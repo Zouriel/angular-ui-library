@@ -6,10 +6,10 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build -- --project showcase --configuration production --base-href /uilib/ --deploy-url /uilib/
+RUN npm run build -- --project ui --configuration production \
+    && npm run build -- --project showcase --configuration production --base-href /uilib/ --deploy-url /uilib/
 
 FROM nginx:1.29-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/showcase/browser /usr/share/nginx/html
-
