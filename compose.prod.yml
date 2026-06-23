@@ -1,0 +1,13 @@
+services:
+  uilib-showcase:
+    build:
+      context: .
+    container_name: uilib-showcase
+    restart: unless-stopped
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+
