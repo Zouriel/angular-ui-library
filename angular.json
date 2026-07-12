@@ -60,7 +60,9 @@
               "node_modules/@angular/cdk/overlay-prebuilt.css",
               "projects/ui/styles/tokens.css",
               "projects/ui/styles/animations.css",
-              "projects/ui/styles/theme-dramatic.css",
+              "projects/ui/styles/theme-palettes.css",
+              "projects/ui/styles/theme-animations.css",
+              "projects/ui/styles/theme-dark-orange.css",
               "projects/ui/styles/fx.css",
               "projects/showcase/src/styles.css"
             ]

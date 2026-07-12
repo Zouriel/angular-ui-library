@@ -10,16 +10,16 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Dramatic theme: hide the native cursor so ui-cursor can take over. */
-[data-theme="dramatic"],
-[data-theme="dramatic"] a,
-[data-theme="dramatic"] button {
+/* darkOrange theme: hide the native cursor so ui-cursor can take over. */
+[data-theme="darkOrange"],
+[data-theme="darkOrange"] a,
+[data-theme="darkOrange"] button {
   cursor: none;
 }
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  [data-theme="dramatic"],
-  [data-theme="dramatic"] a,
-  [data-theme="dramatic"] button {
+  [data-theme="darkOrange"],
+  [data-theme="darkOrange"] a,
+  [data-theme="darkOrange"] button {
     cursor: auto;
   }
 }

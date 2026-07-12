@@ -34,9 +34,9 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Theme service" selector="UiThemeService"
-        summary="Sets data-theme on <html>. Built-ins: dark (default), light, dramatic. Any string is accepted, so you can register custom themes.">
+        summary="Sets data-theme on <html>. Built-ins: dark (default), light, the professional accent palettes (lightOrange, lightPink, darkPink, goldBlack, goldRed, lightTeal, darkTeal, lightPurple, darkPurple) and the cinematic darkOrange skin. Any string is accepted, so you can register custom themes.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
-this.theme.set('dramatic');
+this.theme.set('darkPink');
 this.theme.toggle();   // dark <-> light"></doc-demo>
       </doc-section>
 

@@ -17,8 +17,11 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
         <ui-text variant="body">Then load the tokens once (e.g. in <code>angular.json</code> styles or your global stylesheet):</ui-text>
         <doc-demo lang="css" code="@import 'ui/styles/tokens.css';
 @import 'ui/styles/animations.css';
-/* optional: the cinematic skin */
-@import 'ui/styles/theme-dramatic.css';
+/* optional: professional accent palettes + their signature motion */
+@import 'ui/styles/theme-palettes.css';
+@import 'ui/styles/theme-animations.css';
+/* optional: the cinematic darkOrange skin */
+@import 'ui/styles/theme-dark-orange.css';
 @import 'ui/styles/fx.css';"></doc-demo>
       </doc-section>
 
@@ -34,9 +37,10 @@ export class Demo {}"></doc-demo>
       </doc-section>
 
       <doc-section name="Theming" anchor="theming"
-        summary="Components only read CSS custom-property tokens, so a theme is just a set of token overrides. Switch with UiThemeService.set('dark' | 'light' | 'dramatic') — use the switcher in the top bar to preview.">
+        summary="Components only read CSS custom-property tokens, so a theme is just a set of token overrides. Switch with UiThemeService.set('dark' | 'light' | 'lightOrange' | 'darkPink' | 'goldBlack' | 'darkOrange' | …) — use the picker in the top bar to preview all twelve.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
-this.theme.set('dramatic');   // cinematic ink/ember skin
+this.theme.set('goldBlack');  // professional gold-on-black palette
+this.theme.set('darkOrange'); // cinematic ink/ember skin (web fonts + FX)
 this.theme.toggle();          // dark <-> light"></doc-demo>
       </doc-section>
 

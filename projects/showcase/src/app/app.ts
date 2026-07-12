@@ -3,7 +3,7 @@ import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from 'ui/text';
 import { UiThemeService } from 'ui/theme';
-import { UiButton, UiButtonGroup, UiIconButton } from 'ui/button';
+import { UiButton, UiIconButton } from 'ui/button';
 import { UiSideNav, type UiSideNavGroup } from 'ui/navigation';
 import { UiDrawer, UiToastHost } from 'ui/dialog';
 import { UiSearchInput } from 'ui/form';
@@ -14,7 +14,7 @@ import { NAV } from './app.routes';
 @Component({
   selector: 'app-root',
   imports: [
-    RouterOutlet, UiText, UiButton, UiButtonGroup, UiIconButton, UiSideNav, UiDrawer,
+    RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
     UiSearchInput, UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost,
   ],
   template: `
@@ -37,11 +37,14 @@ import { NAV } from './app.routes';
           <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="navOpen.set(true)">☰</ui-icon-button>
           <ui-button variant="ghost" size="sm" (click)="cmdOpen.set(true)" class="cmd">Search docs ⌘K</ui-button>
           <span class="grow"></span>
-          <ui-button-group label="Theme">
-            <ui-button size="sm" [variant]="themeName() === 'dark' ? 'primary' : 'outline'" (click)="theme.set('dark')">Dark</ui-button>
-            <ui-button size="sm" [variant]="themeName() === 'light' ? 'primary' : 'outline'" (click)="theme.set('light')">Light</ui-button>
-            <ui-button size="sm" [variant]="themeName() === 'dramatic' ? 'primary' : 'outline'" (click)="theme.set('dramatic')">Dramatic</ui-button>
-          </ui-button-group>
+          <label class="theme-picker">
+            <span class="sr-only">Theme</span>
+            <select [value]="themeName()" (change)="theme.set($any($event.target).value)">
+              @for (t of THEMES; track t.value) {
+                <option [value]="t.value">{{ t.label }}</option>
+              }
+            </select>
+          </label>
         </header>
         <main class="content"><router-outlet /></main>
       </div>
@@ -55,7 +58,7 @@ import { NAV } from './app.routes';
     <ui-command-palette [(open)]="cmdOpen" [commands]="commands" (run)="go($event.value)" />
 
     <ui-scroll-progress />
-    @if (dramatic()) { <ui-grain /> <ui-cursor /> }
+    @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
     <ui-toast-host position="bottom-right" />
   `,
   styles: `
@@ -74,6 +77,18 @@ import { NAV } from './app.routes';
       height: 52px; padding: 0 var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border);
       background: color-mix(in srgb, var(--ui-color-bg) 80%, transparent); backdrop-filter: blur(8px); }
     .grow { flex: 1; }
+    .theme-picker select {
+      appearance: none; -webkit-appearance: none;
+      height: var(--ui-size-sm); padding: 0 var(--ui-space-4) 0 var(--ui-space-3);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      background: var(--ui-color-surface); color: var(--ui-color-text);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
+      cursor: pointer; transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .theme-picker select:hover { border-color: var(--ui-color-primary); }
+    .theme-picker select:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .menu-btn { display: none; }
     .content { padding: var(--ui-space-6); max-width: 1000px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     @media (max-width: 900px) {
@@ -93,7 +108,24 @@ export class App {
   protected readonly cmdOpen = signal(false);
   protected readonly query = signal('');
   protected readonly themeName = computed(() => this.theme.theme());
-  protected readonly dramatic = computed(() => this.theme.theme() === 'dramatic');
+  /** Themes that ship the cinematic FX layer (grain + custom cursor). */
+  protected readonly fxTheme = computed(() => this.theme.theme() === 'darkOrange');
+
+  /** Theme roster for the top-bar picker (value = data-theme key). */
+  protected readonly THEMES = [
+    { value: 'dark', label: 'Dark' },
+    { value: 'light', label: 'Light' },
+    { value: 'darkOrange', label: 'Dark Orange ✦' },
+    { value: 'lightOrange', label: 'Light Orange' },
+    { value: 'lightPink', label: 'Light Pink' },
+    { value: 'darkPink', label: 'Dark Pink' },
+    { value: 'goldBlack', label: 'Gold Black' },
+    { value: 'goldRed', label: 'Gold Red' },
+    { value: 'lightTeal', label: 'Light Teal' },
+    { value: 'darkTeal', label: 'Dark Teal' },
+    { value: 'lightPurple', label: 'Light Purple' },
+    { value: 'darkPurple', label: 'Dark Purple' },
+  ];
 
   protected readonly commands: UiCommand[] = NAV.flatMap((g) =>
     g.items.map((i) => ({ label: i.label, value: i.value, group: g.label, icon: '→' })),

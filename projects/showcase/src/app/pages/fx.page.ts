@@ -13,7 +13,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   ],
   template: `
     <doc-page eyebrow="Motion" title="Motion & FX"
-      lead="The cinematic layer (ui/fx) — scroll reveals, marquee, glyph-field background, split-text, custom cursor, grain, glow. Most shine in the Dramatic theme (switch in the top bar). All honor prefers-reduced-motion.">
+      lead="The cinematic layer (ui/fx) — scroll reveals, marquee, glyph-field background, split-text, custom cursor, grain, glow. Most shine in the Dark Orange theme (switch in the top bar). All honor prefers-reduced-motion.">
 
       <doc-section name="Reveal" selector="[uiReveal]" [api]="revealApi"
         summary="Directive. Reveals the host as it scrolls into view (IntersectionObserver). The mode is the directive value. Self-contained (inline transitions; no global CSS).">
@@ -57,7 +57,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       <doc-section name="Cursor / grain / scroll-progress" selector="ui-cursor · ui-grain · ui-scroll-progress"
         summary="Mount once near the app root. ui-cursor replaces the pointer (pair with body { cursor: none }); ui-grain is a film-grain overlay; ui-scroll-progress is a top progress bar using the brand gradient. ui-cursor has an interactiveSelector input; ui-grain has opacity (default 0.06).">
         <doc-demo code="<ui-scroll-progress />
-@if (dramatic) { <ui-grain [opacity]=&quot;0.06&quot; /> <ui-cursor /> }"></doc-demo>
+@if (darkOrange) { <ui-grain [opacity]=&quot;0.06&quot; /> <ui-cursor /> }"></doc-demo>
       </doc-section>
 
       <doc-section name="Intro loader" selector="ui-intro-loader" [api]="introApi" [outputs]="introOut"
