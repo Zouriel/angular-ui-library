@@ -1,14 +1,14 @@
 import { Component, signal } from '@angular/core';
 import { UiButton } from 'ui/button';
 import {
-  UiReveal, UiMarquee, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
+  UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
 } from 'ui/fx';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-fx',
   imports: [
-    UiButton, UiReveal, UiMarquee, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
+    UiButton, UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -30,6 +30,19 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         summary="Infinite horizontal scroller with edge fade; pauses on hover.">
         <doc-demo code="<ui-marquee [items]=&quot;items&quot; [duration]=&quot;24&quot; [reverse]=&quot;false&quot; separator=&quot;✦&quot; />">
           <ui-marquee [items]="marquee" [duration]="22" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Drift row" selector="ui-drift-row" [api]="driftApi"
+        summary="Horizontal rail that auto-drifts to a random side and stays fully draggable/swipeable/scrollable. Pauses on hover or interaction and resumes after resumeDelay. Ping-pongs at the ends; honors prefers-reduced-motion. Project any cards inside.">
+        <doc-demo code="<ui-drift-row [speed]=&quot;26&quot; direction=&quot;auto&quot; gap=&quot;1rem&quot;>
+  <article class=&quot;card&quot;>…</article>
+</ui-drift-row>">
+          <ui-drift-row [speed]="24" gap="1rem">
+            @for (d of drift; track d) {
+              <div class="dcard">{{ d }}</div>
+            }
+          </ui-drift-row>
         </doc-demo>
       </doc-section>
 
@@ -91,12 +104,16 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
     .items-center { align-items: center; }
     .intro { font-size: 3rem; font-weight: 800; font-family: var(--ui-font-display); color: var(--ui-color-text); }
+    .dcard { flex: 0 0 auto; width: 190px; height: 120px; display: grid; place-items: center;
+      font-family: var(--ui-font-display); font-weight: 700; font-size: 1.15rem; color: var(--ui-color-text);
+      background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
   `,
 })
 export class FxPage {
   protected readonly intro = signal(false);
   protected replay(): void { this.intro.set(false); queueMicrotask(() => this.intro.set(true)); }
   protected readonly marquee = ['Design tokens', 'Signals', 'Zoneless', 'CDK', 'A11y', 'Tree-shakeable', 'Themeable'];
+  protected readonly drift = ['Editorial', 'Weddings', 'Birthdays', 'Galas', 'Launches', 'Ceremonies', 'Dinners', 'Reunions'];
 
   protected readonly revealApi: ApiRow[] = [
     { name: 'uiReveal', type: "'up'|'down'|'left'|'right'|'blur'|'scale'", default: "'up'", desc: 'Reveal direction (the value).' },
@@ -111,6 +128,14 @@ export class FxPage {
     { name: 'gap', type: 'string', default: "'3rem'", desc: 'Gap between items.' },
     { name: 'reverse', type: 'boolean', default: 'false', desc: 'Reverse direction.' },
     { name: 'separator', type: 'string', default: "'✦'", desc: 'Item separator glyph.' },
+  ];
+  protected readonly driftApi: ApiRow[] = [
+    { name: 'speed', type: 'number', default: '26', desc: 'Drift speed (px/s).' },
+    { name: 'direction', type: "'auto'|'left'|'right'", default: "'auto'", desc: 'Drift side; auto = random per instance.' },
+    { name: 'gap', type: 'string', default: "'1.5rem'", desc: 'Gap between projected items.' },
+    { name: 'pauseOnHover', type: 'boolean', default: 'true', desc: 'Pause drift while hovered.' },
+    { name: 'resumeDelay', type: 'number', default: '1800', desc: 'Idle time before drift resumes (ms).' },
+    { name: 'fade', type: 'boolean', default: 'true', desc: 'Edge-fade mask on the rail.' },
   ];
   protected readonly labelApi: ApiRow[] = [
     { name: 'index', type: 'string', default: "''", desc: 'Leading index (e.g. 00).' },
