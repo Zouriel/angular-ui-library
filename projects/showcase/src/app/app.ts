@@ -125,6 +125,7 @@ export class App {
     { value: 'darkTeal', label: 'Dark Teal' },
     { value: 'lightPurple', label: 'Light Purple' },
     { value: 'darkPurple', label: 'Dark Purple' },
+    { value: 'lightPurpleGold', label: 'Light Purple Gold' },
   ];
 
   protected readonly commands: UiCommand[] = NAV.flatMap((g) =>
