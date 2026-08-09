@@ -29,6 +29,22 @@ import { UI_CONFIG } from '@zouriel/ui';
     .brand { font-weight: 700; color: var(--ui-color-text); display: flex; align-items: center; gap: var(--ui-space-2); }
     .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; }
     .actions { display: flex; align-items: center; gap: var(--ui-space-2); }
+
+    /*
+     * On a narrow screen a single fixed-height row silently truncates: the last links and the whole
+     * actions slot end up past the right edge, unreachable, with no scrollbar to hint at it. Wrapping
+     * to a second row keeps everything on the page. The links row scrolls on its own as a last
+     * resort, for a nav with more items than a phone can hold.
+     */
+    @media (max-width: 48rem) {
+      .ui-navbar { height: auto; flex-wrap: wrap; padding-block: var(--ui-space-2); gap: var(--ui-space-2); }
+      .brand { flex: 1 0 auto; }
+      /* nowrap so a two-word link scrolls out of view rather than stacking into a tall column and
+         dragging the whole bar down with it. */
+      .links { order: 1; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+      .links::-webkit-scrollbar { display: none; }
+      .actions { flex: 0 0 auto; }
+    }
   `,
 })
 export class UiNavbar {
