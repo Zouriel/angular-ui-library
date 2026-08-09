@@ -7,8 +7,12 @@ import { UI_CONFIG } from '@zouriel/ui';
  */
 @Component({
   selector: 'ui-navbar',
+  // Sticky belongs on the host. A sticky element is confined to its parent's box, and the parent
+  // here is the host, which is exactly the bar's own height: the bar would scroll away with it and
+  // never stick to anything. Hosts are laid out by the page, so this is the element that can.
+  host: { '[class.ui-navbar-sticky]': 'sticky()' },
   template: `
-    <nav class="ui-navbar" [class.glass]="glass()" [class.no-radius]="!radius()" [class.sticky]="sticky()">
+    <nav class="ui-navbar" [class.glass]="glass()" [class.no-radius]="!radius()">
       <div class="brand"><ng-content select="[navbar-brand]" /></div>
       <div class="links"><ng-content /></div>
       <div class="actions"><ng-content select="[navbar-actions]" /></div>
@@ -25,7 +29,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     }
     .ui-navbar.no-radius { border-radius: 0; }
     .ui-navbar.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
-    .ui-navbar.sticky { position: sticky; top: 0; z-index: var(--ui-z-docked); }
+    :host(.ui-navbar-sticky) { position: sticky; top: 0; z-index: var(--ui-z-docked); }
     .brand { font-weight: 700; color: var(--ui-color-text); display: flex; align-items: center; gap: var(--ui-space-2); }
     .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; }
     .actions { display: flex; align-items: center; gap: var(--ui-space-2); }
