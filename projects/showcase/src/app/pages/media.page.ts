@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { UiCarousel, UiGallery, type UiCarouselSlide, type UiGalleryImage } from 'ui/media';
+import { UiCarousel, UiGallery, type UiCarouselSlide, type UiGalleryImage } from '@zouriel/ui/media';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 function grad(a: string, b: string): string {

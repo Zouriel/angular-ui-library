@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiButton } from 'ui/button';
-import { UiAlert } from 'ui/alert';
-import { UiSpinner } from 'ui/spinner';
-import { UiSkeleton } from 'ui/skeleton';
-import { UiProgressBar } from 'ui/progress';
-import { UiEmptyState, UiResult, UiLoadingOverlay } from 'ui/feedback';
+import { UiText } from '@zouriel/ui/text';
+import { UiButton } from '@zouriel/ui/button';
+import { UiAlert } from '@zouriel/ui/alert';
+import { UiSpinner } from '@zouriel/ui/spinner';
+import { UiSkeleton } from '@zouriel/ui/skeleton';
+import { UiProgressBar } from '@zouriel/ui/progress';
+import { UiEmptyState, UiResult, UiLoadingOverlay } from '@zouriel/ui/feedback';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";

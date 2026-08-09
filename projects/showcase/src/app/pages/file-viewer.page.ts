@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiFileViewer, UiImageViewer, UiFileExplorer, type UiFileNode } from 'ui/file-viewer';
+import { UiText } from '@zouriel/ui/text';
+import { UiFileViewer, UiImageViewer, UiFileExplorer, type UiFileNode } from '@zouriel/ui/file-viewer';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const sampleImg = 'data:image/svg+xml;utf8,' + encodeURIComponent(

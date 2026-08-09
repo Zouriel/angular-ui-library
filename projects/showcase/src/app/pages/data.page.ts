@@ -1,14 +1,14 @@
 import { Component, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiTable, type UiColumn } from 'ui/table';
-import { UiList, UiListItem } from 'ui/list';
-import { UiAccordion, UiAccordionItem } from 'ui/accordion';
-import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from 'ui/badge';
-import { UiCard, UiStatCard } from 'ui/card';
+import { UiText } from '@zouriel/ui/text';
+import { UiTable, type UiColumn } from '@zouriel/ui/table';
+import { UiList, UiListItem } from '@zouriel/ui/list';
+import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
+import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
+import { UiCard, UiStatCard } from '@zouriel/ui/card';
 import {
   UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
   type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn,
-} from 'ui/data';
+} from '@zouriel/ui/data';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 interface Row extends Record<string, unknown> { name: string; role: string; score: number; }
@@ -174,7 +174,7 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left'|'right
   protected readonly timeline = [
     { title: 'Created', meta: 'Mon', tone: 'primary' as const }, { title: 'Shipped', meta: 'Wed', tone: 'success' as const },
   ];
-  protected readonly sample = `import { UiTable } from 'ui/table';`;
+  protected readonly sample = `import { UiTable } from '@zouriel/ui/table';`;
 
   protected readonly tableApi: ApiRow[] = [
     { name: 'columns', type: 'UiColumn<T>[]', default: '[]', desc: 'Column defs (see Data shapes).' },

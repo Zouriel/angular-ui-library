@@ -1,5 +1,5 @@
 import { Component, inject, input, model } from '@angular/core';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-toggle-button` — two-state button (`aria-pressed`). Bind `[(pressed)]`. */
 @Component({

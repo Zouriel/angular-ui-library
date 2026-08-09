@@ -1,8 +1,8 @@
 import { Component, input } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiTable, type UiColumn } from 'ui/table';
-import { UiCodeBlock } from 'ui/data';
-import { UiSectionLabel } from 'ui/fx';
+import { UiText } from '@zouriel/ui/text';
+import { UiTable, type UiColumn } from '@zouriel/ui/table';
+import { UiCodeBlock } from '@zouriel/ui/data';
+import { UiSectionLabel } from '@zouriel/ui/fx';
 
 /** Documentation page wrapper: eyebrow + title + lead + projected content. */
 @Component({

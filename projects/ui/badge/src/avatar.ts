@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import type { UiSize } from 'ui';
+import type { UiSize } from '@zouriel/ui';
 
 /**
  * `ui-avatar` — user/entity image with graceful initials fallback.

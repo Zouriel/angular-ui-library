@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiLink, UiKbd, UiInlineCode, UiBlockquote } from 'ui/link';
+import { UiText } from '@zouriel/ui/text';
+import { UiLink, UiKbd, UiInlineCode, UiBlockquote } from '@zouriel/ui/link';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

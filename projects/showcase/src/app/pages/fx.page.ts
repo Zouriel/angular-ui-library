@@ -1,8 +1,8 @@
 import { Component, signal } from '@angular/core';
-import { UiButton } from 'ui/button';
+import { UiButton } from '@zouriel/ui/button';
 import {
   UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
-} from 'ui/fx';
+} from '@zouriel/ui/fx';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

@@ -1,5 +1,5 @@
 import { Component, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
 

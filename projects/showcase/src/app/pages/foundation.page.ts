@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiThemeProvider } from 'ui/theme';
-import { UiCard } from 'ui/card';
+import { UiText } from '@zouriel/ui/text';
+import { UiThemeProvider } from '@zouriel/ui/theme';
+import { UiCard } from '@zouriel/ui/card';
 import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
 
 @Component({

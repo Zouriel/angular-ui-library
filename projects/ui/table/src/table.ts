@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export interface UiColumn<T = Record<string, unknown>> {
   key: string;

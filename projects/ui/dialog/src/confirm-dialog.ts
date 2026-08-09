@@ -1,5 +1,5 @@
 import { Component, input, model, output } from '@angular/core';
-import { UiButton } from 'ui/button';
+import { UiButton } from '@zouriel/ui/button';
 import { UiModal } from './modal';
 
 /**

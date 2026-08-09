@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { UiSize } from 'ui';
+import type { UiSize } from '@zouriel/ui';
 
 /** `ui-spinner` — indeterminate activity indicator. */
 @Component({

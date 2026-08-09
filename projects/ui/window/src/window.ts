@@ -1,7 +1,7 @@
 import {
   Component, ElementRef, NgZone, OnDestroy, OnInit, computed, inject, input, model, output, signal,
 } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 import { UiDockSide, UiWindowBounds, UiWindowManager } from './window-manager';
 
 type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';

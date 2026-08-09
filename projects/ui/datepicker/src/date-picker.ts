@@ -1,7 +1,7 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 interface DayCell { day: number; iso: string; today: boolean; }
 

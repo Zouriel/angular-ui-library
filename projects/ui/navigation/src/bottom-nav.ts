@@ -1,5 +1,5 @@
 import { Component, inject, input, model } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export interface UiBottomNavItem {
   label: string;

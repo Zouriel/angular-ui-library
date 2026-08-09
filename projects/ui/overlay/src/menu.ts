@@ -4,7 +4,7 @@ import {
 import {
   Component, ElementRef, inject, input, model, output, viewChild,
 } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export interface UiMenuItem {
   label: string;

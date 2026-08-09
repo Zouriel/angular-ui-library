@@ -1,11 +1,11 @@
 import { Component, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiButton } from 'ui/button';
+import { UiText } from '@zouriel/ui/text';
+import { UiButton } from '@zouriel/ui/button';
 import {
   UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiBottomNav, UiMenubar, UiSideNav,
   type UiBreadcrumb, type UiBottomNavItem, type UiSideNavGroup,
-} from 'ui/navigation';
-import { UiTabs, UiTab } from 'ui/tabs';
+} from '@zouriel/ui/navigation';
+import { UiTabs, UiTab } from '@zouriel/ui/tabs';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

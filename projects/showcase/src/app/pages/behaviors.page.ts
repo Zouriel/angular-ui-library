@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
-import { UiButton } from 'ui/button';
-import { UiBadge } from 'ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiVirtualList } from 'ui/behaviors';
+import { UiButton } from '@zouriel/ui/button';
+import { UiBadge } from '@zouriel/ui/badge';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiVirtualList } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

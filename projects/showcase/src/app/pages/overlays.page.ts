@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiButton } from 'ui/button';
-import { UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from 'ui/overlay';
-import { UiModal, UiDrawer, UiConfirmDialog, UiToastService } from 'ui/dialog';
+import { UiText } from '@zouriel/ui/text';
+import { UiButton } from '@zouriel/ui/button';
+import { UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+import { UiModal, UiDrawer, UiConfirmDialog, UiToastService } from '@zouriel/ui/dialog';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n  disabled?: boolean;\n  danger?: boolean;\n}";

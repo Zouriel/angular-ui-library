@@ -1,6 +1,6 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, inject, input, output, signal } from '@angular/core';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 import type { UiButtonVariant } from './button';
 
 export interface UiDropdownItem { label: string; value: string; disabled?: boolean; danger?: boolean; }

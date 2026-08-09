@@ -3,7 +3,7 @@
  * `ui/styles/animations.css`. Use these with Angular's modern CSS enter/leave
  * bindings so durations/easings stay token-driven and reduced-motion-safe:
  *
- *   import { UI_ANIM } from 'ui';
+ *   import { UI_ANIM } from '@zouriel/ui';
  *   <div [animate.enter]="UI_ANIM.scale.enter" [animate.leave]="UI_ANIM.scale.leave">
  */
 export const UI_ANIM = {

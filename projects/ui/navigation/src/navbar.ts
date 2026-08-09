@@ -1,5 +1,5 @@
 import { Component, inject, input } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 /**
  * `ui-navbar` — top navigation surface (glass-capable). Slots:

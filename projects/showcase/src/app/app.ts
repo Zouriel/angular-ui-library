@@ -1,14 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { UiText } from 'ui/text';
-import { UiThemeService } from 'ui/theme';
-import { UiButton, UiIconButton } from 'ui/button';
-import { UiSideNav, type UiSideNavGroup } from 'ui/navigation';
-import { UiDrawer, UiToastHost } from 'ui/dialog';
-import { UiSearchInput } from 'ui/form';
-import { UiScrollProgress, UiCursor, UiGrain } from 'ui/fx';
-import { UiCommandPalette, type UiCommand } from 'ui/command-palette';
+import { UiText } from '@zouriel/ui/text';
+import { UiThemeService } from '@zouriel/ui/theme';
+import { UiButton, UiIconButton } from '@zouriel/ui/button';
+import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
+import { UiDrawer, UiToastHost } from '@zouriel/ui/dialog';
+import { UiSearchInput } from '@zouriel/ui/form';
+import { UiScrollProgress, UiCursor, UiGrain } from '@zouriel/ui/fx';
+import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { NAV } from './app.routes';
 
 @Component({

@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { UiStatus } from 'ui';
+import type { UiStatus } from '@zouriel/ui';
 
 export interface UiTimelineItem {
   title: string;

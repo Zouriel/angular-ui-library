@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
 

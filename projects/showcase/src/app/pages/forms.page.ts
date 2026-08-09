@@ -4,9 +4,9 @@ import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
   UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker,
-} from 'ui/form';
-import { UiCombobox, UiMultiSelect } from 'ui/combobox';
-import { UiDatePicker, UiCalendar, UiDateRangePicker } from 'ui/datepicker';
+} from '@zouriel/ui/form';
+import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
+import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepicker';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";

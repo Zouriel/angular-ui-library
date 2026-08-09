@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter } from 'ui/layout';
-import { UiDivider } from 'ui/divider';
-import { UiBadge } from 'ui/badge';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter } from '@zouriel/ui/layout';
+import { UiDivider } from '@zouriel/ui/divider';
+import { UiBadge } from '@zouriel/ui/badge';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

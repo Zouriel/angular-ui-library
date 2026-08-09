@@ -1,8 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiButton } from 'ui/button';
-import { UiBadge } from 'ui/badge';
-import { UiWindow, UiDraggable, UiResizable, UiWindowManager } from 'ui/window';
+import { UiText } from '@zouriel/ui/text';
+import { UiButton } from '@zouriel/ui/button';
+import { UiBadge } from '@zouriel/ui/badge';
+import { UiWindow, UiDraggable, UiResizable, UiWindowManager } from '@zouriel/ui/window';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({

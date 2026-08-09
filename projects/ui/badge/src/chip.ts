@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG, type UiStatus } from 'ui';
+import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
 
 /** `ui-chip` — compact, optionally-removable tag/token. */
 @Component({

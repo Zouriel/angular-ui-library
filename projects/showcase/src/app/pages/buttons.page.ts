@@ -1,9 +1,9 @@
 import { Component, signal } from '@angular/core';
-import { UiText } from 'ui/text';
+import { UiText } from '@zouriel/ui/text';
 import {
   UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton,
   type UiDropdownItem,
-} from 'ui/button';
+} from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = "'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive'";

@@ -1,6 +1,6 @@
 import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 /** `ui-chip-input` — tokenized text entry (CVA; value is string[]). Enter adds, Backspace removes. */
 @Component({

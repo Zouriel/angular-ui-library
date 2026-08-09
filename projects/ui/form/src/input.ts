@@ -1,6 +1,6 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /**
  * `ui-input` — single-line text field. Implements ControlValueAccessor so it

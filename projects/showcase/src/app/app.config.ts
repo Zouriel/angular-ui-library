@@ -4,7 +4,7 @@ import {
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideUiConfig } from 'ui';
+import { provideUiConfig } from '@zouriel/ui';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {

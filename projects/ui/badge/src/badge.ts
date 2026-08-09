@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { UiStatus } from 'ui';
+import type { UiStatus } from '@zouriel/ui';
 
 /** `ui-badge` — small status/count label. */
 @Component({

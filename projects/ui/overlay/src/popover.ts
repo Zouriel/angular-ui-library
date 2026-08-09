@@ -2,7 +2,7 @@ import {
   CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition,
 } from '@angular/cdk/overlay';
 import { Component, inject, input, model } from '@angular/core';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end';
 

@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import type { UiStatus } from 'ui';
+import type { UiStatus } from '@zouriel/ui';
 
 /**
  * `ui-progress-bar` — determinate or indeterminate progress.

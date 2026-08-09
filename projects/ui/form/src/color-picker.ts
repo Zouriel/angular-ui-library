@@ -1,6 +1,6 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from 'ui';
+import { UI_CONFIG } from '@zouriel/ui';
 
 /** `ui-color-picker` — native color well + hex field + preset swatches (CVA; value is hex). */
 @Component({

@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import { UiPdfViewer } from 'ui/pdf-viewer';
+import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 import { UiImageViewer } from './image-viewer';
 import { UiVideoPlayer } from './video-player';
 import { UiAudioPlayer } from './audio-player';

@@ -1,6 +1,6 @@
 import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from 'ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-number-input` — numeric field with stepper buttons (CVA). */
 @Component({

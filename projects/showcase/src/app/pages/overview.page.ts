@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { UiText } from 'ui/text';
-import { UiCard } from 'ui/card';
-import { UiBadge } from 'ui/badge';
+import { UiText } from '@zouriel/ui/text';
+import { UiCard } from '@zouriel/ui/card';
+import { UiBadge } from '@zouriel/ui/badge';
 import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
 
 @Component({
@@ -27,7 +27,7 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
 
       <doc-section name="Usage" anchor="usage"
         summary="Every component is standalone — import it directly. No NgModules.">
-        <doc-demo lang="ts" code="import { UiButton } from 'ui/button';
+        <doc-demo lang="ts" code="import { UiButton } from '@zouriel/ui/button';
 
 @Component({
   imports: [UiButton],
