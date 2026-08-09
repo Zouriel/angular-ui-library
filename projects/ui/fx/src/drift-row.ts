@@ -40,7 +40,7 @@ export type UiDriftDirection = 'auto' | 'left' | 'right';
       <div class="drift__track"><ng-content /></div>
     </div>
   `,
-  host: { '[class.faded]': 'fade() && overflowing()' },
+  host: { '[class.faded]': 'fade() && overflowing()', '[class.static]': '!interactive()' },
   styles: `
     :host { display: block; }
     .drift {
@@ -53,6 +53,8 @@ export type UiDriftDirection = 'auto' | 'left' | 'right';
     }
     .drift::-webkit-scrollbar { display: none; }
     .drift.grabbing { cursor: grabbing; user-select: none; }
+    /* passive display: auto-drift only, no user interaction */
+    :host(.static) .drift { overflow-x: hidden; pointer-events: none; cursor: default; }
     .drift__track {
       display: flex;
       gap: var(--gap, 1.5rem);
@@ -81,6 +83,9 @@ export class UiDriftRow implements AfterViewInit, OnDestroy {
   resumeDelay = input(1800);
   /** Edge-fade mask so items dissolve at the rail's edges. */
   fade = input(true);
+  /** When false, the rail becomes a passive display: it keeps auto-drifting but
+   *  the user cannot scroll, swipe, drag or click it (pointer-events are off). */
+  interactive = input(true);
 
   /** Whether the rail actually overflows — the edge fade only shows when it does. */
   protected readonly overflowing = signal(false);
@@ -112,11 +117,14 @@ export class UiDriftRow implements AfterViewInit, OnDestroy {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     this.zone.runOutsideAngular(() => {
-      el.addEventListener('pointerenter', this.onEnter);
-      el.addEventListener('pointerleave', this.onLeave);
-      el.addEventListener('wheel', this.onInteract, { passive: true });
-      el.addEventListener('touchstart', this.onInteract, { passive: true });
-      el.addEventListener('pointerdown', this.onPointerDown);
+      // Passive display mode: no user interaction, just the autonomous drift.
+      if (this.interactive()) {
+        el.addEventListener('pointerenter', this.onEnter);
+        el.addEventListener('pointerleave', this.onLeave);
+        el.addEventListener('wheel', this.onInteract, { passive: true });
+        el.addEventListener('touchstart', this.onInteract, { passive: true });
+        el.addEventListener('pointerdown', this.onPointerDown);
+      }
 
       if (!reduce) {
         this.last = performance.now();
