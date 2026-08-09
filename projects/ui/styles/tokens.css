@@ -8,6 +8,10 @@
  */
 
 :root {
+  /* The default palette is dark, and native controls have to be told: without color-scheme the
+     browser paints select popups, scrollbars and spinners for a light page. */
+  color-scheme: dark;
+
   /* Color */
   --ui-color-bg: #0f1115;
   --ui-color-surface: #171a21;
@@ -78,6 +82,7 @@
 
 /* Light theme override */
 [data-theme="light"] {
+  color-scheme: light;
   --ui-color-bg: #ffffff;
   --ui-color-surface: #f5f6f8;
   --ui-color-surface-raised: #ffffff;
