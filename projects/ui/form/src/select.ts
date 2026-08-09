@@ -57,7 +57,13 @@ export interface UiSelectOption {
     .wrap[data-size="lg"] .ui-select { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     .ui-select[aria-invalid="true"] { border-color: var(--ui-color-danger); }
     .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted); }
-    option { color: initial; }
+    /*
+     * The popup list is painted by the platform, not by this stylesheet, so it has to be told the
+     * theme's colours outright. "color: initial" put black text in it, which on a dark theme is
+     * either unreadable or invisible depending on what the platform chose for the background.
+     */
+    option { background-color: var(--ui-color-surface); color: var(--ui-color-text); }
+    option:disabled { color: var(--ui-color-text-muted); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSelect), multi: true }],
 })

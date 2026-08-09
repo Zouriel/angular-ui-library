@@ -18,6 +18,28 @@
  *   Dark:  darkPink · darkTeal · darkPurple · goldBlack · goldRed
  */
 
+/*
+ * color-scheme tells the browser which way round the page is, and it is the only way to reach the
+ * parts of a control the page does not paint: a native <select> popup, scrollbars, spinners, the
+ * date picker. Without it those render light while everything around them is dark, so a dropdown
+ * opens as dark text on a light list, or worse, dark on dark.
+ */
+[data-theme="lightOrange"],
+[data-theme="lightPink"],
+[data-theme="lightTeal"],
+[data-theme="lightPurple"],
+[data-theme="lightPurpleGold"] {
+  color-scheme: light;
+}
+
+[data-theme="darkPink"],
+[data-theme="darkTeal"],
+[data-theme="darkPurple"],
+[data-theme="goldBlack"],
+[data-theme="goldRed"] {
+  color-scheme: dark;
+}
+
 /* Shared light-surface recipe (shadows + glass tuned for a bright canvas). */
 [data-theme="lightOrange"],
 [data-theme="lightPink"],

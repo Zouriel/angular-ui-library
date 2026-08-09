@@ -42,6 +42,8 @@ function fmt(s: number): string {
     .seek { flex: 1; accent-color: var(--ui-color-primary); }
     .vol { width: 70px; accent-color: var(--ui-color-primary); }
     .rate { height: 24px; background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); border-radius: 6px; font-size: 12px; }
+    /* The popup list is the platform's, so it needs the colours spelled out here too. */
+    .rate option { background-color: var(--ui-color-surface); color: var(--ui-color-text); }
   `,
 })
 export class UiVideoPlayer {
