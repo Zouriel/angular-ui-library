@@ -60,6 +60,12 @@ export class UiList {
     .ui-list-item.interactive:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-list-item.interactive:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-list-item.selected { background: color-mix(in srgb, var(--ui-color-primary) 20%, transparent); }
+    /* Redeclared, not inherited — .ui-list-item.interactive:hover:not(:disabled) above has higher
+       specificity than the bare .ui-list-item.selected rule (two classes + :hover + :not() vs. two
+       classes), so without this the plain hover tint wins and a selected row loses its selected
+       look the moment it's hovered. [class.selected] is only ever applied alongside .interactive
+       in the template, so this combination is the common case, not an edge case. */
+    .ui-list-item.interactive.selected:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-primary) 26%, transparent); }
     .ui-list-item:disabled { opacity: 0.5; cursor: not-allowed; }
     .lead:empty, .trail:empty { display: none; }
     .main { flex: 1; min-width: 0; }

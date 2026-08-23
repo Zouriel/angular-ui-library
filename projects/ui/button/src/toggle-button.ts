@@ -31,6 +31,11 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-toggle:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
     .ui-toggle:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-toggle.pressed { background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent); border-color: var(--ui-color-primary); color: var(--ui-color-text); }
+    /* Redeclared, not inherited — .ui-toggle:hover:not(:disabled) above has higher specificity
+       (one class + two pseudo-classes = (0,3,0)) than the bare .ui-toggle.pressed rule (two
+       classes = (0,2,0)), so without this the generic hover background would silently replace
+       the pressed highlight while hovering a pressed toggle. */
+    .ui-toggle.pressed:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent); border-color: var(--ui-color-primary); color: var(--ui-color-text); }
     .ui-toggle.no-radius { border-radius: 0; }
     .ui-toggle[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
     .ui-toggle[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }

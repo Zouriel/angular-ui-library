@@ -49,7 +49,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     }
     .ui-btn:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
     .ui-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
-    .ui-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .ui-btn:focus-visible:not(:disabled) { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .ui-btn.no-radius { border-radius: 0; }
     .ui-btn.glass {
@@ -89,7 +89,14 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
                   box-shadow var(--ui-motion-base) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .ui-btn[data-variant="brand"]:hover:not(:disabled) { filter: brightness(1.08); }
+    .ui-btn[data-variant="brand"]:hover:not(:disabled) {
+      /* Redeclared, not inherited — the base .ui-btn:hover:not(:disabled) rule above has
+         higher specificity than the bare [data-variant="brand"] rule (two pseudo-classes vs.
+         one attribute selector), so without this the generic white hover background wins and
+         the gradient disappears on hover/press. Same background value as the non-hover rule. */
+      background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
+      filter: brightness(1.08);
+    }
     .ui-btn[data-variant="brand"].no-radius { border-radius: 0; }
     .spin {
       width: 1em; height: 1em; border-radius: 50%;

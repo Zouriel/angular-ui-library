@@ -58,6 +58,12 @@ export interface UiSideNavGroup {
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
     .item.active { background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); color: var(--ui-color-text); font-weight: 600; }
+    .item.active:hover:not(:disabled) {
+      /* Redeclared, not inherited — .item:hover:not(:disabled) above has higher specificity
+         (one class + two pseudo-classes) than .item.active (two classes), so without this the
+         generic hover background wins and the active highlight disappears on hover. */
+      background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent);
+    }
     .item.active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: var(--ui-color-primary); }
     .item:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .item:disabled { opacity: 0.5; cursor: not-allowed; }
