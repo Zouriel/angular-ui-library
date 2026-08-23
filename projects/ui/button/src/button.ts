@@ -76,7 +76,12 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-variant="brand"] {
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
       color: var(--ui-color-primary-contrast);
-      border-color: transparent;
+      /* border: none rather than border-color: transparent — a 1px transparent border on top
+         of a gradient fill with this much border-radius renders as a visible dark seam at the
+         curved edge in Chrome/Firefox (the border box anti-aliases separately from the
+         background). Every other filled variant keeps border-color: transparent since their
+         radius is small enough that the seam isn't visible, but on a pill it is. */
+      border: none;
       border-radius: var(--ui-radius-pill);
       font-weight: 600;
       box-shadow: var(--ui-glow-amber, none);
