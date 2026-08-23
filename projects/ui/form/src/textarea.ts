@@ -11,6 +11,8 @@ import { UI_CONFIG } from '@zouriel/ui';
       [class.no-radius]="!radius()"
       [attr.placeholder]="placeholder()"
       [attr.rows]="rows()"
+      [attr.autocomplete]="autocomplete()"
+      [attr.name]="name()"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
@@ -39,6 +41,8 @@ export class UiTextarea implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   placeholder = input('');
   rows = input(4);
+  autocomplete = input<string>();
+  name = input<string>();
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
 

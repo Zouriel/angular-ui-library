@@ -16,6 +16,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [attr.type]="type()"
       [attr.placeholder]="placeholder()"
       [attr.inputmode]="inputmode()"
+      [attr.autocomplete]="autocomplete()"
+      [attr.name]="name()"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
@@ -48,6 +50,12 @@ export class UiInput implements ControlValueAccessor {
   type = input<'text' | 'email' | 'url' | 'tel' | 'password' | 'search'>('text');
   placeholder = input('');
   inputmode = input<string>();
+  /** Passed straight through to the native `autocomplete` attribute — e.g. `"email"`,
+   *  `"given-name"`, `"off"`. Unset lets the browser infer from `type`/`name`. */
+  autocomplete = input<string>();
+  /** Passed straight through to the native `name` attribute — browsers use it (together
+   *  with `autocomplete`) to match a field against saved autofill data. */
+  name = input<string>();
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);

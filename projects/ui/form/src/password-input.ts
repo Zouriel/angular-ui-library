@@ -12,7 +12,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         [attr.type]="reveal() ? 'text' : 'password'"
         [attr.placeholder]="placeholder()"
         [attr.aria-invalid]="invalid() || null"
-        autocomplete="current-password"
+        [attr.autocomplete]="autocomplete()"
+        [attr.name]="name()"
         [value]="value()"
         [disabled]="disabled()"
         (input)="handleInput($event)"
@@ -45,6 +46,10 @@ export class UiPasswordInput implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   placeholder = input('');
   size = input<UiSize>('md');
+  /** Defaults to `'current-password'` (sign-in). Pass `'new-password'` for signup/change-password
+   *  fields so browsers stop suggesting a saved password and offer to generate/save a new one. */
+  autocomplete = input<string>('current-password');
+  name = input<string>();
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
 
