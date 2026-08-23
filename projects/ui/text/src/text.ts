@@ -46,10 +46,10 @@ export type TextVariant =
     h1, h2, h3 { font-family: var(--ui-font-display); }
     /* Tracking tapers with size, largest heading first — matches the display type scale
        (tighter at the top, back to normal by h3/body so small text stays legible). */
-    h1 { font-size: 2rem; font-weight: 700; line-height: 1.15; letter-spacing: var(--ui-tracking-tighter); }
-    h2 { font-size: 1.5rem; font-weight: 700; line-height: 1.2; letter-spacing: var(--ui-tracking-tight); }
-    h3 { font-size: 1.25rem; font-weight: 600; }
-    h4 { font-size: 1.1rem; font-weight: 600; }
+    h1 { font-size: 2.5rem; font-weight: 700; line-height: 1.1; letter-spacing: var(--ui-tracking-tighter); }
+    h2 { font-size: 1.875rem; font-weight: 700; line-height: 1.18; letter-spacing: var(--ui-tracking-tight); }
+    h3 { font-size: 1.375rem; font-weight: 600; letter-spacing: var(--ui-tracking-tight); }
+    h4 { font-size: 1.125rem; font-weight: 600; }
     h5 { font-size: 1rem; font-weight: 600; }
     h6 { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     p  { font-size: var(--ui-font-size-md); line-height: 1.5; }

@@ -1,7 +1,7 @@
 import { Component, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
-export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive';
+export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand';
 
 /**
  * `ui-button` — the action primitive. Wires `glass`/`radius` to the global
@@ -69,6 +69,23 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-variant="ghost"] { background: transparent; border-color: transparent; }
     .ui-btn[data-variant="link"] { background: transparent; border-color: transparent; color: var(--ui-color-primary); text-decoration: underline; padding: 0; height: auto; }
     .ui-btn[data-variant="link"]:hover:not(:disabled) { background: transparent; color: var(--ui-color-primary-hover); }
+    /* Signature CTA — the theme's own purple→gold sweep (falls back to a primary→hover gradient
+       on themes that don't define one), pill-shaped so it reads as a distinct "hero action" rather
+       than a bigger version of the ordinary primary button. Reserve it for the one action per view
+       that should pull focus (hero CTA, final CTA) — not a default. */
+    .ui-btn[data-variant="brand"] {
+      background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
+      color: var(--ui-color-primary-contrast);
+      border-color: transparent;
+      border-radius: var(--ui-radius-pill);
+      font-weight: 600;
+      box-shadow: var(--ui-glow-amber, none);
+      transition: filter var(--ui-motion-base) var(--ui-ease-standard),
+                  box-shadow var(--ui-motion-base) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .ui-btn[data-variant="brand"]:hover:not(:disabled) { filter: brightness(1.08); }
+    .ui-btn[data-variant="brand"].no-radius { border-radius: 0; }
     .spin {
       width: 1em; height: 1em; border-radius: 50%;
       border: 2px solid currentColor; border-right-color: transparent;

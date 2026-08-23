@@ -8,7 +8,7 @@ import { UI_CONFIG } from '@zouriel/ui';
 @Component({
   selector: 'ui-card',
   template: `
-    <div class="ui-card" [class.glass]="glass()" [class.no-radius]="!radius()" [attr.data-pad]="padding()">
+    <div class="ui-card" [class.glass]="glass()" [class.no-radius]="!radius()" [class.interactive]="interactive()" [attr.data-pad]="padding()">
       <div class="hd"><ng-content select="[card-header]" /></div>
       <div class="bd"><ng-content /></div>
       <div class="ft"><ng-content select="[card-footer]" /></div>
@@ -28,6 +28,17 @@ import { UI_CONFIG } from '@zouriel/ui';
       overflow: hidden;
       font-family: var(--ui-font-default);
     }
+    /* Opt-in: for cards that are themselves the clickable surface (a template/listing card
+       wrapped in a link, say) — lifts the whole card on hover so it reads as a target, not
+       just decoration. Static/informational cards leave this off. */
+    .ui-card.interactive {
+      cursor: pointer;
+      transition: transform var(--ui-motion-base) var(--ui-ease-standard),
+                  box-shadow var(--ui-motion-base) var(--ui-ease-standard),
+                  border-color var(--ui-motion-base) var(--ui-ease-standard);
+    }
+    .ui-card.interactive:hover { transform: translateY(-3px); box-shadow: var(--ui-shadow-2); border-color: var(--ui-color-primary); }
+    .ui-card.interactive:active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
     /* Body takes the slack so a [card-footer] (e.g. an actions row) bottom-aligns across a grid of cards. */
     .bd { flex: 1 1 auto; }
     .ui-card.no-radius { border-radius: 0; }
@@ -50,4 +61,7 @@ export class UiCard {
   padding = input<'sm' | 'md' | 'lg'>('md');
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
+  /** Opt-in hover lift for cards that are themselves a clickable target (e.g. wrapped in
+   *  an `<a>`). Off by default — static/informational cards shouldn't look clickable. */
+  interactive = input(false);
 }

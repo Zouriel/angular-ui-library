@@ -231,7 +231,10 @@
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #241636;
   --ui-color-text-muted: #6b5a86;
-  --ui-color-border: #e6dbf3;
+  /* Darkened from the original #e6dbf3 — that was nearly invisible against surface-raised
+     (#fff), so cards/dividers/inputs had almost no defined edge. This still reads as a
+     hairline, not a hard outline, but it actually shows up. */
+  --ui-color-border: #d7c3ee;
   --ui-color-primary: #7c3aed;
   --ui-color-primary-hover: #8b5cf6;
   --ui-color-primary-contrast: #ffffff;
