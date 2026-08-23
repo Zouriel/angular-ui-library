@@ -39,7 +39,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       font-family: var(--ui-font-default);
       font-size: 14px;
       font-weight: 500;
-      letter-spacing: -0.01em;
+      letter-spacing: var(--ui-tracking-tight);
       cursor: pointer;
       white-space: nowrap;
       transition: background var(--ui-motion-base) var(--ui-ease-standard),
@@ -48,7 +48,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
                   opacity var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-btn:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
-    .ui-btn:active:not(:disabled) { transform: scale(0.98); }
+    .ui-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .ui-btn.no-radius { border-radius: 0; }
@@ -61,11 +61,11 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
     .ui-btn[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }
-    .ui-btn[data-variant="secondary"] { background: var(--ui-color-secondary); color: #fff; border-color: transparent; }
-    .ui-btn[data-variant="secondary"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-secondary) 85%, #fff); }
+    .ui-btn[data-variant="secondary"] { background: var(--ui-color-secondary); color: var(--ui-color-primary-contrast); border-color: transparent; }
+    .ui-btn[data-variant="secondary"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-secondary) 85%, var(--ui-color-primary-contrast)); }
     .ui-btn[data-variant="outline"] { background: transparent; }
-    .ui-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: #fff; border-color: transparent; }
-    .ui-btn[data-variant="destructive"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-danger) 88%, #fff); }
+    .ui-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-primary-contrast); border-color: transparent; }
+    .ui-btn[data-variant="destructive"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-danger) 88%, var(--ui-color-primary-contrast)); }
     .ui-btn[data-variant="ghost"] { background: transparent; border-color: transparent; }
     .ui-btn[data-variant="link"] { background: transparent; border-color: transparent; color: var(--ui-color-primary); text-decoration: underline; padding: 0; height: auto; }
     .ui-btn[data-variant="link"]:hover:not(:disabled) { background: transparent; color: var(--ui-color-primary-hover); }

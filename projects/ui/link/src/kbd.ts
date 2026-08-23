@@ -13,7 +13,7 @@ import { Component } from '@angular/core';
       color: var(--ui-color-text);
       background: var(--ui-color-surface-raised);
       border: 1px solid var(--ui-color-border);
-      border-bottom-width: 2px; border-radius: 5px;
+      border-bottom-width: 2px; border-radius: var(--ui-radius-xs);
     }
   `,
 })

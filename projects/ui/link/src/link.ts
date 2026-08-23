@@ -19,7 +19,7 @@ import { Component, input } from '@angular/core';
     .ui-link {
       color: var(--ui-color-primary); text-decoration: none;
       font-family: var(--ui-font-default); cursor: pointer;
-      border-radius: 3px;
+      border-radius: var(--ui-radius-xs);
       transition: color var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .ui-link:hover { text-decoration: underline; color: var(--ui-color-primary-hover); }

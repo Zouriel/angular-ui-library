@@ -30,7 +30,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     .ui-navbar.no-radius { border-radius: 0; }
     .ui-navbar.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     :host(.ui-navbar-sticky) { position: sticky; top: 0; z-index: var(--ui-z-docked); }
-    .brand { font-weight: 700; color: var(--ui-color-text); display: flex; align-items: center; gap: var(--ui-space-2); }
+    .brand { font-weight: 700; color: var(--ui-color-text); letter-spacing: var(--ui-tracking-tight); display: flex; align-items: center; gap: var(--ui-space-2); }
     .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; }
     .actions { display: flex; align-items: center; gap: var(--ui-space-2); }
 

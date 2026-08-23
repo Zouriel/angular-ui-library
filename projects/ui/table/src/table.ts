@@ -82,7 +82,7 @@ type SortDir = 'asc' | 'desc' | null;
     tbody tr:hover { background: color-mix(in srgb, var(--ui-color-primary) 8%, transparent); }
     tbody tr.selected { background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); }
     .sort { display: inline-flex; align-items: center; gap: var(--ui-space-1); background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; }
-    .sort:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 4px; }
+    .sort:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .arrow { width: 1em; display: inline-block; }
     .sel { width: 1px; white-space: nowrap; }
     .empty { text-align: center; color: var(--ui-color-text-muted); padding: var(--ui-space-6); }

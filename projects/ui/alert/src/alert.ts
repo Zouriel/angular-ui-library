@@ -36,14 +36,26 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .ui-alert.no-radius { border-radius: 0; }
     .icon { font-size: 1.1em; line-height: 1.4; }
     .content { flex: 1; min-width: 0; }
-    .title { display: block; margin-bottom: 2px; }
+    .title { display: block; margin-bottom: 2px; letter-spacing: var(--ui-tracking-tight); }
     .body { color: var(--ui-color-text-muted); }
     .ui-alert[data-tone="info"]    { border-left-color: var(--ui-color-primary); }
     .ui-alert[data-tone="success"] { border-left-color: var(--ui-color-success); }
     .ui-alert[data-tone="warning"] { border-left-color: var(--ui-color-warning); }
     .ui-alert[data-tone="danger"]  { border-left-color: var(--ui-color-danger); }
-    .x { border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+    .x {
+      position: relative;
+      border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer;
+      font-size: 18px; line-height: 1; padding: 0 4px;
+      transition: color var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    /* Invisible hit-slop: the glyph stays small, but touch users still get the 44px minimum target. */
+    .x::before {
+      content: '';
+      position: absolute;
+      inset: calc((26px - var(--ui-size-touch)) / 2);
+    }
     .x:hover { color: var(--ui-color-text); }
+    .x:active { transform: scale(var(--ui-scale-press)); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 4px; }
   `,
 })

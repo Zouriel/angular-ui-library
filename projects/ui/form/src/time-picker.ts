@@ -12,6 +12,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [class.no-radius]="!radius()"
       [attr.data-size]="size()"
       [attr.step]="step()"
+      [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
       (input)="set($any($event.target).value)"
@@ -24,9 +25,12 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ui-time:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .ui-time:disabled { opacity: 0.55; cursor: not-allowed; }
     .ui-time.no-radius { border-radius: 0; }
     .ui-time[data-size="sm"] { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .ui-time[data-size="lg"] { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
+    .ui-time[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .ui-time[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
     .ui-time::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiTimePicker), multi: true }],
@@ -36,6 +40,7 @@ export class UiTimePicker implements ControlValueAccessor {
   size = input<UiSize>('md');
   /** Seconds granularity: 60 = minutes (default), 1 = show seconds. */
   step = input(60);
+  invalid = input(false);
   radius = input<boolean>(this.config.radius);
 
   protected readonly value = signal('');

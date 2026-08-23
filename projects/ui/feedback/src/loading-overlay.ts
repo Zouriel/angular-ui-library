@@ -24,7 +24,7 @@ import { Component, input } from '@angular/core';
       backdrop-filter: blur(2px);
       font-family: var(--ui-font-default);
     }
-    .spin { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-lo-spin var(--ui-motion-slow) linear infinite; }
+    .spin { width: var(--ui-size-sm); height: var(--ui-size-sm); border-radius: 50%; border: 3px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-lo-spin var(--ui-motion-slow) linear infinite; }
     .lbl { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     @keyframes ui-lo-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 1.2s; } }

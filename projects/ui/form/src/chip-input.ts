@@ -6,11 +6,12 @@ import { UI_CONFIG } from '@zouriel/ui';
 @Component({
   selector: 'ui-chip-input',
   template: `
-    <div class="ci" [class.no-radius]="!radius()" (click)="focusInput()">
+    <div class="ci" [class.no-radius]="!radius()" [class.invalid]="invalid()" (click)="focusInput()">
       @for (chip of chips(); track $index) {
         <span class="chip">{{ chip }}<button type="button" class="x" tabindex="-1" aria-label="Remove" (click)="removeAt($index, $event)">×</button></span>
       }
       <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()"
+             [attr.aria-invalid]="invalid() || null"
              [disabled]="disabled()" (keydown)="onKey($event)" (blur)="onTouched()" />
     </div>
   `,
@@ -22,10 +23,16 @@ import { UI_CONFIG } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ci:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .ci.no-radius { border-radius: 0; }
+    .ci.invalid { border-color: var(--ui-color-danger); }
+    .ci.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .ci:has(.entry:disabled) { opacity: 0.55; cursor: not-allowed; }
     .chip { display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 var(--ui-space-2);
       background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); border: 1px solid var(--ui-color-primary);
-      border-radius: 999px; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
-    .x { border: none; background: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
+      border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
+    .x { border: none; background: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0;
+      border-radius: var(--ui-radius-xs); transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); opacity: 0.7; }
+    .x:hover { opacity: 1; }
+    .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
     .entry { flex: 1; min-width: 80px; border: none; background: transparent; outline: none; color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); height: 22px; }
   `,
@@ -34,6 +41,7 @@ import { UI_CONFIG } from '@zouriel/ui';
 export class UiChipInput implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   placeholder = input('Add tag…');
+  invalid = input(false);
   radius = input<boolean>(this.config.radius);
 
   private readonly inp = viewChild<ElementRef<HTMLInputElement>>('inp');

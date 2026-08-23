@@ -13,6 +13,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           maxlength="1"
           [value]="chars()[i] || ''"
           [disabled]="disabled()"
+          [attr.aria-invalid]="invalid() || null"
           [attr.aria-label]="'Digit ' + (i + 1)"
           (input)="onInput($event, i)"
           (keydown)="onKeydown($event, i)"
@@ -34,6 +35,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     }
     .cell:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .cell:disabled { opacity: 0.55; }
+    .cell[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .cell[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiOtpInput), multi: true }],
 })
@@ -41,6 +44,7 @@ export class UiOtpInput implements ControlValueAccessor {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   length = input(6);
   numeric = input(true);
+  invalid = input(false);
 
   protected readonly chars = signal<string[]>([]);
   protected readonly disabled = signal(false);

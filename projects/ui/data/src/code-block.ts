@@ -22,7 +22,7 @@ import { DOCUMENT } from '@angular/common';
     .lang { font-family: var(--ui-font-default); font-size: 12px; color: var(--ui-color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .copy { border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-family: var(--ui-font-default); font-size: 12px; }
     .copy:hover { color: var(--ui-color-text); }
-    .copy:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 4px; }
+    .copy:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .code { margin: 0; padding: var(--ui-space-3); overflow: auto; }
     code { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); white-space: pre; }
   `,

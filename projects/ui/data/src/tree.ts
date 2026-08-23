@@ -38,12 +38,13 @@ export interface UiTreeNode {
     :host { display: block; }
     .tree { font-family: var(--ui-font-default); }
     .row { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-1) var(--ui-space-2);
-      cursor: pointer; border-radius: 6px; color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
+      cursor: pointer; border-radius: var(--ui-radius-xs); color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
     .row:hover { background: var(--ui-color-surface-raised); }
     .row.selected { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
     .chev { width: 18px; height: 18px; flex: none; border: none; background: none; color: var(--ui-color-text-muted); cursor: pointer;
-      transition: transform var(--ui-motion-fast) var(--ui-ease-standard); transform: rotate(0deg); }
+      border-radius: var(--ui-radius-xs); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); transform: rotate(0deg); }
     .chev.open { transform: rotate(90deg); }
+    .chev:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .chev.spacer { cursor: default; }
     .icon { font-size: 14px; }
     .label { flex: 1; }

@@ -24,10 +24,17 @@ function fmt(s: number): string {
     :host { display: block; }
     .ap { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); font-family: var(--ui-font-default); }
-    .play { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); cursor: pointer; font-size: 12px; flex: none; }
+    .play { position: relative; width: var(--ui-size-lg); height: var(--ui-size-lg); border-radius: 50%; border: none; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); cursor: pointer; font-size: 12px; flex: none;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .play::before { content: ''; position: absolute; inset: calc((var(--ui-size-lg) - var(--ui-size-touch)) / 2); }
+    .play:hover { background: var(--ui-color-primary-hover); }
+    .play:active { transform: scale(var(--ui-scale-press)); }
+    .play:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .title { font-size: var(--ui-font-size-sm); color: var(--ui-color-text); white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
-    .t { font-family: var(--ui-font-mono); font-size: 12px; color: var(--ui-color-text-muted); min-width: 38px; text-align: center; }
+    .t { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 38px; text-align: center; }
     .seek { flex: 1; accent-color: var(--ui-color-primary); }
+    .seek:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,
 })
 export class UiAudioPlayer {

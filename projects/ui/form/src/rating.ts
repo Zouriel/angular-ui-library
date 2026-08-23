@@ -27,8 +27,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .star { border: none; background: none; cursor: pointer; padding: 0 1px; font-size: 20px; line-height: 1;
       color: var(--ui-color-border); transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
     .star.filled { color: var(--ui-color-warning); }
-    .star:disabled { cursor: not-allowed; }
-    .star:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 4px; }
+    .star:disabled { cursor: not-allowed; opacity: 0.55; }
+    .star:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiRating), multi: true }],
 })

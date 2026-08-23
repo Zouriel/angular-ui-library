@@ -3,13 +3,14 @@ import { ComponentPortal } from '@angular/cdk/portal';
 import {
   Component, Directive, OnDestroy, inject, input, output, signal,
 } from '@angular/core';
+import { UI_CONFIG } from '@zouriel/ui';
 import type { UiMenuItem } from './menu';
 
 /** Internal panel rendered in the context-menu overlay. */
 @Component({
   selector: 'ui-context-menu-panel',
   template: `
-    <div class="cm" role="menu">
+    <div class="cm" [class.glass]="config.glass" role="menu">
       @for (item of items(); track item.value) {
         <button type="button" role="menuitem" class="mi" [class.danger]="item.danger"
                 [disabled]="item.disabled" (click)="pick(item)">{{ item.label }}</button>
@@ -21,14 +22,16 @@ import type { UiMenuItem } from './menu';
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default);
       animation: ui-scale-in var(--ui-motion-fast) var(--ui-ease-standard); }
+    .cm.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .mi { padding: var(--ui-space-2) var(--ui-space-3); background: none; border: none; border-radius: 6px; text-align: left;
       cursor: pointer; color: var(--ui-color-text); font: inherit; font-size: var(--ui-font-size-md); }
-    .mi:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
+    .mi:hover:not(:disabled), .mi:focus-visible { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); outline: none; }
     .mi.danger { color: var(--ui-color-danger); }
     .mi:disabled { opacity: 0.5; cursor: not-allowed; }
   `,
 })
 export class UiContextMenuPanel {
+  protected readonly config = inject(UI_CONFIG);
   readonly items = signal<UiMenuItem[]>([]);
   onPick: (item: UiMenuItem) => void = () => {};
   protected pick(item: UiMenuItem): void {

@@ -54,7 +54,7 @@ export interface UiCheckboxOption {
     .opt.disabled { opacity: 0.55; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .box { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none;
-      border: 1px solid var(--ui-color-border); border-radius: 5px; background: var(--ui-color-surface);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); background: var(--ui-color-surface);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), border-color var(--ui-motion-fast) var(--ui-ease-standard); }
     .tick { width: 12px; height: 12px; fill: none; stroke: var(--ui-color-primary-contrast); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--ui-motion-base) var(--ui-ease-standard); }
     .native:checked + .box { background: var(--ui-color-primary); border-color: var(--ui-color-primary); }

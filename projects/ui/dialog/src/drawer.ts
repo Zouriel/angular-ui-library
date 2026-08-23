@@ -23,6 +23,7 @@ let drawerSeq = 0;
         [cdkTrapFocusAutoCapture]="true"
         [attr.data-side]="side()"
         [class.glass]="glass()"
+        [class.no-radius]="!radius()"
         [style.--ui-slide-from]="slideFrom()"
         role="dialog"
         aria-modal="true"
@@ -50,16 +51,24 @@ let drawerSeq = 0;
       box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default);
     }
     .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
-    .panel[data-side="left"]   { top: 0; left: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0 var(--ui-radius) var(--ui-radius) 0; }
-    .panel[data-side="right"]  { top: 0; right: 0; bottom: 0; width: min(360px, 90vw); border-radius: var(--ui-radius) 0 0 var(--ui-radius); }
-    .panel[data-side="top"]    { top: 0; left: 0; right: 0; height: min(320px, 80vh); border-radius: 0 0 var(--ui-radius) var(--ui-radius); }
-    .panel[data-side="bottom"] { bottom: 0; left: 0; right: 0; height: min(320px, 80vh); border-radius: var(--ui-radius) var(--ui-radius) 0 0; }
+    .panel.no-radius { border-radius: 0; }
+    .panel[data-side="left"]   { top: 0; left: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0; }
+    .panel[data-side="right"]  { top: 0; right: 0; bottom: 0; width: min(360px, 90vw); border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg); }
+    .panel[data-side="top"]    { top: 0; left: 0; right: 0; height: min(320px, 80vh); border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg); }
+    .panel[data-side="bottom"] { bottom: 0; left: 0; right: 0; height: min(320px, 80vh); border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; }
     .hd { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
-    .title { font-weight: 600; font-size: var(--ui-font-size-lg); }
+    .title { font-weight: 600; font-size: var(--ui-font-size-lg); letter-spacing: var(--ui-tracking-tight); }
     .bd { padding: var(--ui-space-4); overflow: auto; flex: 1; }
-    .x { border: none; background: transparent; color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer; }
-    .x:hover { color: var(--ui-color-text); }
-    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 6px; }
+    .x {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: var(--ui-space-3); margin: calc(var(--ui-space-3) * -1);
+      border: none; background: transparent; border-radius: var(--ui-radius);
+      color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .x:hover { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .x:active { transform: scale(var(--ui-scale-press)); }
+    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,
 })
 export class UiDrawer {
@@ -71,6 +80,7 @@ export class UiDrawer {
   closeOnBackdrop = input(true);
   closeOnEscape = input(true);
   glass = input<boolean>(this.config.glass);
+  radius = input<boolean>(this.config.radius);
   protected readonly labelId = `ui-drawer-${drawerSeq++}`;
 
   protected readonly slideFrom = computed(() => {

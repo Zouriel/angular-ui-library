@@ -23,9 +23,10 @@ import { UI_CONFIG } from '@zouriel/ui';
       height: 100%;
       background: var(--ui-color-surface);
       border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius);
+      border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-1);
       overflow: hidden;
+      font-family: var(--ui-font-default);
     }
     /* Body takes the slack so a [card-footer] (e.g. an actions row) bottom-aligns across a grid of cards. */
     .bd { flex: 1 1 auto; }
@@ -37,7 +38,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     }
     .hd, .bd, .ft { padding: var(--ui-space-3) var(--ui-space-4); }
     .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-space-2) var(--ui-space-3); }
-    .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-space-4) var(--ui-space-6); }
+    .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-space-6) var(--ui-space-8); }
     .hd { border-bottom: 1px solid var(--ui-color-border); font-weight: 600; }
     .ft { border-top: 1px solid var(--ui-color-border); }
     /* Collapse empty header/footer slots */

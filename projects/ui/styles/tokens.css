@@ -34,17 +34,41 @@
   --ui-size-sm: 26px;
   --ui-size-md: 30px;
   --ui-size-lg: 38px;
+  /* Apple HIG minimum hit target — icon-buttons/checkboxes/chips can pad out to this
+     without growing their visible box, so touch users always get a 44px target. */
+  --ui-size-touch: 44px;
   --ui-space-1: 4px;
   --ui-space-2: 8px;
   --ui-space-3: 12px;
   --ui-space-4: 16px;
   --ui-space-6: 24px;
+  /* Upper spacing steps for section/page-level rhythm (cards, dialogs, page shells) —
+     the component-level scale above (1–6) stays untouched. */
+  --ui-space-8: 32px;
+  --ui-space-12: 48px;
+  --ui-space-20: 80px;
   --ui-font-size-sm: 13px;
   --ui-font-size-md: 15px;
   --ui-font-size-lg: 18px;
 
-  /* Radius — single value, toggled on/off per component */
+  /* Tracking — negative letter-spacing at display sizes reads as considered rather than
+     default; body/caption sizes stay at 0 (tightening small text hurts legibility). */
+  --ui-tracking-tight: -0.02em;
+  --ui-tracking-tighter: -0.03em;
+
+  /* Radius — --ui-radius is the single value most components toggle on/off (unchanged,
+     do not edit call sites). The scale below is for components that deliberately vary
+     radius by role: xs for chip/tag edges, lg for large surfaces (cards, sheets), pill
+     for capsule CTAs and search-style inputs. */
   --ui-radius: 7px;
+  --ui-radius-xs: 5px;
+  --ui-radius-sm: 8px;
+  --ui-radius-lg: 18px;
+  --ui-radius-pill: 9999px;
+
+  /* Press feedback — one shared scale so every interactive component's :active state
+     matches instead of each hand-picking its own (was a mix of 0.97/0.98 before). */
+  --ui-scale-press: 0.96;
 
   /* Elevation */
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);

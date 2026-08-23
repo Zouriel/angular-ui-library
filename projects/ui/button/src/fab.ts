@@ -19,7 +19,7 @@ import { Component, input } from '@angular/core';
       transition: transform var(--ui-motion-fast) var(--ui-ease-spring), background var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-fab:hover:not(:disabled) { background: var(--ui-color-primary-hover); transform: scale(1.05); }
-    .ui-fab:active:not(:disabled) { transform: scale(0.96); }
+    .ui-fab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-fab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring), var(--ui-shadow-2); }
     .ui-fab:disabled { opacity: 0.5; cursor: not-allowed; }
     .ui-fab[data-size="sm"] { width: 40px; height: 40px; font-size: 18px; }

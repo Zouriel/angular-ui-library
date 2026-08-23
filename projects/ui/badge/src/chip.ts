@@ -17,7 +17,7 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
     .ui-chip {
       display: inline-flex; align-items: center; gap: var(--ui-space-1);
       height: var(--ui-size-sm); padding: 0 var(--ui-space-3);
-      border-radius: 999px; font-size: var(--ui-font-size-sm);
+      border-radius: var(--ui-radius-pill); font-size: var(--ui-font-size-sm);
       font-family: var(--ui-font-default);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border);
@@ -28,10 +28,18 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
     .ui-chip[data-tone="warning"] { background: color-mix(in srgb, var(--ui-color-warning) 22%, transparent); border-color: var(--ui-color-warning); }
     .ui-chip[data-tone="danger"] { background: color-mix(in srgb, var(--ui-color-danger) 22%, transparent); border-color: var(--ui-color-danger); }
     .x {
+      position: relative;
       display: inline-flex; align-items: center; justify-content: center;
       width: 16px; height: 16px; border: none; border-radius: 50%;
       background: transparent; color: inherit; cursor: pointer;
       font-size: 14px; line-height: 1;
+    }
+    /* Invisible hit-slop: the visible 16px circle stays tight, but touch users still get the
+       44px minimum target via an absolutely positioned, unstyled pseudo-element. */
+    .x::before {
+      content: '';
+      position: absolute;
+      inset: calc((16px - var(--ui-size-touch)) / 2);
     }
     .x:hover { background: rgba(127,127,127,0.25); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

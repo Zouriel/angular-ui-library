@@ -6,7 +6,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 @Component({
   selector: 'ui-password-input',
   template: `
-    <div class="wrap" [class.no-radius]="!radius()" [attr.data-size]="size()">
+    <div class="wrap" [class.no-radius]="!radius()" [class.invalid]="invalid()" [attr.data-size]="size()">
       <input
         class="ui-pw"
         [attr.type]="reveal() ? 'text' : 'password'"
@@ -31,6 +31,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .wrap.no-radius { border-radius: 0; }
+    .wrap.invalid { border-color: var(--ui-color-danger); }
+    .wrap.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
     .ui-pw { flex: 1; min-width: 0; height: var(--ui-size-md); padding: 0 var(--ui-space-3); border: none; background: transparent;
       color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none; }
     .wrap[data-size="sm"] .ui-pw { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }

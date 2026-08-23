@@ -53,7 +53,7 @@ export interface UiSideNavGroup {
       color: var(--ui-color-text-muted); padding: 0 var(--ui-space-2); margin-bottom: 2px; }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
     .item { position: relative; display: flex; align-items: center; gap: var(--ui-space-2); width: 100%;
-      padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: 7px;
+      padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: var(--ui-radius);
       color: var(--ui-color-text-muted); font: inherit; font-size: var(--ui-font-size-sm); text-align: left; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }

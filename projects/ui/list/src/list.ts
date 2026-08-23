@@ -51,8 +51,13 @@ export class UiList {
       color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
       text-align: left; background: transparent;
     }
-    .ui-list-item.interactive { border: none; cursor: pointer; transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .ui-list-item.interactive {
+      border: none; cursor: pointer; min-height: var(--ui-size-touch);
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
     .ui-list-item.interactive:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
+    .ui-list-item.interactive:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-list-item.interactive:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-list-item.selected { background: color-mix(in srgb, var(--ui-color-primary) 20%, transparent); }
     .ui-list-item:disabled { opacity: 0.5; cursor: not-allowed; }

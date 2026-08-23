@@ -27,13 +27,14 @@ import { Component, input, output, signal } from '@angular/core';
       font-family: var(--ui-font-default); transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard); }
     .dz.no-radius { border-radius: 0; }
     .dz:hover, .dz.over { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 8%, var(--ui-color-surface)); }
+    .dz:focus-within { outline: none; box-shadow: var(--ui-focus-ring); }
     .native { position: absolute; width: 0; height: 0; opacity: 0; }
     .icon { font-size: 22px; color: var(--ui-color-text-muted); }
     .hint { font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
     .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .files { margin: var(--ui-space-2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
     .files li { display: flex; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-1) var(--ui-space-2);
-      background: var(--ui-color-surface-raised); border-radius: 6px; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
+      background: var(--ui-color-surface-raised); border-radius: var(--ui-radius-xs); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
     .sz { color: var(--ui-color-text-muted); }
   `,
 })

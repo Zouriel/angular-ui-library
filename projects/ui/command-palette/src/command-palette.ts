@@ -1,4 +1,5 @@
-import { Component, computed, effect, ElementRef, input, model, output, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { UI_CONFIG } from '@zouriel/ui';
 
 export interface UiCommand {
   label: string;
@@ -19,13 +20,14 @@ export interface UiCommand {
     @if (open()) {
       <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
-        <div class="cp" role="dialog" aria-modal="true" aria-label="Command palette"
+        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette"
              animate.enter="ui-scale-enter" animate.leave="ui-scale-leave">
           <input #input class="cp-input" [value]="query()" [attr.placeholder]="placeholder()"
-                 (input)="onInput($event)" role="combobox" aria-expanded="true" aria-controls="cp-list" />
+                 (input)="onInput($event)" role="combobox" aria-expanded="true" aria-controls="cp-list"
+                 aria-autocomplete="list" [attr.aria-activedescendant]="filtered().length ? 'cp-option-' + active() : null" />
           <ul class="cp-list" id="cp-list" role="listbox">
             @for (c of filtered(); track c.value; let i = $index) {
-              <li role="option" class="cp-item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
+              <li [id]="'cp-option-' + i" role="option" class="cp-item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
                   (mousedown)="$event.preventDefault(); pick(c)" (mouseenter)="active.set(i)">
                 @if (c.icon) { <span class="ci">{{ c.icon }}</span> }
                 <span class="cl">{{ c.label }}</span>
@@ -41,10 +43,12 @@ export interface UiCommand {
     }
   `,
   styles: `
-    .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: rgba(0,0,0,0.5); }
+    .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: rgba(0,0,0,0.55); }
     .cp-wrap { position: fixed; inset: 0; z-index: var(--ui-z-overlay); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; pointer-events: none; }
     .cp { pointer-events: auto; width: min(560px, 92vw); background: var(--ui-color-surface-raised);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default); }
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default); }
+    .cp.no-radius { border-radius: 0; }
+    .cp.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .cp-input { width: 100%; box-sizing: border-box; height: 46px; padding: 0 var(--ui-space-4); border: none;
       border-bottom: 1px solid var(--ui-color-border); background: transparent; color: var(--ui-color-text); font-size: var(--ui-font-size-lg); outline: none; }
     .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; }
@@ -58,9 +62,12 @@ export interface UiCommand {
   `,
 })
 export class UiCommandPalette {
+  private config = inject(UI_CONFIG);
   open = model(false);
   commands = input<UiCommand[]>([]);
   placeholder = input('Type a command or search…');
+  glass = input<boolean>(this.config.glass);
+  radius = input<boolean>(this.config.radius);
   run = output<UiCommand>();
 
   protected readonly query = signal('');

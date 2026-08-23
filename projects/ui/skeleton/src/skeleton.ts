@@ -26,7 +26,7 @@ import { Component, input } from '@angular/core';
       animation: ui-skeleton-shimmer 1.4s ease infinite;
     }
     :host(.circle) { border-radius: 50%; }
-    :host(.text) { height: 0.85em; border-radius: 4px; }
+    :host(.text) { height: 0.85em; border-radius: var(--ui-radius-xs); }
     @keyframes ui-skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
   `,

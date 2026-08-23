@@ -25,9 +25,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .wrap { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-3);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .wrap:has(.ui-search:disabled) { opacity: 0.55; cursor: not-allowed; }
     .wrap.no-radius { border-radius: 0; }
     .icon { font-size: 12px; opacity: 0.7; }
     .ui-search { flex: 1; min-width: 0; height: var(--ui-size-md); border: none; background: transparent;

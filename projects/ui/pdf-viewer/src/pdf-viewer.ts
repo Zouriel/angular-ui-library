@@ -35,8 +35,13 @@ import {
     .pv { display: flex; flex-direction: column; height: 100%; min-height: 240px; background: var(--ui-color-surface); border-radius: var(--ui-radius); overflow: hidden; }
     .bar { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); }
-    .bar button { width: 28px; height: 26px; border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text); border-radius: 6px; cursor: pointer; }
-    .bar button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .bar button { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer;
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard), opacity var(--ui-motion-base) var(--ui-ease-standard); }
+    .bar button::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
+    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .bar button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
+    .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .bar button:disabled { opacity: 0.5; cursor: not-allowed; }
     .spacer { flex: 1; }
     .pg, .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .stage { flex: 1; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: var(--ui-space-3); background: var(--ui-color-bg); }

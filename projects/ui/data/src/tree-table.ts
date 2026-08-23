@@ -53,8 +53,9 @@ interface FlatRow { row: UiTreeTableRow; depth: number; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: color-mix(in srgb, var(--ui-color-primary) 8%, transparent); }
     .chev { width: 16px; height: 16px; border: none; background: none; color: var(--ui-color-text-muted); cursor: pointer;
-      transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+      border-radius: var(--ui-radius-xs); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .chev.open { transform: rotate(90deg); }
+    .chev:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .chev.spacer { cursor: default; display: inline-block; }
   `,
 })

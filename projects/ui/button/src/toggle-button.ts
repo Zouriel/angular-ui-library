@@ -23,10 +23,13 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       height: var(--ui-size-md); padding: 0 var(--ui-space-4);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      font-family: var(--ui-font-default); font-size: 14px; cursor: pointer;
-      transition: background var(--ui-motion-base) var(--ui-ease-standard), border-color var(--ui-motion-base) var(--ui-ease-standard);
+      font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      letter-spacing: var(--ui-tracking-tight); cursor: pointer;
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), border-color var(--ui-motion-base) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .ui-toggle:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .ui-toggle:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-toggle.pressed { background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent); border-color: var(--ui-color-primary); color: var(--ui-color-text); }
     .ui-toggle.no-radius { border-radius: 0; }
     .ui-toggle[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }

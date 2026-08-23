@@ -21,8 +21,9 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .view { display: inline-flex; align-items: center; gap: var(--ui-space-2); background: none; border: 1px solid transparent;
       border-radius: var(--ui-radius); padding: 2px var(--ui-space-2); cursor: text; color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); }
-    .view:hover { border-color: var(--ui-color-border); }
+    .view:hover:not(:disabled) { border-color: var(--ui-color-border); }
     .view:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .view:disabled { opacity: 0.55; cursor: not-allowed; }
     .placeholder { color: var(--ui-color-text-muted); }
     .pencil { opacity: 0; font-size: 12px; color: var(--ui-color-text-muted); }
     .view:hover .pencil { opacity: 1; }

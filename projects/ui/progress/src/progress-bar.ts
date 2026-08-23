@@ -24,7 +24,7 @@ import type { UiStatus } from '@zouriel/ui';
     .track {
       position: relative; height: 8px; width: 100%;
       background: var(--ui-color-surface-raised);
-      border-radius: 999px; overflow: hidden;
+      border-radius: var(--ui-radius-pill); overflow: hidden;
     }
     .fill {
       height: 100%; background: var(--ui-color-primary);

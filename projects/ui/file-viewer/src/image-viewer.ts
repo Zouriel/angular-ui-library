@@ -28,9 +28,13 @@ import { Component, computed, input, signal } from '@angular/core';
     img { max-width: 100%; max-height: 100%; user-select: none; transition: transform 60ms linear; }
     .bar { display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
       padding: var(--ui-space-2); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
-    .bar button { width: 28px; height: 26px; border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
-      color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer; font-family: var(--ui-font-default); }
+    .bar button { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
+      color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer; font-family: var(--ui-font-default);
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .bar button::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
     .bar button:hover { background: var(--ui-color-surface-raised); }
+    .bar button:active { transform: scale(var(--ui-scale-press)); }
+    .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 42px; text-align: center; }
   `,
 })

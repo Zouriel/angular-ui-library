@@ -10,7 +10,7 @@ import type { UiStatus } from '@zouriel/ui';
     .ui-badge {
       display: inline-flex; align-items: center; gap: var(--ui-space-1);
       height: 20px; padding: 0 var(--ui-space-2);
-      border-radius: 999px;
+      border-radius: var(--ui-radius-pill);
       font-size: 12px; font-weight: 600; line-height: 1;
       font-family: var(--ui-font-default);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
@@ -18,9 +18,9 @@ import type { UiStatus } from '@zouriel/ui';
     }
     .ui-badge.dot { width: 8px; height: 8px; padding: 0; }
     .ui-badge[data-tone="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
-    .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: #fff; border-color: transparent; }
+    .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-badge[data-tone="warning"] { background: var(--ui-color-warning); color: #1a1d23; border-color: transparent; }
-    .ui-badge[data-tone="danger"] { background: var(--ui-color-danger); color: #fff; border-color: transparent; }
+    .ui-badge[data-tone="danger"] { background: var(--ui-color-danger); color: var(--ui-color-primary-contrast); border-color: transparent; }
   `,
 })
 export class UiBadge {

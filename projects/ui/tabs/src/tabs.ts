@@ -83,11 +83,14 @@ export class UiTab {
       flex: 0 0 auto;
       white-space: nowrap;
       scroll-snap-align: start;
-      transition: color var(--ui-motion-base) var(--ui-ease-standard), border-color var(--ui-motion-base) var(--ui-ease-standard);
+      transition: color var(--ui-motion-base) var(--ui-ease-standard),
+                  border-color var(--ui-motion-base) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .tab:hover:not(:disabled) { color: var(--ui-color-text); }
+    .tab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .tab[aria-selected="true"] { color: var(--ui-color-text); border-bottom-color: var(--ui-color-primary); }
-    .tab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 6px; }
+    .tab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
     .tab:disabled { opacity: 0.5; cursor: not-allowed; }
   `,
 })

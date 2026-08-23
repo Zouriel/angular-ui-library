@@ -21,6 +21,7 @@ export interface UiComboboxOption {
         class="ui-combobox"
         role="combobox"
         [attr.aria-expanded]="open()"
+        [attr.aria-invalid]="invalid() || null"
         aria-autocomplete="list"
         [attr.placeholder]="placeholder()"
         [value]="query()"
@@ -64,6 +65,9 @@ export interface UiComboboxOption {
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ui-combobox:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .ui-combobox:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-combobox[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .ui-combobox[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
     .wrap.no-radius .ui-combobox { border-radius: 0; }
     .wrap[data-size="sm"] .ui-combobox { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-combobox { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
@@ -71,7 +75,7 @@ export interface UiComboboxOption {
     .panel { margin: var(--ui-space-1) 0 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); }
-    .opt { padding: var(--ui-space-2) var(--ui-space-3); border-radius: 6px; cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
+    .opt { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
     .opt.active { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
     .opt[aria-selected="true"] { font-weight: 600; }
   `,
@@ -82,6 +86,7 @@ export class UiCombobox implements ControlValueAccessor {
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Search…');
   size = input<UiSize>('md');
+  invalid = input(false);
   radius = input<boolean>(this.config.radius);
 
   protected readonly query = signal('');

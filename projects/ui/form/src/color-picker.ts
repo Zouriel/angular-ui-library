@@ -23,11 +23,14 @@ import { UI_CONFIG } from '@zouriel/ui';
     .cp { display: flex; align-items: center; gap: var(--ui-space-2); }
     .well { width: var(--ui-size-md); height: var(--ui-size-md); border-radius: var(--ui-radius); border: 1px solid var(--ui-color-border); overflow: hidden; cursor: pointer; flex: none; }
     .cp.no-radius .well, .cp.no-radius .hex { border-radius: 0; }
+    .well:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
     .well input { opacity: 0; width: 100%; height: 100%; cursor: pointer; }
     .hex { width: 92px; height: var(--ui-size-md); padding: 0 var(--ui-space-2); background: var(--ui-color-surface);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text);
-      font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); outline: none; }
-    .hex:focus { border-color: var(--ui-color-primary); }
+      font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); outline: none;
+      transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
+    .hex:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .hex:disabled { opacity: 0.55; cursor: not-allowed; }
     .swatches { display: flex; gap: 4px; }
     .sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); cursor: pointer; padding: 0; }
     .sw:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

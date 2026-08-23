@@ -28,7 +28,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .box {
       display: inline-flex; align-items: center; justify-content: center;
       width: 18px; height: 18px; flex: none;
-      border: 1px solid var(--ui-color-border); border-radius: 5px;
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs);
       background: var(--ui-color-surface);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), border-color var(--ui-motion-fast) var(--ui-ease-standard);
     }

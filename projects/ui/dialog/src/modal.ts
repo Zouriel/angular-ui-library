@@ -59,7 +59,7 @@ let modalSeq = 0;
       width: 100%; max-width: 480px; max-height: 85vh; overflow: auto;
       display: flex; flex-direction: column;
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default);
     }
     .panel[data-size="sm"] { max-width: 360px; }
@@ -67,13 +67,20 @@ let modalSeq = 0;
     .panel.no-radius { border-radius: 0; }
     .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .hd { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
-    .title { font-weight: 600; font-size: var(--ui-font-size-lg); }
+    .title { font-weight: 600; font-size: var(--ui-font-size-lg); letter-spacing: var(--ui-tracking-tight); }
     .bd { padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .ft { padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: flex-end; }
     .ft:empty { display: none; }
-    .x { border: none; background: transparent; color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer; }
-    .x:hover { color: var(--ui-color-text); }
-    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 6px; }
+    .x {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: var(--ui-space-3); margin: calc(var(--ui-space-3) * -1);
+      border: none; background: transparent; border-radius: var(--ui-radius);
+      color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .x:hover { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .x:active { transform: scale(var(--ui-scale-press)); }
+    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,
 })
 export class UiModal {

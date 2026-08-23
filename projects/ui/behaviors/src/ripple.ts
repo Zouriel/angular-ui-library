@@ -20,7 +20,7 @@ export class UiRipple {
     const rect = el.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const ripple = document.createElement('span');
-    ripple.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;transform:scale(0);opacity:0.35;width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px;background:${this.color()};transition:transform 480ms cubic-bezier(0.2,0,0,1),opacity 600ms;`;
+    ripple.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;transform:scale(0);opacity:0.35;width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px;background:${this.color()};transition:transform 480ms var(--ui-ease-standard),opacity 600ms;`;
     el.appendChild(ripple);
     requestAnimationFrame(() => { ripple.style.transform = 'scale(2.2)'; ripple.style.opacity = '0'; });
     setTimeout(() => ripple.remove(), 620);

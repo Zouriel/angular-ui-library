@@ -23,14 +23,14 @@ import { UI_CONFIG } from '@zouriel/ui';
     .stat { display: flex; flex-direction: column; gap: var(--ui-space-1);
       padding: var(--ui-space-3) var(--ui-space-4);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); }
+      border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); }
     .stat.no-radius { border-radius: 0; }
     .stat.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .top { display: flex; align-items: center; justify-content: space-between; }
     .label { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .icon { color: var(--ui-color-text-muted); }
     .icon:empty { display: none; }
-    .value { font-size: 1.6rem; font-weight: 700; color: var(--ui-color-text); line-height: 1.1; }
+    .value { font-size: 1.6rem; font-weight: 700; letter-spacing: var(--ui-tracking-tight); color: var(--ui-color-text); line-height: 1.1; }
     .delta { font-size: var(--ui-font-size-sm); font-weight: 600; }
     .delta[data-trend="up"] { color: var(--ui-color-success); }
     .delta[data-trend="down"] { color: var(--ui-color-danger); }

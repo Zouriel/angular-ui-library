@@ -16,7 +16,7 @@ let tooltipSeq = 0;
     .ui-tooltip {
       max-width: 240px; padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: 8px;
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-sm);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
       box-shadow: var(--ui-shadow-2); pointer-events: none;
       animation: ui-fade-in var(--ui-motion-fast) var(--ui-ease-standard);

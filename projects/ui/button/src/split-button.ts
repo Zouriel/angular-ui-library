@@ -23,9 +23,11 @@ import type { UiButtonVariant } from './button';
     :host { display: inline-flex; }
     .split { display: inline-flex; }
     button { border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text);
-      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: 14px; cursor: pointer;
-      transition: background var(--ui-motion-base) var(--ui-ease-standard); }
+      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      letter-spacing: var(--ui-tracking-tight); cursor: pointer;
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); z-index: 1; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .main { padding: 0 var(--ui-space-4); border-radius: var(--ui-radius) 0 0 var(--ui-radius); }

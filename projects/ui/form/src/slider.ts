@@ -21,13 +21,13 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   styles: `
     :host { display: block; }
     .ui-slider { display: flex; align-items: center; gap: var(--ui-space-3); }
-    input[type=range] { flex: 1; appearance: none; height: 6px; border-radius: 999px; outline: none; cursor: pointer;
+    input[type=range] { flex: 1; appearance: none; height: 6px; border-radius: var(--ui-radius-pill); outline: none; cursor: pointer;
       background: linear-gradient(to right, var(--ui-color-primary) var(--ui-fill, 0%), var(--ui-color-surface-raised) var(--ui-fill, 0%)); }
     input[type=range]:disabled { opacity: 0.5; cursor: not-allowed; }
     input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%;
-      background: #fff; border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1); cursor: pointer; }
-    input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 1px solid var(--ui-color-border); cursor: pointer; }
-    input[type=range]:focus-visible { box-shadow: var(--ui-focus-ring); }
+      background: var(--ui-color-primary-contrast); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1); cursor: pointer; }
+    input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--ui-color-primary-contrast); border: 1px solid var(--ui-color-border); cursor: pointer; }
+    input[type=range]:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .val { min-width: 2.5ch; text-align: right; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSlider), multi: true }],

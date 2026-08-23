@@ -32,16 +32,23 @@ function fmt(s: number): string {
   `,
   styles: `
     :host { display: block; }
-    .vp { position: relative; background: #000; border-radius: var(--ui-radius); overflow: hidden; }
+    .vp { position: relative; background: #000; border-radius: var(--ui-radius-lg); overflow: hidden; }
     video { display: block; width: 100%; max-height: 60vh; }
     .controls { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface); border-top: 1px solid var(--ui-color-border); }
-    .ic { width: 30px; height: 26px; border: none; background: transparent; color: var(--ui-color-text); cursor: pointer; border-radius: 6px; }
+    .ic { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: none; background: transparent; color: var(--ui-color-text); cursor: pointer; border-radius: var(--ui-radius);
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .ic::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
     .ic:hover { background: var(--ui-color-surface-raised); }
-    .t { font-family: var(--ui-font-mono); font-size: 12px; color: var(--ui-color-text-muted); min-width: 38px; text-align: center; }
-    .seek { flex: 1; accent-color: var(--ui-color-primary); }
-    .vol { width: 70px; accent-color: var(--ui-color-primary); }
-    .rate { height: 24px; background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); border-radius: 6px; font-size: 12px; }
+    .ic:active { transform: scale(var(--ui-scale-press)); }
+    .ic:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .t { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 38px; text-align: center; }
+    .seek, .vol { accent-color: var(--ui-color-primary); }
+    .seek { flex: 1; }
+    .vol { width: 70px; }
+    .seek:focus-visible, .vol:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
+    .rate { height: var(--ui-size-sm); background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); font-size: 12px; }
+    .rate:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     /* The popup list is the platform's, so it needs the colours spelled out here too. */
     .rate option { background-color: var(--ui-color-surface); color: var(--ui-color-text); }
   `,

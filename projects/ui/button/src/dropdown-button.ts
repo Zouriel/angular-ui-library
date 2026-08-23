@@ -27,8 +27,11 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
     :host { display: inline-flex; }
     .ddb { display: inline-flex; align-items: center; gap: var(--ui-space-2); height: var(--ui-size-md); padding: 0 var(--ui-space-4);
       background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: 14px; cursor: pointer; }
+      border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      letter-spacing: var(--ui-tracking-tight); cursor: pointer;
+      transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .ddb:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .ddb:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ddb:disabled { opacity: 0.5; cursor: not-allowed; }
     .ddb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ddb.no-radius { border-radius: 0; }

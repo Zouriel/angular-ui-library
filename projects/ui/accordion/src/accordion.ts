@@ -31,13 +31,17 @@ let accSeq = 0;
     .head { margin: 0; }
     .trigger {
       display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3);
-      width: 100%; padding: var(--ui-space-3) var(--ui-space-2);
+      width: 100%; min-height: var(--ui-size-touch); box-sizing: border-box;
+      padding: var(--ui-space-3) var(--ui-space-2);
       background: none; border: none; cursor: pointer;
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); font-weight: 500;
       color: var(--ui-color-text); text-align: left;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .trigger:hover { color: var(--ui-color-text); }
-    .trigger:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 6px; }
+    .trigger:hover { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
+    .trigger:active { transform: scale(var(--ui-scale-press)); }
+    .trigger:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
     .chevron { transition: transform var(--ui-motion-base) var(--ui-ease-standard); color: var(--ui-color-text-muted); transform: rotate(90deg); }
     .chevron.open { transform: rotate(-90deg); }
     .panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ui-motion-base) var(--ui-ease-standard); }

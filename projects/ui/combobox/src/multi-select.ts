@@ -9,11 +9,12 @@ import type { UiComboboxOption } from './combobox';
   selector: 'ui-multi-select',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
-    <div class="ms" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" (click)="open.set(true)">
+    <div class="ms" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [class.invalid]="invalid()" (click)="open.set(true)">
       @for (v of value(); track v) {
         <span class="chip">{{ labelOf(v) }}<button type="button" class="x" tabindex="-1" aria-label="Remove" (click)="toggle(v, $event)">×</button></span>
       }
       <input class="entry" [attr.placeholder]="value().length ? '' : placeholder()"
+             [attr.aria-invalid]="invalid() || null"
              [value]="query()" [disabled]="disabled()" (input)="onInput($event)" (focus)="open.set(true)" (blur)="onTouched()" />
     </div>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open() && filtered().length > 0"
@@ -35,15 +36,21 @@ import type { UiComboboxOption } from './combobox';
       border-radius: var(--ui-radius); cursor: text; }
     .ms:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .ms.no-radius { border-radius: 0; }
+    .ms.invalid { border-color: var(--ui-color-danger); }
+    .ms.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .ms:has(.entry:disabled) { opacity: 0.55; cursor: not-allowed; }
     .chip { display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 var(--ui-space-2);
       background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); border: 1px solid var(--ui-color-primary);
-      border-radius: 999px; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
-    .x { border: none; background: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
+      border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
+    .x { border: none; background: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0;
+      border-radius: var(--ui-radius-xs); transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); opacity: 0.7; }
+    .x:hover { opacity: 1; }
+    .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
     .entry { flex: 1; min-width: 80px; border: none; background: transparent; outline: none; color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); height: 22px; }
     .panel { margin: var(--ui-space-1) 0 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2); }
-    .opt { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: 6px;
+    .opt { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs);
       cursor: pointer; color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); }
     .opt:hover { background: color-mix(in srgb, var(--ui-color-primary) 14%, transparent); }
     .box { color: var(--ui-color-primary); }
@@ -54,6 +61,7 @@ export class UiMultiSelect implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Select…');
+  invalid = input(false);
   radius = input<boolean>(this.config.radius);
 
   protected readonly value = signal<string[]>([]);

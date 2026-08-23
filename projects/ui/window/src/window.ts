@@ -54,7 +54,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
       position: fixed; display: flex; flex-direction: column;
       min-width: 220px; min-height: 120px;
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default);
       overflow: hidden;
     }
@@ -69,8 +69,10 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
     .title { font-size: var(--ui-font-size-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .chrome { display: flex; gap: 2px; }
     .ctl { width: 26px; height: 24px; border: none; background: transparent; color: var(--ui-color-text-muted);
-      border-radius: 5px; cursor: pointer; font-size: 12px; line-height: 1; }
+      border-radius: var(--ui-radius-xs); cursor: pointer; font-size: 12px; line-height: 1;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .ctl:hover { background: var(--ui-color-surface); color: var(--ui-color-text); }
+    .ctl:active { transform: scale(var(--ui-scale-press)); }
     .ctl.close:hover { background: var(--ui-color-danger); color: #fff; }
     .ctl:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .body { flex: 1; overflow: auto; padding: var(--ui-space-4); }
@@ -83,7 +85,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
     .rz-nw { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
     .rz-se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
     .rz-sw { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
-    .snap-preview { position: fixed; z-index: 1099; border-radius: var(--ui-radius);
+    .snap-preview { position: fixed; z-index: 1099; border-radius: var(--ui-radius-lg);
       background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent);
       border: 2px solid var(--ui-color-primary); pointer-events: none;
       transition: all var(--ui-motion-fast) var(--ui-ease-standard); }

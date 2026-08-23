@@ -100,9 +100,16 @@ export class UiToastService {
     .content { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .title { font-weight: 600; }
     .msg { color: var(--ui-color-text-muted); }
-    .x { border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-size: 18px; line-height: 1; }
-    .x:hover { color: var(--ui-color-text); }
-    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 4px; }
+    .x {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: var(--ui-space-2); margin: calc(var(--ui-space-2) * -1);
+      border: none; background: transparent; border-radius: var(--ui-radius);
+      color: var(--ui-color-text-muted); cursor: pointer; font-size: 18px; line-height: 1;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .x:hover { background: var(--ui-color-surface); color: var(--ui-color-text); }
+    .x:active { transform: scale(var(--ui-scale-press)); }
+    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,
 })
 export class UiToastHost {
