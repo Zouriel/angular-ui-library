@@ -10,6 +10,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         <input
           class="cell"
           [attr.inputmode]="numeric() ? 'numeric' : 'text'"
+          [attr.autocomplete]="i === 0 ? 'one-time-code' : 'off'"
           maxlength="1"
           [value]="chars()[i] || ''"
           [disabled]="disabled()"
@@ -62,6 +63,15 @@ export class UiOtpInput implements ControlValueAccessor {
 
   protected onInput(e: Event, index: number): void {
     const input = e.target as HTMLInputElement;
+
+    // Autofill (`one-time-code`) and some mobile paste paths drop the whole code into a single
+    // cell without firing `paste` — spread it instead of keeping one character.
+    if (input.value.length > 1) {
+      const code = this.sanitize(input.value);
+      input.value = this.chars()[index] || '';
+      if (code.length > 1) { this.fill(code, 0); return; }
+    }
+
     let ch = input.value.slice(-1);
     if (this.numeric() && ch && !/[0-9]/.test(ch)) { input.value = this.chars()[index] || ''; return; }
     const next = [...this.chars()];
@@ -80,21 +90,30 @@ export class UiOtpInput implements ControlValueAccessor {
   // Distribute a pasted code across the cells (the common "paste the whole code" case).
   protected onPaste(e: ClipboardEvent, index: number): void {
     e.preventDefault();
-    const raw = e.clipboardData?.getData('text') ?? '';
-    const value = this.numeric() ? raw.replace(/\D/g, '') : raw.replace(/\s/g, '');
+    const value = this.sanitize(e.clipboardData?.getData('text') ?? '');
     if (!value) return;
-
-    const len = this.length();
-    const next = Array.from({ length: len }, (_, i) => this.chars()[i] ?? '');
-    for (let i = 0; i < value.length && index + i < len; i++) {
-      next[index + i] = value[i];
-    }
-    this.chars.set(next);
-    this.emit();
-    this.focusCell(Math.min(index + value.length, len - 1));
+    // A multi-character paste is the whole code, so it always fills from the first cell — anchoring
+    // it at the pasted-into cell would silently drop the tail (paste into the last cell kept 1 digit).
+    this.fill(value, value.length > 1 ? 0 : index);
   }
 
   protected select(e: Event): void { (e.target as HTMLInputElement).select(); }
+
+  private sanitize(raw: string): string {
+    return this.numeric() ? raw.replace(/\D/g, '') : raw.replace(/\s/g, '');
+  }
+
+  /** Write an already-sanitized code into the cells starting at `start`. */
+  private fill(value: string, start: number): void {
+    const len = this.length();
+    const next = Array.from({ length: len }, (_, i) => this.chars()[i] ?? '');
+    for (let i = 0; i < value.length && start + i < len; i++) {
+      next[start + i] = value[i];
+    }
+    this.chars.set(next);
+    this.emit();
+    this.focusCell(Math.min(start + value.length, len - 1));
+  }
 
   private emit(): void {
     this.onChange(this.chars().join(''));
