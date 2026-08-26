@@ -1,6 +1,8 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 interface DayCell { day: number; iso: string; today: boolean; }
@@ -19,7 +21,7 @@ function iso(y: number, m: number, d: number): string {
  */
 @Component({
   selector: 'ui-date-picker',
-  imports: [CdkOverlayOrigin, CdkConnectedOverlay],
+  imports: [CdkOverlayOrigin, CdkConnectedOverlay, HugeiconsIconComponent],
   template: `
     <div class="wrap" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [attr.data-size]="size()">
       <input
@@ -30,7 +32,9 @@ function iso(y: number, m: number, d: number): string {
         [disabled]="disabled()"
         (click)="toggle()"
         (keydown.escape)="open.set(false)" />
-      <span class="cal" aria-hidden="true">📅</span>
+      <span class="cal" aria-hidden="true">
+        <hugeicons-icon [icon]="calendarIcon" [size]="16" [strokeWidth]="1.8" />
+      </span>
     </div>
 
     <ng-template
@@ -108,7 +112,10 @@ function iso(y: number, m: number, d: number): string {
     .wrap.no-radius .ui-date { border-radius: 0; }
     .wrap[data-size="sm"] .ui-date { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-date { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
-    .cal { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; }
+    /* Flex so the drawn icon centres in the box the glyph used to sit in; currentColor so it
+       follows the field's own text colour rather than the vendor's emoji palette. */
+    .cal { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%);
+      pointer-events: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
     .cal-panel { margin-top: var(--ui-space-1); padding: var(--ui-space-3);
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); width: 252px; }
@@ -148,6 +155,8 @@ function iso(y: number, m: number, d: number): string {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDatePicker), multi: true }],
 })
 export class UiDatePicker implements ControlValueAccessor {
+  /** Drawn, not 📅 — an emoji renders in the vendor's own colours whatever the theme says. */
+  protected readonly calendarIcon = Calendar01Icon;
   private config = inject(UI_CONFIG);
   placeholder = input('Select a date');
   size = input<UiSize>('md');

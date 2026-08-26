@@ -1,9 +1,12 @@
 import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
 
 /** `ui-editable-text` — click-to-edit inline text (CVA). Enter commits, Escape cancels. */
 @Component({
   selector: 'ui-editable-text',
+  imports: [HugeiconsIconComponent],
   template: `
     @if (editing()) {
       <input #inp class="edit" [value]="draft()" [disabled]="disabled()"
@@ -12,7 +15,9 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     } @else {
       <button type="button" class="view" [disabled]="disabled()" (click)="edit()">
         <span [class.placeholder]="!value()">{{ value() || placeholder() }}</span>
-        <span class="pencil" aria-hidden="true">✎</span>
+        <span class="pencil" aria-hidden="true">
+          <hugeicons-icon [icon]="editIcon" [size]="13" [strokeWidth]="1.8" />
+        </span>
       </button>
     }
   `,
@@ -25,7 +30,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .view:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .view:disabled { opacity: 0.55; cursor: not-allowed; }
     .placeholder { color: var(--ui-color-text-muted); }
-    .pencil { opacity: 0; font-size: 12px; color: var(--ui-color-text-muted); }
+    .pencil { opacity: 0; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
     .view:hover .pencil { opacity: 1; }
     .edit { padding: 2px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-color-primary);
       border-radius: var(--ui-radius); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
@@ -34,6 +39,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiEditableText), multi: true }],
 })
 export class UiEditableText implements ControlValueAccessor {
+  /** Drawn, not ✎ — a glyph is whatever the reader's font has, and inherits no colour. */
+  protected readonly editIcon = Edit02Icon;
   placeholder = input('Empty');
   private inp = viewChild<ElementRef<HTMLInputElement>>('inp');
 
