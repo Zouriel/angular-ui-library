@@ -1,77 +1,191 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, ElementRef, input, signal, viewChild } from '@angular/core';
 
-/** `ui-image-viewer` — zoom (buttons/wheel), pan (drag), and fit/reset. */
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 6;
+
+/**
+ * `ui-image-viewer` — zoom (buttons, wheel, pinch), pan (drag, wheel), and fit/reset.
+ *
+ * <p>Gestures are handled here rather than left to the browser, which is why the stage sets
+ * `touch-action: none`: a two-finger pinch that the browser claims first never reaches us, and the
+ * page would zoom instead of the image. Owning the gesture is what makes pinch work at all.</p>
+ */
 @Component({
   selector: 'ui-image-viewer',
   imports: [DecimalPipe],
   template: `
     <div class="iv">
-      <div class="stage" (wheel)="onWheel($event)" (pointerdown)="startPan($event)"
-           (pointermove)="pan($event)" (pointerup)="endPan()" (pointerleave)="endPan()">
-        <img [src]="src()" [alt]="alt()" [style.transform]="transform()" draggable="false" />
+      <div #stage class="stage" [class.panning]="pannable()"
+           (wheel)="onWheel($event)"
+           (pointerdown)="onDown($event)" (pointermove)="onMove($event)"
+           (pointerup)="onUp($event)" (pointercancel)="onUp($event)"
+           (dblclick)="toggleZoom()">
+        <img #img [src]="src()" [alt]="alt()" [style.transform]="transform()"
+             [class.settling]="!interacting()" (load)="reset()" draggable="false" />
       </div>
       <div class="bar">
-        <button type="button" (click)="zoomBy(-0.25)" aria-label="Zoom out">−</button>
+        <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out">−</button>
         <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
-        <button type="button" (click)="zoomBy(0.25)" aria-label="Zoom in">+</button>
-        <button type="button" (click)="reset()" aria-label="Reset view">Fit</button>
+        <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in">+</button>
+        <button type="button" class="fit" (click)="reset()" aria-label="Reset view">Fit</button>
       </div>
     </div>
   `,
   styles: `
     :host { display: block; height: 100%; }
     .iv { display: flex; flex-direction: column; height: 100%; min-height: 200px; }
+    /* We own every gesture on the stage — see the class comment. */
     .stage { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center;
-      background: var(--ui-color-bg); cursor: grab; touch-action: none; }
-    .stage:active { cursor: grabbing; }
-    img { max-width: 100%; max-height: 100%; user-select: none; transition: transform 60ms linear; }
+      background: var(--ui-color-bg); touch-action: none; }
+    .stage.panning { cursor: grab; }
+    .stage.panning:active { cursor: grabbing; }
+    img { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; will-change: transform; }
+    /* Only eases back to rest. A transition during a pinch makes the image lag the fingers. */
+    img.settling { transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease-out); }
+    @media (prefers-reduced-motion: reduce) { img.settling { transition: none; } }
+
     .bar { display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
       padding: var(--ui-space-2); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
-    .bar button { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
-      color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer; font-family: var(--ui-font-default);
+    /* Sized to be tappable outright. It used to stay 26px and grow an invisible ::before to
+       var(--ui-size-touch), which inset by -9px against an 8px gap — so neighbouring hit areas
+       overlapped by 10px and a tap near an edge pressed the wrong button. */
+    .bar button { display: inline-flex; align-items: center; justify-content: center;
+      min-width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
+      border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
+      color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer;
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .bar button::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
-    .bar button:hover { background: var(--ui-color-surface-raised); }
-    .bar button:active { transform: scale(var(--ui-scale-press)); }
+    .bar button.fit { min-width: auto; }
+    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .bar button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
+    .bar button:disabled { opacity: 0.45; cursor: default; }
     .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    @media (pointer: coarse) {
+      .bar { gap: var(--ui-space-3); }
+      .bar button { min-width: var(--ui-size-touch); height: var(--ui-size-touch); }
+    }
     .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 42px; text-align: center; }
   `,
 })
 export class UiImageViewer {
   src = input.required<string>();
   alt = input('');
+
+  protected readonly min = MIN_ZOOM;
+  protected readonly max = MAX_ZOOM;
+
+  private readonly stage = viewChild<ElementRef<HTMLElement>>('stage');
+  private readonly img = viewChild<ElementRef<HTMLImageElement>>('img');
+
   protected readonly zoom = signal(1);
   protected readonly offset = signal({ x: 0, y: 0 });
-  private panning = false;
-  private last = { x: 0, y: 0 };
+  protected readonly interacting = signal(false);
+
+  /** Live pointers, by id. Two of them means a pinch rather than a drag. */
+  private readonly pointers = new Map<number, { x: number; y: number }>();
+  private pinchFrom = 0;
+  private pinchZoom = 1;
 
   protected readonly transform = computed(() => {
     const o = this.offset();
     return `translate(${o.x}px, ${o.y}px) scale(${this.zoom()})`;
   });
 
-  protected zoomBy(d: number): void {
-    this.zoom.update((z) => Math.min(6, Math.max(0.25, +(z + d).toFixed(2))));
-  }
-  protected onWheel(e: WheelEvent): void {
-    e.preventDefault();
-    this.zoomBy(e.deltaY < 0 ? 0.15 : -0.15);
-  }
+  /** There is only something to drag once the image is bigger than the stage. */
+  protected readonly pannable = computed(() => this.zoom() > 1);
+
   protected reset(): void {
     this.zoom.set(1);
     this.offset.set({ x: 0, y: 0 });
   }
-  protected startPan(e: PointerEvent): void {
-    this.panning = true;
-    this.last = { x: e.clientX, y: e.clientY };
+
+  protected toggleZoom(): void {
+    if (this.zoom() > 1) this.reset();
+    else this.setZoom(2);
   }
-  protected pan(e: PointerEvent): void {
-    if (!this.panning) return;
-    const dx = e.clientX - this.last.x;
-    const dy = e.clientY - this.last.y;
-    this.last = { x: e.clientX, y: e.clientY };
-    this.offset.update((o) => ({ x: o.x + dx, y: o.y + dy }));
+
+  protected zoomBy(d: number): void {
+    this.setZoom(this.zoom() + d);
   }
-  protected endPan(): void { this.panning = false; }
+
+  private setZoom(next: number): void {
+    this.zoom.set(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +next.toFixed(3))));
+    // Zooming out can leave the image parked off-centre with slack around it; pull it back in.
+    this.offset.update((o) => this.clamp(o));
+  }
+
+  /**
+   * Keeps the image reachable. Without it a drag could throw the picture entirely outside the
+   * stage, leaving a blank box and Fit as the only way back.
+   */
+  private clamp(o: { x: number; y: number }): { x: number; y: number } {
+    const stage = this.stage()?.nativeElement;
+    const img = this.img()?.nativeElement;
+    if (!stage || !img) return o;
+    const z = this.zoom();
+    const maxX = Math.max(0, (img.clientWidth * z - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (img.clientHeight * z - stage.clientHeight) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, o.x)),
+      y: Math.min(maxY, Math.max(-maxY, o.y)),
+    };
+  }
+
+  protected onWheel(e: WheelEvent): void {
+    // A trackpad pinch arrives as ctrl+wheel; so does the usual zoom modifier.
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      this.setZoom(this.zoom() * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+      return;
+    }
+    // Otherwise scroll around the image — but only while it has somewhere left to go, so a wheel
+    // over a fitted image still scrolls the page behind it instead of being swallowed.
+    const from = this.offset();
+    const to = this.clamp({ x: from.x - e.deltaX, y: from.y - e.deltaY });
+    if (to.x !== from.x || to.y !== from.y) {
+      e.preventDefault();
+      this.offset.set(to);
+    }
+  }
+
+  protected onDown(e: PointerEvent): void {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pointers.size === 2) {
+      this.pinchFrom = this.spread();
+      this.pinchZoom = this.zoom();
+    }
+    this.interacting.set(true);
+  }
+
+  protected onMove(e: PointerEvent): void {
+    const previous = this.pointers.get(e.pointerId);
+    if (!previous) return;
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (this.pointers.size >= 2) {
+      // Two fingers: the ratio of how far apart they are now to where they started IS the zoom.
+      if (this.pinchFrom > 0) this.setZoom(this.pinchZoom * (this.spread() / this.pinchFrom));
+      return;
+    }
+
+    this.offset.update((o) =>
+      this.clamp({ x: o.x + (e.clientX - previous.x), y: o.y + (e.clientY - previous.y) }),
+    );
+  }
+
+  protected onUp(e: PointerEvent): void {
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    this.pointers.delete(e.pointerId);
+    // Lifting one finger of a pinch must not resume the pan from a stale position.
+    if (this.pointers.size < 2) this.pinchFrom = 0;
+    if (this.pointers.size === 0) this.interacting.set(false);
+  }
+
+  /** Distance between the two live pointers. */
+  private spread(): number {
+    const [a, b] = [...this.pointers.values()];
+    return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+  }
 }
