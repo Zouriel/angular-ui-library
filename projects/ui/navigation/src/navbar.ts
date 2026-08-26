@@ -33,6 +33,9 @@ import { UI_CONFIG } from '@zouriel/ui';
     .brand { font-weight: 700; color: var(--ui-color-text); letter-spacing: var(--ui-tracking-tight); display: flex; align-items: center; gap: var(--ui-space-2); }
     .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; }
     .actions { display: flex; align-items: center; gap: var(--ui-space-2); }
+    /* A projected wrapper would otherwise be one flex child and swallow the gap — see modal's .ft. */
+    .actions ::ng-deep > div[navbar-actions], .actions ::ng-deep > span[navbar-actions] {
+      display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); }
 
     /*
      * On a narrow screen a single fixed-height row silently truncates: the last links and the whole

@@ -71,6 +71,15 @@ let modalSeq = 0;
     .bd { padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .ft { padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: flex-end; }
     .ft:empty { display: none; }
+    /*
+      A footer's gap is between .ft's OWN children, and consumers overwhelmingly project one wrapper
+      div holding every button — so .ft had a single child, the gap applied to nothing, and the
+      buttons sat welded together. The wrapper carries the row instead. Scoped to a plain div so an
+      element that IS the action (<ui-button modal-footer>) keeps its own box and the outer gap.
+    */
+    .ft ::ng-deep > div[modal-footer], .ft ::ng-deep > span[modal-footer] {
+      display: flex; align-items: center; flex-wrap: wrap;
+      gap: var(--ui-space-2); justify-content: flex-end; }
     .x {
       display: inline-flex; align-items: center; justify-content: center;
       padding: var(--ui-space-3); margin: calc(var(--ui-space-3) * -1);

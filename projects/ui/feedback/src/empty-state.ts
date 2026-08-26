@@ -23,6 +23,9 @@ import { Component, input } from '@angular/core';
     .title { font-size: var(--ui-font-size-md); font-weight: 600; color: var(--ui-color-text); }
     .desc { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 360px; }
     .actions { display: flex; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
+    /* A projected wrapper would otherwise be one flex child and swallow the gap — see modal's .ft. */
+    .actions ::ng-deep > div[empty-actions], .actions ::ng-deep > span[empty-actions] {
+      display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); }
     .actions:empty { display: none; }
   `,
 })
