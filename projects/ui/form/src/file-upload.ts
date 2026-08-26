@@ -1,13 +1,16 @@
 import { Component, input, output, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { CloudUploadIcon } from '@hugeicons/core-free-icons';
 
 /** `ui-file-upload` — drag-and-drop / click dropzone. Emits `(filesSelected)`. */
 @Component({
   selector: 'ui-file-upload',
+  imports: [HugeiconsIconComponent],
   template: `
     <label class="dz" [class.over]="dragOver()" [class.no-radius]="!radius()"
            (dragover)="onDragOver($event)" (dragleave)="dragOver.set(false)" (drop)="onDrop($event)">
       <input type="file" class="native" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)" />
-      <span class="icon" aria-hidden="true">⬆</span>
+      <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
       <span class="hint"><strong>Click to upload</strong> or drag & drop</span>
       @if (accept()) { <span class="accept">{{ accept() }}</span> }
     </label>
@@ -39,6 +42,8 @@ import { Component, input, output, signal } from '@angular/core';
   `,
 })
 export class UiFileUpload {
+  protected readonly uploadIcon = CloudUploadIcon;
+
   multiple = input(false);
   accept = input<string>();
   radius = input(true);

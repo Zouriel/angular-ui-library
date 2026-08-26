@@ -1,4 +1,6 @@
 import { Component, computed, input } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { File01Icon, Pdf01Icon } from '@hugeicons/core-free-icons';
 import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 import { UiImageViewer } from './image-viewer';
 import { UiVideoPlayer } from './video-player';
@@ -25,7 +27,7 @@ const EXT: Record<string, FileType> = {
  */
 @Component({
   selector: 'ui-file-viewer',
-  imports: [UiImageViewer, UiVideoPlayer, UiAudioPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer],
+  imports: [HugeiconsIconComponent, UiImageViewer, UiVideoPlayer, UiAudioPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer],
   template: `
     <div class="fv">
       @switch (type()) {
@@ -38,12 +40,12 @@ const EXT: Record<string, FileType> = {
           @defer (on immediate) {
             <ui-pdf-viewer [src]="src()" />
           } @placeholder {
-            <div class="fallback"><span class="big">📕</span><span>Loading PDF viewer…</span></div>
+            <div class="fallback"><span class="big"><hugeicons-icon [icon]="pdfIcon" [size]="40" [strokeWidth]="1.6" /></span><span>Loading PDF viewer…</span></div>
           }
         }
         @default {
           <div class="fallback">
-            <span class="big">📄</span>
+            <span class="big"><hugeicons-icon [icon]="fileIcon" [size]="40" [strokeWidth]="1.6" /></span>
             <span class="nm">{{ name() || src() }}</span>
             <span class="muted">Preview not available for this file type.</span>
             <a class="dl" [href]="src()" [attr.download]="name() || true">Download</a>
@@ -65,6 +67,9 @@ const EXT: Record<string, FileType> = {
   `,
 })
 export class UiFileViewer {
+  protected readonly pdfIcon = Pdf01Icon;
+  protected readonly fileIcon = File01Icon;
+
   src = input.required<string>();
   name = input<string>();
   /** Explicit type override or MIME/extension; otherwise inferred from the URL. */

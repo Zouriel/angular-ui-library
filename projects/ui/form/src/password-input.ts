@@ -1,10 +1,13 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-password-input` — password field with show/hide toggle (CVA). */
 @Component({
   selector: 'ui-password-input',
+  imports: [HugeiconsIconComponent],
   template: `
     <div class="wrap" [class.no-radius]="!radius()" [class.invalid]="invalid()" [attr.data-size]="size()">
       <input
@@ -21,7 +24,9 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       <button type="button" class="toggle" tabindex="-1"
               [attr.aria-label]="reveal() ? 'Hide password' : 'Show password'"
               [disabled]="disabled()" (click)="reveal.set(!reveal())">
-        {{ reveal() ? '🙈' : '👁' }}
+        <!-- A drawn icon, not an emoji: 🙈 is a monkey on most platforms and a crossed-out eye on
+             none of them, and emoji render in the vendor's own colours regardless of the theme. -->
+        <hugeicons-icon [icon]="reveal() ? viewOffIcon : viewIcon" [size]="18" [strokeWidth]="1.8" />
       </button>
     </div>
   `,
@@ -43,6 +48,9 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiPasswordInput), multi: true }],
 })
 export class UiPasswordInput implements ControlValueAccessor {
+  protected readonly viewIcon = ViewIcon;
+  protected readonly viewOffIcon = ViewOffIcon;
+
   private config = inject(UI_CONFIG);
   placeholder = input('');
   size = input<UiSize>('md');

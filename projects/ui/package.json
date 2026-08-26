@@ -1,6 +1,6 @@
 {
   "name": "@zouriel/ui",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Zouriel design system for Angular: components, effects, and a theme system.",
   "license": "MIT",
   "repository": {
@@ -15,10 +15,16 @@
     "@angular/core": "^22.0.0",
     "@angular/forms": "^22.0.0",
     "@angular/cdk": "^22.0.0",
-    "@angular/aria": "^22.0.0"
+    "@angular/aria": "^22.0.0",
+    "@hugeicons/angular": "^1.0.11"
   },
   "dependencies": {
     "tslib": "^2.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@hugeicons/angular": {
+      "optional": true
+    }
   },
   "sideEffects": false
 }

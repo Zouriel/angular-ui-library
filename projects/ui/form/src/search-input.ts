@@ -1,13 +1,18 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { Search01Icon } from '@hugeicons/core-free-icons';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-search-input` — search field with icon and clear button (CVA). */
 @Component({
   selector: 'ui-search-input',
+  imports: [HugeiconsIconComponent],
   template: `
     <div class="wrap" [class.no-radius]="!radius()" [attr.data-size]="size()">
-      <span class="icon" aria-hidden="true">🔍</span>
+      <span class="icon" aria-hidden="true">
+        <hugeicons-icon [icon]="searchIcon" [size]="16" [strokeWidth]="1.8" />
+      </span>
       <input
         class="ui-search"
         type="search"
@@ -42,6 +47,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSearchInput), multi: true }],
 })
 export class UiSearchInput implements ControlValueAccessor {
+  protected readonly searchIcon = Search01Icon;
+
   private config = inject(UI_CONFIG);
   placeholder = input('Search…');
   size = input<UiSize>('md');
