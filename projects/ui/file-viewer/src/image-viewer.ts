@@ -33,19 +33,33 @@ const MAX_ZOOM = 6;
     </div>
   `,
   styles: `
-    :host { display: block; height: 100%; }
-    .iv { display: flex; flex-direction: column; height: 100%; min-height: 200px; }
-    /* We own every gesture on the stage — see the class comment. */
-    .stage { flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center;
-      background: var(--ui-color-bg); touch-action: none; }
+    :host { display: block; height: 100%; min-height: 0; }
+    /*
+      Self-bounding on purpose. Dropped into a container with no definite height — a modal panel that
+      is max-height 85vh with overflow auto, say — height:100% resolves to auto, the stage grows to
+      the photograph's natural size, and the control bar is pushed below the fold. Reaching it then
+      means scrolling over the stage, which owns touch and pans the image instead: the controls become
+      unreachable. The cap keeps the whole viewer inside one screen so the bar is always in view, and
+      a host that DOES give a definite height still gets all of it.
+    */
+    .iv { display: flex; flex-direction: column; height: 100%;
+      min-height: 200px; max-height: var(--ui-image-viewer-max-height, 70svh); }
+    /* min-height:0 is load-bearing: a flex child refuses to shrink below its content without it, so
+       a tall image would push the bar out however the parent is sized. We own every gesture here —
+       see the class comment. */
+    .stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center;
+      justify-content: center; background: var(--ui-color-bg); touch-action: none; }
     .stage.panning { cursor: grab; }
     .stage.panning:active { cursor: grabbing; }
-    img { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; will-change: transform; }
+    /* contain, so the shot is fitted to the box rather than cropped or overflowing it. */
+    img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none;
+      -webkit-user-drag: none; will-change: transform; }
     /* Only eases back to rest. A transition during a pinch makes the image lag the fingers. */
     img.settling { transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease-out); }
     @media (prefers-reduced-motion: reduce) { img.settling { transition: none; } }
 
-    .bar { display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
+    /* flex-none: the controls are the one part that must never be the thing that gets squeezed out. */
+    .bar { flex: 0 0 auto; display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
       padding: var(--ui-space-2); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     /* Sized to be tappable outright. It used to stay 26px and grow an invisible ::before to
        var(--ui-size-touch), which inset by -9px against an 8px gap — so neighbouring hit areas
