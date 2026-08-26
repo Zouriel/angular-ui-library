@@ -1,6 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { File01Icon, Pdf01Icon } from '@hugeicons/core-free-icons';
+import File01Icon from '@hugeicons/core-free-icons/File01Icon';
+import Pdf01Icon from '@hugeicons/core-free-icons/Pdf01Icon';
 import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 import { UiImageViewer } from './image-viewer';
 import { UiVideoPlayer } from './video-player';

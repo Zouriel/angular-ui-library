@@ -1,6 +1,6 @@
 import { Component, input, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { CloudUploadIcon } from '@hugeicons/core-free-icons';
+import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
 
 /** `ui-file-upload` — drag-and-drop / click dropzone. Emits `(filesSelected)`. */
 @Component({

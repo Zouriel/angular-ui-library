@@ -1,6 +1,6 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Search01Icon } from '@hugeicons/core-free-icons';
+import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 

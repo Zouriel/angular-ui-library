@@ -1,7 +1,8 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ViewIcon, ViewOffIcon } from '@hugeicons/core-free-icons';
+import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
+import ViewOffIcon from '@hugeicons/core-free-icons/ViewOffIcon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-password-input` — password field with show/hide toggle (CVA). */
