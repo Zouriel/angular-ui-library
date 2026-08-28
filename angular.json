@@ -15,7 +15,7 @@
     "ui": {
       "projectType": "library",
       "root": "projects/ui",
-      "sourceRoot": "projects/ui/src",
+      "sourceRoot": "projects/ui",
       "prefix": "lib",
       "architect": {
         "build": {
@@ -33,7 +33,10 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/ui/tsconfig.spec.json"
+            "tsConfig": "projects/ui/tsconfig.spec.json",
+            "include": [
+              "**/*.spec.ts"
+            ]
           }
         }
       }
