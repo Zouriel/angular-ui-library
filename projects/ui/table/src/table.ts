@@ -10,6 +10,23 @@ export interface UiColumn<T = Record<string, unknown>> {
   format?: (value: unknown, row: T) => string;
 }
 
+/**
+ * Something a row can have done to it — edit, remove, resend.
+ *
+ * <p>Separate from {@link UiColumn} on purpose. A column reads a value out of a row; an action does
+ * something to it, needs to be a real button for the keyboard and for assistive tech, and can be
+ * unavailable for one row and not the next. Squeezing that into a formatter would mean returning
+ * markup from a function that is typed to return a string.</p>
+ */
+export interface UiRowAction<T = Record<string, unknown>> {
+  label: string;
+  run: (row: T) => void;
+  /** Off for this row in particular — a guest with nothing to resend, say. */
+  disabled?: (row: T) => boolean;
+  /** Screen-reader label, when "Edit" on its own does not say which row it edits. */
+  ariaLabel?: (row: T) => string;
+}
+
 type SortDir = 'asc' | 'desc' | null;
 
 /**
@@ -46,6 +63,9 @@ type SortDir = 'asc' | 'desc' | null;
                 }
               </th>
             }
+            @if (actions().length) {
+              <th class="acts" scope="col"><span class="sr">Actions</span></th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -59,6 +79,16 @@ type SortDir = 'asc' | 'desc' | null;
               }
               @for (col of columns(); track col.key) {
                 <td [attr.data-align]="col.align || 'left'">{{ cell(row, col) }}</td>
+              }
+              @if (actions().length) {
+                <td class="acts">
+                  @for (action of actions(); track action.label) {
+                    <button type="button" class="act"
+                            [disabled]="action.disabled ? action.disabled(row) : false"
+                            [attr.aria-label]="action.ariaLabel ? action.ariaLabel(row) : null"
+                            (click)="action.run(row)">{{ action.label }}</button>
+                  }
+                </td>
               }
             </tr>
           } @empty {
@@ -86,6 +116,21 @@ type SortDir = 'asc' | 'desc' | null;
     .arrow { width: 1em; display: inline-block; }
     .sel { width: 1px; white-space: nowrap; }
     .empty { text-align: center; color: var(--ui-color-text-muted); padding: var(--ui-space-6); }
+    /* Trailing and narrow: the actions are the one column that should never take width from the
+       data, and never wrap onto a second line. */
+    .acts { width: 1px; white-space: nowrap; text-align: right; }
+    .act { min-height: var(--ui-size-touch, 44px); padding: 0 var(--ui-space-3); margin-left: var(--ui-space-1);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      background: var(--ui-color-surface); color: var(--ui-color-text);
+      font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .act:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .act:disabled { opacity: 0.45; cursor: default; }
+    .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* The header is for screen readers only — a visible "Actions" over a column of buttons that
+       already say what they do is a word doing no work. */
+    .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+      clip-path: inset(50%); white-space: nowrap; border: 0; }
   `,
 })
 export class UiTable<T extends Record<string, unknown> = Record<string, unknown>> {
@@ -93,6 +138,8 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
   columns = input<UiColumn<T>[]>([]);
   data = input<T[]>([]);
   selectable = input(false);
+  /** Per-row buttons, in a trailing column. Empty (the default) and the column is not rendered. */
+  actions = input<UiRowAction<T>[]>([]);
   emptyText = input('No data');
   radius = input<boolean>(this.config.radius);
   selectionChange = output<T[]>();
@@ -117,7 +164,9 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
     return copy;
   });
 
-  protected readonly colspan = computed(() => this.columns().length + (this.selectable() ? 1 : 0));
+  protected readonly colspan = computed(
+    () => this.columns().length + (this.selectable() ? 1 : 0) + (this.actions().length ? 1 : 0),
+  );
   protected readonly allSelected = computed(() => this.data().length > 0 && this.selected().size === this.data().length);
   protected readonly someSelected = computed(() => this.selected().size > 0 && !this.allSelected());
 
