@@ -79,11 +79,21 @@ describe('UiTable row actions', () => {
     expect(fixture.nativeElement.querySelector('.empty').getAttribute('colspan')).toBe('3');
   });
 
-  /** A visible "Actions" heading over buttons that say what they do is a word doing no work. */
-  it('gives the column a heading only a screen reader hears', () => {
+  /**
+   * The heading is an attribute, and it has to stay one.
+   *
+   * <p>Written as a visually-hidden span it is position:absolute with nothing positioned above it,
+   * so its containing block is the document rather than the table's own scroller. overflow:auto
+   * cannot clip it, its static position sits wherever a wide table puts it, and the PAGE grows to
+   * contain it — a 360px viewport measured 869px of document, which on a phone reads as a narrow
+   * content column beside a full-width fixed bar. No element in this cell, and nothing to escape.</p>
+   */
+  it('names the column without putting an element in the cell', () => {
     withActions([{ label: 'Edit', run: () => {} }]);
     const head = fixture.nativeElement.querySelector('th.acts');
-    expect(head.textContent.trim()).toBe('Actions');
-    expect(getComputedStyle(head.querySelector('.sr')).position).toBe('absolute');
+
+    expect(head.getAttribute('aria-label')).toBe('Actions');
+    expect(head.children.length).toBe(0);
+    expect(head.textContent.trim()).toBe('');
   });
 });

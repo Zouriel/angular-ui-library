@@ -64,7 +64,13 @@ type SortDir = 'asc' | 'desc' | null;
               </th>
             }
             @if (actions().length) {
-              <th class="acts" scope="col"><span class="sr">Actions</span></th>
+              <!-- The heading is an attribute, not a hidden element. A visually-hidden span here is
+                   position:absolute with nothing positioned above it, so its containing block is the
+                   document rather than this scroller: overflow:auto does not clip it, its static
+                   position sits wherever the (often very wide) table puts it, and the whole PAGE
+                   grows to contain it. On a phone that reads as a narrow content column beside a
+                   full-width fixed bar — a table quietly resizing the document it lives in. -->
+              <th class="acts" scope="col" aria-label="Actions"></th>
             }
           </tr>
         </thead>
@@ -127,10 +133,7 @@ type SortDir = 'asc' | 'desc' | null;
     .act:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
     .act:disabled { opacity: 0.45; cursor: default; }
     .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    /* The header is for screen readers only — a visible "Actions" over a column of buttons that
-       already say what they do is a word doing no work. */
-    .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
-      clip-path: inset(50%); white-space: nowrap; border: 0; }
+
   `,
 })
 export class UiTable<T extends Record<string, unknown> = Record<string, unknown>> {
