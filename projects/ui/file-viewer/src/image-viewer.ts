@@ -1,20 +1,9 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { clampOffset, isSwipe, resist } from './gestures';
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 6;
-
-/** How far a drag must travel before it counts as a swipe, and the ceiling on that distance. */
-const SWIPE_FRACTION = 0.2;
-const SWIPE_MIN = 32;
-const SWIPE_MAX = 72;
-
-/** A short, fast drag counts even when it falls short of the distance above. */
-const FLICK_DISTANCE = 24;
-const FLICK_SPEED = 0.4; // px per ms
-
-/** How much of a drag survives when there is nothing to swipe to in that direction. */
-const RUBBER_BAND = 0.25;
 
 /**
  * `ui-image-viewer` — zoom (buttons, wheel, pinch), pan (drag, wheel), fit/reset, and — when the
@@ -208,21 +197,17 @@ export class UiImageViewer {
     this.offset.update((o) => this.clamp(o));
   }
 
-  /**
-   * Keeps the image reachable. Without it a drag could throw the picture entirely outside the
-   * stage, leaving a blank box and Fit as the only way back.
-   */
+  /** Keeps the image reachable — see {@link clampOffset}. */
   private clamp(o: { x: number; y: number }): { x: number; y: number } {
     const stage = this.stage()?.nativeElement;
     const img = this.img()?.nativeElement;
     if (!stage || !img) return o;
-    const z = this.zoom();
-    const maxX = Math.max(0, (img.clientWidth * z - stage.clientWidth) / 2);
-    const maxY = Math.max(0, (img.clientHeight * z - stage.clientHeight) / 2);
-    return {
-      x: Math.min(maxX, Math.max(-maxX, o.x)),
-      y: Math.min(maxY, Math.max(-maxY, o.y)),
-    };
+    return clampOffset(
+      o,
+      { width: img.clientWidth, height: img.clientHeight },
+      { width: stage.clientWidth, height: stage.clientHeight },
+      this.zoom(),
+    );
   }
 
   protected onWheel(e: WheelEvent): void {
@@ -313,9 +298,7 @@ export class UiImageViewer {
    */
   private resist(dx: number): number {
     const blocked = dx > 0 ? !this.hasPrevious() : !this.hasNext();
-    const width = this.stage()?.nativeElement.clientWidth ?? 0;
-    const capped = width > 0 ? Math.max(-width, Math.min(width, dx)) : dx;
-    return blocked ? capped * RUBBER_BAND : capped;
+    return resist(dx, this.stage()?.nativeElement.clientWidth ?? 0, blocked);
   }
 
   /** Decides what the finished drag meant, then puts the image back at rest either way. */
@@ -326,15 +309,8 @@ export class UiImageViewer {
     this.swipe.set(0);
     if (!from || !dx) return;
 
-    // A drag that wandered further down the screen than across it was a scroll attempt, not a swipe.
-    if (Math.abs(dx) <= Math.abs(this.swipeDy)) return;
-
     const width = this.stage()?.nativeElement.clientWidth ?? 0;
-    const far = Math.abs(dx) >= Math.min(SWIPE_MAX, Math.max(SWIPE_MIN, width * SWIPE_FRACTION));
-    // A quick flick is as clear an instruction as a long drag, and much more common on a phone.
-    const flick =
-      Math.abs(dx) >= FLICK_DISTANCE && Math.abs(dx) / Math.max(1, at - from.at) >= FLICK_SPEED;
-    if (!far && !flick) return;
+    if (!isSwipe(dx, this.swipeDy, at - from.at, width)) return;
 
     if (dx < 0 && this.hasNext()) this.next.emit();
     else if (dx > 0 && this.hasPrevious()) this.previous.emit();

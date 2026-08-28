@@ -1,6 +1,15 @@
 import { Component, signal } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
-import { UiFileViewer, UiImageViewer, UiFileExplorer, type UiFileNode } from '@zouriel/ui/file-viewer';
+import {
+  UiFileViewer,
+  UiImageViewer,
+  UiFileExplorer,
+  UiMediaLightbox,
+  type UiFileNode,
+  type UiMediaAction,
+  type UiMediaItem,
+} from '@zouriel/ui/file-viewer';
+import { UiButton } from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const sampleImg = 'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -8,9 +17,11 @@ const sampleImg = 'data:image/svg+xml;utf8,' + encodeURIComponent(
 
 const NODE = "interface UiFileNode {\n  name: string;\n  type: 'file' | 'dir';\n  url?: string;     // file URL for opening into a viewer\n  kind?: string;    // MIME or extension hint\n  children?: UiFileNode[];\n}";
 
+const ITEM = "interface UiMediaItem {\n  src: string;            // full-size image, or the playable video\n  thumb?: string;         // filmstrip tile, and a clip's poster\n  kind?: 'image' | 'video';\n  alt?: string;\n  caption?: string;       // the line the chrome shows\n}\n\ninterface UiMediaAction {\n  id: string;\n  label: string;\n  tone?: 'default' | 'danger';\n  when?: (item, index) => boolean;   // hide where it does not apply\n  href?: (item, index) => string;    // renders an anchor instead\n  download?: (item, index) => string;\n}";
+
 @Component({
   selector: 'page-file-viewer',
-  imports: [UiText, UiFileViewer, UiImageViewer, UiFileExplorer, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiButton, UiFileViewer, UiImageViewer, UiFileExplorer, UiMediaLightbox, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Flagship" title="File viewer"
       lead="A content-agnostic viewer system: a dispatcher detects a file's type and delegates to the matching renderer. Embed inline or inside a ui-window. PDF (pdfjs) is isolated in its own entry and lazy-loaded.">
@@ -32,6 +43,24 @@ const NODE = "interface UiFileNode {\n  name: string;\n  type: 'file' | 'dir';\n
       <doc-section name="Image viewer" selector="ui-image-viewer" [api]="imgApi"
         summary="Zoom (buttons + wheel), pan (drag), fit/reset. src is required.">
         <doc-demo code="<ui-image-viewer [src]=&quot;url&quot; alt=&quot;Description&quot; />"></doc-demo>
+      </doc-section>
+
+      <doc-section name="Media lightbox" selector="ui-media-lightbox" [api]="lbApi" [outputs]="lbOut" [shapes]="ITEM"
+        summary="Full-screen gallery over everything else — a native dialog in the top layer, so no ancestor's overflow, transform or z-index can clip it. Photographs zoom (pinch, wheel, double-tap) and pan; clips get themed controls, a filmstrip, swipe between items, drag-down to dismiss, and chrome that fades away while a clip plays. The host owns the list: items says what there is, index says where you are, and both are just moved.">
+        <doc-demo code="<ui-media-lightbox [items]=&quot;photos&quot; [(index)]=&quot;at&quot; [(open)]=&quot;open&quot;
+  label=&quot;Photos from the night&quot; [actions]=&quot;actions&quot; (action)=&quot;on($event)&quot; />">
+          <ui-button variant="primary" (click)="lightbox.set(true)">Open the lightbox</ui-button>
+          <ui-media-lightbox
+            [items]="shots"
+            [(index)]="shot"
+            [(open)]="lightbox"
+            label="A sample set"
+            [actions]="lbActions"
+          />
+          <ui-text variant="caption">
+            Swipe or use the arrow keys to move, drag down to dismiss, double-tap to zoom.
+          </ui-text>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Media & text sub-renderers" selector="ui-video-player · ui-audio-player · ui-text-viewer · ui-code-viewer" [api]="subApi"
@@ -61,6 +90,7 @@ const NODE = "interface UiFileNode {\n  name: string;\n  type: 'file' | 'dir';\n
 export class FileViewerPage {
   protected readonly img = sampleImg;
   protected readonly NODE = NODE;
+  protected readonly ITEM = ITEM;
   protected readonly opened = signal<UiFileNode | null>(null);
   protected readonly tree: UiFileNode = {
     name: 'project', type: 'dir', children: [
@@ -73,6 +103,18 @@ export class FileViewerPage {
     ],
   };
 
+  protected readonly lightbox = signal(false);
+  protected readonly shot = signal(0);
+  protected readonly shots: UiMediaItem[] = [
+    { src: sampleImg, thumb: sampleImg, caption: 'First of three' },
+    { src: sampleImg, thumb: sampleImg, caption: 'Second of three' },
+    { src: sampleImg, thumb: sampleImg, caption: 'Third of three' },
+  ];
+  protected readonly lbActions: UiMediaAction[] = [
+    { id: 'save', label: 'Download', href: (item) => item.src, download: () => 'sample.svg' },
+    { id: 'remove', label: 'Remove', tone: 'danger' },
+  ];
+
   protected readonly fvApi: ApiRow[] = [
     { name: 'src', type: 'string (required)', default: '—', desc: 'File URL.' },
     { name: 'name', type: 'string', default: '—', desc: 'Display name + extension hint.' },
@@ -81,6 +123,17 @@ export class FileViewerPage {
   protected readonly imgApi: ApiRow[] = [
     { name: 'src', type: 'string (required)', default: '—', desc: 'Image URL.' },
     { name: 'alt', type: 'string', default: "''", desc: 'Alt text.' },
+  ];
+  protected readonly lbApi: ApiRow[] = [
+    { name: 'items', type: 'UiMediaItem[]', default: '[]', desc: 'Everything the lightbox can show.' },
+    { name: 'index', type: 'number (two-way)', default: '0', desc: 'Which of them is open.' },
+    { name: 'open', type: 'boolean (two-way)', default: 'false', desc: 'Whether the lightbox is up.' },
+    { name: 'label', type: 'string', default: "''", desc: 'Name of the set, shown when an item has no caption.' },
+    { name: 'actions', type: 'UiMediaAction[]', default: '[]', desc: 'Buttons in the top bar; href makes one a link.' },
+  ];
+  protected readonly lbOut: ApiRow[] = [
+    { name: 'action', type: '{ id, item, index }', default: '—', desc: 'An action button was pressed.' },
+    { name: 'closed', type: 'void', default: '—', desc: 'The lightbox closed.' },
   ];
   protected readonly subApi: ApiRow[] = [
     { name: 'video: src / poster', type: 'string', default: '—', desc: 'Video URL / poster.' },
