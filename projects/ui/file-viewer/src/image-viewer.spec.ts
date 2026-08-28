@@ -39,10 +39,10 @@ describe('UiImageViewer swipe navigation', () => {
     fixture.detectChanges();
   }
 
-  /** What the image is translated by right now, horizontally. */
+  /** What the picture — image or clip, whichever is showing — is translated by, horizontally. */
   function translateX(): number {
-    const img = fixture.nativeElement.querySelector('img') as HTMLElement;
-    return Number(/translate\((-?[\d.]+)px/.exec(img.style.transform)?.[1] ?? NaN);
+    const shown = fixture.nativeElement.querySelector('img, video') as HTMLElement;
+    return Number(/translate\((-?[\d.]+)px/.exec(shown.style.transform)?.[1] ?? NaN);
   }
 
   function bar(label: string): HTMLButtonElement | null {
@@ -205,5 +205,92 @@ describe('UiImageViewer swipe navigation', () => {
     expect(stage.getAttribute('tabindex')).toBeNull();
     surroundedByOthers();
     expect(stage.getAttribute('tabindex')).toBe('0');
+  });
+
+  // ----- clips ------------------------------------------------------------------------------------
+
+  describe('showing a clip', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('kind', 'video');
+      surroundedByOthers();
+    });
+
+    function clip(): HTMLVideoElement {
+      return fixture.nativeElement.querySelector('video');
+    }
+
+    /**
+     * jsdom lays nothing out, so every element measures 0x0 and the control strip has no position
+     * to be at. The clip is given a plausible rect so the boundary being tested is a real one.
+     */
+    function laidOut(): DOMRect {
+      const box = { left: 0, top: 0, right: 400, bottom: 300, width: 400, height: 300, x: 0, y: 0 };
+      const rect = { ...box, toJSON: () => box } as DOMRect;
+      clip().getBoundingClientRect = () => rect;
+      return rect;
+    }
+
+    it('plays it rather than drawing it, and leaves the controls to the browser', () => {
+      expect(clip()).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('img')).toBeNull();
+      expect(clip().hasAttribute('controls')).toBe(true);
+      // Inline, or an iPhone takes the clip fullscreen and out of the gallery it was opened from.
+      expect(clip().hasAttribute('playsinline')).toBe(true);
+    });
+
+    it('drops the zoom controls, which mean nothing here, and keeps the steps, which do', () => {
+      expect(bar('Zoom in')).toBeNull();
+      expect(bar('Reset view')).toBeNull();
+      expect(bar('Next image')).not.toBeNull();
+    });
+
+    it('is swiped like anything else in the gallery', () => {
+      laidOut();
+      drag(-120);
+      expect(went).toEqual(['next']);
+    });
+
+    /**
+     * The case that would break scrubbing. Events from the video's own controls reach us too, so a
+     * drag along the seek bar looks exactly like a swipe unless the bottom of the clip is excluded.
+     */
+    it('does not read a drag along the scrubber as a swipe', () => {
+      const box = laidOut();
+      const onSeekBar = box.bottom - 10;
+
+      stage.dispatchEvent(at('pointerdown', { pointerId: 1, clientX: 200, clientY: onSeekBar }, 0));
+      stage.dispatchEvent(at('pointermove', { pointerId: 1, clientX: 60, clientY: onSeekBar }, 60));
+      stage.dispatchEvent(at('pointerup', { pointerId: 1, clientX: 60, clientY: onSeekBar }, 60));
+      fixture.detectChanges();
+
+      expect(went).toEqual([]);
+    });
+
+    /**
+     * The zoom left behind by the picture before this one. Swiping from a photograph someone had
+     * zoomed into straight onto a clip leaves the old zoom in place until the clip's metadata
+     * arrives and resets it — and for that moment a drag would pan a video instead of moving on.
+     */
+    it('does not pan on a zoom inherited from the image it replaced', () => {
+      fixture.componentRef.setInput('kind', 'image');
+      fixture.detectChanges();
+      bar('Zoom in')!.click();
+      fixture.detectChanges();
+
+      fixture.componentRef.setInput('kind', 'video');
+      fixture.detectChanges();
+      laidOut();
+
+      drag(-120);
+      expect(went).toEqual(['next']);
+    });
+
+    it('never zooms, so a double tap belongs to the clip', () => {
+      stage.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      fixture.detectChanges();
+      expect(translateX()).toBe(0);
+      // Still at rest, so the gesture layer never took it over.
+      expect(clip().style.transform).toContain('scale(1)');
+    });
   });
 });

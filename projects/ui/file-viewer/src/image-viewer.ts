@@ -41,18 +41,28 @@ const RUBBER_BAND = 0.25;
            (keydown)="onKey($event)"
            [attr.tabindex]="navigable() ? 0 : null"
            (dblclick)="toggleZoom()">
-        <img #img [src]="src()" [alt]="alt()" [style.transform]="transform()"
-             [class.settling]="!interacting()" (load)="reset()" draggable="false" />
+        @if (isVideo()) {
+          <!-- Its own controls, not ours: scrubbing a clip is what the browser is already good at,
+               and a party video is watched far more often than it is zoomed. -->
+          <video #clip [src]="src()" controls playsinline preload="metadata"
+                 [style.transform]="transform()" [class.settling]="!interacting()"
+                 (loadedmetadata)="reset()"></video>
+        } @else {
+          <img #img [src]="src()" [alt]="alt()" [style.transform]="transform()"
+               [class.settling]="!interacting()" (load)="reset()" draggable="false" />
+        }
       </div>
       <div class="bar">
         @if (navigable()) {
           <button type="button" class="step" (click)="previous.emit()"
                   [disabled]="!hasPrevious()" aria-label="Previous image">‹</button>
         }
-        <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out">−</button>
-        <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
-        <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in">+</button>
-        <button type="button" class="fit" (click)="reset()" aria-label="Reset view">Fit</button>
+        @if (!isVideo()) {
+          <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out">−</button>
+          <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
+          <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in">+</button>
+          <button type="button" class="fit" (click)="reset()" aria-label="Reset view">Fit</button>
+        }
         @if (navigable()) {
           <button type="button" class="step" (click)="next.emit()"
                   [disabled]="!hasNext()" aria-label="Next image">›</button>
@@ -81,11 +91,14 @@ const RUBBER_BAND = 0.25;
     .stage.panning:active { cursor: grabbing; }
     .stage:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     /* contain, so the shot is fitted to the box rather than cropped or overflowing it. */
-    img { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none;
+    img, video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none;
       -webkit-user-drag: none; will-change: transform; }
+    /* A clip is never zoomed or panned, so it never needs to claim the gestures an image does —
+       and taking them would be taking them from its own scrubber. */
+    video { touch-action: auto; }
     /* Only eases back to rest. A transition during a pinch makes the image lag the fingers. */
-    img.settling { transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease-out); }
-    @media (prefers-reduced-motion: reduce) { img.settling { transition: none; } }
+    img.settling, video.settling { transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease-out); }
+    @media (prefers-reduced-motion: reduce) { img.settling, video.settling { transition: none; } }
 
     /* flex-none: the controls are the one part that must never be the thing that gets squeezed out. */
     .bar { flex: 0 0 auto; display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
@@ -120,6 +133,13 @@ export class UiImageViewer {
   alt = input('');
 
   /**
+   * What `src` points at. A gallery holds both, and the two need the same frame around them — the
+   * same swipe, the same arrows, the same place in the list — so they are one component rather than
+   * two that happen to sit in the same modal.
+   */
+  kind = input<'image' | 'video'>('image');
+
+  /**
    * Whether a neighbour exists in each direction. Both default to false, so a viewer showing one
    * image behaves exactly as it did before navigation existed: no arrows, and a swipe does nothing.
    */
@@ -135,6 +155,9 @@ export class UiImageViewer {
 
   private readonly stage = viewChild<ElementRef<HTMLElement>>('stage');
   private readonly img = viewChild<ElementRef<HTMLImageElement>>('img');
+  private readonly clip = viewChild<ElementRef<HTMLVideoElement>>('clip');
+
+  protected readonly isVideo = computed(() => this.kind() === 'video');
 
   protected readonly zoom = signal(1);
   protected readonly offset = signal({ x: 0, y: 0 });
@@ -160,7 +183,7 @@ export class UiImageViewer {
   });
 
   /** There is only something to drag once the image is bigger than the stage. */
-  protected readonly pannable = computed(() => this.zoom() > 1);
+  protected readonly pannable = computed(() => !this.isVideo() && this.zoom() > 1);
 
   protected reset(): void {
     this.zoom.set(1);
@@ -170,6 +193,7 @@ export class UiImageViewer {
   }
 
   protected toggleZoom(): void {
+    if (this.isVideo()) return;   // a double tap on a clip belongs to the clip
     if (this.zoom() > 1) this.reset();
     else this.setZoom(2);
   }
@@ -202,6 +226,7 @@ export class UiImageViewer {
   }
 
   protected onWheel(e: WheelEvent): void {
+    if (this.isVideo()) return;
     // A trackpad pinch arrives as ctrl+wheel; so does the usual zoom modifier.
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -226,9 +251,11 @@ export class UiImageViewer {
   }
 
   protected onDown(e: PointerEvent): void {
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    // Not captured over a clip: capturing it here is capturing it away from the scrubber, and a
+    // video whose seek bar has stopped working is a worse trade than a swipe that needs more room.
+    if (!this.isVideo()) (e.target as Element).setPointerCapture?.(e.pointerId);
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (this.pointers.size === 1) {
+    if (this.pointers.size === 1 && !this.onControls(e)) {
       this.swipeFrom = { x: e.clientX, y: e.clientY, at: e.timeStamp };
       this.swipeDy = 0;
     }
@@ -311,6 +338,21 @@ export class UiImageViewer {
 
     if (dx < 0 && this.hasNext()) this.next.emit();
     else if (dx > 0 && this.hasPrevious()) this.previous.emit();
+  }
+
+  /**
+   * Whether the gesture began on a clip's own controls.
+   *
+   * <p>Pointer events from inside the video's shadow DOM reach us all the same, so a drag along the
+   * seek bar is indistinguishable from a swipe across the picture — and scrubbing would jump to the
+   * next clip. The controls sit at the bottom, so the bottom of the clip is not swipeable. Nothing
+   * else about the gesture changes: a swipe anywhere above it still works.</p>
+   */
+  private onControls(e: PointerEvent): boolean {
+    const clip = this.clip()?.nativeElement;
+    if (!clip) return false;
+    const box = clip.getBoundingClientRect();
+    return e.clientY > box.bottom - 56 && e.clientX >= box.left && e.clientX <= box.right;
   }
 
   /** Distance between the two live pointers. */
