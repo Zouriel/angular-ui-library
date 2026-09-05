@@ -61,6 +61,9 @@ describe('UiSwipe', () => {
       at('pointerdown', { pointerId, pointerType: type, clientX: x, clientY: 200 }, 0),
     );
     target.dispatchEvent(
+      at('pointermove', { pointerId, pointerType: type, clientX: x + dx, clientY: 200 + dy }, ms),
+    );
+    target.dispatchEvent(
       at('pointerup', { pointerId, pointerType: type, clientX: x + dx, clientY: 200 + dy }, ms),
     );
     fixture.detectChanges();
@@ -111,17 +114,51 @@ describe('UiSwipe', () => {
     const target = el('plain');
     target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 180, clientY: 200 }, 0));
     target.dispatchEvent(at('pointerdown', { pointerId: 2, pointerType: 'touch', clientX: 220, clientY: 200 }, 10));
+    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 80, clientY: 200 }, 300));
+    target.dispatchEvent(at('pointermove', { pointerId: 2, pointerType: 'touch', clientX: 320, clientY: 200 }, 300));
     target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 80, clientY: 200 }, 300));
     target.dispatchEvent(at('pointerup', { pointerId: 2, pointerType: 'touch', clientX: 320, clientY: 200 }, 300));
     fixture.detectChanges();
     expect(host.went).toEqual([]);
   });
 
-  it('abandons the gesture the browser takes away', () => {
+  it('answers while the finger is still down, without waiting for it to lift', () => {
     const target = el('plain');
     target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointercancel', { pointerId: 1, pointerType: 'touch' }, 100));
-    target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 80, clientY: 200 }, 300));
+    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 100, clientY: 200 }, 200));
+    fixture.detectChanges();
+    expect(host.went).toEqual(['left']);
+  });
+
+  it('answers a gesture only once, however far it carries on', () => {
+    const target = el('plain');
+    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 300, clientY: 200 }, 0));
+    for (const x of [240, 180, 120, 60]) {
+      target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: x, clientY: 200 }, 200));
+    }
+    target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 60, clientY: 200 }, 300));
+    fixture.detectChanges();
+    expect(host.went).toEqual(['left']);
+  });
+
+  /**
+   * The case a phone actually produces. A real swipe drifts vertically, the page scrolls that pixel,
+   * and the browser takes the pointer — so a directive that waits for the release waits forever.
+   */
+  it('still answers a swipe the browser took the pointer away from', () => {
+    const target = el('plain');
+    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
+    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 130, clientY: 212 }, 150));
+    target.dispatchEvent(at('pointercancel', { pointerId: 1, pointerType: 'touch' }, 160));
+    fixture.detectChanges();
+    expect(host.went).toEqual(['left']);
+  });
+
+  it('lets a scroll that was taken away stay a scroll', () => {
+    const target = el('plain');
+    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
+    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 175, clientY: 320 }, 150));
+    target.dispatchEvent(at('pointercancel', { pointerId: 1, pointerType: 'touch' }, 160));
     fixture.detectChanges();
     expect(host.went).toEqual([]);
   });

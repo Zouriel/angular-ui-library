@@ -12,9 +12,11 @@ const INTERACTIVE = 'input, textarea, select, [contenteditable], [draggable="tru
  * else the finger might have meant.
  *
  * <p>Nothing here calls `preventDefault`, and the host is deliberately left with its normal
- * `touch-action`: the page must still scroll down under exactly the same finger. So the gesture is
- * judged after the fact, on release, against the shared thresholds in {@link isSwipe} — which is
- * also why a drag the browser claims for scrolling simply never arrives.</p>
+ * `touch-action`: the page must still scroll down under exactly the same finger, and a strip that
+ * scrolls sideways inside it must keep doing that too — which rules out the usual `touch-action:
+ * pan-y`, since a descendant cannot take back a direction an ancestor gave away. Instead the drag is
+ * measured as it happens, against the shared thresholds in {@link isSwipe}, and answered the moment
+ * it qualifies.</p>
  *
  * <p>It declines far more often than it fires, and that is the point:</p>
  * <ul>
@@ -34,8 +36,9 @@ const INTERACTIVE = 'input, textarea, select, [contenteditable], [draggable="tru
   selector: '[uiSwipe]',
   host: {
     '(pointerdown)': 'onDown($event)',
-    '(pointerup)': 'onUp($event)',
-    '(pointercancel)': 'abandon()',
+    '(pointermove)': 'onMove($event)',
+    '(pointerup)': 'onMove($event)',
+    '(pointercancel)': 'onCancel($event)',
   },
 })
 export class UiSwipe {
@@ -55,6 +58,9 @@ export class UiSwipe {
   /** The live candidate — null whenever there isn't one, which is most of the time. */
   private from: { id: number; x: number; y: number; at: number } | null = null;
 
+  /** Where that pointer was last seen, which is all we are left with if the browser takes it away. */
+  private last: { x: number; y: number; at: number } | null = null;
+
   protected onDown(event: PointerEvent): void {
     // A second finger landing means this was never a swipe. Drop the candidate rather than let the
     // eventual release of one of them be read as a flick.
@@ -66,23 +72,52 @@ export class UiSwipe {
     if (event.pointerType === 'mouse' && !this.mouse()) return;
     if (this.declines(event)) return;
     this.from = { id: event.pointerId, x: event.clientX, y: event.clientY, at: event.timeStamp };
+    this.last = null;
   }
 
-  protected onUp(event: PointerEvent): void {
+  /**
+   * Judged while the finger is still down, and fired the moment it qualifies.
+   *
+   * <p>Waiting for the release looks tidier and does not survive contact with a phone. A real
+   * horizontal swipe always drifts a little vertically; the page scrolls that pixel, the browser
+   * decides the touch belongs to the scroller, and the pointer is CANCELLED — so the release this
+   * would have waited for never comes. Deciding as it happens sidesteps the arbitration entirely,
+   * and has the better feel besides: the screen turns under the finger rather than after it.</p>
+   */
+  protected onMove(event: PointerEvent): void {
     const from = this.from;
-    this.from = null;
     if (!from || event.pointerId !== from.id) return;
+    this.last = { x: event.clientX, y: event.clientY, at: event.timeStamp };
+    this.judge(from, this.last);
+  }
 
-    const dx = event.clientX - from.x;
-    const dy = event.clientY - from.y;
-    if (!isSwipe(dx, dy, event.timeStamp - from.at, this.host.nativeElement.clientWidth)) return;
+  /**
+   * The browser has taken the pointer — usually because the page began to scroll under it.
+   *
+   * <p>What travelled before that is still evidence, so it is weighed one last time instead of being
+   * thrown away. It rarely says yes: a drag the scroller claimed is nearly always the vertical one
+   * that {@link isSwipe} rejects on its first test.</p>
+   */
+  protected onCancel(event: PointerEvent): void {
+    const from = this.from;
+    if (from && event.pointerId === from.id && this.last) this.judge(from, this.last);
+    this.from = null;
+    this.last = null;
+  }
 
+  private judge(
+    from: { x: number; y: number; at: number },
+    now: { x: number; y: number; at: number },
+  ): void {
+    const dx = now.x - from.x;
+    const dy = now.y - from.y;
+    if (!isSwipe(dx, dy, now.at - from.at, this.host.nativeElement.clientWidth)) return;
+
+    // Spent: the rest of this drag is somebody following through on a gesture already answered.
+    this.from = null;
+    this.last = null;
     if (dx < 0) this.swipeLeft.emit();
     else this.swipeRight.emit();
-  }
-
-  protected abandon(): void {
-    this.from = null;
   }
 
   /** Whether the gesture began somewhere that has a better claim to it than we do. */
