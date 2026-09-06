@@ -7,16 +7,41 @@ const EDGE_GUARD = 24;
 /** Where a gesture must never be read as a swipe, because the element wants the drag itself. */
 const INTERACTIVE = 'input, textarea, select, [contenteditable], [draggable="true"], [data-no-swipe]';
 
+/** One point of a drag, whichever event model it arrived by. */
+interface Point {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly at: number;
+}
+
 /**
  * `uiSwipe` — reports a horizontal swipe across the host, and gets out of the way of everything
  * else the finger might have meant.
  *
+ * <h4>Why this listens to touch events and not pointer events</h4>
+ *
+ * <p>Pointer events are the modern, unified API and they are the wrong tool here. A browser does not
+ * promote a touch to a pointer event until it knows the touch is not a gesture, and a swipe IS a
+ * gesture — so the promotion never happens. Measured on Chromium, the same finger produces:</p>
+ *
+ * <pre>
+ *   tap     pointerdown + touchstart ............ pointerup + touchend
+ *   swipe   touchstart + touchmove x12 + touchend        (no pointer events at all)
+ * </pre>
+ *
+ * <p>Not a `pointercancel` to react to, not a truncated stream to salvage — nothing. Anything built
+ * on pointer events can answer a tap and can never answer a swipe. Touch events, by contrast, are
+ * delivered in full and uninterrupted throughout, which is exactly why every swipe library worth the
+ * name is built on them. So: touch events carry the finger, and pointer events are kept only for the
+ * mouse and the pen, which are never subject to that arbitration.</p>
+ *
  * <p>Nothing here calls `preventDefault`, and the host is deliberately left with its normal
  * `touch-action`: the page must still scroll down under exactly the same finger, and a strip that
  * scrolls sideways inside it must keep doing that too — which rules out the usual `touch-action:
- * pan-y`, since a descendant cannot take back a direction an ancestor gave away. Instead the drag is
+ * pan-y`, since a descendant cannot take back a direction an ancestor gave away. The drag is instead
  * measured as it happens, against the shared thresholds in {@link isSwipe}, and answered the moment
- * it qualifies.</p>
+ * it qualifies. That reads better anyway: the screen turns under the finger rather than after it.</p>
  *
  * <p>It declines far more often than it fires, and that is the point:</p>
  * <ul>
@@ -35,10 +60,14 @@ const INTERACTIVE = 'input, textarea, select, [contenteditable], [draggable="tru
 @Directive({
   selector: '[uiSwipe]',
   host: {
-    '(pointerdown)': 'onDown($event)',
-    '(pointermove)': 'onMove($event)',
-    '(pointerup)': 'onMove($event)',
-    '(pointercancel)': 'onCancel($event)',
+    '(touchstart)': 'onTouchStart($event)',
+    '(touchmove)': 'onTouchMove($event)',
+    '(touchend)': 'onTouchEnd($event)',
+    '(touchcancel)': 'onTouchEnd($event)',
+    '(pointerdown)': 'onPointerDown($event)',
+    '(pointermove)': 'onPointerMove($event)',
+    '(pointerup)': 'onPointerMove($event)',
+    '(pointercancel)': 'onPointerCancel($event)',
   },
 })
 export class UiSwipe {
@@ -56,77 +85,117 @@ export class UiSwipe {
   readonly swipeRight = output<void>({ alias: 'uiSwipeRight' });
 
   /** The live candidate — null whenever there isn't one, which is most of the time. */
-  private from: { id: number; x: number; y: number; at: number } | null = null;
+  private from: Point | null = null;
 
-  /** Where that pointer was last seen, which is all we are left with if the browser takes it away. */
-  private last: { x: number; y: number; at: number } | null = null;
-
-  protected onDown(event: PointerEvent): void {
-    // A second finger landing means this was never a swipe. Drop the candidate rather than let the
-    // eventual release of one of them be read as a flick.
-    if (this.from) {
-      this.from = null;
-      return;
-    }
-    if (this.disabled()) return;
-    if (event.pointerType === 'mouse' && !this.mouse()) return;
-    if (this.declines(event)) return;
-    this.from = { id: event.pointerId, x: event.clientX, y: event.clientY, at: event.timeStamp };
-    this.last = null;
-  }
+  /** Where it was last seen, which is all we are left with if the browser takes the drag away. */
+  private last: Point | null = null;
 
   /**
-   * Judged while the finger is still down, and fired the moment it qualifies.
+   * True once a touch has been seen, after which pointer events are ignored entirely.
    *
-   * <p>Waiting for the release looks tidier and does not survive contact with a phone. A real
-   * horizontal swipe always drifts a little vertically; the page scrolls that pixel, the browser
-   * decides the touch belongs to the scroller, and the pointer is CANCELLED — so the release this
-   * would have waited for never comes. Deciding as it happens sidesteps the arbitration entirely,
-   * and has the better feel besides: the screen turns under the finger rather than after it.</p>
+   * <p>A browser that sends both would otherwise read one finger as two drags. Latched rather than
+   * feature-detected because `'ontouchstart' in window` is false in several places that still
+   * deliver touch events perfectly well — a device tells you what it is by what it sends.</p>
    */
-  protected onMove(event: PointerEvent): void {
+  private touched = false;
+
+  // --- touch: the finger ----------------------------------------------------------------------
+
+  protected onTouchStart(event: TouchEvent): void {
+    this.touched = true;
+    // A second finger landing means this was never a swipe. Drop the candidate rather than let the
+    // eventual release of one of them be read as a flick.
+    if (event.touches.length > 1) {
+      this.clear();
+      return;
+    }
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    this.begin(touch.identifier, touch.clientX, touch.clientY, event.timeStamp, event.target);
+  }
+
+  protected onTouchMove(event: TouchEvent): void {
+    if (event.touches.length > 1) {
+      this.clear();
+      return;
+    }
+    this.advance(event);
+  }
+
+  protected onTouchEnd(event: TouchEvent): void {
+    this.advance(event);
+    this.clear();
+  }
+
+  /** Follows the one finger we started with, and judges it where it now is. */
+  private advance(event: TouchEvent): void {
     const from = this.from;
-    if (!from || event.pointerId !== from.id) return;
-    this.last = { x: event.clientX, y: event.clientY, at: event.timeStamp };
+    if (!from) return;
+    const touch = Array.from(event.changedTouches).find((t) => t.identifier === from.id);
+    if (!touch) return;
+    this.last = { id: from.id, x: touch.clientX, y: touch.clientY, at: event.timeStamp };
     this.judge(from, this.last);
   }
 
-  /**
-   * The browser has taken the pointer — usually because the page began to scroll under it.
-   *
-   * <p>What travelled before that is still evidence, so it is weighed one last time instead of being
-   * thrown away. It rarely says yes: a drag the scroller claimed is nearly always the vertical one
-   * that {@link isSwipe} rejects on its first test.</p>
-   */
-  protected onCancel(event: PointerEvent): void {
+  // --- pointer: the mouse and the pen ---------------------------------------------------------
+
+  protected onPointerDown(event: PointerEvent): void {
+    if (this.touched || event.pointerType === 'touch') return;
+    if (event.pointerType === 'mouse' && !this.mouse()) return;
+    if (this.from) {
+      this.clear();
+      return;
+    }
+    this.begin(event.pointerId, event.clientX, event.clientY, event.timeStamp, event.target);
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (this.touched || event.pointerType === 'touch') return;
+    const from = this.from;
+    if (!from || event.pointerId !== from.id) return;
+    this.last = { id: from.id, x: event.clientX, y: event.clientY, at: event.timeStamp };
+    this.judge(from, this.last);
+  }
+
+  protected onPointerCancel(event: PointerEvent): void {
+    if (this.touched || event.pointerType === 'touch') return;
     const from = this.from;
     if (from && event.pointerId === from.id && this.last) this.judge(from, this.last);
-    this.from = null;
+    this.clear();
+  }
+
+  // --- the gesture itself ---------------------------------------------------------------------
+
+  private begin(id: number, x: number, y: number, at: number, target: EventTarget | null): void {
+    if (this.disabled()) return;
+    if (this.declines(x, target)) return;
+    this.from = { id, x, y, at };
     this.last = null;
   }
 
-  private judge(
-    from: { x: number; y: number; at: number },
-    now: { x: number; y: number; at: number },
-  ): void {
+  /** Judged while the finger is still down, and fired the moment it qualifies. */
+  private judge(from: Point, now: Point): void {
     const dx = now.x - from.x;
     const dy = now.y - from.y;
     if (!isSwipe(dx, dy, now.at - from.at, this.host.nativeElement.clientWidth)) return;
 
     // Spent: the rest of this drag is somebody following through on a gesture already answered.
-    this.from = null;
-    this.last = null;
+    this.clear();
     if (dx < 0) this.swipeLeft.emit();
     else this.swipeRight.emit();
   }
 
-  /** Whether the gesture began somewhere that has a better claim to it than we do. */
-  private declines(event: PointerEvent): boolean {
-    const width = window.innerWidth || document.documentElement.clientWidth;
-    if (event.clientX <= EDGE_GUARD || event.clientX >= width - EDGE_GUARD) return true;
+  private clear(): void {
+    this.from = null;
+    this.last = null;
+  }
 
-    const target = event.target as Element | null;
-    if (!target) return true;
+  /** Whether the gesture began somewhere that has a better claim to it than we do. */
+  private declines(x: number, target: EventTarget | null): boolean {
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    if (x <= EDGE_GUARD || x >= width - EDGE_GUARD) return true;
+
+    if (!(target instanceof Element)) return true;
     if (target.closest(INTERACTIVE)) return true;
     return this.scrollsSideways(target);
   }

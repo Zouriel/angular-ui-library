@@ -11,6 +11,11 @@ import { UiSwipe } from './swipe';
  * A page that navigates while you were scrolling a table sideways is far worse than one that makes
  * you reach for the bar.</p>
  *
+ * <p>The finger is driven with TOUCH events, because that is what a browser sends for a swipe. It
+ * withholds pointer events until it knows the touch is not a gesture, so a swipe produces touch
+ * events only — see the note on {@link UiSwipe}. Driving these tests with pointer events would pass
+ * happily and prove nothing about a phone, which is exactly how the first version shipped broken.</p>
+ *
  * <p>jsdom gives every element a width of 0, so the distance threshold falls back to its floor of
  * 32px — the same branch a genuinely narrow phone takes.</p>
  */
@@ -20,6 +25,7 @@ import { UiSwipe } from './swipe';
     <div
       uiSwipe
       [uiSwipeDisabled]="off()"
+      [uiSwipeMouse]="withMouse()"
       (uiSwipeLeft)="went.push('left')"
       (uiSwipeRight)="went.push('right')"
       style="width: 400px"
@@ -33,6 +39,7 @@ import { UiSwipe } from './swipe';
 })
 class Host {
   readonly off = signal(false);
+  readonly withMouse = signal(false);
   readonly went: string[] = [];
 }
 
@@ -40,32 +47,36 @@ describe('UiSwipe', () => {
   let fixture: ComponentFixture<Host>;
   let host: Host;
 
-  function at(type: string, init: PointerEventInit, time: number): PointerEvent {
+  function el(id: string): HTMLElement {
+    return fixture.nativeElement.querySelector(`#${id}`) as HTMLElement;
+  }
+
+  /** jsdom has no TouchEvent, so one is assembled with the three fields the directive reads. */
+  function touch(
+    type: string,
+    points: { id?: number; x: number; y: number }[],
+    time: number,
+  ): Event {
+    const event = new Event(type, { bubbles: true });
+    const list = points.map((p) => ({ identifier: p.id ?? 1, clientX: p.x, clientY: p.y }));
+    Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : list });
+    Object.defineProperty(event, 'changedTouches', { value: list });
+    Object.defineProperty(event, 'timeStamp', { value: time });
+    return event;
+  }
+
+  function pointer(type: string, init: PointerEventInit, time: number): PointerEvent {
     const event = new PointerEvent(type, { bubbles: true, ...init });
     Object.defineProperty(event, 'timeStamp', { value: time });
     return event;
   }
 
-  function el(id: string): HTMLElement {
-    return fixture.nativeElement.querySelector(`#${id}`) as HTMLElement;
-  }
-
   /** One finger down, across and up, starting well clear of both screen edges. */
-  function drag(
-    dx: number,
-    { dy = 0, ms = 400, from = 'plain', type = 'touch', pointerId = 1 } = {},
-  ): void {
+  function drag(dx: number, { dy = 0, ms = 400, from = 'plain', x = 200 } = {}): void {
     const target = el(from);
-    const x = 200;
-    target.dispatchEvent(
-      at('pointerdown', { pointerId, pointerType: type, clientX: x, clientY: 200 }, 0),
-    );
-    target.dispatchEvent(
-      at('pointermove', { pointerId, pointerType: type, clientX: x + dx, clientY: 200 + dy }, ms),
-    );
-    target.dispatchEvent(
-      at('pointerup', { pointerId, pointerType: type, clientX: x + dx, clientY: 200 + dy }, ms),
-    );
+    target.dispatchEvent(touch('touchstart', [{ x, y: 200 }], 0));
+    target.dispatchEvent(touch('touchmove', [{ x: x + dx, y: 200 + dy }], ms));
+    target.dispatchEvent(touch('touchend', [{ x: x + dx, y: 200 + dy }], ms));
     fixture.detectChanges();
   }
 
@@ -87,6 +98,21 @@ describe('UiSwipe', () => {
     expect(host.went).toEqual(['left', 'right']);
   });
 
+  /**
+   * The exact stream a browser delivers for a swipe: touch events, and no pointer event of any kind.
+   * A directive built on pointer events hears nothing at all here — which is the bug this fixes.
+   */
+  it('answers the touch-only stream a real swipe arrives as', () => {
+    const target = el('plain');
+    target.dispatchEvent(touch('touchstart', [{ x: 300, y: 500 }], 0));
+    [284, 268, 253, 237, 221, 205, 189, 173, 158, 142, 126].forEach((x, i) => {
+      target.dispatchEvent(touch('touchmove', [{ x, y: 500 - i * 2 }], 17 * (i + 1)));
+    });
+    target.dispatchEvent(touch('touchend', [{ x: 110, y: 480 }], 240));
+    fixture.detectChanges();
+    expect(host.went).toEqual(['left']);
+  });
+
   it('takes a short flick as well as a long drag', () => {
     drag(-28, { ms: 40 });
     expect(host.went).toEqual(['left']);
@@ -103,62 +129,57 @@ describe('UiSwipe', () => {
   });
 
   it('leaves the screen edges to the browser, which navigates there itself', () => {
-    const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 8, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 208, clientY: 200 }, 300));
-    fixture.detectChanges();
+    drag(200, { x: 8 });
     expect(host.went).toEqual([]);
   });
 
   it('does not fire on a pinch', () => {
     const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 180, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointerdown', { pointerId: 2, pointerType: 'touch', clientX: 220, clientY: 200 }, 10));
-    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 80, clientY: 200 }, 300));
-    target.dispatchEvent(at('pointermove', { pointerId: 2, pointerType: 'touch', clientX: 320, clientY: 200 }, 300));
-    target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 80, clientY: 200 }, 300));
-    target.dispatchEvent(at('pointerup', { pointerId: 2, pointerType: 'touch', clientX: 320, clientY: 200 }, 300));
+    target.dispatchEvent(touch('touchstart', [{ id: 1, x: 180, y: 200 }], 0));
+    target.dispatchEvent(
+      touch('touchstart', [{ id: 1, x: 180, y: 200 }, { id: 2, x: 220, y: 200 }], 10),
+    );
+    target.dispatchEvent(
+      touch('touchmove', [{ id: 1, x: 80, y: 200 }, { id: 2, x: 320, y: 200 }], 300),
+    );
     fixture.detectChanges();
     expect(host.went).toEqual([]);
   });
 
   it('answers while the finger is still down, without waiting for it to lift', () => {
     const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 100, clientY: 200 }, 200));
+    target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 0));
+    target.dispatchEvent(touch('touchmove', [{ x: 100, y: 200 }], 200));
     fixture.detectChanges();
     expect(host.went).toEqual(['left']);
   });
 
   it('answers a gesture only once, however far it carries on', () => {
     const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 300, clientY: 200 }, 0));
+    target.dispatchEvent(touch('touchstart', [{ x: 300, y: 200 }], 0));
     for (const x of [240, 180, 120, 60]) {
-      target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: x, clientY: 200 }, 200));
+      target.dispatchEvent(touch('touchmove', [{ x, y: 200 }], 200));
     }
-    target.dispatchEvent(at('pointerup', { pointerId: 1, pointerType: 'touch', clientX: 60, clientY: 200 }, 300));
+    target.dispatchEvent(touch('touchend', [{ x: 60, y: 200 }], 300));
     fixture.detectChanges();
     expect(host.went).toEqual(['left']);
   });
 
-  /**
-   * The case a phone actually produces. A real swipe drifts vertically, the page scrolls that pixel,
-   * and the browser takes the pointer — so a directive that waits for the release waits forever.
-   */
-  it('still answers a swipe the browser took the pointer away from', () => {
+  /** A system gesture can still take the touch away; what travelled first is evidence enough. */
+  it('still answers a swipe the browser took the touch away from', () => {
     const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 130, clientY: 212 }, 150));
-    target.dispatchEvent(at('pointercancel', { pointerId: 1, pointerType: 'touch' }, 160));
+    target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 0));
+    target.dispatchEvent(touch('touchmove', [{ x: 130, y: 212 }], 150));
+    target.dispatchEvent(touch('touchcancel', [{ x: 130, y: 212 }], 160));
     fixture.detectChanges();
     expect(host.went).toEqual(['left']);
   });
 
   it('lets a scroll that was taken away stay a scroll', () => {
     const target = el('plain');
-    target.dispatchEvent(at('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0));
-    target.dispatchEvent(at('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 175, clientY: 320 }, 150));
-    target.dispatchEvent(at('pointercancel', { pointerId: 1, pointerType: 'touch' }, 160));
+    target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 0));
+    target.dispatchEvent(touch('touchmove', [{ x: 175, y: 320 }], 150));
+    target.dispatchEvent(touch('touchcancel', [{ x: 175, y: 320 }], 160));
     fixture.detectChanges();
     expect(host.went).toEqual([]);
   });
@@ -178,15 +199,58 @@ describe('UiSwipe', () => {
     expect(host.went).toEqual([]);
   });
 
-  it('ignores the mouse unless asked', () => {
-    drag(-80, { type: 'mouse' });
-    expect(host.went).toEqual([]);
-  });
-
   it('stays quiet while disabled', () => {
     host.off.set(true);
     fixture.detectChanges();
     drag(-80);
     expect(host.went).toEqual([]);
+  });
+
+  describe('the mouse and the pen', () => {
+    function mouseDrag(dx: number, type = 'mouse'): void {
+      const target = el('plain');
+      target.dispatchEvent(
+        pointer('pointerdown', { pointerId: 9, pointerType: type, clientX: 200, clientY: 200 }, 0),
+      );
+      target.dispatchEvent(
+        pointer('pointermove', { pointerId: 9, pointerType: type, clientX: 200 + dx, clientY: 200 }, 300),
+      );
+      fixture.detectChanges();
+    }
+
+    it('ignores the mouse unless asked', () => {
+      mouseDrag(-80);
+      expect(host.went).toEqual([]);
+    });
+
+    it('reads a mouse drag once asked, since no arbitration applies to it', () => {
+      host.withMouse.set(true);
+      fixture.detectChanges();
+      mouseDrag(-80);
+      expect(host.went).toEqual(['left']);
+    });
+
+    it('reads a pen drag, which is never withheld either', () => {
+      mouseDrag(-80, 'pen');
+      expect(host.went).toEqual(['left']);
+    });
+
+    /**
+     * A browser that sends both models for one finger must not be read as two drags — and the
+     * pointer half arrives with `pointerType: 'touch'`, so it is dropped on sight.
+     */
+    it('does not double-count a browser that sends pointer events for touch as well', () => {
+      const target = el('plain');
+      target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 0));
+      target.dispatchEvent(
+        pointer('pointerdown', { pointerId: 1, pointerType: 'touch', clientX: 200, clientY: 200 }, 0),
+      );
+      target.dispatchEvent(touch('touchmove', [{ x: 100, y: 200 }], 200));
+      target.dispatchEvent(
+        pointer('pointermove', { pointerId: 1, pointerType: 'touch', clientX: 100, clientY: 200 }, 200),
+      );
+      fixture.detectChanges();
+      expect(host.went).toEqual(['left']);
+    });
   });
 });
