@@ -14,6 +14,7 @@ export class UiResizeObserver implements OnInit, OnDestroy {
   private observer?: ResizeObserver;
 
   ngOnInit(): void {
+    if (typeof ResizeObserver === 'undefined') return; // server-side render
     this.observer = new ResizeObserver((entries) => {
       const rect = entries[0]?.contentRect;
       if (rect) this.zone.run(() => this.sizeChange.emit({ width: rect.width, height: rect.height }));

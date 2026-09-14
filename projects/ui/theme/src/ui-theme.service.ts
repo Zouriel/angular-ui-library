@@ -50,7 +50,8 @@ export class UiThemeService {
     effect(() => {
       const root = this.doc.documentElement;
       if (root) {
-        root.dataset['theme'] = this.theme();
+        // setAttribute rather than dataset: a server-side DOM (prerendering) has no dataset.
+        root.setAttribute('data-theme', this.theme());
       }
     });
   }

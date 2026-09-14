@@ -15,6 +15,7 @@ export class UiIntersect implements OnInit, OnDestroy {
   private observer?: IntersectionObserver;
 
   ngOnInit(): void {
+    if (typeof IntersectionObserver === 'undefined') return; // server-side render
     this.observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         this.zone.run(() => this.intersect.emit(entry.isIntersecting));

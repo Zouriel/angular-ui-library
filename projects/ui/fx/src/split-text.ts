@@ -1,4 +1,5 @@
-import { AfterViewInit, Directive, ElementRef, inject, input } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { AfterViewInit, Directive, ElementRef, PLATFORM_ID, inject, input } from '@angular/core';
 
 /**
  * `uiSplitText` — splits the host's text into per-character spans and animates
@@ -12,6 +13,7 @@ import { AfterViewInit, Directive, ElementRef, inject, input } from '@angular/co
 })
 export class UiSplitText implements AfterViewInit {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   /** Per-character delay (ms). */
   stagger = input(35);
   /** Initial delay before the first character (ms). */
@@ -19,6 +21,8 @@ export class UiSplitText implements AfterViewInit {
   duration = input(900);
 
   ngAfterViewInit(): void {
+    // Prerendered HTML keeps the plain text, which is also what a search engine should read.
+    if (!this.browser) return;
     const el = this.host.nativeElement;
     const text = el.textContent ?? '';
     if (!text.trim()) return;

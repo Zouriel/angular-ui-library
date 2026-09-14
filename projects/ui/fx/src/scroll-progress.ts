@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, inject, viewChild } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, inject, viewChild } from '@angular/core';
 
 /** `ui-scroll-progress` — fixed top bar tracking page scroll, using the brand gradient + glow. */
 @Component({
@@ -14,6 +15,7 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, inject, viewCh
 })
 export class UiScrollProgress implements AfterViewInit, OnDestroy {
   private zone = inject(NgZone);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private bar = viewChild.required<ElementRef<HTMLDivElement>>('bar');
   private readonly onScroll = () => {
     const doc = document.documentElement;
@@ -22,7 +24,8 @@ export class UiScrollProgress implements AfterViewInit, OnDestroy {
     this.bar().nativeElement.style.width = `${pct}%`;
   };
   ngAfterViewInit(): void {
+    if (!this.browser) return;
     this.zone.runOutsideAngular(() => { window.addEventListener('scroll', this.onScroll, { passive: true }); this.onScroll(); });
   }
-  ngOnDestroy(): void { window.removeEventListener('scroll', this.onScroll); }
+  ngOnDestroy(): void { if (this.browser) window.removeEventListener('scroll', this.onScroll); }
 }

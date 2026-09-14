@@ -1,4 +1,5 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, inject, input, viewChild } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, inject, input, viewChild } from '@angular/core';
 
 /**
  * `ui-cursor` — custom cursor: a precise dot plus a lagging ring that grows
@@ -32,6 +33,7 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, inject, input,
 })
 export class UiCursor implements AfterViewInit, OnDestroy {
   private zone = inject(NgZone);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   /** CSS selector for elements that trigger the enlarged "hover" ring. */
   interactiveSelector = input('a, button, [data-magnetic], input, textarea, select, [role="button"]');
   private dot = viewChild.required<ElementRef<HTMLDivElement>>('dot');
@@ -52,7 +54,7 @@ export class UiCursor implements AfterViewInit, OnDestroy {
   };
 
   ngAfterViewInit(): void {
-    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!this.browser || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     window.addEventListener('pointermove', this.onMove, { passive: true });
     window.addEventListener('pointerdown', this.onDown, { passive: true });
     window.addEventListener('pointerup', this.onUp, { passive: true });
@@ -71,6 +73,7 @@ export class UiCursor implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (!this.browser) return;
     cancelAnimationFrame(this.raf);
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerdown', this.onDown);

@@ -8,7 +8,9 @@ import {
   input,
   signal,
   viewChild,
+  PLATFORM_ID,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 export type UiDriftDirection = 'auto' | 'left' | 'right';
 
@@ -69,6 +71,7 @@ export type UiDriftDirection = 'auto' | 'left' | 'right';
 })
 export class UiDriftRow implements AfterViewInit, OnDestroy {
   private zone = inject(NgZone);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private vp = viewChild.required<ElementRef<HTMLDivElement>>('vp');
 
   /** Drift speed in pixels per second. */
@@ -108,7 +111,7 @@ export class UiDriftRow implements AfterViewInit, OnDestroy {
   private readonly DRAG_THRESHOLD = 6;
 
   ngAfterViewInit(): void {
-    if (typeof window === 'undefined') return;
+    if (!this.browser) return;
     const el = this.vp().nativeElement;
 
     const d = this.direction();
@@ -229,6 +232,7 @@ export class UiDriftRow implements AfterViewInit, OnDestroy {
   };
 
   ngOnDestroy(): void {
+    if (!this.browser) return;
     cancelAnimationFrame(this.raf);
     clearTimeout(this.resumeTimer);
     this.ro?.disconnect();

@@ -41,6 +41,7 @@ export class UiAnchorNav implements OnInit, OnDestroy {
   private observer?: IntersectionObserver;
 
   ngOnInit(): void {
+    if (typeof IntersectionObserver === 'undefined') return; // server-side render
     this.observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) this.zone.run(() => this.active.set(entry.target.id));
