@@ -32,6 +32,14 @@
   --ui-winter-pine-900: #19262e;
   --ui-winter-pine-850: #1c2c37;
 
+  /* Night: true black and the faint blue-blacks laid on it, for dark mode's ground and surfaces */
+  --ui-winter-night-1000: #000000;
+  --ui-winter-night-950: #06080a;
+  --ui-winter-night-900: #0b0f12;
+  --ui-winter-night-850: #11171c;
+  --ui-winter-night-800: #1a232a;
+  --ui-winter-night-700: #26323b;
+
   /* Blue: ocean → ice → snow */
   --ui-winter-blue-900: #1b3d59; /* Deep Ocean */
   --ui-winter-blue-850: #20364a;
@@ -213,12 +221,12 @@
 [data-theme="winterDark"] {
   color-scheme: dark;
 
-  --ui-color-bg: var(--ui-winter-pine-950);
-  --ui-color-surface: var(--ui-winter-pine-850);
-  --ui-color-surface-raised: var(--ui-winter-blue-850);
+  --ui-color-bg: var(--ui-winter-night-1000);
+  --ui-color-surface: var(--ui-winter-night-900);
+  --ui-color-surface-raised: var(--ui-winter-night-850);
   --ui-color-text: var(--ui-winter-blue-100);
   --ui-color-text-muted: #9dbad3;
-  --ui-color-border: var(--ui-winter-slate-800);
+  --ui-color-border: var(--ui-winter-night-700);
   --ui-color-primary: var(--ui-winter-blue-400);
   --ui-color-primary-hover: var(--ui-winter-blue-300);
   --ui-color-primary-contrast: var(--ui-winter-pine-950);
@@ -231,13 +239,13 @@
 :root:not([data-theme]),
 [data-theme="dark"],
 [data-theme="winterDark"] {
-  --ui-color-surface-subtle: var(--ui-winter-pine-900);
-  --ui-color-surface-hover: var(--ui-winter-blue-800);
-  --ui-color-elevated-hover: var(--ui-winter-blue-800);
+  --ui-color-surface-subtle: var(--ui-winter-night-950);
+  --ui-color-surface-hover: var(--ui-winter-night-800);
+  --ui-color-elevated-hover: var(--ui-winter-night-800);
   --ui-color-text-secondary: var(--ui-winter-blue-300);
   --ui-color-text-disabled: var(--ui-winter-slate-600);
   --ui-color-text-inverse: var(--ui-winter-pine-950);
-  --ui-color-border-subtle: var(--ui-winter-slate-900);
+  --ui-color-border-subtle: var(--ui-winter-night-800);
   --ui-color-border-strong: var(--ui-winter-slate-500);
   --ui-color-border-focus: var(--ui-winter-blue-400);
   --ui-color-primary-active: var(--ui-winter-blue-500);
@@ -255,35 +263,35 @@
   --ui-color-danger-hover: #f5bcbc;
   --ui-color-selected: rgba(139, 181, 219, 0.14);
   --ui-color-track: var(--ui-winter-slate-800);
-  --ui-color-overlay: rgba(8, 13, 17, 0.66);
+  --ui-color-overlay: rgba(0, 0, 0, 0.72);
 
   --ui-switch-track: var(--ui-winter-slate-500);
   --ui-switch-thumb: var(--ui-winter-blue-100);
   --ui-switch-thumb-checked: var(--ui-winter-pine-950);
   --ui-slider-thumb: var(--ui-winter-blue-100);
   --ui-slider-thumb-border: var(--ui-winter-pine-950);
-  --ui-skeleton-base: var(--ui-winter-slate-900);
-  --ui-skeleton-highlight: var(--ui-winter-slate-800);
+  --ui-skeleton-base: var(--ui-winter-night-850);
+  --ui-skeleton-highlight: var(--ui-winter-night-700);
   --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
-  --ui-media-bg: var(--ui-winter-pine-950);
-  --ui-media-scrim: #0b1216;
+  --ui-media-bg: var(--ui-winter-night-1000);
+  --ui-media-scrim: #000000;
   --ui-media-on-scrim: var(--ui-winter-blue-25);
   --ui-media-danger: var(--ui-winter-red-300);
   --ui-cursor-color: var(--ui-winter-blue-100);
   --ui-section-label-bracket: var(--ui-color-accent-strong);
 
   --ui-gradient-brand: linear-gradient(90deg, #8bb5db 0%, #b3d5f1 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #152026 0%, #1b3d59 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #000000 0%, #1b3d59 100%);
   --ui-gradient-frost: linear-gradient(135deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #1c2c37 0%, #20364a 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #0b0f12 0%, #11171c 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 213, 241, 0.14) 0%, rgba(179, 213, 241, 0) 100%);
   --ui-glow-amber: 0 0 28px rgba(139, 181, 219, 0.26);
 
   --ui-glass-bg: rgba(179, 213, 241, 0.06);
   --ui-glass-border: rgba(179, 213, 241, 0.13);
-  --ui-shadow-1: 0 1px 2px rgba(5, 10, 13, 0.4);
-  --ui-shadow-2: 0 8px 24px rgba(5, 10, 13, 0.5);
-  --ui-shadow-3: 0 16px 48px rgba(5, 10, 13, 0.6);
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.7);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
