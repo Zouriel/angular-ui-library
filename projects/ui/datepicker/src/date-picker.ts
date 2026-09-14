@@ -5,7 +5,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
-interface DayCell { day: number; iso: string; today: boolean; }
+interface DayCell { day: number; iso: string; today: boolean; disabled: boolean; }
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -71,6 +71,7 @@ function iso(y: number, m: number, d: number): string {
                 class="cell"
                 [class.selected]="cell.iso === value()"
                 [class.today]="cell.today"
+                [disabled]="cell.disabled"
                 [attr.aria-selected]="cell.iso === value()"
                 (click)="pick(cell.iso)">{{ cell.day }}</button>
             }
@@ -151,6 +152,8 @@ function iso(y: number, m: number, d: number): string {
     .cell.today { box-shadow: inset 0 0 0 1px var(--ui-color-border); }
     .cell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
     .cell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .cell:disabled { opacity: 0.35; cursor: not-allowed; }
+    .cell:disabled:hover { background: transparent; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDatePicker), multi: true }],
 })
@@ -161,6 +164,10 @@ export class UiDatePicker implements ControlValueAccessor {
   placeholder = input('Select a date');
   size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
+  /** Earliest selectable day, as ISO `YYYY-MM-DD`. Days before it are shown but cannot be picked. */
+  min = input<string | null>(null);
+  /** Latest selectable day, as ISO `YYYY-MM-DD`. */
+  max = input<string | null>(null);
 
   protected readonly value = signal<string | null>(null);
   protected readonly open = signal(false);
@@ -207,7 +214,10 @@ export class UiDatePicker implements ControlValueAccessor {
     return Array.from({ length: count }, (_, i) => {
       const d = i + 1;
       const cellIso = iso(y, m, d);
-      return { day: d, iso: cellIso, today: cellIso === todayIso };
+      const min = this.min();
+      const max = this.max();
+      const disabled = (!!min && cellIso < min) || (!!max && cellIso > max);
+      return { day: d, iso: cellIso, today: cellIso === todayIso, disabled };
     });
   });
 
@@ -256,6 +266,9 @@ export class UiDatePicker implements ControlValueAccessor {
     this.mode.set('months');
   }
   protected pick(isoDate: string): void {
+    const min = this.min();
+    const max = this.max();
+    if ((min && isoDate < min) || (max && isoDate > max)) return;
     this.value.set(isoDate);
     this.onChange(isoDate);
     this.onTouched();

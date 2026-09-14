@@ -19,7 +19,7 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
       <div class="grid" role="grid">
         @for (b of leading(); track $index) { <span class="cell empty"></span> }
         @for (c of days(); track c.iso) {
-          <button type="button" class="cell" [class.selected]="c.iso === value()" [class.today]="c.today" [disabled]="disabled()" (click)="pick(c.iso)">{{ c.day }}</button>
+          <button type="button" class="cell" [class.selected]="c.iso === value()" [class.today]="c.today" [disabled]="disabled() || c.blocked" (click)="pick(c.iso)">{{ c.day }}</button>
         }
       </div>
     </div>
@@ -52,6 +52,11 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
 export class UiCalendar implements ControlValueAccessor {
   protected readonly weekdays = WEEKDAYS;
   protected readonly MONTHS = MONTHS;
+  /** Earliest selectable day, as ISO `YYYY-MM-DD`. */
+  min = input<string | null>(null);
+  /** Latest selectable day, as ISO `YYYY-MM-DD`. */
+  max = input<string | null>(null);
+
   protected readonly value = signal<string | null>(null);
   protected readonly disabled = signal(false);
   protected readonly view = signal<[number, number]>([new Date().getFullYear(), new Date().getMonth()]);
@@ -62,7 +67,12 @@ export class UiCalendar implements ControlValueAccessor {
     const count = new Date(y, m + 1, 0).getDate();
     const today = new Date();
     const todayIso = iso(today.getFullYear(), today.getMonth(), today.getDate());
-    return Array.from({ length: count }, (_, i) => ({ day: i + 1, iso: iso(y, m, i + 1), today: iso(y, m, i + 1) === todayIso }));
+    const min = this.min();
+    const max = this.max();
+    return Array.from({ length: count }, (_, i) => {
+      const cellIso = iso(y, m, i + 1);
+      return { day: i + 1, iso: cellIso, today: cellIso === todayIso, blocked: (!!min && cellIso < min) || (!!max && cellIso > max) };
+    });
   });
 
   private onChange: (v: string | null) => void = () => {};
@@ -73,5 +83,5 @@ export class UiCalendar implements ControlValueAccessor {
   setDisabledState(d: boolean): void { this.disabled.set(d); }
 
   protected shift(delta: number): void { const d = new Date(this.view()[0], this.view()[1] + delta, 1); this.view.set([d.getFullYear(), d.getMonth()]); }
-  protected pick(isoDate: string): void { this.value.set(isoDate); this.onChange(isoDate); this.onTouched(); }
+  protected pick(isoDate: string): void { const min = this.min(); const max = this.max(); if ((min && isoDate < min) || (max && isoDate > max)) return; this.value.set(isoDate); this.onChange(isoDate); this.onTouched(); }
 }
