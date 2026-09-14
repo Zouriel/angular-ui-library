@@ -32,7 +32,7 @@ import type { UiComboboxOption } from './combobox';
   styles: `
     :host { display: block; }
     .ms { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; min-height: var(--ui-size-md);
-      padding: 3px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border);
+      padding: 3px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); cursor: text; }
     .ms:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .ms.no-radius { border-radius: 0; }

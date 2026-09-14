@@ -43,7 +43,7 @@ export interface UiCommand {
     }
   `,
   styles: `
-    .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: rgba(0,0,0,0.55); }
+    .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .cp-wrap { position: fixed; inset: 0; z-index: var(--ui-z-overlay); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; pointer-events: none; }
     .cp { pointer-events: auto; width: min(560px, 92vw); background: var(--ui-color-surface-raised);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default); }

@@ -1,0 +1,41 @@
+/*
+ * UI Library — optional `--color-*` aliases for the semantic colour tokens.
+ *
+ * The library's own components read --ui-color-* only. Include this file AFTER tokens.css if app
+ * code prefers the generic naming (e.g. `background: var(--color-background-surface)`). Aliases
+ * are re-declared on every [data-theme] element so scoped theme islands resolve correctly.
+ *
+ *   @import 'ui/styles/tokens.css';
+ *   @import 'ui/styles/color-aliases.css';
+ */
+:root,
+[data-theme] {
+  --color-background-default: var(--ui-color-bg);
+  --color-background-surface: var(--ui-color-surface);
+  --color-background-elevated: var(--ui-color-surface-raised);
+  --color-background-subtle: var(--ui-color-surface-subtle);
+
+  --color-text-primary: var(--ui-color-text);
+  --color-text-secondary: var(--ui-color-text-secondary);
+  --color-text-muted: var(--ui-color-text-muted);
+  --color-text-disabled: var(--ui-color-text-disabled);
+  --color-text-inverse: var(--ui-color-text-inverse);
+
+  --color-border-default: var(--ui-color-border);
+  --color-border-subtle: var(--ui-color-border-subtle);
+  --color-border-strong: var(--ui-color-border-strong);
+  --color-border-focus: var(--ui-color-border-focus);
+
+  --color-brand-primary: var(--ui-color-primary);
+  --color-brand-primary-hover: var(--ui-color-primary-hover);
+  --color-brand-primary-active: var(--ui-color-primary-active);
+  --color-brand-secondary: var(--ui-color-secondary);
+
+  --color-accent-default: var(--ui-color-accent);
+  --color-accent-subtle: var(--ui-color-accent-subtle);
+
+  --color-status-success: var(--ui-color-success);
+  --color-status-warning: var(--ui-color-warning);
+  --color-status-error: var(--ui-color-danger);
+  --color-status-info: var(--ui-color-info);
+}

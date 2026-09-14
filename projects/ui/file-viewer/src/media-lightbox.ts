@@ -357,15 +357,15 @@ function fmt(seconds: number): string {
     /* The dialog IS the screen. Its own box is stripped back to nothing so the sheet inside can
        paint the whole of it — the default dialog is a centred, bordered, padded card. */
     .lb { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0;
-      border: 0; background: transparent; color: #fff; overflow: hidden;
+      border: 0; background: transparent; color: var(--ui-media-on-scrim); overflow: hidden;
       font-family: var(--ui-font-default, system-ui, sans-serif); }
-    .lb::backdrop { background: rgba(6, 7, 10, 0.86); backdrop-filter: blur(18px) saturate(120%); }
+    .lb::backdrop { background: color-mix(in srgb, var(--ui-media-scrim) 86%, transparent); backdrop-filter: blur(18px) saturate(120%); }
     .lb:not([open]) { display: none; }
 
     /* --lb-drag is how far a dismissing drag has come, --lb-veil how much of the dark is left. Both
        are set from the gesture so the whole sheet moves and fades as one thing. */
     .sheet { position: relative; width: 100%; height: 100%; overflow: hidden;
-      background: rgba(6, 7, 10, calc(0.92 * var(--lb-veil, 1)));
+      background: color-mix(in srgb, var(--ui-media-scrim) calc(92% * var(--lb-veil, 1)), transparent);
       transform: translateY(var(--lb-drag, 0px)) scale(calc(1 - 0.06 * (1 - var(--lb-veil, 1))));
       transform-origin: 50% 40%; }
     /* Opacity here, scale on the stage: the sheet's transform belongs to the dismiss drag, and an
@@ -385,18 +385,18 @@ function fmt(seconds: number): string {
     .media.settling { transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease-out); }
 
     .spin { position: absolute; width: 34px; height: 34px; border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.22); border-top-color: #fff;
+      border: 2px solid color-mix(in srgb, var(--ui-media-on-scrim) 22%, transparent); border-top-color: var(--ui-media-on-scrim);
       animation: lb-spin 700ms linear infinite; }
     @keyframes lb-spin { to { transform: rotate(360deg); } }
 
     .play { position: absolute; width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer;
-      display: grid; place-items: center; color: #fff;
-      background: rgba(255, 255, 255, 0.16); backdrop-filter: blur(14px);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      display: grid; place-items: center; color: var(--ui-media-on-scrim);
+      background: color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); backdrop-filter: blur(14px);
+      box-shadow: 0 10px 40px color-mix(in srgb, var(--ui-media-scrim) 45%, transparent);
       transition: transform var(--ui-motion-fast, 120ms) var(--ui-ease-spring, ease-out),
         background var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
     .play svg { width: 38px; height: 38px; fill: currentColor; margin-left: 4px; }
-    .play:hover { background: rgba(255, 255, 255, 0.26); transform: scale(1.05); }
+    .play:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 26%, transparent); transform: scale(1.05); }
     .play:active { transform: scale(0.96); }
 
     /* Scrims, not bars: the picture runs under them, and they only darken enough to keep white text
@@ -410,10 +410,10 @@ function fmt(seconds: number): string {
        and the controls actually sit, which over a bright photograph is where white stops being
        legible. The dark is held through the band the chrome occupies and only then let go. */
     .bar--top { top: 0; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3, 12px);
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.5) 55%, rgba(0, 0, 0, 0) 100%); }
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--ui-media-scrim) 78%, transparent) 0%, color-mix(in srgb, var(--ui-media-scrim) 50%, transparent) 55%, color-mix(in srgb, var(--ui-media-scrim) 0%, transparent) 100%); }
     .bar--bottom { bottom: 0; flex-direction: column; gap: var(--ui-space-3, 12px);
       padding-bottom: max(var(--ui-space-3, 12px), env(safe-area-inset-bottom));
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.62) 55%, rgba(0, 0, 0, 0) 100%); }
+      background: linear-gradient(to top, color-mix(in srgb, var(--ui-media-scrim) 85%, transparent) 0%, color-mix(in srgb, var(--ui-media-scrim) 62%, transparent) 55%, color-mix(in srgb, var(--ui-media-scrim) 0%, transparent) 100%); }
     /* Faded out, and unclickable with it — chrome you cannot see must not be chrome you can press. */
     .sheet--bare .bar { opacity: 0; pointer-events: none; }
     .sheet--bare .bar--top { transform: translateY(-8px); }
@@ -424,16 +424,16 @@ function fmt(seconds: number): string {
     .meta { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
     .meta__line { font-size: var(--ui-font-size-sm, 14px); font-weight: 600; letter-spacing: 0.01em;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6); }
-    .meta__count { font-size: 12px; color: rgba(255, 255, 255, 0.66); font-variant-numeric: tabular-nums; }
+      text-shadow: 0 1px 12px color-mix(in srgb, var(--ui-media-scrim) 60%, transparent); }
+    .meta__count { font-size: 12px; color: color-mix(in srgb, var(--ui-media-on-scrim) 66%, transparent); font-variant-numeric: tabular-nums; }
 
     .acts { display: flex; align-items: center; gap: var(--ui-space-2, 8px); flex: none; }
 
     /* One glass treatment for everything that floats over the picture. */
     .act, .ic, .chip, .edge {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(14px); color: #fff; cursor: pointer; text-decoration: none;
+      border: 1px solid color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); background: color-mix(in srgb, var(--ui-media-on-scrim) 10%, transparent);
+      backdrop-filter: blur(14px); color: var(--ui-media-on-scrim); cursor: pointer; text-decoration: none;
       font-family: inherit; font-size: 13px; line-height: 1;
       transition: background var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease),
@@ -445,13 +445,13 @@ function fmt(seconds: number): string {
     .ic svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9;
       stroke-linecap: round; stroke-linejoin: round; }
     .ic--x svg { stroke-width: 2.1; }
-    .act:hover, .ic:hover, .chip:hover, .edge:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); }
+    .act:hover, .ic:hover, .chip:hover, .edge:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-media-on-scrim) 22%, transparent); }
     .act:active, .ic:active, .chip:active { transform: scale(var(--ui-scale-press, 0.97)); }
-    .act--danger { color: #ff8b8b; border-color: rgba(255, 139, 139, 0.35); background: rgba(255, 80, 80, 0.14); }
-    .act--danger:hover { background: rgba(255, 80, 80, 0.26); }
+    .act--danger { color: var(--ui-media-danger); border-color: color-mix(in srgb, var(--ui-media-danger) 35%, transparent); background: color-mix(in srgb, var(--ui-media-danger) 14%, transparent); }
+    .act--danger:hover { background: color-mix(in srgb, var(--ui-media-danger) 26%, transparent); }
     .act:focus-visible, .ic:focus-visible, .chip:focus-visible, .edge:focus-visible,
     .strip__item:focus-visible, .scrub__input:focus-visible, .vol:focus-visible, .play:focus-visible {
-      outline: 2px solid #fff; outline-offset: 2px; }
+      outline: 2px solid var(--ui-media-on-scrim); outline-offset: 2px; }
 
     .edge { position: absolute; top: 50%; margin-top: -24px; width: 48px; height: 48px; border-radius: 50%;
       z-index: 2; }
@@ -465,17 +465,17 @@ function fmt(seconds: number): string {
     @media (hover: none), (max-width: 640px) { .edge { display: none; } }
 
     .vc { display: flex; align-items: center; gap: var(--ui-space-2, 8px); min-width: 0; }
-    .time { font-size: 12px; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.8);
+    .time { font-size: 12px; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--ui-media-on-scrim) 80%, transparent);
       min-width: 42px; text-align: center; }
 
     .scrub { position: relative; flex: 1; height: 26px; display: flex; align-items: center; min-width: 60px; }
     .scrub__track, .scrub__load, .scrub__fill { position: absolute; left: 0; height: 4px; border-radius: 999px;
       transition: height var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease); }
-    .scrub__track { right: 0; background: rgba(255, 255, 255, 0.24); }
-    .scrub__load { background: rgba(255, 255, 255, 0.38); }
-    .scrub__fill { background: #fff; }
+    .scrub__track { right: 0; background: color-mix(in srgb, var(--ui-media-on-scrim) 24%, transparent); }
+    .scrub__load { background: color-mix(in srgb, var(--ui-media-on-scrim) 38%, transparent); }
+    .scrub__fill { background: var(--ui-media-on-scrim); }
     .scrub__knob { position: absolute; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%;
-      background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); opacity: 0; transform: scale(0.6);
+      background: var(--ui-media-on-scrim); box-shadow: 0 2px 8px color-mix(in srgb, var(--ui-media-scrim) 50%, transparent); opacity: 0; transform: scale(0.6);
       transition: opacity var(--ui-motion-fast, 120ms) ease, transform var(--ui-motion-fast, 120ms) ease; }
     .scrub:hover .scrub__track, .scrub:hover .scrub__load, .scrub:hover .scrub__fill { height: 6px; }
     .scrub:hover .scrub__knob, .scrub:focus-within .scrub__knob { opacity: 1; transform: scale(1); }
@@ -484,7 +484,7 @@ function fmt(seconds: number): string {
     .scrub__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0;
       cursor: pointer; }
 
-    .vol { width: 76px; accent-color: #fff; cursor: pointer; flex: none; }
+    .vol { width: 76px; accent-color: var(--ui-media-on-scrim); cursor: pointer; flex: none; }
     /* No room for it on a phone, and nothing to point at it with either: the hardware keys are the
        volume control there. The width test matters as well as the hover one — a narrow window on a
        desktop has the same problem and none of the same excuse. */
@@ -494,16 +494,16 @@ function fmt(seconds: number): string {
       padding: 2px; }
     .strip::-webkit-scrollbar { display: none; }
     .strip__item { position: relative; flex: 0 0 auto; width: 54px; height: 54px; padding: 0; border: 0;
-      border-radius: var(--ui-radius-sm, 8px); overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--ui-radius-sm, 8px); overflow: hidden; cursor: pointer; background: color-mix(in srgb, var(--ui-media-on-scrim) 8%, transparent);
       opacity: 0.5; transition: opacity var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         transform var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         box-shadow var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
     .strip__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .strip__item:hover { opacity: 0.8; }
-    .strip__item--on { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 0 2px #fff, 0 6px 18px rgba(0, 0, 0, 0.5); }
+    .strip__item--on { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 0 2px var(--ui-media-on-scrim), 0 6px 18px color-mix(in srgb, var(--ui-media-scrim) 50%, transparent); }
     .strip__play { position: absolute; inset: 0; display: grid; place-items: center;
-      background: rgba(0, 0, 0, 0.28); }
-    .strip__play svg { width: 16px; height: 16px; fill: #fff; }
+      background: color-mix(in srgb, var(--ui-media-scrim) 28%, transparent); }
+    .strip__play svg { width: 16px; height: 16px; fill: var(--ui-media-on-scrim); }
 
     @media (prefers-reduced-motion: reduce) {
       .lb[open] .sheet, .lb[open] .stage { animation: none; }

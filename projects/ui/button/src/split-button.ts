@@ -26,7 +26,7 @@ import type { UiButtonVariant } from './button';
       height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); z-index: 1; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }

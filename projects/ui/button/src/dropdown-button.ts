@@ -30,7 +30,7 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
       border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .ddb:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .ddb:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .ddb:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ddb:disabled { opacity: 0.5; cursor: not-allowed; }
     .ddb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

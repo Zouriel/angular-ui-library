@@ -5,30 +5,78 @@
  *
  * Consumer usage (e.g. in app styles.css or angular.json "styles"):
  *   @import 'ui/styles/tokens.css';
+ *
+ * Colour architecture (see COLOR-SYSTEM.md):
+ *   1. Primitives   --ui-winter-*          raw palette steps. Never read by components.
+ *   2. Semantic     --ui-color-*           roles (background, text, border, brand, accent, status).
+ *   3. Component    --ui-switch-*, --ui-control-border, --ui-media-* …  per-component hooks that
+ *                                          default to a semantic token.
+ *
+ * The default `dark` / `light` themes are the Winter pair (also reachable as `winterDark` /
+ * `winterLight`). Named skins in theme-palettes.css override only the core --ui-color-* tokens;
+ * every extended token below has a formula default so those skins keep working unchanged.
  */
 
 :root {
-  /* The default palette is dark, and native controls have to be told: without color-scheme the
-     browser paints select popups, scrollbars and spinners for a light page. */
-  color-scheme: dark;
+  /* ── 1. Primitive palette (Winter) ─────────────────────────────────── */
+  /* Reference colours */
+  --ui-winter-black-pine: #152026;
+  --ui-winter-deep-ocean: #1b3d59;
+  --ui-winter-windstorm: #6a97c0;
+  --ui-winter-melting-ice: #b3d5f1;
+  --ui-winter-avalanche: #d4eef8;
+  --ui-winter-sun-beam: #f3eed8;
 
-  /* Color */
-  --ui-color-bg: #0f1115;
-  --ui-color-surface: #171a21;
-  --ui-color-surface-raised: #1d212b;
-  --ui-color-text: #e8eaed;
-  --ui-color-text-muted: #9aa0a6;
-  --ui-color-border: #2a2f3a;
-  --ui-color-primary: #2c40d6;
-  --ui-color-primary-hover: #3d54f0;
-  --ui-color-primary-contrast: #ffffff;
-  --ui-color-secondary: #8a8f98;
-  --ui-color-success: #2faa6e;
-  --ui-color-warning: #d9a521;
-  --ui-color-danger: #e5484d;
+  /* Pine: the blue-blacks of the night surfaces */
+  --ui-winter-pine-950: #152026; /* Black Pine */
+  --ui-winter-pine-900: #19262e;
+  --ui-winter-pine-850: #1c2c37;
 
-  /* Focus ring (WCAG AA visible focus) */
-  --ui-focus-ring: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-primary);
+  /* Blue: ocean → ice → snow */
+  --ui-winter-blue-900: #1b3d59; /* Deep Ocean */
+  --ui-winter-blue-850: #20364a;
+  --ui-winter-blue-800: #264460;
+  --ui-winter-blue-700: #3a6488; /* Windstorm, deepened for text on light */
+  --ui-winter-blue-500: #6a97c0; /* Windstorm */
+  --ui-winter-blue-400: #8bb5db; /* Windstorm, brightened for dark */
+  --ui-winter-blue-300: #b3d5f1; /* Melting Ice */
+  --ui-winter-blue-100: #d4eef8; /* Avalanche */
+  --ui-winter-blue-75: #e3f0f7;
+  --ui-winter-blue-50: #eef5f9;
+  --ui-winter-blue-25: #f7fbfd;
+  --ui-winter-white: #ffffff;
+
+  /* Slate: blue-grey neutrals for borders, muted text, tracks */
+  --ui-winter-slate-900: #233441;
+  --ui-winter-slate-800: #2e4658;
+  --ui-winter-slate-700: #465d6f;
+  --ui-winter-slate-600: #587488;
+  --ui-winter-slate-500: #6c8497;
+  --ui-winter-slate-400: #93a6b5;
+  --ui-winter-slate-300: #c3d2dd;
+  --ui-winter-slate-200: #dae5ec;
+
+  /* Sun Beam: the one warm note */
+  --ui-winter-sun-50: #f9f7ec;
+  --ui-winter-sun-100: #f3eed8; /* Sun Beam */
+  --ui-winter-sun-700: #76591a;
+  --ui-winter-sun-900: #34393a;
+
+  /* Status: muted, cool-leaning; 700 for light, 300 for dark */
+  --ui-winter-green-700: #2e6b50;
+  --ui-winter-green-300: #8ccba9;
+  --ui-winter-amber-700: #85570f;
+  --ui-winter-amber-300: #e6c27d;
+  --ui-winter-red-700: #a83a3f;
+  --ui-winter-red-300: #f0a3a3;
+
+  /* Default elevation + glass. Named dark skins inherit these; the Winter themes set their own. */
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --ui-glass-bg: rgba(255, 255, 255, 0.06);
+  --ui-glass-blur: 14px;
+  --ui-glass-border: rgba(255, 255, 255, 0.12);
 
   /* Sizing — FIXED set, no arbitrary values */
   --ui-size-sm: 26px;
@@ -70,16 +118,6 @@
      matches instead of each hand-picking its own (was a mix of 0.97/0.98 before). */
   --ui-scale-press: 0.96;
 
-  /* Elevation */
-  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.5);
-
-  /* Glass recipe — one source so all glass surfaces match */
-  --ui-glass-bg: rgba(255, 255, 255, 0.06);
-  --ui-glass-blur: 14px;
-  --ui-glass-border: rgba(255, 255, 255, 0.12);
-
   /* Motion */
   --ui-motion-fast: 120ms;
   --ui-motion-base: 200ms;
@@ -104,21 +142,233 @@
   --ui-font-display: var(--ui-font-default);
 }
 
-/* Light theme override */
-[data-theme="light"] {
+/* ── 2. Semantic defaults derived from the core tokens ─────────────────────
+   Every theme sets the core set (bg, surface, surface-raised, text, text-muted, border, primary,
+   primary-hover, primary-contrast, secondary, success, warning, danger). The extended roles below
+   are computed from it, so a named skin that predates them renders exactly as it did. Declared on
+   every [data-theme] element (not just :root) so a scoped <ui-theme-provider> island recomputes
+   them from its own palette instead of inheriting the page's. The Winter themes override most of
+   these with tuned, contrast-checked values. */
+:root,
+[data-theme] {
+  --ui-color-surface-subtle: var(--ui-color-surface);
+  --ui-color-surface-hover: var(--ui-color-surface-raised); /* hover on bg/surface-level controls */
+  --ui-color-elevated-hover: var(--ui-color-surface); /* hover inside raised panels (popovers) */
+  --ui-color-text-secondary: color-mix(in srgb, var(--ui-color-text) 70%, var(--ui-color-text-muted));
+  --ui-color-text-disabled: color-mix(in srgb, var(--ui-color-text) 40%, var(--ui-color-bg));
+  --ui-color-text-inverse: var(--ui-color-bg);
+  --ui-color-border-subtle: var(--ui-color-border);
+  --ui-color-border-strong: var(--ui-color-border);
+  --ui-color-border-focus: var(--ui-color-primary);
+  --ui-color-primary-active: var(--ui-color-primary-hover);
+  --ui-color-secondary-hover: color-mix(in srgb, var(--ui-color-secondary) 85%, var(--ui-color-primary-contrast));
+  --ui-color-secondary-contrast: var(--ui-color-primary-contrast);
+  --ui-color-accent: var(--ui-color-secondary);
+  --ui-color-accent-subtle: color-mix(in srgb, var(--ui-color-secondary) 16%, transparent);
+  --ui-color-accent-strong: var(--ui-color-secondary);
+  --ui-color-accent-contrast: var(--ui-color-primary-contrast);
+  --ui-color-info: var(--ui-color-primary);
+  --ui-color-info-contrast: var(--ui-color-primary-contrast);
+  --ui-color-success-contrast: var(--ui-color-primary-contrast);
+  --ui-color-warning-contrast: #1a1d23;
+  --ui-color-danger-contrast: var(--ui-color-primary-contrast);
+  --ui-color-danger-hover: color-mix(in srgb, var(--ui-color-danger) 88%, var(--ui-color-primary-contrast));
+  --ui-color-selected: color-mix(in srgb, var(--ui-color-primary) 18%, transparent);
+  --ui-color-track: var(--ui-color-surface-raised);
+  --ui-color-overlay: rgba(0, 0, 0, 0.55);
+
+  /* Focus ring (WCAG AA visible focus) */
+  --ui-focus-ring: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-border-focus);
+
+  /* Decorative gradients (hero, featured cards, callouts — never ordinary controls) */
+  --ui-gradient-hero: linear-gradient(135deg, var(--ui-color-bg) 0%, var(--ui-color-surface-raised) 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, color-mix(in srgb, var(--ui-color-primary) 16%, transparent) 0%, transparent 100%);
+
+  /* ── 3. Component tokens ── */
+  --ui-control-border: var(--ui-color-border-strong); /* input, select, checkbox, radio outlines */
+  --ui-switch-track: var(--ui-color-border);
+  --ui-switch-track-checked: var(--ui-color-primary);
+  --ui-switch-thumb: var(--ui-color-primary-contrast);
+  --ui-switch-thumb-checked: var(--ui-color-primary-contrast);
+  --ui-slider-thumb: var(--ui-color-primary-contrast);
+  --ui-slider-thumb-border: var(--ui-control-border);
+  --ui-skeleton-base: var(--ui-color-surface);
+  --ui-skeleton-highlight: var(--ui-color-surface-raised);
+  --ui-scroll-progress-track: rgba(255, 255, 255, 0.05);
+  /* Media chrome sits over photographs, so it stays dark-scrim/light-glyph in every theme. */
+  --ui-media-bg: #000000;
+  --ui-media-scrim: #000000;
+  --ui-media-on-scrim: #ffffff;
+  --ui-media-danger: #ff8b8b;
+  --ui-pdf-page-bg: #ffffff; /* rendered PDF pages are paper */
+  --ui-cursor-color: #ffffff;
+  --ui-section-label-bracket: color-mix(in srgb, var(--ui-color-danger) 80%, transparent);
+}
+
+/* ── Winter Dark (default `dark`, alias `winterDark`) ──────────────────────
+   A pine forest beside a dark ocean under moonlight. Core tokens also live on :root so a page
+   with no data-theme at all still renders Winter Dark. */
+:root,
+[data-theme="dark"],
+[data-theme="winterDark"] {
+  color-scheme: dark;
+
+  --ui-color-bg: var(--ui-winter-pine-950);
+  --ui-color-surface: var(--ui-winter-pine-850);
+  --ui-color-surface-raised: var(--ui-winter-blue-850);
+  --ui-color-text: var(--ui-winter-blue-100);
+  --ui-color-text-muted: #9dbad3;
+  --ui-color-border: var(--ui-winter-slate-800);
+  --ui-color-primary: var(--ui-winter-blue-400);
+  --ui-color-primary-hover: var(--ui-winter-blue-300);
+  --ui-color-primary-contrast: var(--ui-winter-pine-950);
+  --ui-color-secondary: var(--ui-winter-blue-800);
+  --ui-color-success: var(--ui-winter-green-300);
+  --ui-color-warning: var(--ui-winter-amber-300);
+  --ui-color-danger: var(--ui-winter-red-300);
+}
+
+:root:not([data-theme]),
+[data-theme="dark"],
+[data-theme="winterDark"] {
+  --ui-color-surface-subtle: var(--ui-winter-pine-900);
+  --ui-color-surface-hover: var(--ui-winter-blue-800);
+  --ui-color-elevated-hover: var(--ui-winter-blue-800);
+  --ui-color-text-secondary: var(--ui-winter-blue-300);
+  --ui-color-text-disabled: var(--ui-winter-slate-600);
+  --ui-color-text-inverse: var(--ui-winter-pine-950);
+  --ui-color-border-subtle: var(--ui-winter-slate-900);
+  --ui-color-border-strong: var(--ui-winter-slate-500);
+  --ui-color-border-focus: var(--ui-winter-blue-400);
+  --ui-color-primary-active: var(--ui-winter-blue-500);
+  --ui-color-secondary-hover: var(--ui-winter-blue-700);
+  --ui-color-secondary-contrast: var(--ui-winter-blue-100);
+  --ui-color-accent: var(--ui-winter-sun-100);
+  --ui-color-accent-subtle: var(--ui-winter-sun-900);
+  --ui-color-accent-strong: var(--ui-winter-sun-100);
+  --ui-color-accent-contrast: var(--ui-winter-pine-950);
+  --ui-color-info: var(--ui-winter-blue-300);
+  --ui-color-info-contrast: var(--ui-winter-pine-950);
+  --ui-color-success-contrast: var(--ui-winter-pine-950);
+  --ui-color-warning-contrast: var(--ui-winter-pine-950);
+  --ui-color-danger-contrast: var(--ui-winter-pine-950);
+  --ui-color-danger-hover: #f5bcbc;
+  --ui-color-selected: rgba(139, 181, 219, 0.14);
+  --ui-color-track: var(--ui-winter-slate-800);
+  --ui-color-overlay: rgba(8, 13, 17, 0.66);
+
+  --ui-switch-track: var(--ui-winter-slate-500);
+  --ui-switch-thumb: var(--ui-winter-blue-100);
+  --ui-switch-thumb-checked: var(--ui-winter-pine-950);
+  --ui-slider-thumb: var(--ui-winter-blue-100);
+  --ui-slider-thumb-border: var(--ui-winter-pine-950);
+  --ui-skeleton-base: var(--ui-winter-slate-900);
+  --ui-skeleton-highlight: var(--ui-winter-slate-800);
+  --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
+  --ui-media-bg: var(--ui-winter-pine-950);
+  --ui-media-scrim: #0b1216;
+  --ui-media-on-scrim: var(--ui-winter-blue-25);
+  --ui-media-danger: var(--ui-winter-red-300);
+  --ui-cursor-color: var(--ui-winter-blue-100);
+  --ui-section-label-bracket: var(--ui-color-accent-strong);
+
+  --ui-gradient-brand: linear-gradient(90deg, #8bb5db 0%, #b3d5f1 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #152026 0%, #1b3d59 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #1b3d59 0%, #6a97c0 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #1c2c37 0%, #20364a 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 213, 241, 0.14) 0%, rgba(179, 213, 241, 0) 100%);
+  --ui-glow-amber: 0 0 28px rgba(139, 181, 219, 0.26);
+
+  --ui-glass-bg: rgba(179, 213, 241, 0.06);
+  --ui-glass-border: rgba(179, 213, 241, 0.13);
+  --ui-shadow-1: 0 1px 2px rgba(5, 10, 13, 0.4);
+  --ui-shadow-2: 0 8px 24px rgba(5, 10, 13, 0.5);
+  --ui-shadow-3: 0 16px 48px rgba(5, 10, 13, 0.6);
+}
+
+/* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
+   Snow-covered Nordic architecture in winter daylight. */
+[data-theme="light"],
+[data-theme="winterLight"] {
   color-scheme: light;
-  --ui-color-bg: #ffffff;
-  --ui-color-surface: #f5f6f8;
-  --ui-color-surface-raised: #ffffff;
-  --ui-color-text: #1a1d23;
-  --ui-color-text-muted: #5f6368;
-  --ui-color-border: #d7dae0;
-  --ui-glass-bg: rgba(0, 0, 0, 0.04);
-  --ui-glass-border: rgba(0, 0, 0, 0.10);
-  --ui-focus-ring: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-primary);
-  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
-  --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.18);
+
+  --ui-color-bg: var(--ui-winter-blue-50);
+  --ui-color-surface: var(--ui-winter-blue-25);
+  --ui-color-surface-raised: var(--ui-winter-white);
+  --ui-color-text: var(--ui-winter-pine-950);
+  --ui-color-text-muted: var(--ui-winter-slate-700);
+  --ui-color-border: var(--ui-winter-slate-300);
+  --ui-color-primary: var(--ui-winter-blue-900);
+  --ui-color-primary-hover: var(--ui-winter-blue-800);
+  --ui-color-primary-contrast: var(--ui-winter-blue-25);
+  --ui-color-secondary: var(--ui-winter-blue-700);
+  --ui-color-success: var(--ui-winter-green-700);
+  --ui-color-warning: var(--ui-winter-amber-700);
+  --ui-color-danger: var(--ui-winter-red-700);
+
+  --ui-color-surface-subtle: var(--ui-winter-blue-75);
+  --ui-color-surface-hover: var(--ui-winter-blue-75);
+  --ui-color-elevated-hover: var(--ui-winter-blue-75);
+  --ui-color-text-secondary: var(--ui-winter-blue-900);
+  --ui-color-text-disabled: var(--ui-winter-slate-400);
+  --ui-color-text-inverse: var(--ui-winter-blue-50);
+  --ui-color-border-subtle: var(--ui-winter-slate-200);
+  --ui-color-border-strong: var(--ui-winter-slate-500);
+  --ui-color-border-focus: var(--ui-winter-blue-700);
+  --ui-color-primary-active: var(--ui-winter-pine-950);
+  --ui-color-secondary-hover: var(--ui-winter-blue-800);
+  --ui-color-secondary-contrast: var(--ui-winter-blue-25);
+  --ui-color-accent: var(--ui-winter-sun-100);
+  --ui-color-accent-subtle: var(--ui-winter-sun-50);
+  --ui-color-accent-strong: var(--ui-winter-sun-700);
+  --ui-color-accent-contrast: var(--ui-winter-pine-950);
+  --ui-color-info: var(--ui-winter-blue-700);
+  --ui-color-info-contrast: var(--ui-winter-blue-25);
+  --ui-color-success-contrast: var(--ui-winter-blue-25);
+  --ui-color-warning-contrast: var(--ui-winter-blue-25);
+  --ui-color-danger-contrast: var(--ui-winter-blue-25);
+  --ui-color-danger-hover: #922f34;
+  --ui-color-selected: rgba(27, 61, 89, 0.12);
+  --ui-color-track: var(--ui-winter-slate-200);
+  --ui-color-overlay: rgba(21, 32, 38, 0.42);
+
+  --ui-switch-track: var(--ui-winter-slate-500);
+  --ui-switch-thumb: var(--ui-winter-white);
+  --ui-switch-thumb-checked: var(--ui-winter-white);
+  --ui-slider-thumb: var(--ui-winter-white);
+  --ui-skeleton-base: var(--ui-winter-blue-75);
+  --ui-skeleton-highlight: var(--ui-winter-blue-25);
+  --ui-scroll-progress-track: rgba(27, 61, 89, 0.06);
+  --ui-media-bg: var(--ui-winter-pine-950);
+  --ui-media-scrim: #0b1216;
+  --ui-media-on-scrim: var(--ui-winter-blue-25);
+  --ui-media-danger: var(--ui-winter-red-300);
+  --ui-cursor-color: var(--ui-winter-blue-900);
+  --ui-section-label-bracket: var(--ui-color-accent-strong);
+
+  --ui-gradient-brand: linear-gradient(90deg, #1b3d59 0%, #3a6488 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #1b3d59 0%, #6a97c0 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #6a97c0 0%, #b3d5f1 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #b3d5f1 0%, #d4eef8 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(212, 238, 248, 0.9) 0%, rgba(212, 238, 248, 0) 100%);
+  --ui-glow-amber: 0 8px 24px rgba(27, 61, 89, 0.18);
+
+  --ui-glass-bg: rgba(255, 255, 255, 0.62);
+  --ui-glass-border: rgba(27, 61, 89, 0.12);
+  --ui-shadow-1: 0 1px 2px rgba(21, 32, 38, 0.07);
+  --ui-shadow-2: 0 8px 24px rgba(27, 61, 89, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(27, 61, 89, 0.16);
+}
+
+[data-theme="dark"] ::selection,
+[data-theme="winterDark"] ::selection {
+  background: rgba(106, 151, 192, 0.45);
+  color: #f7fbfd;
+}
+[data-theme="light"] ::selection,
+[data-theme="winterLight"] ::selection {
+  background: #b3d5f1;
+  color: #152026;
 }
 
 /* Animation-first product: reduced-motion CALMS rather than eliminates. We keep the motion

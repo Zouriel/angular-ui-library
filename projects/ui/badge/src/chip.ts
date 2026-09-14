@@ -41,7 +41,7 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
       position: absolute;
       inset: calc((16px - var(--ui-size-touch)) / 2);
     }
-    .x:hover { background: rgba(127,127,127,0.25); }
+    .x:hover { background: color-mix(in srgb, currentColor 18%, transparent); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,
 })

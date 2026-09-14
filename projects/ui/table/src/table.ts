@@ -130,7 +130,7 @@ type SortDir = 'asc' | 'desc' | null;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
-    .act:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .act:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .act:disabled { opacity: 0.45; cursor: default; }
     .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 

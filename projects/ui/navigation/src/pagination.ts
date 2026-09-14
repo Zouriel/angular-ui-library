@@ -35,7 +35,7 @@ import { Component, computed, input, model } from '@angular/core';
       font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .pg:hover:not(:disabled):not(.active) { background: var(--ui-color-surface-raised); }
+    .pg:hover:not(:disabled):not(.active) { background: var(--ui-color-surface-hover); }
     .pg.active { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .pg:disabled { opacity: 0.4; cursor: not-allowed; }
     .pg:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

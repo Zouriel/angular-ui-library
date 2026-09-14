@@ -43,7 +43,7 @@ let radioGroupSeq = 0;
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .dot {
       width: 18px; height: 18px; flex: none; border-radius: 50%;
-      border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
+      border: 1px solid var(--ui-control-border); background: var(--ui-color-surface);
       display: inline-flex; align-items: center; justify-content: center;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);
     }

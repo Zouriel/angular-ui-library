@@ -26,15 +26,16 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .track {
       position: relative; width: 38px; height: 22px; flex: none;
-      background: var(--ui-color-border); border-radius: var(--ui-radius-pill);
+      background: var(--ui-switch-track); border-radius: var(--ui-radius-pill);
       transition: background var(--ui-motion-base) var(--ui-ease-standard);
     }
     .thumb {
       position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
-      background: var(--ui-color-primary-contrast); border-radius: 50%; box-shadow: var(--ui-shadow-1);
+      background: var(--ui-switch-thumb); border-radius: 50%; box-shadow: var(--ui-shadow-1);
       transition: transform var(--ui-motion-base) var(--ui-ease-spring);
     }
-    .native:checked + .track { background: var(--ui-color-primary); }
+    .native:checked + .track { background: var(--ui-switch-track-checked); }
+    .native:checked + .track .thumb { background: var(--ui-switch-thumb-checked); }
     .native:checked + .track .thumb { transform: translateX(16px); }
     .native:focus-visible + .track { box-shadow: var(--ui-focus-ring); }
   `,

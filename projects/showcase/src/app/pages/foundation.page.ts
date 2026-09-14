@@ -18,8 +18,14 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
             <div class="sw"><span class="chip" [style.background]="'var(--ui-color-' + c + ')'"></span><ui-text variant="caption">{{ c }}</ui-text></div>
           }
         </div>
-        <doc-demo lang="css" code="--ui-color-bg / surface / surface-raised / text / text-muted / border
---ui-color-primary / secondary / success / warning / danger
+        <doc-demo lang="css" code="--ui-winter-*   primitive palette (never read by components)
+--ui-color-bg / surface / surface-raised / surface-subtle / surface-hover
+--ui-color-text / text-secondary / text-muted / text-disabled / text-inverse
+--ui-color-border-subtle / border / border-strong / border-focus
+--ui-color-primary / primary-hover / primary-active / primary-contrast / secondary
+--ui-color-accent / accent-subtle / accent-strong
+--ui-color-success / warning / danger / info  (+ -contrast)
+--ui-control-border  --ui-switch-*  --ui-skeleton-*  --ui-media-*   component tokens
 --ui-size-sm|md|lg   --ui-space-1..6   --ui-radius
 --ui-font-default / mono / display   --ui-motion-* / --ui-ease-*"></doc-demo>
       </doc-section>
@@ -34,7 +40,7 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Theme service" selector="UiThemeService"
-        summary="Sets data-theme on <html>. Built-ins: dark (default), light, the professional accent palettes (lightOrange, lightPink, darkPink, goldBlack, goldRed, lightTeal, darkTeal, lightPurple, darkPurple) and the cinematic darkOrange skin. Any string is accepted, so you can register custom themes.">
+        summary="Sets data-theme on <html>. Built-ins: dark (default) and light, the Winter colour system (also named winterDark / winterLight), the professional accent palettes (lightOrange, lightPink, darkPink, goldBlack, goldRed, lightTeal, darkTeal, lightPurple, darkPurple) and the cinematic darkOrange skin. Any string is accepted, so you can register custom themes.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
 this.theme.set('darkPink');
 this.theme.toggle();   // dark <-> light"></doc-demo>
@@ -57,5 +63,5 @@ this.theme.toggle();   // dark <-> light"></doc-demo>
   `,
 })
 export class FoundationPage {
-  protected readonly colors = ['bg', 'surface', 'surface-raised', 'text', 'border', 'primary', 'success', 'warning', 'danger'];
+  protected readonly colors = ['bg', 'surface', 'surface-raised', 'surface-subtle', 'text', 'text-secondary', 'text-muted', 'border', 'border-strong', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger', 'info'];
 }

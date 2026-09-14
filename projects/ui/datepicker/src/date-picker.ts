@@ -106,7 +106,7 @@ function iso(y: number, m: number, d: number): string {
     .ui-date { width: 100%; box-sizing: border-box; height: var(--ui-size-md);
       padding: 0 var(--ui-space-6) 0 var(--ui-space-3); cursor: pointer;
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ui-date:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
@@ -126,18 +126,18 @@ function iso(y: number, m: number, d: number): string {
     .lbl { border: none; background: transparent; color: var(--ui-color-text); font-weight: 600; font-size: var(--ui-font-size-sm);
       font-family: inherit; cursor: pointer; padding: 2px 6px; border-radius: var(--ui-radius-xs);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
-    .lbl:hover { background: var(--ui-color-surface); color: var(--ui-color-primary); }
+    .lbl:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-primary); }
     .lbl:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .nav { width: 26px; height: 26px; border: none; background: transparent; color: var(--ui-color-text-muted); border-radius: var(--ui-radius-xs); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .nav:hover { background: var(--ui-color-surface); color: var(--ui-color-text); }
+    .nav:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .nav:active { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .mcell { border: none; background: transparent; color: var(--ui-color-text); font: inherit;
       font-size: var(--ui-font-size-sm); padding: 10px 0; border-radius: var(--ui-radius-xs); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .mcell:hover { background: var(--ui-color-surface); }
+    .mcell:hover { background: var(--ui-color-elevated-hover); }
     .mcell:active { transform: scale(var(--ui-scale-press)); }
     .mcell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .mcell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
@@ -147,7 +147,7 @@ function iso(y: number, m: number, d: number): string {
       border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .cell.empty { background: none; cursor: default; }
-    .cell:not(.empty):hover { background: var(--ui-color-surface); }
+    .cell:not(.empty):hover { background: var(--ui-color-elevated-hover); }
     .cell:not(.empty):active { transform: scale(var(--ui-scale-press)); }
     .cell.today { box-shadow: inset 0 0 0 1px var(--ui-color-border); }
     .cell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }

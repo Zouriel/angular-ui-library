@@ -52,7 +52,7 @@ export interface UiBottomNavItem {
     /* Flex so a drawn icon sits on the text baseline the same way a glyph did. */
     .icon { position: relative; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
     .badge { position: absolute; top: -4px; right: -8px; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box;
-      background: var(--ui-color-danger); color: #fff; border-radius: 999px; font-size: 9px; line-height: 14px; text-align: center; }
+      background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-radius: 999px; font-size: 9px; line-height: 14px; text-align: center; }
     .label { font-size: 11px; }
   `,
 })

@@ -20,11 +20,11 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, i
   styles: `
     :host { position: fixed; inset: 0; pointer-events: none; z-index: var(--ui-z-toast, 1200); }
     .dot, .ring { position: fixed; top: 0; left: 0; pointer-events: none; will-change: transform, width, height, opacity; mix-blend-mode: difference; }
-    .dot { width: 6px; height: 6px; border-radius: 9999px; background: #fff; transform: translate3d(-100px,-100px,0); transition: opacity .25s ease; }
-    .ring { width: 38px; height: 38px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.85);
+    .dot { width: 6px; height: 6px; border-radius: 9999px; background: var(--ui-cursor-color); transform: translate3d(-100px,-100px,0); transition: opacity .25s ease; }
+    .ring { width: 38px; height: 38px; border-radius: 9999px; border: 1px solid color-mix(in srgb, var(--ui-cursor-color) 85%, transparent);
       transform: translate3d(-100px,-100px,0);
       transition: width .35s cubic-bezier(.16,1,.3,1), height .35s cubic-bezier(.16,1,.3,1), border-color .25s ease, background .25s ease, opacity .25s ease; }
-    :host(.hover) .ring { width: 64px; height: 64px; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.95); }
+    :host(.hover) .ring { width: 64px; height: 64px; background: color-mix(in srgb, var(--ui-cursor-color) 6%, transparent); border-color: color-mix(in srgb, var(--ui-cursor-color) 95%, transparent); }
     :host(.down) .ring { width: 28px; height: 28px; }
     :host(.out) .dot, :host(.out) .ring { opacity: 0; }
     @media (pointer: coarse) { :host { display: none; } }

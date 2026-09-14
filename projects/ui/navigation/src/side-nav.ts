@@ -56,7 +56,7 @@ export interface UiSideNavGroup {
       padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: var(--ui-radius);
       color: var(--ui-color-text-muted); font: inherit; font-size: var(--ui-font-size-sm); text-align: left; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
-    .item:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .item:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .item.active { background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); color: var(--ui-color-text); font-weight: 600; }
     .item.active:hover:not(:disabled) {
       /* Redeclared, not inherited — .item:hover:not(:disabled) above has higher specificity

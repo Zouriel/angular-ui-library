@@ -17,7 +17,7 @@ import { Component, input } from '@angular/core';
     .sl { display: inline-flex; align-items: center; gap: 0.75rem;
       font-family: var(--ui-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4em;
       color: var(--ui-color-text-muted); }
-    .br { color: color-mix(in srgb, var(--ui-color-danger) 80%, transparent); }
+    .br { color: var(--ui-section-label-bracket); }
     .idx { color: var(--ui-color-text); }
     .dot { opacity: 0.4; }
     .label { color: var(--ui-color-text); }

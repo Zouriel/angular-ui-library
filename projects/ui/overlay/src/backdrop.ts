@@ -15,7 +15,7 @@ import { Component, input, output } from '@angular/core';
       animate.leave="ui-backdrop-leave"></div>
   `,
   styles: `
-    .ui-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: rgba(0, 0, 0, 0.55); }
+    .ui-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .ui-backdrop.blur { backdrop-filter: blur(3px); }
   `,
 })

@@ -18,7 +18,7 @@ import { UI_CONFIG } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .ci { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; min-height: var(--ui-size-md);
-      padding: 3px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border);
+      padding: 3px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); cursor: text;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ci:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }

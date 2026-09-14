@@ -32,7 +32,7 @@ export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
       border-radius: var(--ui-radius); padding: 2px; font-family: var(--ui-font-default); }
     .top { padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: 5px; cursor: pointer;
       color: var(--ui-color-text); font: inherit; font-size: var(--ui-font-size-sm); }
-    .top:hover, .top.open { background: var(--ui-color-surface-raised); }
+    .top:hover, .top.open { background: var(--ui-color-surface-hover); }
     .top:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .panel { display: flex; flex-direction: column; min-width: 160px; margin-top: 4px; padding: var(--ui-space-1);
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);

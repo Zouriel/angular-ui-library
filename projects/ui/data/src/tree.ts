@@ -39,7 +39,7 @@ export interface UiTreeNode {
     .tree { font-family: var(--ui-font-default); }
     .row { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-1) var(--ui-space-2);
       cursor: pointer; border-radius: var(--ui-radius-xs); color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
-    .row:hover { background: var(--ui-color-surface-raised); }
+    .row:hover { background: var(--ui-color-surface-hover); }
     .row.selected { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
     .chev { width: 18px; height: 18px; flex: none; border: none; background: none; color: var(--ui-color-text-muted); cursor: pointer;
       border-radius: var(--ui-radius-xs); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); transform: rotate(0deg); }

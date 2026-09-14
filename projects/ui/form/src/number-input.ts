@@ -27,7 +27,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .wrap { position: relative; display: flex; align-items: stretch;
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .wrap.no-radius { border-radius: 0; }
@@ -44,7 +44,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .steppers { display: flex; flex-direction: column; border-left: 1px solid var(--ui-color-border); }
     .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-size: 8px; padding: 0; }
     .steppers button:first-child { border-bottom: 1px solid var(--ui-color-border); }
-    .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .steppers button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiNumberInput), multi: true }],

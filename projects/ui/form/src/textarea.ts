@@ -25,7 +25,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       width: 100%; box-sizing: border-box; resize: vertical;
       padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.5;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }

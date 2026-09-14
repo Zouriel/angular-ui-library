@@ -21,12 +21,12 @@ import { UI_CONFIG } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .cp { display: flex; align-items: center; gap: var(--ui-space-2); }
-    .well { width: var(--ui-size-md); height: var(--ui-size-md); border-radius: var(--ui-radius); border: 1px solid var(--ui-color-border); overflow: hidden; cursor: pointer; flex: none; }
+    .well { width: var(--ui-size-md); height: var(--ui-size-md); border-radius: var(--ui-radius); border: 1px solid var(--ui-control-border); overflow: hidden; cursor: pointer; flex: none; }
     .cp.no-radius .well, .cp.no-radius .hex { border-radius: 0; }
     .well:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
     .well input { opacity: 0; width: 100%; height: 100%; cursor: pointer; }
     .hex { width: 92px; height: var(--ui-size-md); padding: 0 var(--ui-space-2); background: var(--ui-color-surface);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); color: var(--ui-color-text);
       font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .hex:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
@@ -40,9 +40,9 @@ import { UI_CONFIG } from '@zouriel/ui';
 export class UiColorPicker implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   radius = input<boolean>(this.config.radius);
-  swatches = input<string[]>(['#3d5afe', '#2faa6e', '#d9a521', '#e5484d', '#8a8f98', '#e8eaed']);
+  swatches = input<string[]>(['#1b3d59', '#6a97c0', '#b3d5f1', '#f3eed8', '#2e6b50', '#a83a3f']);
 
-  protected readonly value = signal('#3d5afe');
+  protected readonly value = signal('#1b3d59');
   protected readonly disabled = signal(false);
   private onChange: (v: string) => void = () => {};
   protected onTouched: () => void = () => {};

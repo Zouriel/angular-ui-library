@@ -17,9 +17,9 @@ import { Component, input } from '@angular/core';
       display: block;
       background: linear-gradient(
         90deg,
-        var(--ui-color-surface) 25%,
-        var(--ui-color-surface-raised) 37%,
-        var(--ui-color-surface) 63%
+        var(--ui-skeleton-base) 25%,
+        var(--ui-skeleton-highlight) 37%,
+        var(--ui-skeleton-base) 63%
       );
       background-size: 400% 100%;
       border-radius: var(--ui-radius);

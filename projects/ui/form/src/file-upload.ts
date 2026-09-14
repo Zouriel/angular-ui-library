@@ -26,7 +26,7 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
     :host { display: block; }
     .dz { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-1);
       padding: var(--ui-space-6) var(--ui-space-4); text-align: center; cursor: pointer;
-      border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
+      border: 1px dashed var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
       font-family: var(--ui-font-default); transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard); }
     .dz.no-radius { border-radius: 0; }
     .dz:hover, .dz.over { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 8%, var(--ui-color-surface)); }

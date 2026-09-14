@@ -35,7 +35,7 @@ export type UiDateRange = { start: string | null; end: string | null };
     .month { font-weight: 600; font-size: var(--ui-font-size-sm); }
     .nav { width: 26px; height: 26px; border: none; background: transparent; color: var(--ui-color-text-muted); border-radius: var(--ui-radius-xs); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .nav:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .nav:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .nav:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -44,7 +44,7 @@ export type UiDateRange = { start: string | null; end: string | null };
     .cell { aspect-ratio: 1; border: none; background: transparent; color: var(--ui-color-text); border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .cell.empty { cursor: default; }
-    .cell:not(.empty):hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .cell:not(.empty):hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .cell:not(.empty):active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .cell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .cell:disabled:not(.empty) { opacity: 0.4; cursor: not-allowed; }

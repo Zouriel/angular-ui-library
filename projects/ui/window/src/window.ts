@@ -71,9 +71,9 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
     .ctl { width: 26px; height: 24px; border: none; background: transparent; color: var(--ui-color-text-muted);
       border-radius: var(--ui-radius-xs); cursor: pointer; font-size: 12px; line-height: 1;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .ctl:hover { background: var(--ui-color-surface); color: var(--ui-color-text); }
+    .ctl:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .ctl:active { transform: scale(var(--ui-scale-press)); }
-    .ctl.close:hover { background: var(--ui-color-danger); color: #fff; }
+    .ctl.close:hover { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); }
     .ctl:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .body { flex: 1; overflow: auto; padding: var(--ui-space-4); }
     .rz { position: absolute; z-index: 3; touch-action: none; }

@@ -38,7 +38,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .content { flex: 1; min-width: 0; }
     .title { display: block; margin-bottom: 2px; letter-spacing: var(--ui-tracking-tight); }
     .body { color: var(--ui-color-text-muted); }
-    .ui-alert[data-tone="info"]    { border-left-color: var(--ui-color-primary); }
+    .ui-alert[data-tone="info"]    { border-left-color: var(--ui-color-info); }
     .ui-alert[data-tone="success"] { border-left-color: var(--ui-color-success); }
     .ui-alert[data-tone="warning"] { border-left-color: var(--ui-color-warning); }
     .ui-alert[data-tone="danger"]  { border-left-color: var(--ui-color-danger); }

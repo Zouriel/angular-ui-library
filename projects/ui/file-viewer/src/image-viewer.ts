@@ -106,7 +106,7 @@ const MAX_ZOOM = 6;
     .bar button.step { font-size: var(--ui-font-size-lg); }
     .bar button.step:first-child { margin-right: auto; }
     .bar button.step:last-child { margin-left: auto; }
-    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .bar button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .bar button:disabled { opacity: 0.45; cursor: default; }
     .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

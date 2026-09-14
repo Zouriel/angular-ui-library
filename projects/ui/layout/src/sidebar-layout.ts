@@ -73,7 +73,7 @@ import { isPlatformBrowser } from '@angular/common';
       border-radius: var(--ui-radius); cursor: pointer; flex: none;
     }
     .burger span { display: block; height: 2px; border-radius: 2px; background: var(--ui-color-text); transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); }
-    .burger:hover { background: var(--ui-color-surface-raised); }
+    .burger:hover { background: var(--ui-color-surface-hover); }
     .burger:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 
     /* Compact mode — toggled by the matchMedia-driven host class. */
@@ -88,7 +88,7 @@ import { isPlatformBrowser } from '@angular/common';
     :host(.ui-compact.ui-open) .sidebar { transform: translateX(0); box-shadow: var(--ui-shadow-2); }
     :host(.ui-compact.ui-open) .backdrop {
       display: block; position: fixed; inset: 0; z-index: 20;
-      background: rgba(0, 0, 0, 0.55);
+      background: var(--ui-color-overlay);
     }
     :host(.ui-compact) .bar { padding: var(--ui-space-3) var(--ui-space-4); }
     :host(.ui-compact) .content { padding: var(--ui-shell-pad, var(--ui-space-4)); }

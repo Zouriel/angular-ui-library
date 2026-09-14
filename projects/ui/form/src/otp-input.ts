@@ -29,7 +29,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .ui-otp { display: inline-flex; gap: var(--ui-space-2); }
     .cell {
       width: var(--ui-size-md); height: var(--ui-size-lg); text-align: center;
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font-family: var(--ui-font-mono); font-size: var(--ui-font-size-lg); outline: none;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard), box-shadow var(--ui-motion-fast) var(--ui-ease-standard);

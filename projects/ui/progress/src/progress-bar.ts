@@ -23,7 +23,7 @@ import type { UiStatus } from '@zouriel/ui';
     :host { display: block; }
     .track {
       position: relative; height: 8px; width: 100%;
-      background: var(--ui-color-surface-raised);
+      background: var(--ui-color-track);
       border-radius: var(--ui-radius-pill); overflow: hidden;
     }
     .fill {

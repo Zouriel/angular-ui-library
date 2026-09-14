@@ -32,14 +32,14 @@ function fmt(s: number): string {
   `,
   styles: `
     :host { display: block; }
-    .vp { position: relative; background: #000; border-radius: var(--ui-radius-lg); overflow: hidden; }
+    .vp { position: relative; background: var(--ui-media-bg); border-radius: var(--ui-radius-lg); overflow: hidden; }
     video { display: block; width: 100%; max-height: 60vh; }
     .controls { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface); border-top: 1px solid var(--ui-color-border); }
     .ic { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: none; background: transparent; color: var(--ui-color-text); cursor: pointer; border-radius: var(--ui-radius);
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .ic::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
-    .ic:hover { background: var(--ui-color-surface-raised); }
+    .ic:hover { background: var(--ui-color-surface-hover); }
     .ic:active { transform: scale(var(--ui-scale-press)); }
     .ic:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .t { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 38px; text-align: center; }

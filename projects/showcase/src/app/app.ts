@@ -113,8 +113,8 @@ export class App {
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
   protected readonly THEMES = [
-    { value: 'dark', label: 'Dark' },
-    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Winter Dark' },
+    { value: 'light', label: 'Winter Light' },
     { value: 'darkOrange', label: 'Dark Orange ✦' },
     { value: 'lightOrange', label: 'Light Orange' },
     { value: 'lightPink', label: 'Light Pink' },

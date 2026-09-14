@@ -36,24 +36,24 @@ export interface UiCarouselSlide {
     .track { display: flex; transition: transform var(--ui-motion-slow) var(--ui-ease-standard); }
     .slide { position: relative; flex: 0 0 100%; }
     .slide img { width: 100%; height: 100%; max-height: 360px; object-fit: cover; display: block; }
-    .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-3); background: linear-gradient(transparent, rgba(0,0,0,0.6));
-      color: #fff; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
+    .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
+      color: var(--ui-media-on-scrim); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
     .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: var(--ui-size-touch); height: var(--ui-size-touch); border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      border: none; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer; font-size: 18px;
+      border: none; background: color-mix(in srgb, var(--ui-media-scrim) 45%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; font-size: 18px;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .arrow:hover { background: rgba(0,0,0,0.65); }
+    .arrow:hover { background: color-mix(in srgb, var(--ui-media-scrim) 65%, transparent); }
     .arrow:active { transform: translateY(-50%) scale(var(--ui-scale-press)); }
     .arrow:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .prev { left: var(--ui-space-2); } .next { right: var(--ui-space-2); }
     .dots { position: absolute; bottom: var(--ui-space-2); left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
-    .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; border: none; background: rgba(255,255,255,0.5); cursor: pointer; padding: 0;
+    .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; border: none; background: color-mix(in srgb, var(--ui-media-on-scrim) 50%, transparent); cursor: pointer; padding: 0;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .dot::before { content: ''; position: absolute; inset: -12px; }
-    .dot:hover { background: rgba(255,255,255,0.75); }
+    .dot:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 75%, transparent); }
     .dot:active { transform: scale(var(--ui-scale-press)); }
     .dot:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .dot.active { background: #fff; }
+    .dot.active { background: var(--ui-media-on-scrim); }
   `,
 })
 export class UiCarousel implements OnInit, OnDestroy {

@@ -4,8 +4,9 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 /**
  * Built-in theme names.
  *
- * - `dark` (default) and `light` are the neutral professional base palettes
- *   (defined in `ui/styles/tokens.css`).
+ * - `dark` (default) and `light` are the Winter colour system (defined in
+ *   `ui/styles/tokens.css`), also reachable by their explicit names
+ *   `winterDark` and `winterLight`. See `ui/styles/COLOR-SYSTEM.md`.
  * - The professional accent palettes — `lightOrange`, `lightPink`, `darkPink`,
  *   `goldBlack`, `goldRed`, `lightTeal`, `darkTeal`, `lightPurple`,
  *   `darkPurple`, `lightPurpleGold` — are colours-only skins in
@@ -21,6 +22,8 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 export type UiTheme =
   | 'dark'
   | 'light'
+  | 'winterDark'
+  | 'winterLight'
   | 'darkOrange'
   | 'lightOrange'
   | 'lightPink'
@@ -43,7 +46,7 @@ export type UiTheme =
 export class UiThemeService {
   private readonly doc = inject(DOCUMENT);
 
-  /** Current global theme. Defaults to dark (the library's base palette). */
+  /** Current global theme. Defaults to dark (Winter Dark, the library's base palette). */
   readonly theme = signal<UiTheme>('dark');
 
   constructor() {
@@ -60,7 +63,12 @@ export class UiThemeService {
     this.theme.set(theme);
   }
 
+  /** Flips between the light and dark Winter themes, keeping whichever naming the app uses. */
   toggle(): void {
-    this.theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
+    this.theme.update((t) => {
+      if (t === 'winterDark') return 'winterLight';
+      if (t === 'winterLight') return 'winterDark';
+      return t === 'dark' ? 'light' : 'dark';
+    });
   }
 }

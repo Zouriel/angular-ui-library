@@ -42,7 +42,7 @@ import type { UiButtonVariant } from './button';
       position: absolute;
       inset: calc((var(--ui-size-md) - var(--ui-size-touch)) / 2);
     }
-    .ui-icon-btn:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .ui-icon-btn:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .ui-icon-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-icon-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -55,8 +55,8 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn[data-size="lg"]::before { inset: calc((var(--ui-size-lg) - var(--ui-size-touch)) / 2); }
     .ui-icon-btn[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }
-    .ui-icon-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-primary-contrast); border-color: transparent; }
-    .ui-icon-btn[data-variant="destructive"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-danger) 88%, var(--ui-color-primary-contrast)); }
+    .ui-icon-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
+    .ui-icon-btn[data-variant="destructive"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
     .ui-icon-btn[data-variant="ghost"] { background: transparent; border-color: transparent; }
     ::ng-content svg, ::slotted(svg) { width: 1.15em; height: 1.15em; }
   `,

@@ -93,7 +93,7 @@ export class UiToastService {
       border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
     }
-    .toast[data-tone="info"]    { border-left-color: var(--ui-color-primary); }
+    .toast[data-tone="info"]    { border-left-color: var(--ui-color-info); }
     .toast[data-tone="success"] { border-left-color: var(--ui-color-success); }
     .toast[data-tone="warning"] { border-left-color: var(--ui-color-warning); }
     .toast[data-tone="danger"]  { border-left-color: var(--ui-color-danger); }
@@ -107,7 +107,7 @@ export class UiToastService {
       color: var(--ui-color-text-muted); cursor: pointer; font-size: 18px; line-height: 1;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .x:hover { background: var(--ui-color-surface); color: var(--ui-color-text); }
+    .x:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .x:active { transform: scale(var(--ui-scale-press)); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,

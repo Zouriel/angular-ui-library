@@ -38,14 +38,14 @@ import {
     .bar button { position: relative; width: var(--ui-size-sm); height: var(--ui-size-sm); border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard), opacity var(--ui-motion-base) var(--ui-ease-standard); }
     .bar button::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); }
-    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .bar button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .bar button:disabled { opacity: 0.5; cursor: not-allowed; }
     .spacer { flex: 1; }
     .pg, .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .stage { flex: 1; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: var(--ui-space-3); background: var(--ui-color-bg); }
-    canvas { box-shadow: var(--ui-shadow-2); background: #fff; }
+    canvas { box-shadow: var(--ui-shadow-2); background: var(--ui-pdf-page-bg); }
     canvas.hidden { display: none; }
     .msg { padding: var(--ui-space-4); color: var(--ui-color-text-muted); font-family: var(--ui-font-default); }
     .msg.err { color: var(--ui-color-danger); }

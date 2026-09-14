@@ -45,14 +45,14 @@ export interface UiFileNode {
       background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); }
     .crumb { background: none; border: none; color: var(--ui-color-text-muted); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm); padding: 2px 4px; border-radius: var(--ui-radius-xs);
       transition: background var(--ui-motion-base) var(--ui-ease-standard), color var(--ui-motion-base) var(--ui-ease-standard); }
-    .crumb:hover { color: var(--ui-color-text); background: var(--ui-color-surface); }
+    .crumb:hover { color: var(--ui-color-text); background: var(--ui-color-elevated-hover); }
     .crumb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .sep { color: var(--ui-color-text-muted); }
     .list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 280px; overflow: auto; }
     .row { display: flex; align-items: center; gap: var(--ui-space-2); width: 100%; padding: var(--ui-space-2) var(--ui-space-3);
       background: none; border: none; border-radius: var(--ui-radius); cursor: pointer; color: var(--ui-color-text); font: inherit; text-align: left;
       transition: background var(--ui-motion-base) var(--ui-ease-standard); }
-    .row:hover { background: var(--ui-color-surface-raised); }
+    .row:hover { background: var(--ui-color-surface-hover); }
     .row:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .icon { font-size: 15px; }
     .name { flex: 1; font-size: var(--ui-font-size-md); }

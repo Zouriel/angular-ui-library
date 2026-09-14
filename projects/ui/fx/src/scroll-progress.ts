@@ -6,7 +6,7 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, i
   selector: 'ui-scroll-progress',
   template: `<div #bar class="bar" aria-hidden="true"></div>`,
   styles: `
-    :host { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: var(--ui-z-overlay, 1000); pointer-events: none; background: rgba(255,255,255,0.05); }
+    :host { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: var(--ui-z-overlay, 1000); pointer-events: none; background: var(--ui-scroll-progress-track); }
     .bar { height: 100%; width: 0%;
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
       box-shadow: var(--ui-glow-amber, 0 0 12px color-mix(in srgb, var(--ui-color-primary) 60%, transparent));

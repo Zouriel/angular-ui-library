@@ -28,7 +28,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       transition: background var(--ui-motion-base) var(--ui-ease-standard), border-color var(--ui-motion-base) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .ui-toggle:hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .ui-toggle:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .ui-toggle:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-toggle.pressed { background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent); border-color: var(--ui-color-primary); color: var(--ui-color-text); }
     /* Redeclared, not inherited — .ui-toggle:hover:not(:disabled) above has higher specificity

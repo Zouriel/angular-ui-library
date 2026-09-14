@@ -42,7 +42,7 @@ let drawerSeq = 0;
     }
   `,
   styles: `
-    .backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: rgba(0,0,0,0.55); }
+    .backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .panel {
       position: fixed; z-index: var(--ui-z-overlay);
       display: flex; flex-direction: column;
@@ -66,7 +66,7 @@ let drawerSeq = 0;
       color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .x:hover { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .x:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .x:active { transform: scale(var(--ui-scale-press)); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
   `,

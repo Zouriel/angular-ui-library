@@ -31,7 +31,7 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
     .month { font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .nav { width: 26px; height: 26px; border: none; background: transparent; color: var(--ui-color-text-muted); border-radius: var(--ui-radius-xs); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .nav:hover:not(:disabled) { background: var(--ui-color-surface-raised); color: var(--ui-color-text); }
+    .nav:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .nav:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -40,7 +40,7 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
     .cell { aspect-ratio: 1; border: none; background: transparent; color: var(--ui-color-text); border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .cell.empty { cursor: default; }
-    .cell:not(.empty):hover:not(:disabled) { background: var(--ui-color-surface-raised); }
+    .cell:not(.empty):hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .cell:not(.empty):active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .cell.today { box-shadow: inset 0 0 0 1px var(--ui-color-border); }
     .cell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }

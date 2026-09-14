@@ -37,14 +37,14 @@ export interface UiGalleryImage {
     .thumb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .lb { position: fixed; inset: 0; z-index: var(--ui-z-overlay); display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.85); }
+      background: color-mix(in srgb, var(--ui-media-scrim) 85%, transparent); }
     .lb > img { max-width: 86vw; max-height: 86vh; border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-2); }
-    .nav, .x { position: absolute; border: none; background: rgba(255,255,255,0.12); color: #fff; cursor: pointer; border-radius: 50%;
+    .nav, .x { position: absolute; border: none; background: color-mix(in srgb, var(--ui-media-on-scrim) 12%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; border-radius: 50%;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .nav { top: 50%; transform: translateY(-50%); width: 44px; height: 44px; font-size: 22px; display: flex; align-items: center; justify-content: center; }
     .prev { left: var(--ui-space-4); } .next { right: var(--ui-space-4); }
     .x { top: var(--ui-space-4); right: var(--ui-space-4); width: var(--ui-size-touch); height: var(--ui-size-touch); font-size: 16px; display: flex; align-items: center; justify-content: center; }
-    .nav:hover, .x:hover { background: rgba(255,255,255,0.25); }
+    .nav:hover, .x:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 25%, transparent); }
     .nav:active { transform: translateY(-50%) scale(var(--ui-scale-press)); }
     .x:active { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible, .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
