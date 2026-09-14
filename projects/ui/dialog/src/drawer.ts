@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { DOCUMENT } from '@angular/common';
-import { Component, computed, effect, inject, input, model } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { Component, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
 export type UiDrawerSide = 'left' | 'right' | 'top' | 'bottom';
@@ -16,6 +16,7 @@ let drawerSeq = 0;
   imports: [CdkTrapFocus],
   template: `
     @if (open()) {
+      <div #layer class="ui-layer">
       <div class="backdrop" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave" (click)="onBackdrop()"></div>
       <div
         class="panel"
@@ -39,9 +40,11 @@ let drawerSeq = 0;
         }
         <div class="bd"><ng-content /></div>
       </div>
+      </div>
     }
   `,
   styles: `
+    .ui-layer { display: contents; }
     .backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .panel {
       position: fixed; z-index: var(--ui-z-overlay);
@@ -92,7 +95,20 @@ export class UiDrawer {
     }
   });
 
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
+
   constructor() {
+    // Opens on its own layer at the end of <body>. Rendered where it is declared, a dialog inside a
+    // sticky bar, a card or anything with a transform or backdrop-filter is positioned against that
+    // box instead of the screen and comes out clipped or squashed. Angular still removes the layer
+    // when it closes, wherever it lives.
+    effect(() => {
+      const el = this.layer()?.nativeElement;
+      if (!this.browser || !el || el.parentNode === this.doc.body) return;
+      this.doc.body.appendChild(el);
+    });
+
     effect(() => {
       const body = this.doc.body;
       if (body) body.style.overflow = this.open() ? 'hidden' : '';
