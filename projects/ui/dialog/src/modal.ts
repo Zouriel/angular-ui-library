@@ -1,7 +1,8 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, ElementRef, PLATFORM_ID, effect, inject, input, model, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, effect, inject, input, model, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
+import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 let modalSeq = 0;
 
@@ -110,21 +111,45 @@ export class UiModal {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
 
+  /** The layer this instance last moved to <body>; kept after close so destroy can still find it. */
+  private moved: HTMLElement | null = null;
+  /** Whether this instance holds one of the document's body-scroll locks. */
+  private locked = false;
+
   constructor() {
     // Opens on its own layer at the end of <body>. Rendered where it is declared, a dialog inside a
     // sticky bar, a card or anything with a transform or backdrop-filter is positioned against that
     // box instead of the screen and comes out clipped or squashed. Angular still removes the layer
-    // when it closes, wherever it lives.
+    // when it closes, wherever it lives (after the leave animations), but NOT when the owner is
+    // destroyed while open: see the onDestroy below.
     effect(() => {
       const el = this.layer()?.nativeElement;
       if (!this.browser || !el || el.parentNode === this.doc.body) return;
       this.doc.body.appendChild(el);
+      this.moved = el;
     });
 
     effect(() => {
-      const body = this.doc.body;
-      if (!body) return;
-      body.style.overflow = this.open() ? 'hidden' : '';
+      const open = this.open();
+      if (!this.browser) return;
+      if (open && !this.locked) {
+        lockBodyScroll(this.doc);
+        this.locked = true;
+      } else if (!open && this.locked) {
+        unlockBodyScroll(this.doc);
+        this.locked = false;
+      }
+    });
+
+    // Navigating away with the dialog open destroys the owner, and Angular removes only the host
+    // element — the layer is not inside it any more. Take the layer down and give scroll back.
+    inject(DestroyRef).onDestroy(() => {
+      detachLayer(this.moved, this.doc);
+      this.moved = null;
+      if (this.locked) {
+        unlockBodyScroll(this.doc);
+        this.locked = false;
+      }
     });
   }
 
