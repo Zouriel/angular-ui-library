@@ -224,8 +224,10 @@
   --ui-color-bg: var(--ui-winter-night-1000);
   --ui-color-surface: var(--ui-winter-night-900);
   --ui-color-surface-raised: var(--ui-winter-night-850);
-  --ui-color-text: var(--ui-winter-blue-100);
-  --ui-color-text-muted: #9dbad3;
+  /* A soft, slightly grey blue rather than Avalanche itself: on a black ground the brighter blue
+     glares. 12.5:1 on the ground, 10.7:1 on raised surfaces. */
+  --ui-color-text: #b3cbdc;
+  --ui-color-text-muted: #8aa4b8;
   --ui-color-border: var(--ui-winter-night-700);
   --ui-color-primary: var(--ui-winter-blue-400);
   --ui-color-primary-hover: var(--ui-winter-blue-300);
@@ -242,7 +244,7 @@
   --ui-color-surface-subtle: var(--ui-winter-night-950);
   --ui-color-surface-hover: var(--ui-winter-night-800);
   --ui-color-elevated-hover: var(--ui-winter-night-800);
-  --ui-color-text-secondary: var(--ui-winter-blue-300);
+  --ui-color-text-secondary: #a6c0d3;
   --ui-color-text-disabled: var(--ui-winter-slate-600);
   --ui-color-text-inverse: var(--ui-winter-pine-950);
   --ui-color-border-subtle: var(--ui-winter-night-800);
