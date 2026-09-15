@@ -1,12 +1,18 @@
 import {
   Component, ElementRef, contentChildren, effect, inject, input, model, signal,
 } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import type { IconSvgObject } from '@hugeicons/angular';
 
 let tabSeq = 0;
 
 /**
  * `ui-tab` — a single tab + its panel. Provide a `label` and project the panel
  * content. Inactive panels stay in the DOM but are hidden (`[hidden]`).
+ *
+ * An optional HugeIcons `icon` draws before the label. With `iconOnly` the label is not shown, but it
+ * is still the tab's accessible name and its tooltip, so a screen reader and a hovering mouse both get
+ * the words the icon stands for.
  */
 @Component({
   selector: 'ui-tab',
@@ -25,6 +31,10 @@ let tabSeq = 0;
 export class UiTab {
   label = input.required<string>();
   disabled = input(false);
+  /** A HugeIcons icon drawn before the label. */
+  icon = input<IconSvgObject | undefined>(undefined);
+  /** Show only the icon. The label stays as the accessible name and the tooltip. */
+  iconOnly = input(false);
   readonly active = signal(false);
   readonly tabId = `ui-tab-${tabSeq}`;
   readonly panelId = `ui-tabpanel-${tabSeq++}`;
@@ -36,6 +46,7 @@ export class UiTab {
  */
 @Component({
   selector: 'ui-tabs',
+  imports: [HugeiconsIconComponent],
   template: `
     <div class="tablist" role="tablist" [attr.aria-label]="label()">
       @for (tab of tabs(); track tab.tabId; let i = $index) {
@@ -48,9 +59,17 @@ export class UiTab {
           [attr.aria-selected]="selectedIndex() === i"
           [attr.tabindex]="selectedIndex() === i ? 0 : -1"
           [disabled]="tab.disabled()"
+          [class.tab--icon]="tab.iconOnly() && !!tab.icon()"
+          [attr.aria-label]="tab.iconOnly() && tab.icon() ? tab.label() : null"
+          [attr.title]="tab.iconOnly() && tab.icon() ? tab.label() : null"
           (click)="select(i)"
           (keydown)="onKeydown($event, i)">
-          {{ tab.label() }}
+          @if (tab.icon(); as icon) {
+            <hugeicons-icon class="tab__icon" aria-hidden="true" [icon]="icon" [size]="tab.iconOnly() ? 22 : 18" [strokeWidth]="1.8" />
+          }
+          @if (!tab.iconOnly() || !tab.icon()) {
+            <span class="tab__label">{{ tab.label() }}</span>
+          }
         </button>
       }
     </div>
@@ -87,6 +106,10 @@ export class UiTab {
                   border-color var(--ui-motion-base) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
+    .tab { display: inline-flex; align-items: center; gap: var(--ui-space-2); }
+    .tab__icon { display: inline-flex; flex: none; }
+    /* Icon-only tabs share the strip evenly and keep a thumb-sized target. */
+    .tab--icon { flex: 1 1 0; justify-content: center; min-width: var(--ui-size-touch, 44px); padding-block: var(--ui-space-3); }
     .tab:hover:not(:disabled) { color: var(--ui-color-text); }
     .tab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .tab[aria-selected="true"] { color: var(--ui-color-text); border-bottom-color: var(--ui-color-primary); }
