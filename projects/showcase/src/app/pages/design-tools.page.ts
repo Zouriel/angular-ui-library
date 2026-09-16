@@ -2,7 +2,7 @@ import { Component, computed, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiTransformBox, UiSnapGuides, uiSnap, uiRotatedBounds, type UiBox, type UiGuide } from '@zouriel/ui/canvas';
-import { UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
+import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
 import { UiTokenInput, UiNumberInput, type UiTokenRun } from '@zouriel/ui/form';
 import { UiMeter } from '@zouriel/ui/progress';
 import { UiDeviceFrame } from '@zouriel/ui/media';
@@ -13,7 +13,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-design-tools',
   imports: [
-    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiSequencer, UiTokenInput, UiNumberInput, UiMeter, UiDeviceFrame,
+    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiMeter, UiDeviceFrame,
     UiResizeHandle, UiButton, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -50,6 +50,16 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
               (muteToggle)="toggle($event, 'muted')" (lockToggle)="toggle($event, 'locked')" />
           </div>
           <p class="note">Playhead: {{ playhead() | number: '1.0-0' }}</p>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi"
+        summary="The phone answer to a timeline ruler: the strip slides under a playhead fixed at its centre, so the finger drags content rather than a tiny handle. Flicks glide, two fingers pinch to zoom, and it is a keyboard slider too. Built on touch events, so a sideways drag works on a phone.">
+        <doc-demo code="<ui-scrubber [length]=&quot;3376&quot; [markers]=&quot;markers&quot; [ticks]=&quot;ticks&quot; [(value)]=&quot;at&quot; [(zoom)]=&quot;zoom&quot; />">
+          <div class="scrub-demo">
+            <ui-scrubber [length]="3376" [markers]="scrubMarkers" [ticks]="scrubTicks" [(value)]="scrubAt" [(zoom)]="scrubZoom" label="Scroll position" />
+            <span class="mono">{{ scrubAt() | number: '1.0-0' }} · zoom {{ scrubZoom() | number: '1.2-2' }}</span>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -114,6 +124,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     </doc-page>
   `,
   styles: `
+    .scrub-demo { display: grid; gap: 8px; max-width: 420px; }
+    .scrub-demo .mono { font: var(--ui-font-size-sm) var(--ui-font-mono); color: var(--ui-color-text-muted); }
     .stage { position: relative; height: 320px; border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle);
       background-image: radial-gradient(var(--ui-color-border) 1px, transparent 1px); background-size: 20px 20px; overflow: hidden; }
     .thing { position: absolute; border-radius: var(--ui-radius-sm); background: var(--ui-color-surface-raised); border: 1px dashed var(--ui-color-border-strong); }
@@ -229,6 +241,20 @@ export class DesignToolsPage {
     { name: '(keyframeChange)', type: '{ rowId, keyframeId, at, final }', default: '', desc: 'Diamond retimed.' },
     { name: '(keyframeDelete) / (keyframeMenu)', type: 'event', default: '', desc: 'Delete key / right-click or the context-menu key.' },
     { name: '(rowReorder) / (muteToggle) / (lockToggle) / (scrub)', type: 'event', default: '', desc: 'Row grip drop, eye and lock buttons, playhead released.' },
+  ];
+  protected readonly scrubAt = signal(600);
+  protected readonly scrubZoom = signal(0.25);
+  protected readonly scrubMarkers = [{ at: 0, label: 'Screen 1' }, { at: 844, label: 'Screen 2' }, { at: 1688, label: 'Screen 3' }, { at: 2532, label: 'Screen 4' }];
+  protected readonly scrubTicks = [{ at: 400 }, { at: 900 }, { at: 1800, active: true }];
+  protected readonly scrubberApi: ApiRow[] = [
+    { name: 'length', type: 'number', default: '100', desc: 'Length in units.' },
+    { name: 'value', type: 'number (model)', default: '0', desc: 'Position under the playhead — [(value)].' },
+    { name: 'zoom', type: 'number (model)', default: '0.25', desc: 'Pixels per unit; a pinch changes it — [(zoom)].' },
+    { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Labelled segments along the strip.' },
+    { name: 'ticks', type: '{ at, active? }[]', default: '[]', desc: 'Points of interest, e.g. keyframes.' },
+    { name: 'label / valueText', type: 'string', default: "'Position' / ''", desc: 'Slider name and spoken value.' },
+    { name: 'minZoom / maxZoom', type: 'number', default: '0.02 / 4', desc: 'Pinch limits.' },
+    { name: '(settle)', type: 'number', default: '—', desc: 'Once, when a drag, glide, wheel or key change comes to rest.' },
   ];
   protected readonly tokenApi: ApiRow[] = [
     { name: 'ngModel', type: 'UiTokenRun[]', default: '[]', desc: '{ text } or { token }, each optionally bold / italic.' },
