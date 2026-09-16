@@ -8,11 +8,19 @@ export interface UiToastOptions {
   tone?: UiToastTone;
   /** Auto-dismiss after ms. Pass 0 to keep until dismissed. Default 4000. */
   duration?: number;
+  /** One button in the toast, e.g. Undo. Running it dismisses the toast. */
+  action?: UiToastAction;
 }
 
-export interface UiToast extends Required<Omit<UiToastOptions, 'title'>> {
+export interface UiToastAction {
+  label: string;
+  run: () => void;
+}
+
+export interface UiToast extends Required<Omit<UiToastOptions, 'title' | 'action'>> {
   id: number;
   title?: string;
+  action?: UiToastAction;
 }
 
 let toastSeq = 0;
@@ -33,6 +41,7 @@ export class UiToastService {
       title: opts.title,
       tone: opts.tone ?? 'info',
       duration: opts.duration ?? 4000,
+      action: opts.action,
     };
     this.toasts.update((list) => [...list, toast]);
     if (toast.duration > 0) {
@@ -45,6 +54,13 @@ export class UiToastService {
   success(message: string, title?: string) { return this.show({ message, title, tone: 'success' }); }
   warning(message: string, title?: string) { return this.show({ message, title, tone: 'warning' }); }
   danger(message: string, title?: string) { return this.show({ message, title, tone: 'danger' }); }
+
+  /** Runs a toast's action, then dismisses it. */
+  act(id: number): void {
+    const toast = this.toasts().find((t) => t.id === id);
+    this.dismiss(id);
+    toast?.action?.run();
+  }
 
   dismiss(id: number): void {
     this.toasts.update((list) => list.filter((t) => t.id !== id));
@@ -68,6 +84,9 @@ export class UiToastService {
             @if (t.title) { <strong class="title">{{ t.title }}</strong> }
             <span class="msg">{{ t.message }}</span>
           </div>
+          @if (t.action) {
+            <button class="act" type="button" (click)="toasts.act(t.id)">{{ t.action.label }}</button>
+          }
           <button class="x" type="button" aria-label="Dismiss" (click)="toasts.dismiss(t.id)">×</button>
         </div>
       }
@@ -100,6 +119,12 @@ export class UiToastService {
     .content { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .title { font-weight: 600; }
     .msg { color: var(--ui-color-text-muted); }
+    .act {
+      align-self: center; flex: none; padding: 4px 10px; border: 1px solid var(--ui-color-border-strong); border-radius: var(--ui-radius-sm);
+      background: transparent; color: var(--ui-color-text); font: 600 var(--ui-font-size-sm) var(--ui-font-default); cursor: pointer;
+    }
+    .act:hover { background: var(--ui-color-elevated-hover); }
+    .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .x {
       display: inline-flex; align-items: center; justify-content: center;
       padding: var(--ui-space-2); margin: calc(var(--ui-space-2) * -1);

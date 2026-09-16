@@ -96,8 +96,13 @@ export class UiTransformBox implements OnDestroy {
   private readonly zone = inject(NgZone);
 
   box = input.required<UiBox>();
-  /** Screen pixels per stage unit. */
+  /** Layout pixels per stage unit — how the box is sized inside its stage. */
   scale = input(1);
+  /**
+   * Screen pixels per stage unit, when the stage itself is visually scaled (e.g. inside a CSS
+   * transform). Pointer movement is divided by this. Defaults to `scale`.
+   */
+  pointerScale = input<number | null>(null);
   resizable = input(true);
   rotatable = input(true);
   /** Keep proportions on every resize, not only with Shift. */
@@ -143,7 +148,7 @@ export class UiTransformBox implements OnDestroy {
 
     const origin = { ...this.box() };
     const stage = (this.el.nativeElement.offsetParent as HTMLElement | null)?.getBoundingClientRect();
-    const scale = this.scale();
+    const scale = this.pointerScale() ?? this.scale();
     const centerX = (stage?.left ?? 0) + (origin.x + origin.w / 2) * scale;
     const centerY = (stage?.top ?? 0) + (origin.y + origin.h / 2) * scale;
 
@@ -162,7 +167,7 @@ export class UiTransformBox implements OnDestroy {
   private move(e: PointerEvent): void {
     const d = this.drag;
     if (!d || e.pointerId !== d.pointerId) return;
-    const scale = this.scale() || 1;
+    const scale = (this.pointerScale() ?? this.scale()) || 1;
     const dx = (e.clientX - d.startX) / scale;
     const dy = (e.clientY - d.startY) / scale;
     const o = d.origin;

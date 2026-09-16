@@ -74,7 +74,7 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
         <div class="corner">{{ title() }}</div>
         <div class="ruler" #ruler (pointerdown)="startPlayhead($event)">
           @for (m of markers(); track $index) {
-            <span class="marker" [style.left.%]="pct(m.at)"><span class="mlabel">{{ m.label }}</span></span>
+            <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)"><span class="mlabel">{{ m.label }}</span></span>
           }
           <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
             aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
@@ -148,6 +148,7 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
       border-bottom: 1px solid var(--ui-color-border); text-transform: uppercase; letter-spacing: .06em; font-size: 10.5px; }
     .ruler { position: sticky; top: 0; z-index: 3; background: var(--ui-color-surface-subtle); border-bottom: 1px solid var(--ui-color-border); cursor: ew-resize; }
     .marker { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--ui-color-border-strong); }
+    .marker.end .mlabel { left: auto; right: 4px; }
     .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; white-space: nowrap; color: var(--ui-color-text-muted); font-size: 10.5px; font-family: var(--ui-font-mono); }
     .playhead-knob { position: absolute; bottom: 0; width: 12px; height: 12px; margin-left: -6px; background: var(--ui-color-primary);
       clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); cursor: ew-resize; }
