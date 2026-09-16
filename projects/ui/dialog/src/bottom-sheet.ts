@@ -155,8 +155,10 @@ export class UiBottomSheet {
   private readonly viewport = signal(this.browser ? window.innerHeight : 800);
   /** How much of the layout viewport's bottom an on-screen keyboard covers. */
   private readonly keyboard = signal(0);
+  /** Distance from the layout viewport's bottom to the visible bottom while the keyboard is up. */
+  private readonly keyboardEdge = signal(0);
   /** Rests on the keyboard while it's up — the toolbar under it is hidden anyway — and on `offset` otherwise. */
-  protected readonly bottom = computed(() => (this.keyboard() > 0 ? this.keyboard() : this.offset()));
+  protected readonly bottom = computed(() => (this.keyboard() > 0 ? this.keyboardEdge() : this.offset()));
   /** The live height while a drag is in progress. */
   protected readonly dragHeight = signal<number | null>(null);
 
@@ -177,11 +179,20 @@ export class UiBottomSheet {
     if (this.browser) {
       const onResize = () => {
         const vv = window.visualViewport;
-        const visible = vv?.height ?? window.innerHeight;
-        const covered = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-        // Less than this is browser chrome settling, not a keyboard.
-        this.keyboard.set(covered > 120 ? Math.round(covered) : 0);
-        this.viewport.set(this.keyboard() > 0 ? window.innerHeight - this.keyboard() : visible);
+        if (!vv) {
+          this.keyboard.set(0);
+          this.viewport.set(window.innerHeight);
+          return;
+        }
+        // The keyboard is what the visual viewport lost, however the browser has panned it. Chrome on
+        // Android pans (offsetTop > 0) to bring the focused field into view; reading that pan as the
+        // keyboard closing dropped the sheet back behind it — seen on a real device, not in emulation.
+        const keyboardHeight = window.innerHeight - vv.height;
+        const open = keyboardHeight > 120; // less is browser chrome settling, not a keyboard
+        this.keyboard.set(open ? Math.round(keyboardHeight) : 0);
+        // Rest on the bottom of what's VISIBLE: the layout viewport's bottom less the keyboard, less any pan.
+        this.keyboardEdge.set(open ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0);
+        this.viewport.set(open ? vv.height : window.innerHeight);
       };
       onResize();
       window.addEventListener('resize', onResize);
