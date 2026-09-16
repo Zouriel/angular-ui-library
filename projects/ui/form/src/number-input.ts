@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
@@ -18,11 +18,12 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         [attr.placeholder]="placeholder()"
         [attr.aria-invalid]="invalid() || null"
         #inp
-        [value]="value()"
         [disabled]="disabled()"
         (input)="handleInput($event)"
+        (change)="settle()"
+        (keydown.enter)="settle()"
         [attr.aria-label]="ariaLabel() || label() || null"
-        (blur)="onTouched()" />
+        (blur)="settle(); onTouched()" />
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
       <div class="steppers">
@@ -109,10 +110,55 @@ export class UiNumberInput implements ControlValueAccessor {
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }
 
+  /**
+   * While typing, the field is left alone: clamping each keystroke made some numbers impossible to
+   * type — "18" in a field with a minimum of 4 became "48", because the "1" was raised to 4 before
+   * the "8" arrived. A value is passed on as soon as it's in range; out-of-range or half-typed input
+   * waits for Enter or leaving the field, which clamps and rounds it.
+   */
   protected handleInput(e: Event): void {
     const raw = (e.target as HTMLInputElement).value;
-    const v = raw === '' ? null : Number(raw);
-    this.commit(v);
+    if (raw === '' || raw === '-' || raw.endsWith('.')) return;
+    const v = Number(raw);
+    if (!Number.isFinite(v)) return;
+    const min = this.min(), max = this.max();
+    if ((min !== undefined && v < min) || (max !== undefined && v > max)) return;
+    const precision = this.precision();
+    const value = precision !== null ? Number(v.toFixed(precision)) : v;
+    this.typed = value;
+    this.onChange(value);
+  }
+
+  /** The last value passed on from typing, so the model echoing it back doesn't rewrite the text. */
+  private typed: number | null | undefined = undefined;
+
+  constructor() {
+    effect(() => {
+      const v = this.value();
+      const el = this.inp()?.nativeElement;
+      if (el) untracked(() => this.show(v, el));
+    });
+  }
+
+  /** Writes a value into the field — unless it's being typed and already says that. */
+  private show(v: number | null, el: HTMLInputElement): void {
+    const typing = typeof document !== 'undefined' && document.activeElement === el;
+    if (typing && el.value !== '' && Number(el.value) === v) return;
+    const display = v === null ? '' : String(v);
+    if (el.value !== display) el.value = display;
+  }
+
+  /** Enter, change or blur: the typed text becomes a valid value, shown as such. */
+  protected settle(): void {
+    const el = this.inp()?.nativeElement;
+    if (!el) return;
+    const raw = el.value;
+    if (raw === '') {
+      if (this.value() !== null) this.commit(null);
+      return;
+    }
+    const v = Number(raw);
+    this.commit(Number.isFinite(v) ? v : this.value(), { quietIfUnchanged: true });
   }
   protected startScrub(e: PointerEvent): void {
     if (this.disabled() || e.button !== 0) return;
@@ -126,7 +172,8 @@ export class UiNumberInput implements ControlValueAccessor {
   protected bump(delta: number): void {
     this.commit((this.value() ?? 0) + delta);
   }
-  private commit(v: number | null): void {
+  private commit(v: number | null, { quietIfUnchanged = false } = {}): void {
+    const before = this.typed !== undefined ? this.typed : this.value();
     if (v !== null) {
       const precision = this.precision();
       if (precision !== null) v = Number(v.toFixed(precision));
@@ -135,12 +182,13 @@ export class UiNumberInput implements ControlValueAccessor {
       if (max !== undefined) v = Math.min(max, v);
     }
     this.value.set(v);
-    // If the clamp result equals the current signal value, value.set() is a no-op and the [value]
-    // binding won't re-write the input — so the DOM would keep the un-clamped text the user typed
-    // (e.g. "1000" while the control holds 100). Force the displayed value to match.
+    // Settling always shows the result, even when it equals the current value (so "1000" typed into
+    // a field capped at 100 reads 100).
     const el = this.inp()?.nativeElement;
     const display = v === null ? '' : String(v);
     if (el && el.value !== display) el.value = display;
-    this.onChange(v);
+    this.typed = undefined;
+    // Leaving a field that wasn't changed is not a change.
+    if (!(quietIfUnchanged && v === before)) this.onChange(v);
   }
 }

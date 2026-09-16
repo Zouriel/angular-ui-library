@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, forwardRef, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
@@ -56,11 +56,20 @@ export class UiEditableText implements ControlValueAccessor {
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }
 
+  constructor() {
+    // Focus the field once it exists. A microtask after switching to editing ran before the input was
+    // rendered, so it opened unfocused and needed a second click before typing did anything.
+    effect(() => {
+      const el = this.inp()?.nativeElement;
+      if (!el || !this.editing()) return;
+      untracked(() => { el.focus(); el.select(); });
+    });
+  }
+
   protected edit(): void {
     if (this.disabled()) return;
     this.draft.set(this.value());
     this.editing.set(true);
-    queueMicrotask(() => { const el = this.inp()?.nativeElement; el?.focus(); el?.select(); });
   }
   protected commit(): void {
     if (!this.editing()) return;

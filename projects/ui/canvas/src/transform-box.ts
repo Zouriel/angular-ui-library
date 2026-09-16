@@ -141,6 +141,9 @@ export class UiTransformBox implements OnDestroy {
    */
   readonly tap = output<UiTransformTap>();
 
+  private nudged: UiBox | null = null;
+  private nudgedFrom: UiBox | null = null;
+
   protected readonly handles = computed(() => (this.cornersOnly() ? HANDLES.filter((h) => h.sx !== 0 && h.sy !== 0) : HANDLES));
   protected readonly sizeText = computed(() => `${Math.round(this.box().w)} × ${Math.round(this.box().h)}`);
 
@@ -280,7 +283,13 @@ export class UiTransformBox implements OnDestroy {
     const m = moves[e.key];
     if (!m) return;
     e.preventDefault();
-    this.transformEnd.emit({ ...b, x: b.x + m[0], y: b.y + m[1] });
+    // Presses faster than the host re-renders (a held key) build on the last nudge, not on a box
+    // that hasn't caught up yet — otherwise they overwrite each other and the element barely moves.
+    const base = this.nudged && this.nudgedFrom === b ? this.nudged : b;
+    const next = { ...base, x: base.x + m[0], y: base.y + m[1] };
+    this.nudged = next;
+    this.nudgedFrom = b;
+    this.transformEnd.emit(next);
   }
 
   private detach(): void {
