@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter } from '@zouriel/ui/layout';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection } from '@zouriel/ui/layout';
+import { UiButton } from '@zouriel/ui/button';
 import { UiDivider } from '@zouriel/ui/divider';
 import { UiBadge } from '@zouriel/ui/badge';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -7,7 +8,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-layout',
   imports: [
-    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge,
+    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -76,6 +77,28 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Panel section" selector="ui-panel-section" [api]="panelApi"
+        summary="A dense, collapsible titled group for inspector and settings panels. Header actions go in [panel-actions]; set collapsible to false for a fixed heading.">
+        <doc-demo code="<ui-panel-section title=&quot;Sections&quot; badge=&quot;4&quot;>
+  <ui-button panel-actions size=&quot;sm&quot; variant=&quot;ghost&quot;>Add</ui-button>
+  …controls…
+</ui-panel-section>">
+          <div class="panel-host">
+            <ui-panel-section title="Sections" badge="4">
+              <ui-button panel-actions size="sm" variant="ghost">Add</ui-button>
+              <div class="ln">Screen 1 · 844</div>
+              <div class="ln">Screen 2 · 844</div>
+            </ui-panel-section>
+            <ui-panel-section title="Theme colours" [open]="false">
+              <div class="ln">Accent</div>
+            </ui-panel-section>
+            <ui-panel-section title="Layout" [collapsible]="false">
+              <div class="ln">Always shown</div>
+            </ui-panel-section>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Divider" selector="ui-divider" [api]="dividerApi"
         summary="Horizontal or vertical separator, optionally with a centered label (horizontal only).">
         <doc-demo code="<ui-divider />
@@ -91,6 +114,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     .tile { display: flex; align-items: center; justify-content: center; height: 44px; background: var(--ui-color-surface-raised);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted); font-family: var(--ui-font-mono); }
     .ln { padding: 2px var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
+    .panel-host { max-width: 320px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface); }
     .split-host { height: 120px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
     .pane { padding: var(--ui-space-3); height: 100%; box-sizing: border-box; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
@@ -121,6 +145,13 @@ export class LayoutPage {
   ];
   protected readonly splitterApi: ApiRow[] = [
     { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Split direction.' },
+  ];
+  protected readonly panelApi: ApiRow[] = [
+    { name: 'title', type: 'string (required)', default: '—', desc: 'Heading, also the group’s aria-label.' },
+    { name: 'open', type: 'boolean (model)', default: 'true', desc: 'Two-way expanded state — [(open)].' },
+    { name: 'collapsible', type: 'boolean', default: 'true', desc: 'False shows a fixed heading and always renders the body.' },
+    { name: 'badge', type: 'string | number | null', default: 'null', desc: 'Small count or note after the title.' },
+    { name: '[panel-actions]', type: 'slot', default: '—', desc: 'Header controls, e.g. an Add button.' },
   ];
   protected readonly dividerApi: ApiRow[] = [
     { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Direction.' },

@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
 import {
-  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton,
+  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented,
   type UiDropdownItem,
 } from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -12,7 +12,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
 @Component({
   selector: 'page-buttons',
   imports: [
-    UiText, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton,
+    UiText, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -70,6 +70,17 @@ const SIZE = "'sm' | 'md' | 'lg'";
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Segmented" selector="ui-segmented" [api]="segmentedApi"
+        summary="Pick one of a few options, joined into one control. A radiogroup: arrow keys move the choice, Tab leaves the group. Use it for modes and view switches; use toggle buttons when several can be on.">
+        <doc-demo code="<ui-segmented label=&quot;Preview with&quot; [options]=&quot;[{ value: 'filled', label: 'Filled' }, { value: 'empty', label: 'Empty' }]&quot; [(value)]=&quot;mode&quot; />">
+          <div class="row items-center">
+            <ui-segmented label="Preview with" [options]="segOptions" [(value)]="segValue" />
+            <ui-segmented size="sm" label="Mode" [options]="segModes" [(value)]="segMode" />
+          </div>
+          <div class="row"><span class="muted">value: {{ segValue() }} · {{ segMode() }}</span></div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Toggle button" selector="ui-toggle-button" [api]="toggleApi" [outputs]="toggleOut"
         summary="Two-state button with aria-pressed. pressed is a two-way model — bind [(pressed)].">
         <doc-demo code="<ui-toggle-button [(pressed)]=&quot;bold&quot;>Bold</ui-toggle-button>">
@@ -107,6 +118,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
   styles: `
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
+    .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
   `,
 })
 export class ButtonsPage {
@@ -135,6 +147,16 @@ export class ButtonsPage {
     { name: 'round', type: 'boolean', default: 'false', desc: 'Fully circular (pill).' },
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Opt-in glass.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+  ];
+  protected readonly segOptions = [{ value: 'filled', label: 'Filled' }, { value: 'empty', label: 'Empty fields' }, { value: 'roles', label: 'Two roles' }];
+  protected readonly segModes = [{ value: 'edit', label: 'Edit' }, { value: 'interact', label: 'Interact' }];
+  protected readonly segValue = signal<string | null>('filled');
+  protected readonly segMode = signal<string | null>('edit');
+  protected readonly segmentedApi: ApiRow[] = [
+    { name: 'options', type: 'readonly { value: string; label: string; disabled?: boolean }[]', default: '[]', desc: 'The choices, in order.' },
+    { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way selected value — [(value)].' },
+    { name: 'label', type: 'string', default: "'Options'", desc: 'aria-label for the radiogroup.' },
+    { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
   ];
   protected readonly groupApi: ApiRow[] = [
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the group.' },

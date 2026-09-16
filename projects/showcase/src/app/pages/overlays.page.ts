@@ -86,10 +86,12 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         [shapes]="TOAST">
         <doc-demo code="toast = inject(UiToastService);
 this.toast.success('Saved', 'Done');
-this.toast.show({ message: 'Hi', duration: 0 });">
+this.toast.show({ message: 'Hi', duration: 0 });
+this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: () => undo() } });">
           <div class="row">
             <ui-button variant="secondary" (click)="toast.success('Changes saved', 'Success')">Success</ui-button>
             <ui-button variant="ghost" (click)="toast.danger('Could not connect', 'Error')">Error</ui-button>
+            <ui-button variant="outline" (click)="toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: undoToast } })">With action</ui-button>
           </div>
         </doc-demo>
       </doc-section>
@@ -180,5 +182,7 @@ export class OverlaysPage {
     { name: 'host: position', type: "'top-right'|'top-left'|'bottom-right'|'bottom-left'", default: "'bottom-right'", desc: 'ui-toast-host corner.' },
     { name: 'service.show(opts)', type: '(UiToastOptions) => number', default: '—', desc: 'Enqueue; returns id.' },
     { name: 'service.dismiss(id)', type: '(number) => void', default: '—', desc: 'Remove a toast.' },
+    { name: 'opts.action', type: '{ label: string; run: () => void }', default: '—', desc: 'One button in the toast, e.g. Undo. Running it dismisses the toast.' },
   ];
+  protected readonly undoToast = () => this.toast.success('Restored');
 }
