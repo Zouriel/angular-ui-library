@@ -2,14 +2,14 @@ import { Component, inject, signal } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import { UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
-import { UiModal, UiDrawer, UiConfirmDialog, UiToastService } from '@zouriel/ui/dialog';
+import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet } from '@zouriel/ui/dialog';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n  disabled?: boolean;\n  danger?: boolean;\n}";
 
 @Component({
   selector: 'page-overlays',
-  imports: [
+  imports: [ UiBottomSheet,
     UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog,
     DocPage, DocSection, DocDemo,
   ],
@@ -81,6 +81,19 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi"
+        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. Non-modal unless backdrop is set. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages.">
+        <doc-demo code="<ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
+  …content…
+</ui-bottom-sheet>">
+          <div class="row">
+            <ui-button variant="secondary" (click)="sheetSnap.set(1)">Open half</ui-button>
+            <ui-button variant="ghost" (click)="sheetSnap.set(2)">Open full</ui-button>
+            <span class="sheet-state">snap: {{ sheetSnap() }}</span>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Toast" selector="UiToastService · ui-toast-host" [api]="toastApi"
         summary="Imperative notifications. Render <ui-toast-host /> once near the app root, then call the service: show/info/success/warning/danger(message, title?). Returns an id; dismiss(id) to remove."
         [shapes]="TOAST">
@@ -97,6 +110,13 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
       </doc-section>
     </doc-page>
 
+    <ui-bottom-sheet [(snap)]="sheetSnap" [snaps]="[0, 0.4, 0.9]" title="Layers" [hasHeader]="true">
+      <ui-button sheet-actions size="sm" variant="ghost">Add</ui-button>
+      <div class="sheet-rows">
+        @for (n of sheetRows; track n) { <div class="sheet-row">Layer {{ n }}</div> }
+      </div>
+    </ui-bottom-sheet>
+
     <ui-modal [(open)]="modal" title="Modal title">
       <ui-text variant="body">Traps focus, locks scroll, closes on Esc / backdrop.</ui-text>
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
@@ -106,6 +126,9 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
   `,
   styles: `
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
+    .sheet-state { align-self: center; color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
+    .sheet-rows { display: grid; }
+    .sheet-row { padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border-subtle); }
     .ctx { display: inline-flex; align-items: center; padding: 0 var(--ui-space-4); height: var(--ui-size-md);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted);
       font-size: var(--ui-font-size-sm); user-select: none; }
@@ -177,6 +200,24 @@ export class OverlaysPage {
   protected readonly confirmOut: ApiRow[] = [
     { name: 'confirm', type: 'void', default: '—', desc: 'Confirm pressed.' },
     { name: 'cancel', type: 'void', default: '—', desc: 'Cancel pressed.' },
+  ];
+  protected readonly sheetSnap = signal(0);
+  protected readonly sheetRows = Array.from({ length: 30 }, (_, i) => i + 1);
+  protected readonly sheetApi: ApiRow[] = [
+    { name: 'snaps', type: 'readonly number[]', default: '[0, 0.5, 1]', desc: 'Resting heights as fractions of the room it has, ascending. A first snap of 0 is closed.' },
+    { name: 'snap', type: 'number (model)', default: '0', desc: 'Index it rests at — [(snap)].' },
+    { name: 'title', type: 'string', default: "''", desc: 'Header title and aria-label.' },
+    { name: 'offset', type: 'number', default: '0', desc: 'Px kept free below it, for a toolbar it sits on.' },
+    { name: 'topInset', type: 'number', default: '0', desc: 'Px kept free above its tallest snap.' },
+    { name: 'backdrop', type: 'boolean', default: 'false', desc: 'Modal: dims the page and closes on a backdrop tap.' },
+    { name: 'closable', type: 'boolean', default: 'true', desc: 'Close button in the header.' },
+    { name: 'hasHeader', type: 'boolean', default: 'false', desc: 'Show the header row without a title.' },
+    { name: 'expandOnFocus', type: 'boolean', default: 'true', desc: 'Rise to the tallest snap when a field inside gains focus on a touch screen.' },
+    { name: '(heightChange)', type: 'number', default: '—', desc: 'Px height once it settles.' },
+    { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
+    { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
+    { name: '(coverChange)', type: 'number', default: '—', desc: 'Px of the screen it takes from the bottom once settled, including what it rests on (offset or keyboard).' },
+    { name: '--ui-sheet-z', type: 'CSS variable', default: 'var(--ui-z-overlay)', desc: 'Stacking level, e.g. to sit under a toolbar but below dialogs.' },
   ];
   protected readonly toastApi: ApiRow[] = [
     { name: 'host: position', type: "'top-right'|'top-left'|'bottom-right'|'bottom-left'", default: "'bottom-right'", desc: 'ui-toast-host corner.' },

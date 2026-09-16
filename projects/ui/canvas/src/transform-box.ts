@@ -11,6 +11,13 @@ export interface UiBox {
 
 export type UiTransformMode = 'move' | 'resize' | 'rotate';
 
+export interface UiTransformTap {
+  clientX: number;
+  clientY: number;
+  shiftKey: boolean;
+  pointerType: string;
+}
+
 /** Which edges a resize handle drags: -1 left/top, 1 right/bottom, 0 untouched. */
 type Handle = { id: string; sx: -1 | 0 | 1; sy: -1 | 0 | 1; cursor: string };
 
@@ -86,6 +93,14 @@ const HANDLES: Handle[] = [
     .rotate { position: absolute; left: 50%; top: -30px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%;
       background: var(--ui-color-primary); border: 2px solid var(--ui-color-surface); box-sizing: border-box; cursor: grab; }
     .rotate::after { content: ''; position: absolute; inset: -8px; }
+    @media (pointer: coarse) {
+      .handle { width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; }
+      .handle::after { inset: -12px; }
+      .handle[data-h="n"], .handle[data-h="s"], .handle[data-h="e"], .handle[data-h="w"] { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+      .stem { top: -34px; height: 34px; }
+      .rotate { top: -46px; width: 20px; height: 20px; margin-left: -10px; }
+      .rotate::after { inset: -12px; }
+    }
     .size { position: absolute; left: 50%; top: calc(100% + 10px); translate: -50% 0; white-space: nowrap; pointer-events: none;
       padding: 2px 6px; border-radius: var(--ui-radius-xs); background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
       font: 500 11px/1.4 var(--ui-font-mono); }
@@ -120,6 +135,11 @@ export class UiTransformBox implements OnDestroy {
   readonly transform = output<UiBox>();
   readonly transformEnd = output<UiBox>();
   readonly activate = output<void>();
+  /**
+   * The body was pressed and released without moving. The box covers whatever is under it, so this is
+   * how a host lets a click on the selection reach the thing beneath — or the thing on top of it.
+   */
+  readonly tap = output<UiTransformTap>();
 
   protected readonly handles = computed(() => (this.cornersOnly() ? HANDLES.filter((h) => h.sx !== 0 && h.sy !== 0) : HANDLES));
   protected readonly sizeText = computed(() => `${Math.round(this.box().w)} × ${Math.round(this.box().h)}`);
@@ -135,6 +155,8 @@ export class UiTransformBox implements OnDestroy {
     startAngle: number;
     last: UiBox;
     pointerId: number;
+    pointerType: string;
+    moved: boolean;
   } | null = null;
 
   private readonly onMove = (e: PointerEvent) => this.move(e);
@@ -155,6 +177,7 @@ export class UiTransformBox implements OnDestroy {
     this.drag = {
       mode, handle, startX: e.clientX, startY: e.clientY, origin, centerX, centerY,
       startAngle: Math.atan2(e.clientY - centerY, e.clientX - centerX), last: origin, pointerId: e.pointerId,
+      pointerType: e.pointerType, moved: false,
     };
     this.zone.runOutsideAngular(() => {
       window.addEventListener('pointermove', this.onMove);
@@ -167,6 +190,12 @@ export class UiTransformBox implements OnDestroy {
   private move(e: PointerEvent): void {
     const d = this.drag;
     if (!d || e.pointerId !== d.pointerId) return;
+    if (!d.moved) {
+      // A finger wobbles: don't let a tap become a one-pixel move.
+      const slop = d.pointerType === 'touch' ? 6 : 1;
+      if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < slop) return;
+      d.moved = true;
+    }
     const scale = (this.pointerScale() ?? this.scale()) || 1;
     const dx = (e.clientX - d.startX) / scale;
     const dy = (e.clientY - d.startY) / scale;
@@ -237,6 +266,8 @@ export class UiTransformBox implements OnDestroy {
     this.drag = null;
     const moved = d.last !== d.origin;
     if (moved) this.zone.run(() => this.transformEnd.emit(d.last));
+    else if (d.mode === 'move' && e.type === 'pointerup')
+      this.zone.run(() => this.tap.emit({ clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey, pointerType: e.pointerType }));
   }
 
   protected onKey(e: KeyboardEvent): void {

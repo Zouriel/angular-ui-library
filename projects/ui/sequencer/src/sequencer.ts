@@ -66,7 +66,7 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
  */
 @Component({
   selector: 'ui-sequencer',
-  host: { class: 'ui-sequencer', '[style.--label-w.px]': 'labelWidth()', '[style.--row-h.px]': 'rowHeight()' },
+  host: { class: 'ui-sequencer', '[class.compact]': 'compact()', '[style.--label-w.px]': 'labelWidth()', '[style.--row-h.px]': 'rowHeight()' },
   template: `
     <div class="scroller" #scroller>
       <div class="grid" [style.width]="'calc(var(--label-w) + ' + zoom() * 100 + '% - ' + zoom() + ' * var(--label-w))'">
@@ -74,7 +74,7 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
         <div class="corner">{{ title() }}</div>
         <div class="ruler" #ruler (pointerdown)="startPlayhead($event)">
           @for (m of markers(); track $index) {
-            <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)"><span class="mlabel">{{ m.label }}</span></span>
+            <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan($index))"><span class="mlabel">{{ m.label }}</span></span>
           }
           <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
             aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
@@ -101,7 +101,7 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
                 }
               </svg>
             </button>
-            <button type="button" class="toggle" [class.on]="row.locked" [attr.aria-pressed]="!!row.locked"
+            <button type="button" class="toggle lock" [class.on]="row.locked" [attr.aria-pressed]="!!row.locked"
               [attr.aria-label]="(row.locked ? 'Unlock ' : 'Lock ') + row.label" (click)="$event.stopPropagation(); lockToggle.emit(row.id)">
               <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
                 <rect x="3" y="7" width="10" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/>
@@ -149,7 +149,8 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
     .ruler { position: sticky; top: 0; z-index: 3; background: var(--ui-color-surface-subtle); border-bottom: 1px solid var(--ui-color-border); cursor: ew-resize; }
     .marker { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--ui-color-border-strong); }
     .marker.end .mlabel { left: auto; right: 4px; }
-    .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; white-space: nowrap; color: var(--ui-color-text-muted); font-size: 10.5px; font-family: var(--ui-font-mono); }
+    .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; max-width: calc(100% - 8px); overflow: hidden; text-overflow: clip;
+      white-space: nowrap; color: var(--ui-color-text-muted); font-size: 10.5px; font-family: var(--ui-font-mono); }
     .playhead-knob { position: absolute; bottom: 0; width: 12px; height: 12px; margin-left: -6px; background: var(--ui-color-primary);
       clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); cursor: ew-resize; }
     .playhead-knob:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -186,6 +187,26 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder';
     .diamond:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .empty { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); height: calc(var(--row-h) * 2); }
     .drop-end { grid-column: 1 / 2; height: 0; box-shadow: 0 -2px 0 var(--ui-color-primary); }
+
+    /* Compact: for narrow screens. The label column keeps what identifies a row — its name — and
+       drops the type badge and lock toggle, which the host offers elsewhere. */
+    :host(.compact) .kind, :host(.compact) .toggle.lock { display: none; }
+    :host(.compact) .grip { padding: 0; }
+    :host(.compact) .corner { padding: 0 8px; }
+
+    /* Touch. A finger drag the browser might read as a scroll never reaches pointer events, so each
+       draggable part says which directions are its own: the small handles take every direction, and
+       the ruler, lanes and bars take sideways drags while leaving vertical ones to scroll the rows. */
+    .playhead-knob, .edge, .diamond, .grip { touch-action: none; }
+    .ruler, .lane, .bar { touch-action: pan-y; }
+    @media (pointer: coarse) {
+      .playhead-knob { width: 18px; height: 18px; margin-left: -9px; }
+      .playhead-knob::after, .diamond::after, .grip::after { content: ''; position: absolute; inset: -10px; }
+      .grip { position: relative; padding: 0 6px; font-size: 14px; }
+      .diamond { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+      .edge { width: 20px; } .edge.start { left: -10px; } .edge.end { right: -10px; }
+      .toggle { width: 32px; height: 32px; opacity: 1; }
+    }
   `,
 })
 export class UiSequencer implements OnDestroy {
@@ -207,6 +228,8 @@ export class UiSequencer implements OnDestroy {
   reorderable = input(true);
   /** 1 fits the width; larger values zoom in and scroll horizontally. */
   zoom = input(1);
+  /** Narrow screens: the label column shows the grip, name and visibility toggle only. */
+  compact = input(false);
 
   playhead = model(0);
   selectedRowId = model<string | null>(null);
@@ -243,6 +266,13 @@ export class UiSequencer implements OnDestroy {
 
   private readonly onMove = (e: PointerEvent) => this.move(e);
   private readonly onUp = (e: PointerEvent) => this.up(e);
+
+  /** Width of a marker's stretch, up to the next marker, in timeline units — so its label can't run into the next. */
+  protected markerSpan(index: number): number {
+    const markers = this.markers();
+    const next = markers[index + 1]?.at ?? this.length();
+    return Math.max(0, next - markers[index].at);
+  }
 
   protected pct(units: number): number {
     const len = this.length() || 1;
@@ -319,7 +349,14 @@ export class UiSequencer implements OnDestroy {
     const d = this.drag;
     if (!d || e.pointerId !== d.pointerId) return;
     const dxPx = e.clientX - d.startX;
-    if (!d.moved && Math.abs(dxPx) < 2 && Math.abs(e.clientY - d.startY) < 2) return;
+    if (!d.moved) {
+      const dyPx = e.clientY - d.startY;
+      // A finger needs a clearer sideways intent than a mouse before a bar or diamond starts moving;
+      // a mostly vertical drag is the rows being scrolled, which the browser takes over.
+      const slop = e.pointerType === 'touch' ? 6 : 2;
+      if (Math.abs(dxPx) < slop && Math.abs(dyPx) < slop) return;
+      if (e.pointerType === 'touch' && d.kind !== 'reorder' && d.kind !== 'playhead' && Math.abs(dyPx) > Math.abs(dxPx)) return;
+    }
     d.moved = true;
     const du = dxPx * d.unitsPerPx;
     const len = this.length();
@@ -381,7 +418,10 @@ export class UiSequencer implements OnDestroy {
     if (!d || e.pointerId !== d.pointerId) return;
     this.detach();
     this.drag = null;
+    // The browser took the gesture (a scroll): put back whatever was being dragged.
+    if (e.type === 'pointercancel' && d.moved && d.last) d.last = { start: d.origStart, end: d.origEnd, at: d.origAt };
     this.zone.run(() => {
+      if (e.type === 'pointercancel' && d.kind === 'reorder') this.dropIndex.set(null);
       if (!d.moved) return;
       if ((d.kind === 'move' || d.kind === 'start' || d.kind === 'end') && d.last)
         this.rangeChange.emit({ rowId: d.row!.id, start: d.last.start, end: d.last.end, final: true });

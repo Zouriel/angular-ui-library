@@ -12,7 +12,7 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
       <input type="file" class="native" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)" />
       <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
       <span class="hint"><strong>Click to upload</strong> or drag & drop</span>
-      @if (accept()) { <span class="accept">{{ accept() }}</span> }
+      @if (acceptLabel() ?? accept(); as label) { <span class="accept">{{ label }}</span> }
     </label>
     @if (files().length) {
       <ul class="files">
@@ -34,7 +34,8 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
     .native { position: absolute; width: 0; height: 0; opacity: 0; }
     .icon { font-size: 22px; color: var(--ui-color-text-muted); }
     .hint { font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
-    .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
+    .hint { overflow-wrap: anywhere; }
     .files { margin: var(--ui-space-2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
     .files li { display: flex; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-1) var(--ui-space-2);
       background: var(--ui-color-surface-raised); border-radius: var(--ui-radius-xs); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
@@ -46,6 +47,8 @@ export class UiFileUpload {
 
   multiple = input(false);
   accept = input<string>();
+  /** What to show for the accepted types, when `accept` itself reads badly (e.g. "PNG, JPEG or WebP"). */
+  acceptLabel = input<string>();
   radius = input(true);
   filesSelected = output<File[]>();
   protected readonly files = signal<File[]>([]);
