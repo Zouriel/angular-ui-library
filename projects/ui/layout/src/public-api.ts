@@ -6,3 +6,4 @@ export * from './aspect-ratio';
 export * from './scroll-area';
 export * from './splitter';
 export * from './sidebar-layout';
+export * from './resize-handle';

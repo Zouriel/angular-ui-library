@@ -17,3 +17,4 @@ export * from './editable-text';
 export * from './color-picker';
 export * from './file-upload';
 export * from './time-picker';
+export * from './token-input';

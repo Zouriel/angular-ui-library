@@ -7,6 +7,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   selector: 'ui-number-input',
   template: `
     <div class="wrap" [class.no-radius]="!radius()" [class.invalid]="invalid()" [attr.data-size]="size()">
+      @if (label()) {
+        <span class="scrub" [class.active]="scrubbing()" [attr.title]="'Drag to change ' + label()" aria-hidden="true"
+          (pointerdown)="startScrub($event)">{{ label() }}</span>
+      }
       <input
         class="ui-number"
         type="number"
@@ -17,11 +21,15 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         [value]="value()"
         [disabled]="disabled()"
         (input)="handleInput($event)"
+        [attr.aria-label]="ariaLabel() || label() || null"
         (blur)="onTouched()" />
+      @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
+      @if (steppers()) {
       <div class="steppers">
         <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())">▲</button>
         <button type="button" tabindex="-1" aria-label="Decrement" [disabled]="disabled()" (click)="bump(-step())">▼</button>
       </div>
+      }
     </div>
   `,
   styles: `
@@ -41,6 +49,11 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-number::-webkit-outer-spin-button, .ui-number::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .wrap[data-size="sm"] .ui-number { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-number { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
+    .scrub { display: flex; align-items: center; padding: 0 0 0 var(--ui-space-2); color: var(--ui-color-text-muted); cursor: ew-resize;
+      font-size: var(--ui-font-size-sm); font-weight: 500; user-select: none; touch-action: none; min-width: 1.2em; }
+    .scrub:hover, .scrub.active { color: var(--ui-color-primary); }
+    .suffix { display: flex; align-items: center; padding-right: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .wrap[data-size="sm"] .ui-number { padding: 0 var(--ui-space-2); }
     .steppers { display: flex; flex-direction: column; border-left: 1px solid var(--ui-color-border); }
     .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-size: 8px; padding: 0; }
     .steppers button:first-child { border-bottom: 1px solid var(--ui-color-border); }
@@ -58,6 +71,32 @@ export class UiNumberInput implements ControlValueAccessor {
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** A short label before the number that you can drag left/right to change the value (e.g. "X", "W"). */
+  label = input('');
+  /** Accessible name when the visible label is too terse. */
+  ariaLabel = input('');
+  /** A unit shown after the number, e.g. "px" or "°". */
+  suffix = input('');
+  /** Decimal places kept; values are rounded to this. */
+  precision = input<number | null>(null);
+  /** Show the ▲▼ buttons. */
+  steppers = input(true);
+
+  protected readonly scrubbing = signal(false);
+  private scrubStart: { x: number; value: number } | null = null;
+  private readonly scrubMove = (e: PointerEvent) => {
+    if (!this.scrubStart) return;
+    const factor = e.shiftKey ? 10 : e.altKey ? 0.1 : 1;
+    const delta = Math.round((e.clientX - this.scrubStart.x) / 2) * this.step() * factor;
+    this.commit(this.scrubStart.value + delta);
+  };
+  private readonly scrubUp = () => {
+    this.scrubStart = null;
+    this.scrubbing.set(false);
+    window.removeEventListener('pointermove', this.scrubMove);
+    window.removeEventListener('pointerup', this.scrubUp);
+    this.onTouched();
+  };
 
   private readonly inp = viewChild<ElementRef<HTMLInputElement>>('inp');
   protected readonly value = signal<number | null>(null);
@@ -75,11 +114,22 @@ export class UiNumberInput implements ControlValueAccessor {
     const v = raw === '' ? null : Number(raw);
     this.commit(v);
   }
+  protected startScrub(e: PointerEvent): void {
+    if (this.disabled() || e.button !== 0) return;
+    e.preventDefault();
+    this.scrubStart = { x: e.clientX, value: this.value() ?? 0 };
+    this.scrubbing.set(true);
+    window.addEventListener('pointermove', this.scrubMove);
+    window.addEventListener('pointerup', this.scrubUp);
+  }
+
   protected bump(delta: number): void {
     this.commit((this.value() ?? 0) + delta);
   }
   private commit(v: number | null): void {
     if (v !== null) {
+      const precision = this.precision();
+      if (precision !== null) v = Number(v.toFixed(precision));
       const min = this.min(), max = this.max();
       if (min !== undefined) v = Math.max(min, v);
       if (max !== undefined) v = Math.min(max, v);
