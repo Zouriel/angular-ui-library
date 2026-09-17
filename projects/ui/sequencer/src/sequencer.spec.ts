@@ -104,6 +104,17 @@ describe('UiSequencer, bars only', () => {
     expect(q('.tip')).toBeNull();
   });
 
+  it('the name bubble keeps its hide and lock buttons on a phone layout', async () => {
+    fixture.debugElement.children[0].componentInstance; // host sequencer
+    const seq = fixture.nativeElement.querySelector('ui-sequencer') as HTMLElement;
+    seq.classList.add('compact');
+    bar('a').dispatchEvent(touch('touchstart', [{ x: 10, y: 10 }]));
+    bar('a').dispatchEvent(touch('touchend', [{ x: 10, y: 10 }]));
+    fixture.detectChanges();
+    expect(q('.tip .toggle.lock')).not.toBeNull();
+    expect(getComputedStyle(q('.tip .toggle.lock')!).display).not.toBe('none');
+  });
+
   it('a tap on a keyframe diamond shows the name too', () => {
     host.rows.update((rows) => [{ ...rows[0], keyframes: [{ id: 'k0', at: 0 }] }, rows[1]]);
     fixture.detectChanges();
@@ -123,11 +134,11 @@ describe('UiSequencer, bars only', () => {
 
 @Component({
   imports: [UiScrubber],
-  template: `<ui-scrubber [length]="2000" [lanes]="lanes" [end]="1500" [(value)]="value" (longPress)="presses = presses + 1" />`,
+  template: `<ui-scrubber [length]="2000" [lanes]="lanes()" [end]="1500" [(value)]="value" (longPress)="presses = presses + 1" />`,
 })
 class ScrubberHost {
   readonly value = signal(300);
-  readonly lanes: UiScrubberLane[] = [{ start: 0, end: 400 }, { start: 200, end: 900, selected: true }];
+  readonly lanes = signal<UiScrubberLane[]>([{ start: 0, end: 400 }, { start: 200, end: 900, selected: true }]);
   presses = 0;
 }
 
@@ -147,6 +158,14 @@ describe('UiScrubber lanes and long press', () => {
     fixture.detectChanges();
   });
   afterEach(() => vi.useRealTimers());
+
+  it('packs lanes that overlap into separate rows, and ones that do not into one', () => {
+    const tops = () => Array.from(strip().querySelectorAll<HTMLElement>('.lane')).map((l) => l.style.top);
+    expect(tops()[0]).not.toBe(tops()[1]);
+    host.lanes.set([{ start: 0, end: 400 }, { start: 500, end: 900 }]);
+    fixture.detectChanges();
+    expect(tops()[0]).toBe(tops()[1]);
+  });
 
   it('draws a line per lane and shades past the end', () => {
     expect(strip().querySelectorAll('.lane').length).toBe(2);

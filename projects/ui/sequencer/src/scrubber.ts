@@ -29,6 +29,8 @@ const GLIDE_DECAY = 0.94;
 /** A finger held this long without moving is a long press, not a scrub. */
 const LONG_PRESS_MS = 450;
 const PRESS_SLOP = 8;
+/** Rows of lanes the strip draws before it starts reusing them. */
+const MAX_ROWS = 6;
 
 /**
  * `ui-scrubber` — a strip that slides under a playhead fixed at its centre, the way mobile video
@@ -72,10 +74,10 @@ const PRESS_SLOP = 8;
     <div class="track" [style.width.px]="length() * zoom()" [style.transform]="'translateX(' + offset() + 'px)'">
       @if (lanes().length) {
         <span class="lanes" aria-hidden="true">
-          @for (l of lanes(); track $index; let i = $index) {
+          @for (l of packed().lanes; track $index) {
             <span class="lane" [class.selected]="l.selected" [class.muted]="l.muted"
               [style.left.px]="l.start * zoom()" [style.width.px]="Math.max(2, (l.end - l.start) * zoom())"
-              [style.top.%]="laneTop(i)" [style.height.%]="laneHeight()"></span>
+              [style.top.%]="l.top" [style.height.%]="packed().height"></span>
           }
         </span>
       }
@@ -190,17 +192,25 @@ export class UiScrubber {
     return Math.round(n);
   }
 
-  /** Lanes share the strip's height, each at least a hairline; with many, they overlap evenly. */
-  protected laneHeight(): number {
-    const n = this.lanes().length;
-    return Math.max(8, Math.min(34, 100 / Math.max(1, n) - 4));
-  }
-
-  protected laneTop(i: number): number {
-    const n = this.lanes().length;
-    if (n <= 1) return 50 - this.laneHeight() / 2;
-    return (i / (n - 1)) * (100 - this.laneHeight());
-  }
+  /**
+   * Lanes packed into as few rows as they need, the way a video editor stacks clips: one that doesn't
+   * overlap another shares its row. At most `MAX_ROWS` rows fit the strip readably; past that, rows are
+   * reused in turn, and a selected lane is always drawn on top.
+   */
+  protected readonly packed = computed(() => {
+    const lanes = this.lanes();
+    const ends: number[] = [];
+    const rows = lanes.map((l) => {
+      let row = ends.findIndex((end) => end <= l.start);
+      if (row < 0) { row = ends.length; ends.push(l.end); } else ends[row] = l.end;
+      return row;
+    });
+    const count = Math.min(MAX_ROWS, Math.max(1, ends.length));
+    const height = Math.min(30, 100 / count - (count > 1 ? 4 : 0));
+    const gap = count > 1 ? (100 - height * count) / (count - 1) : 0;
+    const top = (row: number) => (count === 1 ? 50 - height / 2 : (row % count) * (height + gap));
+    return { height, lanes: lanes.map((l, i) => ({ ...l, top: top(rows[i]) })) };
+  });
 
   private startPress(origin: number, isStill: () => boolean, cancel: () => void): void {
     this.clearPress();

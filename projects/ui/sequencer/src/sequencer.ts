@@ -223,7 +223,7 @@ const TIP_MS = 2600;
     .bar.muted { opacity: .45; }
     .bar.locked { cursor: not-allowed; background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ui-color-text) 8%, transparent) 5px 7px); }
     .bar:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .edge { position: absolute; top: -2px; bottom: -2px; width: 8px; cursor: ew-resize; }
+    .edge { position: absolute; top: -2px; bottom: -2px; width: 8px; cursor: ew-resize; z-index: 2; }
     .edge.start { left: -4px; } .edge.end { right: -4px; }
     .bar.locked .edge { display: none; }
     .diamond { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; rotate: 45deg; box-sizing: border-box;
@@ -256,7 +256,7 @@ const TIP_MS = 2600;
 
     /* Compact: for narrow screens. The label column keeps what identifies a row — its name — and
        drops the type badge and lock toggle, which the host offers elsewhere. */
-    :host(.compact) .kind, :host(.compact) .toggle.lock { display: none; }
+    :host(.compact) .label .kind, :host(.compact) .label .toggle.lock { display: none; }
     :host(.compact) .grip { padding: 0; }
     :host(.compact) .corner { padding: 0 8px; }
 
@@ -272,7 +272,10 @@ const TIP_MS = 2600;
       .playhead-knob::after, .diamond::after, .grip::after { content: ''; position: absolute; inset: -10px; }
       .grip { position: relative; padding: 0 6px; font-size: 14px; }
       .diamond { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
-      .edge { width: 20px; } .edge.start { left: -10px; } .edge.end { right: -10px; }
+      /* Outside the bar, so a keyframe diamond sitting at 0% or 100% can't cover them; shown on the selected bar. */
+      .edge { width: 22px; } .edge.start { left: -22px; } .edge.end { right: -22px; }
+      .bar.selected .edge::before { content: ''; position: absolute; top: 20%; bottom: 20%; width: 4px; border-radius: 2px; background: var(--ui-color-primary); }
+      .bar.selected .edge.start::before { right: 3px; } .bar.selected .edge.end::before { left: 3px; }
       .toggle { width: 32px; height: 32px; opacity: 1; }
     }
   `,

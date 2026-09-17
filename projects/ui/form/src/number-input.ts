@@ -23,6 +23,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         (change)="settle()"
         (keydown.enter)="settle()"
         [attr.aria-label]="ariaLabel() || label() || null"
+        (focus)="selectAll($event)"
+        (mouseup)="keepSelection($event)"
         (blur)="settle(); onTouched()" />
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
@@ -168,6 +170,24 @@ export class UiNumberInput implements ControlValueAccessor {
     window.addEventListener('pointermove', this.scrubMove);
     window.addEventListener('pointerup', this.scrubUp);
   }
+
+  /**
+   * Focusing the field selects its number, so typing replaces it. On a phone there's no quick
+   * select-all: without this a tap put the caret after "1" and typing "2" gave 12. Selected at once,
+   * never later — a delayed select landed mid-typing and swallowed digits.
+   */
+  protected selectAll(e: FocusEvent): void {
+    (e.target as HTMLInputElement).select();
+    this.justFocused = true;
+  }
+
+  /** The click that focused the field would put the caret where it landed and drop the selection. */
+  protected keepSelection(e: MouseEvent): void {
+    if (this.justFocused) e.preventDefault();
+    this.justFocused = false;
+  }
+
+  private justFocused = false;
 
   protected bump(delta: number): void {
     this.commit((this.value() ?? 0) + delta);
