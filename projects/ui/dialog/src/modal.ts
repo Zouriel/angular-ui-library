@@ -68,6 +68,10 @@ let modalSeq = 0;
     }
     .panel[data-size="sm"] { max-width: 360px; }
     .panel[data-size="lg"] { max-width: 720px; }
+    /* A working window over everything: the whole screen, no margin, no rounding — for editors. */
+    .panel-wrap:has(> .panel[data-size="full"]) { padding: 0; }
+    .panel[data-size="full"] { max-width: none; max-height: none; width: 100vw; height: 100dvh; border-radius: 0; border: none; overflow: hidden; }
+    .panel[data-size="full"] .bd { flex: 1; min-height: 0; min-width: 0; padding: 0; gap: 0; overflow: hidden; }
     .panel.no-radius { border-radius: 0; }
     .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .hd { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
@@ -101,7 +105,8 @@ export class UiModal {
   private doc = inject(DOCUMENT);
   open = model(false);
   title = input<string>();
-  size = input<'sm' | 'md' | 'lg'>('md');
+  /** `full` fills the screen, with no padding around the content — for editors opened over a page. */
+  size = input<'sm' | 'md' | 'lg' | 'full'>('md');
   closeOnBackdrop = input(true);
   closeOnEscape = input(true);
   glass = input<boolean>(this.config.glass);
