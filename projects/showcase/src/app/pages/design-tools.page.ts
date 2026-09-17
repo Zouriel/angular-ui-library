@@ -51,6 +51,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           </div>
           <p class="note">Playhead: {{ playhead() | number: '1.0-0' }}</p>
         </doc-demo>
+        <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [showLabels]=&quot;false&quot; [end]=&quot;700&quot; [(zoom)]=&quot;zoom&quot; ... />">
+          <p class="note">Bars only, like a phone video editor: tap a bar for its name, hold it to drag it along or up and down, pinch (or Ctrl + wheel) to zoom. Past <code>end</code> is shaded.</p>
+          <div class="seq">
+            <ui-sequencer [rows]="rows()" [length]="1000" [showLabels]="false" [end]="700" [rowHeight]="26" [(playhead)]="playhead"
+              (rangeChange)="onRange($event)" (keyframeChange)="onKeyframe($event)" (rowReorder)="onReorder($event)"
+              (muteToggle)="toggle($event, 'muted')" (lockToggle)="toggle($event, 'locked')" />
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi"
@@ -59,6 +67,9 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <div class="scrub-demo">
             <ui-scrubber [length]="3376" [markers]="scrubMarkers" [ticks]="scrubTicks" [(value)]="scrubAt" [(zoom)]="scrubZoom" label="Scroll position" />
             <span class="mono">{{ scrubAt() | number: '1.0-0' }} · zoom {{ scrubZoom() | number: '1.2-2' }}</span>
+            <ui-scrubber [length]="3376" [lanes]="scrubLanes" [end]="2600" [(value)]="scrubAt" [(zoom)]="scrubZoom" label="Layers, flattened — hold to open"
+              (longPress)="scrubPresses.set(scrubPresses() + 1)" />
+            <span class="mono">long presses: {{ scrubPresses() }}</span>
           </div>
         </doc-demo>
       </doc-section>
@@ -232,11 +243,13 @@ export class DesignToolsPage {
     { name: 'uiSnap(moving, targets, threshold, extra?)', type: 'function', default: '', desc: 'Edges-and-centres snapping; returns { dx, dy, guides }.' },
   ];
   protected readonly sequencerApi: ApiRow[] = [
-    { name: 'rows', type: 'UiSequencerRow[]', default: '[]', desc: 'id, label, start, end, keyframes (at 0…1 within the bar), depth, muted, locked, kind.' },
+    { name: 'rows', type: 'UiSequencerRow[]', default: '[]', desc: 'id, label, start, end, keyframes (at 0…1 within the bar), depth, muted, locked, kind, fixed (no trim edges).' },
+    { name: 'showLabels', type: 'boolean', default: 'true', desc: 'Off: bars only. Tap a bar for its name (with hide/lock), hold to lift it and drag both ways, pinch to zoom.' },
+    { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
     { name: 'length', type: 'number', default: '100', desc: 'Timeline length in units.' },
     { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Ruler markers; also snap targets.' },
     { name: '[(playhead)] / [(selectedRowId)] / [(selectedKeyframeId)]', type: 'model', default: '', desc: 'Two-way state.' },
-    { name: 'zoom', type: 'number', default: '1', desc: '1 fits the width; larger zooms in and scrolls.' },
+    { name: 'zoom / maxZoom', type: 'number (model) / number', default: '1 / 16', desc: '1 fits the width; larger zooms in and scrolls. Pinch or Ctrl + wheel changes it — [(zoom)].' },
     { name: '(rangeChange)', type: '{ rowId, start, end, final }', default: '', desc: 'Bar moved or trimmed; final on release.' },
     { name: '(keyframeChange)', type: '{ rowId, keyframeId, at, final }', default: '', desc: 'Diamond retimed.' },
     { name: '(keyframeDelete) / (keyframeMenu)', type: 'event', default: '', desc: 'Delete key / right-click or the context-menu key.' },
@@ -246,12 +259,17 @@ export class DesignToolsPage {
   protected readonly scrubZoom = signal(0.25);
   protected readonly scrubMarkers = [{ at: 0, label: 'Screen 1' }, { at: 844, label: 'Screen 2' }, { at: 1688, label: 'Screen 3' }, { at: 2532, label: 'Screen 4' }];
   protected readonly scrubTicks = [{ at: 400 }, { at: 900 }, { at: 1800, active: true }];
+  protected readonly scrubLanes = [{ start: 0, end: 900 }, { start: 300, end: 1500, selected: true }, { start: 1200, end: 2100 }, { start: 1700, end: 2600 }];
+  protected readonly scrubPresses = signal(0);
   protected readonly scrubberApi: ApiRow[] = [
     { name: 'length', type: 'number', default: '100', desc: 'Length in units.' },
     { name: 'value', type: 'number (model)', default: '0', desc: 'Position under the playhead — [(value)].' },
     { name: 'zoom', type: 'number (model)', default: '0.25', desc: 'Pixels per unit; a pinch changes it — [(zoom)].' },
     { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Labelled segments along the strip.' },
     { name: 'ticks', type: '{ at, active? }[]', default: '[]', desc: 'Points of interest, e.g. keyframes.' },
+    { name: 'lanes', type: '{ start, end, selected?, muted? }[]', default: '[]', desc: 'Layers as thin stacked lines — a flattened timeline.' },
+    { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; shaded after.' },
+    { name: '(longPress)', type: 'void', default: '—', desc: 'Held still; the value is put back. E.g. open the full timeline.' },
     { name: 'label / valueText', type: 'string', default: "'Position' / ''", desc: 'Slider name and spoken value.' },
     { name: 'minZoom / maxZoom', type: 'number', default: '0.02 / 4', desc: 'Pinch limits.' },
     { name: '(settle)', type: 'number', default: '—', desc: 'Once, when a drag, glide, wheel or key change comes to rest.' },
