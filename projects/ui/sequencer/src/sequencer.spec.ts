@@ -72,6 +72,27 @@ describe('UiSequencer, bars only', () => {
     expect(q('.tip')).toBeNull();
   });
 
+  it('the name appears where the bar was tapped, turned inward near the edges', () => {
+    const rect = (left: number, width: number) => () => ({ left, right: left + width, width, top: 0, bottom: 100, height: 100, x: left, y: 0, toJSON: () => ({}) });
+    const scroller = q('.scroller')!;
+    scroller.getBoundingClientRect = rect(0, 400) as never;
+    (scroller.firstElementChild as HTMLElement).getBoundingClientRect = rect(-300, 1600) as never; // zoomed in, scrolled along
+    const tapAt = (x: number) => {
+      bar('a').dispatchEvent(touch('touchstart', [{ x, y: 10 }]));
+      bar('a').dispatchEvent(touch('touchend', [{ x, y: 10 }]));
+      fixture.detectChanges();
+      return q('.tip')!;
+    };
+    let tip = tapAt(200);
+    expect(tip.style.left).toBe('500px');
+    expect(tip.classList.contains('from-left') || tip.classList.contains('from-right')).toBe(false);
+    tip = tapAt(30);
+    expect(tip.style.left).toBe('330px');
+    expect(tip.classList.contains('from-left')).toBe(true);
+    tip = tapAt(390);
+    expect(tip.classList.contains('from-right')).toBe(true);
+  });
+
   it('holding a bar lifts it; then it follows the finger along the timeline', () => {
     // A 1000px-wide ruler: one pixel is one unit, and snapping reaches 6 units rather than the whole timeline.
     q('.ruler')!.getBoundingClientRect = () => ({ left: 0, right: 1000, width: 1000, top: 0, bottom: 30, height: 30, x: 0, y: 0, toJSON: () => ({}) });

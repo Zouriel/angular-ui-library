@@ -146,9 +146,9 @@ const TIP_MS = 2600;
         }
         @if (tip(); as t) {
           @for (row of rows(); track row.id; let i = $index) {
-            @if (row.id === t) {
-              <div class="tip" role="status" [class.below]="i === 0" [class.from-left]="pct((row.start + row.end) / 2) < 15" [class.from-right]="pct((row.start + row.end) / 2) > 85"
-                [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct((row.start + row.end) / 2) / 100 + ')'"
+            @if (row.id === t.id) {
+              <div class="tip" role="status" [class.below]="i === 0" [class.from-left]="t.edge === 'left'" [class.from-right]="t.edge === 'right'"
+                [style.left]="t.x !== null ? t.x + 'px' : 'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct((row.start + row.end) / 2) / 100 + ')'"
                 [style.top.px]="(i === 0 ? i + 2 : i + 1) * rowHeight()">
                 @if (row.kind) { <span class="kind">{{ row.kind }}</span> }
                 <span class="tip-name">{{ row.label }}</span>
@@ -323,8 +323,11 @@ export class UiSequencer implements OnDestroy {
   readonly scrub = output<number>();
 
   protected readonly dropIndex = signal<number | null>(null);
-  /** The row whose name is showing after a tap. */
-  protected readonly tip = signal<string | null>(null);
+  /**
+   * The row whose name is showing after a tap, and where: at the tap (in px across the grid), so it
+   * appears under the finger even on a long bar or zoomed in; turned inward near either edge of the view.
+   */
+  protected readonly tip = signal<{ id: string; x: number | null; edge: 'left' | 'right' | null } | null>(null);
   /** The row lifted by a long press, following the pointer both ways. */
   protected readonly liftedId = signal<string | null>(null);
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
@@ -416,7 +419,7 @@ export class UiSequencer implements OnDestroy {
     e.stopPropagation();
     this.selectedRowId.set(row.id);
     if (row.locked) {
-      if (kind === 'move' && !this.showLabels()) this.showTip(row.id);
+      if (kind === 'move' && !this.showLabels()) this.showTip(row.id, e.clientX);
       return;
     }
     e.preventDefault();
@@ -440,7 +443,7 @@ export class UiSequencer implements OnDestroy {
     this.selectedRowId.set(row.id);
     this.selectedKeyframeId.set(k.id);
     if (row.locked) {
-      if (!this.showLabels()) this.showTip(row.id);
+      if (!this.showLabels()) this.showTip(row.id, e.clientX);
       return;
     }
     e.preventDefault();
@@ -543,7 +546,7 @@ export class UiSequencer implements OnDestroy {
     }
     // A click on a bar, bars-only: show whose it is.
     // A tap on a diamond too: phones steer a tap near one onto it, and it's still that bar being asked about.
-    if (!d.moved && (d.kind === 'move' || d.kind === 'keyframe') && !this.showLabels() && e.type === 'pointerup') this.zone.run(() => this.showTip(d.row!.id));
+    if (!d.moved && (d.kind === 'move' || d.kind === 'keyframe') && !this.showLabels() && e.type === 'pointerup') this.zone.run(() => this.showTip(d.row!.id, e.clientX));
     // The browser took the gesture (a scroll): put back whatever was being dragged.
     if (e.type === 'pointercancel' && d.moved && d.last) d.last = { start: d.origStart, end: d.origEnd, at: d.origAt };
     this.zone.run(() => {
@@ -586,8 +589,18 @@ export class UiSequencer implements OnDestroy {
 
   // ----- Bars only: tap for the name, hold to lift ------------------------------------------------------
 
-  protected showTip(rowId: string): void {
-    this.tip.set(rowId);
+  protected showTip(rowId: string, clientX?: number): void {
+    const scroller = this.scroller()?.nativeElement;
+    const grid = scroller?.firstElementChild?.getBoundingClientRect();
+    const view = scroller?.getBoundingClientRect();
+    if (clientX === undefined || !grid || !view || !view.width) {
+      this.tip.set({ id: rowId, x: null, edge: null });
+    } else {
+      const x = Math.min(view.right, Math.max(view.left, clientX));
+      const room = 120;
+      const edge = x - view.left < room ? 'left' : view.right - x < room ? 'right' : null;
+      this.tip.set({ id: rowId, x: x - grid.left, edge });
+    }
     this.keepTip();
   }
 
@@ -752,7 +765,7 @@ export class UiSequencer implements OnDestroy {
     if (d.moved || e.type !== 'touchend') return;
     if (d.rowId) {
       this.selectedRowId.set(d.rowId);
-      this.showTip(d.rowId);
+      this.showTip(d.rowId, d.x);
     } else if (d.lane) {
       this.hideTip();
       this.setPlayheadFromPointer(d.x);
