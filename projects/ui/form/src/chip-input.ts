@@ -8,7 +8,7 @@ import { UI_CONFIG } from '@zouriel/ui';
   template: `
     <div class="ci" [class.no-radius]="!radius()" [class.invalid]="invalid()" (click)="focusInput()">
       @for (chip of chips(); track $index) {
-        <span class="chip">{{ chip }}<button type="button" class="x" tabindex="-1" aria-label="Remove" (click)="removeAt($index, $event)">×</button></span>
+        <span class="chip">{{ chip }}<button type="button" class="x" tabindex="-1" aria-label="Remove" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
       }
       <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()"
              [attr.aria-invalid]="invalid() || null"

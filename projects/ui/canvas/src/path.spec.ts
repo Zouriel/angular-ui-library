@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  breakAt, deletePoint, ellipseContour, insertPoint, joinEnds, pathBounds, pathD, polygonContour, rectContour, toggleClosed,
+  breakAt, contourArea, deletePoint, deletePoints, movePoints, orientContours, pullHandles, reverseContour, ellipseContour, insertPoint, joinEnds, pathBounds, pathD, polygonContour, rectContour, toggleClosed,
   toggleSmooth, type UiPathContour,
 } from './path';
 
@@ -47,5 +47,31 @@ describe('path', () => {
     expect(toggleSmooth(smooth, { contour: 0, point: 0 })[0].points[0].in).toBeNull();
     const line: UiPathContour[] = [{ closed: false, points: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }];
     expect(deletePoint(line, { contour: 0, point: 0 })).toHaveLength(0);
+  });
+
+  it('moves and deletes several points at once', () => {
+    const box = [rectContour(0, 0, 10, 10)];
+    const moved = movePoints(box, [{ contour: 0, point: 0 }, { contour: 0, point: 1 }], 0, -5);
+    expect(moved[0].points.map((p) => p.y)).toEqual([-5, -5, 10, 10]);
+    const two = deletePoints(box, [{ contour: 0, point: 0 }, { contour: 0, point: 2 }]);
+    expect(two[0].points).toHaveLength(2);
+    expect(two[0].closed).toBe(false);
+    expect(deletePoints(box, [0, 1, 2].map((point) => ({ contour: 0, point })))).toEqual([]);
+  });
+
+  it('pulls curve handles out of a corner, in line with the drag', () => {
+    const [c] = pullHandles([rectContour(0, 0, 10, 10)], { contour: 0, point: 1 }, { x: 14, y: -2 });
+    expect(c.points[1].out).toEqual({ x: 14, y: -2 });
+    expect(c.points[1].in).toEqual({ x: 6, y: 2 });
+  });
+
+  it('winds outlines so pieces add up and holes stay holes', () => {
+    const outer = rectContour(0, 0, 100, 100);
+    const backwards = reverseContour(rectContour(200, 0, 50, 50));
+    const hole = rectContour(25, 25, 50, 50);
+    const [a, b, h] = orientContours([outer, backwards, hole]);
+    expect(Math.sign(contourArea(a))).toBe(1);
+    expect(Math.sign(contourArea(b))).toBe(1);
+    expect(Math.sign(contourArea(h))).toBe(-1);
   });
 });

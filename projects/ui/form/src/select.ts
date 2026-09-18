@@ -36,7 +36,7 @@ export interface UiSelectOption {
           <option [value]="opt.value" [selected]="opt.value === value()" [disabled]="!!opt.disabled">{{ opt.label }}</option>
         }
       </select>
-      <span class="chevron" aria-hidden="true">▾</span>
+      <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
   `,
   styles: `

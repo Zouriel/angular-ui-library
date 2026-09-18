@@ -30,9 +30,21 @@ export interface UiPathItem {
   contours: UiPathContour[];
   /** Cut this out of the items below it rather than adding to them (the host decides what that means). */
   cut?: boolean;
+  /**
+   * How this item combines with the items below it, as in Photoshop's path operations: add to them, cut
+   * out of them (same as `cut`), keep only where they overlap, or keep all but the overlap.
+   */
+  op?: UiPathOp;
   /** Paint for the item's fill preview in the editor. */
   fill?: string | null;
   name?: string;
+}
+
+export type UiPathOp = 'add' | 'cut' | 'intersect' | 'exclude';
+
+/** An item's operation, reading the older `cut` flag too. */
+export function itemOp(item: UiPathItem): UiPathOp {
+  return item.op ?? (item.cut ? 'cut' : 'add');
 }
 
 export interface UiPathBounds {
@@ -328,6 +340,95 @@ export function movePoint(contours: readonly UiPathContour[], ref: UiPointRef, t
     out: p.out ? { x: p.out.x + dx, y: p.out.y + dy } : null,
   };
   return replaceContour(contours, ref.contour, { closed: c.closed, points: c.points.map((q, i) => (i === ref.point ? moved : q)) });
+}
+
+/** Moves several points (and their handles) by the same amount. */
+export function movePoints(contours: readonly UiPathContour[], refs: readonly UiPointRef[], dx: number, dy: number): UiPathContour[] {
+  const moving = new Set(refs.map((r) => `${r.contour}:${r.point}`));
+  return contours.map((c, ci) => ({
+    closed: c.closed,
+    points: c.points.map((p, pi) => {
+      if (!moving.has(`${ci}:${pi}`)) return p;
+      return {
+        x: p.x + dx, y: p.y + dy,
+        in: p.in ? { x: p.in.x + dx, y: p.in.y + dy } : null,
+        out: p.out ? { x: p.out.x + dx, y: p.out.y + dy } : null,
+      };
+    }),
+  }));
+}
+
+/** Removes several points at once (see `deletePoint` for what happens to a contour left too short). */
+export function deletePoints(contours: readonly UiPathContour[], refs: readonly UiPointRef[]): UiPathContour[] {
+  const doomed = new Set(refs.map((r) => `${r.contour}:${r.point}`));
+  const out: UiPathContour[] = [];
+  contours.forEach((c, ci) => {
+    const pts = c.points.filter((_, pi) => !doomed.has(`${ci}:${pi}`));
+    if (pts.length === c.points.length) out.push(c);
+    else if (pts.length >= 2) out.push({ closed: c.closed && pts.length > 2, points: pts });
+  });
+  return out;
+}
+
+/** Every point of every contour. */
+export function allPoints(contours: readonly UiPathContour[]): UiPointRef[] {
+  return contours.flatMap((c, contour) => c.points.map((_, point) => ({ contour, point })));
+}
+
+/**
+ * Pulls handles out of a point, both in line with the drag (the Convert Point tool): the handle on the
+ * next segment follows the pointer, the other mirrors it.
+ */
+export function pullHandles(contours: readonly UiPathContour[], ref: UiPointRef, to: UiPathXY): UiPathContour[] {
+  const c = contours[ref.contour];
+  const p = c.points[ref.point];
+  const next: UiPathPoint = { x: p.x, y: p.y, out: { x: to.x, y: to.y }, in: { x: 2 * p.x - to.x, y: 2 * p.y - to.y } };
+  return replaceContour(contours, ref.contour, { closed: c.closed, points: c.points.map((q, i) => (i === ref.point ? next : q)) });
+}
+
+/** The same outline traced the other way round. */
+export function reverseContour(c: UiPathContour): UiPathContour {
+  return { closed: c.closed, points: [...c.points].reverse().map(swapHandles) };
+}
+
+/** Twice the signed area of a contour's outline: positive runs clockwise on screen. */
+export function contourArea(c: UiPathContour): number {
+  const pts = flattenContour(c, 12);
+  let s = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    s += a.x * b.y - b.x * a.y;
+  }
+  return s;
+}
+
+/** Whether a point is inside a closed contour (even–odd, curves sampled). */
+export function insideContour(c: UiPathContour, at: UiPathXY): boolean {
+  const pts = flattenContour(c, 12);
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const a = pts[i];
+    const b = pts[j];
+    if ((a.y > at.y) !== (b.y > at.y) && at.x < ((b.x - a.x) * (at.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Winds an item's closed outlines consistently — outer outlines clockwise, holes the other way — so
+ * that under the non-zero rule pieces add up instead of cancelling where they overlap (a piece flipped
+ * by scaling, or drawn the other way round with the pen, would otherwise punch a hole).
+ */
+export function orientContours(contours: readonly UiPathContour[]): UiPathContour[] {
+  const closed = contours.filter((c) => c.closed && c.points.length > 2);
+  return contours.map((c) => {
+    if (!c.closed || c.points.length < 3) return c;
+    const probe = c.points[0];
+    const depth = closed.filter((o) => o !== c && insideContour(o, probe)).length;
+    const clockwise = contourArea(c) > 0;
+    return clockwise === (depth % 2 === 0) ? c : reverseContour(c);
+  });
 }
 
 /**

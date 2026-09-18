@@ -1,15 +1,22 @@
-import { Component, ElementRef, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { Component, Directive, ElementRef, contentChild, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+
+/**
+ * An icon to show in place of a `ui-number-input`'s text label: `<svg uiNumberLabel …/>` inside the input.
+ * It works like the label (drag it to scrub); keep `label` or `ariaLabel` set for screen readers.
+ */
+@Directive({ selector: '[uiNumberLabel]', host: { class: 'ui-number-label' } })
+export class UiNumberLabel {}
 
 /** `ui-number-input` — numeric field with stepper buttons (CVA). */
 @Component({
   selector: 'ui-number-input',
   template: `
     <div class="wrap" [class.no-radius]="!radius()" [class.invalid]="invalid()" [attr.data-size]="size()">
-      @if (label()) {
-        <span class="scrub" [class.active]="scrubbing()" [attr.title]="'Drag to change ' + label()" aria-hidden="true"
-          (pointerdown)="startScrub($event)">{{ label() }}</span>
+      @if (label() || labelIcon()) {
+        <span class="scrub" [class.active]="scrubbing()" [attr.title]="'Drag to change ' + (label() || ariaLabel())" aria-hidden="true"
+          (pointerdown)="startScrub($event)">@if (labelIcon()) { <ng-content select="[uiNumberLabel]" /> } @else { {{ label() }} }</span>
       }
       <input
         class="ui-number"
@@ -29,8 +36,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
       <div class="steppers">
-        <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())">▲</button>
-        <button type="button" tabindex="-1" aria-label="Decrement" [disabled]="disabled()" (click)="bump(-step())">▼</button>
+        <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" aria-label="Decrement" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       }
     </div>
@@ -58,7 +65,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .suffix { display: flex; align-items: center; padding-right: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="sm"] .ui-number { padding: 0 var(--ui-space-2); }
     .steppers { display: flex; flex-direction: column; border-left: 1px solid var(--ui-color-border); }
-    .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font-size: 8px; padding: 0; }
+    .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; }
     .steppers button:first-child { border-bottom: 1px solid var(--ui-color-border); }
     .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .steppers button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
@@ -67,6 +74,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 })
 export class UiNumberInput implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
+  protected readonly labelIcon = contentChild(UiNumberLabel);
   min = input<number>();
   max = input<number>();
   step = input(1);
@@ -82,7 +90,7 @@ export class UiNumberInput implements ControlValueAccessor {
   suffix = input('');
   /** Decimal places kept; values are rounded to this. */
   precision = input<number | null>(null);
-  /** Show the ▲▼ buttons. */
+  /** Show the up/down stepper buttons. */
   steppers = input(true);
 
   protected readonly scrubbing = signal(false);
