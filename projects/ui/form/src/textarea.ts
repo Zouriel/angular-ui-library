@@ -1,14 +1,21 @@
-import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG } from '@zouriel/ui';
 
-/** `ui-textarea` — multi-line text field (CVA). */
+/**
+ * `ui-textarea` — multi-line text field (CVA).
+ *
+ * `autosize` makes it grow with what is typed, from `rows` lines up to `maxRows`, and takes away the
+ * drag handle: a comment box people resize by hand is a box that was the wrong size.
+ */
 @Component({
   selector: 'ui-textarea',
   template: `
     <textarea
+      #field
       class="ui-textarea"
       [class.no-radius]="!radius()"
+      [class.autosize]="autosize()"
       [attr.placeholder]="placeholder()"
       [attr.rows]="rows()"
       [attr.autocomplete]="autocomplete()"
@@ -33,6 +40,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     .ui-textarea:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
     .ui-textarea:disabled { opacity: 0.55; cursor: not-allowed; }
     .ui-textarea.no-radius { border-radius: 0; }
+    .ui-textarea.autosize { resize: none; overflow-y: hidden; }
     .ui-textarea[aria-invalid="true"] { border-color: var(--ui-color-danger); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiTextarea), multi: true }],
@@ -45,6 +53,33 @@ export class UiTextarea implements ControlValueAccessor {
   name = input<string>();
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** Grow with the text instead of scrolling, and no resize handle. */
+  autosize = input(false);
+  /** With `autosize`: the most lines it grows to before scrolling. */
+  maxRows = input(8);
+
+  private readonly field = viewChild.required<ElementRef<HTMLTextAreaElement>>('field');
+
+  constructor() {
+    // After render, so a value written from outside (a reset to '') shrinks it back too.
+    afterRenderEffect(() => {
+      this.value();
+      if (this.autosize()) this.fit();
+    });
+  }
+
+  private fit(): void {
+    const el = this.field().nativeElement;
+    const style = getComputedStyle(el);
+    const line = parseFloat(style.lineHeight) || 24;
+    const chrome = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+      + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    const max = line * this.maxRows() + chrome;
+    el.style.height = 'auto';
+    const wanted = el.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    el.style.height = `${Math.min(wanted, max)}px`;
+    el.style.overflowY = wanted > max ? 'auto' : 'hidden';
+  }
 
   protected readonly value = signal('');
   protected readonly disabled = signal(false);
