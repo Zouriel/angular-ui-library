@@ -52,9 +52,9 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <p class="note">Playhead: {{ playhead() | number: '1.0-0' }}</p>
         </doc-demo>
         <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [showLabels]=&quot;false&quot; [end]=&quot;700&quot; [(zoom)]=&quot;zoom&quot; ... />">
-          <p class="note">Bars only, like a phone video editor: tap a bar for its name, hold it to drag it along or up and down, pinch (or Ctrl + wheel) to zoom. Past <code>end</code> is shaded.</p>
+          <p class="note">Bars only, like a phone video editor: tap a bar for its name, hold it to drag it along or up and down, pinch (or Ctrl + wheel) to zoom. Past <code>end</code> is shaded; with <code>endDraggable</code> the End has a grip — drag it (to the edge to keep going) or use the arrow keys.</p>
           <div class="seq">
-            <ui-sequencer [rows]="rows()" [length]="1000" [showLabels]="false" [end]="700" [rowHeight]="26" [(playhead)]="playhead"
+            <ui-sequencer [rows]="rows()" [length]="demoLength()" [showLabels]="false" [end]="demoEnd()" [endDraggable]="true" (endChange)="onEnd($event)" [rowHeight]="26" [(playhead)]="playhead"
               (rangeChange)="onRange($event)" (keyframeChange)="onKeyframe($event)" (rowReorder)="onReorder($event)"
               (muteToggle)="toggle($event, 'muted')" (lockToggle)="toggle($event, 'locked')" />
           </div>
@@ -242,10 +242,18 @@ export class DesignToolsPage {
     { name: '(activate)', type: 'void', default: '', desc: 'Double-click — e.g. start editing text.' },
     { name: 'uiSnap(moving, targets, threshold, extra?)', type: 'function', default: '', desc: 'Edges-and-centres snapping; returns { dx, dy, guides }.' },
   ];
+  protected readonly demoEnd = signal(700);
+  protected readonly demoLength = signal(1000);
+  protected onEnd(e: { end: number; final: boolean }): void {
+    this.demoEnd.set(Math.round(e.end));
+    if (e.end > this.demoLength() - 40) this.demoLength.update((l) => l + 200);
+    if (e.final) this.demoLength.set(Math.max(1000, Math.round(e.end) + 200));
+  }
   protected readonly sequencerApi: ApiRow[] = [
     { name: 'rows', type: 'UiSequencerRow[]', default: '[]', desc: 'id, label, start, end, keyframes (at 0…1 within the bar), depth, muted, locked, kind, fixed (no trim edges).' },
     { name: 'showLabels', type: 'boolean', default: 'true', desc: 'Off: bars only. Tap a bar for its name (with hide/lock), hold to lift it and drag both ways, pinch to zoom.' },
     { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
+    { name: 'endDraggable', type: 'boolean', default: 'false', desc: 'Give the End a grip; drags and arrow keys report (endChange) {end, final}, not clamped to length so the host can grow it.' },
     { name: 'length', type: 'number', default: '100', desc: 'Timeline length in units.' },
     { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Ruler markers; also snap targets.' },
     { name: '[(playhead)] / [(selectedRowId)] / [(selectedKeyframeId)]', type: 'model', default: '', desc: 'Two-way state.' },

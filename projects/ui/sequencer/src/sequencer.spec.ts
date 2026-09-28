@@ -212,3 +212,50 @@ describe('UiScrubber lanes and long press', () => {
     expect(host.value()).not.toBe(300);
   });
 });
+
+@Component({
+  imports: [UiSequencer],
+  template: `<ui-sequencer [rows]="[]" [length]="1000" [end]="600" [endDraggable]="true" (endChange)="ends.push($event)" />`,
+})
+class EndHost {
+  readonly ends: { end: number; final: boolean }[] = [];
+}
+
+function pointer(type: string, x: number): Event {
+  const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: 5, button: 0 });
+  Object.defineProperty(event, 'pointerId', { value: 7 });
+  Object.defineProperty(event, 'pointerType', { value: 'mouse' });
+  return event;
+}
+
+describe('UiSequencer, a draggable end', () => {
+  it('reports the end as it is dragged — past the timeline too — and once more when let go', async () => {
+    await TestBed.configureTestingModule({ imports: [EndHost] }).compileComponents();
+    const fixture = TestBed.createComponent(EndHost);
+    fixture.detectChanges();
+    const handle = fixture.nativeElement.querySelector('.end-handle') as HTMLElement;
+    expect(handle).not.toBeNull();
+    expect(handle.getAttribute('aria-valuenow')).toBe('600');
+    handle.dispatchEvent(pointer('pointerdown', 0));
+    window.dispatchEvent(pointer('pointermove', 150));
+    window.dispatchEvent(pointer('pointermove', 900));
+    window.dispatchEvent(pointer('pointerup', 900));
+    const ends = fixture.componentInstance.ends;
+    expect(ends.at(-1)!.final).toBe(true);
+    expect(ends.at(-1)!.end).toBeGreaterThan(1000);
+    expect(ends.some((e) => !e.final)).toBe(true);
+  });
+
+  it('moves with the arrow keys, and is absent unless asked for', async () => {
+    await TestBed.configureTestingModule({ imports: [EndHost] }).compileComponents();
+    const fixture = TestBed.createComponent(EndHost);
+    fixture.detectChanges();
+    const handle = fixture.nativeElement.querySelector('.end-handle') as HTMLElement;
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(fixture.componentInstance.ends.at(-1)).toEqual({ end: 610, final: true });
+
+    const plain = TestBed.createComponent(SequencerHost);
+    plain.detectChanges();
+    expect(plain.nativeElement.querySelector('.end-handle')).toBeNull();
+  });
+});

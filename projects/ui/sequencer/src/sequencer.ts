@@ -54,7 +54,7 @@ export interface UiSequencerKeyframeRef {
   clientY: number;
 }
 
-type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder' | 'lift';
+type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder' | 'lift' | 'page-end';
 
 /** How long a bar is held before it lifts and can go anywhere — along the timeline and up or down the layers. */
 const LONG_PRESS_MS = 380;
@@ -96,6 +96,12 @@ const TIP_MS = 2600;
         <div class="ruler" #ruler (pointerdown)="startPlayhead($event)">
           @for (m of markers(); track $index) {
             <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan($index))"><span class="mlabel">{{ m.label }}</span></span>
+          }
+          @if (endDraggable() && end() !== null) {
+            <!-- Never closer to the left edge than half its width, so an End at 0 can still be grabbed. -->
+            <span class="end-handle" role="slider" tabindex="0" [style.left]="'max(13px, ' + pct(end()!) + '%)'" [attr.aria-label]="endLabel()"
+              [attr.aria-valuemin]="0" [attr.aria-valuenow]="round(end()!)" [attr.title]="endLabel()"
+              (pointerdown)="startPageEnd($event)" (keydown)="onEndKey($event)"><span aria-hidden="true"></span></span>
           }
           <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
             aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
@@ -140,6 +146,10 @@ const TIP_MS = 2600;
         }
         @if (rows().length === 0) {
           <div class="empty">{{ emptyText() }}</div>
+        }
+        @if (endDraggable() && end() !== null) {
+          <div class="end-line" aria-hidden="true" [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct(end()!) / 100 + ')'"
+            (pointerdown)="startPageEnd($event)"></div>
         }
         @if (end() !== null && end()! < length()) {
           <div class="beyond" aria-hidden="true" [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct(end()!) / 100 + ')'"></div>
@@ -232,6 +242,16 @@ const TIP_MS = 2600;
     .diamond:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .empty { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); height: calc(var(--row-h) * 2); }
     .drop-end { grid-column: 1 / 2; height: 0; box-shadow: 0 -2px 0 var(--ui-color-primary); }
+    .end-handle { position: absolute; top: 0; bottom: 0; width: 14px; margin-left: -7px; z-index: 2; cursor: ew-resize; touch-action: none;
+      display: flex; align-items: center; justify-content: center; }
+    .end-handle span { width: 6px; height: 70%; border-radius: 3px; background: var(--ui-color-text-muted);
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .end-handle:hover span, .end-handle:focus-visible span { background: var(--ui-color-primary); transform: scaleX(1.3); }
+    .end-handle:focus-visible { outline: none; }
+    .end-line { position: absolute; top: var(--row-h); bottom: 0; width: 10px; margin-left: -5px; z-index: 2; cursor: ew-resize; touch-action: none; }
+    .end-line::after { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: color-mix(in srgb, var(--ui-color-text-muted) 45%, transparent); }
+    .end-line:hover::after { background: var(--ui-color-primary); }
+    :host(.compact) .end-handle, :host(.no-labels) .end-handle { width: 26px; margin-left: -13px; }
     .beyond { position: absolute; top: var(--row-h); bottom: 0; right: 0; pointer-events: none; z-index: 1;
       background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ui-color-text) 5%, transparent) 0 6px, transparent 6px 12px);
       border-left: 1.5px dashed var(--ui-color-border-strong); }
@@ -297,6 +317,9 @@ export class UiSequencer implements OnDestroy {
   snapPixels = input(6);
   /** Keyboard step as a fraction of the length. */
   keyStep = input(0.01);
+  /** The End (see `end`) can be dragged, to make the timeline's content longer or shorter. */
+  endDraggable = input(false);
+  endLabel = input('Drag to change where it ends');
   reorderable = input(true);
   /** 1 fits the width; larger values zoom in and scroll horizontally. A pinch or Ctrl + wheel changes it. */
   zoom = model(1);
@@ -321,6 +344,8 @@ export class UiSequencer implements OnDestroy {
   readonly lockToggle = output<string>();
   /** A click on an empty part of a lane or the ruler, after the playhead moved there. */
   readonly scrub = output<number>();
+  /** The End was dragged (or moved with the keys): where it is now, and whether the gesture is done. */
+  readonly endChange = output<{ end: number; final: boolean }>();
 
   protected readonly dropIndex = signal<number | null>(null);
   /**
@@ -410,6 +435,22 @@ export class UiSequencer implements OnDestroy {
     this.setPlayheadFromPointer(e.clientX);
     this.scrub.emit(this.playhead());
     this.begin(e, { kind: 'playhead', origStart: 0, origEnd: 0, origAt: 0 });
+  }
+
+  protected startPageEnd(e: PointerEvent): void {
+    if (e.button !== 0 || this.end() === null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    this.hideTip();
+    this.begin(e, { kind: 'page-end', origStart: 0, origEnd: 0, origAt: this.end()! });
+  }
+
+  protected onEndKey(e: KeyboardEvent): void {
+    const end = this.end();
+    if (end === null || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+    e.preventDefault();
+    const step = this.length() * this.keyStep() * (e.shiftKey ? 10 : 1);
+    this.endChange.emit({ end: Math.max(0, end + (e.key === 'ArrowRight' ? step : -step)), final: true });
   }
 
   protected startBar(e: PointerEvent, row: UiSequencerRow, kind: 'move' | 'start' | 'end'): void {
@@ -516,6 +557,16 @@ export class UiSequencer implements OnDestroy {
           this.rangeChange.emit({ rowId: d.row!.id, start: d.origStart, end, final: false });
           break;
         }
+        case 'page-end': {
+          // Under the pointer at the timeline's CURRENT scale, and not clamped to its length: the host
+          // grows the timeline while the End is pulled to its edge, and the End keeps following.
+          const rect = this.ruler()!.nativeElement.getBoundingClientRect();
+          let end = rect.width > 0 ? Math.max(0, ((e.clientX - rect.left) / rect.width) * this.length()) : Math.max(0, d.origAt + du);
+          if (!free) end = this.snap(end, null, d.unitsPerPx);
+          d.last = { start: 0, end, at: end };
+          this.endChange.emit({ end, final: false });
+          break;
+        }
         case 'keyframe': {
           const span = d.origEnd - d.origStart || 1;
           let units = d.origStart + d.origAt * span + du;
@@ -552,7 +603,8 @@ export class UiSequencer implements OnDestroy {
     this.zone.run(() => {
       if (e.type === 'pointercancel' && d.kind === 'reorder') this.dropIndex.set(null);
       if (!d.moved) return;
-      if ((d.kind === 'move' || d.kind === 'start' || d.kind === 'end') && d.last)
+      if (d.kind === 'page-end' && d.last) this.endChange.emit({ end: d.last.end, final: true });
+      else if ((d.kind === 'move' || d.kind === 'start' || d.kind === 'end') && d.last)
         this.rangeChange.emit({ rowId: d.row!.id, start: d.last.start, end: d.last.end, final: true });
       else if (d.kind === 'keyframe' && d.last)
         this.keyframeChange.emit({ rowId: d.row!.id, keyframeId: d.keyframe!.id, at: d.last.at, final: true });
@@ -705,7 +757,7 @@ export class UiSequencer implements OnDestroy {
     }
     const t = e.changedTouches[0];
     const target = e.target as Element | null;
-    if (!t || !target || target.closest('.edge, .diamond, .playhead-knob, .ruler, .tip, .toggle')) {
+    if (!t || !target || target.closest('.edge, .diamond, .playhead-knob, .ruler, .tip, .toggle, .end-handle, .end-line')) {
       this.touch = null;
       return;
     }
