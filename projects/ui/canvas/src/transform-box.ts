@@ -43,6 +43,11 @@ const HANDLES: Handle[] = [
  *
  * Modifiers: Shift keeps proportions while resizing and snaps rotation to 15°; Alt resizes from the
  * centre. Arrow keys nudge by one unit, Shift+arrow by ten.
+ *
+ * Two fingers pinch: the box grows or shrinks about its centre, proportions kept, and follows the
+ * point between the fingers. A second finger landing anywhere while one drags the box turns the drag
+ * into a pinch; a host that sees two fingers land elsewhere (both beside a small element) can start
+ * one with `startPinch`. It reports as a resize: `transformStart('resize')`, `transform`, `transformEnd`.
  */
 @Component({
   selector: 'ui-transform-box',
@@ -164,6 +169,46 @@ export class UiTransformBox implements OnDestroy {
 
   private readonly onMove = (e: PointerEvent) => this.move(e);
   private readonly onUp = (e: PointerEvent) => this.end(e);
+  private readonly onSecondDown = (e: PointerEvent) => this.secondFinger(e);
+
+  /** Two fingers on the stage: where each is, and the box and spread when they started. */
+  private pinch: {
+    points: Map<number, { x: number; y: number }>;
+    spread: number;
+    mid: { x: number; y: number };
+    origin: UiBox;
+    last: UiBox;
+    moved: boolean;
+  } | null = null;
+  private readonly onPinchMove = (e: PointerEvent) => this.pinchMove(e);
+  private readonly onPinchUp = (e: PointerEvent) => this.pinchEnd(e);
+
+  /**
+   * Starts a pinch from two touch points (pointer events, or anything with a pointerId and client
+   * position) — for a host that sees both fingers land off the box. Does nothing while disabled.
+   */
+  startPinch(a: { pointerId: number; clientX: number; clientY: number }, b: { pointerId: number; clientX: number; clientY: number }): void {
+    if (this.disabled() || this.pinch || a.pointerId === b.pointerId) return;
+    // A drag in progress hands over to the pinch, keeping where it had got to.
+    const from = this.drag?.last ?? this.box();
+    // A drag that already moved has told the host it started; the pinch carries on from it.
+    const carried = !!this.drag?.moved;
+    if (this.drag) { this.detach(); this.drag = null; }
+    const points = new Map([[a.pointerId, { x: a.clientX, y: a.clientY }], [b.pointerId, { x: b.clientX, y: b.clientY }]]);
+    const [p, q] = [...points.values()];
+    this.pinch = { points, spread: Math.max(1, Math.hypot(q.x - p.x, q.y - p.y)), mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, origin: { ...from }, last: { ...from }, moved: carried };
+    this.zone.runOutsideAngular(() => {
+      window.addEventListener('pointermove', this.onPinchMove);
+      window.addEventListener('pointerup', this.onPinchUp);
+      window.addEventListener('pointercancel', this.onPinchUp);
+    });
+    if (carried) this.zone.run(() => this.transformStart.emit('resize'));
+  }
+
+  /** Whether two fingers are pinching the box now. */
+  get pinching(): boolean {
+    return this.pinch !== null;
+  }
 
   protected start(e: PointerEvent, mode: UiTransformMode, handle?: Handle): void {
     if (this.disabled() || e.button !== 0) return;
@@ -186,13 +231,62 @@ export class UiTransformBox implements OnDestroy {
       window.addEventListener('pointermove', this.onMove);
       window.addEventListener('pointerup', this.onUp);
       window.addEventListener('pointercancel', this.onUp);
+      // A finger dragging the box: a second one anywhere makes it a pinch.
+      if (e.pointerType === 'touch') window.addEventListener('pointerdown', this.onSecondDown, true);
     });
     this.transformStart.emit(mode);
+  }
+
+  private secondFinger(e: PointerEvent): void {
+    const d = this.drag;
+    if (!d || e.pointerType !== 'touch' || e.pointerId === d.pointerId || d.pointerType !== 'touch') return;
+    e.preventDefault();
+    e.stopPropagation();
+    const first = { pointerId: d.pointerId, clientX: d.startX, clientY: d.startY };
+    // The first finger may have moved since: its latest place is where the pinch measures from.
+    const at = this.lastPoint ?? first;
+    this.startPinch({ pointerId: d.pointerId, clientX: at.clientX, clientY: at.clientY }, e);
+  }
+
+  private lastPoint: { clientX: number; clientY: number } | null = null;
+
+  private pinchMove(e: PointerEvent): void {
+    const p = this.pinch;
+    if (!p || !p.points.has(e.pointerId)) return;
+    p.points.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const [a, b] = [...p.points.values()];
+    const scale = (this.pointerScale() ?? this.scale()) || 1;
+    const o = p.origin;
+    const min = this.minSize();
+    // Equal from every side: one factor for both, never below the smallest size.
+    const k = Math.max(Math.hypot(b.x - a.x, b.y - a.y) / p.spread, min / Math.max(1e-6, o.w), min / Math.max(1e-6, o.h));
+    const w = o.w * k;
+    const h = o.h * k;
+    const cx = o.x + o.w / 2 + ((a.x + b.x) / 2 - p.mid.x) / scale;
+    const cy = o.y + o.h / 2 + ((a.y + b.y) / 2 - p.mid.y) / scale;
+    p.last = { ...o, x: cx - w / 2, y: cy - h / 2, w, h };
+    // Told on the first movement, so two fingers that land and lift change nothing.
+    if (!p.moved) this.zone.run(() => this.transformStart.emit('resize'));
+    p.moved = true;
+    this.zone.run(() => this.transform.emit(p.last));
+  }
+
+  private pinchEnd(e: PointerEvent): void {
+    const p = this.pinch;
+    if (!p || !p.points.has(e.pointerId)) return;
+    // Lifting either finger ends it; the other one doesn't carry on as a drag, so nothing jumps.
+    this.pinch = null;
+    window.removeEventListener('pointermove', this.onPinchMove);
+    window.removeEventListener('pointerup', this.onPinchUp);
+    window.removeEventListener('pointercancel', this.onPinchUp);
+    // Fingers that never moved changed nothing: no end, so the host doesn't record a change.
+    if (p.moved) this.zone.run(() => this.transformEnd.emit(p.last));
   }
 
   private move(e: PointerEvent): void {
     const d = this.drag;
     if (!d || e.pointerId !== d.pointerId) return;
+    this.lastPoint = { clientX: e.clientX, clientY: e.clientY };
     if (!d.moved) {
       // A finger wobbles: don't let a tap become a one-pixel move.
       const slop = d.pointerType === 'touch' ? 6 : 1;
@@ -296,9 +390,14 @@ export class UiTransformBox implements OnDestroy {
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
     window.removeEventListener('pointercancel', this.onUp);
+    window.removeEventListener('pointerdown', this.onSecondDown, true);
+    this.lastPoint = null;
   }
 
   ngOnDestroy(): void {
     this.detach();
+    window.removeEventListener('pointermove', this.onPinchMove);
+    window.removeEventListener('pointerup', this.onPinchUp);
+    window.removeEventListener('pointercancel', this.onPinchUp);
   }
 }
