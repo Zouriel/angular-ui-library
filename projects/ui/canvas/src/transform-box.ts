@@ -44,8 +44,9 @@ const HANDLES: Handle[] = [
  * Modifiers: Shift keeps proportions while resizing and snaps rotation to 15°; Alt resizes from the
  * centre. Arrow keys nudge by one unit, Shift+arrow by ten.
  *
- * Two fingers pinch: the box grows or shrinks about its centre, proportions kept, and follows the
- * point between the fingers. A second finger landing anywhere while one drags the box turns the drag
+ * Two fingers pinch: the box grows or shrinks toward the point between the fingers — that point stays
+ * under them, like zooming a photo — proportions kept, and moves with them. Fingers either side of
+ * the middle grow it equally from every side. A second finger landing anywhere while one drags the box turns the drag
  * into a pinch; a host that sees two fingers land elsewhere (both beside a small element) can start
  * one with `startPinch`. It reports as a resize: `transformStart('resize')`, `transform`, `transformEnd`.
  */
@@ -176,6 +177,8 @@ export class UiTransformBox implements OnDestroy {
     points: Map<number, { x: number; y: number }>;
     spread: number;
     mid: { x: number; y: number };
+    /** The box's centre on screen when the pinch began. */
+    centre: { x: number; y: number };
     origin: UiBox;
     last: UiBox;
     moved: boolean;
@@ -196,7 +199,10 @@ export class UiTransformBox implements OnDestroy {
     if (this.drag) { this.detach(); this.drag = null; }
     const points = new Map([[a.pointerId, { x: a.clientX, y: a.clientY }], [b.pointerId, { x: b.clientX, y: b.clientY }]]);
     const [p, q] = [...points.values()];
-    this.pinch = { points, spread: Math.max(1, Math.hypot(q.x - p.x, q.y - p.y)), mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, origin: { ...from }, last: { ...from }, moved: carried };
+    const stage = (this.el.nativeElement.offsetParent as HTMLElement | null)?.getBoundingClientRect();
+    const px = this.pointerScale() ?? this.scale();
+    const centre = { x: (stage?.left ?? 0) + (from.x + from.w / 2) * px, y: (stage?.top ?? 0) + (from.y + from.h / 2) * px };
+    this.pinch = { centre, points, spread: Math.max(1, Math.hypot(q.x - p.x, q.y - p.y)), mid: { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }, origin: { ...from }, last: { ...from }, moved: carried };
     this.zone.runOutsideAngular(() => {
       window.addEventListener('pointermove', this.onPinchMove);
       window.addEventListener('pointerup', this.onPinchUp);
@@ -262,8 +268,12 @@ export class UiTransformBox implements OnDestroy {
     const k = Math.max(Math.hypot(b.x - a.x, b.y - a.y) / p.spread, min / Math.max(1e-6, o.w), min / Math.max(1e-6, o.h));
     const w = o.w * k;
     const h = o.h * k;
-    const cx = o.x + o.w / 2 + ((a.x + b.x) / 2 - p.mid.x) / scale;
-    const cy = o.y + o.h / 2 + ((a.y + b.y) / 2 - p.mid.y) / scale;
+    // The point that was between the fingers stays between them: the centre keeps its offset from it,
+    // scaled, and the pair's movement carries both.
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const cx = o.x + o.w / 2 + (mx - p.mid.x + (p.centre.x - p.mid.x) * (k - 1)) / scale;
+    const cy = o.y + o.h / 2 + (my - p.mid.y + (p.centre.y - p.mid.y) * (k - 1)) / scale;
     p.last = { ...o, x: cx - w / 2, y: cy - h / 2, w, h };
     // Told on the first movement, so two fingers that land and lift change nothing.
     if (!p.moved) this.zone.run(() => this.transformStart.emit('resize'));

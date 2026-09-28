@@ -33,13 +33,14 @@ describe('UiTransformBox pinch', () => {
   });
 
   it('grows equally from every side about its centre, keeping proportions and rotation', () => {
-    host.tb().startPinch({ pointerId: 1, clientX: 100, clientY: 200 }, { pointerId: 2, clientX: 200, clientY: 200 });
-    window.dispatchEvent(pointer('pointermove', 2, 250, 200));
-    window.dispatchEvent(pointer('pointermove', 1, 50, 200));
-    window.dispatchEvent(pointer('pointerup', 2, 250, 200));
+    // Fingers either side of the centre (140, 120), spreading from 80 apart to 160.
+    host.tb().startPinch({ pointerId: 1, clientX: 100, clientY: 120 }, { pointerId: 2, clientX: 180, clientY: 120 });
+    window.dispatchEvent(pointer('pointermove', 2, 220, 120));
+    window.dispatchEvent(pointer('pointermove', 1, 60, 120));
+    window.dispatchEvent(pointer('pointerup', 2, 220, 120));
     expect(host.starts).toEqual(['resize']);
     const end = host.ends.at(-1)!;
-    // Spread 100 → 200: twice the size, same centre (140, 120), same turn.
+    // Twice the size, same centre, same turn.
     expect(end.w).toBeCloseTo(160, 6);
     expect(end.h).toBeCloseTo(80, 6);
     expect(end.x + end.w / 2).toBeCloseTo(140, 6);
@@ -57,6 +58,20 @@ describe('UiTransformBox pinch', () => {
     expect(end.w).toBeCloseTo(80, 6);
     expect(end.x + end.w / 2).toBeCloseTo(170, 6);
     expect(end.y + end.h / 2).toBeCloseTo(150, 6);
+  });
+
+  it('zooms toward the fingers: the point between them stays under them', () => {
+    // jsdom lays nothing out, so the stage sits at 0,0 and one unit is one pixel. The box is 100..180 × 100..140;
+    // pinch about (110, 110), near its top-left corner, to twice the spread.
+    host.tb().startPinch({ pointerId: 1, clientX: 100, clientY: 110 }, { pointerId: 2, clientX: 120, clientY: 110 });
+    window.dispatchEvent(pointer('pointermove', 1, 90, 110));
+    window.dispatchEvent(pointer('pointermove', 2, 130, 110));
+    window.dispatchEvent(pointer('pointerup', 2, 130, 110));
+    const end = host.ends.at(-1)!;
+    expect(end.w).toBeCloseTo(160, 6);
+    // (110, 110) was 30 left and 10 up of the centre (140, 120); twice as far now, from the same point.
+    expect(end.x + end.w / 2).toBeCloseTo(170, 6);
+    expect(end.y + end.h / 2).toBeCloseTo(130, 6);
   });
 
   it('never shrinks below the smallest size, on either side', () => {
@@ -77,9 +92,10 @@ describe('UiTransformBox pinch', () => {
     expect(host.starts).toEqual(['move', 'resize']);
     expect(host.ends).toHaveLength(1);
     const end = host.ends[0];
-    // The midpoint moved 50 right as the spread doubled.
+    // The first finger held the centre while the second spread away: the box doubled toward the pair's
+    // middle, and the point under the first finger — the centre — stayed put.
     expect(end.w).toBeCloseTo(160, 6);
-    expect(end.x + end.w / 2).toBeCloseTo(190, 6);
+    expect(end.x + end.w / 2).toBeCloseTo(140, 6);
   });
 
   it('two fingers that land and lift without moving change nothing', () => {
