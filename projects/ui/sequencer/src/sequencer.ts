@@ -233,11 +233,12 @@ const TIP_MS = 2600;
     .bar.muted { opacity: .45; }
     .bar.locked { cursor: not-allowed; background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ui-color-text) 8%, transparent) 5px 7px); }
     .bar:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .edge { position: absolute; top: -2px; bottom: -2px; width: 8px; cursor: ew-resize; z-index: 2; }
-    .edge.start { left: -4px; } .edge.end { right: -4px; }
+    /* Mostly outside the bar: a keyframe at 0% or 100% sits over the inside, and keyframes win. */
+    .edge { position: absolute; top: -2px; bottom: -2px; width: 16px; cursor: ew-resize; z-index: 2; }
+    .edge.start { left: -14px; } .edge.end { right: -14px; }
     .bar.locked .edge { display: none; }
     .diamond { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; rotate: 45deg; box-sizing: border-box;
-      background: var(--ui-color-surface); border: 1.5px solid var(--ui-color-primary); cursor: ew-resize; z-index: 1; }
+      background: var(--ui-color-surface); border: 1.5px solid var(--ui-color-primary); cursor: ew-resize; z-index: 3; }
     .diamond.selected { background: var(--ui-color-primary); }
     .diamond:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .empty { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); height: calc(var(--row-h) * 2); }
