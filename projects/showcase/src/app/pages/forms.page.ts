@@ -1,9 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker,
+  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, type UiChoice,
 } from '@zouriel/ui/form';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
 import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepicker';
@@ -18,7 +18,7 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
     ReactiveFormsModule,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker,
+    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker,
     UiCombobox, UiMultiSelect, UiDatePicker, UiCalendar, UiDateRangePicker,
     DocPage, DocSection, DocDemo,
   ],
@@ -198,11 +198,46 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
       </doc-section>
 
       </form>
+
+      <doc-section name="Choice grid" selector="ui-choice-grid" [api]="choiceApi"
+        summary="One of many options as tiles, grouped under headings; a radio group underneath. Project #tile to draw a picture per option."
+        [shapes]="'interface UiChoice { value: string; label: string; description?: string; group?: string; disabled?: boolean; }'">
+        <doc-demo code="<ui-choice-grid [options]=&quot;presets&quot; [(value)]=&quot;preset&quot;><ng-template #tile let-item>…</ng-template></ui-choice-grid>">
+          <ui-choice-grid [options]="choices" [(value)]="choice" label="Motion preset">
+            <ng-template #tile let-item let-selected="selected"><span class="swatch" [class.on]="selected">{{ item.label[0] }}</span></ng-template>
+          </ui-choice-grid>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Anchor picker" selector="ui-anchor-picker" [api]="anchorApi"
+        summary="The nine-dot grid for picking a point of a box — a pivot, an alignment. Value is {x, y} in fractions of the box.">
+        <doc-demo code="<ui-anchor-picker [(value)]=&quot;pivot&quot; label=&quot;Pivot&quot; />">
+          <ui-anchor-picker [(value)]="anchor" label="Pivot" /> <span>{{ anchor().x }}, {{ anchor().y }}</span>
+        </doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `.stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }`,
 })
 export class FormsPage {
+  protected readonly choices: UiChoice[] = [
+    { value: 'fade', label: 'Fade', group: 'Basic' }, { value: 'rise', label: 'Rise', group: 'Basic' },
+    { value: 'bounce', label: 'Bounce in', group: 'Bounce', description: 'Playful' }, { value: 'drop', label: 'Drop', group: 'Bounce' },
+    { value: 'flip', label: 'Flip', group: 'Turn', disabled: true },
+  ];
+  protected readonly choice = signal<string | null>('rise');
+  protected readonly anchor = signal({ x: 0.5, y: 0 });
+  protected readonly choiceApi: ApiRow[] = [
+    { name: 'options', type: 'UiChoice[]', default: '[]', desc: 'The tiles; items with a group sit under its heading.' },
+    { name: '[(value)] / ngModel', type: 'string | null', default: 'null', desc: 'The chosen value.' },
+    { name: 'label', type: 'string', default: "'Choices'", desc: 'Accessible name of the group.' },
+    { name: 'minTile', type: 'string', default: "'88px'", desc: 'Narrowest a tile may get.' },
+    { name: '(picked)', type: 'UiChoice', default: '', desc: 'Every choice, including the chosen one again.' },
+  ];
+  protected readonly anchorApi: ApiRow[] = [
+    { name: '[(value)] / ngModel', type: '{ x: number; y: number }', default: '{0.5, 0.5}', desc: 'Fractions of the box; between dots shows none chosen.' },
+    { name: 'label', type: 'string', default: "'Point'", desc: 'Accessible name.' },
+  ];
   protected readonly OPTION = OPTION;
   protected readonly roles = [{ label: 'Engineer', value: 'eng' }, { label: 'Designer', value: 'design' }, { label: 'PM', value: 'pm' }];
   protected readonly plans = [{ label: 'Free', value: 'free' }, { label: 'Pro', value: 'pro' }, { label: 'Enterprise', value: 'ent' }];
