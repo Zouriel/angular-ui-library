@@ -3,6 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiChip } from '@zouriel/ui/badge';
 import { UiConfirmDialog, UiModal, UiToastService } from '@zouriel/ui/dialog';
@@ -49,7 +51,7 @@ function comparable(def: UiFormDefinition | null): string {
 
 @Component({
   selector: 'page-form-studio',
-  imports: [FormsModule, UiButton, UiSegmented, UiChip, UiConfirmDialog, UiModal, UiEmptyState, UiFormField, UiTextarea, UiFormBuilder, UiFormRenderer, UiFormGlobalSettingsEditor],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiSegmented, UiChip, UiConfirmDialog, UiModal, UiEmptyState, UiFormField, UiTextarea, UiFormBuilder, UiFormRenderer, UiFormGlobalSettingsEditor],
   providers: [
     provideUiFormValidators(STUDENT_ID),
     provideUiFormOptionSources(...DEMO_SOURCES),
@@ -62,7 +64,7 @@ function comparable(def: UiFormDefinition | null): string {
       <div class="scroll"><div class="library">
         <header class="lib-head">
           <div>
-            <ui-button variant="ghost" size="sm" (click)="open(null)">← All forms</ui-button>
+            <ui-button variant="ghost" size="sm" (click)="open(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />All forms</ui-button>
             <h1>Form settings</h1>
             <p class="lead">For every form in the app. In your app this is <code translate="no">ui-form-global-settings</code> on its settings page; the result is plain JSON you store.</p>
           </div>
@@ -72,7 +74,7 @@ function comparable(def: UiFormDefinition | null): string {
     } @else if (current(); as f) {
       <!-- One form open: build it, fill it in, look after its answers. -->
       <header class="bar">
-        <ui-button variant="ghost" size="sm" (click)="open(null)">← All forms</ui-button>
+        <ui-button variant="ghost" size="sm" (click)="open(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />All forms</ui-button>
         <div class="title">
           <h1>{{ f.draft.title || 'Untitled form' }}</h1>
           <ui-chip [tone]="statusTone(f)"><span class="st-long">{{ statusText(f) }}</span><span class="st-short" aria-hidden="true">{{ statusShort(f) }}</span></ui-chip>
@@ -134,7 +136,7 @@ function comparable(def: UiFormDefinition | null): string {
                 <section class="detail" aria-live="polite">
                   @if (answer(); as r) {
                     <div class="detail-head">
-                      <ui-button class="back" variant="ghost" size="sm" (click)="openAnswer(null)">← Answers</ui-button>
+                      <ui-button class="back" variant="ghost" size="sm" (click)="openAnswer(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />Answers</ui-button>
                       <div class="detail-title">
                         <strong>{{ headline(f, r) }}</strong>
                         <span class="when">Sent {{ when(r.submittedAt) }}@if (r.updatedAt) { · edited {{ when(r.updatedAt) }} }</span>
@@ -342,6 +344,7 @@ function comparable(def: UiFormDefinition | null): string {
 })
 export class FormStudioPage {
   protected readonly store = inject(FormStudioStore);
+  protected readonly backIcon = ArrowLeft01Icon;
   private readonly router = inject(Router);
   private readonly toast = inject(UiToastService);
   protected readonly query = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map((q) => ({ form: q.get('form'), tab: q.get('tab'), answer: q.get('answer'), view: q.get('view') }))));

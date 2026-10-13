@@ -109,7 +109,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           <footer class="ui-fr-footer">
             <div class="ui-fr-footer-start">
               @if (multiPage() && e.step() > 0) {
-                <ui-button variant="outline" type="button" (click)="back()">{{ def.settings?.backLabel || 'Back' }}</ui-button>
+                <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ def.settings?.backLabel || 'Back' }}</ui-button>
               }
               @if (cancelLabel()) {
                 <ui-button variant="ghost" type="button" (click)="cancelled.emit()">{{ cancelLabel() }}</ui-button>
@@ -130,7 +130,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                   <span class="ui-fr-saved">No changes</span>
                 }
               }
-              <ui-button type="submit" [loading]="busy()">{{ primaryLabel() }}</ui-button>
+              <ui-button type="submit" [loading]="busy()">{{ primaryLabel() }}@if (!e.isLastPage()) {<hugeicons-icon aria-hidden="true" [icon]="nextIcon" [size]="14" [strokeWidth]="1.8" />}</ui-button>
             </div>
           </footer>
         }
@@ -323,6 +323,8 @@ export class UiFormRenderer {
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly deleteIcon = FB_ICONS.Delete02Icon;
   protected readonly upIcon = FB_ICONS.ArrowUp01Icon;
+  protected readonly backIcon = FB_ICONS.ArrowLeft01Icon;
+  protected readonly nextIcon = FB_ICONS.ArrowRight01Icon;
   protected readonly downIcon = FB_ICONS.ArrowDown01Icon;
 
   /** The running form. Hosts can read `data()`, `dirty()`, `changes()` from it. */

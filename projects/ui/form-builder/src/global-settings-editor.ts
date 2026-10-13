@@ -81,7 +81,7 @@ interface TestRun {
         @if (current(); as c) {
           <section class="pane editor" [attr.aria-label]="'Editing ' + (c.label || 'list')">
             <div class="ed-head">
-              <ui-button class="back" size="sm" variant="ghost" (click)="open.set(null)">← Lists</ui-button>
+              <ui-button class="back" size="sm" variant="ghost" (click)="open.set(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />Lists</ui-button>
               <h3>{{ c.label || 'Untitled list' }}</h3>
               <ui-button size="sm" variant="ghost" (click)="remove()"><hugeicons-icon aria-hidden="true" [icon]="deleteIcon" [size]="14" [strokeWidth]="1.8" />Delete</ui-button>
             </div>
@@ -301,6 +301,7 @@ export class UiFormGlobalSettingsEditor {
 
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly deleteIcon = FB_ICONS.Delete02Icon;
+  protected readonly backIcon = FB_ICONS.ArrowLeft01Icon;
   protected readonly sectionOptions = [{ value: 'sources', label: 'Data sources' }, { value: 'defaults', label: 'New form defaults' }];
   protected readonly pagingOptions = [{ value: 'page', label: 'Page numbers' }, { value: 'offset', label: 'Skip a number' }];
 

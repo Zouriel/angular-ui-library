@@ -1,10 +1,13 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, input, model, output } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import type { IconSvgObject } from '@hugeicons/angular';
 
 export interface UiSideNavItem {
   label: string;
   value: string;
-  icon?: string;
+  /** A HugeIcons icon (drawn in currentColor), or a short string such as a letter. */
+  icon?: string | IconSvgObject;
   badge?: string | number;
   disabled?: boolean;
   /**
@@ -28,7 +31,7 @@ export interface UiSideNavGroup {
  */
 @Component({
   selector: 'ui-side-nav',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, HugeiconsIconComponent],
   template: `
     <nav class="ui-side-nav" [attr.aria-label]="label()">
       @for (group of groups(); track $index) {
@@ -66,7 +69,11 @@ export interface UiSideNavGroup {
     </nav>
 
     <ng-template #content let-item>
-      @if (item.icon) { <span class="icon" aria-hidden="true">{{ item.icon }}</span> }
+      @if (item.icon) {
+        <span class="icon" aria-hidden="true">
+          @if (isSvg(item.icon)) { <hugeicons-icon [icon]="item.icon" [size]="16" [strokeWidth]="1.8" /> } @else { {{ item.icon }} }
+        </span>
+      }
       <span class="label">{{ item.label }}</span>
       @if (item.badge != null) { <span class="badge">{{ item.badge }}</span> }
     </ng-template>
@@ -95,7 +102,7 @@ export interface UiSideNavGroup {
     .item:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .item:disabled, .item[aria-disabled='true'] { opacity: .5; cursor: not-allowed; }
     @media (pointer: coarse) { .item { min-height: var(--ui-size-touch); } }
-    .icon { width: 18px; text-align: center; }
+    .icon { flex: none; width: 18px; display: inline-flex; align-items: center; justify-content: center; }
     .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .badge { flex: none; font-size: 11px; font-weight: 600; line-height: 16px; padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill);
       font-variant-numeric: tabular-nums; background: var(--ui-color-surface-raised); color: var(--ui-color-text-muted); }
@@ -106,6 +113,11 @@ export class UiSideNav {
   active = model<string>('');
   label = input('Sidebar');
   navigate = output<UiSideNavItem>();
+
+  /** A HugeIcons icon is an array of [tag, attributes] pairs; a text icon is a string. */
+  protected isSvg(icon: string | IconSvgObject | undefined): icon is IconSvgObject {
+    return Array.isArray(icon);
+  }
 
   protected choose(item: UiSideNavItem): void {
     if (item.disabled) return;

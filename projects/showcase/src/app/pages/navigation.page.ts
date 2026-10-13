@@ -1,4 +1,12 @@
 import { Component, signal } from '@angular/core';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
+import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
+import Notification01Icon from '@hugeicons/core-free-icons/Notification01Icon';
+import UserCircleIcon from '@hugeicons/core-free-icons/UserCircleIcon';
+import DashboardSquare01Icon from '@hugeicons/core-free-icons/DashboardSquare01Icon';
+import Analytics01Icon from '@hugeicons/core-free-icons/Analytics01Icon';
+import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
+import CreditCardIcon from '@hugeicons/core-free-icons/CreditCardIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import {
@@ -49,7 +57,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
       <doc-section name="Side nav" selector="ui-side-nav" [api]="sideApi" [outputs]="sideOut"
         summary="Vertical grouped navigation (powers this docs sidebar). active is a two-way model; listen to (navigate) to route. Items with href render as real links (crawlable, open in new tab); a plain click still emits (navigate) and prevents the browser navigation, while modified clicks are left to the browser."
-        [shapes]="'interface UiSideNavGroup { label?: string; items: UiSideNavItem[]; }\ninterface UiSideNavItem { label: string; value: string; icon?: string; badge?: string|number; disabled?: boolean; href?: string; }'">
+        [shapes]="'interface UiSideNavGroup { label?: string; items: UiSideNavItem[]; }\ninterface UiSideNavItem { label: string; value: string; icon?: string | IconSvgObject; badge?: string|number; disabled?: boolean; href?: string; }'">
         <doc-demo code="<ui-side-nav [groups]=&quot;groups&quot; [(active)]=&quot;active&quot; (navigate)=&quot;go($event)&quot; />">
           <div class="boxed"><ui-side-nav [groups]="navGroups" [(active)]="active" /></div>
         </doc-demo>
@@ -91,7 +99,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Bottom nav" selector="ui-bottom-nav" [api]="bottomApi" [outputs]="bottomOut"
-        summary="Mobile-style bottom bar. active is a two-way model. An icon can be a HugeIcons icon (drawn in currentColor, so it follows the active state) or a short string such as an emoji."
+        summary="Mobile-style bottom bar. active is a two-way model. Give each item a HugeIcons icon: it is drawn in currentColor, so it follows the theme and the active state. A short string still works, but emoji draw in the platform's own colours."
         [shapes]="'interface UiBottomNavItem { label: string; value: string; icon?: string | IconSvgObject; badge?: string|number; }'">
         <doc-demo code="<ui-bottom-nav [items]=&quot;items&quot; [(active)]=&quot;active&quot; />">
           <ui-bottom-nav [items]="bottom" [(active)]="bottomActive" />
@@ -123,12 +131,12 @@ export class NavigationPage {
     { label: 'Edit', items: [{ label: 'Undo', value: 'undo' }, { label: 'Redo', value: 'redo', disabled: true }] },
   ];
   protected readonly bottom: UiBottomNavItem[] = [
-    { label: 'Home', value: 'home', icon: '🏠' }, { label: 'Search', value: 'search', icon: '🔍' },
-    { label: 'Alerts', value: 'alerts', icon: '🔔', badge: 3 }, { label: 'Profile', value: 'profile', icon: '👤' },
+    { label: 'Home', value: 'home', icon: Home01Icon }, { label: 'Search', value: 'search', icon: Search01Icon },
+    { label: 'Alerts', value: 'alerts', icon: Notification01Icon, badge: 3 }, { label: 'Profile', value: 'profile', icon: UserCircleIcon },
   ];
   protected readonly navGroups: UiSideNavGroup[] = [
-    { label: 'Main', items: [{ label: 'Dashboard', value: 'a1', icon: '▤' }, { label: 'Reports', value: 'a2', icon: '◷' }] },
-    { label: 'Account', items: [{ label: 'Settings', value: 'a3', icon: '⚙' }, { label: 'Billing', value: 'a4', icon: '◫', badge: 'pro' }] },
+    { label: 'Main', items: [{ label: 'Dashboard', value: 'a1', icon: DashboardSquare01Icon }, { label: 'Reports', value: 'a2', icon: Analytics01Icon }] },
+    { label: 'Account', items: [{ label: 'Settings', value: 'a3', icon: Settings01Icon }, { label: 'Billing', value: 'a4', icon: CreditCardIcon, badge: 'pro' }] },
   ];
 
   protected readonly navbarApi: ApiRow[] = [
