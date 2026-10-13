@@ -23,7 +23,7 @@ import { NAV } from './app.routes';
     <div class="shell">
       <aside class="sidebar">
         <a class="brand" href="#/" (click)="go('', $event)">
-          <span class="logo">◆</span><ui-text variant="label">UI Library</ui-text>
+          <img class="logo" src="favicon.svg" alt="" width="24" height="24" /><ui-text variant="label">UI Library</ui-text>
         </a>
         <ui-search-input class="filter" placeholder="Filter…" (input)="onFilter($event)" />
         <div class="nav-scroll">
@@ -70,7 +70,7 @@ import { NAV } from './app.routes';
       display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-4);
       border-right: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .brand { display: flex; align-items: center; gap: var(--ui-space-2); text-decoration: none; color: var(--ui-color-text); }
-    .logo { color: var(--ui-color-primary); font-size: 18px; }
+    .logo { display: block; flex: none; width: 24px; height: 24px; border-radius: 6px; }
     .filter { display: block; }
     .nav-scroll { flex: 1; overflow: auto; margin: 0 calc(-1 * var(--ui-space-2)); padding: 0 var(--ui-space-2); }
     .side-foot { border-top: 1px solid var(--ui-color-border); padding-top: var(--ui-space-2); }
