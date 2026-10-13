@@ -163,6 +163,28 @@ describe('UiFormRenderer', () => {
     expect(el.querySelector('input, select, button[type=submit]')).toBeNull();
   });
 
+  it('a page reached with Continue starts clean: its problems wait for blur or for its own Continue', async () => {
+    const def: UiFormDefinition = {
+      schemaVersion: 1, id: 'f', title: 'T', settings: { validateOn: 'blur' },
+      pages: [
+        { id: 'p1', title: 'First', elements: [f('a', 'text', { required: true })] },
+        { id: 'p2', title: 'Second', elements: [f('b', 'text', { required: true }), f('c', 'email', { required: true })] },
+      ],
+    };
+    const { fx, el } = await renderForm(def);
+    const input = el.querySelector<HTMLInputElement>('input')!;
+    input.value = 'x';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await fx.whenStable();
+    fx.detectChanges();
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Second');
+    expect(el.querySelector('.ui-fr-summary')).toBeNull();
+    expect(el.querySelectorAll('[aria-invalid="true"]').length).toBe(0);
+  });
+
   it('shows every page of a multi-step form in view mode, without steps, skipping pages that were skipped', async () => {
     const def: UiFormDefinition = {
       schemaVersion: 1, id: 'f', title: 'T',

@@ -22,11 +22,13 @@ import {
   updatePage,
   type UiFbDropTarget,
   type UiFbIndexEntry,
+  type UiFbProblem,
 } from './definition';
 import { fieldTypeInfo, valueKindOf, type UiFbValueKind } from './field-types';
 import { formatValue } from './format';
 import type { UiFbCondition, UiFbElement, UiFbField, UiFbGroup, UiFbPage, UiFbSettings, UiFbStatic, UiFormDefinition } from './schema';
 import { UI_FB_BUILTIN_VALIDATORS, type UiFbValidatorDef } from './validators';
+import type { UiFbOptionSourceDef } from './option-sources';
 
 /** Something a rule can ask about: a field, a section or a page. */
 export interface UiFbRefOption {
@@ -55,12 +57,31 @@ export class FbBuilderStore {
   readonly published = signal<UiFormDefinition | null>(null);
   readonly submissionCount = signal(0);
   readonly validatorDefs = signal<readonly UiFbValidatorDef[]>(UI_FB_BUILTIN_VALIDATORS);
+  /** Lists the app can search (see provideUiFormOptionSources). */
+  readonly optionSourceDefs = signal<readonly UiFbOptionSourceDef[]>([]);
   /** An element id, a page id, or null for the form itself. */
   readonly selectedId = signal<string | null>(null);
   readonly pageIndex = signal(0);
 
   readonly index = computed(() => indexDefinition(this.def()));
-  readonly problems = computed(() => lintDefinition(this.def()));
+  readonly problems = computed(() => [...lintDefinition(this.def()), ...this.sourceProblems()]);
+  /** Sourced fields whose source this app doesn't offer, or whose required settings are empty. */
+  private readonly sourceProblems = computed<UiFbProblem[]>(() => {
+    const out: UiFbProblem[] = [];
+    for (const e of this.index().values()) {
+      const f = e.element as UiFbElement;
+      if (e.kind !== 'field' || f.kind !== 'field' || !f.source || f.archived) continue;
+      const def = this.optionSourceDefs().find((d) => d.type === f.source!.type);
+      const name = `“${this.name(f.id)}”`;
+      if (!def) { out.push({ severity: 'error', targetId: f.id, message: `${name} uses a data source this app doesn’t provide (“${f.source.type}”). Pick another, or switch to a typed list.` }); continue; }
+      for (const p of def.params ?? []) {
+        const v = f.source.params?.[p.key];
+        const set = !!v && ('ref' in v ? !!v.ref : v.const != null && v.const !== '');
+        if (p.required && !set) out.push({ severity: 'error', targetId: f.id, message: `${name} needs “${p.label}” set for its ${def.label} list.` });
+      }
+    }
+    return out;
+  });
   readonly problemIds = computed(() => new Set(this.problems().filter((p) => p.severity === 'error').map((p) => p.targetId)));
   readonly page = computed<UiFbPage>(() => this.def().pages[Math.min(this.pageIndex(), this.def().pages.length - 1)]);
   readonly selected = computed<UiFbIndexEntry | null>(() => (this.selectedId() ? this.index().get(this.selectedId()!) ?? null : null));

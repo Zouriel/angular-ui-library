@@ -89,6 +89,32 @@ Registered checks appear in the builder's **Add a check** list and run in the
 renderer. Async checks are debounced, show "Checking…", block submitting until
 they finish, and are cancelled when the answer changes.
 
+### Option sources (searchable lists from your app)
+
+```ts
+providers: [provideUiFormOptionSources({
+  type: 'courses',
+  label: 'Courses',
+  params: [{ key: 'programme', label: 'Programme', required: true }],
+  search: ({ query, page, pageSize, params, signal }) =>
+    api.courses({ q: query, page, size: pageSize, programme: params.programme }, signal),
+  // → { items: [{ value, label, description? }], hasMore }   (or total)
+})]
+```
+
+In the builder, a dropdown or multi-select's **Options** can switch from a typed
+list to **Data source**. Admins pick a list, fill in its settings (each a fixed
+value or *the answer to* another question, for lists that depend on each other),
+and can try it on the spot. Radio buttons and tick boxes stay typed lists.
+
+In the form, the field searches as people type (debounced, older requests
+cancelled through `signal`), loads the next page as the list scrolls, and shows
+loading, "no matches" and retry states. When an answer it depends on changes,
+its own answer is cleared. Answers are saved as `{ value, label }` (a list of
+them for multi-selects), so they stay readable even if the record is renamed or
+removed later. Rules on these questions compare the `value` and search the same
+list in the rule editor.
+
 ## Filling forms in
 
 ```html

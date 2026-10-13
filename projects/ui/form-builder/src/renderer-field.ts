@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewEncapsulation, afterRenderEffect, computed, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, ViewEncapsulation, afterRenderEffect, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -24,6 +24,8 @@ import { fieldTypeInfo } from './field-types';
 import { formatValue } from './format';
 import type { UiFbErrorPlacement, UiFbField, UiFbFileValue, UiFbLabelPlacement } from './schema';
 import { FB_ICONS } from './builder-icons';
+import { optionValueOf, type UiFbChoice } from './option-sources';
+import { UiFbSourcePicker } from './source-picker';
 
 /** Uploads a picked file and returns what to store (usually with a `url` or `id`). */
 export type UiFbUploader = (file: File, field: UiFbField) => Promise<UiFbFileValue>;
@@ -41,7 +43,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
   encapsulation: ViewEncapsulation.None,
   imports: [
     FormsModule, NgTemplateOutlet, HugeiconsIconComponent, UiInput, UiTextarea, UiNumberInput, UiSelect, UiRadioGroup, UiCheckboxGroup,
-    UiCheckbox, UiSwitch, UiRating, UiSlider, UiFileUpload, UiTimePicker, UiDatePicker, UiMultiSelect,
+    UiCheckbox, UiSwitch, UiRating, UiSlider, UiFileUpload, UiTimePicker, UiDatePicker, UiMultiSelect, UiFbSourcePicker,
   ],
   host: { class: 'ui-fbf-host', '[attr.data-addr]': 'addr()' },
   template: `
@@ -71,6 +73,15 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
             @if (labelPos() === 'inside') {
               <label class="ui-fbf-float" [for]="ids().control" [id]="ids().label">{{ f.label }}<ng-container [ngTemplateOutlet]="markerTpl" /></label>
             }
+            @if (f.source && (f.type === 'select' || f.type === 'multiselect')) {
+              @if (sourceDef(); as src) {
+                <ui-fb-source-picker [source]="src" [params]="sourceParams()" [multiple]="f.type === 'multiselect'" [value]="st.value"
+                  [placeholder]="placeholder() || 'Search ' + src.label.toLowerCase() + '…'" [disabled]="st.disabled" [invalid]="showError()"
+                  [inputId]="ids().control" (valueChange)="set($event)" />
+              } @else {
+                <p class="ui-fbf-note bad" role="alert">This list isn’t available right now.@if (display()) { Saved answer: {{ display() }}. }</p>
+              }
+            } @else {
             @switch (f.type) {
               @case ('textarea') {
                 <ui-textarea [rows]="f.props?.rows ?? 3" [autosize]="true" [maxRows]="f.props?.maxRows ?? 8" [placeholder]="placeholder()"
@@ -144,6 +155,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
                   [autocomplete]="f.props?.autocomplete" [invalid]="showError()"
                   [ngModel]="text()" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
+            }
             }
             @if (errInside() && showError()) {
               <span class="ui-fbf-err-in" aria-hidden="true" [title]="error()">
@@ -333,7 +345,29 @@ export class UiFbFieldView {
     return live;
   });
 
+  /** The registered list a sourced field searches (undefined when the app doesn't provide it). */
+  protected readonly sourceDef = computed(() => this.engine().optionSource(this.field().source?.type));
+  /** The source's settings with other answers filled in (as plain values). */
+  protected readonly sourceParams = computed(() => {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(this.field().source?.params ?? {})) {
+      out[k] = optionValueOf('ref' in v ? this.engine().answerFor(v.ref, this.row()) : v.const);
+    }
+    return out;
+  });
+
   constructor() {
+    // A dependent list (Cities of the chosen Country) drops its answer when what it depends on changes.
+    let lastParams: string | null = null;
+    effect(() => {
+      const key = JSON.stringify(this.sourceParams());
+      untracked(() => {
+        if (lastParams !== null && key !== lastParams && !this.viewing() && !isEmptyValue(this.state().value)) {
+          this.set(this.field().type === 'multiselect' ? ([] as UiFbChoice[]) : null);
+        }
+        lastParams = key;
+      });
+    });
     // The library controls render their own native inputs; point those at our
     // label, help and error so screen readers get the whole picture.
     afterRenderEffect(() => {

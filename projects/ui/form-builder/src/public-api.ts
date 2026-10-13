@@ -4,6 +4,8 @@ export * from './definition';
 export * from './conditions';
 export * from './calc';
 export * from './validators';
+export * from './option-sources';
+export * from './source-picker';
 export * from './engine';
 export * from './format';
 export * from './renderer-field';

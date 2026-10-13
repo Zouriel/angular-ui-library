@@ -9,6 +9,7 @@ import { FbConditionEditor, FbValueInput } from './builder-condition';
 import { FbCalcEditor, FbChecksEditor, FbOptionsEditor } from './builder-editors';
 import { FbBuilderStore, type UiFbRefOption } from './builder-store';
 import { FB_SHARED_STYLES } from './builder-styles';
+import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
 import { createField, fbKeyValid, fbSlug, fbUid, uniqueKey, type UiFbRefKind } from './definition';
 import { fieldTypeInfo, typesCompatible, UI_FB_FIELD_TYPES, valueKindOf } from './field-types';
 import type {
@@ -37,6 +38,7 @@ const REF_WORDS: Record<UiFbRefKind, string> = {
   validator: 'in a check',
   calc: 'in its calculation',
   jump: 'in a page jump',
+  source: 'to narrow its list',
 };
 
 const AUTOCOMPLETE = [
@@ -703,6 +705,8 @@ export class FbInspector {
       const next: UiFbField = { ...old, type, props: { ...(fresh.props ?? {}), ...pickProps(old.props, type) } };
       if (info.hasOptions && !old.options?.length) next.options = fresh.options;
       if (!info.hasOptions) delete next.options;
+      // Radio buttons and tick boxes show every option, so a searchable list doesn't fit them.
+      if (!(UI_FB_SOURCE_FIELD_TYPES as readonly string[]).includes(type)) delete next.source;
       if (type === 'calculated' && !old.calc) next.calc = fresh.calc;
       if (type !== 'calculated') delete next.calc;
       if (valueKindOf(type) !== valueKindOf(old.type)) { delete next.defaultValue; delete next.setValue; }

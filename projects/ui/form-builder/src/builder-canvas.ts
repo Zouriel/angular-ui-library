@@ -162,6 +162,7 @@ export interface FbDeleteRequest {
           @if (f.disabled) { <span class="fb-chip" [title]="isObj(f.disabled) ? 'Locked when ' + store.describe($any(f.disabled).when) : 'Can’t be changed'">Locked{{ isObj(f.disabled) ? ' when…' : '' }}</span> }
           @if (f.setValue?.length) { <span class="fb-chip logic">Fills itself</span> }
           @if (f.validators?.length) { <span class="fb-chip">{{ f.validators!.length }} check{{ f.validators!.length > 1 ? 's' : '' }}</span> }
+          @if (f.source) { <span class="fb-chip" [title]="'Options come from the ' + sourceName(f) + ' list'">From {{ sourceName(f) }}</span> }
         }
         @if (el.kind === 'group' && el.disabled) { <span class="fb-chip">Locked{{ isObj(el.disabled) ? ' when…' : '' }}</span> }
       </span>
@@ -183,8 +184,8 @@ export interface FbDeleteRequest {
           <div class="mock" aria-hidden="true" [attr.data-type]="f.type">
             @switch (f.type) {
               @case ('textarea') { <div class="box tall">{{ f.placeholder }}</div> }
-              @case ('select') { <div class="box chev">{{ f.placeholder || 'Choose…' }}</div> }
-              @case ('multiselect') { <div class="box chev">{{ f.placeholder || 'Choose…' }}</div> }
+              @case ('select') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : f.placeholder || 'Choose…' }}</div> }
+              @case ('multiselect') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : f.placeholder || 'Choose…' }}</div> }
               @case ('radio') { <ng-container [ngTemplateOutlet]="opts" [ngTemplateOutletContext]="{ $implicit: f, round: true }" /> }
               @case ('checkboxes') { <ng-container [ngTemplateOutlet]="opts" [ngTemplateOutletContext]="{ $implicit: f, round: false }" /> }
               @case ('checkbox') { <div class="choice"><span class="tick"></span>{{ f.props?.caption || f.label }}</div> }
@@ -558,6 +559,11 @@ export class FbCanvas {
   protected addStarter(type: UiFbFieldType | 'group'): void {
     const el = type === 'group' ? createGroup(this.store.def()) : createField(type, this.store.def());
     this.store.add(el, { containerId: this.store.page().id, index: this.store.page().elements.length });
+  }
+
+  /** What admins call a field's data source ("Students"), or its stored type when the app doesn't provide it. */
+  protected sourceName(f: UiFbField): string {
+    return this.store.optionSourceDefs().find((d) => d.type === f.source?.type)?.label ?? f.source?.type ?? '';
   }
 
   protected moreItems(el: UiFbElement): UiMenuItem[] {

@@ -364,7 +364,13 @@ function toggleRefs(t: UiFbToggle | undefined, out: string[]): void {
   if (t && typeof t === 'object') conditionRefs(t.when, out);
 }
 
-export type UiFbRefKind = 'visibility' | 'required' | 'disabled' | 'setValue' | 'validator' | 'calc' | 'jump';
+export type UiFbRefKind = 'visibility' | 'required' | 'disabled' | 'setValue' | 'validator' | 'calc' | 'jump' | 'source';
+
+/** Answers a field's option source reads (dependent lists, e.g. Cities of the chosen Country). */
+export function sourceRefs(el: { source?: { params?: Record<string, { const: unknown } | { ref: string }> } }, out: string[] = []): string[] {
+  Object.values(el.source?.params ?? {}).forEach((v) => { if ('ref' in v && v.ref) out.push(v.ref); });
+  return out;
+}
 
 export interface UiFbReference {
   /** The element or page whose rule mentions the target. */
@@ -405,6 +411,7 @@ export function referencesTo(def: UiFormDefinition, id: string): UiFbReference[]
     });
     check(el.id, 'validator', va);
     check(el.id, 'calc', calcRefs(el.calc));
+    check(el.id, 'source', sourceRefs(el));
   }
   return out;
 }
@@ -495,6 +502,10 @@ export function removeReferences(def: UiFormDefinition, idList: string[]): UiFor
         ?.filter((v) => !Object.values(v.params ?? {}).some((p) => typeof p === 'string' && ids.has(p)))
         .map((v) => ({ ...v, when: stripCondition(v.when, ids) })),
       calc: withDisabled.calc ? stripCalc(withDisabled.calc, ids) : undefined,
+      // A filter that read a deleted answer is dropped; the list then just isn't narrowed by it.
+      source: withDisabled.source
+        ? { ...withDisabled.source, params: Object.fromEntries(Object.entries(withDisabled.source.params ?? {}).filter(([, v]) => !('ref' in v && ids.has(v.ref)))) }
+        : undefined,
     };
   });
 }
@@ -622,7 +633,8 @@ export function lintDefinition(def: UiFormDefinition): UiFbProblem[] {
     }
     if (el.kind === 'field') {
       if (!el.label?.trim() && el.type !== 'hidden') out.push({ severity: 'warning', targetId: el.id, message: `A ${fieldTypeInfo(el.type).label.toLowerCase()} field has no label.` });
-      if (fieldTypeInfo(el.type).hasOptions) {
+      // Options from a data source live in the app, so there's nothing typed to check.
+      if (fieldTypeInfo(el.type).hasOptions && !el.source) {
         const live = (el.options ?? []).filter((o) => !o.archived);
         if (!live.length) out.push({ severity: 'error', targetId: el.id, message: `“${name(el.id)}” has no options to choose from.` });
         const vals = new Set<string>();
@@ -727,9 +739,14 @@ export function diffDefinitions(before: UiFormDefinition, after: UiFormDefinitio
       }
       const now = new Set((e.options ?? []).filter((o) => !o.archived).map((o) => o.value));
       const gone = (old.options ?? []).filter((o) => !o.archived && !now.has(o.value)).map((o) => o.value);
-      if (gone.length) {
+      if (!old.source && !e.source && gone.length) {
         diff.optionsRemoved.push({ id, values: gone });
         diff.summary.push(`Removed ${gone.length} option${gone.length > 1 ? 's' : ''} from ${nm(e)}`);
+      }
+      if (old.source?.type !== e.source?.type) {
+        diff.summary.push(e.source ? `${nm(e)} now takes its options from a data source` : `${nm(e)} now uses a typed list of options`);
+      } else if (JSON.stringify(old.source?.params ?? {}) !== JSON.stringify(e.source?.params ?? {})) {
+        diff.summary.push(`Changed the data source settings of ${nm(e)}`);
       }
     }
     if (rulesSig(old) !== rulesSig(e)) { diff.rulesChanged.push(id); diff.summary.push(`Changed the rules of ${nm(e)}`); }

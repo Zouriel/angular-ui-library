@@ -24,6 +24,7 @@ import { FB_SHARED_STYLES } from './builder-styles';
 import { createDefinition, subtreeIds, type UiFbDiff, type UiFbDropTarget, type UiFbProblem, type UiFbReference } from './definition';
 import type { UiFormDefinition } from './schema';
 import { UI_FB_BUILTIN_VALIDATORS, UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
+import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
 import { FB_ICONS } from './builder-icons';
 
 type View = 'build' | 'logic' | 'preview';
@@ -251,6 +252,7 @@ export class UiFormBuilder {
   protected readonly dnd = inject(FbDnd);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly registered = (inject(UI_FB_VALIDATORS, { optional: true }) ?? []).flat();
+  private readonly registeredSources = (inject(UI_FB_OPTION_SOURCES, { optional: true }) ?? []).flat();
 
   /** The form being built. Two-way: every change is written back. */
   readonly definition = model<UiFormDefinition>(createDefinition());
@@ -260,6 +262,8 @@ export class UiFormBuilder {
   readonly submissionCount = input(0);
   /** App checks for the "Add a check" list, on top of `provideUiFormValidators`. */
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
+  /** Extra option sources (searchable lists) for dropdowns and multi-selects, on top of `provideUiFormOptionSources`. */
+  readonly optionSources = input<readonly UiFbOptionSourceDef[]>([]);
 
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly undoIcon = FB_ICONS.Undo02Icon;
@@ -268,7 +272,7 @@ export class UiFormBuilder {
   protected readonly views = [{ value: 'build', label: 'Build' }, { value: 'logic', label: 'Logic' }, { value: 'preview', label: 'Preview' }];
   protected readonly refWords: Record<string, string> = {
     visibility: 'decides when it shows', required: 'decides when it’s required', disabled: 'decides when it’s read-only',
-    setValue: 'fills itself in from it', validator: 'checks against it', calc: 'calculates from it', jump: 'jumps based on it',
+    setValue: 'fills itself in from it', validator: 'checks against it', calc: 'calculates from it', jump: 'jumps based on it', source: 'narrows its list by it',
   };
 
   protected readonly view = signal<View>('build');
@@ -310,6 +314,7 @@ export class UiFormBuilder {
     effect(() => this.store.published.set(this.published()));
     effect(() => this.store.submissionCount.set(this.submissionCount()));
     effect(() => this.store.validatorDefs.set([...UI_FB_BUILTIN_VALIDATORS, ...this.registered, ...this.validators()]));
+    effect(() => this.store.optionSourceDefs.set([...this.registeredSources, ...this.optionSources()]));
 
     // Lays out by the builder's own width, not the window's (it may sit in a panel). No observer on the server.
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(([e]) => this.width.set(e.contentRect.width));

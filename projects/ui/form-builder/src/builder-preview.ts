@@ -39,13 +39,13 @@ import { FB_ICONS } from './builder-icons';
           @if (device() === 'phone') {
             <ui-device-frame [width]="390" [height]="760" class="phone">
               <div class="phone-scroll">
-                <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()"
+                <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()"
                   (submitted)="submitted($event)" />
               </div>
             </ui-device-frame>
           } @else {
             <div class="desktop">
-              <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()"
+              <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()"
                 (submitted)="submitted($event)" />
             </div>
           }

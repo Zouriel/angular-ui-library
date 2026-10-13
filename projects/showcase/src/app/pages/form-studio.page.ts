@@ -14,12 +14,14 @@ import {
   allFields,
   formatValue,
   isEmptyValue,
+  provideUiFormOptionSources,
   provideUiFormValidators,
   type UiFbUploader,
   type UiFbValidatorDef,
   type UiFormDefinition,
   type UiFormSubmission,
 } from '@zouriel/ui/form-builder';
+import { DEMO_SOURCES } from './form-builder.sources';
 import { FormStudioStore, type StudioForm, type StudioResponse } from './form-studio.store';
 
 /** Same sample app check as the docs page, so "Student ID exists" is in the Add a check list here too. */
@@ -46,7 +48,7 @@ function comparable(def: UiFormDefinition | null): string {
 @Component({
   selector: 'page-form-studio',
   imports: [FormsModule, UiButton, UiSegmented, UiChip, UiConfirmDialog, UiModal, UiEmptyState, UiFormField, UiTextarea, UiFormBuilder, UiFormRenderer],
-  providers: [provideUiFormValidators(STUDENT_ID)],
+  providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES)],
   template: `
     @if (current(); as f) {
       <!-- One form open: build it, fill it in, look after its answers. -->

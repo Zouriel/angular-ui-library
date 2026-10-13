@@ -207,6 +207,15 @@ export interface UiFbFieldProps {
   excludeFromData?: boolean;
 }
 
+/** A param's value: fixed, or another question's answer (for lists that depend on each other). */
+export type UiFbSourceParamValue = { const: unknown } | { ref: string };
+
+export interface UiFbOptionSourceRef {
+  /** The registered source's `type`. */
+  type: string;
+  params?: Record<string, UiFbSourceParamValue>;
+}
+
 export interface UiFbField {
   kind: 'field';
   id: string;
@@ -223,6 +232,12 @@ export interface UiFbField {
   disabled?: UiFbToggle;
   visibility?: UiFbVisibility;
   options?: UiFbOption[];
+  /**
+   * Dropdowns and multi-selects only: take the options from a list the app
+   * registered (`provideUiFormOptionSources`) instead of `options`. Answers are
+   * then saved as `{ value, label }` (a list of them for multi-selects).
+   */
+  source?: UiFbOptionSourceRef;
   props?: UiFbFieldProps;
   validators?: UiFbValidatorRule[];
   calc?: UiFbCalc;

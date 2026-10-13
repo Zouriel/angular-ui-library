@@ -34,6 +34,12 @@ export const SAMPLE_FORM: UiFormDefinition = {
           kind: 'field', id: 'f_inst', type: 'text', key: 'institution', label: 'School or university', required: true,
           visibility: { action: 'hide', when: { ref: 'f_status', op: 'eq', value: { const: 'not_studying' } } },
         },
+        {
+          kind: 'field', id: 'f_record', type: 'select', key: 'student_record', label: 'Your student record',
+          help: 'Search by name or student ID. Leave it blank if you’re not enrolled yet.',
+          source: { type: 'students' },
+          visibility: { action: 'hide', when: { ref: 'f_status', op: 'eq', value: { const: 'not_studying' } } },
+        },
         { kind: 'field', id: 'f_dep', type: 'toggle', key: 'has_dependants', label: 'Do you support any dependants?', props: { caption: 'Yes, I do' } },
       ],
     },
@@ -89,6 +95,12 @@ export const SAMPLE_FORM: UiFormDefinition = {
           ],
         },
         {
+          kind: 'field', id: 'f_courses', type: 'multiselect', key: 'courses', label: 'Courses you’ll take',
+          help: 'The list follows the programme you picked. Choose up to four.',
+          source: { type: 'courses', params: { programme: { ref: 'f_prog' } } },
+          validators: [{ id: 'v_courses', type: 'maxSelected', params: { max: 4 } }],
+        },
+        {
           kind: 'field', id: 'f_statement', type: 'textarea', key: 'statement', label: 'Personal statement', required: true,
           help: 'Tell us why you are applying and what you hope to achieve. 50 to 300 words.',
           validators: [
@@ -120,10 +132,12 @@ export const SAMPLE_ANSWERS: Record<string, unknown> = {
   age: 22,
   study_status: 'part_time',
   institution: 'Maldives National University',
+  student_record: { value: 'S240117', label: 'Aminath Shareef' },
   has_dependants: true,
   dependants: [{ name: 'Ibrahim', relationship: 'sibling' }],
   income: { wages: 1240, benefits: 180, total: 1420 },
   programme: 'health',
+  courses: [{ value: 'health-1', label: 'Anatomy' }, { value: 'health-5', label: 'Nursing practice I' }],
   statement: 'I have worked part time at a community clinic in Hulhumalé for two years while studying, and I want to train as a nurse so I can do more for the patients I meet there. Many of them travel from the islands for care that should be closer to home. With this scholarship I would finish my degree without working nights, and then return to the clinic to help run its community health visits.',
   documents: [{ name: 'transcript-2026.pdf', size: 184320, type: 'application/pdf' }],
   consent: true,

@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiMultiSelect } from '@zouriel/ui/combobox';
@@ -9,6 +9,7 @@ import { FB_SHARED_STYLES } from './builder-styles';
 import { operatorInfo, operatorsFor, type UiFbValueKind } from './field-types';
 import type { UiFbCondition, UiFbConditionGroup, UiFbConditionRule, UiFbOperand, UiFbOperator } from './schema';
 import { FB_ICONS } from './builder-icons';
+import { UiFbSourcePicker } from './source-picker';
 
 type Kind = UiFbRefOption['kind'];
 
@@ -30,7 +31,7 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
  */
 @Component({
   selector: 'ui-fb-value',
-  imports: [FormsModule, UiInput, UiNumberInput, UiDatePicker, UiTimePicker, UiMultiSelect],
+  imports: [FormsModule, UiInput, UiNumberInput, UiDatePicker, UiTimePicker, UiMultiSelect, UiFbSourcePicker],
   template: `
     @if (sources().length > 1) {
       <select class="fb-native-select src" (change)="setSource($any($event.target).value)" aria-label="Compare with">
@@ -54,6 +55,25 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
       @default {
         @if (count()) {
           <ui-number-input [ngModel]="constNum()" (ngModelChange)="emit({ const: $event })" [min]="0" [step]="1" ariaLabel="How many" />
+        } @else if (sourceDef(); as sd) {
+          <!-- A sourced question: search the same list; the rule keeps { value, label } so it reads well later. -->
+          @for (p of refParams(); track p.key) {
+            <!-- Its list follows another answer, which a rule doesn't have: pick one to browse with (not saved). -->
+            <div class="fb-row with">
+              <span class="with-lbl">From {{ p.label.toLowerCase() }}</span>
+              @if (p.options?.length) {
+                <select class="fb-native-select grow" (change)="setBrowse(p.key, $any($event.target).value)" [attr.aria-label]="'Browse ' + sd.label + ' for ' + p.label">
+                  <option value="" [selected]="!browse()[p.key]">Choose…</option>
+                  @for (o of p.options!; track o.value) { <option [value]="o.value" [selected]="o.value === browse()[p.key]">{{ o.label }}</option> }
+                </select>
+              } @else {
+                <label class="lw grow"><span class="fb-sr">Browse with {{ p.label }}</span>
+                  <ui-input size="sm" [ngModel]="browse()[p.key] ?? ''" (ngModelChange)="setBrowse(p.key, $event)" placeholder="A value" /></label>
+              }
+            </div>
+          }
+          <ui-fb-source-picker [source]="sd" [params]="sourceParams()" [multiple]="multi()" [value]="constRaw()"
+            (valueChange)="emit({ const: $event })" [ariaLabel]="label()" [placeholder]="'Search ' + sd.label.toLowerCase() + '…'" />
         } @else if (options().length && multi()) {
           <label class="lw"><span class="fb-sr">{{ label() }}</span>
             <ui-multi-select [options]="options()" [ngModel]="constList()" (ngModelChange)="emit({ const: $event })" placeholder="Choose options…" /></label>
@@ -85,6 +105,9 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
     .today { display: flex; align-items: center; gap: var(--ui-space-2); }
     .today ui-number-input { width: 96px; flex: none; }
     .unit { font-size: 12px; color: var(--ui-color-text-secondary); }
+    .with { gap: var(--ui-space-2); }
+    .with-lbl { flex: none; font-size: 12px; color: var(--ui-color-text-secondary); }
+    .grow { flex: 1; min-width: 0; }
   `],
 })
 export class FbValueInput {
@@ -110,6 +133,33 @@ export class FbValueInput {
     const f = s ? this.store.field(s.id) : null;
     return (f?.options ?? []).filter((o) => !o.archived).map((o) => ({ label: o.label, value: o.value }));
   });
+
+  /** The list the subject searches, when its options come from a data source. */
+  protected readonly sourceDef = computed(() => {
+    const s = this.subject();
+    const f = s ? this.store.field(s.id) : null;
+    return f?.source ? this.store.optionSourceDefs().find((d) => d.type === f.source!.type) : undefined;
+  });
+  /** Its settings: fixed ones as set, ones that follow another answer from the browse choice below. */
+  protected readonly sourceParams = computed(() => {
+    const s = this.subject();
+    const f = s ? this.store.field(s.id) : null;
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(f?.source?.params ?? {})) out[k] = 'const' in v ? v.const : this.browse()[k];
+    return out;
+  });
+  /** Settings of the subject's list that follow another answer. */
+  protected readonly refParams = computed(() => {
+    const s = this.subject();
+    const params = (s ? this.store.field(s.id)?.source?.params : undefined) ?? {};
+    return (this.sourceDef()?.params ?? []).filter((p) => { const v = params[p.key]; return !!v && 'ref' in v; });
+  });
+  /** What to browse the list with, for those settings. Only for picking here; not saved. */
+  protected readonly browse = signal<Record<string, unknown>>({});
+  protected setBrowse(key: string, value: unknown): void {
+    this.browse.update((b) => ({ ...b, [key]: value === '' ? undefined : value }));
+  }
+  protected readonly constRaw = computed(() => { const o = this.operand(); return o && 'const' in o ? o.const : null; });
 
   protected readonly sources = computed(() => {
     const out = [{ value: 'const', label: 'a value' }];

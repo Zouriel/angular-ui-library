@@ -22,6 +22,7 @@ import { formatValue } from './format';
 import { UiFbFieldView, type UiFbUploader } from './renderer-field';
 import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFormDefinition, UiFormSubmission } from './schema';
 import { UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
+import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
 import { FB_ICONS } from './builder-icons';
 
 let rendererSeq = 0;
@@ -285,6 +286,7 @@ export class UiFormRenderer {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly registered = (inject(UI_FB_VALIDATORS, { optional: true }) ?? []).flat();
+  private readonly registeredSources = (inject(UI_FB_OPTION_SOURCES, { optional: true }) ?? []).flat();
 
   readonly definition = input.required<UiFormDefinition>();
   /** Saved answers to edit or view. */
@@ -293,6 +295,8 @@ export class UiFormRenderer {
   readonly mode = input<UiFormMode | null>(null);
   /** Extra app checks, on top of the ones from `provideUiFormValidators`. */
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
+  /** Extra option sources, on top of the ones from `provideUiFormOptionSources`. */
+  readonly optionSources = input<readonly UiFbOptionSourceDef[]>([]);
   /** Uploads files as they're picked; without it, files ride along in the submission. */
   readonly uploader = input<UiFbUploader | null>(null);
   readonly showTitle = input(true);
@@ -347,9 +351,10 @@ export class UiFormRenderer {
       const data = this.data();
       const mode = this.mode();
       const validators = [...this.registered, ...this.validators()];
+      const optionSources = [...this.registeredSources, ...this.optionSources()];
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
-        definition, data, mode: mode ?? undefined, validators, injector: this.injector, today: today ?? undefined,
+        definition, data, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
       }));
       this.engine.set(e);
       onCleanup(() => e.destroy());

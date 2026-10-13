@@ -15,6 +15,8 @@ import { valueKindOf } from './field-types';
 import type { UiFbCalc, UiFbCalcArg, UiFbCalcOp, UiFbCondition, UiFbField, UiFbGroup, UiFbOption, UiFbValidatorRule } from './schema';
 import { comparisonWords, describeDateParam, formatMessage, UI_FB_IMPLICIT_VALIDATOR, type UiFbParamSpec, type UiFbValidatorDef } from './validators';
 import { FB_ICONS } from './builder-icons';
+import { FbSourceSettings } from './builder-source';
+import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
 
 // ── Options ───────────────────────────────────────────────────────────────
 
@@ -25,9 +27,17 @@ import { FB_ICONS } from './builder-icons';
  */
 @Component({
   selector: 'ui-fb-options',
-  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiSwitch, UiTextarea, UiButton],
+  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiSwitch, UiTextarea, UiButton, UiSegmented, FbSourceSettings],
   template: `
     @let f = field();
+    @if (canSource()) {
+      <ui-segmented class="from" size="sm" label="Where the options come from" [options]="fromModes" [value]="f.source ? 'source' : 'list'"
+        (valueChange)="setFrom($any($event))" />
+      @if (switchedToSource()) { <p class="fb-warn">People have answered this with the typed options. Those answers keep their saved values, shown as the value itself.</p> }
+    }
+    @if (f.source) {
+      <ui-fb-source-settings [field]="f" />
+    } @else {
     <div class="fb-stack tight">
       <ul class="opts" role="list">
         @for (o of f.options ?? []; track o.id; let i = $index; let last = $last) {
@@ -76,9 +86,11 @@ import { FB_ICONS } from './builder-icons';
         </div>
       }
     </div>
+    }
   `,
   styles: [FB_SHARED_STYLES, `
     .tight { gap: var(--ui-space-2); }
+    .from { display: block; margin-bottom: var(--ui-space-2); }
     .opts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
     .opt { display: flex; align-items: flex-start; gap: 4px; }
     .opt.archived .opt-main ui-input { opacity: 0.55; }
@@ -99,8 +111,27 @@ import { FB_ICONS } from './builder-icons';
   `],
 })
 export class FbOptionsEditor {
-  private readonly store = inject(FbBuilderStore);
+  protected readonly store = inject(FbBuilderStore);
   readonly field = input.required<UiFbField>();
+
+  protected readonly fromModes = [{ value: 'list', label: 'Typed list' }, { value: 'source', label: 'Data source' }];
+  /** Dropdowns and multi-selects can search an app list, when the app registered one (or the field already uses one). */
+  protected readonly canSource = computed(() =>
+    (UI_FB_SOURCE_FIELD_TYPES as readonly string[]).includes(this.field().type) && (!!this.store.optionSourceDefs().length || !!this.field().source));
+
+  /** The published form had typed options here, and answers use them. */
+  protected readonly switchedToSource = computed(() => {
+    if (!this.store.live() || !this.field().source) return false;
+    const pub = indexDefinition(this.store.published()!).get(this.field().id)?.element;
+    return !!pub && 'kind' in pub && pub.kind === 'field' && !pub.source;
+  });
+
+  protected setFrom(mode: 'list' | 'source'): void {
+    const f = this.field();
+    if (mode === 'source' && !f.source) this.store.updateField(f.id, { source: { type: this.store.optionSourceDefs()[0]?.type ?? '', params: {} } });
+    // The typed options are kept while a source is on, so switching back restores them.
+    if (mode === 'list' && f.source) this.store.updateField(f.id, (old) => { const { source: _s, ...rest } = old; return rest as UiFbField; });
+  }
 
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly removeIcon = FB_ICONS.Cancel01Icon;

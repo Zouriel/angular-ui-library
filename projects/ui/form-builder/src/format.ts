@@ -1,8 +1,11 @@
 import { isEmptyValue } from './conditions';
+import { isChoice } from './option-sources';
 import type { UiFbField, UiFbFileValue } from './schema';
 
 /** An option's label for a stored value, or the value itself (marked) when the option is gone. */
 export function optionLabel(field: UiFbField, value: unknown): string {
+  // Sourced answers carry the label they were picked with.
+  if (isChoice(value)) return value.label;
   const opt = field.options?.find((o) => o.value === String(value));
   return opt ? opt.label : `${String(value)} (no longer an option)`;
 }

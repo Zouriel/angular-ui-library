@@ -7,12 +7,14 @@ import { UiSwitch } from '@zouriel/ui/form';
 import {
   UiFormBuilder,
   UiFormRenderer,
+  provideUiFormOptionSources,
   provideUiFormValidators,
   type UiFbValidatorDef,
   type UiFormDefinition,
   type UiFormMode,
   type UiFormSubmission,
 } from '@zouriel/ui/form-builder';
+import { DEMO_SOURCES } from './form-builder.sources';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 import { SAMPLE_ANSWERS, SAMPLE_FORM } from './form-builder.sample';
 
@@ -29,7 +31,7 @@ const STUDENT_ID: UiFbValidatorDef = {
 @Component({
   selector: 'page-form-builder',
   imports: [JsonPipe, FormsModule, RouterLink, UiButton, UiSegmented, UiSwitch, UiFormBuilder, UiFormRenderer, DocPage, DocSection, DocDemo],
-  providers: [provideUiFormValidators(STUDENT_ID)],
+  providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES)],
   template: `
     <doc-page eyebrow="Flagship" title="Form builder"
       lead="Admin staff build forms by dragging fields onto a page, then add rules in plain words: show a question only when another answer says so, require it under a condition, group questions into sections that depend on other sections, repeat a section, split the form into steps. The form and every answer are plain JSON.">
@@ -81,6 +83,22 @@ const STUDENT_ID: UiFbValidatorDef = {
   validate: (v) => api.studentExists(v),   // true, false, or a message
 })]">
           <p class="plain">Checks get the answer, their settings, and a context with other answers and an AbortSignal. Slow checks show “Checking…” and block submitting until they finish.</p>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Option sources" selector="provideUiFormOptionSources" [api]="sourceApi"
+        summary="Lists that live in your app, usually behind a paginated, searchable API: students, courses, countries. Register them and they appear in the builder as a data source for dropdowns and multi-selects (Options → Data source). The renderer searches as people type and loads more as they scroll. Each setting can be a fixed value or another question’s answer, so lists can depend on each other. Answers are saved as { value, label }."
+        [shapes]="sourceShape">
+        <doc-demo lang="ts" code="providers: [provideUiFormOptionSources({
+  type: 'courses',
+  label: 'Courses',
+  params: [{ key: 'programme', label: 'Programme', required: true }],
+  pageSize: 20,
+  search: ({ query, page, pageSize, params, signal }) =>
+    api.courses({ q: query, page, size: pageSize, programme: params.programme }, signal),
+    // → { items: [{ value, label, description? }], hasMore }   (or total)
+})]">
+          <p class="plain">This page registers two demo lists, “Students” (600, searchable by name or ID) and “Courses” (follows the Programme answer). The sample form uses them for “Your student record” on page 1 and “Courses you’ll take” on page 3. Rules on these questions search the same list.</p>
         </doc-demo>
       </doc-section>
 
@@ -180,6 +198,19 @@ export class FormBuilderPage {
     { name: 'validate', type: '(value, params, ctx) => result | Promise<result>', desc: 'true or null passes; false fails with the message; a string fails with that text.' },
     { name: 'debounceMs', type: 'number', default: '400 for async', desc: 'Pause after typing before an async check runs.' },
   ];
+  protected readonly sourceApi: ApiRow[] = [
+    { name: 'type / label / description', type: 'string', desc: 'type is stored in the form JSON (keep it stable); label and description are what admins see.' },
+    { name: 'params', type: 'UiFbSourceParamSpec[]', desc: 'Settings admins fill in: { key, label, kind: text | number | select, options?, required? }. Each can also be set to another question’s answer.' },
+    { name: 'search(query)', type: '(q) => page | Promise<page>', desc: 'Gets { query, page (from 1), pageSize, params, signal }; returns { items, hasMore? , total? }. Pass signal to fetch so stale searches are cancelled.' },
+    { name: 'pageSize / minQueryLength / debounceMs', type: 'number', default: '20 / 0 / 250', desc: 'Results per page; characters needed before searching; pause after typing.' },
+    { name: 'optionSources', type: 'UiFbOptionSourceDef[]', desc: 'Also an input on ui-form-builder and ui-form-renderer, for lists you don’t provide app-wide.' },
+  ];
+  protected readonly sourceShape = `// A sourced field in the form JSON
+{ kind: 'field', type: 'multiselect', key: 'courses', label: 'Courses you’ll take',
+  source: { type: 'courses', params: { programme: { ref: 'f_prog' } } } }
+
+// Its answer: the value, and the label it had when picked
+"courses": [{ "value": "health-1", "label": "Anatomy" }]`;
   protected readonly validatorShape = `interface UiFbValidatorContext {
   field: UiFbField;
   value(ref: string): unknown;   // another answer

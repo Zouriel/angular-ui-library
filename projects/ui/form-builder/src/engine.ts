@@ -1,6 +1,7 @@
 import { computed, effect, signal, untracked, type EffectRef, type Injector } from '@angular/core';
 import { evaluateCalc, type UiFbCalcContext } from './calc';
 import { evaluateCondition, isEmptyValue, resolveOperand, type UiFbConditionContext } from './conditions';
+import { optionValueOf, toChoice, type UiFbChoice, type UiFbOptionSourceDef } from './option-sources';
 import { indexDefinition, elementName, migrateDefinition, type UiFbIndex, type UiFbIndexEntry } from './definition';
 import { fieldTypeInfo, valueKindOf } from './field-types';
 import type {
@@ -35,6 +36,8 @@ export interface UiFormEngineOptions {
   mode?: UiFormMode;
   /** App-registered checks (built-ins are always included). */
   validators?: readonly UiFbValidatorDef[];
+  /** App-registered option sources, for dropdowns and multi-selects that search a list. */
+  optionSources?: readonly UiFbOptionSourceDef[];
   /** Overrides "today" (for tests and for forms filled in on behalf of a past date). */
   today?: () => string;
   injector: Injector;
@@ -129,9 +132,18 @@ export function coerceValue(field: UiFbField, v: unknown): unknown {
       return v === '' || !Number.isFinite(n) ? null : n;
     }
     case 'boolean': return v === true || v === 'true' || v === 1;
-    case 'multi': return Array.isArray(v) ? v.map(String) : [String(v)];
+    case 'multi': {
+      const list = Array.isArray(v) ? v : [v];
+      // Sourced answers keep { value, label }; typed lists keep plain values (and unwrap a saved choice).
+      if (field.source) return list.map(toChoice).filter((c): c is UiFbChoice => !!c);
+      return list.map((x) => String(optionValueOf(x)));
+    }
     case 'file': return Array.isArray(v) ? v : [v];
-    case 'choice': return Array.isArray(v) ? (v.length ? String(v[0]) : null) : String(v);
+    case 'choice': {
+      const one = Array.isArray(v) ? v[0] : v;
+      if (one == null || one === '') return null;
+      return field.source ? toChoice(one) : String(optionValueOf(one));
+    }
     default: return typeof v === 'string' ? v : Array.isArray(v) ? v.join(', ') : String(v);
   }
 }
@@ -159,6 +171,7 @@ export class UiFormEngine {
   readonly settings: Required<Pick<NonNullable<UiFormDefinition['settings']>, 'validateOn' | 'clearHidden' | 'errorSummary' | 'requiredMarker'>>;
 
   private readonly validatorDefs: Map<string, UiFbValidatorDef>;
+  private readonly sourceDefs: Map<string, UiFbOptionSourceDef>;
   private readonly today: () => string;
   private readonly initialData: Record<string, unknown>;
 
@@ -200,6 +213,7 @@ export class UiFormEngine {
       requiredMarker: s.requiredMarker ?? 'asterisk',
     };
     this.validatorDefs = new Map([...UI_FB_BUILTIN_VALIDATORS, ...(opts.validators ?? [])].map((d) => [d.type, d]));
+    this.sourceDefs = new Map((opts.optionSources ?? []).map((d) => [d.type, d]));
     this.initialData = isObj(opts.data) ? structuredClone(opts.data) : {};
     this.load();
 
@@ -295,6 +309,23 @@ export class UiFormEngine {
 
   rawValue(id: string, row: string | null): unknown {
     return this.values()[addrOf(id, row)];
+  }
+
+  /** The registered source a field searches, if it has one and the app provides it. */
+  optionSource(type: string | undefined): UiFbOptionSourceDef | undefined {
+    return type ? this.sourceDefs.get(type) : undefined;
+  }
+
+  /**
+   * Another field's answer as seen from `row`: the same repeat entry when both
+   * are in it, the top-level answer otherwise, nothing for a repeat asked from outside.
+   */
+  answerFor(ref: string, row: string | null): unknown {
+    const entry = this.index.get(ref);
+    if (!entry) return undefined;
+    if (!entry.repeat) return this.instanceState(ref, null).value;
+    if (!row || !(this.rowIds()[entry.repeat.id] ?? []).includes(row)) return undefined;
+    return this.instanceState(ref, row).value;
   }
 
   field(id: string): UiFbField | undefined {

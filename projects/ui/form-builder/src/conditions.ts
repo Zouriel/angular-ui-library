@@ -1,4 +1,5 @@
 import { operatorInfo } from './field-types';
+import { optionValueOf } from './option-sources';
 import type { UiFbCondition, UiFbConditionRule, UiFbOperand } from './schema';
 
 /** What a condition can ask about the form while it is being filled in. */
@@ -71,7 +72,8 @@ function evalRule(r: UiFbConditionRule, ctx: UiFbConditionContext): boolean {
     case 'rowsGte': return ctx.rows(r.ref) >= (num(resolveOperand(r.value, ctx)) ?? Infinity);
     case 'rowsLte': return ctx.rows(r.ref) <= (num(resolveOperand(r.value, ctx)) ?? -Infinity);
   }
-  const v = ctx.value(r.ref);
+  // Answers from a data source are saved as { value, label }; rules compare the value.
+  const v = optionValueOf(ctx.value(r.ref));
   switch (r.op) {
     case 'empty': return isEmptyValue(v) || v === false;
     case 'notEmpty': return !isEmptyValue(v) && v !== false;
@@ -79,7 +81,7 @@ function evalRule(r: UiFbConditionRule, ctx: UiFbConditionContext): boolean {
     case 'isFalse': return v !== true;
   }
   const info = operatorInfo(r.op);
-  const target = resolveOperand(r.value, ctx);
+  const target = optionValueOf(resolveOperand(r.value, ctx));
   // An unfinished rule ("Age is more than …") never matches.
   if (info.arity > 0 && isEmptyValue(target)) return r.op === 'neq' || r.op === 'noneOf' || r.op === 'excludes' ? !isEmptyValue(v) : false;
   switch (r.op) {
@@ -94,7 +96,7 @@ function evalRule(r: UiFbConditionRule, ctx: UiFbConditionContext): boolean {
     case 'lt': case 'before': { const c = compare(v, target); return c !== null && c < 0; }
     case 'lte': case 'onOrBefore': { const c = compare(v, target); return c !== null && c <= 0; }
     case 'between': {
-      const hi = resolveOperand(r.value2, ctx);
+      const hi = optionValueOf(resolveOperand(r.value2, ctx));
       const lo = compare(v, target);
       const up = compare(v, hi);
       return lo !== null && up !== null && lo >= 0 && up <= 0;
