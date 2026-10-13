@@ -123,3 +123,53 @@ describe('UiCombobox / UiMultiSelect', () => {
     expect(multi.disabled).toBe(true);
   });
 });
+
+@Component({
+  imports: [ReactiveFormsModule, UiCombobox],
+  template: `<ui-combobox [options]="fonts" [formControl]="font" [fontPreview]="true" />`,
+})
+class FontHost {
+  fonts: UiComboboxOption[] = [{ label: 'Georgia', value: 'Georgia' }, { label: 'Open Sans', value: 'Open Sans' }];
+  font = new FormControl<string | null>('Georgia');
+}
+
+describe('UiCombobox font preview', () => {
+  it('draws the chosen value and every option in its own font', async () => {
+    const f = TestBed.createComponent(FontHost);
+    f.detectChanges();
+    await f.whenStable();
+    const input = f.nativeElement.querySelector('ui-combobox input') as HTMLInputElement;
+    expect(input.style.fontFamily).toContain('Georgia');
+    input.focus();
+    input.click();
+    f.detectChanges();
+    await f.whenStable();
+    const opts = [...document.querySelectorAll<HTMLElement>('.cdk-overlay-container [role=option]')];
+    expect(opts.map((o) => o.style.fontFamily)).toEqual(['"Georgia", system-ui, sans-serif', '"Open Sans", system-ui, sans-serif']);
+  });
+});
+
+describe('UiCombobox opening with a value', () => {
+  it('lists every option with the chosen one active, and filters only after typing', async () => {
+    const f = TestBed.createComponent(FontHost);
+    f.detectChanges();
+    await f.whenStable();
+    const input = f.nativeElement.querySelector('ui-combobox input') as HTMLInputElement;
+    input.value = 'Open Sans';
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    f.componentInstance.font.setValue('Open Sans');
+    input.dispatchEvent(new FocusEvent('blur'));
+    f.detectChanges();
+    input.click();
+    f.detectChanges();
+    await f.whenStable();
+    const opts = () => [...document.querySelectorAll<HTMLElement>('.cdk-overlay-container [role=option]')];
+    expect(opts().length).toBe(2);
+    expect(opts()[1].classList.contains('active')).toBe(true);
+    input.value = 'geo';
+    input.dispatchEvent(new Event('input'));
+    f.detectChanges();
+    expect(opts().map((o) => o.textContent!.trim())).toEqual(['Georgia']);
+  });
+});

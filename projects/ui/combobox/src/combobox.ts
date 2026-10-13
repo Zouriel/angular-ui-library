@@ -1,13 +1,15 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, ElementRef, computed, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, uiFontStack, type UiSize } from '@zouriel/ui';
 
 let nextId = 0;
 
 export interface UiComboboxOption {
   label: string;
   value: string;
+  /** Show this option in this font (a family name or a CSS font stack). */
+  fontFamily?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface UiComboboxOption {
         [attr.aria-controls]="listId"
         [attr.aria-activedescendant]="open() && filtered().length ? listId + '-' + activeIndex() : null"
         [attr.placeholder]="placeholder()"
+        [style.font-family]="selectedFont()"
         [value]="query()"
         [disabled]="disabled()"
         (input)="onInput($event)"
@@ -62,7 +65,8 @@ export interface UiComboboxOption {
             [class.active]="i === activeIndex()"
             [attr.aria-selected]="opt.value === value()"
             (mousedown)="$event.preventDefault(); select(opt)"
-            (mouseenter)="activeIndex.set(i)">
+            (mouseenter)="activeIndex.set(i)"
+            [style.font-family]="fontOf(opt)">
             {{ opt.label }}
           </li>
         } @empty {
@@ -114,6 +118,8 @@ export class UiCombobox implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Search…');
+  /** Draw each option, and the chosen value, in the font it names (for font pickers). */
+  fontPreview = input(false);
   /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
   label = input<string>();
   size = input<UiSize>('md');
@@ -123,6 +129,16 @@ export class UiCombobox implements ControlValueAccessor {
   clearable = input(true);
 
   protected readonly query = signal('');
+  protected readonly selectedFont = computed(() => {
+    if (!this.fontPreview()) return null;
+    const opt = this.options().find((o) => o.value === this.value());
+    return opt ? this.fontOf(opt) : null;
+  });
+
+  /** An option's preview font: its own fontFamily, or with fontPreview its value as a family name. */
+  protected fontOf(opt: UiComboboxOption): string | null {
+    return uiFontStack(opt.fontFamily ?? (this.fontPreview() ? opt.value : null));
+  }
   protected readonly value = signal<string | null>(null);
   protected readonly open = signal(false);
   protected readonly activeIndex = signal(0);
@@ -145,12 +161,22 @@ export class UiCombobox implements ControlValueAccessor {
   protected openPanel(): void {
     if (this.disabled()) return;
     this.triggerWidth.set((this.origin().elementRef.nativeElement as HTMLElement).getBoundingClientRect().width);
+    if (!this.open()) {
+      // A fresh open lists everything, with the chosen option active, until the user types.
+      this.typed.set(false);
+      const i = this.options().findIndex((o) => o.value === this.value());
+      this.activeIndex.set(Math.max(0, i));
+      if (i > 0) this.revealActive();
+    }
     this.open.set(true);
   }
 
+  /** Whether the text was edited since the list opened; only then does it filter. */
+  private readonly typed = signal(false);
+
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
-    if (!q) return this.options();
+    if (!q || !this.typed()) return this.options();
     return this.options().filter((o) => o.label.toLowerCase().includes(q));
   });
 
@@ -180,6 +206,7 @@ export class UiCombobox implements ControlValueAccessor {
   protected onInput(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);
     this.openPanel();
+    this.typed.set(true);
     this.activeIndex.set(0);
   }
 

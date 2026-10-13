@@ -12,8 +12,8 @@ import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepic
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";
-const OPTION = "interface UiSelectOption { label: string; value: string; disabled?: boolean; }";
-const COMBO = "interface UiComboboxOption { label: string; value: string; }   // from @zouriel/ui/combobox";
+const OPTION = "interface UiSelectOption {\n  label: string;\n  value: string;\n  disabled?: boolean;\n  fontFamily?: string;   // show this option in this font\n}";
+const COMBO = "interface UiComboboxOption {   // from @zouriel/ui/combobox\n  label: string;\n  value: string;\n  fontFamily?: string;   // show this option in this font\n}";
 const CHOICE = `interface UiChoice {
   value: string;
   label: string;
@@ -111,16 +111,23 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Select" selector="ui-select" [api]="selectApi"
-        summary="Single choice on a native <select>, so the keyboard and screen readers work as the platform does; the option list takes the theme colours. Value type: string. A placeholder adds an empty, unselectable first option." [shapes]="OPTION">
+        summary="Single choice on a native <select>, so the keyboard and screen readers work as the platform does; the option list takes the theme colours. Value type: string. A placeholder adds an empty, unselectable first option. For a font picker set fontPreview: each option, and the closed field, is drawn in the font it names (its fontFamily, or its value as a family name). Desktop Chrome and Firefox style native options, and browsers with appearance: base-select get a page-drawn list; phone and macOS native pickers ignore option fonts, so use the combobox when the preview must show everywhere." [shapes]="OPTION">
         <doc-demo code="<ui-select formControlName=&quot;role&quot; [options]=&quot;roles&quot; placeholder=&quot;Choose…&quot; />">
           <ui-select formControlName="role" [options]="roles" placeholder="Choose…" />
+        </doc-demo>
+        <doc-demo code="<ui-select [options]=&quot;fonts&quot; [fontPreview]=&quot;true&quot; [(ngModel)]=&quot;font&quot; label=&quot;Font&quot; />
+<!-- each option: { label: 'Space Grotesk', value: 'Space Grotesk' } or a fontFamily stack -->">
+          <ui-select [options]="fonts" [fontPreview]="true" [(ngModel)]="fontSel" [ngModelOptions]="{ standalone: true }" label="Font" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Combobox" selector="ui-combobox" [api]="comboApi"
-        summary="Filterable autocomplete (CDK Overlay, WAI-ARIA combobox). Value type: string | null. Focus or click opens the list; type to filter by label; ArrowUp/Down move, Enter chooses, Escape, Tab or a click outside closes. Leaving the field puts the chosen label back, so typed text never becomes the value. With clearable (the default) a Clear button (aria-label Clear) shows while a value is chosen; it, or emptying the text and leaving the field, sets the value to null and keeps focus in the field. Name it with ui-form-field, or with label when there is no visible label." [shapes]="COMBO">
+        summary="Filterable autocomplete (CDK Overlay, WAI-ARIA combobox). Value type: string | null. Focus or click opens the list; type to filter by label; ArrowUp/Down move, Enter chooses, Escape, Tab or a click outside closes. Leaving the field puts the chosen label back, so typed text never becomes the value. Opening lists every option with the chosen one active; typing filters. fontPreview draws each option and the chosen value in the font it names, on every platform. With clearable (the default) a Clear button (aria-label Clear) shows while a value is chosen; it, or emptying the text and leaving the field, sets the value to null and keeps focus in the field. Name it with ui-form-field, or with label when there is no visible label." [shapes]="COMBO">
         <doc-demo code="<ui-combobox formControlName=&quot;country&quot; [options]=&quot;countries&quot; />">
           <ui-combobox formControlName="country" [options]="countries" />
+        </doc-demo>
+        <doc-demo code="<ui-combobox [options]=&quot;fonts&quot; [fontPreview]=&quot;true&quot; [(ngModel)]=&quot;font&quot; label=&quot;Font&quot; />">
+          <ui-combobox [options]="fonts" [fontPreview]="true" [(ngModel)]="fontCombo" [ngModelOptions]="{ standalone: true }" label="Font" />
         </doc-demo>
       </doc-section>
 
@@ -329,6 +336,17 @@ export class FormsPage {
   ];
   protected readonly formJson = computed(() => JSON.stringify(this.formValue()));
   protected readonly OPTION = OPTION;
+  /** Fonts the docs page has loaded (the Dark Orange theme brings three) plus generic families. */
+  protected readonly fonts = [
+    { label: 'System UI', value: 'system', fontFamily: 'system-ui, sans-serif' },
+    { label: 'Space Grotesk', value: 'Space Grotesk' },
+    { label: 'Bricolage Grotesque', value: 'Bricolage Grotesque' },
+    { label: 'JetBrains Mono', value: 'JetBrains Mono' },
+    { label: 'Serif', value: 'serif', fontFamily: 'Georgia, "Times New Roman", serif' },
+    { label: 'Monospace', value: 'monospace', fontFamily: 'ui-monospace, monospace' },
+  ];
+  protected fontSel = 'Space Grotesk';
+  protected fontCombo: string | null = 'Bricolage Grotesque';
   protected readonly roles = [{ label: 'Engineer', value: 'eng' }, { label: 'Designer', value: 'design' }, { label: 'PM', value: 'pm' }];
   protected readonly plans = [{ label: 'Free', value: 'free' }, { label: 'Pro', value: 'pro' }, { label: 'Enterprise', value: 'ent' }];
   protected readonly interests = [{ label: 'Design', value: 'design' }, { label: 'Code', value: 'code' }, { label: 'Data', value: 'data' }];
@@ -419,6 +437,7 @@ export class FormsPage {
     { name: 'options', type: 'UiSelectOption[]', default: '[]', desc: 'Choices (see Data shapes).' },
     { name: 'placeholder', type: 'string', default: '—', desc: 'Text of an empty first option, shown while no value is chosen.' },
     { name: 'label', type: 'string', default: '—', desc: 'aria-label (not needed inside ui-form-field).' },
+    { name: 'fontPreview', type: 'boolean', default: 'false', desc: 'Font picker: draw each option and the closed field in the font it names (fontFamily, else the value).' },
     ...this.common,
   ];
   protected readonly comboApi: ApiRow[] = [
@@ -427,6 +446,7 @@ export class FormsPage {
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
     { name: 'clearable', type: 'boolean', default: 'true', desc: 'Show a Clear button while a value is chosen (hidden when disabled), and clear the value when the text is emptied and the field is left. Off: leaving the field always restores the chosen label.' },
     { name: 'clear()', type: 'method', default: '—', desc: 'Set the value to null, notify the form and focus the field.' },
+    { name: 'fontPreview', type: 'boolean', default: 'false', desc: 'Font picker: draw each option and the chosen value in the font it names (fontFamily, else the value).' },
     ...this.common,
   ];
   protected readonly multiApi: ApiRow[] = [

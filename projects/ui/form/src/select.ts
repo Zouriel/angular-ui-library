@@ -1,16 +1,24 @@
-import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, uiFontStack, type UiSize } from '@zouriel/ui';
 
 export interface UiSelectOption {
   label: string;
   value: string;
   disabled?: boolean;
+  /** Show this option in this font (a family name or a CSS font stack). */
+  fontFamily?: string;
 }
 
 /**
  * `ui-select` — single-choice dropdown (CVA) built on a native `<select>` for
  * full keyboard/screen-reader support. For rich filtering use combobox instead.
+ *
+ * Font pickers: with `fontPreview` each option is drawn in its own font (`option.fontFamily`, or
+ * the option's value as a family name), and so is the closed field. Desktop Chrome and Firefox
+ * style native options; where the browser supports `appearance: base-select` the whole list is
+ * drawn by the page instead, so it works there too. Phone and macOS native pickers ignore option
+ * fonts; use `ui-combobox` with `fontPreview` when the preview must show everywhere.
  */
 @Component({
   selector: 'ui-select',
@@ -18,6 +26,8 @@ export interface UiSelectOption {
     <div class="wrap" [class.no-radius]="!radius()" [attr.data-size]="size()">
       <select
         class="ui-select"
+        [class.font-preview]="fontPreview()"
+        [style.font-family]="selectedFont()"
         [disabled]="disabled()"
         [attr.aria-invalid]="invalid() || null"
         [attr.aria-label]="label()"
@@ -33,7 +43,7 @@ export interface UiSelectOption {
           <option value="" disabled [selected]="!value()">{{ placeholder() }}</option>
         }
         @for (opt of options(); track opt.value) {
-          <option [value]="opt.value" [selected]="opt.value === value()" [disabled]="!!opt.disabled">{{ opt.label }}</option>
+          <option [value]="opt.value" [selected]="opt.value === value()" [disabled]="!!opt.disabled" [style.font-family]="fontOf(opt)">{{ opt.label }}</option>
         }
       </select>
       <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -66,6 +76,21 @@ export interface UiSelectOption {
      */
     option { background-color: var(--ui-color-surface); color: var(--ui-color-text); }
     option:disabled { color: var(--ui-color-text-muted); }
+    /* Font pickers: where supported, the page draws the list, so every option shows its font on
+       every platform that has the feature. Styled with the same tokens as the rest of the field. */
+    @supports (appearance: base-select) {
+      .ui-select.font-preview, .ui-select.font-preview::picker(select) { appearance: base-select; }
+      .ui-select.font-preview::picker-icon { display: none; }
+      .ui-select.font-preview::picker(select) {
+        background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+        border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+        box-shadow: var(--ui-shadow-2); padding: var(--ui-space-1); max-height: 320px;
+      }
+      .ui-select.font-preview option { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); font-size: var(--ui-font-size-md); }
+      .ui-select.font-preview option:hover, .ui-select.font-preview option:focus-visible { background: var(--ui-color-elevated-hover); outline: none; }
+      .ui-select.font-preview option:checked { background: var(--ui-color-selected); }
+      .ui-select.font-preview option::checkmark { display: none; }
+    }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSelect), multi: true }],
 })
@@ -77,9 +102,21 @@ export class UiSelect implements ControlValueAccessor {
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** Draw each option, and the closed field, in the font it names (for font pickers). */
+  fontPreview = input(false);
 
   protected readonly value = signal('');
   protected readonly disabled = signal(false);
+  protected readonly selectedFont = computed(() => {
+    if (!this.fontPreview()) return null;
+    const opt = this.options().find((o) => o.value === this.value());
+    return opt ? this.fontOf(opt) : null;
+  });
+
+  /** An option's preview font: its own fontFamily, or with fontPreview its value as a family name. */
+  protected fontOf(opt: UiSelectOption): string | null {
+    return uiFontStack(opt.fontFamily ?? (this.fontPreview() ? opt.value : null));
+  }
   private onChange: (v: string) => void = () => {};
   protected onTouched: () => void = () => {};
 
