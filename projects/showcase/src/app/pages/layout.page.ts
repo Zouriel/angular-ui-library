@@ -14,7 +14,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   ],
   template: `
     <doc-page eyebrow="Layout" title="Layout & grid"
-      lead="Structural primitives — container, grid, stack, spacer, aspect-ratio, scroll-area, splitter, sidebar layout, divider. gap values are token steps (0–6 → --ui-space-*).">
+      lead="Structural primitives — container, grid, stack, spacer, aspect-ratio, scroll-area, splitter, sidebar layout, divider. gap values are token steps (0–20 → --ui-space-*); 8, 12 and 20 are the larger section-level steps.">
 
       <doc-section name="Grid" selector="ui-grid" [api]="gridApi"
         summary="CSS grid with a fixed column count (columns: number) or a responsive auto-fit (min: a CSS length, which overrides columns).">
@@ -27,7 +27,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Stack" selector="ui-stack" [api]="stackApi"
-        summary="Flexbox row/column with token gap + alignment.">
+        summary="Flexbox row/column with token gap and alignment.">
         <doc-demo code="<ui-stack direction=&quot;row&quot; [gap]=&quot;3&quot; align=&quot;center&quot; justify=&quot;space-between&quot;>
   <ui-badge>left</ui-badge><ui-spacer /><ui-badge>right</ui-badge>
 </ui-stack>">
@@ -43,7 +43,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Container" selector="ui-container" [api]="containerApi"
-        summary="Centered max-width wrapper with responsive padding.">
+        summary="Centered max-width wrapper with side padding (--ui-space-4). sm 640px, md 860px, lg 1100px, xl 1320px, full has no limit.">
         <doc-demo code="<ui-container size=&quot;md&quot;> … </ui-container>"></doc-demo>
       </doc-section>
 
@@ -64,7 +64,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Splitter" selector="ui-splitter" [api]="splitterApi"
-        summary="Two resizable panes with a draggable divider. Project [split-a] and [split-b]; the divider is keyboard-resizable.">
+        summary="Two resizable panes with a draggable divider. Project [split-a] and [split-b]. The first pane stays between 10% and 90%. The divider is focusable: arrow keys move it 2% at a time. Its grab area grows on coarse (touch) pointers only.">
         <doc-demo code="<ui-splitter orientation=&quot;horizontal&quot;>
   <div split-a>Left</div>
   <div split-b>Right</div>
@@ -119,7 +119,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Divider" selector="ui-divider" [api]="dividerApi"
-        summary="Horizontal or vertical separator, optionally with a centered label (horizontal only).">
+        summary="Horizontal or vertical separator (role=separator), optionally with a centered label (horizontal only). A vertical divider stretches to the height of its row.">
         <doc-demo code="<ui-divider />
 <ui-divider label=&quot;or&quot; />
 <ui-divider orientation=&quot;vertical&quot; />">
@@ -154,17 +154,18 @@ export class LayoutPage {
     { name: 'breakpoint', type: 'number', default: '860', desc: 'Widest viewport (px) that still uses the drawer.' },
     { name: 'sidebarWidth', type: 'string', default: "'248px'", desc: 'Sidebar width, any CSS length.' },
     { name: '[(open)]', type: 'boolean', default: 'false', desc: 'Whether the drawer is open, e.g. to close it on navigation. Ignored above the breakpoint.' },
+    { name: 'toggle() / close()', type: 'method', default: '—', desc: 'Open/close the drawer from code, e.g. close() on navigation.' },
     { name: '[sidebar] / [header] / default', type: 'content slots', default: '', desc: 'The nav, the top-bar content and the page.' },
     { name: '--ui-shell-pad', type: 'CSS variable', default: 'space-6 (space-4 compact)', desc: 'Padding around the page content.' },
   ];
   protected readonly gridApi: ApiRow[] = [
     { name: 'columns', type: 'number | string', default: '12', desc: 'Column count or grid-template-columns.' },
     { name: 'min', type: 'string', default: '—', desc: 'Auto-fit min column width (overrides columns).' },
-    { name: 'gap', type: '0 | 1 | 2 | 3 | 4 | 6', default: '4', desc: 'Token gap step.' },
+    { name: 'gap', type: '1 | 2 | 3 | 4 | 6 | 8 | 12 | 20', default: '4', desc: 'Token gap step (--ui-space-N).' },
   ];
   protected readonly stackApi: ApiRow[] = [
     { name: 'direction', type: "'row' | 'column'", default: "'column'", desc: 'Flex direction.' },
-    { name: 'gap', type: '0 | 1 | 2 | 3 | 4 | 6', default: '3', desc: 'Token gap step.' },
+    { name: 'gap', type: '0 | 1 | 2 | 3 | 4 | 6 | 8 | 12 | 20', default: '3', desc: 'Token gap step (--ui-space-N).' },
     { name: 'align', type: "'start'|'center'|'end'|'stretch'", default: "'stretch'", desc: 'align-items.' },
     { name: 'justify', type: "'start'|'center'|'end'|'space-between'", default: "'start'", desc: 'justify-content.' },
     { name: 'wrap', type: 'boolean', default: 'false', desc: 'Allow wrapping.' },
@@ -181,6 +182,8 @@ export class LayoutPage {
   ];
   protected readonly splitterApi: ApiRow[] = [
     { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Split direction.' },
+    { name: 'ratio', type: 'WritableSignal<number>', default: '50', desc: 'Public signal: size of the first pane in %. Read or set it through a template ref.' },
+    { name: '[split-a] / [split-b]', type: 'content slots', default: '—', desc: 'The first and second pane.' },
   ];
   protected readonly panelApi: ApiRow[] = [
     { name: 'title', type: 'string (required)', default: '—', desc: 'Heading, also the group’s aria-label.' },
@@ -191,6 +194,6 @@ export class LayoutPage {
   ];
   protected readonly dividerApi: ApiRow[] = [
     { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Direction.' },
-    { name: 'label', type: 'string', default: '—', desc: 'Centered label (horizontal only).' },
+    { name: 'label', type: 'string', default: '—', desc: 'Centered label (horizontal only; a label forces horizontal).' },
   ];
 }

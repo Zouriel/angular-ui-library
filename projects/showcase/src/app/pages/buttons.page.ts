@@ -1,4 +1,8 @@
 import { Component, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon';
+import Add01Icon from '@hugeicons/core-free-icons/Add01Icon';
+import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import { UiText } from '@zouriel/ui/text';
 import {
   UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented,
@@ -6,12 +10,12 @@ import {
 } from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
-const VARIANT = "'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive'";
+const VARIANT = "'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand'";
 const SIZE = "'sm' | 'md' | 'lg'";
 
 @Component({
   selector: 'page-buttons',
-  imports: [
+  imports: [HugeiconsIconComponent, 
     UiText, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented,
     DocPage, DocSection, DocDemo,
   ],
@@ -20,7 +24,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
       lead="Action primitives. All wire radius from UiConfig and use only design tokens, so they re-skin with the active theme.">
 
       <doc-section name="Button" selector="ui-button" [api]="buttonApi"
-        summary="Six variants, three sizes, loading and block states. Glass is opt-in (buttons are solid by default). Projects its label as content.">
+        summary="Seven variants (brand uses the --ui-gradient-brand fill), three sizes, loading and block states. Glass is opt-in (buttons are solid by default). On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
         <doc-demo code="<ui-button variant=&quot;primary&quot;>Primary</ui-button>
 <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Outline</ui-button>
 <ui-button variant=&quot;destructive&quot;>Delete</ui-button>
@@ -45,13 +49,13 @@ const SIZE = "'sm' | 'md' | 'lg'";
       </doc-section>
 
       <doc-section name="Icon button" selector="ui-icon-button" [api]="iconApi"
-        summary="Square, icon-only action. label is REQUIRED (string) and applied as aria-label so the control is named for assistive tech. Project an icon/SVG as content.">
-        <doc-demo code="<ui-icon-button label=&quot;Settings&quot; variant=&quot;outline&quot;>⚙</ui-icon-button>
-<ui-icon-button label=&quot;Add&quot; variant=&quot;primary&quot; [round]=&quot;true&quot;>＋</ui-icon-button>">
+        summary="Square, icon-only action. label is REQUIRED (string) and applied as aria-label so the control is named for assistive tech. Takes every button variant. Project an icon/SVG as content; projected SVGs are sized to match. On coarse pointers an invisible hit area brings it up to 44px.">
+        <doc-demo code="<ui-icon-button label=&quot;Settings&quot; variant=&quot;outline&quot;><hugeicons-icon [icon]=&quot;Settings02Icon&quot; /></ui-icon-button>
+<ui-icon-button label=&quot;Add&quot; variant=&quot;primary&quot; [round]=&quot;true&quot;><hugeicons-icon [icon]=&quot;Add01Icon&quot; /></ui-icon-button>">
           <div class="row items-center">
-            <ui-icon-button label="Settings" variant="outline">⚙</ui-icon-button>
-            <ui-icon-button label="Add" variant="primary" [round]="true">＋</ui-icon-button>
-            <ui-icon-button label="Delete" variant="ghost">🗑</ui-icon-button>
+            <ui-icon-button label="Settings" variant="outline"><hugeicons-icon aria-hidden="true" [icon]="icons.settings" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-icon-button label="Add" variant="primary" [round]="true"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-icon-button label="Delete" variant="ghost"><hugeicons-icon aria-hidden="true" [icon]="icons.remove" [strokeWidth]="1.8" /></ui-icon-button>
           </div>
         </doc-demo>
       </doc-section>
@@ -70,8 +74,14 @@ const SIZE = "'sm' | 'md' | 'lg'";
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Segmented" selector="ui-segmented" [api]="segmentedApi"
-        summary="Pick one of a few options, joined into one control. A radiogroup: arrow keys move the choice, Tab leaves the group. Use it for modes and view switches; use toggle buttons when several can be on.">
+      <doc-section name="Segmented" selector="ui-segmented" [api]="segmentedApi" [outputs]="segmentedOut"
+        shapes="interface UiSegmentedOption {
+  value: string;
+  label: string;
+  glyph?: string;      // short visible content; label stays the accessible name
+  disabled?: boolean;
+}"
+        summary="Pick one of a few options, joined into one control. A radiogroup: arrow keys move the choice, Tab leaves the group. Bind [(value)] or ngModel / formControl. An option can show a short glyph instead of its label (the label stays the accessible name). Use it for modes and view switches; use toggle buttons when several can be on.">
         <doc-demo code="<ui-segmented label=&quot;Preview with&quot; [options]=&quot;[{ value: 'filled', label: 'Filled' }, { value: 'empty', label: 'Empty' }]&quot; [(value)]=&quot;mode&quot; />">
           <div class="row items-center">
             <ui-segmented label="Preview with" [options]="segOptions" [(value)]="segValue" />
@@ -82,7 +92,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
       </doc-section>
 
       <doc-section name="Toggle button" selector="ui-toggle-button" [api]="toggleApi" [outputs]="toggleOut"
-        summary="Two-state button with aria-pressed. pressed is a two-way model — bind [(pressed)].">
+        summary="Two-state button with aria-pressed. pressed is a two-way model, so bind [(pressed)]. On coarse pointers the hit area grows to 44px tall.">
         <doc-demo code="<ui-toggle-button [(pressed)]=&quot;bold&quot;>Bold</ui-toggle-button>">
           <ui-toggle-button [(pressed)]="bold">Bold {{ bold() ? 'ON' : 'off' }}</ui-toggle-button>
         </doc-demo>
@@ -97,7 +107,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
       </doc-section>
 
       <doc-section name="Dropdown button" selector="ui-dropdown-button" [api]="ddApi" [outputs]="ddOut"
-        summary="A button that opens a menu of actions (CDK Overlay). Pass items; listen to (select)."
+        summary="A button that opens a menu of actions (CDK Overlay). Pass items; listen to (select). Opening moves focus to the first item; ArrowUp/Down, Home and End move between items, Escape closes and returns focus to the trigger, Tab closes. The menu flips to stay on screen."
         shapes="interface UiDropdownItem {
   label: string;
   value: string;
@@ -110,7 +120,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
       </doc-section>
 
       <doc-section name="FAB" selector="ui-fab" [api]="fabApi"
-        summary="Floating action button pinned to a screen corner (position: fixed). label is required (aria-label). Project an icon as content.">
+        summary="Floating action button pinned to a screen corner (position: fixed). label is required (aria-label). Project an icon as content. The sm size grows to 44px on coarse pointers.">
         <doc-demo code="<ui-fab label=&quot;New&quot; position=&quot;bottom-right&quot;>＋</ui-fab>"></doc-demo>
       </doc-section>
     </doc-page>
@@ -122,6 +132,7 @@ const SIZE = "'sm' | 'md' | 'lg'";
   `,
 })
 export class ButtonsPage {
+  protected readonly icons = { settings: Settings02Icon, add: Add01Icon, remove: Delete02Icon };
   protected readonly bold = signal(false);
   protected readonly msg = signal('—');
   protected readonly ddItems: UiDropdownItem[] = [
@@ -153,10 +164,13 @@ export class ButtonsPage {
   protected readonly segValue = signal<string | null>('filled');
   protected readonly segMode = signal<string | null>('edit');
   protected readonly segmentedApi: ApiRow[] = [
-    { name: 'options', type: 'readonly { value: string; label: string; disabled?: boolean }[]', default: '[]', desc: 'The choices, in order.' },
-    { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way selected value — [(value)].' },
+    { name: 'options', type: 'readonly UiSegmentedOption[]', default: '[]', desc: 'The choices, in order (see Data shapes).' },
+    { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way selected value: [(value)]. Also works with ngModel and reactive forms.' },
     { name: 'label', type: 'string', default: "'Options'", desc: 'aria-label for the radiogroup.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
+  ];
+  protected readonly segmentedOut: ApiRow[] = [
+    { name: 'valueChange', type: 'string | null', default: '—', desc: 'Emits when the choice changes (model change).' },
   ];
   protected readonly groupApi: ApiRow[] = [
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the group.' },

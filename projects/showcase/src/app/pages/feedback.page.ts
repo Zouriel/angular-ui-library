@@ -1,4 +1,6 @@
 import { Component, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import FolderAddIcon from '@hugeicons/core-free-icons/FolderAddIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import { UiAlert } from '@zouriel/ui/alert';
@@ -13,7 +15,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
 @Component({
   selector: 'page-feedback',
-  imports: [
+  imports: [HugeiconsIconComponent, 
     UiText, UiButton, UiAlert, UiSpinner, UiSkeleton, UiProgressBar, UiEmptyState, UiResult, UiLoadingOverlay,
     DocPage, DocSection, DocDemo,
   ],
@@ -22,7 +24,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       lead="Communicate state: alerts, spinners, progress, skeletons, empty/result states, and a loading overlay.">
 
       <doc-section name="Alert" selector="ui-alert" [api]="alertApi" [outputs]="alertOut"
-        summary="Inline contextual message. Project the body as content; danger/warning use role=alert, others role=status.">
+        summary="Inline contextual message with an SVG icon per tone. Project the body as content; danger/warning use role=alert, others role=status. The dismiss button grows its hit area on coarse (touch) pointers only.">
         <doc-demo code="<ui-alert tone=&quot;warning&quot; heading=&quot;Heads up&quot; [dismissible]=&quot;true&quot; (dismiss)=&quot;hide()&quot;>
   Message body
 </ui-alert>">
@@ -36,7 +38,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Spinner" selector="ui-spinner" [api]="spinnerApi"
-        summary="Indeterminate activity indicator (role=status).">
+        summary="Indeterminate activity indicator (role=status). Spins slower under reduced motion.">
         <doc-demo code="<ui-spinner size=&quot;lg&quot; label=&quot;Loading&quot; />">
           <div class="row items-center"><ui-spinner size="sm" /><ui-spinner /><ui-spinner size="lg" /></div>
         </doc-demo>
@@ -55,7 +57,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Skeleton" selector="ui-skeleton" [api]="skeletonApi"
-        summary="Content placeholder shown while data loads (aria-hidden).">
+        summary="Content placeholder shown while data loads (aria-hidden). The shimmer stops under reduced motion.">
         <doc-demo code="<ui-skeleton shape=&quot;circle&quot; width=&quot;40px&quot; height=&quot;40px&quot; />
 <ui-skeleton shape=&quot;text&quot; width=&quot;60%&quot; />">
           <div class="row items-center">
@@ -66,7 +68,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Loading overlay" selector="ui-loading-overlay" [api]="loadingApi"
-        summary="Veils its positioned parent (place inside a position:relative container) while loading is true.">
+        summary="Veils its positioned parent (place inside a position:relative container) with a spinner and label while loading is true. Fades in and out.">
         <doc-demo code="<div style=&quot;position:relative&quot;>
   <ui-loading-overlay [loading]=&quot;busy()&quot; label=&quot;Saving…&quot; />
   …content…
@@ -80,19 +82,19 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Empty state" selector="ui-empty-state" [api]="emptyApi"
-        summary="Placeholder for no-content. Project [empty-icon] and [empty-actions].">
+        summary="Placeholder for no-content. Slots: [empty-icon] and [empty-actions]; empty slots collapse.">
         <doc-demo code="<ui-empty-state heading=&quot;No projects&quot; description=&quot;Create one to start.&quot;>
-  <span empty-icon>📁</span>
+  <hugeicons-icon empty-icon [icon]=&quot;FolderAddIcon&quot; [size]=&quot;32&quot; />
   <ui-button empty-actions>New project</ui-button>
 </ui-empty-state>">
           <ui-empty-state heading="No projects yet" description="Create your first project.">
-            <span empty-icon>📁</span><ui-button empty-actions size="sm">New project</ui-button>
+            <hugeicons-icon empty-icon aria-hidden="true" [icon]="icons.folder" [size]="32" [strokeWidth]="1.5" /><ui-button empty-actions size="sm">New project</ui-button>
           </ui-empty-state>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Result" selector="ui-result" [api]="resultApi"
-        summary="Full outcome state. Project action buttons as content.">
+        summary="Full outcome state with an SVG icon per status (404 and 500 show ? and !). Project action buttons as content.">
         <doc-demo code="<ui-result status=&quot;success&quot; title=&quot;All done!&quot; subtitle=&quot;Published.&quot;>
   <ui-button>View</ui-button>
 </ui-result>">
@@ -113,16 +115,17 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   `,
 })
 export class FeedbackPage {
+  protected readonly icons = { folder: FolderAddIcon };
   protected readonly loading = signal(false);
   protected runLoading(): void { this.loading.set(true); setTimeout(() => this.loading.set(false), 1500); }
 
   protected readonly alertApi: ApiRow[] = [
-    { name: 'tone', type: "'info' | 'success' | 'warning' | 'danger'", default: "'info'", desc: 'Color + role + glyph.' },
+    { name: 'tone', type: "'info' | 'success' | 'warning' | 'danger'", default: "'info'", desc: 'Color, ARIA role and icon.' },
     { name: 'heading', type: 'string', default: '—', desc: 'Optional bold title.' },
-    { name: 'dismissible', type: 'boolean', default: 'false', desc: 'Show close button.' },
+    { name: 'dismissible', type: 'boolean', default: 'false', desc: 'Show the dismiss (×) button.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
-  protected readonly alertOut: ApiRow[] = [{ name: 'dismiss', type: 'void', default: '—', desc: 'Close button pressed.' }];
+  protected readonly alertOut: ApiRow[] = [{ name: 'dismiss', type: 'void', default: '—', desc: 'Dismiss button pressed. The host decides whether to hide the alert.' }];
   protected readonly spinnerApi: ApiRow[] = [
     { name: 'size', type: SIZE, default: "'md'", desc: 'Diameter.' },
     { name: 'label', type: 'string', default: "'Loading'", desc: 'aria-label.' },
@@ -139,14 +142,14 @@ export class FeedbackPage {
   ];
   protected readonly loadingApi: ApiRow[] = [
     { name: 'loading', type: 'boolean', default: 'false', desc: 'Show the veil.' },
-    { name: 'label', type: 'string', default: "'Loading…'", desc: 'Status text.' },
+    { name: 'label', type: 'string', default: "'Loading…'", desc: 'Text under the spinner and the aria-label. Empty hides the text.' },
   ];
   protected readonly emptyApi: ApiRow[] = [
     { name: 'heading', type: 'string', default: "'Nothing here yet'", desc: 'Title.' },
     { name: 'description', type: 'string', default: '—', desc: 'Supporting text.' },
   ];
   protected readonly resultApi: ApiRow[] = [
-    { name: 'status', type: "'success'|'error'|'info'|'warning'|'404'|'500'", default: "'info'", desc: 'Glyph + color.' },
+    { name: 'status', type: "'success'|'error'|'info'|'warning'|'404'|'500'", default: "'info'", desc: 'Icon and color.' },
     { name: 'title', type: 'string', default: "''", desc: 'Headline.' },
     { name: 'subtitle', type: 'string', default: '—', desc: 'Supporting text.' },
   ];

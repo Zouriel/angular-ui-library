@@ -29,8 +29,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     <doc-page eyebrow="Flagship" title="Design tools"
       lead="The pieces of a visual editor, as used by the invites.blog designer: handles for placing things on a stage, a vector editor for drawing and reshaping outlines, a timeline for when things move, text with inline variables, and the meters and frames around them.">
 
-      <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi"
-        summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre; arrows nudge. Pair with uiSnap() and ui-snap-guides for alignment guides.">
+      <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi" [outputs]="transformOutputs"
+        summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre. From the keyboard, arrows nudge (Shift for 10), Alt+arrow resizes (width with left/right, height with up/down), and [ / ] rotate by 1° (15° with Shift). Two fingers pinch to scale about the point between them. Pair with uiSnap() and ui-snap-guides for alignment guides.">
         <doc-demo code="<div class=&quot;stage&quot;>
   <ui-transform-box [box]=&quot;box()&quot; [scale]=&quot;1&quot; showSize
     (transform)=&quot;live($event)&quot; (transformEnd)=&quot;commit($event)&quot; />
@@ -50,7 +50,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs"
-        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or wheel zooms. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
+        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or wheel zooms. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
         <doc-demo code="<ui-path-editor #editor [items]=&quot;items()&quot; [width]=&quot;400&quot; [height]=&quot;260&quot; [mode]=&quot;mode()&quot; [brush]=&quot;brush()&quot;
   [(selectedId)]=&quot;selectedId&quot; (itemsChange)=&quot;commit($event)&quot; (stroke)=&quot;addStroke($event)&quot; />
 <ui-button (click)=&quot;editor.fit()&quot;>Fit</ui-button>">
@@ -79,7 +79,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         summary="The pure functions under the editor, for building shapes in code, turning them into SVG and reading hand-drawn strokes. An outline is a UiPathContour { points, closed }, where each point may carry in/out curve handles; a UiPathItem is a list of them plus an optional fill and boolean op (cut, intersect, exclude).">
         <doc-demo lang="ts" code="const star = starContour(0, 0, 100, 100, 5, 0.45);
 const d = pathD([star]);                 // SVG path data for <path [attr.d]>
-const box = pathBounds([star]);          // { x, y, w, h }
+const box = pathBounds([star]);          // { x, y, w, h } or null
 const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null for a scribble">
           <div class="shapes">
             @for (s of sampleShapes; track s.name) {
@@ -89,8 +89,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi"
-        summary="A timeline: a bar per layer for when it's active, diamonds for its keyframes, markers along a ruler and a playhead. Bars, edges and diamonds snap to markers, the playhead and other bars (hold Alt to place freely). Rows reorder by their grip.">
+      <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi" [outputs]="sequencerOutputs"
+        summary="A timeline: a bar per layer for when it's active, diamonds for its keyframes, markers along a ruler and a playhead. Bars, edges and diamonds snap to markers, the playhead and other bars (hold Alt to place freely). Rows reorder by their grip. Keyboard: a focused bar moves with left/right (Shift for a larger step) and trims with [ and ]; a focused diamond retimes with left/right, Delete removes it, and the context-menu key opens its menu. It reports every change and mutates nothing.">
         <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [markers]=&quot;markers&quot;
   [(playhead)]=&quot;playhead&quot; (rangeChange)=&quot;onRange($event)&quot; (keyframeChange)=&quot;onKey($event)&quot; />">
           <div class="seq">
@@ -110,8 +110,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi"
-        summary="The phone answer to a timeline ruler: the strip slides under a playhead fixed at its centre, so the finger drags content rather than a tiny handle. Flicks glide, two fingers pinch to zoom, and it is a keyboard slider too. Built on touch events, so a sideways drag works on a phone.">
+      <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi" [outputs]="scrubberOutputs"
+        summary="The phone answer to a timeline ruler: the strip slides under a playhead fixed at its centre, so the finger drags content rather than a tiny handle. Flicks glide, two fingers pinch to zoom, and a mouse drags or uses the wheel. It is a keyboard slider too: left/right (Shift for bigger steps), PageUp/PageDown and Home/End. Built on touch events, so a sideways drag works on a phone.">
         <doc-demo code="<ui-scrubber [length]=&quot;3376&quot; [markers]=&quot;markers&quot; [ticks]=&quot;ticks&quot; [(value)]=&quot;at&quot; [(zoom)]=&quot;zoom&quot; />">
           <div class="scrub-demo">
             <ui-scrubber [length]="3376" [markers]="scrubMarkers" [ticks]="scrubTicks" [(value)]="scrubAt" [(zoom)]="scrubZoom" label="Scroll position" />
@@ -123,8 +123,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Token input" selector="ui-token-input" [api]="tokenApi"
-        summary="Rich text where variables are atomic chips. Ctrl/⌘+B and I mark text; paste is always plain. insertToken() drops a chip at the caret.">
+      <doc-section name="Token input" selector="ui-token-input" [api]="tokenApi" [outputs]="tokenOutputs"
+        summary="Rich text where variables are atomic chips. The caret skips a chip and one Backspace removes it. Ctrl/⌘+B and I mark text; paste is always plain. insertToken() drops a chip at the caret.">
         <doc-demo code="<ui-token-input #t [(ngModel)]=&quot;runs&quot; [tokenLabel]=&quot;labelFor&quot; />
 <ui-button (click)=&quot;t.insertToken('event.date')&quot;>Insert date</ui-button>">
           <ui-token-input #tokens [(ngModel)]="runs" [tokenLabel]="labelFor" placeholder="Type, then insert a variable" />
@@ -137,7 +137,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       </doc-section>
 
       <doc-section name="Scrubbable number" selector="ui-number-input" [api]="numberApi"
-        summary="ui-number-input with a label you drag left and right to change the value — Shift for bigger steps, Alt for finer — plus a unit suffix and rounding.">
+        summary="ui-number-input with a label you drag left and right to change the value — Shift for 10× steps, Alt for 0.1× — plus a unit suffix and rounding. Project an element marked uiNumberLabel to show an icon in place of the text label.">
         <doc-demo code="<ui-number-input label=&quot;X&quot; suffix=&quot;px&quot; [(ngModel)]=&quot;x&quot; size=&quot;sm&quot; [steppers]=&quot;false&quot; />">
           <div class="row">
             <ui-number-input label="X" suffix="px" size="sm" [steppers]="false" [(ngModel)]="nx" />
@@ -185,8 +185,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Resize handle" selector="ui-resize-handle" [api]="resizeApi"
-        summary="A draggable panel edge bound to a pixel size, with snap points. Double-click cycles the snaps; arrows resize from the keyboard.">
+      <doc-section name="Resize handle" selector="ui-resize-handle" [api]="resizeApi" [outputs]="resizeOutputs"
+        summary="A draggable panel edge bound to a pixel size, with snap points. Releasing near a snap settles on it, and double-click cycles the snaps. Arrows resize by 16px (Shift: 64px); Home and End go to min and max. On coarse pointers the grab area grows.">
         <doc-demo code="<ui-resize-handle edge=&quot;top&quot; [(size)]=&quot;height&quot; [min]=&quot;40&quot; [max]=&quot;320&quot; [snaps]=&quot;[40, 160, 320]&quot; />">
           <div class="panel-demo">
             <div class="content">Main area</div>
@@ -373,6 +373,7 @@ export class DesignToolsPage {
     { name: 'showArtboard / label', type: 'boolean / string', default: "true / 'Shape editor'", desc: 'Draw the artboard; accessible name.' },
     { name: 'fit() / zoomBy(f) / selectAllPoints()', type: 'methods', default: '', desc: 'View and selection helpers.' },
     { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'methods', default: '', desc: 'Pen-mode controls for a toolbar.' },
+    { name: 'penCount', type: 'Signal<number>', default: '', desc: 'Points placed so far by the pen, to enable those toolbar buttons.' },
   ];
   protected readonly pathOutputs: ApiRow[] = [
     { name: 'itemsChange', type: 'UiPathItem[]', desc: 'A finished edit: the whole list, for the host to keep (and undo).' },
@@ -381,15 +382,18 @@ export class DesignToolsPage {
     { name: 'penDetected', type: 'void', desc: 'A pen touched the surface for the first time.' },
   ];
   protected readonly pathHelpersApi: ApiRow[] = [
-    { name: 'rectContour / ellipseContour / polygonContour / starContour / archContour', type: '(x, y, w, h, …) => UiPathContour', default: '', desc: 'Ready-made outlines (rect takes a corner radius; star spikes and inner ratio).' },
+    { name: 'rectContour / polygonContour / starContour / archContour', type: '(x, y, w, h, …) => UiPathContour', default: '', desc: 'Ready-made outlines in a box (rect takes a corner radius, polygon a side count, star spikes and inner ratio).' },
+    { name: 'ellipseContour(cx, cy, rx, ry)', type: 'UiPathContour', default: '', desc: 'An ellipse from its centre and radii.' },
+    { name: 'itemOp(item)', type: 'UiPathOp', default: '', desc: "How an item combines with those below: 'add', 'cut', 'intersect' or 'exclude' (reads the older cut flag too)." },
     { name: 'pathD(contours) / segmentPathD(contour, i)', type: 'string', default: '', desc: 'SVG path data for a whole item, or one segment.' },
-    { name: 'pathBounds / flattenContour / contourArea / insideContour', type: 'measure', default: '', desc: 'Bounding box, a polyline approximation, signed area, point-in-outline.' },
+    { name: 'pathBounds / flattenContour / contourArea / insideContour', type: 'measure', default: '', desc: 'Bounding box (null when empty), a polyline approximation, signed area, point-in-outline.' },
     { name: 'translateContours / scaleContours / rotateContours / mapContours', type: 'transform', default: '', desc: 'Return moved copies; inputs are never mutated.' },
     { name: 'insertPoint / deletePoint(s) / movePoint(s) / moveHandle / pullHandles', type: 'edit points', default: '', desc: 'What the editor does on each gesture, available to toolbars and keyboard shortcuts.' },
     { name: 'toggleSmooth / toggleClosed / breakAt / joinEnds / reverseContour / orientContours', type: 'edit outlines', default: '', desc: 'Corner/curve, open/close, cut and join, direction for fill rules.' },
     { name: 'nearestOnPath / pointOnSegment / segmentCount / allPoints', type: 'query', default: '', desc: 'Hit-testing and walking an outline.' },
     { name: 'recognizeShape(samples)', type: 'UiInkShape | null', default: '', desc: 'Reads a stroke as a line, ellipse or polygon (rectangle, triangle…), or null.' },
-    { name: 'inkArea / inkD / inkRadii / shapeSamples / thinSamples', type: 'ink', default: '', desc: 'Turn pressure samples into a painted outline, and a recognised shape back into samples.' },
+    { name: 'inkArea / inkD / inkRadii / inkRadiusAt / inkPiece / pieceD / convexHull', type: 'ink', default: '', desc: 'Turn pressure samples into a painted outline, piece by piece.' },
+    { name: 'shapeSamples / thinSamples', type: 'ink', default: '', desc: 'A recognised shape back into samples; merge samples closer than a spacing.' },
     { name: 'brushSteadiness / brushUsesPressure / simulatedPressure', type: 'brush', default: '', desc: 'How each brush smooths and responds; pressure from speed for a mouse or finger.' },
   ];
   protected readonly icons = { rotate: RotateClockwiseIcon, scale: ArrowExpand01Icon, opacity: DropletIcon };
@@ -405,15 +409,26 @@ export class DesignToolsPage {
 
   protected readonly transformApi: ApiRow[] = [
     { name: 'box', type: 'UiBox', default: 'required', desc: 'x, y, w, h and rotate (degrees) in stage units.' },
-    { name: 'scale', type: 'number', default: '1', desc: 'Screen pixels per stage unit.' },
+    { name: 'scale', type: 'number', default: '1', desc: 'Layout pixels per stage unit.' },
+    { name: 'pointerScale', type: 'number | null', default: 'null', desc: 'Screen pixels per unit when the stage is itself CSS-scaled; pointer movement is divided by it. Falls back to scale.' },
     { name: 'resizable / rotatable', type: 'boolean', default: 'true', desc: 'Show resize handles / the rotation knob.' },
     { name: 'lockAspect', type: 'boolean', default: 'false', desc: 'Always keep proportions (Shift does it per drag).' },
     { name: 'minSize', type: 'number', default: '4', desc: 'Smallest width and height, in units.' },
     { name: 'cornersOnly', type: 'boolean', default: 'false', desc: 'Only the four corner handles.' },
-    { name: 'showSize', type: 'boolean', default: 'false', desc: 'Show a W × H readout.' },
-    { name: '(transform) / (transformEnd)', type: 'UiBox', default: '', desc: 'Every pointer move / once on release or a key nudge.' },
-    { name: '(activate)', type: 'void', default: '', desc: 'Double-click — e.g. start editing text.' },
+    { name: 'showSize', type: 'boolean', default: 'false', desc: 'Show a W × H readout while resizing.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Hide the handles and ignore pointer, pinch and keys.' },
+    { name: 'label', type: 'string', default: "''", desc: "Accessible name; 'Selected element' when empty." },
+    { name: 'startPinch(a, b)', type: 'method', default: '', desc: 'Start a pinch from two pointers that landed off the box.' },
+    { name: 'ui-snap-guides: guides / scale', type: 'UiGuide[] / number', default: '[] / 1', desc: 'Draws the guides uiSnap returns over the stage.' },
     { name: 'uiSnap(moving, targets, threshold, extra?)', type: 'function', default: '', desc: 'Edges-and-centres snapping; returns { dx, dy, guides }.' },
+    { name: 'uiRotatedBounds(box)', type: 'function', default: '', desc: 'The axis-aligned bounds of a rotated box, to snap with.' },
+  ];
+  protected readonly transformOutputs: ApiRow[] = [
+    { name: 'transformStart', type: "'move' | 'resize' | 'rotate'", desc: 'A drag or pinch began.' },
+    { name: 'transform', type: 'UiBox', desc: 'Every pointer move.' },
+    { name: 'transformEnd', type: 'UiBox', desc: 'Once on release, or after a key nudge, resize or rotate.' },
+    { name: 'activate', type: 'void', desc: 'Double-click, e.g. start editing text.' },
+    { name: 'tap', type: 'UiTransformTap', desc: 'The body was pressed and released without moving, so the host can pass the click to what is beneath.' },
   ];
   protected readonly demoEnd = signal(700);
   protected readonly demoLength = signal(1000);
@@ -424,17 +439,29 @@ export class DesignToolsPage {
   }
   protected readonly sequencerApi: ApiRow[] = [
     { name: 'rows', type: 'UiSequencerRow[]', default: '[]', desc: 'id, label, start, end, keyframes (at 0…1 within the bar), depth, muted, locked, kind, fixed (no trim edges).' },
-    { name: 'showLabels', type: 'boolean', default: 'true', desc: 'Off: bars only. Tap a bar for its name (with hide/lock), hold to lift it and drag both ways, pinch to zoom.' },
-    { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
-    { name: 'endDraggable', type: 'boolean', default: 'false', desc: 'Give the End a grip; drags and arrow keys report (endChange) {end, final}, not clamped to length so the host can grow it.' },
     { name: 'length', type: 'number', default: '100', desc: 'Timeline length in units.' },
     { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Ruler markers; also snap targets.' },
-    { name: '[(playhead)] / [(selectedRowId)] / [(selectedKeyframeId)]', type: 'model', default: '', desc: 'Two-way state.' },
+    { name: 'showLabels', type: 'boolean', default: 'true', desc: 'Off: bars only. Tap a bar for its name (with hide/lock), hold to lift it and drag both ways, pinch to zoom.' },
+    { name: 'compact', type: 'boolean', default: 'false', desc: 'Narrow screens: the label column shows only the grip, name and visibility toggle.' },
+    { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
+    { name: 'endDraggable / endLabel', type: 'boolean / string', default: "false / 'Drag to change where it ends'", desc: 'Give the End a grip; drags and arrow keys report (endChange), not clamped to length so the host can grow it.' },
+    { name: 'title / emptyText', type: 'string', default: "'Layers' / 'Nothing here yet'", desc: 'Label column heading and the empty message.' },
+    { name: 'labelWidth / rowHeight', type: 'number', default: '200 / 30', desc: 'Label column width and row height in px.' },
+    { name: 'snapPixels', type: 'number', default: '6', desc: 'Snap distance in screen px.' },
+    { name: 'keyStep', type: 'number', default: '0.01', desc: 'Keyboard step as a fraction of length.' },
+    { name: 'reorderable', type: 'boolean', default: 'true', desc: 'Rows can be reordered by their grip.' },
+    { name: '[(playhead)] / [(selectedRowId)] / [(selectedKeyframeId)]', type: 'model', default: '0 / null / null', desc: 'Two-way state.' },
     { name: 'zoom / maxZoom', type: 'number (model) / number', default: '1 / 16', desc: '1 fits the width; larger zooms in and scrolls. Pinch or Ctrl + wheel changes it — [(zoom)].' },
-    { name: '(rangeChange)', type: '{ rowId, start, end, final }', default: '', desc: 'Bar moved or trimmed; final on release.' },
-    { name: '(keyframeChange)', type: '{ rowId, keyframeId, at, final }', default: '', desc: 'Diamond retimed.' },
-    { name: '(keyframeDelete) / (keyframeMenu)', type: 'event', default: '', desc: 'Delete key / right-click or the context-menu key.' },
-    { name: '(rowReorder) / (muteToggle) / (lockToggle) / (scrub)', type: 'event', default: '', desc: 'Row grip drop, eye and lock buttons, playhead released.' },
+  ];
+  protected readonly sequencerOutputs: ApiRow[] = [
+    { name: 'rangeChange', type: '{ rowId, start, end, final }', desc: 'Bar moved or trimmed; final on release.' },
+    { name: 'keyframeChange', type: '{ rowId, keyframeId, at, final }', desc: 'Diamond retimed.' },
+    { name: 'keyframeDelete', type: '{ rowId, keyframeId }', desc: 'Delete pressed on a focused diamond.' },
+    { name: 'keyframeMenu', type: 'UiSequencerKeyframeRef', desc: 'Right-click or the context-menu key on a diamond.' },
+    { name: 'rowReorder', type: '{ rowId, toIndex }', desc: 'A row was dropped at a new index.' },
+    { name: 'muteToggle / lockToggle', type: 'string', desc: 'Eye or lock button for a row id.' },
+    { name: 'scrub', type: 'number', desc: 'A click on an empty part of a lane or the ruler, after the playhead moved there.' },
+    { name: 'endChange', type: '{ end, final }', desc: 'The End was dragged or moved with the keys.' },
   ];
   protected readonly scrubAt = signal(600);
   protected readonly scrubZoom = signal(0.25);
@@ -446,46 +473,63 @@ export class DesignToolsPage {
     { name: 'length', type: 'number', default: '100', desc: 'Length in units.' },
     { name: 'value', type: 'number (model)', default: '0', desc: 'Position under the playhead — [(value)].' },
     { name: 'zoom', type: 'number (model)', default: '0.25', desc: 'Pixels per unit; a pinch changes it — [(zoom)].' },
+    { name: 'minZoom / maxZoom', type: 'number', default: '0.02 / 4', desc: 'Pinch limits.' },
     { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Labelled segments along the strip.' },
     { name: 'ticks', type: '{ at, active? }[]', default: '[]', desc: 'Points of interest, e.g. keyframes.' },
     { name: 'lanes', type: '{ start, end, selected?, muted? }[]', default: '[]', desc: 'Layers as thin stacked lines — a flattened timeline.' },
     { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; shaded after.' },
-    { name: '(longPress)', type: 'void', default: '—', desc: 'Held still; the value is put back. E.g. open the full timeline.' },
     { name: 'label / valueText', type: 'string', default: "'Position' / ''", desc: 'Slider name and spoken value.' },
-    { name: 'minZoom / maxZoom', type: 'number', default: '0.02 / 4', desc: 'Pinch limits.' },
-    { name: '(settle)', type: 'number', default: '—', desc: 'Once, when a drag, glide, wheel or key change comes to rest.' },
+  ];
+  protected readonly scrubberOutputs: ApiRow[] = [
+    { name: 'settle', type: 'number', desc: 'Once, when a drag, glide, wheel or key change comes to rest.' },
+    { name: 'longPress', type: 'void', desc: 'Held still; the value is put back. E.g. open the full timeline.' },
   ];
   protected readonly tokenApi: ApiRow[] = [
     { name: 'ngModel', type: 'UiTokenRun[]', default: '[]', desc: '{ text } or { token }, each optionally bold / italic.' },
     { name: 'tokenLabel', type: '(token) => string', default: 'identity', desc: 'What a chip shows.' },
+    { name: 'placeholder / label', type: 'string', default: "''", desc: 'Empty-state text; accessible name.' },
     { name: 'multiline', type: 'boolean', default: 'true', desc: 'Enter inserts a line break; off keeps one line.' },
+    { name: 'minHeight', type: 'string | null', default: 'null', desc: 'CSS min-height for the field.' },
+    { name: 'radius', type: 'boolean', default: 'UiConfig', desc: 'Rounded corners.' },
     { name: 'insertToken(token)', type: 'method', default: '', desc: 'Insert a chip at the caret (or the end).' },
-    { name: '(tokenClick)', type: 'string', default: '', desc: 'A chip was clicked.' },
+    { name: 'focus()', type: 'method', default: '', desc: 'Focus the field with the caret at the end.' },
+  ];
+  protected readonly tokenOutputs: ApiRow[] = [
+    { name: 'tokenClick', type: 'string', desc: 'A chip was clicked; its token value.' },
+    { name: 'focusChange', type: 'boolean', desc: 'The field gained or lost focus.' },
   ];
   protected readonly numberApi: ApiRow[] = [
     { name: 'label', type: 'string', default: "''", desc: 'Drag-to-scrub prefix.' },
+    { name: 'ariaLabel', type: 'string', default: "''", desc: 'Accessible name when the label is too terse or an icon.' },
     { name: 'suffix', type: 'string', default: "''", desc: 'Unit after the number.' },
     { name: 'precision', type: 'number | null', default: 'null', desc: 'Decimal places kept.' },
-    { name: 'steppers', type: 'boolean', default: 'true', desc: 'Show ▲▼.' },
+    { name: 'steppers', type: 'boolean', default: 'true', desc: 'Show the up/down stepper buttons.' },
+    { name: 'min / max / step', type: 'number', default: 'undefined / undefined / 1', desc: 'Bounds and step (scrubbing moves one step per 2px).' },
+    { name: 'size / invalid / placeholder', type: "UiSize / boolean / string", default: "'md' / false / ''", desc: 'See ui-number-input on the Forms page.' },
     { name: '[uiNumberLabel]', type: 'directive', default: '', desc: 'Mark a projected icon to show (and scrub) in place of the text label.' },
   ];
   protected readonly meterApi: ApiRow[] = [
     { name: 'value / max', type: 'number', default: '0 / 100', desc: 'The measurement and the scale.' },
-    { name: 'warnAt / dangerAt', type: 'number | null', default: 'null / max', desc: 'Thresholds.' },
-    { name: 'label / valueText', type: 'string', default: "''", desc: 'Heading and how the value is written.' },
-    { name: 'warnText / dangerText', type: 'string', default: '', desc: 'Said alongside the colour.' },
+    { name: 'warnAt / dangerAt', type: 'number | null', default: 'null / null (max)', desc: 'Thresholds. dangerAt falls back to max.' },
+    { name: 'label / valueText', type: 'string', default: "''", desc: 'Heading and how the value is written (falls back to value / max).' },
+    { name: 'warnText / dangerText', type: 'string', default: "'Getting large' / 'Over the limit'", desc: 'Said alongside the colour.' },
   ];
   protected readonly deviceApi: ApiRow[] = [
     { name: 'width / height', type: 'number', default: '390 / 844', desc: 'Screen size in CSS pixels.' },
     { name: 'bezel / island', type: 'boolean', default: 'true', desc: 'Draw the phone body / the camera island.' },
     { name: 'maxScale', type: 'number', default: '1', desc: 'Never scale above this.' },
-    { name: 'scale', type: 'Signal<number>', default: '', desc: 'Current scale, for overlays.' },
+    { name: 'scale', type: 'Signal<number>', default: '', desc: 'Current scale, read from a template reference for overlays.' },
+    { name: '<ng-content>', type: 'slot', default: '', desc: 'The screen content, laid out at true size.' },
   ];
   protected readonly resizeApi: ApiRow[] = [
     { name: '[(size)]', type: 'number', default: '240', desc: 'Panel size in px.' },
     { name: 'edge', type: "'top' | 'bottom' | 'left' | 'right'", default: "'top'", desc: 'Where the handle sits on the panel.' },
-    { name: 'min / max / snaps', type: 'number / number[]', default: '', desc: 'Bounds and snap points.' },
-    { name: '(resizeEnd)', type: 'number', default: '', desc: 'After a drag, double-click or key.' },
+    { name: 'min / max', type: 'number', default: '0 / 10000', desc: 'Bounds in px.' },
+    { name: 'snaps / snapDistance', type: 'number[] / number', default: '[] / 28', desc: 'Snap points, and how close (px) a release must be to settle on one.' },
+    { name: 'label', type: 'string', default: "'Resize'", desc: 'Accessible name.' },
+  ];
+  protected readonly resizeOutputs: ApiRow[] = [
+    { name: 'resizeEnd', type: 'number', desc: 'After a drag, double-click or key.' },
   ];
 
   protected readonly unused = computed(() => this.tokenInput());

@@ -189,7 +189,7 @@ function comparable(def: UiFormDefinition | null): string {
           <div>
             <p class="eyebrow">Playground</p>
             <h1>Form studio</h1>
-            <p class="lead">Build forms, fill them in and edit the answers, the way an app would use <code translate="no">ui-form-builder</code> and <code translate="no">ui-form-renderer</code>. Everything is saved in this browser.</p>
+            <p class="lead">Build forms, fill them in and edit the answers, the way an app would use <code translate="no">ui-form-builder</code> and <code translate="no">ui-form-renderer</code>. Settings holds the lists dropdowns can search and the defaults new forms start with (<code translate="no">ui-form-global-settings</code>). Everything is saved in this browser.</p>
           </div>
           <div class="lib-actions">
             <ui-button (click)="newForm()">New form</ui-button>

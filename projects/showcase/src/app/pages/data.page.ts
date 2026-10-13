@@ -1,4 +1,7 @@
 import { Component, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import PencilEdit02Icon from '@hugeicons/core-free-icons/PencilEdit02Icon';
+import Rocket01Icon from '@hugeicons/core-free-icons/Rocket01Icon';
 import { UiText } from '@zouriel/ui/text';
 import { UiTable, type UiColumn } from '@zouriel/ui/table';
 import { UiList, UiListItem } from '@zouriel/ui/list';
@@ -16,7 +19,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
 @Component({
   selector: 'page-data',
-  imports: [
+  imports: [HugeiconsIconComponent, 
     UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
     UiCard, UiStatCard, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, DocPage, DocSection, DocDemo,
   ],
@@ -25,8 +28,8 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       lead="Present data: table, list, tree, tree-table, accordion, cards, badges, chips, avatars, stats, description-list, timeline, code-block.">
 
       <doc-section name="Table" selector="ui-table" [api]="tableApi" [outputs]="tableOut"
-        summary="Generic over the row type. Click-to-sort headers; optional row selection. selectionChange emits selected rows by reference (correct across sorts)."
-        [shapes]="COLUMN">
+        summary="Generic over the row type. Click-to-sort headers; optional row selection with a select-all box. selectionChange emits selected rows by reference (correct across sorts). actions adds a trailing column of real buttons per row, each of which can be disabled for one row."
+        [shapes]="COLUMN + ACTION">
         <doc-demo code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;rows&quot; [selectable]=&quot;true&quot;
   (selectionChange)=&quot;onSelect($event)&quot; />">
           <ui-table [columns]="cols" [data]="rows" [selectable]="true" (selectionChange)="sel.set($event.length)" />
@@ -35,22 +38,22 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="List" selector="ui-list · ui-list-item" [api]="listApi" [outputs]="listOut"
-        summary="Semantic list. Items can be interactive (button) with [item-leading] / [item-trailing] slots.">
+        summary="Semantic list. Items can be interactive (rendered as a button, taller on touch screens) with [item-leading] / [item-trailing] slots.">
         <doc-demo code="<ui-list [bordered]=&quot;true&quot;>
   <ui-list-item [interactive]=&quot;true&quot; (activate)=&quot;open()&quot;>
-    <span item-leading>📝</span> Title <span item-trailing>2m</span>
+    <hugeicons-icon item-leading [icon]=&quot;PencilEdit02Icon&quot; [size]=&quot;16&quot; /> Title <span item-trailing>2m</span>
   </ui-list-item>
 </ui-list>">
           <ui-list [bordered]="true">
             @for (a of activity; track a.id) {
-              <ui-list-item [interactive]="true"><span item-leading>{{ a.icon }}</span>{{ a.title }}<span item-trailing>{{ a.time }}</span></ui-list-item>
+              <ui-list-item [interactive]="true"><hugeicons-icon item-leading aria-hidden="true" [icon]="a.icon" [size]="16" [strokeWidth]="1.8" />{{ a.title }}<span item-trailing>{{ a.time }}</span></ui-list-item>
             }
           </ui-list>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
-        summary="Expandable hierarchy (recursive). selected is a two-way model."
+        summary="Expandable hierarchy (recursive, WAI-ARIA tree). selected is a two-way model. Every row is a tab stop; Enter or Space selects, Arrow Right expands and Arrow Left collapses."
         [shapes]="'interface UiTreeNode { label: string; value: string; icon?: string; children?: UiTreeNode[]; }'">
         <doc-demo code="<ui-tree [nodes]=&quot;nodes&quot; [(selected)]=&quot;sel&quot; (nodeSelect)=&quot;on($event)&quot; />">
           <ui-tree [nodes]="treeNodes" />
@@ -66,7 +69,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Accordion" selector="ui-accordion · ui-accordion-item" [api]="accApi"
-        summary="Collapsible panels; single-open unless [multiple]. Each item needs a title; project its body.">
+        summary="Collapsible panels; single-open unless [multiple]. Each item needs a title; project its body. A closed panel is inert, so its content is out of the tab order and hidden from screen readers.">
         <doc-demo code="<ui-accordion [multiple]=&quot;false&quot;>
   <ui-accordion-item title=&quot;Section&quot;>Body…</ui-accordion-item>
 </ui-accordion>">
@@ -78,7 +81,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Card & stat-card" selector="ui-card · ui-stat-card" [api]="cardApi"
-        summary="ui-card: surface with [card-header]/[card-footer] slots + padding. ui-stat-card: KPI tile with value, delta, trend, [stat-icon].">
+        summary="ui-card: surface with [card-header]/[card-footer] slots + padding; empty slots collapse. Set interactive for a hover lift when the card itself is a link. ui-stat-card: KPI tile with value, delta, trend, [stat-icon].">
         <doc-demo code="<ui-card padding=&quot;md&quot;>
   <span card-header>Title</span> Body
   <div card-footer>Footer</div>
@@ -92,7 +95,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar(-group)" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status/label/token/identity primitives. ui-chip is optionally removable; ui-avatar falls back to initials from name.">
+        summary="Status/label/token/identity primitives. ui-chip is optionally removable; ui-avatar falls back to initials from name. ui-avatar-group overlaps its avatars by --ui-avatar-overlap.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
 <ui-chip tone=&quot;primary&quot; [removable]=&quot;true&quot; label=&quot;ng&quot; (remove)=&quot;x()&quot;>ng</ui-chip>
 <ui-avatar name=&quot;Ada Lovelace&quot; size=&quot;md&quot; />">
@@ -121,7 +124,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       </doc-section>
 
       <doc-section name="Code block" selector="ui-code-block" [api]="codeApi"
-        summary="Monospace code panel with language label and copy button.">
+        summary="Monospace code panel with language label and a copy button that says Copied after copying.">
         <doc-demo code="<ui-code-block language=&quot;ts&quot; [code]=&quot;source&quot; />">
           <ui-code-block language="ts" [code]="sample" />
         </doc-demo>
@@ -135,6 +138,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   `,
 })
 export class DataPage {
+  protected readonly icons = { edit: PencilEdit02Icon, deploy: Rocket01Icon };
   protected readonly status = STATUS;
   protected readonly COLUMN = `interface UiColumn<T> {
   key: string;
@@ -142,6 +146,13 @@ export class DataPage {
   sortable?: boolean;
   align?: 'left' | 'right' | 'center';
   format?: (value: unknown, row: T) => string;
+}`;
+  protected readonly ACTION = `
+interface UiRowAction<T> {
+  label: string;
+  run: (row: T) => void;
+  disabled?: (row: T) => boolean;
+  ariaLabel?: (row: T) => string;
 }`;
   protected readonly TREEROW = `interface UiTreeTableRow {
   label: string; value: string;
@@ -159,11 +170,11 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left'|'right
     { name: 'Alan Turing', role: 'Researcher', score: 99 },
   ];
   protected readonly activity = [
-    { id: 1, icon: '📝', title: 'Edited tokens', time: '2m' }, { id: 2, icon: '🚀', title: 'Deployed', time: '1h' },
+    { id: 1, icon: PencilEdit02Icon, title: 'Edited tokens', time: '2m' }, { id: 2, icon: Rocket01Icon, title: 'Deployed', time: '1h' },
   ];
   protected readonly treeNodes: UiTreeNode[] = [
-    { label: 'src', value: 'src', icon: '📁', children: [{ label: 'app.ts', value: 'a', icon: '📜' }, { label: 'main.ts', value: 'm', icon: '📜' }] },
-    { label: 'package.json', value: 'p', icon: '📦' },
+    { label: 'src', value: 'src', children: [{ label: 'app.ts', value: 'a' }, { label: 'main.ts', value: 'm' }] },
+    { label: 'package.json', value: 'p' },
   ];
   protected readonly treeCols: UiTreeTableColumn[] = [{ key: 'size', header: 'Size', align: 'right' }];
   protected readonly treeRows: UiTreeTableRow[] = [
@@ -180,12 +191,14 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left'|'right
     { name: 'columns', type: 'UiColumn<T>[]', default: '[]', desc: 'Column defs (see Data shapes).' },
     { name: 'data', type: 'T[]', default: '[]', desc: 'Row objects.' },
     { name: 'selectable', type: 'boolean', default: 'false', desc: 'Show selection checkboxes.' },
+    { name: 'actions', type: 'UiRowAction<T>[]', default: '[]', desc: 'Per-row buttons in a trailing column; none renders no column.' },
     { name: 'emptyText', type: 'string', default: "'No data'", desc: 'Empty-state text.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly tableOut: ApiRow[] = [{ name: 'selectionChange', type: 'T[]', default: '—', desc: 'Selected rows (by reference).' }];
   protected readonly listApi: ApiRow[] = [
     { name: 'list: bordered', type: 'boolean', default: 'false', desc: 'Outer border + row dividers.' },
+    { name: 'item: [item-leading] / [item-trailing]', type: 'slot', default: '—', desc: 'Content before and after the main text.' },
     { name: 'item: interactive', type: 'boolean', default: 'false', desc: 'Render as a button.' },
     { name: 'item: selected', type: 'boolean', default: 'false', desc: 'Selected styling.' },
     { name: 'item: disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
@@ -195,7 +208,10 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left'|'right
     { name: 'nodes', type: 'UiTreeNode[]', default: '[]', desc: 'Root nodes.' },
     { name: 'selected', type: 'string | null (model)', default: 'null', desc: 'Selected value — [(selected)].' },
   ];
-  protected readonly treeOut: ApiRow[] = [{ name: 'nodeSelect', type: 'UiTreeNode', default: '—', desc: 'Node clicked.' }];
+  protected readonly treeOut: ApiRow[] = [
+    { name: 'nodeSelect', type: 'UiTreeNode', default: '—', desc: 'Node chosen by click, Enter or Space.' },
+    { name: 'selectedChange', type: 'string | null', default: '—', desc: 'From [(selected)].' },
+  ];
   protected readonly treeTableApi: ApiRow[] = [
     { name: 'rows', type: 'UiTreeTableRow[]', default: '[]', desc: 'Hierarchical rows.' },
     { name: 'columns', type: 'UiTreeTableColumn[]', default: '[]', desc: 'Trailing columns.' },
@@ -208,16 +224,27 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left'|'right
   protected readonly cardApi: ApiRow[] = [
     { name: 'card: padding', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Inner padding.' },
     { name: 'card: glass/radius', type: 'boolean', default: 'UiConfig', desc: 'Surface treatment.' },
+    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Hover lift, for cards that are a clickable target.' },
+    { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
     { name: 'stat: label / value', type: 'string | number', default: "''", desc: 'Caption / KPI value.' },
     { name: 'stat: delta', type: 'string | number', default: '—', desc: 'Change indicator.' },
     { name: 'stat: trend', type: "'up' | 'down'", default: "'up'", desc: 'Delta color/arrow.' },
+    { name: 'stat: glass/radius', type: 'boolean', default: 'UiConfig', desc: 'Surface treatment.' },
+    { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },
   ];
   protected readonly badgeApi: ApiRow[] = [
     { name: 'badge: tone', type: STATUS, default: "'neutral'", desc: 'Color.' },
     { name: 'badge: dot', type: 'boolean', default: 'false', desc: 'Bare status dot.' },
-    { name: 'chip: tone / removable / label', type: 'see source', default: '—', desc: 'Color, close button, a11y label.' },
-    { name: 'avatar: src / name / size / square', type: 'see source', default: '—', desc: 'Image or initials.' },
-    { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational cap.' },
+    { name: 'chip: tone', type: STATUS, default: "'neutral'", desc: 'Color.' },
+    { name: 'chip: removable', type: 'boolean', default: 'false', desc: 'Show a remove button.' },
+    { name: 'chip: label', type: 'string', default: '—', desc: "Builds the remove button's accessible name." },
+    { name: 'chip: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'avatar: src / alt', type: 'string', default: '—', desc: 'Image and its alt text.' },
+    { name: 'avatar: name', type: 'string', default: '—', desc: 'Initials fallback and accessible name.' },
+    { name: 'avatar: size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Avatar size.' },
+    { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Square instead of round.' },
+    { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational cap; you trim the list yourself.' },
+    { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-2)', desc: 'How far grouped avatars overlap.' },
   ];
   protected readonly chipOut: ApiRow[] = [{ name: 'chip: remove', type: 'void', default: '—', desc: 'Remove button pressed.' }];
   protected readonly dlApi: ApiRow[] = [

@@ -15,7 +15,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="Reusable interaction primitives from ui/behaviors — attach to any element. Plus clickOutside & focusTrap used across the overlay components.">
 
       <doc-section name="copyToClipboard" selector="[uiCopyToClipboard]" [api]="copyApi" [outputs]="copyOut"
-        summary="Copies the bound text on click; exposes a transient copied() signal via exportAs='uiCopy'. The text is the directive value.">
+        summary="Copies the bound text on click. For 1.5s after a copy, the copied() signal (exportAs 'uiCopy') is true and the host carries data-copied. The result is also announced to screen readers through a polite live region, including a hint to copy by hand when the clipboard refuses.">
         <doc-demo code="<button [uiCopyToClipboard]=&quot;'npm i ui'&quot; #c=&quot;uiCopy&quot;>
   {{ '{{' }} c.copied() ? 'Copied!' : 'Copy' {{ '}}' }}
 </button>">
@@ -24,7 +24,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="ripple" selector="[uiRipple]" [api]="rippleApi"
-        summary="Material-style ripple emanating from the pointer on press.">
+        summary="Material-style ripple emanating from the pointer on press. Skipped when the user prefers reduced motion. Sets position: relative and overflow: hidden on the host.">
         <doc-demo code="<button uiRipple uiRippleColor=&quot;#fff&quot;>Press</button>">
           <ui-button variant="primary" uiRipple>Ripple me</ui-button>
         </doc-demo>
@@ -64,7 +64,7 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="virtual-list" selector="ui-virtual-list" [api]="vlApi"
-        summary="Renders only the visible slice of a large list via CDK virtual scroll. Provide an item template via ng-template let-item.">
+        summary="Renders only the visible slice of a large list via CDK virtual scroll. Provide the row template as a child ng-template let-item. Each row is itemSize px tall.">
         <doc-demo code="<ui-virtual-list [items]=&quot;rows&quot; [itemSize]=&quot;32&quot; height=&quot;200px&quot;>
   <ng-template let-item>{{ '{{' }} item {{ '}}' }}</ng-template>
 </ui-virtual-list>">
@@ -80,7 +80,7 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="clickOutside & focusTrap" selector="[uiClickOutside] · CDK cdkTrapFocus"
-        summary="uiClickOutside (ui/overlay) emits when a pointer event occurs outside the host — used to dismiss popovers/menus. Focus trapping inside modal/drawer uses CDK a11y's cdkTrapFocus (no separate UI wrapper needed).">
+        summary="uiClickOutside (ui/overlay) emits the PointerEvent when a pointerdown lands outside the host — used to dismiss popovers/menus. Focus trapping inside modal/drawer uses CDK a11y's cdkTrapFocus (no separate UI wrapper needed).">
         <doc-demo code="<div (uiClickOutside)=&quot;close()&quot;>…</div>"></doc-demo>
       </doc-section>
     </doc-page>
@@ -118,6 +118,8 @@ export class BehaviorsPage {
 
   protected readonly copyApi: ApiRow[] = [
     { name: 'uiCopyToClipboard', type: 'string', default: "''", desc: 'Text to copy (the value).' },
+    { name: 'copied()', type: 'Signal<boolean>', default: 'false', desc: 'True for 1.5s after a successful copy. Read via #c="uiCopy".' },
+    { name: 'copy()', type: 'Promise<void>', default: '—', desc: 'Copy now (what a click does).' },
   ];
   protected readonly copyOut: ApiRow[] = [
     { name: 'copied', type: 'string', default: '—', desc: 'Emitted with the copied text.' },
@@ -141,6 +143,7 @@ export class BehaviorsPage {
     { name: 'items', type: 'T[]', default: '[]', desc: 'Full data set.' },
     { name: 'itemSize', type: 'number', default: '32', desc: 'Row height (px).' },
     { name: 'height', type: 'string', default: "'320px'", desc: 'Viewport height.' },
+    { name: '<ng-template let-item>', type: 'slot', default: '—', desc: 'Row template; the item is the implicit context.' },
   ];
-  protected readonly roOut: ApiRow[] = [{ name: 'uiResizeObserver', type: '{ width, height }', default: '—', desc: 'Content-box size.' }];
+  protected readonly roOut: ApiRow[] = [{ name: 'uiResizeObserver', type: 'UiSize2D { width, height }', default: '—', desc: 'Content-box size.' }];
 }

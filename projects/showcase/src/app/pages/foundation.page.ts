@@ -22,16 +22,20 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
 --ui-color-bg / surface / surface-raised / surface-subtle / surface-hover
 --ui-color-text / text-secondary / text-muted / text-disabled / text-inverse
 --ui-color-border-subtle / border / border-strong / border-focus
---ui-color-primary / primary-hover / primary-active / primary-contrast / secondary
---ui-color-accent / accent-subtle / accent-strong
+--ui-color-primary / primary-hover / primary-active / primary-contrast
+--ui-color-secondary / secondary-hover / secondary-contrast
+--ui-color-accent / accent-subtle / accent-strong / accent-contrast
 --ui-color-success / warning / danger / info  (+ -contrast)
---ui-control-border  --ui-switch-*  --ui-skeleton-*  --ui-media-*   component tokens
---ui-size-sm|md|lg   --ui-space-1..6   --ui-radius
---ui-font-default / mono / display   --ui-motion-* / --ui-ease-*"></doc-demo>
+--ui-color-track / overlay / elevated-hover   --ui-focus-ring
+--ui-control-border  --ui-switch-*  --ui-slider-*  --ui-skeleton-*  --ui-media-*   component tokens
+--ui-size-sm|md|lg|touch   --ui-space-1|2|3|4|6|8|12|20
+--ui-radius / radius-xs|sm|lg|pill   --ui-shadow-1..3   --ui-z-*
+--ui-font-default / mono / display   --ui-font-size-sm|md|lg   --ui-tracking-*
+--ui-motion-fast|base|slow   --ui-ease-*   --ui-scale-press   --ui-glass-*"></doc-demo>
       </doc-section>
 
       <doc-section name="provideUiConfig()" selector="provideUiConfig"
-        summary="Set library-wide defaults once. Components read these and let their own inputs override per-instance.">
+        summary="Set library-wide defaults once. Components read these and let their own inputs override per-instance. Keys: glass (default false), radius (true), defaultFont ('var(--ui-font-default)') and animations (true). Unset keys keep their defaults.">
         <doc-demo lang="ts" code="export const appConfig = {
   providers: [
     provideUiConfig({ glass: true, radius: true, animations: true }),
@@ -40,15 +44,17 @@ import { DocPage, DocSection, DocDemo } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Theme service" selector="UiThemeService"
-        summary="Sets data-theme on <html>. Built-ins: dark (default) and light, the Winter colour system (also named winterDark / winterLight), the professional accent palettes (lightOrange, lightPink, darkPink, goldBlack, goldRed, lightTeal, darkTeal, lightPurple, darkPurple) and the cinematic darkOrange skin. Any string is accepted, so you can register custom themes.">
+        summary="Sets data-theme on <html>; read the current one from the theme signal. Built-ins: dark (default) and light, the Winter colour system (also named winterDark / winterLight), the professional accent palettes (lightOrange, lightPink, darkPink, goldBlack, goldRed, lightTeal, darkTeal, lightPurple, darkPurple, lightPurpleGold) and the cinematic darkOrange skin, which needs theme-dark-orange.css. Any string is accepted, so you can register custom themes. toggle() flips dark/light, or winterDark/winterLight if the app uses those names.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
 this.theme.set('darkPink');
-this.theme.toggle();   // dark <-> light"></doc-demo>
+this.theme.toggle();   // dark <-> light
+this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Scoped theme" selector="ui-theme-provider"
-        summary="Theme just a subtree. Uses display:contents so it adds no layout of its own.">
-        <doc-demo code="<ui-theme-provider theme=&quot;light&quot;> … </ui-theme-provider>">
+        summary="Theme just a subtree; theme is a model, so [(theme)] works. Uses display:contents so it adds no layout of its own. Add class=ui-surface to paint the island with its own background and text colour.">
+        <doc-demo code="<ui-theme-provider theme=&quot;light&quot;> … </ui-theme-provider>
+<ui-theme-provider theme=&quot;light&quot; class=&quot;ui-surface&quot;> … </ui-theme-provider>">
           <ui-theme-provider theme="light">
             <ui-card><ui-text variant="body">This card is a light-theme island regardless of the page theme.</ui-text></ui-card>
           </ui-theme-provider>

@@ -10,10 +10,10 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   imports: [UiText, UiButton, UiBadge, UiWindow, UiDraggable, UiResizable, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Flagship" title="Window system"
-      lead="A floating, draggable, resizable window shell coordinated by a manager. Drag the title bar to a screen edge to snap (left/right half, maximize); resize from any edge or corner; minimize / maximize / restore / close; focus-to-front z-stacking.">
+      lead="A floating, draggable, resizable window shell coordinated by a manager. Drag the title bar to a screen edge to snap (left/right half, bottom half, maximize); resize from any edge or corner; minimize / maximize / restore / close; focus-to-front z-stacking.">
 
       <doc-section name="Window" selector="ui-window" [api]="winApi" [outputs]="winOut"
-        summary="Bind [(open)]. Hosts any content via <ng-content>. Self-registers with UiWindowManager for focus + bulk ops.">
+        summary="Bind [(open)]. Hosts any content via <ng-content>. Drag the title bar to move; drop near the top edge to maximize, the left or right edge for a half, or the bottom edge for the bottom half. Double-click the title bar to maximize or restore. Resize from all eight edges and corners (minimum 220 x 120 px). Chrome buttons use SVG icons, and their hit areas and the resize handles grow on coarse pointers only. Self-registers with UiWindowManager for focus + bulk ops.">
         <doc-demo code="<ui-window [(open)]=&quot;open&quot; title=&quot;Inspector&quot;
   [initialX]=&quot;120&quot; [initialY]=&quot;120&quot; [initialWidth]=&quot;460&quot; [initialHeight]=&quot;300&quot;>
   …content…
@@ -27,7 +27,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Window manager" selector="UiWindowManager" [api]="mgrApi"
-        summary="Injectable (providedIn root). Coordinates focus order, z-index, and bulk operations; tracks count() reactively.">
+        [shapes]="'type UiDockSide = &quot;left&quot; | &quot;right&quot; | &quot;top&quot; | &quot;bottom&quot; | &quot;maximize&quot; | null;\ninterface UiWindowBounds { x: number; y: number; width: number; height: number; }'"
+        summary="Injectable (providedIn root). Coordinates focus order, z-index, and bulk operations; tracks count() reactively. tile() fills the viewport with a grid.">
         <doc-demo code="wm = inject(UiWindowManager);
 wm.tile();          // grid-arrange all open windows
 wm.minimizeAll();
@@ -50,7 +51,7 @@ wm.focus(id); wm.dock(id, 'left');">
       </doc-section>
 
       <doc-section name="uiResizable" selector="[uiResizable]" [api]="rzApi" [outputs]="rzOut"
-        summary="Reusable behavior directive. Adds E / S / SE resize handles to the host and resizes it in place.">
+        summary="Reusable behavior directive. Adds E / S / SE resize handles to the host and resizes it in place by setting inline width and height. The host should have its own size.">
         <doc-demo code="<div uiResizable [minWidth]=&quot;120&quot; [minHeight]=&quot;70&quot; (resized)=&quot;on($event)&quot;>resize</div>">
           <div class="rbox" uiResizable [minWidth]="120" [minHeight]="70">resize me ↘</div>
         </doc-demo>
@@ -90,6 +91,9 @@ export class WindowPage {
     { name: 'initialX / initialY', type: 'number', default: '80 / 80', desc: 'Starting position (px).' },
     { name: 'initialWidth / initialHeight', type: 'number', default: '440 / 300', desc: 'Starting size (px).' },
     { name: 'glass / radius', type: 'boolean', default: 'UiConfig', desc: 'Surface treatment.' },
+    { name: 'dock(side)', type: '(side: UiDockSide) => void', default: '—', desc: "Public method. Snap to 'left', 'right', 'bottom' or 'maximize'; null restores." },
+    { name: 'restore()', type: '() => void', default: '—', desc: 'Public method. Un-minimize / un-maximize and return to the previous bounds.' },
+    { name: 'setBounds(b)', type: '(b: UiWindowBounds) => void', default: '—', desc: 'Public method. Set x / y / width / height directly.' },
   ];
   protected readonly winOut: ApiRow[] = [{ name: 'closed', type: 'void', default: '—', desc: 'Window closed.' }];
   protected readonly mgrApi: ApiRow[] = [
@@ -97,7 +101,7 @@ export class WindowPage {
     { name: 'focusedId()', type: 'Signal<string|null>', default: '—', desc: 'Front-most window id.' },
     { name: 'tile()', type: '() => void', default: '—', desc: 'Grid-arrange all windows.' },
     { name: 'minimizeAll() / restoreAll()', type: '() => void', default: '—', desc: 'Bulk min/restore.' },
-    { name: 'focus(id) / dock(id, side)', type: 'method', default: '—', desc: 'Programmatic control.' },
+    { name: 'focus(id) / dock(id, side)', type: '(id: string, side?: UiDockSide) => void', default: '—', desc: 'Bring a window to front, or dock it to a side.' },
   ];
   protected readonly dragApi: ApiRow[] = [
     { name: 'position', type: 'UiDragPosition (model)', default: '{x:0,y:0}', desc: 'Two-way offset.' },
@@ -112,5 +116,5 @@ export class WindowPage {
     { name: 'minHeight', type: 'number', default: '48', desc: 'Minimum height (px).' },
     { name: 'uiResizableDisabled', type: 'boolean', default: 'false', desc: 'Disable resizing.' },
   ];
-  protected readonly rzOut: ApiRow[] = [{ name: 'resized', type: '{ width, height }', default: '—', desc: 'New dimensions.' }];
+  protected readonly rzOut: ApiRow[] = [{ name: 'resized', type: '{ width, height }', default: '—', desc: 'New dimensions, emitted on every pointer move.' }];
 }

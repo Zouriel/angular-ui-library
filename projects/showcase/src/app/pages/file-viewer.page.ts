@@ -27,7 +27,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
       lead="A content-agnostic viewer system: a dispatcher detects a file's type and delegates to the matching renderer. Embed inline or inside a ui-window. PDF (pdfjs) is isolated in its own entry and lazy-loaded.">
 
       <doc-section name="File viewer (dispatcher)" selector="ui-file-viewer" [api]="fvApi"
-        summary="Detects type from kind/extension and renders image / video / audio / text / code / pdf, or a metadata + download fallback. kind may be a type ('image'…), a MIME ('application/pdf'), or an extension; otherwise inferred from name/src.">
+        summary="Detects type from kind/extension and renders image / video / audio / text / code / pdf, or a metadata + download fallback. The PDF branch is loaded with @defer, so pdfjs only ships when a PDF opens. kind may be a type ('image'…), a MIME ('application/pdf'), or an extension; otherwise inferred from name/src.">
         <doc-demo code="<ui-file-viewer [src]=&quot;url&quot; [name]=&quot;name&quot; [kind]=&quot;kind&quot; />">
           <div class="cols2">
             <ui-file-explorer [root]="tree" (open)="opened.set($event)" />
@@ -40,13 +40,15 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Image viewer" selector="ui-image-viewer" [api]="imgApi"
-        summary="Zoom (buttons + wheel), pan (drag), fit/reset. src is required.">
-        <doc-demo code="<ui-image-viewer [src]=&quot;url&quot; alt=&quot;Description&quot; />"></doc-demo>
+      <doc-section name="Image viewer" selector="ui-image-viewer" [api]="imgApi" [outputs]="imgOut"
+        summary="Zoom (buttons, Ctrl+wheel, pinch), pan (drag, wheel), fit/reset. When zoomed in, the arrow keys pan (Shift for bigger steps); otherwise Left/Right ask for the neighbour. With hasPrevious/hasNext set it shows step buttons and reads swipes, and emits previous/next for the host to change src. kind='video' frames a clip the same way. src is required.">
+        <doc-demo code="<ui-image-viewer [src]=&quot;photos[i]&quot; alt=&quot;Description&quot;
+  [hasPrevious]=&quot;i &gt; 0&quot; [hasNext]=&quot;i &lt; photos.length - 1&quot;
+  (previous)=&quot;i = i - 1&quot; (next)=&quot;i = i + 1&quot; />"></doc-demo>
       </doc-section>
 
       <doc-section name="Media lightbox" selector="ui-media-lightbox" [api]="lbApi" [outputs]="lbOut" [shapes]="ITEM"
-        summary="Full-screen gallery over everything else — a native dialog in the top layer, so no ancestor's overflow, transform or z-index can clip it. Photographs zoom (pinch, wheel, double-tap) and pan; clips get themed controls, a filmstrip, swipe between items, drag-down to dismiss, and chrome that fades away while a clip plays. The host owns the list: items says what there is, index says where you are, and both are just moved.">
+        summary="Full-screen gallery over everything else — a native dialog in the top layer, so no ancestor's overflow, transform or z-index can clip it. Photographs zoom (pinch, wheel, double-tap) and pan; clips get themed controls, a filmstrip, swipe between items, drag-down to dismiss, and chrome that fades away while a clip plays. The host owns the list: items says what there is, index says where you are, and both are just moved. Keys: Left/Right step (Shift seeks a clip), Space or k plays, j/l seek 10s, m mutes, f toggles fullscreen, 0 resets the zoom, Esc closes. Extra top-bar controls can be projected with the lightbox-actions attribute.">
         <doc-demo code="<ui-media-lightbox [items]=&quot;photos&quot; [(index)]=&quot;at&quot; [(open)]=&quot;open&quot;
   label=&quot;Photos from the night&quot; [actions]=&quot;actions&quot; (action)=&quot;on($event)&quot; />">
           <ui-button variant="primary" (click)="lightbox.set(true)">Open the lightbox</ui-button>
@@ -64,7 +66,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
       </doc-section>
 
       <doc-section name="Media & text sub-renderers" selector="ui-video-player · ui-audio-player · ui-text-viewer · ui-code-viewer" [api]="subApi"
-        summary="video/audio use native APIs with themed controls; text/code fetch a URL (src) or take a content string; code-viewer adds line numbers + a language label.">
+        summary="video/audio use native APIs with themed controls (video: play, scrub, time, volume, speed, fullscreen; audio: play, scrub, time, volume). Project track elements into ui-video-player for captions. text/code fetch a URL (src) or take a content string; code-viewer adds line numbers + a language label.">
         <doc-demo code="<ui-video-player [src]=&quot;'/clip.mp4'&quot; [poster]=&quot;'/p.jpg'&quot; />
 <ui-audio-player [src]=&quot;'/a.mp3'&quot; [title]=&quot;'Track'&quot; />
 <ui-code-viewer [src]=&quot;'/main.ts'&quot; language=&quot;ts&quot; />"></doc-demo>
@@ -123,6 +125,13 @@ export class FileViewerPage {
   protected readonly imgApi: ApiRow[] = [
     { name: 'src', type: 'string (required)', default: '—', desc: 'Image URL.' },
     { name: 'alt', type: 'string', default: "''", desc: 'Alt text.' },
+    { name: 'kind', type: "'image' | 'video'", default: "'image'", desc: 'What src points at.' },
+    { name: 'hasPrevious', type: 'boolean', default: 'false', desc: 'A previous item exists (shows the step button, allows the swipe).' },
+    { name: 'hasNext', type: 'boolean', default: 'false', desc: 'A next item exists.' },
+  ];
+  protected readonly imgOut: ApiRow[] = [
+    { name: 'previous', type: 'void', default: '—', desc: 'Swipe, arrow key or step button asked for the previous item.' },
+    { name: 'next', type: 'void', default: '—', desc: 'Same, for the next item.' },
   ];
   protected readonly lbApi: ApiRow[] = [
     { name: 'items', type: 'UiMediaItem[]', default: '[]', desc: 'Everything the lightbox can show.' },
@@ -130,14 +139,16 @@ export class FileViewerPage {
     { name: 'open', type: 'boolean (two-way)', default: 'false', desc: 'Whether the lightbox is up.' },
     { name: 'label', type: 'string', default: "''", desc: 'Name of the set, shown when an item has no caption.' },
     { name: 'actions', type: 'UiMediaAction[]', default: '[]', desc: 'Buttons in the top bar; href makes one a link.' },
+    { name: '[lightbox-actions]', type: 'slot', default: '—', desc: 'Extra controls projected into the top bar.' },
   ];
   protected readonly lbOut: ApiRow[] = [
     { name: 'action', type: '{ id, item, index }', default: '—', desc: 'An action button was pressed.' },
     { name: 'closed', type: 'void', default: '—', desc: 'The lightbox closed.' },
   ];
   protected readonly subApi: ApiRow[] = [
-    { name: 'video: src / poster', type: 'string', default: '—', desc: 'Video URL / poster.' },
-    { name: 'audio: src / title', type: 'string', default: '—', desc: 'Audio URL / label.' },
+    { name: 'video: src / poster', type: 'string', default: '—', desc: 'Video URL (required) / poster.' },
+    { name: 'video: <track>', type: 'slot', default: '—', desc: 'Captions or subtitles, projected into the video.' },
+    { name: 'audio: src / title', type: 'string', default: '—', desc: 'Audio URL (required) / label.' },
     { name: 'text/code: src', type: 'string', default: '—', desc: 'URL to fetch.' },
     { name: 'text/code: content', type: 'string', default: '—', desc: 'Inline content (skips fetch).' },
     { name: 'code: language', type: 'string', default: "'text'", desc: 'Language label.' },

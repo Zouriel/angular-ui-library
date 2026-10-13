@@ -16,7 +16,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="The cinematic layer (ui/fx) — scroll reveals, marquee, glyph-field background, split-text, custom cursor, grain, glow. Most shine in the Dark Orange theme (switch in the top bar). All honor prefers-reduced-motion.">
 
       <doc-section name="Reveal" selector="[uiReveal]" [api]="revealApi"
-        summary="Directive. Reveals the host as it scrolls into view (IntersectionObserver). The mode is the directive value. Self-contained (inline transitions; no global CSS).">
+        summary="Directive. Reveals the host as it scrolls into view (IntersectionObserver). The mode is the directive value. Self-contained (inline transitions; no global CSS). Honors prefers-reduced-motion.">
         <doc-demo code="<div uiReveal>up</div>
 <div uiReveal=&quot;blur&quot; [revealDelay]=&quot;120&quot;>blur</div>
 <div uiReveal=&quot;left&quot; [revealOnce]=&quot;false&quot;>repeat</div>">
@@ -27,14 +27,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Marquee" selector="ui-marquee" [api]="marqueeApi"
-        summary="Infinite horizontal scroller with edge fade; pauses on hover.">
+        summary="Infinite horizontal scroller with edge fade. Pauses on hover and while it holds focus; stands still under prefers-reduced-motion. The duplicate track is hidden from screen readers.">
         <doc-demo code="<ui-marquee [items]=&quot;items&quot; [duration]=&quot;24&quot; [reverse]=&quot;false&quot; separator=&quot;✦&quot; />">
           <ui-marquee [items]="marquee" [duration]="22" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Drift row" selector="ui-drift-row" [api]="driftApi"
-        summary="Horizontal rail that auto-drifts to a random side and stays fully draggable/swipeable/scrollable. Pauses on hover or interaction and resumes after resumeDelay. Ping-pongs at the ends; honors prefers-reduced-motion. Project any cards inside.">
+        summary="Horizontal rail that auto-drifts to a random side and stays fully draggable/swipeable/scrollable. Pauses on hover or interaction and resumes after resumeDelay. Ping-pongs at the ends. Click-drag scrolls on desktop (a click still fires if you don't drag). Under prefers-reduced-motion it doesn't drift but still scrolls. Set interactive to false for a passive display. Project any cards inside.">
         <doc-demo code="<ui-drift-row [speed]=&quot;26&quot; direction=&quot;auto&quot; gap=&quot;1rem&quot;>
   <article class=&quot;card&quot;>…</article>
 </ui-drift-row>">
@@ -47,41 +47,43 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Section label" selector="ui-section-label" [api]="labelApi"
-        summary="Editorial mono section marker, e.g. [ 00 · INDEX ]. label is required.">
+        summary="Editorial mono section marker, e.g. [ 00 · INDEX ]. label is required; the index and its dot are left out when index is empty.">
         <doc-demo code="<ui-section-label index=&quot;00&quot; label=&quot;Index&quot; />">
           <ui-section-label index="00" label="Index" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Split text" selector="[uiSplitText]" [api]="splitApi"
-        summary="Directive. Splits the host's text into per-character spans and animates them in with a stagger (Web Animations API).">
+        summary="Directive. Splits the host's text into per-character spans and animates them in with a stagger (Web Animations API). The host keeps the full text as its aria-label. Under prefers-reduced-motion it plays a softer fade with little travel. Best on a single line.">
         <doc-demo code="<h1 uiSplitText [stagger]=&quot;35&quot; [base]=&quot;120&quot;>Headline</h1>">
           <div class="big" uiSplitText>Headline</div>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Glyph field" selector="ui-glyph-field" [api]="glyphApi"
-        summary="Animated binary/glyph canvas background (asset-free take on the portfolio's binary-face). Use fixed for a page backdrop, or contain within a positioned parent.">
+        summary="Animated binary/glyph canvas background (asset-free take on the portfolio's binary-face). Use fixed for a page backdrop, or contain within a positioned parent. Under prefers-reduced-motion it draws one still frame.">
         <doc-demo code="<ui-glyph-field [fixed]=&quot;true&quot; [opacity]=&quot;0.5&quot; chars=&quot;01&quot; [cell]=&quot;16&quot; [speed]=&quot;1&quot; />">
           <div class="gf-host"><ui-glyph-field [opacity]="0.6" /></div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Cursor / grain / scroll-progress" selector="ui-cursor · ui-grain · ui-scroll-progress"
-        summary="Mount once near the app root. ui-cursor replaces the pointer (pair with body { cursor: none }); ui-grain is a film-grain overlay; ui-scroll-progress is a top progress bar using the brand gradient. ui-cursor has an interactiveSelector input; ui-grain has opacity (default 0.06).">
+      <doc-section name="Cursor / grain / scroll-progress" selector="ui-cursor · ui-grain · ui-scroll-progress" [api]="chromeApi"
+        summary="Mount once near the app root. ui-cursor draws a dot plus a lagging ring that grows over interactive elements. It hides itself on touch devices and under reduced motion, and puts ui-cursor-on on html while it draws, so hide the native cursor with html.ui-cursor-on, never unconditionally. ui-grain is a film-grain overlay (off under reduced motion); ui-scroll-progress is a fixed 2px top bar using the brand gradient. Colors come from --ui-cursor-color and --ui-scroll-progress-track.">
         <doc-demo code="<ui-scroll-progress />
-@if (darkOrange) { <ui-grain [opacity]=&quot;0.06&quot; /> <ui-cursor /> }"></doc-demo>
+@if (darkOrange) { <ui-grain [opacity]=&quot;0.06&quot; /> <ui-cursor /> }
+
+html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
       </doc-section>
 
       <doc-section name="Intro loader" selector="ui-intro-loader" [api]="introApi" [outputs]="introOut"
-        summary="Full-screen intro veil that wipes after duration (or when [(open)] is set false). Project a logo/wordmark.">
+        summary="Full-screen intro veil that wipes after duration (or when [(open)] is set false). Project a logo/wordmark. Under prefers-reduced-motion it holds for a third of duration and fades out without the lift.">
         <doc-demo code="<ui-intro-loader [(open)]=&quot;intro&quot; [duration]=&quot;1400&quot; (done)=&quot;start()&quot;>ui</ui-intro-loader>">
           <ui-button variant="outline" size="sm" (click)="replay()">Replay intro</ui-button>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Magnetic & utility classes" selector="[uiMagnetic] · .ui-glow · .ui-gradient-text · .ui-underline" [api]="magApi"
-        summary="uiMagnetic pulls the host toward the cursor on hover. The fx.css utility classes (.ui-glow, .ui-gradient-text, .ui-underline) are token-driven and adapt per theme.">
+        summary="uiMagnetic pulls the host toward the cursor on hover and springs back on leave. It is off on touch (coarse pointer) and under reduced motion, and marks the host data-magnetic so ui-cursor treats it as interactive. The fx.css utility classes (.ui-glow, .ui-gradient-text, .ui-underline) are token-driven and adapt per theme.">
         <doc-demo code="<button uiMagnetic [magneticStrength]=&quot;0.35&quot;>Magnetic</button>
 <span class=&quot;ui-gradient-text ui-glow&quot;>Glow</span>
 <a class=&quot;ui-underline&quot;>Hover underline</a>">
@@ -135,7 +137,9 @@ export class FxPage {
     { name: 'gap', type: 'string', default: "'1.5rem'", desc: 'Gap between projected items.' },
     { name: 'pauseOnHover', type: 'boolean', default: 'true', desc: 'Pause drift while hovered.' },
     { name: 'resumeDelay', type: 'number', default: '1800', desc: 'Idle time before drift resumes (ms).' },
-    { name: 'fade', type: 'boolean', default: 'true', desc: 'Edge-fade mask on the rail.' },
+    { name: 'fade', type: 'boolean', default: 'true', desc: 'Edge-fade mask on the rail (only shown when it overflows).' },
+    { name: 'interactive', type: 'boolean', default: 'true', desc: 'False makes a passive display: it keeps drifting but cannot be scrolled, dragged or clicked.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'The items on the rail.' },
   ];
   protected readonly labelApi: ApiRow[] = [
     { name: 'index', type: 'string', default: "''", desc: 'Leading index (e.g. 00).' },
@@ -156,7 +160,14 @@ export class FxPage {
   ];
   protected readonly introApi: ApiRow[] = [
     { name: 'open', type: 'boolean (model)', default: 'true', desc: 'Two-way visibility.' },
-    { name: 'duration', type: 'number', default: '1400', desc: 'Time before wipe (ms).' },
+    { name: 'duration', type: 'number', default: '1400', desc: 'Time before wipe (ms). A third of this under reduced motion.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'Logo or wordmark shown above the progress line.' },
+  ];
+  protected readonly chromeApi: ApiRow[] = [
+    { name: 'ui-cursor: interactiveSelector', type: 'string', default: "'a, button, [data-magnetic], input, textarea, select, [role=\"button\"]'", desc: 'Elements that grow the ring.' },
+    { name: 'ui-grain: opacity', type: 'number', default: '0.06', desc: 'Grain strength.' },
+    { name: '--ui-cursor-color', type: 'CSS color', default: 'theme', desc: 'Dot and ring color.' },
+    { name: '--ui-scroll-progress-track', type: 'CSS color', default: 'theme', desc: 'Track behind the progress bar.' },
   ];
   protected readonly introOut: ApiRow[] = [{ name: 'done', type: 'void', default: '—', desc: 'Emitted after the wipe.' }];
   protected readonly magApi: ApiRow[] = [

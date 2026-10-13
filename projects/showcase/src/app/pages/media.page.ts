@@ -12,10 +12,10 @@ function grad(a: string, b: string): string {
   imports: [UiCarousel, UiGallery, UiImagePicker, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Components" title="Media"
-      lead="Image-centric components: a carousel slideshow, a thumbnail gallery with a lightbox, and a picker for choosing an image.">
+      lead="Image-centric components: a carousel slideshow, a thumbnail gallery with a lightbox, a picker for choosing an image, and a phone frame for previews.">
 
       <doc-section name="Carousel" selector="ui-carousel" [api]="carouselApi"
-        summary="Slides with arrows, dots, edge fade, optional autoplay (ms; 0 disables); pauses on hover."
+        summary="Slides with arrows, dots, a swipe that follows the finger, and optional autoplay (ms; 0 disables). Autoplay pauses while hovered or while focus is inside, and is off under prefers-reduced-motion. Arrows show only where there is a mouse. A swipe that starts inside is the carousel's own and never reaches page-level swipe handlers. Projected content is laid over the slides."
         [shapes]="'interface UiCarouselSlide { image: string; alt?: string; caption?: string; }'">
         <doc-demo code="<ui-carousel [slides]=&quot;slides&quot; [autoplay]=&quot;4000&quot; />">
           <ui-carousel [slides]="slides" [autoplay]="4000" />
@@ -23,15 +23,15 @@ function grad(a: string, b: string): string {
       </doc-section>
 
       <doc-section name="Gallery" selector="ui-gallery" [api]="galleryApi"
-        summary="Responsive thumbnail grid; click opens a lightbox with prev/next + Esc."
+        summary="Responsive thumbnail grid; click opens a lightbox with prev/next. In the lightbox, Left/Right step and Esc closes; focus returns to the thumbnail on close."
         [shapes]="'interface UiGalleryImage { src: string; thumb?: string; alt?: string; }'">
         <doc-demo code="<ui-gallery [images]=&quot;images&quot; minThumb=&quot;90px&quot; />">
           <ui-gallery [images]="images" minThumb="90px" />
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Image picker" selector="ui-image-picker" [api]="pickerApi"
-        summary="A grid of tiles to choose from (search results, stock art). One tile can be busy while its choice loads; reaching the end asks for the next page; broken thumbnails fall back to their label."
+      <doc-section name="Image picker" selector="ui-image-picker" [api]="pickerApi" [outputs]="pickerOut"
+        summary="A grid of tiles to choose from (search results, stock art). One tile can be busy while its choice loads; reaching the end asks for the next page; broken thumbnails fall back to their label. Tap or Enter picks. Tiles sit on a faint checkerboard so white or transparent art shows. With dragType set, tiles can be dragged."
         [shapes]="'interface UiImagePickerItem { id: string; src: string; label: string; badge?: string; disabled?: boolean; hint?: string; }'">
         <doc-demo code="<ui-image-picker [items]=&quot;items&quot; [busyId]=&quot;busy&quot; [hasMore]=&quot;true&quot; (pick)=&quot;choose($event)&quot; (more)=&quot;loadMore()&quot; />">
           <ui-image-picker [items]="pickerItems()" [busyId]="busy()" [hasMore]="pickerItems().length < 24" [captions]="true" minThumb="88px"
@@ -80,12 +80,18 @@ export class MediaPage {
     { name: 'captions', type: 'boolean', default: 'false', desc: 'Show each label under its tile.' },
     { name: 'emptyText', type: 'string', default: "''", desc: 'Shown when there are no items.' },
     { name: 'dragType', type: 'string | null', default: 'null', desc: 'Makes tiles draggable; drag data is the id under this type.' },
-    { name: '(pick)', type: 'UiImagePickerItem', default: '', desc: 'A tile was chosen.' },
-    { name: '(more)', type: 'void', default: '', desc: 'The next page is wanted.' },
+  ];
+  protected readonly pickerOut: ApiRow[] = [
+    { name: 'pick', type: 'UiImagePickerItem', default: '—', desc: 'A tile was chosen.' },
+    { name: 'more', type: 'void', default: '—', desc: 'Scrolled near the end with hasMore on; the next page is wanted.' },
   ];
   protected readonly carouselApi: ApiRow[] = [
     { name: 'slides', type: 'UiCarouselSlide[]', default: '[]', desc: 'Slides (image + caption).' },
     { name: 'autoplay', type: 'number', default: '0', desc: 'Auto-advance interval (ms); 0 = off.' },
+    { name: 'index', type: 'number (model)', default: '0', desc: 'The slide showing. Bind it to draw your own position marker.' },
+    { name: 'dots', type: 'boolean', default: 'true', desc: 'Built-in dots. Turn off when drawing your own.' },
+    { name: 'arrows', type: 'boolean', default: 'true', desc: 'Built-in arrows (shown only where there is a mouse).' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'Laid over the slides, e.g. a title or counter.' },
   ];
   protected readonly galleryApi: ApiRow[] = [
     { name: 'images', type: 'UiGalleryImage[]', default: '[]', desc: 'Images (full + optional thumb).' },

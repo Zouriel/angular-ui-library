@@ -1,4 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Menu01Icon from '@hugeicons/core-free-icons/Menu01Icon';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
@@ -13,7 +15,7 @@ import { NAV } from './app.routes';
 
 @Component({
   selector: 'app-root',
-  imports: [
+  imports: [HugeiconsIconComponent, 
     RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
     UiSearchInput, UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost,
   ],
@@ -34,7 +36,7 @@ import { NAV } from './app.routes';
 
       <div class="main-col">
         <header class="topbar">
-          <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="navOpen.set(true)">☰</ui-icon-button>
+          <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="navOpen.set(true)"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
           <ui-button variant="ghost" size="sm" (click)="cmdOpen.set(true)" class="cmd">Search docs ⌘K</ui-button>
           <span class="grow"></span>
           <label class="theme-picker">
@@ -106,6 +108,7 @@ import { NAV } from './app.routes';
   `,
 })
 export class App {
+  protected readonly icons = { menu: Menu01Icon };
   protected readonly theme = inject(UiThemeService);
   private readonly router = inject(Router);
   protected readonly NAV = NAV;

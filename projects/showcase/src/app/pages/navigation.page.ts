@@ -33,8 +33,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Tabs" selector="ui-tabs · ui-tab" [api]="tabsApi"
-        summary="WAI-ARIA tabs with roving tabindex + Arrow/Home/End. selectedIndex is a two-way model. Each ui-tab needs a label and may be disabled.">
+      <doc-section name="Tabs" selector="ui-tabs · ui-tab" [api]="tabsApi" [outputs]="tabsOut"
+        summary="WAI-ARIA tabs with roving tabindex + Arrow/Home/End (disabled tabs are skipped). selectedIndex is a two-way model. Each ui-tab needs a label and may be disabled or carry a HugeIcons icon; with iconOnly the label stays as the accessible name and tooltip. Inactive panels stay in the DOM but hidden. When the strip scrolls, the selected tab is kept in view.">
         <doc-demo code="<ui-tabs [(selectedIndex)]=&quot;idx&quot;>
   <ui-tab label=&quot;One&quot;>…</ui-tab>
   <ui-tab label=&quot;Two&quot; [disabled]=&quot;true&quot;>…</ui-tab>
@@ -48,8 +48,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Side nav" selector="ui-side-nav" [api]="sideApi" [outputs]="sideOut"
-        summary="Vertical grouped navigation (powers this docs sidebar). active is a two-way model; emit (navigate) to route."
-        [shapes]="'interface UiSideNavGroup { label?: string; items: UiSideNavItem[]; }\ninterface UiSideNavItem { label: string; value: string; icon?: string; badge?: string|number; disabled?: boolean; }'">
+        summary="Vertical grouped navigation (powers this docs sidebar). active is a two-way model; listen to (navigate) to route. Items with href render as real links (crawlable, open in new tab); a plain click still emits (navigate) and prevents the browser navigation, while modified clicks are left to the browser."
+        [shapes]="'interface UiSideNavGroup { label?: string; items: UiSideNavItem[]; }\ninterface UiSideNavItem { label: string; value: string; icon?: string; badge?: string|number; disabled?: boolean; href?: string; }'">
         <doc-demo code="<ui-side-nav [groups]=&quot;groups&quot; [(active)]=&quot;active&quot; (navigate)=&quot;go($event)&quot; />">
           <div class="boxed"><ui-side-nav [groups]="navGroups" [(active)]="active" /></div>
         </doc-demo>
@@ -64,14 +64,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Pagination" selector="ui-pagination" [api]="pageApi" [outputs]="pageOut"
-        summary="Page navigation with truncation. page is a two-way model.">
+        summary="Page navigation with prev/next and truncation. page is a two-way model.">
         <doc-demo code="<ui-pagination [(page)]=&quot;page&quot; [total]=&quot;10&quot; [siblings]=&quot;1&quot; />">
           <ui-pagination [(page)]="page" [total]="10" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Stepper" selector="ui-stepper" [api]="stepApi"
-        summary="Horizontal progress through ordered steps."
+        summary="Horizontal progress through ordered steps. Display only: steps before active show as done, and the active step gets aria-current=&quot;step&quot;."
         [shapes]="'interface UiStep { label: string; description?: string; }'">
         <doc-demo code="<ui-stepper [steps]=&quot;steps&quot; [active]=&quot;step&quot; />">
           <ui-stepper [steps]="steps" [active]="step()" />
@@ -83,16 +83,16 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Menubar" selector="ui-menubar" [api]="menubarApi" [outputs]="menubarOut"
-        summary="Application-style horizontal menu bar with dropdowns (one open at a time)."
+        summary="Application-style horizontal menu bar with dropdowns (one open at a time). Once a menu is open, hovering another top item switches to it. Inside a menu, ArrowUp/Down, Home and End move between items and Escape closes it. Menus flip to stay on screen."
         [shapes]="'interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }\ninterface UiMenubarItem { label: string; value: string; disabled?: boolean; }'">
         <doc-demo code="<ui-menubar [menus]=&quot;menus&quot; (select)=&quot;run($event)&quot; />">
           <ui-menubar [menus]="menus" />
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Bottom nav" selector="ui-bottom-nav" [api]="bottomApi"
-        summary="Mobile-style bottom bar. active is a two-way model."
-        [shapes]="'interface UiBottomNavItem { label: string; value: string; icon?: string; badge?: string|number; }'">
+      <doc-section name="Bottom nav" selector="ui-bottom-nav" [api]="bottomApi" [outputs]="bottomOut"
+        summary="Mobile-style bottom bar. active is a two-way model. An icon can be a HugeIcons icon (drawn in currentColor, so it follows the active state) or a short string such as an emoji."
+        [shapes]="'interface UiBottomNavItem { label: string; value: string; icon?: string | IconSvgObject; badge?: string|number; }'">
         <doc-demo code="<ui-bottom-nav [items]=&quot;items&quot; [(active)]=&quot;active&quot; />">
           <ui-bottom-nav [items]="bottom" [(active)]="bottomActive" />
         </doc-demo>
@@ -141,13 +141,19 @@ export class NavigationPage {
     { name: 'tabs: label', type: 'string', default: "'Tabs'", desc: 'tablist aria-label.' },
     { name: 'tab: label', type: 'string (required)', default: '—', desc: 'Tab button text.' },
     { name: 'tab: disabled', type: 'boolean', default: 'false', desc: 'Disable the tab.' },
+    { name: 'tab: icon', type: 'IconSvgObject', default: 'undefined', desc: 'HugeIcons icon drawn before the label.' },
+    { name: 'tab: iconOnly', type: 'boolean', default: 'false', desc: 'Show only the icon. The label stays the accessible name and tooltip.' },
   ];
+  protected readonly tabsOut: ApiRow[] = [{ name: 'selectedIndexChange', type: 'number', default: '—', desc: 'Selected tab model change.' }];
   protected readonly sideApi: ApiRow[] = [
     { name: 'groups', type: 'UiSideNavGroup[]', default: '[]', desc: 'Grouped items.' },
     { name: 'active', type: 'string (model)', default: "''", desc: 'Active value — [(active)].' },
     { name: 'label', type: 'string', default: "'Sidebar'", desc: 'nav aria-label.' },
   ];
-  protected readonly sideOut: ApiRow[] = [{ name: 'navigate', type: 'UiSideNavItem', default: '—', desc: 'Item activated.' }];
+  protected readonly sideOut: ApiRow[] = [
+    { name: 'navigate', type: 'UiSideNavItem', default: '—', desc: 'Item activated.' },
+    { name: 'activeChange', type: 'string', default: '—', desc: 'Active model change.' },
+  ];
   protected readonly crumbApi: ApiRow[] = [
     { name: 'items', type: 'UiBreadcrumb[]', default: '[]', desc: 'Trail items.' },
     { name: 'separator', type: 'string', default: "'/'", desc: 'Separator glyph.' },
@@ -170,9 +176,11 @@ export class NavigationPage {
     { name: 'items', type: 'UiBottomNavItem[]', default: '[]', desc: 'Tabs.' },
     { name: 'active', type: 'string (model)', default: "''", desc: 'Active value — [(active)].' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
+    { name: 'iconSize', type: 'number', default: '22', desc: 'Drawn-icon size in px. String icons ignore it.' },
   ];
+  protected readonly bottomOut: ApiRow[] = [{ name: 'activeChange', type: 'string', default: '—', desc: 'Active model change.' }];
   protected readonly anchorApi: ApiRow[] = [
     { name: 'items', type: 'UiAnchorItem[]', default: '[]', desc: 'Section links (by element id).' },
-    { name: 'offset', type: 'number', default: '80', desc: 'Scroll offset (px).' },
+    { name: 'offset', type: 'number', default: '80', desc: 'Scroll-margin offset (px) used when scrolling to a section.' },
   ];
 }

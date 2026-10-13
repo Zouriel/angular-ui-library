@@ -11,11 +11,12 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="ui-text is the only text element — it renders the correct semantic tag per variant, keeping a11y and SEO intact. Headings (h1–h3) use the --ui-font-display token.">
 
       <doc-section name="Text" selector="ui-text" [api]="textApi"
-        summary="Project the text as content. The variant picks the semantic tag and style.">
+        summary="Project the text as content. The variant picks the semantic tag and style: h1–h6, p (body), small (caption), span (label), code and blockquote. Add the bare inline attribute to render it inline instead of as a block.">
         <doc-demo code="<ui-text variant=&quot;h1&quot;>Heading</ui-text>
 <ui-text variant=&quot;body&quot;>Body copy</ui-text>
 <ui-text variant=&quot;caption&quot;>caption</ui-text>
-<ui-text variant=&quot;code&quot;>inline code</ui-text>">
+<ui-text variant=&quot;code&quot;>inline code</ui-text>
+<ui-text variant=&quot;label&quot; inline>Inline label</ui-text>">
           <ui-text variant="h1">Heading 1</ui-text>
           <ui-text variant="h2">Heading 2</ui-text>
           <ui-text variant="h3">Heading 3</ui-text>
@@ -26,7 +27,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Link" selector="ui-link" [api]="linkApi"
-        summary="Themed anchor. external adds target=_blank + rel=noopener and a marker.">
+        summary="Themed anchor, underlined at rest so it never relies on colour alone. external adds target=_blank, rel=noopener noreferrer, an arrow icon and screen-reader text saying it opens in a new tab.">
         <doc-demo code="<ui-link href=&quot;/x&quot;>internal</ui-link>
 <ui-link href=&quot;https://angular.dev&quot; [external]=&quot;true&quot;>external</ui-link>">
           <ui-text variant="body">An <ui-link href="#/buttons">internal link</ui-link> and an
@@ -61,11 +62,12 @@ export class TypographyPage {
   protected readonly textApi: ApiRow[] = [
     { name: 'variant', type: "'h1'..'h6' | 'body' | 'caption' | 'label' | 'code' | 'quote'", default: "'body'", desc: 'Semantic tag + style.' },
     { name: 'font', type: 'string', default: '—', desc: 'Optional font-family override.' },
+    { name: 'inline', type: 'attribute', default: '—', desc: 'Present: display inline instead of block.' },
   ];
   protected readonly linkApi: ApiRow[] = [
     { name: 'href', type: 'string', default: '—', desc: 'Target URL.' },
-    { name: 'external', type: 'boolean', default: 'false', desc: 'Open in new tab + rel + marker.' },
-    { name: 'tone', type: "'primary' | 'muted' | 'plain'", default: "'primary'", desc: 'Color.' },
+    { name: 'external', type: 'boolean', default: 'false', desc: 'Open in a new tab with safe rel, an arrow icon and hidden "(opens in a new tab)" text.' },
+    { name: 'tone', type: "'primary' | 'muted' | 'plain'", default: "'primary'", desc: 'Color. plain inherits the surrounding text colour.' },
   ];
   protected readonly quoteApi: ApiRow[] = [
     { name: 'cite', type: 'string', default: '—', desc: 'Optional citation line.' },

@@ -38,18 +38,18 @@ const STUDENT_ID: UiFbValidatorDef = {
   providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES), provideUiFormHttpSources({ allowedOrigins: ['https://dummyjson.com'] })],
   template: `
     <doc-page eyebrow="Flagship" title="Form builder"
-      lead="Admin staff build forms by dragging fields onto a page, then add rules in plain words: show a question only when another answer says so, require it under a condition, group questions into sections that depend on other sections, repeat a section, split the form into steps. The form and every answer are plain JSON.">
+      lead="Admin staff build forms by dragging fields onto a page, then add rules in plain words: show a question only when another answer says so, require it under a condition, group questions into sections that depend on other sections, repeat a section, split the form into steps. Dropdowns can search lists from your API. The form and every answer are plain JSON.">
 
       <aside class="studio-cta">
         <div>
-          <strong>Two components</strong>
-          <p><code translate="no">ui-form-builder</code> is the admin screen where a form is made. <code translate="no">ui-form-renderer</code> is what people fill in, and what staff use to view or correct saved answers. Your app stores the JSON in between.</p>
+          <strong>Three components</strong>
+          <p><code translate="no">ui-form-builder</code> is the admin screen where a form is made. <code translate="no">ui-form-renderer</code> is what people fill in, and what staff use to view or correct saved answers. <code translate="no">ui-form-global-settings</code> is for your app’s settings page: the lists every form can search, and new-form defaults. Your app stores the JSON in between.</p>
         </div>
         <ui-button routerLink="/form-studio">Open the form studio</ui-button>
       </aside>
 
       <doc-section name="Builder" selector="ui-form-builder" [api]="builderApi"
-        summary="Bind [(definition)] and store it. Pass the published version and its answer count so the builder protects saved answers: it archives instead of deleting, locks stored option values and remembers renamed keys.">
+        summary="Bind [(definition)] and store it. Pass the published version and its answer count so the builder protects saved answers: it archives instead of deleting, locks stored option values and remembers renamed keys. Tap a question to select it and use its toolbar; double-click, press Enter or hold it on a touch screen to open its settings. Pages have a ⋯ menu to move or delete them.">
         <div class="builder-frame">
           <ui-form-builder #builder [(definition)]="form" [globalSettings]="globalSettings()" [published]="published()" [submissionCount]="answered() ? 12 : 0">
             <div fbActions class="actions">
@@ -64,7 +64,7 @@ const STUDENT_ID: UiFbValidatorDef = {
       </doc-section>
 
       <doc-section name="Renderer" selector="ui-form-renderer" [api]="rendererApi" [outputs]="rendererOutputs"
-        summary="Fills in a definition. Give it saved data to edit (with a change list and dirty tracking) or to view. It emits JSON ready to store.">
+        summary="Fills in a definition. Give it saved data to edit (with a change list and dirty tracking) or to view, where every step shows on one page. Problems show when a question is left (or only on Continue, per form), and all of a page’s problems are listed at the top when someone tries to move on. It emits JSON ready to store.">
         <doc-demo code="<ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; (submitted)=&quot;save($event)&quot; />">
           <div class="bar">
             <ui-segmented [options]="modes" [value]="mode()" (valueChange)="mode.set($any($event))" label="Mode" size="sm" />
@@ -186,6 +186,9 @@ export class FormBuilderPage {
     { name: 'published', type: 'UiFormDefinition | null', default: 'null', desc: 'The version people answer now. Drives the unpublished-changes list and answer protection.' },
     { name: 'submissionCount', type: 'number', default: '0', desc: 'Answers the published version has. Above zero: archive instead of delete, lock saved option values, remember renamed keys, only allow similar type changes.' },
     { name: 'validators', type: 'UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks for the “Add a check” list (also see provideUiFormValidators).' },
+    { name: 'optionSources', type: 'UiFbOptionSourceDef[]', default: '[]', desc: 'Extra searchable lists for Options → Data source (also see provideUiFormOptionSources).' },
+    { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'App-wide settings from ui-form-global-settings; their lists become data sources.' },
+    { name: 'select(id) / undo() / redo()', type: 'methods', desc: 'Select a question, section or page (null for the form itself); step through history.' },
     { name: 'problems()', type: 'Signal<UiFbProblem[]>', desc: 'Missing keys, loops between rules, rules pointing at deleted questions, backward jumps. Check before publishing.' },
     { name: 'changes()', type: 'Signal<UiFbDiff | null>', desc: 'What changed since published: added, archived, renamed keys, type changes, removed options, changed rules.' },
     { name: '[fbActions]', type: 'content slot', desc: 'Your buttons (Save, Publish) in the builder’s top bar.' },
@@ -196,9 +199,13 @@ export class FormBuilderPage {
     { name: 'data', type: 'Record<string, unknown> | null', default: 'null', desc: 'Saved answers to edit or view. Unknown keys and answers to questions hidden at the time are kept.' },
     { name: 'mode', type: "'create' | 'edit' | 'view'", default: 'edit when data, else create', desc: 'View shows answers as text and never validates.' },
     { name: 'validators', type: 'UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks.' },
+    { name: 'optionSources / globalSettings', type: 'UiFbOptionSourceDef[] / UiFormGlobalSettings', default: '[] / null', desc: 'The lists sourced questions search. Use the same ones the builder had.' },
     { name: 'uploader', type: '(file, field) => Promise<UiFbFileValue>', default: 'null', desc: 'Uploads files as they are picked. Without it, files come back in the submission’s files map.' },
     { name: 'submitLabel / cancelLabel', type: 'string', desc: 'Button text overrides. A cancel label shows a Cancel button.' },
     { name: 'busy', type: 'boolean', default: 'false', desc: 'Shows the submit button as busy while you save.' },
+    { name: 'showTitle / showActions', type: 'boolean', default: 'true', desc: 'Hide the form’s title and description, or its buttons (to drive it with your own).' },
+    { name: 'today', type: '(() => string) | null', default: 'null', desc: 'Overrides today (YYYY-MM-DD) for date rules and ages, e.g. for forms filled in on behalf of a past date.' },
+    { name: 'submit() / reset()', type: 'methods', desc: 'Submit from your own button; start over from the data the form was given.' },
     { name: 'engine()', type: 'Signal<UiFormEngine>', desc: 'The running form: data(), dirty(), changes(), submit().' },
   ];
   protected readonly rendererOutputs: ApiRow[] = [
