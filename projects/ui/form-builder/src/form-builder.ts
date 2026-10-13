@@ -25,6 +25,8 @@ import { createDefinition, subtreeIds, type UiFbDiff, type UiFbDropTarget, type 
 import type { UiFormDefinition } from './schema';
 import { UI_FB_BUILTIN_VALIDATORS, UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
 import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
+import { sourcesFromSettings, type UiFormGlobalSettings } from './global-settings';
+import { UI_FB_HTTP_SOURCES } from './http-sources';
 import { FB_ICONS } from './builder-icons';
 
 type View = 'build' | 'logic' | 'preview';
@@ -253,6 +255,7 @@ export class UiFormBuilder {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly registered = (inject(UI_FB_VALIDATORS, { optional: true }) ?? []).flat();
   private readonly registeredSources = (inject(UI_FB_OPTION_SOURCES, { optional: true }) ?? []).flat();
+  private readonly http = inject(UI_FB_HTTP_SOURCES, { optional: true }) ?? {};
 
   /** The form being built. Two-way: every change is written back. */
   readonly definition = model<UiFormDefinition>(createDefinition());
@@ -264,6 +267,8 @@ export class UiFormBuilder {
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
   /** Extra option sources (searchable lists) for dropdowns and multi-selects, on top of `provideUiFormOptionSources`. */
   readonly optionSources = input<readonly UiFbOptionSourceDef[]>([]);
+  /** App-wide settings from `ui-form-global-settings`: their lists become data sources here. */
+  readonly globalSettings = input<UiFormGlobalSettings | null>(null);
 
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly undoIcon = FB_ICONS.Undo02Icon;
@@ -314,7 +319,7 @@ export class UiFormBuilder {
     effect(() => this.store.published.set(this.published()));
     effect(() => this.store.submissionCount.set(this.submissionCount()));
     effect(() => this.store.validatorDefs.set([...UI_FB_BUILTIN_VALIDATORS, ...this.registered, ...this.validators()]));
-    effect(() => this.store.optionSourceDefs.set([...this.registeredSources, ...this.optionSources()]));
+    effect(() => this.store.optionSourceDefs.set([...this.registeredSources, ...sourcesFromSettings(this.globalSettings(), this.http), ...this.optionSources()]));
 
     // Lays out by the builder's own width, not the window's (it may sit in a panel). No observer on the server.
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(([e]) => this.width.set(e.contentRect.width));

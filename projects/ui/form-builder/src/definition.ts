@@ -10,6 +10,7 @@ import {
   type UiFbGroup,
   type UiFbOperand,
   type UiFbPage,
+  type UiFbSettings,
   type UiFbStatic,
   type UiFbStaticType,
   type UiFbToggle,
@@ -48,13 +49,14 @@ export function fbKeyValid(key: string): boolean {
 
 // ── Creating elements ─────────────────────────────────────────────────────
 
-export function createDefinition(title = 'Untitled form'): UiFormDefinition {
+/** A new, one-page form. `defaults` (e.g. global settings' `defaults`) are copied into its settings. */
+export function createDefinition(title = 'Untitled form', defaults?: UiFbSettings): UiFormDefinition {
   return {
     schemaVersion: UI_FB_SCHEMA_VERSION,
     id: fbUid('form'),
     title,
     revision: 0,
-    settings: {},
+    settings: { ...(defaults ?? {}) },
     pages: [createPage()],
   };
 }

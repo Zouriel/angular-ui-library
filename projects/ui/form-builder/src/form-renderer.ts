@@ -23,6 +23,8 @@ import { UiFbFieldView, type UiFbUploader } from './renderer-field';
 import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFormDefinition, UiFormSubmission } from './schema';
 import { UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
 import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
+import { sourcesFromSettings, type UiFormGlobalSettings } from './global-settings';
+import { UI_FB_HTTP_SOURCES } from './http-sources';
 import { FB_ICONS } from './builder-icons';
 
 let rendererSeq = 0;
@@ -287,6 +289,7 @@ export class UiFormRenderer {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly registered = (inject(UI_FB_VALIDATORS, { optional: true }) ?? []).flat();
   private readonly registeredSources = (inject(UI_FB_OPTION_SOURCES, { optional: true }) ?? []).flat();
+  private readonly http = inject(UI_FB_HTTP_SOURCES, { optional: true }) ?? {};
 
   readonly definition = input.required<UiFormDefinition>();
   /** Saved answers to edit or view. */
@@ -297,6 +300,8 @@ export class UiFormRenderer {
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
   /** Extra option sources, on top of the ones from `provideUiFormOptionSources`. */
   readonly optionSources = input<readonly UiFbOptionSourceDef[]>([]);
+  /** App-wide settings from `ui-form-global-settings`: their lists are searched here. */
+  readonly globalSettings = input<UiFormGlobalSettings | null>(null);
   /** Uploads files as they're picked; without it, files ride along in the submission. */
   readonly uploader = input<UiFbUploader | null>(null);
   readonly showTitle = input(true);
@@ -351,7 +356,7 @@ export class UiFormRenderer {
       const data = this.data();
       const mode = this.mode();
       const validators = [...this.registered, ...this.validators()];
-      const optionSources = [...this.registeredSources, ...this.optionSources()];
+      const optionSources = [...this.registeredSources, ...sourcesFromSettings(this.globalSettings(), this.http), ...this.optionSources()];
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
         definition, data, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,

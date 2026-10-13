@@ -115,6 +115,37 @@ them for multi-selects), so they stay readable even if the record is renamed or
 removed later. Rules on these questions compare the `value` and search the same
 list in the rule editor.
 
+### Global settings (for the app's settings page)
+
+```html
+<ui-form-global-settings [(settings)]="settings" [usage]="{ students: 3 }" />
+<ui-form-builder [(definition)]="form" [globalSettings]="settings()" />
+<ui-form-renderer [definition]="form" [globalSettings]="settings()" />
+```
+
+```ts
+providers: [provideUiFormHttpSources({
+  allowedOrigins: ['https://api.example.com'],
+  fetch: (url, { signal }) => myHttp.getJson(url, { signal }),   // adds the session or token
+})]
+```
+
+Admins manage, in one place:
+- **Data sources**: lists set up without code. Each has:
+  - an address;
+  - how it searches and pages (page numbers or skip/limit);
+  - where the items are in the reply, and which fields are the value and the label (`{firstName} {lastName}` combines fields);
+  - optional per-question settings;
+  - a **Test** that shows the request and what came back, including the fields found in each item.
+
+  Lists built into the app's code are shown read-only. Settings hold no secrets: the
+  app's `fetch` adds its login, and lists may only call `allowedOrigins` (or the
+  app's own origin).
+- **New form defaults**: what `createDefinition(title, settings.defaults)` starts
+  every new form with. Existing forms aren't changed.
+
+The settings are plain JSON (`UiFormGlobalSettings`) for the app to store.
+
 ## Filling forms in
 
 ```html

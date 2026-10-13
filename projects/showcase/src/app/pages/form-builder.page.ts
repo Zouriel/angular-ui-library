@@ -7,7 +7,10 @@ import { UiSwitch } from '@zouriel/ui/form';
 import {
   UiFormBuilder,
   UiFormRenderer,
+  provideUiFormHttpSources,
   provideUiFormOptionSources,
+  UiFormGlobalSettingsEditor,
+  type UiFormGlobalSettings,
   provideUiFormValidators,
   type UiFbValidatorDef,
   type UiFormDefinition,
@@ -15,6 +18,7 @@ import {
   type UiFormSubmission,
 } from '@zouriel/ui/form-builder';
 import { DEMO_SOURCES } from './form-builder.sources';
+import { demoSettings } from './form-studio.store';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 import { SAMPLE_ANSWERS, SAMPLE_FORM } from './form-builder.sample';
 
@@ -30,8 +34,8 @@ const STUDENT_ID: UiFbValidatorDef = {
 
 @Component({
   selector: 'page-form-builder',
-  imports: [JsonPipe, FormsModule, RouterLink, UiButton, UiSegmented, UiSwitch, UiFormBuilder, UiFormRenderer, DocPage, DocSection, DocDemo],
-  providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES)],
+  imports: [JsonPipe, FormsModule, RouterLink, UiButton, UiSegmented, UiSwitch, UiFormBuilder, UiFormRenderer, UiFormGlobalSettingsEditor, DocPage, DocSection, DocDemo],
+  providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES), provideUiFormHttpSources({ allowedOrigins: ['https://dummyjson.com'] })],
   template: `
     <doc-page eyebrow="Flagship" title="Form builder"
       lead="Admin staff build forms by dragging fields onto a page, then add rules in plain words: show a question only when another answer says so, require it under a condition, group questions into sections that depend on other sections, repeat a section, split the form into steps. The form and every answer are plain JSON.">
@@ -47,7 +51,7 @@ const STUDENT_ID: UiFbValidatorDef = {
       <doc-section name="Builder" selector="ui-form-builder" [api]="builderApi"
         summary="Bind [(definition)] and store it. Pass the published version and its answer count so the builder protects saved answers: it archives instead of deleting, locks stored option values and remembers renamed keys.">
         <div class="builder-frame">
-          <ui-form-builder #builder [(definition)]="form" [published]="published()" [submissionCount]="answered() ? 12 : 0">
+          <ui-form-builder #builder [(definition)]="form" [globalSettings]="globalSettings()" [published]="published()" [submissionCount]="answered() ? 12 : 0">
             <div fbActions class="actions">
               <ui-button size="sm" (click)="publish()">{{ published() ? 'Publish changes' : 'Publish' }}</ui-button>
             </div>
@@ -102,6 +106,19 @@ const STUDENT_ID: UiFbValidatorDef = {
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Global settings" selector="ui-form-global-settings" [api]="globalApi"
+        summary="For the app’s settings page: admins set up the lists every form can search (address, how it searches and pages, which fields are the value and label) and test them on the spot, plus what new forms start with. It saves plain JSON; pass it to ui-form-builder and ui-form-renderer as globalSettings. Requests go through provideUiFormHttpSources, where the app adds its login and lists the servers it allows, so no keys are stored in settings.">
+        <doc-demo code="<ui-form-global-settings [(settings)]=&quot;settings&quot; [usage]=&quot;{ people: 2 }&quot; />
+<ui-form-builder [(definition)]=&quot;form&quot; [globalSettings]=&quot;settings()&quot; />
+
+providers: [provideUiFormHttpSources({
+  allowedOrigins: ['https://api.example.com'],
+  fetch: (url, { signal }) => myHttp.getJson(url, { signal }),   // adds the session or token
+})]">
+          <div class="gs-frame"><ui-form-global-settings [(settings)]="globalSettings" /></div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="JSON format" selector="UiFormDefinition" summary="What the builder saves and the renderer reads. Rules refer to element ids, never labels or keys, so renaming never breaks them." [shapes]="definitionShape">
         <doc-demo lang="json" [code]="formJson()">
           <p class="plain">The current form from the builder above is in the code panel below.</p>
@@ -125,6 +142,7 @@ const STUDENT_ID: UiFbValidatorDef = {
     .bar { display: flex; gap: var(--ui-space-2); margin-bottom: var(--ui-space-3); }
     .frame { max-width: 720px; width: 100%; text-align: left; }
     .out { max-height: 260px; overflow: auto; font-size: 12px; text-align: left; width: 100%; }
+    .gs-frame { width: 100%; text-align: left; }
     .plain { margin: 0; color: var(--ui-color-text-secondary); font-size: 14px; max-width: 70ch; text-align: left; }
     @media (max-width: 900px) { .builder-frame { --w: 100%; margin-left: 0; } }
     @media (max-width: 720px) { .builder-frame { width: auto; height: calc(100dvh - 120px); min-height: 520px; margin: 0 calc(-1 * var(--ui-space-4)); } }
@@ -197,6 +215,14 @@ export class FormBuilderPage {
     { name: 'defaultMessage', type: 'string', desc: 'Supports {label} and {paramKey}. Admins can override it per field.' },
     { name: 'validate', type: '(value, params, ctx) => result | Promise<result>', desc: 'true or null passes; false fails with the message; a string fails with that text.' },
     { name: 'debounceMs', type: 'number', default: '400 for async', desc: 'Pause after typing before an async check runs.' },
+  ];
+  protected readonly globalSettings = signal<UiFormGlobalSettings>(demoSettings());
+  protected readonly globalApi: ApiRow[] = [
+    { name: '[(settings)]', type: 'UiFormGlobalSettings', desc: '{ version: 1, sources: UiFbHttpSourceConfig[], defaults: UiFbSettings }.' },
+    { name: 'usage', type: 'Record<string, number>', default: '{}', desc: 'How many forms use each list key; deleting or re-keying a used list asks first.' },
+    { name: 'provideUiFormHttpSources', type: '{ fetch?, allowedOrigins? }', desc: 'How requests are made (add the login here) and which servers are allowed. Without it: fetch with same-site cookies, this app’s origin only.' },
+    { name: 'createDefinition(title, defaults)', type: 'function', desc: 'Start new forms with settings.defaults.' },
+    { name: 'globalSettings', type: 'input on ui-form-builder / ui-form-renderer', desc: 'Makes the lists available as data sources and searches them.' },
   ];
   protected readonly sourceApi: ApiRow[] = [
     { name: 'type / label / description', type: 'string', desc: 'type is stored in the form JSON (keep it stable); label and description are what admins see.' },

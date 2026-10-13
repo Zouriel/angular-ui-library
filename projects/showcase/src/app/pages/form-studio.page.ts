@@ -14,7 +14,9 @@ import {
   allFields,
   formatValue,
   isEmptyValue,
+  provideUiFormHttpSources,
   provideUiFormOptionSources,
+  UiFormGlobalSettingsEditor,
   provideUiFormValidators,
   type UiFbUploader,
   type UiFbValidatorDef,
@@ -47,10 +49,27 @@ function comparable(def: UiFormDefinition | null): string {
 
 @Component({
   selector: 'page-form-studio',
-  imports: [FormsModule, UiButton, UiSegmented, UiChip, UiConfirmDialog, UiModal, UiEmptyState, UiFormField, UiTextarea, UiFormBuilder, UiFormRenderer],
-  providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES)],
+  imports: [FormsModule, UiButton, UiSegmented, UiChip, UiConfirmDialog, UiModal, UiEmptyState, UiFormField, UiTextarea, UiFormBuilder, UiFormRenderer, UiFormGlobalSettingsEditor],
+  providers: [
+    provideUiFormValidators(STUDENT_ID),
+    provideUiFormOptionSources(...DEMO_SOURCES),
+    // Lists set up in Settings may only call these servers; a real app would also attach its login here.
+    provideUiFormHttpSources({ allowedOrigins: ['https://dummyjson.com'] }),
+  ],
   template: `
-    @if (current(); as f) {
+    @if (query()?.view === 'settings') {
+      <!-- The app's settings page: shared lists and new-form defaults, as an app would host them. -->
+      <div class="scroll"><div class="library">
+        <header class="lib-head">
+          <div>
+            <ui-button variant="ghost" size="sm" (click)="open(null)">← All forms</ui-button>
+            <h1>Form settings</h1>
+            <p class="lead">For every form in the app. In your app this is <code translate="no">ui-form-global-settings</code> on its settings page; the result is plain JSON you store.</p>
+          </div>
+        </header>
+        <ui-form-global-settings [settings]="store.settings()" (settingsChange)="store.saveSettings($event)" [usage]="store.usage()" />
+      </div></div>
+    } @else if (current(); as f) {
       <!-- One form open: build it, fill it in, look after its answers. -->
       <header class="bar">
         <ui-button variant="ghost" size="sm" (click)="open(null)">← All forms</ui-button>
@@ -66,7 +85,7 @@ function comparable(def: UiFormDefinition | null): string {
         @switch (tab()) {
           @case ('build') {
             @for (x of [f.id]; track x) {
-              <ui-form-builder #builder class="builder"
+              <ui-form-builder #builder class="builder" [globalSettings]="store.settings()"
                 [definition]="f.draft" (definitionChange)="store.setDraft(f.id, $event)"
                 [published]="f.published" [submissionCount]="f.responses.length">
                 <div fbActions class="fb-actions">
@@ -89,7 +108,7 @@ function comparable(def: UiFormDefinition | null): string {
                 </ui-empty-state>
               } @else {
                 @if (changed(f)) { <p class="note">You’re filling in the published version. Your newer edits show here after you publish them.</p> }
-                <ui-form-renderer [definition]="f.published" [uploader]="uploader" (submitted)="saveNew(f, $event)" />
+                <ui-form-renderer [definition]="f.published" [globalSettings]="store.settings()" [uploader]="uploader" (submitted)="saveNew(f, $event)" />
               }
             </div></div>
           }
@@ -129,7 +148,7 @@ function comparable(def: UiFormDefinition | null): string {
                       <p class="note">Saved with version {{ r.revision }}. It opens in the current version ({{ f.published.revision }}); answers the form no longer asks are kept.</p>
                     }
                     @for (x of [r.id + editing()]; track x) {
-                      <ui-form-renderer [definition]="f.published ?? f.draft" [data]="r.data" [mode]="editing() ? 'edit' : 'view'"
+                      <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [data]="r.data" [mode]="editing() ? 'edit' : 'view'"
                         [uploader]="uploader" [cancelLabel]="editing() ? 'Cancel' : ''" (cancelled)="editing.set(false)"
                         (submitted)="saveEdit(f, r, $event)" />
                     }
@@ -175,6 +194,7 @@ function comparable(def: UiFormDefinition | null): string {
           <div class="lib-actions">
             <ui-button (click)="newForm()">New form</ui-button>
             <ui-button variant="secondary" (click)="importOpen.set(true)">Import JSON</ui-button>
+            <ui-button variant="ghost" (click)="openSettings()">Settings</ui-button>
           </div>
         </header>
         @if (store.saveError()) { <p class="save-error" role="alert">{{ store.saveError() }}</p> }
@@ -324,7 +344,7 @@ export class FormStudioPage {
   protected readonly store = inject(FormStudioStore);
   private readonly router = inject(Router);
   private readonly toast = inject(UiToastService);
-  private readonly query = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map((q) => ({ form: q.get('form'), tab: q.get('tab'), answer: q.get('answer') }))));
+  protected readonly query = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map((q) => ({ form: q.get('form'), tab: q.get('tab'), answer: q.get('answer'), view: q.get('view') }))));
   protected readonly builder = viewChild(UiFormBuilder);
 
   /** The open form, tab and answer live in the URL, so reloads and the back button keep your place. */
@@ -357,6 +377,10 @@ export class FormStudioPage {
 
   /** No server here: keep the file's details in the answer so it round-trips as JSON. */
   protected readonly uploader: UiFbUploader = async (file) => ({ name: file.name, size: file.size, type: file.type });
+
+  protected openSettings(): void {
+    this.router.navigate([], { queryParams: { view: 'settings' } });
+  }
 
   protected open(id: string | null, tab: Tab = 'build'): void {
     this.editing.set(false);

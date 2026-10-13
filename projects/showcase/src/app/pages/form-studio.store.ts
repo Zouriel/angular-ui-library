@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { createDefinition, fbUid, migrateDefinition, type UiFormDefinition } from '@zouriel/ui/form-builder';
+import { allFields, createDefinition, fbUid, migrateDefinition, type UiFormDefinition, type UiFormGlobalSettings } from '@zouriel/ui/form-builder';
 import { SAMPLE_ANSWERS, SAMPLE_FORM } from './form-builder.sample';
 
 /** One saved answer set. `revision` is the published revision it was last saved against. */
@@ -22,6 +22,30 @@ export interface StudioForm {
 }
 
 const KEY = 'zui-form-studio-v1';
+const SETTINGS_KEY = 'zui-form-studio-settings-v1';
+
+/** The studio's app-wide settings to start with: one list over a real public API, so the HTTP path is live. */
+export function demoSettings(): UiFormGlobalSettings {
+  return {
+    version: 1,
+    defaults: {},
+    sources: [{
+      type: 'people',
+      label: 'People (dummyjson.com)',
+      description: 'A public test API with 208 people, searched by name.',
+      url: 'https://dummyjson.com/users/search',
+      paging: 'offset',
+      pageParam: 'skip',
+      pageSizeParam: 'limit',
+      pageSize: 20,
+      itemsPath: 'users',
+      valueField: 'id',
+      labelField: '{firstName} {lastName}',
+      descriptionField: 'email',
+      totalPath: 'total',
+    }],
+  };
+}
 
 /**
  * The showcase's stand-in for a backend: forms and answers live in this browser's
@@ -30,6 +54,17 @@ const KEY = 'zui-form-studio-v1';
 @Injectable({ providedIn: 'root' })
 export class FormStudioStore {
   readonly forms = signal<StudioForm[]>(this.read());
+  /** App-wide form settings (shared lists, new-form defaults), as an app would keep them on its server. */
+  readonly settings = signal<UiFormGlobalSettings>(this.readSettings());
+  /** How many forms use each list, for warnings in the settings screen. */
+  readonly usage = computed(() => {
+    const out: Record<string, number> = {};
+    for (const f of this.forms()) {
+      const types = new Set(allFields(f.draft).map((x) => x.source?.type).filter((t): t is string => !!t));
+      types.forEach((t) => (out[t] = (out[t] ?? 0) + 1));
+    }
+    return out;
+  });
   /** Set when the browser refused to save (storage full or blocked). */
   readonly saveError = signal('');
   readonly sorted = computed(() => [...this.forms()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
@@ -40,7 +75,7 @@ export class FormStudioStore {
 
   create(title = 'Untitled form'): StudioForm {
     const now = new Date().toISOString();
-    const form: StudioForm = { id: fbUid('form'), draft: createDefinition(title), published: null, responses: [], createdAt: now, updatedAt: now };
+    const form: StudioForm = { id: fbUid('form'), draft: createDefinition(title, this.settings().defaults), published: null, responses: [], createdAt: now, updatedAt: now };
     this.write([form, ...this.forms()]);
     return form;
   }
@@ -100,7 +135,21 @@ export class FormStudioStore {
   }
 
   /** Clears everything and puts the sample form back. */
+  saveSettings(settings: UiFormGlobalSettings): void {
+    this.settings.set(settings);
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { this.saveError.set('This browser wouldn’t save the settings.'); }
+  }
+
+  private readSettings(): UiFormGlobalSettings {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (raw) return JSON.parse(raw) as UiFormGlobalSettings;
+    } catch { /* fall through to the demo */ }
+    return demoSettings();
+  }
+
   reset(): void {
+    this.saveSettings(demoSettings());
     this.write(this.seed());
   }
 
