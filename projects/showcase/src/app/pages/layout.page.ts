@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection } from '@zouriel/ui/layout';
-import { UiButton } from '@zouriel/ui/button';
+import { Component, signal } from '@angular/core';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout } from '@zouriel/ui/layout';
+import { UiButton, UiSegmented } from '@zouriel/ui/button';
+import { UiSideNav } from '@zouriel/ui/navigation';
 import { UiDivider } from '@zouriel/ui/divider';
 import { UiBadge } from '@zouriel/ui/badge';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -8,12 +9,12 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-layout',
   imports: [
-    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton,
+    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout,
     DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Layout" title="Layout & grid"
-      lead="Structural primitives — container, grid, stack, spacer, aspect-ratio, scroll-area, splitter, divider. gap values are token steps (0–6 → --ui-space-*).">
+      lead="Structural primitives — container, grid, stack, spacer, aspect-ratio, scroll-area, splitter, sidebar layout, divider. gap values are token steps (0–6 → --ui-space-*).">
 
       <doc-section name="Grid" selector="ui-grid" [api]="gridApi"
         summary="CSS grid with a fixed column count (columns: number) or a responsive auto-fit (min: a CSS length, which overrides columns).">
@@ -99,6 +100,24 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Sidebar layout" selector="ui-sidebar-layout" [api]="sidebarApi"
+        summary="An app shell: a sidebar beside a scrolling main column, with a sticky top bar. Below breakpoint the sidebar becomes a drawer opened by a built-in menu button, over a dimmed backdrop. The breakpoint is read with matchMedia, so each app picks its own.">
+        <doc-demo code="<ui-sidebar-layout [breakpoint]=&quot;860&quot; [(open)]=&quot;navOpen&quot;>
+  <ui-side-nav sidebar [groups]=&quot;nav&quot; />
+  <h1 header>Dashboard</h1>
+  <router-outlet />
+</ui-sidebar-layout>">
+          <ui-segmented size="sm" label="Width" [options]="shellWidths" [value]="shellWidth()" (valueChange)="shellWidth.set($any($event)); shellOpen.set(false)" />
+          <div class="shell-host" [class.phone]="shellWidth() === 'phone'">
+            <ui-sidebar-layout [breakpoint]="shellWidth() === 'phone' ? 100000 : 0" sidebarWidth="190px" [(open)]="shellOpen">
+              <ui-side-nav sidebar [groups]="shellNav" [(active)]="shellActive" (navigate)="shellOpen.set(false)" />
+              <strong header>{{ shellActive() }}</strong>
+              <p class="pane-text">Page content scrolls here while the bar stays put.</p>
+            </ui-sidebar-layout>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Divider" selector="ui-divider" [api]="dividerApi"
         summary="Horizontal or vertical separator, optionally with a centered label (horizontal only).">
         <doc-demo code="<ui-divider />
@@ -116,11 +135,28 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     .ln { padding: 2px var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .panel-host { max-width: 320px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface); }
     .split-host { height: 120px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
+    .shell-host { position: relative; height: 260px; margin-top: var(--ui-space-2); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      overflow: hidden; transform: translateZ(0); /* keeps the drawer's fixed layers inside the demo */ }
+    .shell-host.phone { max-width: 390px; }
+    .shell-host ui-sidebar-layout { min-height: 100%; height: 100%; }
+    .pane-text { margin: 0; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .pane { padding: var(--ui-space-3); height: 100%; box-sizing: border-box; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })
 export class LayoutPage {
   protected readonly lines = Array.from({ length: 20 }, (_, i) => i + 1);
+  protected readonly shellWidths = [{ value: 'desktop', label: 'Desktop' }, { value: 'phone', label: 'Phone' }];
+  protected readonly shellWidth = signal<'desktop' | 'phone'>('desktop');
+  protected readonly shellOpen = signal(false);
+  protected readonly shellActive = signal('Dashboard');
+  protected readonly shellNav = [{ label: 'Workspace', items: [{ label: 'Dashboard', value: 'Dashboard' }, { label: 'Events', value: 'Events' }, { label: 'Guests', value: 'Guests' }] }];
+  protected readonly sidebarApi: ApiRow[] = [
+    { name: 'breakpoint', type: 'number', default: '860', desc: 'Widest viewport (px) that still uses the drawer.' },
+    { name: 'sidebarWidth', type: 'string', default: "'248px'", desc: 'Sidebar width, any CSS length.' },
+    { name: '[(open)]', type: 'boolean', default: 'false', desc: 'Whether the drawer is open, e.g. to close it on navigation. Ignored above the breakpoint.' },
+    { name: '[sidebar] / [header] / default', type: 'content slots', default: '', desc: 'The nav, the top-bar content and the page.' },
+    { name: '--ui-shell-pad', type: 'CSS variable', default: 'space-6 (space-4 compact)', desc: 'Padding around the page content.' },
+  ];
   protected readonly gridApi: ApiRow[] = [
     { name: 'columns', type: 'number | string', default: '12', desc: 'Column count or grid-template-columns.' },
     { name: 'min', type: 'string', default: '—', desc: 'Auto-fit min column width (overrides columns).' },

@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
-import { UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+import { UiBackdrop, UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet } from '@zouriel/ui/dialog';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -9,7 +9,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
 @Component({
   selector: 'page-overlays',
-  imports: [ UiBottomSheet,
+  imports: [ UiBottomSheet, UiBackdrop,
     UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog,
     DocPage, DocSection, DocDemo,
   ],
@@ -81,6 +81,16 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Backdrop" selector="ui-backdrop" [api]="backdropApi"
+        summary="The dimmed full-screen layer behind an overlay of your own. Render it with @if; it fades in and out with the shared backdrop animation and reports clicks so you can close what it sits behind.">
+        <doc-demo code="@if (open()) {
+  <ui-backdrop [blur]=&quot;true&quot; (backdropClick)=&quot;open.set(false)&quot; />
+  <my-panel />
+}">
+          <ui-button variant="outline" (click)="backdrop.set(true)">Show backdrop</ui-button>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi"
         summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. Non-modal unless backdrop is set. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages.">
         <doc-demo code="<ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
@@ -117,6 +127,12 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
       </div>
     </ui-bottom-sheet>
 
+    @if (backdrop()) {
+      <ui-backdrop [blur]="true" (backdropClick)="backdrop.set(false)" />
+      <div class="floating" role="dialog" aria-label="Example panel">
+        <ui-text variant="body">Click anywhere outside to close.</ui-text>
+      </div>
+    }
     <ui-modal [(open)]="modal" title="Modal title">
       <ui-text variant="body">Traps focus, locks scroll, closes on Esc / backdrop.</ui-text>
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
@@ -126,6 +142,9 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
   `,
   styles: `
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
+    .floating { position: fixed; z-index: calc(var(--ui-z-overlay) + 1); left: 50%; top: 50%; transform: translate(-50%, -50%);
+      padding: var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);
+      box-shadow: var(--ui-shadow-3); }
     .sheet-state { align-self: center; color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
     .sheet-rows { display: grid; }
     .sheet-row { padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border-subtle); }
@@ -136,6 +155,11 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
 })
 export class OverlaysPage {
   protected readonly toast = inject(UiToastService);
+  protected readonly backdrop = signal(false);
+  protected readonly backdropApi: ApiRow[] = [
+    { name: 'blur', type: 'boolean', default: 'false', desc: 'Blur what is behind it as well as dimming it.' },
+    { name: '(backdropClick)', type: 'void', default: '', desc: 'The backdrop itself was clicked.' },
+  ];
   protected readonly MENU_ITEM = MENU_ITEM;
   protected readonly TOAST = `interface UiToastOptions {
   message: string;

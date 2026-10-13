@@ -1,13 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiVirtualList } from '@zouriel/ui/behaviors';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiSwipe, UiVirtualList } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-behaviors',
   imports: [
-    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiVirtualList,
+    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiSwipe, UiVirtualList,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -27,6 +27,22 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         summary="Material-style ripple emanating from the pointer on press.">
         <doc-demo code="<button uiRipple uiRippleColor=&quot;#fff&quot;>Press</button>">
           <ui-button variant="primary" uiRipple>Ripple me</ui-button>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="swipe" selector="[uiSwipe]" [api]="swipeApi" [outputs]="swipeOut"
+        summary="Reports a sideways swipe across the host, e.g. to move between tabs or screens, and stays out of the way of everything else: vertical scrolling, pinches, the screen edges (the browser's back gesture), anything that scrolls sideways under the finger, and fields and sliders. Mark any subtree data-no-swipe to opt it out. It never calls preventDefault, so the page still scrolls under the same finger.">
+        <doc-demo code="<main uiSwipe (uiSwipeLeft)=&quot;next()&quot; (uiSwipeRight)=&quot;previous()&quot;>…</main>">
+          <div class="swipe" uiSwipe [uiSwipeMouse]="true" (uiSwipeLeft)="page.set(Math.min(page() + 1, 3))" (uiSwipeRight)="page.set(Math.max(page() - 1, 0))">
+            <strong>{{ swipePages[page()] }}</strong>
+            <span>Swipe left or right (with a mouse here too). Screen {{ page() + 1 }} of 4.</span>
+          </div>
+        </doc-demo>
+        <doc-demo lang="ts" code="import { isSwipe, resist, SWIPE_MIN, SWIPE_MAX, FLICK_SPEED } from '@zouriel/ui/behaviors';
+
+if (isSwipe(dx, dy, ms, stageWidth)) next();     // the same thresholds the viewers use
+el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at the ends">
+          <p class="plain">The thresholds live in one place, so the image viewer, the lightbox and uiSwipe all agree on what a swipe is: far enough (a fifth of the width, 32–72px) or a quick flick, and never mostly vertical.</p>
         </doc-demo>
       </doc-section>
 
@@ -73,10 +89,29 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     .inf { height: 160px; overflow: auto; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .ln { padding: 2px var(--ui-space-3); font-size: var(--ui-font-size-sm); }
     .ln.muted { color: var(--ui-color-text-muted); }
+    .swipe { display: grid; gap: var(--ui-space-1); place-content: center; text-align: center; height: 140px; border: 1px dashed var(--ui-color-border-strong);
+      border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); user-select: none; cursor: grab; }
+    .swipe strong { font-size: var(--ui-font-size-lg); }
+    .swipe span, .plain { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .plain { margin: 0; max-width: 70ch; }
   `,
 })
 export class BehaviorsPage {
   protected readonly vis = signal(false);
+  protected readonly Math = Math;
+  protected readonly page = signal(0);
+  protected readonly swipePages = ['Invitation', 'Details', 'RSVP', 'Photos'];
+  protected readonly swipeApi: ApiRow[] = [
+    { name: 'uiSwipeDisabled', type: 'boolean', default: 'false', desc: 'Stop listening, e.g. when there is nowhere to swipe to.' },
+    { name: 'uiSwipeMouse', type: 'boolean', default: 'false', desc: 'Also read mouse drags (off by default: a mouse drag is a text selection).' },
+    { name: 'isSwipe(dx, dy, ms, width)', type: 'function', default: '', desc: 'Whether a finished drag was a swipe.' },
+    { name: 'resist(dx, width, blocked)', type: 'function', default: '', desc: 'How far to follow a drag, with a rubber-band when there is nothing that way.' },
+    { name: 'SWIPE_FRACTION / SWIPE_MIN / SWIPE_MAX / FLICK_DISTANCE / FLICK_SPEED / RUBBER_BAND', type: 'number', default: '0.2 / 32 / 72 / 24 / 0.4 / 0.25', desc: 'The shared thresholds.' },
+  ];
+  protected readonly swipeOut: ApiRow[] = [
+    { name: 'uiSwipeLeft', type: 'void', default: '—', desc: 'Finger moved right-to-left (go forward).' },
+    { name: 'uiSwipeRight', type: 'void', default: '—', desc: 'Finger moved left-to-right (go back).' },
+  ];
   protected readonly big = Array.from({ length: 1000 }, (_, i) => i + 1);
   protected readonly items = signal(Array.from({ length: 20 }, (_, i) => i + 1));
   protected loadMore(): void { this.items.update((l) => [...l, ...Array.from({ length: 10 }, (_, i) => l.length + i + 1)]); }

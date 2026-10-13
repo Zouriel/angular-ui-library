@@ -1,24 +1,29 @@
 import { Component, computed, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UiTransformBox, UiSnapGuides, uiSnap, uiRotatedBounds, type UiBox, type UiGuide } from '@zouriel/ui/canvas';
+import {
+  UiPathEditor, UiTransformBox, UiSnapGuides, archContour, ellipseContour, insideContour, pathD, polygonContour, rectContour, starContour,
+  uiSnap, uiRotatedBounds, type UiBox, type UiBrushKind, type UiGuide, type UiInkStroke, type UiPathContour, type UiPathEditorMode, type UiPathItem,
+} from '@zouriel/ui/canvas';
 import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
-import { UiTokenInput, UiNumberInput, type UiTokenRun } from '@zouriel/ui/form';
+import { UiTokenInput, UiNumberInput, UiNumberLabel, type UiTokenRun } from '@zouriel/ui/form';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { ArrowExpand01Icon, DropletIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons';
 import { UiMeter } from '@zouriel/ui/progress';
 import { UiDeviceFrame } from '@zouriel/ui/media';
 import { UiResizeHandle } from '@zouriel/ui/layout';
-import { UiButton } from '@zouriel/ui/button';
+import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-design-tools',
   imports: [
-    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiMeter, UiDeviceFrame,
-    UiResizeHandle, UiButton, DocPage, DocSection, DocDemo,
+    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
+    UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Flagship" title="Design tools"
-      lead="The pieces of a visual editor: handles for placing things on a stage, a timeline for when they move, text with inline variables, and the meters and frames around them.">
+      lead="The pieces of a visual editor, as used by the invites.blog designer: handles for placing things on a stage, a vector editor for drawing and reshaping outlines, a timeline for when things move, text with inline variables, and the meters and frames around them.">
 
       <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi"
         summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre; arrows nudge. Pair with uiSnap() and ui-snap-guides for alignment guides.">
@@ -36,6 +41,46 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
             <ui-transform-box [box]="box()" [showSize]="true" label="Card"
               (transform)="onTransform($event)" (transformEnd)="onTransformEnd($event)" />
             <ui-snap-guides [guides]="guides()" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs"
+        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or wheel zooms. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
+        <doc-demo code="<ui-path-editor #editor [items]=&quot;items()&quot; [width]=&quot;400&quot; [height]=&quot;260&quot; [mode]=&quot;mode()&quot; [brush]=&quot;brush()&quot;
+  [(selectedId)]=&quot;selectedId&quot; (itemsChange)=&quot;commit($event)&quot; (stroke)=&quot;addStroke($event)&quot; />
+<ui-button (click)=&quot;editor.fit()&quot;>Fit</ui-button>">
+          <div class="pe-bar">
+            <ui-segmented size="sm" label="Mode" [options]="peModes" [value]="peMode()" (valueChange)="peMode.set($any($event))" />
+            @if (peMode() === 'draw') {
+              <ui-segmented size="sm" label="Brush" [options]="brushes" [value]="brushKind()" (valueChange)="brushKind.set($any($event))" />
+            }
+            <span class="grow"></span>
+            <ui-button size="sm" variant="outline" (click)="addShape('rect')">Rectangle</ui-button>
+            <ui-button size="sm" variant="outline" (click)="addShape('ellipse')">Ellipse</ui-button>
+            <ui-button size="sm" variant="outline" (click)="addShape('star')">Star</ui-button>
+            <ui-button size="sm" variant="ghost" [disabled]="!pathHistory().length" (click)="undoPath()">Undo</ui-button>
+            <ui-button size="sm" variant="ghost" (click)="pathEditor.fit()">Fit</ui-button>
+          </div>
+          <div class="pe-stage">
+            <ui-path-editor #pathEditor label="Shape editor demo" [items]="pathItems()" [width]="400" [height]="260" [mode]="peMode()"
+              [brush]="{ kind: brushKind(), size: brushKind() === 'marker' ? 12 : 5 }" [(selectedId)]="peSelected"
+              (itemsChange)="commitPath($event)" (stroke)="onStroke($event)" />
+          </div>
+          <p class="note">{{ peHints[peMode()] }}</p>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Path & ink helpers" selector="@zouriel/ui/canvas" [api]="pathHelpersApi"
+        summary="The pure functions under the editor, for building shapes in code, turning them into SVG and reading hand-drawn strokes. An outline is a UiPathContour { points, closed }, where each point may carry in/out curve handles; a UiPathItem is a list of them plus an optional fill and boolean op (cut, intersect, exclude).">
+        <doc-demo lang="ts" code="const star = starContour(0, 0, 100, 100, 5, 0.45);
+const d = pathD([star]);                 // SVG path data for <path [attr.d]>
+const box = pathBounds([star]);          // { x, y, w, h }
+const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null for a scribble">
+          <div class="shapes">
+            @for (s of sampleShapes; track s.name) {
+              <figure><svg viewBox="-4 -4 108 108" aria-hidden="true"><path [attr.d]="s.d" /></svg><figcaption>{{ s.name }}</figcaption></figure>
+            }
           </div>
         </doc-demo>
       </doc-section>
@@ -96,6 +141,22 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
             <ui-number-input label="α" size="sm" [steppers]="false" [min]="0" [max]="1" [step]="0.01" [precision]="2" [(ngModel)]="na" ariaLabel="Opacity" />
           </div>
         </doc-demo>
+        <doc-demo code="<ui-number-input label=&quot;Rotation&quot; suffix=&quot;°&quot; size=&quot;sm&quot; [steppers]=&quot;false&quot; [(ngModel)]=&quot;r&quot; ariaLabel=&quot;Rotation&quot;>
+  <hugeicons-icon uiNumberLabel [icon]=&quot;RotateClockwiseIcon&quot; [size]=&quot;14&quot; />
+</ui-number-input>">
+          <p class="note">An icon instead of a text label: put any element marked <code>uiNumberLabel</code> inside. It scrubs like the label does; keep <code>ariaLabel</code> set for screen readers.</p>
+          <div class="row">
+            <ui-number-input label="Rotation" suffix="°" size="sm" [steppers]="false" [min]="-180" [max]="180" [(ngModel)]="nr" ariaLabel="Rotation">
+              <hugeicons-icon uiNumberLabel [icon]="icons.rotate" [size]="14" [strokeWidth]="1.8" />
+            </ui-number-input>
+            <ui-number-input label="Scale" size="sm" [steppers]="false" [min]="0" [max]="10" [step]="0.01" [precision]="2" [(ngModel)]="ns" ariaLabel="Scale">
+              <hugeicons-icon uiNumberLabel [icon]="icons.scale" [size]="14" [strokeWidth]="1.8" />
+            </ui-number-input>
+            <ui-number-input label="Opacity" size="sm" [steppers]="false" [min]="0" [max]="1" [step]="0.01" [precision]="2" [(ngModel)]="na" ariaLabel="Opacity">
+              <hugeicons-icon uiNumberLabel [icon]="icons.opacity" [size]="14" [strokeWidth]="1.8" />
+            </ui-number-input>
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Meter" selector="ui-meter" [api]="meterApi"
@@ -135,6 +196,15 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     </doc-page>
   `,
   styles: `
+    .pe-bar { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; margin-bottom: var(--ui-space-2); }
+    .pe-bar .grow { flex: 1; }
+    .pe-stage { height: 340px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface-subtle); }
+    .pe-stage ui-path-editor { display: block; width: 100%; height: 100%; }
+    .shapes { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
+    .shapes figure { margin: 0; display: grid; justify-items: center; gap: var(--ui-space-1); }
+    .shapes svg { width: 72px; height: 72px; overflow: visible; }
+    .shapes path { fill: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); stroke: var(--ui-color-primary); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .shapes figcaption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrub-demo { display: grid; gap: 8px; max-width: 420px; }
     .scrub-demo .mono { font: var(--ui-font-size-sm) var(--ui-font-mono); color: var(--ui-color-text-muted); }
     .stage { position: relative; height: 320px; border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle);
@@ -222,8 +292,107 @@ export class DesignToolsPage {
   protected readonly labelFor = (t: string) => ({ 'event.date': 'Date', 'guest.name': 'Guest name' } as Record<string, string>)[t] ?? t;
   protected runsJson = () => JSON.stringify(this.runs);
 
+  // Path editor
+  protected readonly peModes = [
+    { value: 'objects', label: 'Objects' }, { value: 'points', label: 'Points' }, { value: 'pen', label: 'Pen' }, { value: 'draw', label: 'Draw' },
+  ];
+  protected readonly brushes = [
+    { value: 'pen', label: 'Pen' }, { value: 'pencil', label: 'Pencil' }, { value: 'marker', label: 'Marker' },
+    { value: 'calligraphy', label: 'Calligraphy' }, { value: 'eraser', label: 'Eraser' },
+  ];
+  protected readonly peHints: Record<UiPathEditorMode, string> = {
+    objects: 'Tap a shape to select it, drag to move, corner knobs scale, the top knob rotates. Shift keeps proportions; arrows nudge; ] and [ step through shapes.',
+    points: 'Drag points and handles; tap an edge to add a point; double-tap a point to switch corner/curve; Shift-click or drag a box to select several.',
+    pen: 'Tap to place corners, drag to pull out a curve, tap the first point to close the shape (Enter finishes an open line).',
+    draw: 'Paint with the brush (pens use pressure). Hold still at the end of a stroke to snap it to a shape. The eraser removes shapes it touches.',
+  };
+  protected readonly peMode = signal<UiPathEditorMode>('objects');
+  protected readonly brushKind = signal<UiBrushKind>('pen');
+  protected readonly peSelected = signal<string | null>(null);
+  private shapeSeq = 0;
+  protected readonly pathItems = signal<UiPathItem[]>([
+    { id: 'arch', name: 'Arch', contours: [archContour(40, 40, 120, 180)] },
+    { id: 'star', name: 'Star', contours: [starContour(230, 60, 130, 130)] },
+  ]);
+  protected readonly pathHistory = signal<UiPathItem[][]>([]);
+
+  protected commitPath(items: UiPathItem[]): void {
+    this.pathHistory.update((h) => [...h.slice(-49), this.pathItems()]);
+    this.pathItems.set(items);
+  }
+  protected undoPath(): void {
+    const h = this.pathHistory();
+    if (!h.length) return;
+    this.pathItems.set(h[h.length - 1]);
+    this.pathHistory.set(h.slice(0, -1));
+  }
+  protected addShape(kind: 'rect' | 'ellipse' | 'star'): void {
+    const n = ++this.shapeSeq;
+    const at = 30 + ((n * 37) % 200);
+    const contour = kind === 'rect' ? rectContour(at, 70, 110, 80, 12) : kind === 'ellipse' ? ellipseContour(at + 55, 120, 55, 40) : starContour(at, 60, 110, 110);
+    const id = `${kind}-${n}`;
+    this.commitPath([...this.pathItems(), { id, name: kind, contours: [contour] }]);
+    this.peSelected.set(id);
+  }
+  /** Draw mode reports strokes; the host decides what they become. Here: a snapped shape becomes that
+   *  shape, a free stroke becomes its painted area, and the eraser removes shapes it passes over. */
+  protected onStroke(s: UiInkStroke): void {
+    if (s.brush.kind === 'eraser') {
+      const hit = (item: UiPathItem) => s.samples.some((p) => item.contours.some((c) => c.closed && insideContour(c, p)));
+      const kept = this.pathItems().filter((item) => !hit(item));
+      if (kept.length !== this.pathItems().length) this.commitPath(kept);
+      return;
+    }
+    const id = `ink-${++this.shapeSeq}`;
+    let contours: UiPathContour[];
+    if (s.shape?.kind === 'ellipse') contours = [ellipseContour(s.shape.cx, s.shape.cy, s.shape.rx, s.shape.ry)];
+    else if (s.shape?.kind === 'polygon') contours = [{ closed: true, points: s.shape.points.map((p) => ({ x: p.x, y: p.y })) }];
+    else contours = s.pieces.map((piece) => ({ closed: true, points: piece.map((p) => ({ x: p.x, y: p.y })) }));
+    this.commitPath([...this.pathItems(), { id, name: 'Drawing', contours }]);
+  }
+  protected readonly sampleShapes = [
+    { name: 'rectContour', d: pathD([rectContour(0, 10, 100, 80, 14)]) },
+    { name: 'ellipseContour', d: pathD([ellipseContour(50, 50, 50, 36)]) },
+    { name: 'polygonContour', d: pathD([polygonContour(0, 0, 100, 100, 6)]) },
+    { name: 'starContour', d: pathD([starContour(0, 0, 100, 100, 5, 0.45)]) },
+    { name: 'archContour', d: pathD([archContour(15, 0, 70, 100)]) },
+  ];
+  protected readonly pathApi: ApiRow[] = [
+    { name: 'items', type: 'UiPathItem[]', default: 'required', desc: '{ id, contours, fill?, op?, name? }. Never mutated.' },
+    { name: 'width / height', type: 'number', default: '100 / 100', desc: 'The artboard, in editor units; the view fits it on first layout and on fit().' },
+    { name: 'mode', type: "'objects' | 'points' | 'pen' | 'draw'", default: "'objects'", desc: 'What a press does.' },
+    { name: '[(selectedId)] / [(selectedPoint)] / [(selectedPoints)]', type: 'model', default: 'null / null / []', desc: 'The selected item, the point being worked on, and every selected point.' },
+    { name: 'brush', type: 'UiBrush', default: "{ kind: 'pen', size: 4 }", desc: 'pen, marker, pencil, brush, calligraphy or eraser, and its width.' },
+    { name: 'fill', type: 'string | null', default: 'null', desc: 'Paint for ink as it goes down and for items the pen makes.' },
+    { name: 'fingerDraws', type: "boolean | 'auto'", default: "'auto'", desc: 'After a pen is seen, fingers pan instead of drawing (palm rejection).' },
+    { name: 'snapToShape / freeHandles / lockAspect', type: 'boolean', default: 'true / false / false', desc: 'Hold-to-snap strokes; handles move independently (Alt for touch); keep proportions when scaling.' },
+    { name: 'showArtboard / label', type: 'boolean / string', default: "true / 'Shape editor'", desc: 'Draw the artboard; accessible name.' },
+    { name: 'fit() / zoomBy(f) / selectAllPoints()', type: 'methods', default: '', desc: 'View and selection helpers.' },
+    { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'methods', default: '', desc: 'Pen-mode controls for a toolbar.' },
+  ];
+  protected readonly pathOutputs: ApiRow[] = [
+    { name: 'itemsChange', type: 'UiPathItem[]', desc: 'A finished edit: the whole list, for the host to keep (and undo).' },
+    { name: 'stroke', type: 'UiInkStroke', desc: 'A finished draw-mode stroke: samples, brush, painted pieces, and the snapped shape if any.' },
+    { name: 'pointTap', type: 'UiPointRef', desc: 'A point was tapped (not dragged), e.g. to pick ends to join.' },
+    { name: 'penDetected', type: 'void', desc: 'A pen touched the surface for the first time.' },
+  ];
+  protected readonly pathHelpersApi: ApiRow[] = [
+    { name: 'rectContour / ellipseContour / polygonContour / starContour / archContour', type: '(x, y, w, h, …) => UiPathContour', default: '', desc: 'Ready-made outlines (rect takes a corner radius; star spikes and inner ratio).' },
+    { name: 'pathD(contours) / segmentPathD(contour, i)', type: 'string', default: '', desc: 'SVG path data for a whole item, or one segment.' },
+    { name: 'pathBounds / flattenContour / contourArea / insideContour', type: 'measure', default: '', desc: 'Bounding box, a polyline approximation, signed area, point-in-outline.' },
+    { name: 'translateContours / scaleContours / rotateContours / mapContours', type: 'transform', default: '', desc: 'Return moved copies; inputs are never mutated.' },
+    { name: 'insertPoint / deletePoint(s) / movePoint(s) / moveHandle / pullHandles', type: 'edit points', default: '', desc: 'What the editor does on each gesture, available to toolbars and keyboard shortcuts.' },
+    { name: 'toggleSmooth / toggleClosed / breakAt / joinEnds / reverseContour / orientContours', type: 'edit outlines', default: '', desc: 'Corner/curve, open/close, cut and join, direction for fill rules.' },
+    { name: 'nearestOnPath / pointOnSegment / segmentCount / allPoints', type: 'query', default: '', desc: 'Hit-testing and walking an outline.' },
+    { name: 'recognizeShape(samples)', type: 'UiInkShape | null', default: '', desc: 'Reads a stroke as a line, ellipse or polygon (rectangle, triangle…), or null.' },
+    { name: 'inkArea / inkD / inkRadii / shapeSamples / thinSamples', type: 'ink', default: '', desc: 'Turn pressure samples into a painted outline, and a recognised shape back into samples.' },
+    { name: 'brushSteadiness / brushUsesPressure / simulatedPressure', type: 'brush', default: '', desc: 'How each brush smooths and responds; pressure from speed for a mouse or finger.' },
+  ];
+  protected readonly icons = { rotate: RotateClockwiseIcon, scale: ArrowExpand01Icon, opacity: DropletIcon };
+
   // Number
   protected nx = 40;
+  protected ns = 1;
   protected nr = 0;
   protected na = 1;
 
@@ -294,6 +463,7 @@ export class DesignToolsPage {
     { name: 'suffix', type: 'string', default: "''", desc: 'Unit after the number.' },
     { name: 'precision', type: 'number | null', default: 'null', desc: 'Decimal places kept.' },
     { name: 'steppers', type: 'boolean', default: 'true', desc: 'Show ▲▼.' },
+    { name: '[uiNumberLabel]', type: 'directive', default: '', desc: 'Mark a projected icon to show (and scrub) in place of the text label.' },
   ];
   protected readonly meterApi: ApiRow[] = [
     { name: 'value / max', type: 'number', default: '0 / 100', desc: 'The measurement and the scale.' },
