@@ -39,12 +39,13 @@ export interface UiTokenRun {
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.6; white-space: pre-wrap;
       overflow-wrap: anywhere; outline: none; cursor: text;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    ui-token-input .editor.single { white-space: nowrap; overflow: hidden; }
-    ui-token-input .editor:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    ui-token-input .editor[contenteditable="false"] { opacity: .55; cursor: not-allowed; }
+    /* Single-line: one control height, like ui-input, so it lines up in a row of fields. */
+    ui-token-input .editor.single { white-space: nowrap; overflow: hidden; height: var(--ui-size-md); padding-block: 0; line-height: calc(var(--ui-size-md) - 2px); }
+    ui-token-input .editor:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    ui-token-input .editor[contenteditable="false"] { opacity: .5; cursor: not-allowed; }
     ui-token-input .editor.no-radius { border-radius: 0; }
     ui-token-input .editor.empty::before { content: attr(data-placeholder); color: var(--ui-color-text-muted); pointer-events: none; position: absolute; }
-    ui-token-input .ui-token { display: inline-block; margin: 0 1px; padding: 0 7px; border-radius: var(--ui-radius-pill); white-space: nowrap;
+    ui-token-input .ui-token { display: inline-block; margin: 0 1px; padding: 0 var(--ui-space-2); border-radius: var(--ui-radius-pill); white-space: nowrap;
       background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); color: var(--ui-color-text);
       border: 1px solid color-mix(in srgb, var(--ui-color-primary) 45%, transparent); font-size: .86em; line-height: 1.55;
       vertical-align: baseline; cursor: default; user-select: all; }

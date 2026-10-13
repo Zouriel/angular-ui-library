@@ -26,7 +26,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-1);
       overflow: hidden;
-      font-family: var(--ui-font-default);
+      font-family: var(--ui-font-default); line-height: 1.35;
     }
     /* Opt-in: for cards that are themselves the clickable surface (a template/listing card
        wrapped in a link, say) — lifts the whole card on hover so it reads as a target, not
@@ -37,8 +37,13 @@ import { UI_CONFIG } from '@zouriel/ui';
                   box-shadow var(--ui-motion-base) var(--ui-ease-standard),
                   border-color var(--ui-motion-base) var(--ui-ease-standard);
     }
-    .ui-card.interactive:hover { transform: translateY(-3px); box-shadow: var(--ui-shadow-2); border-color: var(--ui-color-primary); }
+    .ui-card.interactive:hover { transform: translateY(-2px); box-shadow: var(--ui-shadow-2); border-color: var(--ui-color-border-strong); }
     .ui-card.interactive:active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
+    /* The card is the target, so keyboard focus on the link/button inside rings the whole card. */
+    .ui-card.interactive:has(:focus-visible) { box-shadow: var(--ui-focus-ring); }
+    @media (prefers-reduced-motion: reduce) {
+      .ui-card.interactive:hover, .ui-card.interactive:active { transform: none; }
+    }
     /* Body takes the slack so a [card-footer] (e.g. an actions row) bottom-aligns across a grid of cards. */
     .bd { flex: 1 1 auto; }
     .ui-card.no-radius { border-radius: 0; }
@@ -50,7 +55,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     .hd, .bd, .ft { padding: var(--ui-space-3) var(--ui-space-4); }
     .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-space-2) var(--ui-space-3); }
     .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-space-6) var(--ui-space-8); }
-    .hd { border-bottom: 1px solid var(--ui-color-border); font-weight: 600; }
+    .hd { border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: var(--ui-font-size-md); }
     .ft { border-top: 1px solid var(--ui-color-border); }
     /* Collapse empty header/footer slots */
     .hd:empty, .ft:empty { display: none; }

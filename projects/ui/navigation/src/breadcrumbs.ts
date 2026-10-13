@@ -31,10 +31,11 @@ export interface UiBreadcrumb {
     :host { display: block; }
     ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-1); margin: 0; padding: 0; list-style: none; }
     li { display: inline-flex; align-items: center; gap: var(--ui-space-1); }
-    .crumb { font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; }
+    .crumb { display: inline-block; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+      font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text-muted); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; }
     a.crumb:hover, .crumb.link:hover { color: var(--ui-color-text); text-decoration: underline; }
     .crumb.current { color: var(--ui-color-text); font-weight: 500; cursor: default; }
-    .crumb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 3px; }
+    .crumb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .sep { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })

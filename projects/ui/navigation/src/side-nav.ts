@@ -73,7 +73,7 @@ export interface UiSideNavGroup {
   `,
   styles: `
     :host { display: block; }
-    .ui-side-nav { display: flex; flex-direction: column; gap: var(--ui-space-4); font-family: var(--ui-font-default); }
+    .ui-side-nav { display: flex; flex-direction: column; gap: var(--ui-space-4); font-family: var(--ui-font-default); line-height: 1.35; }
     .group { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .group-label { font-family: var(--ui-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
       color: var(--ui-color-text-muted); padding: 0 var(--ui-space-2); margin-bottom: 2px; }
@@ -84,20 +84,21 @@ export interface UiSideNavGroup {
       box-sizing: border-box;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover:not(:disabled):not([aria-disabled='true']) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
-    .item.active { background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); color: var(--ui-color-text); font-weight: 600; }
+    .item.active { background: var(--ui-color-selected); color: var(--ui-color-text); font-weight: 600; }
     .item.active:hover:not(:disabled):not([aria-disabled='true']) {
       /* Redeclared, not inherited — .item:hover:not(:disabled) above has higher specificity
          (one class + two pseudo-classes) than .item.active (two classes), so without this the
          generic hover background wins and the active highlight disappears on hover. */
-      background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent);
+      background: var(--ui-color-selected);
     }
-    .item.active::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px; border-radius: 2px; background: var(--ui-color-primary); }
+    .item.active::before { content: ''; position: absolute; left: 0; top: var(--ui-space-1); bottom: var(--ui-space-1); width: 2px; border-radius: var(--ui-radius-pill); background: var(--ui-color-primary); }
     .item:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .item:disabled, .item[aria-disabled='true'] { opacity: 0.5; cursor: not-allowed; }
+    .item:disabled, .item[aria-disabled='true'] { opacity: .5; cursor: not-allowed; }
+    @media (pointer: coarse) { .item { min-height: var(--ui-size-touch); } }
     .icon { width: 18px; text-align: center; }
-    .label { flex: 1; min-width: 0; }
-    .badge { font-size: 10px; font-family: var(--ui-font-mono); padding: 1px 6px; border-radius: 999px;
-      background: var(--ui-color-surface-raised); color: var(--ui-color-text-muted); }
+    .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge { flex: none; font-size: 11px; font-weight: 600; line-height: 16px; padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill);
+      font-variant-numeric: tabular-nums; background: var(--ui-color-surface-raised); color: var(--ui-color-text-muted); }
   `,
 })
 export class UiSideNav {

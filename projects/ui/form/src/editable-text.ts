@@ -25,16 +25,18 @@ import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
     :host { display: inline-block; }
     .view { display: inline-flex; align-items: center; gap: var(--ui-space-2); background: none; border: 1px solid transparent;
       border-radius: var(--ui-radius); padding: 2px var(--ui-space-2); cursor: text; color: var(--ui-color-text);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); }
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; }
     .view:hover:not(:disabled) { border-color: var(--ui-color-border); }
     .view:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .view:disabled { opacity: 0.55; cursor: not-allowed; }
+    .view:disabled { opacity: .5; cursor: not-allowed; }
     .placeholder { color: var(--ui-color-text-muted); }
     .pencil { opacity: 0; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
-    .view:hover .pencil { opacity: 1; }
+    .view:hover .pencil, .view:focus-visible .pencil { opacity: 1; }
+    /* Touch has no hover, so the edit affordance is always shown there. */
+    @media (hover: none) { .pencil { opacity: 1; } }
     .edit { padding: 2px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-color-primary);
-      border-radius: var(--ui-radius); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
-      outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+      border-radius: var(--ui-radius); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35;
+      outline: none; box-shadow: var(--ui-focus-ring); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiEditableText), multi: true }],
 })

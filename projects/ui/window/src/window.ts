@@ -33,9 +33,9 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
       <header class="titlebar" (pointerdown)="startDrag($event)" (dblclick)="toggleMax()">
         <span class="title">{{ title() }}</span>
         <div class="chrome">
-          <button type="button" class="ctl" aria-label="Minimize" (pointerdown)="$event.stopPropagation()" (click)="minimize()">—</button>
-          <button type="button" class="ctl" [attr.aria-label]="maximized() ? 'Restore' : 'Maximize'" (pointerdown)="$event.stopPropagation()" (click)="toggleMax()">{{ maximized() ? '❐' : '▢' }}</button>
-          <button type="button" class="ctl close" aria-label="Close" (pointerdown)="$event.stopPropagation()" (click)="close()">✕</button>
+          <button type="button" class="ctl" aria-label="Minimize" (pointerdown)="$event.stopPropagation()" (click)="minimize()"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 8h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          <button type="button" class="ctl" [attr.aria-label]="maximized() ? 'Restore' : 'Maximize'" (pointerdown)="$event.stopPropagation()" (click)="toggleMax()">@if (maximized()) {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 6.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1zM6 3.5h5.5a1 1 0 0 1 1 1V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>} @else {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>}</button>
+          <button type="button" class="ctl close" aria-label="Close" (pointerdown)="$event.stopPropagation()" (click)="close()"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
       </header>
       @if (!minimized()) {
@@ -55,26 +55,33 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
       min-width: 220px; min-height: 120px;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg);
-      box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default);
+      box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default); line-height: 1.35;
       overflow: hidden;
     }
     .ui-window.no-radius { border-radius: 0; }
     .ui-window.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .ui-window.minimized { min-height: 0; height: auto; }
     .titlebar { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3);
-      height: 34px; padding: 0 var(--ui-space-2) 0 var(--ui-space-3); flex: none;
+      height: calc(var(--ui-size-sm) + var(--ui-space-2)); box-sizing: border-box; padding: 0 var(--ui-space-1) 0 var(--ui-space-3); flex: none;
       background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border);
       cursor: grab; user-select: none; touch-action: none; }
     .titlebar:active { cursor: grabbing; }
-    .title { font-size: var(--ui-font-size-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .chrome { display: flex; gap: 2px; }
-    .ctl { width: 26px; height: 24px; border: none; background: transparent; color: var(--ui-color-text-muted);
-      border-radius: var(--ui-radius-xs); cursor: pointer; font-size: 12px; line-height: 1;
+    .title { min-width: 0; font-size: var(--ui-font-size-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chrome { display: flex; flex: none; gap: 2px; }
+    .ctl { position: relative; display: inline-grid; place-items: center; width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0;
+      border: none; background: transparent; color: var(--ui-color-text-muted);
+      border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; line-height: 1;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .ctl:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .ctl:active { transform: scale(var(--ui-scale-press)); }
     .ctl.close:hover { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); }
     .ctl:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    @media (pointer: coarse) {
+      .ctl::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2) -1px; }
+      .rz-n, .rz-s { height: 16px; } .rz-n { top: -8px; } .rz-s { bottom: -8px; }
+      .rz-e, .rz-w { width: 16px; } .rz-e { right: -8px; } .rz-w { left: -8px; }
+      .rz-ne, .rz-nw, .rz-se, .rz-sw { width: 24px; height: 24px; }
+    }
     .body { flex: 1; overflow: auto; padding: var(--ui-space-4); }
     .rz { position: absolute; z-index: 3; touch-action: none; }
     .rz-n { top: -3px; left: 6px; right: 6px; height: 7px; cursor: ns-resize; }
@@ -85,10 +92,11 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
     .rz-nw { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
     .rz-se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
     .rz-sw { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
-    .snap-preview { position: fixed; z-index: 1099; border-radius: var(--ui-radius-lg);
+    .snap-preview { position: fixed; z-index: calc(var(--ui-z-window) - 1); border-radius: var(--ui-radius-lg);
       background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent);
       border: 2px solid var(--ui-color-primary); pointer-events: none;
-      transition: all var(--ui-motion-fast) var(--ui-ease-standard); }
+      transition: left var(--ui-motion-fast) var(--ui-ease-standard), top var(--ui-motion-fast) var(--ui-ease-standard),
+                  width var(--ui-motion-fast) var(--ui-ease-standard), height var(--ui-motion-fast) var(--ui-ease-standard); }
   `,
 })
 export class UiWindow implements OnInit, OnDestroy {

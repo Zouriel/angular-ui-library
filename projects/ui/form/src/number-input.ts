@@ -44,28 +44,36 @@ export class UiNumberLabel {}
   `,
   styles: `
     :host { display: block; }
-    .wrap { position: relative; display: flex; align-items: stretch;
+    .wrap { position: relative; display: flex; align-items: stretch; box-sizing: border-box; height: var(--ui-size-md);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .wrap.no-radius { border-radius: 0; }
     .wrap.invalid { border-color: var(--ui-color-danger); }
-    .wrap.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .wrap.invalid:focus-within { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
+    .wrap:has(.ui-number:disabled) { opacity: .5; cursor: not-allowed; }
+    .wrap:has(.ui-number:disabled) .scrub, .ui-number:disabled { cursor: not-allowed; }
     .ui-number {
       flex: 1; min-width: 0; appearance: textfield; -moz-appearance: textfield;
-      height: var(--ui-size-md); padding: 0 var(--ui-space-3); border: none; background: transparent;
+      box-sizing: border-box; height: 100%; padding: 0 var(--ui-space-3); border: none; background: transparent;
       color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
+      font-variant-numeric: tabular-nums;
     }
     .ui-number::-webkit-outer-spin-button, .ui-number::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    .wrap[data-size="sm"] .ui-number { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
-    .wrap[data-size="lg"] .ui-number { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
+    .ui-number::placeholder { color: var(--ui-color-text-muted); }
+    .wrap[data-size="sm"] { height: var(--ui-size-sm); }
+    .wrap[data-size="sm"] .ui-number { font-size: var(--ui-font-size-sm); }
+    .wrap[data-size="lg"] { height: var(--ui-size-lg); }
+    .wrap[data-size="lg"] .ui-number { font-size: var(--ui-font-size-lg); }
     .scrub { display: flex; align-items: center; padding: 0 0 0 var(--ui-space-2); color: var(--ui-color-text-muted); cursor: ew-resize;
       font-size: var(--ui-font-size-sm); font-weight: 500; user-select: none; touch-action: none; min-width: 1.2em; }
     .scrub:hover, .scrub.active { color: var(--ui-color-primary); }
     .suffix { display: flex; align-items: center; padding-right: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="sm"] .ui-number { padding: 0 var(--ui-space-2); }
     .steppers { display: flex; flex-direction: column; border-left: 1px solid var(--ui-color-border); }
-    .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; }
+    .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; font: inherit;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .steppers button:disabled { cursor: not-allowed; }
     .steppers button:first-child { border-bottom: 1px solid var(--ui-color-border); }
     .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .steppers button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }

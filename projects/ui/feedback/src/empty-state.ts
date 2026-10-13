@@ -16,12 +16,12 @@ import { Component, input } from '@angular/core';
     .ui-empty {
       display: flex; flex-direction: column; align-items: center; text-align: center;
       gap: var(--ui-space-2); padding: var(--ui-space-6) var(--ui-space-4);
-      font-family: var(--ui-font-default);
+      font-family: var(--ui-font-default); line-height: 1.35;
     }
     .icon { font-size: 32px; line-height: 1; color: var(--ui-color-text-muted); }
     .icon:empty { display: none; }
     .title { font-size: var(--ui-font-size-md); font-weight: 600; color: var(--ui-color-text); }
-    .desc { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 360px; }
+    .desc { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 360px; text-wrap: pretty; }
     .actions { display: flex; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     /* A projected wrapper would otherwise be one flex child and swallow the gap — see modal's .ft. */
     .actions ::ng-deep > div[empty-actions], .actions ::ng-deep > span[empty-actions] {

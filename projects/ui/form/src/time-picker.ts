@@ -20,18 +20,20 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .ui-time { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-3);
+    .ui-time { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-3); font-variant-numeric: tabular-nums;
       background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ui-time:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .ui-time:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-time:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-time:disabled { opacity: .5; cursor: not-allowed; }
     .ui-time.no-radius { border-radius: 0; }
     .ui-time[data-size="sm"] { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .ui-time[data-size="lg"] { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     .ui-time[aria-invalid="true"] { border-color: var(--ui-color-danger); }
-    .ui-time[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
-    .ui-time::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+    .ui-time[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
+    /* The theme's color-scheme already picks a light or dark indicator; just quiet it. */
+    .ui-time::-webkit-calendar-picker-indicator { opacity: .6; cursor: pointer; transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); }
+    .ui-time::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiTimePicker), multi: true }],
 })

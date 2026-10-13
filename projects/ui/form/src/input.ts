@@ -35,13 +35,13 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-input::placeholder { color: var(--ui-color-text-muted); }
-    .ui-input:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .ui-input:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-input:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-input:disabled { opacity: .5; cursor: not-allowed; }
     .ui-input.no-radius { border-radius: 0; }
     .ui-input[data-size="sm"] { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .ui-input[data-size="lg"] { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     .ui-input[aria-invalid="true"] { border-color: var(--ui-color-danger); }
-    .ui-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .ui-input[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiInput), multi: true }],
 })

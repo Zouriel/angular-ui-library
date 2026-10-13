@@ -25,13 +25,13 @@ import { UI_CONFIG } from '@zouriel/ui';
       height: 52px; padding: 0 var(--ui-space-4);
       background: var(--ui-color-surface);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      font-family: var(--ui-font-default);
+      font-family: var(--ui-font-default); line-height: 1.35;
     }
     .ui-navbar.no-radius { border-radius: 0; }
     .ui-navbar.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     :host(.ui-navbar-sticky) { position: sticky; top: 0; z-index: var(--ui-z-docked); }
     .brand { font-weight: 700; color: var(--ui-color-text); letter-spacing: var(--ui-tracking-tight); display: flex; align-items: center; gap: var(--ui-space-2); }
-    .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; }
+    .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; min-width: 0; }
     .actions { display: flex; align-items: center; gap: var(--ui-space-2); }
     /* A projected wrapper would otherwise be one flex child and swallow the gap — see modal's .ft. */
     .actions ::ng-deep > div[navbar-actions], .actions ::ng-deep > span[navbar-actions] {
@@ -48,7 +48,9 @@ import { UI_CONFIG } from '@zouriel/ui';
       .brand { flex: 1 0 auto; }
       /* nowrap so a two-word link scrolls out of view rather than stacking into a tall column and
          dragging the whole bar down with it. */
-      .links { order: 1; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+      /* Padding/negative-margin pair: room for focus rings the scroller would otherwise clip, at no extra height. */
+      .links { order: 1; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; white-space: nowrap;
+        padding: var(--ui-space-1); margin: calc(var(--ui-space-1) * -1); }
       .links::-webkit-scrollbar { display: none; }
       .actions { flex: 0 0 auto; }
     }

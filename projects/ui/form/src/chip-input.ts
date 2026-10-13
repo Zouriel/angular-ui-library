@@ -8,7 +8,7 @@ import { UI_CONFIG } from '@zouriel/ui';
   template: `
     <div class="ci" [class.no-radius]="!radius()" [class.invalid]="invalid()" (click)="focusInput()">
       @for (chip of chips(); track $index) {
-        <span class="chip">{{ chip }}<button type="button" class="x" tabindex="-1" aria-label="Remove" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
+        <span class="chip"><span class="chip-text" [attr.title]="chip">{{ chip }}</span><button type="button" class="x" tabindex="-1" [attr.aria-label]="'Remove ' + chip" [disabled]="disabled()" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
       }
       <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()"
              [attr.aria-invalid]="invalid() || null"
@@ -17,24 +17,30 @@ import { UI_CONFIG } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .ci { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; min-height: var(--ui-size-md);
-      padding: 3px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
+    .ci { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; box-sizing: border-box; min-height: var(--ui-size-md);
+      padding: 2px var(--ui-space-1); line-height: 1.35; background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); cursor: text;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ci:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .ci:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ci.no-radius { border-radius: 0; }
     .ci.invalid { border-color: var(--ui-color-danger); }
-    .ci.invalid:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
-    .ci:has(.entry:disabled) { opacity: 0.55; cursor: not-allowed; }
-    .chip { display: inline-flex; align-items: center; gap: 2px; height: 22px; padding: 0 var(--ui-space-2);
-      background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); border: 1px solid var(--ui-color-primary);
+    .ci.invalid:focus-within { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
+    .ci:has(.entry:disabled) { opacity: .5; cursor: not-allowed; }
+    .chip { display: inline-flex; align-items: center; gap: var(--ui-space-1); max-width: 100%; min-width: 0; box-sizing: border-box; height: 22px;
+      padding: 0 var(--ui-space-1) 0 var(--ui-space-2);
+      background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 45%, transparent);
       border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
-    .x { border: none; background: none; color: inherit; cursor: pointer; font-size: 13px; line-height: 1; padding: 0;
-      border-radius: var(--ui-radius-xs); transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); opacity: 0.7; }
-    .x:hover { opacity: 1; }
+    .chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .x { display: grid; place-items: center; flex: none; width: 16px; height: 16px; border: none; background: none; color: inherit; cursor: pointer;
+      font: inherit; padding: 0; border-radius: var(--ui-radius-pill); opacity: .7;
+      transition: opacity var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .x:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, currentColor 14%, transparent); }
+    .x:disabled { cursor: not-allowed; }
     .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
-    .entry { flex: 1; min-width: 80px; border: none; background: transparent; outline: none; color: var(--ui-color-text);
+    .entry { flex: 1; min-width: 80px; box-sizing: border-box; padding: 0 var(--ui-space-2); border: none; background: transparent; outline: none; color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); height: 22px; }
+    .entry::placeholder { color: var(--ui-color-text-muted); }
+    .entry:disabled { cursor: not-allowed; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiChipInput), multi: true }],
 })
@@ -69,6 +75,7 @@ export class UiChipInput implements ControlValueAccessor {
   }
   protected removeAt(i: number, e: Event): void {
     e.stopPropagation();
+    if (this.disabled()) return;
     this.chips.update((c) => c.filter((_, idx) => idx !== i));
     this.onChange(this.chips());
   }

@@ -7,7 +7,15 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
   selector: 'ui-result',
   template: `
     <div class="ui-result">
-      <div class="glyph" [attr.data-status]="status()" aria-hidden="true">{{ glyph[status()] }}</div>
+      <div class="glyph" [attr.data-status]="status()" aria-hidden="true">
+        @switch (status()) {
+          @case ('success') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
+          @case ('error') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
+          @case ('warning') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v10M12 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
+          @case ('info') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 10v9M12 5h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
+          @default { {{ glyph[status()] }} }
+        }
+      </div>
       <div class="title">{{ title() }}</div>
       @if (subtitle()) { <div class="subtitle">{{ subtitle() }}</div> }
       <div class="actions"><ng-content /></div>
@@ -17,7 +25,7 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
     :host { display: block; }
     .ui-result {
       display: flex; flex-direction: column; align-items: center; text-align: center;
-      gap: var(--ui-space-2); padding: var(--ui-space-6); font-family: var(--ui-font-default);
+      gap: var(--ui-space-2); padding: var(--ui-space-6); font-family: var(--ui-font-default); line-height: 1.35;
     }
     .glyph {
       display: flex; align-items: center; justify-content: center;
@@ -27,10 +35,13 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
     .glyph[data-status="success"] { color: var(--ui-color-success); }
     .glyph[data-status="error"], .glyph[data-status="500"] { color: var(--ui-color-danger); }
     .glyph[data-status="warning"] { color: var(--ui-color-warning); }
-    .glyph[data-status="info"], .glyph[data-status="404"] { color: var(--ui-color-primary); }
-    .title { font-size: var(--ui-font-size-lg); font-weight: 600; color: var(--ui-color-text); margin-top: var(--ui-space-2); }
+    .glyph[data-status="info"], .glyph[data-status="404"] { color: var(--ui-color-info); }
+    .title { font-size: var(--ui-font-size-lg); font-weight: 600; color: var(--ui-color-text); margin-top: var(--ui-space-2); text-wrap: balance; }
     .subtitle { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 420px; }
-    .actions { display: flex; gap: var(--ui-space-2); margin-top: var(--ui-space-3); }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); margin-top: var(--ui-space-3); }
+    /* A projected wrapper would otherwise be one flex child and swallow the gap — see modal's .ft. */
+    .actions ::ng-deep > div, .actions ::ng-deep > span {
+      display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); }
     .actions:empty { display: none; }
   `,
 })

@@ -30,12 +30,13 @@ const NAMES = [['Top left', 'Top', 'Top right'], ['Left', 'Centre', 'Right'], ['
     .grid { display: grid; grid-template-columns: repeat(3, var(--ui-size-sm, 32px)); grid-template-rows: repeat(3, var(--ui-size-sm, 32px));
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); }
     .dot { display: flex; align-items: center; justify-content: center; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: var(--ui-radius); }
-    .dot span { width: 8px; height: 8px; border-radius: 50%; background: var(--ui-color-text-muted); opacity: 0.45;
+    .dot span { width: 8px; height: 8px; border-radius: 50%; background: var(--ui-color-text-muted);
       transition: transform var(--ui-motion-fast) var(--ui-ease-standard), opacity var(--ui-motion-fast) var(--ui-ease-standard); }
-    .dot:hover span { opacity: 0.9; }
-    .dot.on span { width: 12px; height: 12px; background: var(--ui-color-primary); opacity: 1; }
+    .dot:hover:not(:disabled) span { background: var(--ui-color-text); }
+    .dot.on span { transform: scale(1.5); background: var(--ui-color-primary); opacity: 1; }
     .dot:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .dot:disabled { cursor: not-allowed; }
+    .grid:has(.dot:disabled) { opacity: .5; }
   `,
 })
 export class UiAnchorPicker implements ControlValueAccessor {

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, effect, input, model, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, input, model, signal } from '@angular/core';
 
 export interface UiCarouselSlide {
   image: string;
@@ -31,7 +31,7 @@ const INTENT_PX = 8;
     '(touchcancel)': 'onTouchEnd($event)',
   },
   template: `
-    <div class="cz" (pointerenter)="paused.set(true)" (pointerleave)="paused.set(false)">
+    <div class="cz" (pointerenter)="hovered.set(true)" (pointerleave)="hovered.set(false)" (focusin)="focused.set(true)" (focusout)="onFocusOut($event)">
       <div
         class="track"
         [class.dragging]="drag() !== null"
@@ -47,8 +47,8 @@ const INTENT_PX = 8;
       <ng-content />
       @if (slides().length > 1) {
         @if (arrows()) {
-          <button type="button" class="arrow prev" aria-label="Previous slide" (click)="prev()">‹</button>
-          <button type="button" class="arrow next" aria-label="Next slide" (click)="next()">›</button>
+          <button type="button" class="arrow prev" aria-label="Previous slide" (click)="prev()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="arrow next" aria-label="Next slide" (click)="next()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         }
         @if (dots()) {
           <div class="dots">
@@ -65,13 +65,14 @@ const INTENT_PX = 8;
     .cz { position: relative; overflow: hidden; border-radius: var(--ui-radius-lg); background: var(--ui-color-bg); touch-action: pan-y; }
     .track { display: flex; transition: transform var(--ui-motion-slow) var(--ui-ease-standard); }
     .track.dragging { transition: none; }
-    .slide { position: relative; flex: 0 0 100%; }
-    .slide img { width: 100%; height: 100%; max-height: 360px; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
+    .slide { position: relative; flex: 0 0 100%; display: flex; }
+    .slide img { width: 100%; height: auto; align-self: stretch; max-height: 360px; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
     .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
-      color: var(--ui-media-on-scrim); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
+      color: var(--ui-media-on-scrim); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: var(--ui-size-touch); height: var(--ui-size-touch); border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
-      border: none; background: color-mix(in srgb, var(--ui-media-scrim) 45%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; font-size: 18px;
+      border: none; background: color-mix(in srgb, var(--ui-media-scrim) 45%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; font: inherit; padding: 0;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .arrow:hover { background: color-mix(in srgb, var(--ui-media-scrim) 65%, transparent); }
     .arrow:active { transform: translateY(-50%) scale(var(--ui-scale-press)); }
@@ -79,10 +80,11 @@ const INTENT_PX = 8;
     .prev { left: var(--ui-space-2); } .next { right: var(--ui-space-2); }
     /* Fingers swipe; the arrows are for a mouse. */
     @media (hover: none) { .arrow { display: none; } }
-    .dots { position: absolute; bottom: var(--ui-space-2); left: 0; right: 0; display: flex; justify-content: center; gap: 6px; }
+    .dots { position: absolute; bottom: var(--ui-space-2); left: 0; right: 0; display: flex; justify-content: center; gap: var(--ui-space-2); }
     .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; border: none; background: color-mix(in srgb, var(--ui-media-on-scrim) 50%, transparent); cursor: pointer; padding: 0;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .dot::before { content: ''; position: absolute; inset: -12px; }
+    .dot::before { content: ''; position: absolute; inset: -4px; }
+    @media (pointer: coarse) { .dot::before { inset: -12px -4px; } }
     .dot:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 75%, transparent); }
     .dot:active { transform: scale(var(--ui-scale-press)); }
     .dot:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -100,7 +102,10 @@ export class UiCarousel implements OnInit, OnDestroy {
   /** The built-in arrows, shown only where there is a mouse. */
   arrows = input(true);
 
-  protected readonly paused = signal(false);
+  protected readonly hovered = signal(false);
+  protected readonly focused = signal(false);
+  /** Autoplay holds while a pointer is over the carousel or focus is inside it. */
+  protected readonly paused = computed(() => this.hovered() || this.focused());
   /** How far the finger has pulled the track, in px, while a swipe is under way. */
   protected readonly drag = signal<number | null>(null);
   private timer?: ReturnType<typeof setInterval>;
@@ -118,9 +123,16 @@ export class UiCarousel implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     const ms = this.autoplay();
-    if (ms > 0) this.timer = setInterval(() => { if (!this.paused() && this.drag() === null) this.next(); }, ms);
+    // Reduced motion: no slide turns on its own; arrows, dots and swipes still work.
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (ms > 0 && !reduce) this.timer = setInterval(() => { if (!this.paused() && this.drag() === null) this.next(); }, ms);
   }
   ngOnDestroy(): void { if (this.timer) clearInterval(this.timer); }
+
+  protected onFocusOut(e: FocusEvent): void {
+    const next = e.relatedTarget as Node | null;
+    if (!next || !(e.currentTarget as HTMLElement).contains(next)) this.focused.set(false);
+  }
 
   protected next(): void { this.index.update((i) => (i + 1) % Math.max(1, this.slides().length)); }
   protected prev(): void { this.index.update((i) => (i - 1 + this.slides().length) % Math.max(1, this.slides().length)); }

@@ -59,10 +59,12 @@ export interface UiMenuItem {
     .trigger { display: inline-flex; }
     .ui-menu {
       display: flex; flex-direction: column; min-width: 180px;
-      margin-top: var(--ui-space-2); padding: var(--ui-space-1);
+      padding: var(--ui-space-1);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default);
+      font-size: var(--ui-font-size-sm); line-height: 1.35;
+      transform-origin: top left;
       animation: ui-scale-in var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .ui-menu.no-radius { border-radius: 0; }
@@ -70,11 +72,15 @@ export interface UiMenuItem {
     .item {
       display: flex; align-items: center; gap: var(--ui-space-2);
       padding: var(--ui-space-2) var(--ui-space-3);
-      background: transparent; border: none; border-radius: 6px;
+      background: transparent; border: none; border-radius: var(--ui-radius-xs);
       color: inherit; font: inherit; text-align: left; cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .item:hover:not(:disabled), .item:focus-visible { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); outline: none; }
+    .item:hover:not(:disabled), .item:focus-visible { background: var(--ui-color-elevated-hover); outline: none; }
+    /* Keyboard focus also gets an inset ring so it never reads the same as a mouse hover elsewhere. */
+    .item:focus-visible { box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     .item.danger { color: var(--ui-color-danger); }
+    .item.danger:hover:not(:disabled), .item.danger:focus-visible { background: color-mix(in srgb, var(--ui-color-danger) 12%, transparent); }
     .item:disabled { opacity: 0.5; cursor: not-allowed; }
     @media (prefers-reduced-motion: reduce) { .ui-menu { animation: none; } }
   `,
@@ -90,8 +96,8 @@ export class UiMenu {
   private panel = viewChild<ElementRef<HTMLElement>>('panel');
 
   protected readonly positions: ConnectedPosition[] = [
-    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
-    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
   ];
 
   protected toggle(): void { this.open.update((v) => !v); }

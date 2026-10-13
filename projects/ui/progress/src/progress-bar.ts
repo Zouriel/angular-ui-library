@@ -22,7 +22,7 @@ import type { UiStatus } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .track {
-      position: relative; height: 8px; width: 100%;
+      position: relative; height: 6px; width: 100%;
       background: var(--ui-color-track);
       border-radius: var(--ui-radius-pill); overflow: hidden;
     }
@@ -38,9 +38,10 @@ import type { UiStatus } from '@zouriel/ui';
       width: 40%;
       animation: ui-progress-indeterminate 1.2s var(--ui-ease-standard) infinite;
     }
+    /* transform, not margin: stays on the compositor. 250% of the 40% bar = the track's full width. */
     @keyframes ui-progress-indeterminate {
-      0% { margin-left: -40%; }
-      100% { margin-left: 100%; }
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(250%); }
     }
     @media (prefers-reduced-motion: reduce) { .fill.indeterminate { animation-duration: 2.4s; } }
   `,

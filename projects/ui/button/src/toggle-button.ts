@@ -39,8 +39,14 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-toggle.no-radius { border-radius: 0; }
     .ui-toggle[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
     .ui-toggle[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
-    .ui-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ui-toggle:disabled { opacity: .5; cursor: not-allowed; }
     .ui-toggle:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Touch: grow the hit area vertically to 44px on coarse pointers only, never sideways
+       (so it can't overlap a neighbour in a row); desktop keeps the compact box. */
+    @media (pointer: coarse) {
+      .ui-toggle { position: relative; }
+      .ui-toggle::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
+    }
   `,
 })
 export class UiToggleButton {

@@ -51,11 +51,16 @@ export class UiGlyphField implements AfterViewInit, OnDestroy {
       const cs = this.cell();
       cols = Math.ceil(w / cs); rows = Math.ceil(h / cs);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.font = `700 ${Math.round(this.cell() * 0.82)}px ui-monospace, Menlo, monospace`;
+      const mono = getComputedStyle(canvas).getPropertyValue('--ui-font-mono').trim() || 'ui-monospace, Menlo, monospace';
+      ctx.font = `700 ${Math.round(this.cell() * 0.82)}px ${mono}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     };
     size();
-    this.ro = new ResizeObserver(() => size());
+    // Screen only lightens: on a light theme the field would vanish, so darken into it instead.
+    const scheme = getComputedStyle(canvas).colorScheme;
+    if (/light/.test(scheme) && !/dark/.test(scheme)) canvas.style.mixBlendMode = 'multiply';
+    // Resizing clears the canvas; a static (reduced-motion) field has no next frame to repaint it.
+    this.ro = new ResizeObserver(() => { size(); if (reduce) draw(0); });
     this.ro.observe(canvas);
 
     const hash = (x: number, y: number) => {

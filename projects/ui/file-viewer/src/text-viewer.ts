@@ -5,7 +5,7 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   selector: 'ui-text-viewer',
   template: `
     <div class="tv">
-      @if (loading()) { <div class="msg">Loading…</div> }
+      @if (loading()) { <div class="msg" role="status">Loading…</div> }
       @else if (error()) { <div class="msg err">{{ error() }}</div> }
       @else { <pre class="text">{{ text() }}</pre> }
     </div>

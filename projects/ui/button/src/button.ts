@@ -86,8 +86,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       border-radius: var(--ui-radius-pill);
       font-weight: 600;
       box-shadow: var(--ui-glow-amber, none);
-      transition: filter var(--ui-motion-base) var(--ui-ease-standard),
-                  box-shadow var(--ui-motion-base) var(--ui-ease-standard),
+      transition: box-shadow var(--ui-motion-base) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .ui-btn[data-variant="brand"]:hover:not(:disabled) {
@@ -96,13 +95,22 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
          one attribute selector), so without this the generic white hover background wins and
          the gradient disappears on hover/press. Same background value as the non-hover rule. */
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
-      filter: brightness(1.08);
+      /* Hover lifts the gradient with a contrast-colour wash rather than filter: brightness, so it
+         follows each theme's own contrast colour (a dark wash on light gradients, light on dark). */
+      box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-color-primary-contrast) 12%, transparent), var(--ui-glow-amber, 0 0 transparent);
     }
+    .ui-btn[data-variant="brand"]:focus-visible:not(:disabled) { box-shadow: var(--ui-focus-ring); }
     .ui-btn[data-variant="brand"].no-radius { border-radius: 0; }
     .spin {
       width: 1em; height: 1em; border-radius: 50%;
       border: 2px solid currentColor; border-right-color: transparent;
       animation: ui-btn-spin var(--ui-motion-slow) linear infinite;
+    }
+    /* Touch: grow the hit area vertically to 44px on coarse pointers only, never sideways
+       (so it can't overlap a neighbour in a row); desktop keeps the compact box. */
+    @media (pointer: coarse) {
+      .ui-btn { position: relative; }
+      .ui-btn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
     }
     @keyframes ui-btn-spin { to { transform: rotate(360deg); } }
   `,

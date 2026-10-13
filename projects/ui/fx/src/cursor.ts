@@ -1,10 +1,14 @@
 import { isPlatformBrowser } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, inject, input, viewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, inject, input, signal, viewChild } from '@angular/core';
 
 /**
  * `ui-cursor` — custom cursor: a precise dot plus a lagging ring that grows
  * over interactive elements. Mount once near the app root. Hidden on touch
- * devices and when reduced motion is requested. Pair with `body { cursor: none }`.
+ * devices and when reduced motion is requested. While it is actually drawing it puts `ui-cursor-on`
+ * on `<html>`; hide the native cursor with that, never unconditionally, or users it hides itself
+ * from are left with no cursor at all:
+ *
+ *   html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }
  */
 @Component({
   selector: 'ui-cursor',
@@ -13,9 +17,9 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, i
     <div #dot class="dot" aria-hidden="true"></div>
   `,
   host: {
-    '[class.hover]': 'hover',
-    '[class.down]': 'down',
-    '[class.out]': 'out',
+    '[class.hover]': 'hover()',
+    '[class.down]': 'down()',
+    '[class.out]': 'out()',
   },
   styles: `
     :host { position: fixed; inset: 0; pointer-events: none; z-index: var(--ui-z-toast, 1200); }
@@ -39,22 +43,28 @@ export class UiCursor implements AfterViewInit, OnDestroy {
   private dot = viewChild.required<ElementRef<HTMLDivElement>>('dot');
   private ring = viewChild.required<ElementRef<HTMLDivElement>>('ring');
 
-  protected hover = false;
-  protected down = false;
-  protected out = false;
+  // Signals, not fields: the listeners below run outside any change detection the app might have,
+  // and only a signal write schedules the host-class update in a zoneless app.
+  protected readonly hover = signal(false);
+  protected readonly down = signal(false);
+  protected readonly out = signal(false);
+  private active = false;
 
   private tx = 0; private ty = 0; private rx = 0; private ry = 0; private raf = 0;
-  private readonly onMove = (e: PointerEvent) => { this.tx = e.clientX; this.ty = e.clientY; this.out = false; };
-  private readonly onDown = () => (this.down = true);
-  private readonly onUp = () => (this.down = false);
-  private readonly onLeave = () => (this.out = true);
+  private readonly onMove = (e: PointerEvent) => { this.tx = e.clientX; this.ty = e.clientY; if (this.out()) this.out.set(false); };
+  private readonly onDown = () => this.down.set(true);
+  private readonly onUp = () => this.down.set(false);
+  private readonly onLeave = () => this.out.set(true);
   private readonly onOver = (e: Event) => {
     const t = e.target as HTMLElement;
-    this.hover = !!t?.closest?.(this.interactiveSelector());
+    this.hover.set(!!t?.closest?.(this.interactiveSelector()));
   };
 
   ngAfterViewInit(): void {
-    if (!this.browser || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!this.browser || window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        window.matchMedia('(pointer: coarse)').matches) return;
+    this.active = true;
+    document.documentElement.classList.add('ui-cursor-on');
     window.addEventListener('pointermove', this.onMove, { passive: true });
     window.addEventListener('pointerdown', this.onDown, { passive: true });
     window.addEventListener('pointerup', this.onUp, { passive: true });
@@ -73,7 +83,8 @@ export class UiCursor implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (!this.browser) return;
+    if (!this.browser || !this.active) return;
+    document.documentElement.classList.remove('ui-cursor-on');
     cancelAnimationFrame(this.raf);
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerdown', this.onDown);

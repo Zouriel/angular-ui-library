@@ -14,11 +14,12 @@ let tooltipSeq = 0;
   template: `<div class="ui-tooltip" role="tooltip" [id]="id">{{ text() }}</div>`,
   styles: `
     .ui-tooltip {
-      max-width: 240px; padding: var(--ui-space-2) var(--ui-space-3);
+      max-width: 240px; padding: var(--ui-space-1) var(--ui-space-2);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-sm);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
-      box-shadow: var(--ui-shadow-2); pointer-events: none;
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
+      overflow-wrap: anywhere;
+      box-shadow: var(--ui-shadow-1); pointer-events: none;
       animation: ui-fade-in var(--ui-motion-fast) var(--ui-ease-standard);
     }
     @media (prefers-reduced-motion: reduce) { .ui-tooltip { animation: none; } }
@@ -40,6 +41,7 @@ export class UiTooltipPanel {
     '(mouseleave)': 'hide()',
     '(focusin)': 'show()',
     '(focusout)': 'hide()',
+    '(keydown.escape)': 'hide()',
     '[attr.aria-describedby]': 'describedBy()',
   },
 })
@@ -81,7 +83,7 @@ export class UiTooltip implements OnDestroy {
   }
 
   private positionFor(p: UiTooltipPosition) {
-    const gap = 8;
+    const gap = 4;
     switch (p) {
       case 'bottom': return { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: gap } as const;
       case 'left':   return { originX: 'start', originY: 'center', overlayX: 'end', overlayY: 'center', offsetX: -gap } as const;

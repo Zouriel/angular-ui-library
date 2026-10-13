@@ -108,31 +108,38 @@ type SortDir = 'asc' | 'desc' | null;
     :host { display: block; }
     .wrap { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: auto; }
     .wrap.no-radius { border-radius: 0; }
-    .ui-table { width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
-    th, td { padding: var(--ui-space-2) var(--ui-space-4); text-align: left; }
+    .ui-table { width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text); font-variant-numeric: tabular-nums; }
+    th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: left; }
     th[data-align="right"], td[data-align="right"] { text-align: right; }
     th[data-align="center"], td[data-align="center"] { text-align: center; }
-    thead th { background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); white-space: nowrap; }
+    thead th { background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; }
     tbody tr { border-bottom: 1px solid var(--ui-color-border); transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: color-mix(in srgb, var(--ui-color-primary) 8%, transparent); }
-    tbody tr.selected { background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); }
+    tbody tr:hover { background: var(--ui-color-surface-hover); }
+    tbody tr.selected { background: var(--ui-color-selected); }
     .sort { display: inline-flex; align-items: center; gap: var(--ui-space-1); background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+    .sort:hover { color: var(--ui-color-text); }
+    th:not([aria-sort]) .arrow { opacity: .4; }
     .sort:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .arrow { width: 1em; display: inline-block; }
     .sel { width: 1px; white-space: nowrap; }
+    .sel input { accent-color: var(--ui-color-primary); width: 14px; height: 14px; margin: 0; vertical-align: middle; cursor: pointer; }
+    .sel input:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 2px; }
     .empty { text-align: center; color: var(--ui-color-text-muted); padding: var(--ui-space-6); }
     /* Trailing and narrow: the actions are the one column that should never take width from the
        data, and never wrap onto a second line. */
     .acts { width: 1px; white-space: nowrap; text-align: right; }
-    .act { min-height: var(--ui-size-touch, 44px); padding: 0 var(--ui-space-3); margin-left: var(--ui-space-1);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+    .act { position: relative; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-2); margin-left: var(--ui-space-1);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     .act:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
-    .act:disabled { opacity: 0.45; cursor: default; }
+    .act:disabled { opacity: .5; cursor: not-allowed; }
     .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    @media (pointer: coarse) {
+      .act::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2) 0; }
+    }
 
   `,
 })

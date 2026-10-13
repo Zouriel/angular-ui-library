@@ -28,16 +28,16 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     :host { display: block; }
     .ui-otp { display: inline-flex; gap: var(--ui-space-2); }
     .cell {
-      width: var(--ui-size-md); height: var(--ui-size-lg); text-align: center;
+      box-sizing: border-box; width: var(--ui-size-md); height: var(--ui-size-lg); padding: 0; text-align: center;
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font-family: var(--ui-font-mono); font-size: var(--ui-font-size-lg); outline: none;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard), box-shadow var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .cell:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .cell:disabled { opacity: 0.55; }
+    .cell:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .cell:disabled { opacity: .5; cursor: not-allowed; }
     .cell[aria-invalid="true"] { border-color: var(--ui-color-danger); }
-    .cell[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .cell[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiOtpInput), multi: true }],
 })

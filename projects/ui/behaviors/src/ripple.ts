@@ -16,6 +16,9 @@ export class UiRipple {
 
   protected spawn(e: PointerEvent): void {
     if (this.disabled()) return;
+    // A burst of motion on every press is exactly what reduced motion asks to calm; the press
+    // state of the control itself is feedback enough.
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const el = this.host.nativeElement;
     const rect = el.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);

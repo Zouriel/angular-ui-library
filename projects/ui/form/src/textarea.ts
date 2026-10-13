@@ -37,11 +37,12 @@ import { UI_CONFIG } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-textarea::placeholder { color: var(--ui-color-text-muted); }
-    .ui-textarea:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .ui-textarea:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-textarea:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-textarea:disabled { opacity: .5; cursor: not-allowed; }
     .ui-textarea.no-radius { border-radius: 0; }
     .ui-textarea.autosize { resize: none; overflow-y: hidden; }
     .ui-textarea[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .ui-textarea[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiTextarea), multi: true }],
 })

@@ -21,8 +21,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   `,
   styles: `
     :host { display: inline-flex; }
-    .ui-switch { display: inline-flex; align-items: center; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
-    .ui-switch.disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-switch { display: inline-flex; align-items: center; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text); }
+    .ui-switch.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .track {
       position: relative; width: 38px; height: 22px; flex: none;
@@ -38,6 +38,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .native:checked + .track .thumb { background: var(--ui-switch-thumb-checked); }
     .native:checked + .track .thumb { transform: translateX(16px); }
     .native:focus-visible + .track { box-shadow: var(--ui-focus-ring); }
+    @media (prefers-reduced-motion: reduce) { .thumb { transition-timing-function: var(--ui-ease-standard); } }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSwitch), multi: true }],
 })

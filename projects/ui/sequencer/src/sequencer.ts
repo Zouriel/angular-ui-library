@@ -92,7 +92,7 @@ const TIP_MS = 2600;
     <div class="scroller" #scroller>
       <div class="grid" [style.width]="'calc(var(--label-w) + ' + zoom() * 100 + '% - ' + zoom() + ' * var(--label-w))'">
         <!-- Ruler -->
-        @if (showLabels()) { <div class="corner">{{ title() }}</div> }
+        @if (showLabels()) { <div class="corner"><span class="ctitle">{{ title() }}</span></div> }
         <div class="ruler" #ruler (pointerdown)="startPlayhead($event)">
           @for (m of markers(); track $index) {
             <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan($index))"><span class="mlabel">{{ m.label }}</span></span>
@@ -112,10 +112,10 @@ const TIP_MS = 2600;
         @for (row of rows(); track row.id; let i = $index) {
           @if (showLabels()) {
           <div class="label" [class.selected]="row.id === selectedRowId()" [class.muted]="row.muted"
-            [class.drop-before]="dropIndex() === i" [style.padding-left.px]="8 + (row.depth ?? 0) * 14"
+            [class.drop-before]="dropIndex() === i" [style.padding-left]="'calc(var(--ui-space-2) + ' + (row.depth ?? 0) * 16 + 'px)'"
             (click)="selectRow(row.id)">
             @if (reorderable()) {
-              <span class="grip" title="Drag to reorder" (pointerdown)="startReorder($event, row, i)" aria-hidden="true">⋮⋮</span>
+              <span class="grip" title="Drag to reorder" (pointerdown)="startReorder($event, row, i)" aria-hidden="true"><svg viewBox="0 0 12 16" width="10" height="14" aria-hidden="true"><path d="M4 4h0M8 4h0M4 8h0M8 8h0M4 12h0M8 12h0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
             }
             @if (row.kind) { <span class="kind">{{ row.kind }}</span> }
             <span class="name" [title]="row.label">{{ row.label }}</span>
@@ -195,31 +195,37 @@ const TIP_MS = 2600;
   `,
   styles: `
     :host { display: block; position: relative; min-height: 0; height: 100%; color: var(--ui-color-text);
-      font: 12px/1.3 var(--ui-font-default); background: var(--ui-color-surface); user-select: none; }
+      font: 12px/1.35 var(--ui-font-default); font-variant-numeric: tabular-nums; background: var(--ui-color-surface); user-select: none; }
     .scroller { position: absolute; inset: 0; overflow: auto; }
     .grid { position: relative; display: grid; grid-template-columns: var(--label-w) 1fr; grid-auto-rows: var(--row-h); min-width: 100%; }
     .corner, .label { position: sticky; left: 0; z-index: 2; background: var(--ui-color-surface); border-right: 1px solid var(--ui-color-border); }
-    .corner { top: 0; z-index: 4; display: flex; align-items: center; padding: 0 10px; font-weight: 600; color: var(--ui-color-text-muted);
-      border-bottom: 1px solid var(--ui-color-border); text-transform: uppercase; letter-spacing: .06em; font-size: 10.5px; }
+    .corner { top: 0; z-index: 4; display: flex; align-items: center; min-width: 0; padding: 0 var(--ui-space-3); font-weight: 600; color: var(--ui-color-text-muted);
+      border-bottom: 1px solid var(--ui-color-border); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+    .ctitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ruler { position: sticky; top: 0; z-index: 3; background: var(--ui-color-surface-subtle); border-bottom: 1px solid var(--ui-color-border); cursor: ew-resize; }
     .marker { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--ui-color-border-strong); }
     .marker.end .mlabel { left: auto; right: 4px; }
-    .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; max-width: calc(100% - 8px); overflow: hidden; text-overflow: clip;
-      white-space: nowrap; color: var(--ui-color-text-muted); font-size: 10.5px; font-family: var(--ui-font-mono); }
-    .playhead-knob { position: absolute; bottom: 0; width: 12px; height: 12px; margin-left: -6px; background: var(--ui-color-primary);
-      clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); cursor: ew-resize; }
+    .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; color: var(--ui-color-text-muted); font-size: 11px; font-family: var(--ui-font-mono); }
+    /* The pointer shape lives on ::before so clip-path doesn't also clip the focus ring on the knob itself. */
+    .playhead-knob { position: absolute; bottom: 0; width: 12px; height: 12px; margin-left: -6px; border-radius: 2px; cursor: ew-resize; }
+    .playhead-knob::before { content: ''; position: absolute; inset: 0; background: var(--ui-color-primary);
+      clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%); }
     .playhead-knob:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .playhead-line { position: absolute; top: var(--row-h); bottom: 0; width: 1.5px; margin-left: -0.75px; background: var(--ui-color-primary); pointer-events: none; z-index: 1; }
-    .label { display: flex; align-items: center; gap: 6px; padding-right: 4px; border-bottom: 1px solid var(--ui-color-border-subtle); cursor: pointer; min-width: 0; }
+    .label { display: flex; align-items: center; gap: var(--ui-space-1); padding-right: var(--ui-space-1); border-bottom: 1px solid var(--ui-color-border-subtle); cursor: pointer; min-width: 0; }
+    .label:hover { background: var(--ui-color-surface-hover); }
     .label.selected { background: var(--ui-color-selected); }
     .label.muted .name, .label.muted .kind { opacity: .5; }
     .label.drop-before { box-shadow: inset 0 2px 0 var(--ui-color-primary); }
-    .grip { cursor: grab; color: var(--ui-color-text-muted); letter-spacing: -2px; font-size: 11px; padding: 0 2px; }
-    .kind { flex: none; font-size: 9.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-color-text-muted);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); padding: 0 4px; }
+    .grip { flex: none; display: inline-grid; place-items: center; cursor: grab; color: var(--ui-color-text-muted); padding: 0 2px; }
+    .grip:hover { color: var(--ui-color-text); }
+    .kind { flex: none; font-size: 11px; line-height: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-color-text-muted);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); padding: 0 var(--ui-space-1); }
     .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .toggle { flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--ui-radius-xs);
-      background: transparent; color: var(--ui-color-text-muted); cursor: pointer; opacity: .55; }
+    .toggle { flex: none; display: grid; place-items: center; width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; border: 0; border-radius: var(--ui-radius-xs);
+      background: transparent; color: var(--ui-color-text-muted); font: inherit; cursor: pointer; opacity: .7;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .toggle.on, .label:hover .toggle { opacity: 1; }
     .toggle:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .toggle:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); opacity: 1; }
@@ -228,7 +234,8 @@ const TIP_MS = 2600;
     .gridline { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--ui-color-border-subtle); }
     .bar { position: absolute; top: 5px; bottom: 5px; min-width: 6px; box-sizing: border-box; border-radius: var(--ui-radius-sm);
       background: color-mix(in srgb, var(--ui-color-primary) 22%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 55%, transparent);
-      cursor: grab; }
+      cursor: grab; transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .bar:not(.locked):hover { border-color: var(--ui-color-primary); }
     .bar.selected { background: color-mix(in srgb, var(--ui-color-primary) 38%, var(--ui-color-surface)); border-color: var(--ui-color-primary); }
     .bar.muted { opacity: .45; }
     .bar.locked { cursor: not-allowed; background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ui-color-text) 8%, transparent) 5px 7px); }
@@ -249,6 +256,7 @@ const TIP_MS = 2600;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .end-handle:hover span, .end-handle:focus-visible span { background: var(--ui-color-primary); transform: scaleX(1.3); }
     .end-handle:focus-visible { outline: none; }
+    .end-handle:focus-visible span { box-shadow: var(--ui-focus-ring); }
     .end-line { position: absolute; top: var(--row-h); bottom: 0; width: 10px; margin-left: -5px; z-index: 2; cursor: ew-resize; touch-action: none; }
     .end-line::after { content: ''; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: color-mix(in srgb, var(--ui-color-text-muted) 45%, transparent); }
     .end-line:hover::after { background: var(--ui-color-primary); }
@@ -257,17 +265,21 @@ const TIP_MS = 2600;
       background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ui-color-text) 5%, transparent) 0 6px, transparent 6px 12px);
       border-left: 1.5px dashed var(--ui-color-border-strong); }
     .tip { position: absolute; z-index: 6; display: flex; align-items: center; gap: 4px; max-width: min(260px, 80vw); translate: -50% calc(-100% - 2px);
-      padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--ui-color-surface-raised, var(--ui-color-surface)); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-md, 0 4px 14px rgb(0 0 0 / .18)); white-space: nowrap; animation: tip-in .14s ease-out; }
+      padding: 2px 2px 2px var(--ui-space-3); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface-raised, var(--ui-color-surface)); color: var(--ui-color-text);
+      border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-2); white-space: nowrap; animation: tip-in var(--ui-motion-fast) var(--ui-ease-decelerate); }
     .tip.below { translate: -50% 2px; }
     .tip.from-left { translate: -12px calc(-100% - 2px); } .tip.from-left.below { translate: -12px 2px; }
     .tip.from-right { translate: calc(-100% + 12px) calc(-100% - 2px); } .tip.from-right.below { translate: calc(-100% + 12px) 2px; }
     .tip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
     .tip .toggle { opacity: 1; }
     @keyframes tip-in { from { opacity: 0; scale: .92; } }
-    .bar.lifted { z-index: 5; cursor: grabbing; box-shadow: 0 6px 18px rgb(0 0 0 / .28); scale: 1.04 1.25;
+    .bar.lifted { z-index: 5; cursor: grabbing; box-shadow: var(--ui-shadow-2); scale: 1.04 1.25;
       background: color-mix(in srgb, var(--ui-color-primary) 48%, var(--ui-color-surface)); }
     :host(.lifting) { cursor: grabbing; }
+    @media (prefers-reduced-motion: reduce) {
+      .tip { animation: none; }
+      .bar.lifted { scale: none; }
+    }
     .lane.drop-before { box-shadow: inset 0 2px 0 var(--ui-color-primary); }
 
     /* No labels: bars only, the full width to the timeline. */

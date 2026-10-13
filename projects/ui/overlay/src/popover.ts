@@ -47,8 +47,8 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
     .trigger { display: inline-flex; }
     .ui-popover {
       min-width: 180px; max-width: 320px;
-      margin-top: var(--ui-space-2);
       padding: var(--ui-space-3);
+      overflow-wrap: anywhere; line-height: 1.35;
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2);
@@ -71,10 +71,10 @@ export class UiPopover {
 
   protected get positions(): ConnectedPosition[] {
     const map: Record<UiPopoverPlacement, ConnectedPosition> = {
-      'bottom':       { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top' },
-      'bottom-start': { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
-      'bottom-end':   { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top' },
-      'top':          { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom' },
+      'bottom':       { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 4 },
+      'bottom-start': { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
+      'bottom-end':   { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+      'top':          { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -4 },
     };
     const primary = map[this.placement()];
     return [primary, map['top']];

@@ -49,7 +49,7 @@ export interface UiImagePickerItem {
       }
     </div>
     @if (loading()) {
-      <div class="status"><ui-spinner size="sm" label="Loading" /></div>
+      <div class="status"><ui-spinner size="sm" label="Loading…" /></div>
     } @else if (!items().length && emptyText()) {
       <p class="status empty">{{ emptyText() }}</p>
     }
@@ -59,7 +59,7 @@ export interface UiImagePickerItem {
     :host { display: block; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--ui-image-picker-min, 96px), 1fr)); gap: var(--ui-space-2); }
     .cell { display: flex; flex-direction: column; gap: var(--ui-space-1); min-width: 0; }
-    .tile { position: relative; display: block; width: 100%; aspect-ratio: 1; padding: var(--ui-space-2); cursor: pointer; overflow: hidden;
+    .tile { position: relative; display: block; width: 100%; aspect-ratio: 1; padding: var(--ui-space-2); cursor: pointer; overflow: hidden; font: inherit;
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       background-color: var(--ui-color-surface);
       background-image: linear-gradient(45deg, var(--ui-color-surface-subtle) 25%, transparent 25%, transparent 75%, var(--ui-color-surface-subtle) 75%),
@@ -69,18 +69,18 @@ export interface UiImagePickerItem {
     .tile:hover:not(:disabled) { border-color: var(--ui-color-primary); }
     .tile:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .tile:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .tile:disabled { cursor: default; opacity: 0.5; }
+    .tile:disabled { cursor: not-allowed; opacity: .5; }
     .tile.busy { opacity: 1; border-color: var(--ui-color-primary); }
     .tile img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-1); height: 100%;
       color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); line-height: 1.2; text-align: center; overflow: hidden; }
     .fallback span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .badge { position: absolute; top: 4px; right: 4px; padding: 1px 6px; border-radius: var(--ui-radius-pill);
+    .badge { position: absolute; top: var(--ui-space-1); right: var(--ui-space-1); padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill);
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
-      font-family: var(--ui-font-default); font-size: 10px; font-weight: 600; line-height: 16px; letter-spacing: 0.02em; }
+      font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; }
     .veil { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       background: color-mix(in srgb, var(--ui-color-surface) 60%, transparent); }
-    .caption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .caption { font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .status { display: flex; justify-content: center; padding: var(--ui-space-3); margin: 0; }
     .empty { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); text-align: center; }
     .sentinel { height: 1px; }

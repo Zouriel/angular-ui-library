@@ -357,7 +357,8 @@ function fmt(seconds: number): string {
     /* The dialog IS the screen. Its own box is stripped back to nothing so the sheet inside can
        paint the whole of it — the default dialog is a centred, bordered, padded card. */
     .lb { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0;
-      border: 0; background: transparent; color: var(--ui-media-on-scrim); overflow: hidden;
+      border: 0; background: transparent; color: var(--ui-media-on-scrim); overflow: hidden; line-height: 1.35;
+      overscroll-behavior: contain;
       font-family: var(--ui-font-default, system-ui, sans-serif); }
     .lb::backdrop { background: color-mix(in srgb, var(--ui-media-scrim) 86%, transparent); backdrop-filter: blur(18px) saturate(120%); }
     .lb:not([open]) { display: none; }
@@ -397,7 +398,7 @@ function fmt(seconds: number): string {
         background var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
     .play svg { width: 38px; height: 38px; fill: currentColor; margin-left: 4px; }
     .play:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 26%, transparent); transform: scale(1.05); }
-    .play:active { transform: scale(0.96); }
+    .play:active { transform: scale(var(--ui-scale-press, 0.96)); }
 
     /* Scrims, not bars: the picture runs under them, and they only darken enough to keep white text
        legible over whatever happens to be behind it. */
@@ -422,7 +423,7 @@ function fmt(seconds: number): string {
     .sheet--bare .stage { cursor: none; }
 
     .meta { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .meta__line { font-size: var(--ui-font-size-sm, 14px); font-weight: 600; letter-spacing: 0.01em;
+    .meta__line { font-size: var(--ui-font-size-sm, 13px); font-weight: 600; letter-spacing: 0.01em;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       text-shadow: 0 1px 12px color-mix(in srgb, var(--ui-media-scrim) 60%, transparent); }
     .meta__count { font-size: 12px; color: color-mix(in srgb, var(--ui-media-on-scrim) 66%, transparent); font-variant-numeric: tabular-nums; }
@@ -431,22 +432,22 @@ function fmt(seconds: number): string {
 
     /* One glass treatment for everything that floats over the picture. */
     .act, .ic, .chip, .edge {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-1, 4px);
       border: 1px solid color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); background: color-mix(in srgb, var(--ui-media-on-scrim) 10%, transparent);
       backdrop-filter: blur(14px); color: var(--ui-media-on-scrim); cursor: pointer; text-decoration: none;
-      font-family: inherit; font-size: 13px; line-height: 1;
+      font: inherit; font-size: var(--ui-font-size-sm, 13px); line-height: 1;
       transition: background var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease),
         opacity var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
-    .act, .chip { height: 34px; padding: 0 14px; border-radius: var(--ui-radius-pill, 9999px); }
+    .act, .chip { height: var(--ui-size-lg, 38px); padding: 0 var(--ui-space-4, 16px); border-radius: var(--ui-radius-pill, 9999px); }
     .ic { width: 38px; height: 38px; border-radius: 50%; padding: 0; }
-    .ic--rate { width: auto; padding: 0 10px; border-radius: var(--ui-radius-pill, 9999px);
+    .ic--rate { width: auto; padding: 0 var(--ui-space-3, 12px); border-radius: var(--ui-radius-pill, 9999px);
       font-variant-numeric: tabular-nums; }
     .ic svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9;
       stroke-linecap: round; stroke-linejoin: round; }
     .ic--x svg { stroke-width: 2.1; }
     .act:hover, .ic:hover, .chip:hover, .edge:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-media-on-scrim) 22%, transparent); }
-    .act:active, .ic:active, .chip:active { transform: scale(var(--ui-scale-press, 0.97)); }
+    .act:active, .ic:active, .chip:active { transform: scale(var(--ui-scale-press, 0.96)); }
     .act--danger { color: var(--ui-media-danger); border-color: color-mix(in srgb, var(--ui-media-danger) 35%, transparent); background: color-mix(in srgb, var(--ui-media-danger) 14%, transparent); }
     .act--danger:hover { background: color-mix(in srgb, var(--ui-media-danger) 26%, transparent); }
     .act:focus-visible, .ic:focus-visible, .chip:focus-visible, .edge:focus-visible,
@@ -490,8 +491,10 @@ function fmt(seconds: number): string {
        desktop has the same problem and none of the same excuse. */
     @media (hover: none), (max-width: 560px) { .vol { display: none; } }
 
+    /* Room above and below for the current thumb's lift and ring and for the focus outline: the
+       sideways scroller clips vertically too. */
     .strip { display: flex; gap: var(--ui-space-2, 8px); overflow-x: auto; scrollbar-width: none;
-      padding: 2px; }
+      padding: var(--ui-space-2, 8px) var(--ui-space-1, 4px); margin: calc(-1 * var(--ui-space-2, 8px)) 0; }
     .strip::-webkit-scrollbar { display: none; }
     .strip__item { position: relative; flex: 0 0 auto; width: 54px; height: 54px; padding: 0; border: 0;
       border-radius: var(--ui-radius-sm, 8px); overflow: hidden; cursor: pointer; background: color-mix(in srgb, var(--ui-media-on-scrim) 8%, transparent);
@@ -507,7 +510,8 @@ function fmt(seconds: number): string {
 
     @media (prefers-reduced-motion: reduce) {
       .lb[open] .sheet, .lb[open] .stage { animation: none; }
-      .media.settling, .bar, .strip__item, .act, .ic, .chip, .edge, .play { transition: none; }
+      .strip__item--on { transform: none; }
+      .play:hover { transform: none; }
       .spin { animation-duration: 1400ms; }
     }
   `,
@@ -1014,6 +1018,11 @@ export class UiMediaLightbox {
         else this.step(-1);
         break;
       case ' ':
+        // Space on a focused button or link presses it; only on the stage does it mean play/pause.
+        if ((event.target as HTMLElement)?.closest?.('button, a, input, select, textarea')) return;
+        if (!this.isVideo()) return;
+        this.togglePlay();
+        break;
       case 'k':
         if (!this.isVideo()) return;
         this.togglePlay();

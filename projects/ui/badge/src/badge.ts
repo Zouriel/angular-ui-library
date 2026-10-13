@@ -9,9 +9,9 @@ import type { UiStatus } from '@zouriel/ui';
     :host { display: inline-flex; }
     .ui-badge {
       display: inline-flex; align-items: center; gap: var(--ui-space-1);
-      height: 20px; padding: 0 var(--ui-space-2);
+      box-sizing: border-box; height: 20px; padding: 0 var(--ui-space-2);
       border-radius: var(--ui-radius-pill);
-      font-size: 12px; font-weight: 600; line-height: 1;
+      font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap; font-variant-numeric: tabular-nums;
       font-family: var(--ui-font-default);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border);

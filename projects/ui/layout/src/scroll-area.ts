@@ -8,7 +8,7 @@ import { Component, input } from '@angular/core';
     :host { display: block; }
     .sa { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--ui-color-border) transparent; }
     .sa::-webkit-scrollbar { width: 9px; height: 9px; }
-    .sa::-webkit-scrollbar-thumb { background: var(--ui-color-border); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+    .sa::-webkit-scrollbar-thumb { background: var(--ui-color-border); border-radius: var(--ui-radius-pill); border: 2px solid transparent; background-clip: padding-box; }
     .sa::-webkit-scrollbar-thumb:hover { background: var(--ui-color-text-muted); background-clip: padding-box; }
     .sa::-webkit-scrollbar-track { background: transparent; }
   `,

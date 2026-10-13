@@ -20,12 +20,12 @@ export interface UiDescriptionItem {
   `,
   styles: `
     :host { display: block; }
-    .ui-dl { margin: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); font-family: var(--ui-font-default); }
-    .pair { display: flex; flex-direction: column; gap: 2px; }
+    .ui-dl { margin: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); font-family: var(--ui-font-default); line-height: 1.35; }
+    .pair { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .ui-dl.row .pair { flex-direction: row; gap: var(--ui-space-4); }
-    .ui-dl.row dt { min-width: 140px; }
+    .ui-dl.row dt { flex: none; min-width: 140px; }
     dt { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); margin: 0; }
-    dd { margin: 0; font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
+    dd { margin: 0; min-width: 0; overflow-wrap: anywhere; font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
   `,
 })
 export class UiDescriptionList {

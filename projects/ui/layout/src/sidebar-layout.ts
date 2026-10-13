@@ -53,13 +53,13 @@ import { isPlatformBrowser } from '@angular/common';
     .sidebar {
       background: var(--ui-color-surface);
       border-right: 1px solid var(--ui-color-border);
-      min-width: 0; overflow-y: auto;
+      min-width: 0; overflow-y: auto; overscroll-behavior: contain;
     }
     .main { display: flex; flex-direction: column; min-width: 0; }
     .bar {
       display: flex; align-items: center; gap: var(--ui-space-3);
-      min-height: var(--ui-size-lg);
-      padding: var(--ui-space-3) var(--ui-space-6);
+      box-sizing: border-box; min-height: var(--ui-size-touch);
+      padding: var(--ui-space-2) var(--ui-space-6);
       border-bottom: 1px solid var(--ui-color-border);
       background: var(--ui-color-bg);
       position: sticky; top: 0; z-index: 5;
@@ -69,11 +69,13 @@ import { isPlatformBrowser } from '@angular/common';
     .burger {
       display: inline-flex; flex-direction: column; justify-content: center; gap: 4px;
       width: var(--ui-size-md); height: var(--ui-size-md);
-      padding: 0 7px; background: none; border: 1px solid var(--ui-color-border);
+      padding: 0 var(--ui-space-2); background: none; border: 1px solid var(--ui-color-border);
       border-radius: var(--ui-radius); cursor: pointer; flex: none;
     }
     .burger span { display: block; height: 2px; border-radius: 2px; background: var(--ui-color-text); transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); }
+    .burger { transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .burger:hover { background: var(--ui-color-surface-hover); }
+    .burger:active { transform: scale(var(--ui-scale-press)); }
     .burger:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 
     /* Compact mode — toggled by the matchMedia-driven host class. */
@@ -90,7 +92,7 @@ import { isPlatformBrowser } from '@angular/common';
       display: block; position: fixed; inset: 0; z-index: 20;
       background: var(--ui-color-overlay);
     }
-    :host(.ui-compact) .bar { padding: var(--ui-space-3) var(--ui-space-4); }
+    :host(.ui-compact) .bar { padding: var(--ui-space-2) var(--ui-space-4); }
     :host(.ui-compact) .content { padding: var(--ui-shell-pad, var(--ui-space-4)); }
 
     @media (prefers-reduced-motion: reduce) {

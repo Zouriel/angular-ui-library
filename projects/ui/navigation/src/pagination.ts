@@ -5,7 +5,7 @@ import { Component, computed, input, model } from '@angular/core';
   selector: 'ui-pagination',
   template: `
     <nav class="ui-pagination" [attr.aria-label]="label()">
-      <button type="button" class="pg" [disabled]="page() <= 1" aria-label="Previous page" (click)="go(page() - 1)">‹</button>
+      <button type="button" class="pg" [disabled]="page() <= 1" aria-label="Previous page" (click)="go(page() - 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 3l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       @for (item of items(); track $index) {
         @if (item === -1) {
           <span class="ellipsis" aria-hidden="true">…</span>
@@ -21,23 +21,24 @@ import { Component, computed, input, model } from '@angular/core';
           </button>
         }
       }
-      <button type="button" class="pg" [disabled]="page() >= total()" aria-label="Next page" (click)="go(page() + 1)">›</button>
+      <button type="button" class="pg" [disabled]="page() >= total()" aria-label="Next page" (click)="go(page() + 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4.5 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </nav>
   `,
   styles: `
     :host { display: block; }
-    .ui-pagination { display: inline-flex; align-items: center; gap: var(--ui-space-1); font-family: var(--ui-font-default); }
+    .ui-pagination { display: inline-flex; align-items: center; gap: var(--ui-space-1); font-family: var(--ui-font-default); line-height: 1.35; }
     .pg {
-      min-width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
+      box-sizing: border-box; min-width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
       display: inline-flex; align-items: center; justify-content: center;
       background: transparent; color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
+      font: inherit; font-size: var(--ui-font-size-sm); font-variant-numeric: tabular-nums; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .pg:hover:not(:disabled):not(.active) { background: var(--ui-color-surface-hover); }
-    .pg.active { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
-    .pg:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pg.active { background: var(--ui-color-selected); color: var(--ui-color-text); border-color: var(--ui-color-border-focus); font-weight: 600; }
+    .pg:disabled { opacity: .5; cursor: not-allowed; }
+    @media (pointer: coarse) { .pg { min-width: var(--ui-size-touch); height: var(--ui-size-touch); } }
     .pg:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ellipsis { padding: 0 var(--ui-space-1); color: var(--ui-color-text-muted); }
   `,

@@ -11,7 +11,7 @@ export interface UiStep {
   template: `
     <ol class="ui-stepper">
       @for (step of steps(); track $index; let i = $index, last = $last) {
-        <li class="step" [class.done]="i < active()" [class.active]="i === active()">
+        <li class="step" [class.done]="i < active()" [class.active]="i === active()" [attr.aria-current]="i === active() ? 'step' : null">
           <span class="marker" aria-hidden="true">
             @if (i < active()) { ✓ } @else { {{ i + 1 }} }
           </span>
@@ -27,7 +27,7 @@ export interface UiStep {
   styles: `
     :host { display: block; }
     .ui-stepper {
-      display: flex; margin: 0; padding: 0; list-style: none; font-family: var(--ui-font-default);
+      display: flex; margin: 0; padding: 0; list-style: none; font-family: var(--ui-font-default); line-height: 1.35;
       overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
     }
     .ui-stepper::-webkit-scrollbar { display: none; }
@@ -44,7 +44,7 @@ export interface UiStep {
     .text { display: flex; flex-direction: column; }
     .label { font-size: var(--ui-font-size-sm); color: var(--ui-color-text); font-weight: 500; }
     .step.active .label { color: var(--ui-color-text); }
-    .desc { font-size: 12px; color: var(--ui-color-text-muted); }
+    .desc { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .bar { flex: 1; height: 1px; min-width: var(--ui-space-4); background: var(--ui-color-border); margin: 0 var(--ui-space-2); }
     .step.done .bar { background: var(--ui-color-primary); }
     /* Narrow screens: keep only the active step labelled so all markers fit without clipping. */

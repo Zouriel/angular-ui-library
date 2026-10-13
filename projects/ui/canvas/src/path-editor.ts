@@ -131,6 +131,13 @@ const DOUBLE_TAP_MS = 320;
         <g class="frame">
           <rect class="frame-box" [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.w" [attr.height]="b.h" />
           <line class="frame-stem" [attr.x1]="b.x + b.w / 2" [attr.y1]="b.y" [attr.x2]="b.x + b.w / 2" [attr.y2]="b.y - px(28)" />
+          @if (coarse) {
+            <!-- Touch: invisible 44px targets under the drawn knobs, which stay small enough to see past. -->
+            <circle class="hit" [attr.cx]="b.x + b.w / 2" [attr.cy]="b.y - px(28)" [attr.r]="px(22)" data-rotate="1" />
+            @for (c of corners(b); track c.id) {
+              <circle class="hit" [attr.cx]="c.x" [attr.cy]="c.y" [attr.r]="px(22)" [attr.data-corner]="c.id" />
+            }
+          }
           <circle class="knob rotate" [attr.cx]="b.x + b.w / 2" [attr.cy]="b.y - px(28)" [attr.r]="px(knob())" data-rotate="1" />
           @for (c of corners(b); track c.id) {
             <circle class="knob" [attr.cx]="c.x" [attr.cy]="c.y" [attr.r]="px(knob())" [attr.data-corner]="c.id" />
@@ -144,6 +151,16 @@ const DOUBLE_TAP_MS = 320;
           @for (c of it.contours; track $index; let ci = $index) {
             @for (s of segments(c); track s) {
               <path class="seg-hit" [attr.d]="segD(c, s)" [attr.data-seg]="ci + ':' + s" />
+            }
+          }
+          @if (coarse) {
+            @for (h of handles(); track h.key) {
+              <circle class="hit" [attr.cx]="h.at.x" [attr.cy]="h.at.y" [attr.r]="px(22)" [attr.data-handle]="h.key" />
+            }
+            @for (c of it.contours; track $index; let ci = $index) {
+              @for (p of c.points; track $index; let pi = $index) {
+                <circle class="hit" [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="px(22)" [attr.data-point]="ci + ':' + pi" />
+              }
             }
           }
           @for (h of handles(); track h.key) {
@@ -194,12 +211,13 @@ const DOUBLE_TAP_MS = 320;
   styles: `
     :host { display: block; position: relative; overflow: hidden; touch-action: none; outline: none; user-select: none;
       -webkit-user-select: none; -webkit-touch-callout: none; background: var(--ui-color-surface-subtle); color: var(--ui-color-text); }
-    :host(:focus-visible) { box-shadow: inset var(--ui-focus-ring); }
+    :host(:focus-visible) { box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     :host([data-mode="draw"]), :host([data-mode="pen"]) { cursor: crosshair; }
     .surface { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     .artboard { fill: var(--ui-color-surface); stroke: var(--ui-color-border-strong); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
     .item { fill: var(--ui-color-text-muted); stroke: none; cursor: pointer; }
     :host([data-mode="draw"]) .item, :host([data-mode="pen"]) .item { cursor: inherit; }
+    :host([data-mode="objects"]) .item:hover { fill: var(--ui-color-text-secondary); }
     .item.dim { opacity: .28; }
     .item.cut { stroke: var(--ui-color-danger); stroke-dasharray: 5 4; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
     .item.intersect, .item.exclude { fill-opacity: .45; stroke: var(--ui-color-primary); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
@@ -213,7 +231,9 @@ const DOUBLE_TAP_MS = 320;
     .frame-box { fill: none; stroke: var(--ui-color-primary); stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
     .frame-stem, .arm { stroke: var(--ui-color-primary); stroke-width: 1.25; vector-effect: non-scaling-stroke; pointer-events: none; }
     .knob { fill: var(--ui-color-surface); stroke: var(--ui-color-primary); stroke-width: 1.75; vector-effect: non-scaling-stroke; cursor: grab; }
+    .knob:hover { fill: color-mix(in srgb, var(--ui-color-primary) 35%, var(--ui-color-surface)); }
     .knob.rotate { fill: var(--ui-color-primary); }
+    .hit { fill: transparent; stroke: none; cursor: grab; }
     .knob.point.on { fill: var(--ui-color-primary); }
     .knob.point.end { stroke-width: 2.5; }
     .knob.handle { fill: var(--ui-color-primary); stroke: var(--ui-color-surface); }
@@ -276,7 +296,7 @@ export class UiPathEditor {
   private readonly hostSize = signal({ w: 0, h: 0 });
   private readonly zoom = signal(1);
   private readonly center = signal<UiPathXY>({ x: 50, y: 50 });
-  private readonly coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  protected readonly coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   protected readonly knob = signal(this.coarse ? 9 : 6);
 
   /** Screen pixels per editor unit. */
@@ -1046,6 +1066,28 @@ export class UiPathEditor {
         e.preventDefault();
         this.undoPenPoint();
       }
+      return;
+    }
+    // `]` / `[` step the selection through the items, Escape clears it: without them a keyboard user
+    // could never select anything, and every key below needs a selection.
+    if ((e.key === ']' || e.key === '[') && (this.mode() === 'objects' || this.mode() === 'points')) {
+      const list = this.items();
+      if (!list.length) return;
+      e.preventDefault();
+      const at = list.findIndex((i) => i.id === this.selectedId());
+      const next = at < 0 ? (e.key === ']' ? 0 : list.length - 1) : (at + (e.key === ']' ? 1 : -1) + list.length) % list.length;
+      this.selectedId.set(list[next].id);
+      this.selectedPoint.set(null);
+      this.selectedPoints.set([]);
+      return;
+    }
+    if (e.key === 'Escape' && this.selectedId() !== null) {
+      e.preventDefault();
+      // Points first, then the item: one Escape per level, like leaving a group in a drawing app.
+      if (this.selectedPoints().length) { this.selectedPoint.set(null); this.selectedPoints.set([]); return; }
+      this.selectedId.set(null);
+      this.selectedPoint.set(null);
+      this.selectedPoints.set([]);
       return;
     }
     const item = this.selectedItem();

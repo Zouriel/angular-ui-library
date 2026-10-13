@@ -16,18 +16,22 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           [attr.aria-label]="i + ' of ' + max()"
           [disabled]="disabled()"
           (click)="set(i)"
-          (mouseenter)="hover.set(i)"
-          (mouseleave)="hover.set(0)">★</button>
+          (mouseenter)="!disabled() && hover.set(i)"
+          (mouseleave)="hover.set(0)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 2.8l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93z"/></svg></button>
       }
     </div>
   `,
   styles: `
     :host { display: inline-block; }
     .ui-rating { display: inline-flex; gap: 2px; }
-    .star { border: none; background: none; cursor: pointer; padding: 0 1px; font-size: 20px; line-height: 1;
-      color: var(--ui-color-border); transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
+    /* Drawn star (a ★ glyph fell back to Arial). Empty = outline in text-muted so it clears 3:1 in
+       every theme (--ui-color-border measured 1.2–1.5:1); filled = solid warning. */
+    .star { display: grid; place-items: center; border: none; background: none; cursor: pointer; padding: 0; font: inherit;
+      color: var(--ui-color-text-muted); transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .star svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
     .star.filled { color: var(--ui-color-warning); }
-    .star:disabled { cursor: not-allowed; opacity: 0.55; }
+    .star.filled svg path { fill: currentColor; }
+    .star:disabled { cursor: not-allowed; opacity: .5; }
     .star:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiRating), multi: true }],

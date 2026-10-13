@@ -96,7 +96,7 @@ export class UiTab {
     .tab {
       position: relative; appearance: none; border: none; background: transparent;
       padding: var(--ui-space-2) var(--ui-space-3); margin-bottom: -1px;
-      color: var(--ui-color-text-muted); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
+      color: var(--ui-color-text-muted); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       cursor: pointer; border-bottom: 2px solid transparent;
       /* Never shrink or wrap: a two-line "Audit log" is how a tab strip starts looking broken. */
       flex: 0 0 auto;
@@ -109,12 +109,16 @@ export class UiTab {
     .tab { display: inline-flex; align-items: center; gap: var(--ui-space-2); }
     .tab__icon { display: inline-flex; flex: none; }
     /* Icon-only tabs share the strip evenly and keep a thumb-sized target. */
-    .tab--icon { flex: 1 1 0; justify-content: center; min-width: var(--ui-size-touch, 44px); padding-block: var(--ui-space-3); }
+    .tab--icon { flex: 1 1 0; justify-content: center; min-width: var(--ui-size-touch, 44px); }
+    @media (pointer: coarse) { .tab { min-height: var(--ui-size-touch); } }
     .tab:hover:not(:disabled) { color: var(--ui-color-text); }
-    .tab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
+    /* Press feedback on the contents only, so the selected underline doesn't shrink with it. */
+    .tab:active:not(:disabled) > * { transform: scale(var(--ui-scale-press)); }
+    .tab > * { transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .tab[aria-selected="true"] { color: var(--ui-color-text); border-bottom-color: var(--ui-color-primary); }
-    .tab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
-    .tab:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* The strip scrolls, which clips an outset ring top and bottom; the ring sits inside instead. */
+    .tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); border-radius: var(--ui-radius-xs); }
+    .tab:disabled { opacity: .5; cursor: not-allowed; }
   `,
 })
 export class UiTabs {
@@ -159,6 +163,11 @@ export class UiTabs {
     else if (e.key === 'End') next = count - 1;
     else return;
     e.preventDefault();
+    // Disabled tabs can't take focus, so step past them in the direction of travel.
+    const step = e.key === 'ArrowLeft' || e.key === 'End' ? -1 : 1;
+    const tabs = this.tabs();
+    for (let n = 0; n < count && tabs[next]?.disabled(); n++) next = (next + step + count) % count;
+    if (tabs[next]?.disabled()) return;
     this.select(next);
     const buttons = this.host.nativeElement.querySelectorAll<HTMLButtonElement>('.tab');
     buttons[next]?.focus();

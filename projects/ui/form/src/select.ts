@@ -44,18 +44,20 @@ export interface UiSelectOption {
     .wrap { position: relative; }
     .ui-select {
       width: 100%; box-sizing: border-box; appearance: none;
-      height: var(--ui-size-md); padding: 0 var(--ui-space-6) 0 var(--ui-space-3);
+      height: var(--ui-size-md); padding: 0 calc(var(--ui-space-3) + 12px + var(--ui-space-2)) 0 var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); cursor: pointer;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }
-    .ui-select:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .ui-select:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-select:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-select:disabled { opacity: .5; cursor: not-allowed; }
     .wrap.no-radius .ui-select { border-radius: 0; }
     .wrap[data-size="sm"] .ui-select { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-select { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     .ui-select[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .ui-select[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
+    .wrap:has(.ui-select:disabled) .chevron { opacity: .5; }
     .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted); }
     /*
      * The popup list is painted by the platform, not by this stylesheet, so it has to be told the

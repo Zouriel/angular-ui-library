@@ -22,12 +22,12 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   `,
   styles: `
     :host { display: inline-flex; }
-    .ui-checkbox { display: inline-flex; align-items: center; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
-    .ui-checkbox.disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-checkbox { display: inline-flex; align-items: flex-start; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text); }
+    .ui-checkbox.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .box {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 18px; height: 18px; flex: none;
+      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px;
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-xs);
       background: var(--ui-color-surface);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), border-color var(--ui-motion-fast) var(--ui-ease-standard);
@@ -36,6 +36,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .native:checked + .box { background: var(--ui-color-primary); border-color: var(--ui-color-primary); }
     .native:checked + .box .tick { stroke-dashoffset: 0; }
     .native:focus-visible + .box { box-shadow: var(--ui-focus-ring); }
+    .ui-checkbox:not(.disabled):hover .native:not(:checked) + .box { border-color: var(--ui-color-primary); }
     .native[aria-invalid="true"] + .box { border-color: var(--ui-color-danger); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCheckbox), multi: true }],

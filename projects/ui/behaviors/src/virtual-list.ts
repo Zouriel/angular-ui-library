@@ -25,7 +25,9 @@ import { Component, contentChild, input, TemplateRef } from '@angular/core';
     .vp { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .row { display: flex; align-items: center; padding: 0 var(--ui-space-3); box-sizing: border-box;
       border-bottom: 1px solid var(--ui-color-border); font-family: var(--ui-font-default);
-      font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
+      font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text);
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .row:hover { background: var(--ui-color-surface-hover); }
   `,
 })
 export class UiVirtualList<T = unknown> {

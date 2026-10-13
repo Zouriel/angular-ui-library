@@ -1,5 +1,10 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
+import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
+import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
+import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
 import { clampOffset, isSwipe, resist } from './gestures';
 
 const MIN_ZOOM = 0.25;
@@ -20,7 +25,7 @@ const MAX_ZOOM = 6;
  */
 @Component({
   selector: 'ui-image-viewer',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, HugeiconsIconComponent],
   template: `
     <div class="iv">
       <div #stage class="stage" [class.panning]="pannable()"
@@ -28,7 +33,7 @@ const MAX_ZOOM = 6;
            (pointerdown)="onDown($event)" (pointermove)="onMove($event)"
            (pointerup)="onUp($event)" (pointercancel)="onUp($event)"
            (keydown)="onKey($event)"
-           [attr.tabindex]="navigable() ? 0 : null"
+           [attr.tabindex]="navigable() || pannable() ? 0 : null"
            (dblclick)="toggleZoom()">
         @if (isVideo()) {
           <!-- Its own controls, not ours: scrubbing a clip is what the browser is already good at,
@@ -44,17 +49,17 @@ const MAX_ZOOM = 6;
       <div class="bar">
         @if (navigable()) {
           <button type="button" class="step" (click)="previous.emit()"
-                  [disabled]="!hasPrevious()" aria-label="Previous image">‹</button>
+                  [disabled]="!hasPrevious()" aria-label="Previous image"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
         }
         @if (!isVideo()) {
-          <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out">−</button>
+          <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out"><hugeicons-icon [icon]="minusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
           <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
-          <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in">+</button>
+          <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in"><hugeicons-icon [icon]="plusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
           <button type="button" class="fit" (click)="reset()" aria-label="Reset view">Fit</button>
         }
         @if (navigable()) {
           <button type="button" class="step" (click)="next.emit()"
-                  [disabled]="!hasNext()" aria-label="Next image">›</button>
+                  [disabled]="!hasNext()" aria-label="Next image"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
         }
       </div>
     </div>
@@ -90,31 +95,32 @@ const MAX_ZOOM = 6;
     @media (prefers-reduced-motion: reduce) { img.settling, video.settling { transition: none; } }
 
     /* flex-none: the controls are the one part that must never be the thing that gets squeezed out. */
-    .bar { flex: 0 0 auto; display: flex; align-items: center; gap: var(--ui-space-2); justify-content: center;
-      padding: var(--ui-space-2); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
+    .bar { flex: 0 0 auto; display: flex; align-items: center; gap: var(--ui-space-1); justify-content: center;
+      padding: var(--ui-space-1) var(--ui-space-2); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface-raised);
+      font-family: var(--ui-font-default); line-height: 1.35; }
     /* Sized to be tappable outright. It used to stay 26px and grow an invisible ::before to
        var(--ui-size-touch), which inset by -9px against an 8px gap — so neighbouring hit areas
        overlapped by 10px and a tap near an edge pressed the wrong button. */
-    .bar button { display: inline-flex; align-items: center; justify-content: center;
-      min-width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
-      border: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
-      color: var(--ui-color-text); border-radius: var(--ui-radius); cursor: pointer;
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1;
+    .bar button { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+      min-width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0;
+      border: none; background: transparent;
+      color: var(--ui-color-text); border-radius: var(--ui-radius-xs); cursor: pointer;
+      font: inherit; font-size: var(--ui-font-size-sm); line-height: 1;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .bar button.fit { min-width: auto; }
+    .bar button.fit { padding: 0 var(--ui-space-2); }
     /* The step arrows sit at the ends so the pair never reads as part of the zoom cluster. */
-    .bar button.step { font-size: var(--ui-font-size-lg); }
     .bar button.step:first-child { margin-right: auto; }
     .bar button.step:last-child { margin-left: auto; }
-    .bar button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
+    .bar button:hover:not(:disabled) { background: var(--ui-color-elevated-hover); }
     .bar button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
-    .bar button:disabled { opacity: 0.45; cursor: default; }
+    .bar button:disabled { opacity: 0.5; cursor: not-allowed; }
     .bar button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     @media (pointer: coarse) {
       .bar { gap: var(--ui-space-3); }
       .bar button { min-width: var(--ui-size-touch); height: var(--ui-size-touch); }
     }
-    .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 42px; text-align: center; }
+    .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 42px; text-align: center;
+      font-variant-numeric: tabular-nums; }
   `,
 })
 export class UiImageViewer {
@@ -138,6 +144,11 @@ export class UiImageViewer {
   /** A swipe, arrow key or step button asking for the neighbour. The host changes `src`. */
   previous = output<void>();
   next = output<void>();
+
+  protected readonly prevIcon = ArrowLeft01Icon;
+  protected readonly nextIcon = ArrowRight01Icon;
+  protected readonly minusIcon = MinusSignIcon;
+  protected readonly plusIcon = PlusSignIcon;
 
   protected readonly min = MIN_ZOOM;
   protected readonly max = MAX_ZOOM;
@@ -229,6 +240,15 @@ export class UiImageViewer {
   }
 
   protected onKey(e: KeyboardEvent): void {
+    // Zoomed in, the arrows pan — the keyboard's version of dragging the picture around.
+    const pan: Record<string, [number, number]> = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+    if (this.pannable() && pan[e.key]) {
+      const [dx, dy] = pan[e.key];
+      const step = e.shiftKey ? 160 : 40;
+      this.offset.update((o) => this.clamp({ x: o.x + dx * step, y: o.y + dy * step }));
+      e.preventDefault();
+      return;
+    }
     if (e.key === 'ArrowRight' && this.hasNext()) this.next.emit();
     else if (e.key === 'ArrowLeft' && this.hasPrevious()) this.previous.emit();
     else return;

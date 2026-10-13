@@ -9,8 +9,8 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
   template: `
     <div class="sp" [class.vertical]="orientation() === 'vertical'" #root>
       <div class="pane" [style.flex-basis.%]="ratio()"><ng-content select="[split-a]" /></div>
-      <div class="gutter" role="separator" tabindex="0"
-           [attr.aria-orientation]="orientation()"
+      <div class="gutter" role="separator" tabindex="0" aria-label="Resize panes"
+           [attr.aria-orientation]="orientation()" [attr.aria-valuenow]="round(ratio())" aria-valuemin="10" aria-valuemax="90"
            (pointerdown)="start($event)"
            (keydown)="onKey($event)"></div>
       <div class="pane"><ng-content select="[split-b]" /></div>
@@ -22,11 +22,14 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
     .sp.vertical { flex-direction: column; }
     .pane { overflow: auto; flex: 1 1 0; min-width: 0; min-height: 0; }
     .sp > .pane:first-child { flex: 0 0 auto; }
-    .gutter { flex: none; background: var(--ui-color-border); position: relative; }
+    .gutter { flex: none; background: var(--ui-color-border); position: relative; touch-action: none;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     .sp:not(.vertical) .gutter { width: 1px; cursor: col-resize; }
     .sp.vertical .gutter { height: 1px; cursor: row-resize; }
-    .gutter::after { content: ''; position: absolute; inset: -3px; }
+    .gutter::after { content: ''; position: absolute; inset: -3px; border-radius: var(--ui-radius-pill); }
     .gutter:hover, .gutter:focus-visible { background: var(--ui-color-primary); outline: none; }
+    .gutter:focus-visible::after { box-shadow: var(--ui-focus-ring); }
+    @media (pointer: coarse) { .gutter::after { inset: -10px; } }
   `,
 })
 export class UiSplitter implements OnDestroy {
@@ -62,6 +65,7 @@ export class UiSplitter implements OnDestroy {
     document.removeEventListener('pointermove', this.move);
     document.removeEventListener('pointerup', this.up);
   }
+  protected round(v: number): number { return Math.round(v); }
   protected onKey(e: KeyboardEvent): void {
     const step = 2;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); this.ratio.update((r) => Math.max(10, r - step)); }

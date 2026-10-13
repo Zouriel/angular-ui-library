@@ -42,7 +42,8 @@ const HANDLES: Handle[] = [
  * step). Resizing respects rotation: the opposite edge stays put on screen.
  *
  * Modifiers: Shift keeps proportions while resizing and snaps rotation to 15°; Alt resizes from the
- * centre. Arrow keys nudge by one unit, Shift+arrow by ten.
+ * centre. Arrow keys nudge by one unit, Shift+arrow by ten; Alt+arrow resizes (width with ←/→, height
+ * with ↑/↓); `[` / `]` rotate by 1° (15° with Shift) — the keyboard's way to every drag.
  *
  * Two fingers pinch: the box grows or shrinks toward the point between the fingers — that point stays
  * under them, like zooming a photo — proportions kept, and moves with them. Fingers either side of
@@ -100,16 +101,18 @@ const HANDLES: Handle[] = [
       background: var(--ui-color-primary); border: 2px solid var(--ui-color-surface); box-sizing: border-box; cursor: grab; }
     .rotate::after { content: ''; position: absolute; inset: -8px; }
     @media (pointer: coarse) {
+      /* 44px hit areas: 14px + 2×15 and 12px + 2×16 for the handles, 20px + 2×12 for the knob. */
       .handle { width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; }
-      .handle::after { inset: -12px; }
+      .handle::after { inset: -15px; }
       .handle[data-h="n"], .handle[data-h="s"], .handle[data-h="e"], .handle[data-h="w"] { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+      .handle[data-h="n"]::after, .handle[data-h="s"]::after, .handle[data-h="e"]::after, .handle[data-h="w"]::after { inset: -16px; }
       .stem { top: -34px; height: 34px; }
       .rotate { top: -46px; width: 20px; height: 20px; margin-left: -10px; }
       .rotate::after { inset: -12px; }
     }
     .size { position: absolute; left: 50%; top: calc(100% + 10px); translate: -50% 0; white-space: nowrap; pointer-events: none;
-      padding: 2px 6px; border-radius: var(--ui-radius-xs); background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
-      font: 500 11px/1.4 var(--ui-font-mono); }
+      padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-xs); background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
+      font: 500 11px/16px var(--ui-font-mono); font-variant-numeric: tabular-nums; }
   `,
 })
 export class UiTransformBox implements OnDestroy {
@@ -385,15 +388,30 @@ export class UiTransformBox implements OnDestroy {
       ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step],
     };
     const m = moves[e.key];
-    if (!m) return;
+    const turn = e.key === '[' || e.key === '{' ? -1 : e.key === ']' || e.key === '}' ? 1 : 0;
+    if (!m && !(turn && this.rotatable())) return;
+    if (m && e.altKey && !this.resizable()) return;
     e.preventDefault();
     // Presses faster than the host re-renders (a held key) build on the last nudge, not on a box
     // that hasn't caught up yet — otherwise they overwrite each other and the element barely moves.
     const base = this.nudged && this.nudgedFrom === b ? this.nudged : b;
-    const next = { ...base, x: base.x + m[0], y: base.y + m[1] };
+    const min = this.minSize();
+    const next = turn
+      ? { ...base, rotate: base.rotate + turn * (e.shiftKey ? 15 : 1) }
+      : e.altKey
+        ? this.keyResize(base, m![0], m![1], min)
+        : { ...base, x: base.x + m![0], y: base.y + m![1] };
     this.nudged = next;
     this.nudgedFrom = b;
     this.transformEnd.emit(next);
+  }
+
+  /** Alt+arrow resize; with lockAspect the other side follows so proportions hold. */
+  private keyResize(base: UiBox, dw: number, dh: number, min: number): UiBox {
+    if (!this.lockAspect() || !base.w || !base.h) return { ...base, w: Math.max(min, base.w + dw), h: Math.max(min, base.h + dh) };
+    const ratio = base.h / base.w;
+    const w = Math.max(min, dw ? base.w + dw : base.w + dh / ratio);
+    return { ...base, w, h: w * ratio };
   }
 
   private detach(): void {

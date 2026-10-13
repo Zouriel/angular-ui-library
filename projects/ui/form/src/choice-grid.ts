@@ -54,7 +54,7 @@ export interface UiChoiceTileContext {
   `,
   styles: `
     :host { display: block; }
-    .wrap { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    .wrap { display: flex; flex-direction: column; gap: var(--ui-space-2); line-height: 1.35; }
     .heading { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); font-weight: 600; color: var(--ui-color-text-muted); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--ui-choice-min, 88px), 1fr)); gap: var(--ui-space-2); }
     .tile { display: flex; flex-direction: column; align-items: stretch; gap: var(--ui-space-1); min-width: 0; padding: var(--ui-space-2);
@@ -62,10 +62,10 @@ export interface UiChoiceTileContext {
       font-family: var(--ui-font-default); text-align: center; cursor: pointer;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .tile.compact { text-align: left; }
-    .tile:hover:not(:disabled) { border-color: var(--ui-color-primary); }
+    .tile:hover:not(:disabled) { border-color: color-mix(in srgb, var(--ui-color-primary) 50%, var(--ui-color-border)); background: var(--ui-color-surface-hover); }
     .tile:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .tile:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .tile.on { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, var(--ui-color-surface)); }
+    .tile.on, .tile.on:hover:not(:disabled) { border-color: var(--ui-color-primary); background: var(--ui-color-selected); }
     .tile:disabled { opacity: 0.5; cursor: not-allowed; }
     .art { display: flex; align-items: center; justify-content: center; aspect-ratio: 1.4; border-radius: calc(var(--ui-radius) - 2px);
       background: var(--ui-color-surface-subtle); overflow: hidden; }

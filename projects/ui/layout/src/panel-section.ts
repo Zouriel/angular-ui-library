@@ -28,19 +28,22 @@ let panelSeq = 0;
   `,
   styles: `
     :host { display: block; border-bottom: 1px solid var(--ui-color-border); }
-    .head { display: flex; align-items: center; gap: var(--ui-space-2); min-height: 38px; padding: 0 var(--ui-space-2) 0 0; }
-    .toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 var(--ui-space-3);
+    .head { display: flex; align-items: center; gap: var(--ui-space-2); min-height: var(--ui-size-lg); padding: 0 var(--ui-space-2) 0 0; }
+    .toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--ui-space-2); height: var(--ui-size-lg); padding: 0 var(--ui-space-3);
       border: 0; background: none; color: var(--ui-color-text); font: 600 12px/1 var(--ui-font-default); letter-spacing: .04em;
-      text-transform: uppercase; cursor: pointer; text-align: left; }
+      text-transform: uppercase; cursor: pointer; text-align: left;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .toggle:not(.static):hover { background: var(--ui-color-surface-hover); }
     .toggle.static { cursor: default; }
-    .toggle:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
+    .toggle:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     .chev { flex: none; color: var(--ui-color-text-muted); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
     :host(.open) .chev { transform: rotate(90deg); }
     .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .badge { flex: none; padding: 1px 6px; border-radius: var(--ui-radius-pill); background: var(--ui-color-surface-subtle);
-      color: var(--ui-color-text-muted); font-size: 10.5px; letter-spacing: 0; text-transform: none; font-weight: 500; }
-    .actions { display: flex; align-items: center; gap: 4px; }
-    .body { display: grid; gap: var(--ui-space-2); padding: 2px var(--ui-space-3) var(--ui-space-3); }
+    .badge { flex: none; padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface-subtle);
+      color: var(--ui-color-text-muted); font-size: 11px; line-height: 16px; letter-spacing: 0; text-transform: none; font-weight: 600;
+      font-variant-numeric: tabular-nums; }
+    .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
+    .body { display: grid; gap: var(--ui-space-2); padding: 2px var(--ui-space-3) var(--ui-space-3); line-height: 1.35; }
   `,
 })
 export class UiPanelSection {

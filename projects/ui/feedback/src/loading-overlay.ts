@@ -18,13 +18,14 @@ import { Component, input } from '@angular/core';
   styles: `
     :host { position: absolute; inset: 0; display: contents; }
     .veil {
-      position: absolute; inset: 0; z-index: 2;
+      position: absolute; inset: 0; z-index: var(--ui-z-docked);
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-2);
       background: color-mix(in srgb, var(--ui-color-bg) 55%, transparent);
       backdrop-filter: blur(2px);
-      font-family: var(--ui-font-default);
+      font-family: var(--ui-font-default); line-height: 1.35;
     }
-    .spin { width: var(--ui-size-sm); height: var(--ui-size-sm); border-radius: 50%; border: 3px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-lo-spin var(--ui-motion-slow) linear infinite; }
+    /* Same look as <ui-spinner size="lg">. */
+    .spin { box-sizing: border-box; width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-lo-spin 700ms linear infinite; }
     .lbl { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     @keyframes ui-lo-spin { to { transform: rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 1.2s; } }

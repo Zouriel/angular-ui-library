@@ -38,11 +38,11 @@ let radioGroupSeq = 0;
     :host { display: block; }
     .ui-radio-group { display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .ui-radio-group.row { flex-direction: row; flex-wrap: wrap; gap: var(--ui-space-4); }
-    .opt { display: inline-flex; align-items: center; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
-    .opt.disabled { opacity: 0.55; cursor: not-allowed; }
+    .opt { display: inline-flex; align-items: flex-start; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text); }
+    .opt.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .dot {
-      width: 18px; height: 18px; flex: none; border-radius: 50%;
+      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px; border-radius: 50%;
       border: 1px solid var(--ui-control-border); background: var(--ui-color-surface);
       display: inline-flex; align-items: center; justify-content: center;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);
@@ -51,6 +51,9 @@ let radioGroupSeq = 0;
     .native:checked + .dot { border-color: var(--ui-color-primary); }
     .native:checked + .dot::after { transform: scale(1); }
     .native:focus-visible + .dot { box-shadow: var(--ui-focus-ring); }
+    .opt:not(.disabled):hover .native:not(:checked) + .dot { border-color: var(--ui-color-primary); }
+    /* Reduced motion calms the overshoot spring to a plain ease. */
+    @media (prefers-reduced-motion: reduce) { .dot::after { transition-timing-function: var(--ui-ease-standard); } }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiRadioGroup), multi: true }],
 })

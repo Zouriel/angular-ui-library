@@ -31,14 +31,16 @@ export interface UiSegmentedOption {
     :host { display: inline-flex; max-width: 100%; }
     .seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle);
       border: 1px solid var(--ui-color-border); max-width: 100%; overflow-x: auto; }
-    .opt { flex: 1 0 auto; min-width: 30px; height: calc(var(--ui-size-md) - 6px); padding: 0 10px; border: 0; border-radius: calc(var(--ui-radius) - 2px);
+    .opt { flex: 1 0 auto; min-width: 30px; height: calc(var(--ui-size-md) - 6px); padding: 0 var(--ui-space-3); border: 0; border-radius: calc(var(--ui-radius) - 2px);
       background: transparent; color: var(--ui-color-text-muted); font: 500 var(--ui-font-size-sm) var(--ui-font-default); cursor: pointer; white-space: nowrap;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
-    .seg[data-size="sm"] .opt { height: calc(var(--ui-size-sm) - 6px); padding: 0 8px; font-size: 12px; }
+    .seg[data-size="sm"] .opt { height: calc(var(--ui-size-sm) - 6px); padding: 0 var(--ui-space-2); }
+    .seg[data-size="lg"] .opt { height: calc(var(--ui-size-lg) - 6px); padding: 0 var(--ui-space-4); font-size: var(--ui-font-size-md); }
     .opt:hover:not(:disabled):not(.on) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .opt.on { background: var(--ui-color-surface-raised); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }
-    .opt:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .opt:disabled { opacity: .45; cursor: not-allowed; }
+    /* Inset: .seg scrolls horizontally, which would clip an outset ring. */
+    .opt:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
+    .opt:disabled { opacity: .5; cursor: not-allowed; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSegmented), multi: true }],
 })

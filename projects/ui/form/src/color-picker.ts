@@ -13,7 +13,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       <input class="hex" [value]="value()" [disabled]="disabled()" (input)="set($any($event.target).value)" (blur)="onTouched()" aria-label="Hex color" />
       <div class="swatches">
         @for (c of swatches(); track c) {
-          <button type="button" class="sw" [style.background]="c" [attr.aria-label]="c" (click)="set(c)"></button>
+          <button type="button" class="sw" [style.background]="c" [attr.aria-label]="c" [attr.aria-pressed]="c.toLowerCase() === (value() || '').toLowerCase()" [disabled]="disabled()" (click)="set(c)"></button>
         }
       </div>
     </div>
@@ -21,18 +21,24 @@ import { UI_CONFIG } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .cp { display: flex; align-items: center; gap: var(--ui-space-2); }
-    .well { width: var(--ui-size-md); height: var(--ui-size-md); border-radius: var(--ui-radius); border: 1px solid var(--ui-control-border); overflow: hidden; cursor: pointer; flex: none; }
+    .well { box-sizing: border-box; width: var(--ui-size-md); height: var(--ui-size-md); border-radius: var(--ui-radius); border: 1px solid var(--ui-control-border); overflow: hidden; cursor: pointer; flex: none; }
     .cp.no-radius .well, .cp.no-radius .hex { border-radius: 0; }
-    .well:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+    .well:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+    /* The native colour input is invisible, so its keyboard focus is drawn on the well. */
+    .well:has(input:focus-visible) { box-shadow: var(--ui-focus-ring); }
     .well input { opacity: 0; width: 100%; height: 100%; cursor: pointer; }
-    .hex { width: 92px; height: var(--ui-size-md); padding: 0 var(--ui-space-2); background: var(--ui-color-surface);
+    .hex { box-sizing: border-box; width: 92px; height: var(--ui-size-md); padding: 0 var(--ui-space-3); background: var(--ui-color-surface);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); color: var(--ui-color-text);
       font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .hex:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .hex:disabled { opacity: 0.55; cursor: not-allowed; }
-    .swatches { display: flex; gap: 4px; }
-    .sw { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); cursor: pointer; padding: 0; }
+    .hex:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .hex:disabled { opacity: .5; cursor: not-allowed; }
+    .swatches { display: flex; gap: var(--ui-space-1); }
+    .sw { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); cursor: pointer; padding: 0;
+      transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .sw:hover:not(:disabled) { transform: scale(1.1); }
+    .sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 3px var(--ui-color-text); }
+    .sw:disabled { opacity: .5; cursor: not-allowed; }
     .sw:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiColorPicker), multi: true }],

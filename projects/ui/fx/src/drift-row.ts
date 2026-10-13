@@ -61,7 +61,7 @@ export type UiDriftDirection = 'auto' | 'left' | 'right';
       display: flex;
       gap: var(--gap, 1.5rem);
       width: max-content;
-      padding: 0.35rem 0.15rem;
+      padding: var(--ui-space-1) 2px;
     }
     :host(.faded) .drift {
       mask-image: linear-gradient(90deg, transparent, #000 3.5%, #000 96.5%, transparent);
@@ -161,7 +161,8 @@ export class UiDriftRow implements AfterViewInit, OnDestroy {
 
     // While hovered/dragging/paused, follow the user's scroll position so the
     // drift picks up seamlessly from wherever they left it.
-    if (this.paused || this.dragging || (this.pauseOnHover() && this.hovering)) {
+    // Focus inside counts as hovering: a keyboard user's focused item must not drift out of view.
+    if (this.paused || this.dragging || (this.pauseOnHover() && this.hovering) || el.matches(':focus-within')) {
       this.pos = el.scrollLeft;
       return;
     }

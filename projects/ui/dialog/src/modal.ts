@@ -60,11 +60,11 @@ let modalSeq = 0;
     }
     .panel {
       pointer-events: auto;
-      width: 100%; max-width: 480px; max-height: 85vh; overflow: auto;
+      width: 100%; max-width: 480px; max-height: 85dvh; overflow: hidden;
       display: flex; flex-direction: column;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg);
-      box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default);
+      box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default); line-height: 1.35;
     }
     .panel[data-size="sm"] { max-width: 360px; }
     .panel[data-size="lg"] { max-width: 720px; }
@@ -74,10 +74,11 @@ let modalSeq = 0;
     .panel[data-size="full"] .bd { flex: 1; min-height: 0; min-width: 0; padding: 0; gap: 0; overflow: hidden; }
     .panel.no-radius { border-radius: 0; }
     .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
-    .hd { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
-    .title { font-weight: 600; font-size: var(--ui-font-size-lg); letter-spacing: var(--ui-tracking-tight); }
-    .bd { padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); }
-    .ft { padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: flex-end; }
+    .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
+    .title { min-width: 0; overflow-wrap: anywhere; text-wrap: balance; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
+    /* Only the body scrolls, so the header and footer stay put on long content. */
+    .bd { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: var(--ui-space-3) var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); }
+    .ft { flex: none; padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: flex-end; }
     .ft:empty { display: none; }
     /*
       A footer's gap is between .ft's OWN children, and consumers overwhelmingly project one wrapper
@@ -85,19 +86,25 @@ let modalSeq = 0;
       buttons sat welded together. The wrapper carries the row instead. Scoped to a plain div so an
       element that IS the action (<ui-button modal-footer>) keeps its own box and the outer gap.
     */
-    .ft ::ng-deep > div[modal-footer], .ft ::ng-deep > span[modal-footer] {
-      display: flex; align-items: center; flex-wrap: wrap;
+    /* :where() keeps this at the lowest specificity, so a component's own footer layout (a
+       destructive confirm's Cancel-left / action-right split) always wins over this default. */
+    :where(.ft) ::ng-deep > :where(div[modal-footer], span[modal-footer]) {
+      flex: 1 1 auto; display: flex; align-items: center; flex-wrap: wrap;
       gap: var(--ui-space-2); justify-content: flex-end; }
     .x {
+      position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
-      padding: var(--ui-space-3); margin: calc(var(--ui-space-3) * -1);
-      border: none; background: transparent; border-radius: var(--ui-radius);
-      color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer;
-      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard);
+      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1);
+      border: none; background: transparent; border-radius: var(--ui-radius-xs);
+      color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .x:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .x:active { transform: scale(var(--ui-scale-press)); }
-    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius); }
+    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Touch-only hit-slop: the visible box stays compact on desktop. */
+    @media (pointer: coarse) { .x::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); } }
   `,
 })
 export class UiModal {

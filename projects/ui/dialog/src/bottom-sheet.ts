@@ -75,7 +75,7 @@ interface Drag {
             <span class="title">{{ title() }}</span>
             <span class="actions"><ng-content select="[sheet-actions]" /></span>
             @if (closable()) {
-              <button type="button" class="x" aria-label="Close" (click)="snap.set(0)">×</button>
+              <button type="button" class="x" aria-label="Close" (click)="snap.set(0)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             }
           </div>
         }
@@ -92,7 +92,7 @@ interface Drag {
     .sheet {
       position: fixed; left: 0; right: 0; bottom: var(--ui-sheet-offset, 0px); z-index: var(--ui-sheet-z, var(--ui-z-overlay));
       display: flex; flex-direction: column; box-sizing: border-box;
-      background: var(--ui-color-surface); color: var(--ui-color-text); font-family: var(--ui-font-default);
+      background: var(--ui-color-surface); color: var(--ui-color-text); font-family: var(--ui-font-default); line-height: 1.35;
       border: 1px solid var(--ui-color-border); border-bottom: 0; border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
       box-shadow: var(--ui-shadow-3);
       transition: transform var(--ui-motion-base) var(--ui-ease-standard), visibility 0s linear 0s;
@@ -103,22 +103,33 @@ interface Drag {
     :host(.dragging) .sheet { transition: none; }
     .grab { flex: none; touch-action: none; cursor: grab; user-select: none; }
     :host(.dragging) .grab { cursor: grabbing; }
-    .handle { display: flex; justify-content: center; width: 100%; padding: 8px 0 6px; border: 0; background: transparent; cursor: inherit; }
+    .handle { display: flex; align-items: center; justify-content: center; width: 100%; padding: var(--ui-space-2) 0; border: 0; background: transparent; cursor: inherit; }
+    @media (pointer: coarse) { .handle { min-height: var(--ui-size-touch); padding: 0; } }
     .handle span { width: 40px; height: 5px; border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); }
     .handle:focus-visible { outline: none; }
     .handle:focus-visible span { box-shadow: var(--ui-focus-ring); }
     .hd { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-3) var(--ui-space-2) var(--ui-space-4); min-height: 32px; }
-    .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--ui-font-size-md); }
+    .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
     .actions:empty { display: none; }
-    .x { display: grid; place-items: center; width: 36px; height: 36px; margin-right: calc(var(--ui-space-1) * -1); border: 0; border-radius: var(--ui-radius);
-      background: transparent; color: var(--ui-color-text-muted); font-size: 22px; line-height: 1; cursor: pointer; }
+    .x {
+      position: relative; flex: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1);
+      border: none; background: transparent; border-radius: var(--ui-radius-xs);
+      color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),
+                  transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
     .x:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .x:active { transform: scale(var(--ui-scale-press)); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Touch-only hit-slop: the visible box stays compact on desktop. */
+    @media (pointer: coarse) { .x::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); } }
     /* The sheet is always its tallest height, slid down to rest lower; the part below the screen edge
        is padding here, so the end of the content can still be scrolled into view at a lower snap. */
     .bd { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--ui-color-border-subtle);
-      padding-bottom: var(--ui-sheet-hidden, 0px); box-sizing: border-box; }
+      padding-bottom: calc(var(--ui-sheet-hidden, 0px) + env(safe-area-inset-bottom)); box-sizing: border-box; }
     @media (prefers-reduced-motion: reduce) { .sheet { transition: visibility 0s; } }
   `,
 })

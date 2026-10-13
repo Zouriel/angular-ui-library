@@ -17,7 +17,7 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
     @if (files().length) {
       <ul class="files">
         @for (f of files(); track f.name) {
-          <li><span class="fn">{{ f.name }}</span><span class="sz">{{ size(f.size) }}</span></li>
+          <li><span class="fn" [attr.title]="f.name">{{ f.name }}</span><span class="sz">{{ size(f.size) }}</span></li>
         }
       </ul>
     }
@@ -27,7 +27,7 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
     .dz { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-1);
       padding: var(--ui-space-6) var(--ui-space-4); text-align: center; cursor: pointer;
       border: 1px dashed var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
-      font-family: var(--ui-font-default); transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard); }
+      font-family: var(--ui-font-default); line-height: 1.35; transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard); }
     .dz.no-radius { border-radius: 0; }
     .dz:hover, .dz.over { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 8%, var(--ui-color-surface)); }
     .dz:focus-within { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -37,9 +37,10 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
     .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     .hint { overflow-wrap: anywhere; }
     .files { margin: var(--ui-space-2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
-    .files li { display: flex; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-1) var(--ui-space-2);
+    .files li { display: flex; justify-content: space-between; gap: var(--ui-space-3); line-height: 1.35; padding: var(--ui-space-1) var(--ui-space-2);
       background: var(--ui-color-surface-raised); border-radius: var(--ui-radius-xs); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
-    .sz { color: var(--ui-color-text-muted); }
+    .fn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sz { flex: none; color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
 })
 export class UiFileUpload {

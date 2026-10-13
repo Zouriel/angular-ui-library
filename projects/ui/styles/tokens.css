@@ -202,7 +202,7 @@
   --ui-slider-thumb-border: var(--ui-control-border);
   --ui-skeleton-base: var(--ui-color-surface);
   --ui-skeleton-highlight: var(--ui-color-surface-raised);
-  --ui-scroll-progress-track: rgba(255, 255, 255, 0.05);
+  --ui-scroll-progress-track: color-mix(in srgb, var(--ui-color-text) 6%, transparent);
   /* Media chrome sits over photographs, so it stays dark-scrim/light-glyph in every theme. */
   --ui-media-bg: #000000;
   --ui-media-scrim: #000000;

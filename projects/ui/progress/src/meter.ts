@@ -20,9 +20,9 @@ import { Component, computed, input } from '@angular/core';
   `,
   styles: `
     :host { display: block; min-width: 120px; }
-    .head { display: flex; justify-content: space-between; gap: var(--ui-space-2); margin-bottom: 4px; font-size: var(--ui-font-size-sm); }
-    .label { color: var(--ui-color-text-muted); }
-    .value { font-family: var(--ui-font-mono); color: var(--ui-color-text-secondary); white-space: nowrap; }
+    .head { display: flex; justify-content: space-between; gap: var(--ui-space-2); margin-bottom: var(--ui-space-1); font-size: var(--ui-font-size-sm); line-height: 1.35; }
+    .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-color-text-muted); }
+    .value { font-family: var(--ui-font-mono); font-variant-numeric: tabular-nums; color: var(--ui-color-text-secondary); white-space: nowrap; }
     .value[data-tone="warning"] { color: var(--ui-color-warning); }
     .value[data-tone="danger"] { color: var(--ui-color-danger); }
     .status { font-family: var(--ui-font-default); }

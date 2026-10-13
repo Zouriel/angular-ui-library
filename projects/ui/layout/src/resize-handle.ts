@@ -29,7 +29,8 @@ import { Component, NgZone, OnDestroy, inject, input, model, output } from '@ang
     :host { position: relative; display: flex; align-items: center; justify-content: center; flex: none; touch-action: none; outline: none; z-index: 1; }
     :host([data-edge="top"]), :host([data-edge="bottom"]) { height: 8px; cursor: row-resize; }
     :host([data-edge="left"]), :host([data-edge="right"]) { width: 8px; cursor: col-resize; }
-    .grip { border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); transition: background var(--ui-motion-fast); }
+    .grip { border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    @media (pointer: coarse) { :host::before { content: ''; position: absolute; inset: -12px; } }
     :host([data-edge="top"]) .grip, :host([data-edge="bottom"]) .grip { width: 36px; height: 3px; }
     :host([data-edge="left"]) .grip, :host([data-edge="right"]) .grip { width: 3px; height: 36px; }
     :host(:hover) .grip, :host(:focus-visible) .grip { background: var(--ui-color-primary); }

@@ -21,7 +21,7 @@
   --ui-color-surface: #120a0d;
   --ui-color-surface-raised: #1a1014;
   --ui-color-text: #f4ece4;            /* bone */
-  --ui-color-text-muted: rgba(244, 236, 228, 0.46);
+  --ui-color-text-muted: rgba(244, 236, 228, 0.6);
   --ui-color-border: rgba(244, 236, 228, 0.13);
 
   /* Accents — ember / blood / rose signature ramp */
@@ -31,7 +31,7 @@
   --ui-color-secondary: #8a8f98;
   --ui-color-success: #2faa6e;
   --ui-color-warning: #f59e0b;
-  --ui-color-danger: #d23045;          /* blood */
+  --ui-color-danger: #e8475b;          /* blood, lifted to read as text on ink */
 
   /* darkOrange-only accent tokens (components can reach for these) */
   --ui-color-ember: #f59e0b;

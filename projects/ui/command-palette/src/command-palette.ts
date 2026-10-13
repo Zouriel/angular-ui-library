@@ -1,3 +1,4 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { Component, computed, effect, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
@@ -16,16 +17,17 @@ export interface UiCommand {
  */
 @Component({
   selector: 'ui-command-palette',
+  imports: [CdkTrapFocus],
   template: `
     @if (open()) {
       <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
-        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette"
+        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus
              animate.enter="ui-scale-enter" animate.leave="ui-scale-leave">
           <input #input class="cp-input" [value]="query()" [attr.placeholder]="placeholder()"
                  (input)="onInput($event)" role="combobox" aria-expanded="true" aria-controls="cp-list"
                  aria-autocomplete="list" [attr.aria-activedescendant]="filtered().length ? 'cp-option-' + active() : null" />
-          <ul class="cp-list" id="cp-list" role="listbox">
+          <ul #list class="cp-list" id="cp-list" role="listbox">
             @for (c of filtered(); track c.value; let i = $index) {
               <li [id]="'cp-option-' + i" role="option" class="cp-item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
                   (mousedown)="$event.preventDefault(); pick(c)" (mouseenter)="active.set(i)">
@@ -46,18 +48,26 @@ export interface UiCommand {
     .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .cp-wrap { position: fixed; inset: 0; z-index: var(--ui-z-overlay); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; pointer-events: none; }
     .cp { pointer-events: auto; width: min(560px, 92vw); background: var(--ui-color-surface-raised);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default); }
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default);
+      color: var(--ui-color-text); line-height: 1.35; }
     .cp.no-radius { border-radius: 0; }
     .cp.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
-    .cp-input { width: 100%; box-sizing: border-box; height: 46px; padding: 0 var(--ui-space-4); border: none;
-      border-bottom: 1px solid var(--ui-color-border); background: transparent; color: var(--ui-color-text); font-size: var(--ui-font-size-lg); outline: none; }
-    .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; }
-    .cp-item { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: 6px; cursor: pointer; color: var(--ui-color-text); }
-    .cp-item.active { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
-    .ci { width: 18px; text-align: center; }
-    .cl { flex: 1; font-size: var(--ui-font-size-md); }
-    .cg { font-size: 12px; color: var(--ui-color-text-muted); }
-    .ck { font-family: var(--ui-font-mono); font-size: 11px; padding: 1px 5px; border: 1px solid var(--ui-color-border); border-radius: 4px; color: var(--ui-color-text-muted); }
+    .cp-input { display: block; width: 100%; box-sizing: border-box; height: 46px; padding: 0 var(--ui-space-4); border: none;
+      border-bottom: 1px solid var(--ui-color-border); background: transparent; color: var(--ui-color-text);
+      font: inherit; font-size: var(--ui-font-size-md); outline: none;
+      transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
+    /* The field is the dialog's only control; its underline carries the focus cue. */
+    .cp-input:focus-visible { border-bottom-color: var(--ui-color-border-focus); }
+    .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; overscroll-behavior: contain; }
+    .cp-item { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-sm); }
+    .cp-item.active { background: var(--ui-color-elevated-hover); }
+    .ci { flex: none; width: 16px; text-align: center; color: var(--ui-color-text-muted); }
+    .cl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cg { flex: none; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    /* Matches ui-kbd. */
+    .ck { flex: none; display: inline-flex; align-items: center; min-width: 1.4em; height: 1.5em; padding: 0 0.4em; box-sizing: border-box;
+      font-family: var(--ui-font-mono); font-size: 11px; line-height: 1; color: var(--ui-color-text-muted);
+      background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-bottom-width: 2px; border-radius: var(--ui-radius-xs); }
     .cp-empty { padding: var(--ui-space-4); text-align: center; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })
@@ -73,6 +83,7 @@ export class UiCommandPalette {
   protected readonly query = signal('');
   protected readonly active = signal(0);
   private input = viewChild<ElementRef<HTMLInputElement>>('input');
+  private list = viewChild<ElementRef<HTMLElement>>('list');
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -93,10 +104,14 @@ export class UiCommandPalette {
   protected onInput(e: Event): void { this.query.set((e.target as HTMLInputElement).value); this.active.set(0); }
   protected onKey(e: KeyboardEvent): void {
     const items = this.filtered();
-    if (e.key === 'ArrowDown') { e.preventDefault(); this.active.update((i) => Math.min(items.length - 1, i + 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); this.active.update((i) => Math.max(0, i - 1)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); this.active.update((i) => Math.min(items.length - 1, i + 1)); this.revealActive(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.active.update((i) => Math.max(0, i - 1)); this.revealActive(); }
     else if (e.key === 'Enter') { e.preventDefault(); const c = items[this.active()]; if (c) this.runCommand(c); }
     else if (e.key === 'Escape') { e.preventDefault(); this.open.set(false); }
+  }
+  /** Keeps the keyboard-highlighted option inside the scrolled list. */
+  private revealActive(): void {
+    queueMicrotask(() => this.list()?.nativeElement.querySelector<HTMLElement>('#cp-option-' + this.active())?.scrollIntoView({ block: 'nearest' }));
   }
   protected pick(c: UiCommand): void { this.runCommand(c); }
   private runCommand(c: UiCommand): void { this.run.emit(c); this.open.set(false); }

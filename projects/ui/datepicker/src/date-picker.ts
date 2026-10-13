@@ -2,14 +2,13 @@ import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angul
 import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
+import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { formatIsoDate, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
 
 interface DayCell { day: number; iso: string; today: boolean; disabled: boolean; }
-
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function iso(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -45,7 +44,7 @@ function iso(y: number, m: number, d: number): string {
       (overlayOutsideClick)="open.set(false)">
       <div class="cal-panel" (keydown.escape)="open.set(false)">
         <div class="cal-head">
-          <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)">‹</button>
+          <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
           @if (mode() === 'days') {
             <span class="heading">
               <button type="button" class="lbl" (click)="mode.set('months')">{{ monthName() }}</button>
@@ -56,7 +55,7 @@ function iso(y: number, m: number, d: number): string {
           } @else {
             <span class="heading-static">{{ yearRange() }}</span>
           }
-          <button type="button" class="nav" [attr.aria-label]="nextLabel()" (click)="shift(1)">›</button>
+          <button type="button" class="nav" [attr.aria-label]="nextLabel()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
         </div>
 
         @if (mode() === 'days') {
@@ -104,12 +103,15 @@ function iso(y: number, m: number, d: number): string {
     :host { display: block; }
     .wrap { position: relative; }
     .ui-date { width: 100%; box-sizing: border-box; height: var(--ui-size-md);
-      padding: 0 var(--ui-space-6) 0 var(--ui-space-3); cursor: pointer;
+      padding: 0 calc(var(--ui-space-3) + 16px + var(--ui-space-2)) 0 var(--ui-space-3); cursor: pointer;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ui-date:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
+    .ui-date:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-date::placeholder { color: var(--ui-color-text-muted); }
+    .ui-date:disabled { opacity: .5; cursor: not-allowed; }
+    .wrap:has(.ui-date:disabled) .cal { opacity: .5; }
     .wrap.no-radius .ui-date { border-radius: 0; }
     .wrap[data-size="sm"] .ui-date { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-date { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
@@ -117,25 +119,25 @@ function iso(y: number, m: number, d: number): string {
        follows the field's own text colour rather than the vendor's emoji palette. */
     .cal { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%);
       pointer-events: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
-    .cal-panel { margin-top: var(--ui-space-1); padding: var(--ui-space-3);
+    .cal-panel { padding: var(--ui-space-3); line-height: 1.35;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); width: 252px; }
     .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ui-space-2); }
-    .heading { display: inline-flex; gap: 4px; }
+    .heading { display: inline-flex; gap: var(--ui-space-1); }
     .heading-static { font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .lbl { border: none; background: transparent; color: var(--ui-color-text); font-weight: 600; font-size: var(--ui-font-size-sm);
-      font-family: inherit; cursor: pointer; padding: 2px 6px; border-radius: var(--ui-radius-xs);
+      font-family: inherit; cursor: pointer; padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-xs);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     .lbl:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-primary); }
     .lbl:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .nav { width: 26px; height: 26px; border: none; background: transparent; color: var(--ui-color-text-muted); border-radius: var(--ui-radius-xs); cursor: pointer;
+    .nav { display: grid; place-items: center; width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; border: none; background: transparent; color: var(--ui-color-text-muted); border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .nav:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .nav:active { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-1); }
     .mcell { border: none; background: transparent; color: var(--ui-color-text); font: inherit;
-      font-size: var(--ui-font-size-sm); padding: 10px 0; border-radius: var(--ui-radius-xs); cursor: pointer;
+      font-size: var(--ui-font-size-sm); padding: var(--ui-space-2) 0; border-radius: var(--ui-radius-xs); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .mcell:hover { background: var(--ui-color-elevated-hover); }
     .mcell:active { transform: scale(var(--ui-scale-press)); }
@@ -152,7 +154,7 @@ function iso(y: number, m: number, d: number): string {
     .cell.today { box-shadow: inset 0 0 0 1px var(--ui-color-border); }
     .cell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
     .cell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .cell:disabled { opacity: 0.35; cursor: not-allowed; }
+    .cell:disabled { opacity: .5; cursor: not-allowed; }
     .cell:disabled:hover { background: transparent; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDatePicker), multi: true }],
@@ -160,6 +162,8 @@ function iso(y: number, m: number, d: number): string {
 export class UiDatePicker implements ControlValueAccessor {
   /** Drawn, not 📅 — an emoji renders in the vendor's own colours whatever the theme says. */
   protected readonly calendarIcon = Calendar01Icon;
+  protected readonly prevIcon = ArrowLeft01Icon;
+  protected readonly nextIcon = ArrowRight01Icon;
   private config = inject(UI_CONFIG);
   placeholder = input('Select a date');
   size = input<UiSize>('md');
@@ -180,15 +184,14 @@ export class UiDatePicker implements ControlValueAccessor {
   protected readonly view = signal<[number, number]>(this.initialView());
 
   protected readonly positions: ConnectedPosition[] = [
-    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
-    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
   ];
 
   protected readonly display = computed(() => {
     const v = this.value();
     if (!v) return '';
-    const [y, m, d] = v.split('-').map(Number);
-    return `${MONTHS[m - 1]} ${d}, ${y}`;
+    return formatIsoDate(v);
   });
   protected readonly monthName = computed(() => MONTHS[this.view()[1]]);
   // Start year of the current 12-year page shown in the year grid.
@@ -240,6 +243,7 @@ export class UiDatePicker implements ControlValueAccessor {
   setDisabledState(d: boolean): void { this.disabled.set(d); }
 
   protected toggle(): void {
+    if (this.disabled()) return;
     const next = !this.open();
     if (next) this.mode.set('days');
     this.open.set(next);

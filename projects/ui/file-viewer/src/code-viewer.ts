@@ -6,7 +6,7 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   template: `
     <div class="cv">
       <div class="bar"><span class="lang">{{ language() }}</span></div>
-      @if (loading()) { <div class="msg">Loading…</div> }
+      @if (loading()) { <div class="msg" role="status">Loading…</div> }
       @else if (error()) { <div class="msg err">{{ error() }}</div> }
       @else {
         <div class="body">
@@ -19,10 +19,11 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   styles: `
     :host { display: block; height: 100%; }
     .cv { display: flex; flex-direction: column; height: 100%; background: var(--ui-color-surface); border-radius: var(--ui-radius); overflow: hidden; }
-    .bar { padding: var(--ui-space-1) var(--ui-space-3); background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); }
+    .bar { display: flex; align-items: center; box-sizing: border-box; min-height: var(--ui-size-sm); padding: 0 var(--ui-space-3); line-height: 1.35; background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); }
     .lang { font-family: var(--ui-font-default); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     .body { display: flex; flex: 1; overflow: auto; }
-    .gutter { display: flex; flex-direction: column; padding: var(--ui-space-3) var(--ui-space-2); text-align: right;
+    /* Sticky so the line numbers stay put while long lines scroll sideways. */
+    .gutter { position: sticky; left: 0; z-index: 1; display: flex; flex-direction: column; padding: var(--ui-space-3) var(--ui-space-2); text-align: right;
       color: var(--ui-color-text-muted); font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); line-height: 1.5;
       user-select: none; border-right: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .code { margin: 0; padding: var(--ui-space-3); flex: 1; }

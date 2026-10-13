@@ -29,17 +29,29 @@ export class UiSplitText implements AfterViewInit {
     const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     el.textContent = '';
-    const frag = document.createDocumentFragment();
+    // Screen readers get the sentence once, not a letter at a time.
+    el.setAttribute('aria-label', text.trim());
+    const wrap = document.createElement('span');
+    wrap.setAttribute('aria-hidden', 'true');
     const spans: HTMLElement[] = [];
-    for (const ch of Array.from(text)) {
-      const span = document.createElement('span');
-      span.textContent = ch === ' ' ? ' ' : ch;
-      span.style.display = 'inline-block';
-      span.style.willChange = 'transform, opacity';
-      frag.appendChild(span);
-      spans.push(span);
-    }
-    el.appendChild(frag);
+    // Characters are grouped into unbreakable words with ordinary spaces between them, so a heading
+    // still wraps at word boundaries instead of running off the side of a phone.
+    text.split(/(\s+)/).forEach((part) => {
+      if (!part) return;
+      if (/^\s+$/.test(part)) { wrap.appendChild(document.createTextNode(' ')); return; }
+      const word = document.createElement('span');
+      word.style.display = 'inline-block';
+      word.style.whiteSpace = 'nowrap';
+      for (const ch of Array.from(part)) {
+        const span = document.createElement('span');
+        span.textContent = ch;
+        span.style.display = 'inline-block';
+        word.appendChild(span);
+        spans.push(span);
+      }
+      wrap.appendChild(word);
+    });
+    el.appendChild(wrap);
 
     if (typeof Element.prototype.animate !== 'function') return;
     // Animation-first: the headline reveal plays even under reduced-motion, softened to a gentle
@@ -49,12 +61,14 @@ export class UiSplitText implements AfterViewInit {
       : { opacity: 0, transform: 'translateY(0.9em) rotate(8deg)' };
     const to = { opacity: 1, transform: 'translateY(0) rotate(0)' };
     spans.forEach((span, i) => {
-      span.animate([from, to], {
+      span.style.willChange = 'transform, opacity';
+      const anim = span.animate([from, to], {
         duration: this.duration(),
         delay: this.base() + i * this.stagger(),
         easing: 'cubic-bezier(.16,1,.3,1)',
         fill: 'both',
       });
+      anim.finished.then(() => (span.style.willChange = 'auto'), () => undefined);
     });
   }
 }

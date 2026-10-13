@@ -1,7 +1,9 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+
+let nextId = 0;
 
 export interface UiComboboxOption {
   label: string;
@@ -23,27 +25,30 @@ export interface UiComboboxOption {
         [attr.aria-expanded]="open()"
         [attr.aria-invalid]="invalid() || null"
         aria-autocomplete="list"
+        [attr.aria-controls]="listId"
+        [attr.aria-activedescendant]="open() && filtered().length ? listId + '-' + activeIndex() : null"
         [attr.placeholder]="placeholder()"
         [value]="query()"
         [disabled]="disabled()"
         (input)="onInput($event)"
-        (focus)="open.set(true)"
+        (focus)="openPanel()"
         (keydown)="onKeydown($event)"
         (blur)="onBlur()" />
-      <span class="chevron" aria-hidden="true">▾</span>
+      <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
 
     <ng-template
       cdkConnectedOverlay
       [cdkConnectedOverlayOrigin]="origin"
-      [cdkConnectedOverlayOpen]="open() && filtered().length > 0"
+      [cdkConnectedOverlayOpen]="open()"
       [cdkConnectedOverlayPositions]="positions"
       [cdkConnectedOverlayWidth]="triggerWidth()"
       (overlayOutsideClick)="open.set(false)">
-      <ul class="panel" role="listbox">
+      <ul class="panel" role="listbox" [id]="listId">
         @for (opt of filtered(); track opt.value; let i = $index) {
           <li
             role="option"
+            [id]="listId + '-' + i"
             class="opt"
             [class.active]="i === activeIndex()"
             [attr.aria-selected]="opt.value === value()"
@@ -51,6 +56,8 @@ export interface UiComboboxOption {
             (mouseenter)="activeIndex.set(i)">
             {{ opt.label }}
           </li>
+        } @empty {
+          <li class="empty" role="presentation">No results</li>
         }
       </ul>
     </ng-template>
@@ -59,25 +66,31 @@ export interface UiComboboxOption {
     :host { display: block; }
     .wrap { position: relative; }
     .ui-combobox { width: 100%; box-sizing: border-box; height: var(--ui-size-md);
-      padding: 0 var(--ui-space-6) 0 var(--ui-space-3);
+      padding: 0 calc(var(--ui-space-3) + 12px + var(--ui-space-2)) 0 var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ui-combobox:focus { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
-    .ui-combobox:disabled { opacity: 0.55; cursor: not-allowed; }
+    .ui-combobox::placeholder { color: var(--ui-color-text-muted); }
+    .ui-combobox:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
+    .ui-combobox:disabled { opacity: .5; cursor: not-allowed; }
+    .wrap:has(.ui-combobox:disabled) .chevron { opacity: .5; }
     .ui-combobox[aria-invalid="true"] { border-color: var(--ui-color-danger); }
-    .ui-combobox[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .ui-combobox[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
     .wrap.no-radius .ui-combobox { border-radius: 0; }
     .wrap[data-size="sm"] .ui-combobox { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] .ui-combobox { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
-    .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted); }
-    .panel { margin: var(--ui-space-1) 0 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto;
+    .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted);
+      transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .wrap:has([aria-expanded="true"]) .chevron { transform: translateY(-50%) rotate(180deg); }
+    .panel { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; width: 100%;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); }
-    .opt { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
-    .opt.active { background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
-    .opt[aria-selected="true"] { font-weight: 600; }
+      box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); line-height: 1.35; }
+    .opt { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); overflow-wrap: anywhere; }
+    .opt.active { background: var(--ui-color-elevated-hover); }
+    .opt[aria-selected="true"] { background: var(--ui-color-selected); font-weight: 600; }
+    .opt.active[aria-selected="true"] { background: color-mix(in srgb, var(--ui-color-selected), var(--ui-color-elevated-hover)); }
+    .empty { padding: var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCombobox), multi: true }],
 })
@@ -97,9 +110,18 @@ export class UiCombobox implements ControlValueAccessor {
   protected readonly triggerWidth = signal<number | string>('auto');
 
   protected readonly positions: ConnectedPosition[] = [
-    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top' },
-    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom' },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
   ];
+  protected readonly listId = `ui-combobox-${nextId++}`;
+  private readonly origin = viewChild.required(CdkOverlayOrigin);
+
+  /** Opens the list at the field's width (measured on open, not on every render). */
+  protected openPanel(): void {
+    if (this.disabled()) return;
+    this.triggerWidth.set((this.origin().elementRef.nativeElement as HTMLElement).getBoundingClientRect().width);
+    this.open.set(true);
+  }
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -121,15 +143,15 @@ export class UiCombobox implements ControlValueAccessor {
 
   protected onInput(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);
-    this.open.set(true);
+    this.openPanel();
     this.activeIndex.set(0);
   }
 
   protected onKeydown(e: KeyboardEvent): void {
     const items = this.filtered();
-    if (e.key === 'ArrowDown') { e.preventDefault(); this.open.set(true); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); }
-    else if (e.key === 'Enter') { e.preventDefault(); const opt = items[this.activeIndex()]; if (opt) this.select(opt); }
+    else if (e.key === 'Enter') { if (!this.open()) return; e.preventDefault(); const opt = items[this.activeIndex()]; if (opt) this.select(opt); }
     else if (e.key === 'Escape') { this.open.set(false); }
   }
 

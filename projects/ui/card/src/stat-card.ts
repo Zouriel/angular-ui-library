@@ -13,7 +13,8 @@ import { UI_CONFIG } from '@zouriel/ui';
       <div class="value">{{ value() }}</div>
       @if (delta() !== undefined) {
         <div class="delta" [attr.data-trend]="trend()">
-          {{ trend() === 'down' ? '▼' : '▲' }} {{ delta() }}
+          <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path [attr.d]="trend() === 'down' ? 'M2 4h8L6 9z' : 'M2 8h8L6 3z'" fill="currentColor"/></svg>
+          <span class="sr-only">{{ trend() === 'down' ? 'Down ' : 'Up ' }}</span>{{ delta() }}
         </div>
       }
     </div>
@@ -23,15 +24,17 @@ import { UI_CONFIG } from '@zouriel/ui';
     .stat { display: flex; flex-direction: column; gap: var(--ui-space-1);
       padding: var(--ui-space-3) var(--ui-space-4);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); }
+      border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); line-height: 1.35; }
     .stat.no-radius { border-radius: 0; }
     .stat.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
-    .top { display: flex; align-items: center; justify-content: space-between; }
-    .label { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
-    .icon { color: var(--ui-color-text-muted); }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
+    .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .icon { flex: none; display: inline-flex; color: var(--ui-color-text-muted); }
     .icon:empty { display: none; }
-    .value { font-size: 1.6rem; font-weight: 700; letter-spacing: var(--ui-tracking-tight); color: var(--ui-color-text); line-height: 1.1; }
-    .delta { font-size: var(--ui-font-size-sm); font-weight: 600; }
+    .value { font-family: var(--ui-font-display); font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; letter-spacing: var(--ui-tracking-tight); color: var(--ui-color-text); line-height: 1.1; }
+    .delta { font-size: var(--ui-font-size-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .delta { display: inline-flex; align-items: center; gap: var(--ui-space-1); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .delta[data-trend="up"] { color: var(--ui-color-success); }
     .delta[data-trend="down"] { color: var(--ui-color-danger); }
   `,

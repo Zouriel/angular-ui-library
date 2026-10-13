@@ -25,8 +25,10 @@ export interface UiAnchorItem {
     ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--ui-color-border); }
     .link { display: block; width: 100%; text-align: left; padding: var(--ui-space-1) var(--ui-space-3);
       background: none; border: none; border-left: 2px solid transparent; margin-left: -1px; cursor: pointer;
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+      font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text-muted);
+      transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
     .link:hover { color: var(--ui-color-text); }
+    @media (pointer: coarse) { .link { min-height: var(--ui-size-touch); } }
     .link.active { color: var(--ui-color-primary); border-left-color: var(--ui-color-primary); }
     .link:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,

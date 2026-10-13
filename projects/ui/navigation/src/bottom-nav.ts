@@ -43,17 +43,23 @@ export interface UiBottomNavItem {
   styles: `
     :host { display: block; }
     .bn { display: flex; align-items: stretch; height: 56px; background: var(--ui-color-surface);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; font-family: var(--ui-font-default); }
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; font-family: var(--ui-font-default); line-height: 1.35;
+      padding-bottom: env(safe-area-inset-bottom); }
     .bn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-      background: none; border: none; cursor: pointer; color: var(--ui-color-text-muted); font: inherit; }
+      min-width: 0; background: none; border: none; cursor: pointer; color: var(--ui-color-text-muted); font: inherit;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      transition: color var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
+    .item:hover { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .item.active { color: var(--ui-color-primary); }
-    .item:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* The bar clips its overflow, so the ring sits inside the item. */
+    .item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     /* Flex so a drawn icon sits on the text baseline the same way a glyph did. */
     .icon { position: relative; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
-    .badge { position: absolute; top: -4px; right: -8px; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box;
-      background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-radius: 999px; font-size: 9px; line-height: 14px; text-align: center; }
-    .label { font-size: 11px; }
+    .badge { position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1); box-sizing: border-box;
+      background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-radius: var(--ui-radius-pill);
+      font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+    .label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--ui-space-1); box-sizing: border-box; font-size: 11px; }
   `,
 })
 export class UiBottomNav {
