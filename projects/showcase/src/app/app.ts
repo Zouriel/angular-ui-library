@@ -98,6 +98,10 @@ import { NAV } from './app.routes';
       .menu-btn { display: inline-flex; }
       .content { padding: var(--ui-space-4); }
       .content.full { padding: 0; }
+      /* Phones: the theme picker shrinks (and the search button drops its shortcut hint) so the bar fits 320px. */
+      .theme-picker { min-width: 0; }
+      .theme-picker select { max-width: 128px; text-overflow: ellipsis; }
+      .topbar { gap: var(--ui-space-1); padding: 0 var(--ui-space-3); }
     }
   `,
 })

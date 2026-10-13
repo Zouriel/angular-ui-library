@@ -79,12 +79,14 @@ interface PendingDelete {
         @if (store.diff(); as d) {
           @if (d.summary.length) {
             <details class="changes">
-              <summary>{{ d.summary.length }} unpublished change{{ d.summary.length > 1 ? 's' : '' }}</summary>
+              <summary [attr.aria-label]="d.summary.length + ' unpublished change' + (d.summary.length > 1 ? 's' : '')">
+                {{ d.summary.length }}<span class="changes-word"> unpublished</span> change{{ d.summary.length > 1 ? 's' : '' }}
+              </summary>
               <ul>@for (line of d.summary; track $index) { <li>{{ line }}</li> }</ul>
             </details>
           }
         }
-        @if (layout() !== 'wide' && view() === 'build') {
+        @if (layout() === 'medium' && view() === 'build') {
           <ui-button size="sm" variant="outline" (click)="openAdd(null)"><hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="14" [strokeWidth]="1.8" />Add</ui-button>
         }
         <ng-content select="[fbActions]" />
@@ -192,7 +194,8 @@ interface PendingDelete {
     .title:hover { background: var(--ui-color-surface-hover); }
     .title:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .views { margin: 0 auto; }
-    .top-tools { display: flex; align-items: center; gap: 2px; }
+    /* Wraps instead of overflowing, so the host's own buttons (Publish…) never leave the screen. */
+    .top-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px; min-width: 0; max-width: 100%; margin-left: auto; }
     .top-tools ui-button hugeicons-icon { margin-right: 4px; }
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 4px; border: 0; border-radius: 12px; cursor: pointer;
       background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); color: var(--ui-color-danger); font: inherit; font-size: 12px; font-weight: 600; }
@@ -237,6 +240,7 @@ interface PendingDelete {
     @keyframes fb-toast-in { from { opacity: 0; transform: translate(-50%, 6px); } }
     :host([data-layout="narrow"]) { border-radius: 0; border-left: 0; border-right: 0; }
     :host([data-layout="narrow"]) .title { max-width: 18ch; }
+    :host([data-layout="narrow"]) .changes-word { display: none; }
     :host([data-layout="narrow"]) .views { order: 3; margin: 0; width: 100%; }
     :host([data-layout="narrow"]) .toast { bottom: 76px; }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }

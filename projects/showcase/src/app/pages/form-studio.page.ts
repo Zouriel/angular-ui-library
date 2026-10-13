@@ -54,7 +54,7 @@ function comparable(def: UiFormDefinition | null): string {
         <ui-button variant="ghost" size="sm" (click)="open(null)">← All forms</ui-button>
         <div class="title">
           <h1>{{ f.draft.title || 'Untitled form' }}</h1>
-          <ui-chip [tone]="statusTone(f)">{{ statusText(f) }}</ui-chip>
+          <ui-chip [tone]="statusTone(f)"><span class="st-long">{{ statusText(f) }}</span><span class="st-short" aria-hidden="true">{{ statusShort(f) }}</span></ui-chip>
         </div>
         <ui-segmented class="tabs" size="sm" label="Section" [options]="tabOptions()" [value]="tab()" (valueChange)="setTab($any($event))" />
       </header>
@@ -268,6 +268,8 @@ function comparable(def: UiFormDefinition | null): string {
       border-bottom: 1px solid var(--ui-color-border); background: var(--ui-color-surface); flex-wrap: wrap; }
     .title { display: flex; align-items: center; gap: var(--ui-space-2); min-width: 0; flex: 1; }
     .title ui-chip { flex: none; white-space: nowrap; }
+    .st-short { display: none; }
+    @media (max-width: 420px) { .st-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .st-short { display: inline; } }
     .title h1 { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .builder { flex: 1; min-height: 0; }
@@ -393,6 +395,9 @@ export class FormStudioPage {
   protected statusText(f: StudioForm): string {
     if (!f.published) return 'Draft';
     return this.changed(f) ? 'Unpublished changes' : `Published v${f.published.revision ?? 1}`;
+  }
+  protected statusShort(f: StudioForm): string {
+    return !f.published ? 'Draft' : this.changed(f) ? 'Changed' : `v${f.published.revision ?? 1}`;
   }
   protected statusTone(f: StudioForm): 'neutral' | 'success' | 'warning' {
     return !f.published ? 'neutral' : this.changed(f) ? 'warning' : 'success';
