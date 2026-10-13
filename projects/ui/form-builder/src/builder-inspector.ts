@@ -187,6 +187,7 @@ const AUTOCOMPLETE = [
               <ui-fb-value [subject]="selfRef(f)" [op]="isMulti(f) ? 'includesAny' : 'eq'" [operand]="defaultOperand(f)" [constOnly]="true" [label]="f.type === 'hidden' ? 'Value' : 'Starts with'" (operandChange)="setDefault(f, $event)" />
               @if (f.defaultValue != null && f.defaultValue !== '') { <button type="button" class="fb-link clear" (click)="store.updateField(f.id, { defaultValue: undefined })">Clear</button> }
               @if (f.type === 'hidden') { <span class="fb-hint">Saved with every answer, e.g. a campaign name. Apps can also fill it in.</span> }
+              @else { <span class="fb-hint">Already filled in when the form opens. People can change it.</span> }
             </div>
           }
 

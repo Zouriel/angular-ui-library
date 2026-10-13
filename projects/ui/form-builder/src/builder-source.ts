@@ -1,11 +1,11 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { UiButton } from '@zouriel/ui/button';
 import { UiInput, UiNumberInput } from '@zouriel/ui/form';
 import { FbBuilderStore } from './builder-store';
 import { FB_SHARED_STYLES } from './builder-styles';
-import type { UiFbChoice, UiFbOptionSourceDef, UiFbSourceParamSpec } from './option-sources';
+import { sourceHasMore, type UiFbOptionSourceDef, type UiFbSourceParamSpec } from './option-sources';
 import type { UiFbField, UiFbOptionSourceRef, UiFbSourceParamValue } from './schema';
-import { UiFbSourcePicker } from './source-picker';
 
 /**
  * `ui-fb-source-settings` — where a dropdown or multi-select gets its options
@@ -15,7 +15,7 @@ import { UiFbSourcePicker } from './source-picker';
  */
 @Component({
   selector: 'ui-fb-source-settings',
-  imports: [FormsModule, UiInput, UiNumberInput, UiFbSourcePicker],
+  imports: [FormsModule, UiButton, UiInput, UiNumberInput],
   template: `
     @let src = source();
     <div class="fb-stack tight">
@@ -64,11 +64,11 @@ import { UiFbSourcePicker } from './source-picker';
           </div>
         }
         <div class="try">
-          <span class="fb-label">Try it</span>
+          <span class="fb-label">Check the list</span>
           @for (p of refParams(); track p.key) {
             <!-- Settings that follow another answer have no answer here; let the admin pick one to try with. -->
             <div class="fb-row with">
-              <span class="with-lbl">With {{ p.label.toLowerCase() }}</span>
+              <span class="with-lbl">Test with {{ p.label.toLowerCase() }}</span>
               @if (p.options?.length) {
                 <select class="fb-native-select grow" (change)="setTry(p.key, $any($event.target).value)" [attr.aria-label]="'Try with ' + p.label">
                   <option value="" [selected]="!tryWith()[p.key]">Choose…</option>
@@ -80,9 +80,11 @@ import { UiFbSourcePicker } from './source-picker';
               }
             </div>
           }
-          <ui-fb-source-picker [source]="d" [params]="previewParams()" [multiple]="field().type === 'multiselect'" [value]="tried()"
-            (valueChange)="tried.set($event)" [placeholder]="'Search ' + d.label.toLowerCase() + '…'" ariaLabel="Preview of the list" />
-          <p class="fb-hint">Answers are saved with both the value and its label, so they stay readable later.</p>
+          <div class="fb-row test">
+            <ui-button size="sm" variant="outline" [loading]="testing()" (click)="test(d)">Test the list</ui-button>
+            <span class="result" [class.bad]="testResult()?.ok === false" role="status">{{ testResult()?.text }}</span>
+          </div>
+          <p class="fb-hint">Answers are saved with both the value and its label, so they stay readable later. To pre-fill one, use “Starts with” below.</p>
         </div>
       } @else if (!store.optionSourceDefs().length) {
         <p class="fb-warn">This app hasn’t registered any lists. Switch back to a typed list, or ask a developer to add one.</p>
@@ -98,6 +100,9 @@ import { UiFbSourcePicker } from './source-picker';
     .req { color: var(--ui-color-danger); margin-left: 3px; }
     .with { gap: var(--ui-space-2); }
     .with-lbl { flex: none; font-size: 12px; color: var(--ui-color-text-secondary); }
+    .test { gap: var(--ui-space-2); align-items: center; }
+    .result { flex: 1; min-width: 0; font-size: 12px; color: var(--ui-color-text-secondary); }
+    .result.bad { color: var(--ui-color-danger); }
     .try { display: flex; flex-direction: column; gap: 4px; padding-top: var(--ui-space-2); border-top: 1px dashed var(--ui-color-border); }
   `],
 })
@@ -121,10 +126,33 @@ export class FbSourceSettings {
   });
 
   protected setTry(key: string, value: unknown): void {
-    this.tried.set(null);
+    this.testResult.set(null);
     this.tryWith.update((t) => ({ ...t, [key]: value === '' ? undefined : value }));
   }
-  protected readonly tried = signal<UiFbChoice | UiFbChoice[] | null>(null);
+  protected readonly testing = signal(false);
+  protected readonly testResult = signal<{ ok: boolean; text: string } | null>(null);
+
+  /** Loads the first page with the current settings and says what came back. */
+  protected async test(d: UiFbOptionSourceDef): Promise<void> {
+    const missing = (d.params ?? []).find((p) => p.required && (this.previewParams()[p.key] == null || this.previewParams()[p.key] === ''));
+    if (missing) { this.testResult.set({ ok: false, text: `Choose ${missing.label.toLowerCase()} to test with first.` }); return; }
+    this.testing.set(true);
+    this.testResult.set(null);
+    const pageSize = d.pageSize ?? 20;
+    try {
+      const res = await d.search({ query: '', page: 1, pageSize, params: this.previewParams(), signal: new AbortController().signal });
+      const n = res.total ?? res.items.length;
+      const more = res.total == null && sourceHasMore(res, res.items.length, pageSize) ? '+' : '';
+      const eg = res.items.slice(0, 3).map((i) => i.label).join(', ');
+      this.testResult.set(res.items.length
+        ? { ok: true, text: `Works: ${n}${more} ${d.label.toLowerCase()}, e.g. ${eg}.` }
+        : { ok: true, text: `Works, but the list is empty with these settings.` });
+    } catch (e) {
+      this.testResult.set({ ok: false, text: `Couldn’t load it${e instanceof Error && e.message ? `: ${e.message}` : ''}.` });
+    } finally {
+      this.testing.set(false);
+    }
+  }
 
   protected isRef(v: UiFbSourceParamValue | undefined): boolean {
     return !!v && 'ref' in v;
@@ -140,7 +168,7 @@ export class FbSourceSettings {
   }
 
   protected setType(type: string): void {
-    this.tried.set(null);
+    this.testResult.set(null);
     this.store.updateField(this.field().id, { source: { type, params: {} } });
   }
 
@@ -154,7 +182,7 @@ export class FbSourceSettings {
     const empty = 'const' in v ? v.const == null || v.const === '' : false;
     if (empty && !('ref' in v)) delete params[p.key];
     else params[p.key] = v;
-    this.tried.set(null);
+    this.testResult.set(null);
     this.store.updateField(this.field().id, { source: { ...src, params } }, mergeKey);
   }
 }

@@ -9,6 +9,7 @@ import { UiFormRenderer } from './form-renderer';
 import { optionValueOf, type UiFbChoice, type UiFbOptionSourceDef, type UiFbSourceQuery } from './option-sources';
 import type { UiFbField, UiFormDefinition, UiFormSubmission } from './schema';
 import { UiFbSourcePicker } from './source-picker';
+import { FbSourceSettings } from './builder-source';
 
 const PEOPLE = Array.from({ length: 45 }, (_, i) => ({ value: `S${100 + i}`, label: `Person ${i + 1}` }));
 
@@ -255,5 +256,39 @@ describe('builder: data sources', () => {
     const msgs = s.problems().map((p) => `${p.targetId}: ${p.message}`);
     expect(msgs.some((m) => m.startsWith('a:') && m.includes('doesn’t provide'))).toBe(true);
     expect(msgs.some((m) => m.startsWith('b:') && m.includes('needs “Country”'))).toBe(true);
+  });
+});
+
+describe('builder: checking a source', () => {
+  it('tests the list with a stand-in for a setting that follows another answer, and says what came back', async () => {
+    TestBed.configureTestingModule({ providers: [FbBuilderStore] });
+    const s = TestBed.inject(FbBuilderStore);
+    const courses: UiFbOptionSourceDef = {
+      type: 'courses', label: 'Courses', params: [{ key: 'programme', label: 'Programme', required: true, kind: 'select', options: [{ value: 'health', label: 'Health' }] }],
+      search: ({ params }) => ({ items: params['programme'] === 'health' ? [{ value: 'h1', label: 'Anatomy' }, { value: 'h2', label: 'Physiology' }] : [], total: params['programme'] === 'health' ? 11 : 0 }),
+    };
+    s.optionSourceDefs.set([courses]);
+    s.load({ schemaVersion: 1, id: 'f', title: 'T', pages: [{ id: 'p1', elements: [
+      f('prog', 'select', { label: 'Programme', options: [{ id: 'o', value: 'health', label: 'Health' }] }),
+      f('c', 'multiselect', { label: 'Courses', source: { type: 'courses', params: { programme: { ref: 'prog' } } } }),
+    ] }] });
+    const fx = TestBed.createComponent(FbSourceSettings);
+    fx.componentRef.setInput('field', s.field('c'));
+    fx.detectChanges();
+    const el = fx.nativeElement as HTMLElement;
+    const testBtn = () => Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Test the list'))!;
+    testBtn().click();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(el.querySelector('.result')!.textContent).toContain('Choose programme to test with first');
+    const sel = el.querySelector<HTMLSelectElement>('.with select')!;
+    sel.value = 'health';
+    sel.dispatchEvent(new Event('change'));
+    fx.detectChanges();
+    testBtn().click();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(el.querySelector('.result')!.textContent).toContain('Works: 11 courses, e.g. Anatomy, Physiology.');
+    expect(el.querySelector('ui-fb-source-picker')).toBeNull();
   });
 });
