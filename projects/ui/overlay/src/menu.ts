@@ -30,7 +30,7 @@ export interface UiMenuItem {
       cdkConnectedOverlay
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="open()"
-      [cdkConnectedOverlayPositions]="positions"
+      [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
       (overlayOutsideClick)="open.set(false)"
       (attach)="focusFirst()"
       (detach)="open.set(false)">
@@ -98,6 +98,9 @@ export class UiMenu {
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+    // Near the right edge of the screen, line up with the trigger's right edge instead.
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
 
   protected toggle(): void { this.open.update((v) => !v); }

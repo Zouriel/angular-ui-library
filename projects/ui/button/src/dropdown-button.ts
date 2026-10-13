@@ -15,7 +15,7 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
       <ng-content /><svg class="caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="o" [cdkConnectedOverlayOpen]="open()"
-                 [cdkConnectedOverlayPositions]="positions" (overlayOutsideClick)="open.set(false)"
+                 [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" (overlayOutsideClick)="open.set(false)"
                  (attach)="focusItem(0)" (overlayKeydown)="onOverlayKey($event)">
       <div class="menu" role="menu" (keydown)="onMenuKey($event)">
         @for (item of items(); track item.value) {
@@ -77,6 +77,9 @@ export class UiDropdownButton {
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+    // Near the right edge of the screen, line up with the trigger's right edge instead.
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
   private readonly overlay = viewChild.required(CdkConnectedOverlay);
   private readonly trigger = viewChild.required(CdkOverlayOrigin);

@@ -41,7 +41,7 @@ export interface UiComboboxOption {
       cdkConnectedOverlay
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="open()"
-      [cdkConnectedOverlayPositions]="positions"
+      [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
       [cdkConnectedOverlayWidth]="triggerWidth()"
       (overlayOutsideClick)="open.set(false)">
       <ul class="panel" role="listbox" [id]="listId">
@@ -112,6 +112,9 @@ export class UiCombobox implements ControlValueAccessor {
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+    // Near the right edge of the screen, line up with the trigger's right edge instead.
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
   protected readonly listId = `ui-combobox-${nextId++}`;
   private readonly origin = viewChild.required(CdkOverlayOrigin);

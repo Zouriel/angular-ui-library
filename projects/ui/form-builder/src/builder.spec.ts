@@ -1,6 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FbBuilderStore } from './builder-store';
+import { FbCanvas } from './builder-canvas';
+import { FbDnd } from './builder-dnd';
 import { createDefinition, createField, createGroup, indexDefinition } from './definition';
 import { UiFormBuilder } from './form-builder';
 import { UiFormRenderer } from './form-renderer';
@@ -269,5 +271,91 @@ describe('UiFormBuilder', () => {
     fx.detectChanges();
     expect(host.def().pages[0].elements[0].kind).toBe('group');
     expect(createGroup().kind).toBe('group');
+  });
+});
+
+// ── Canvas: tap selects, hold opens settings ──────────────────────────────
+
+@Component({
+  imports: [FbCanvas],
+  providers: [FbBuilderStore, FbDnd],
+  template: `<ui-fb-canvas (open)="opened.push($event)" (picked)="picked.push($event)" (deleteRequest)="deleted.push($event.id)" />`,
+})
+class CanvasHost {
+  readonly store = inject(FbBuilderStore);
+  opened: string[] = [];
+  picked: (string | null)[] = [];
+  deleted: string[] = [];
+}
+
+function press(target: HTMLElement, type: string, pointerType: string, x = 10, y = 10): void {
+  const e = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y });
+  Object.defineProperty(e, 'pointerType', { value: pointerType });
+  Object.defineProperty(e, 'isPrimary', { value: true });
+  target.dispatchEvent(e);
+}
+
+describe('FbCanvas', () => {
+  afterEach(() => vi.useRealTimers());
+
+  function render(def = form([f('a', 'text', { label: 'First' })])) {
+    const fx = TestBed.createComponent(CanvasHost);
+    fx.componentInstance.store.load(def);
+    fx.detectChanges();
+    const el = fx.nativeElement as HTMLElement;
+    return { fx, el, host: fx.componentInstance, card: el.querySelector<HTMLElement>('.card.field')! };
+  }
+
+  it('a tap only selects a card, so its toolbar can be used', () => {
+    const { fx, host, card, el } = render();
+    card.click();
+    fx.detectChanges();
+    expect(host.picked).toEqual(['a']);
+    expect(host.opened).toEqual([]);
+    expect(el.querySelector('.tools')).not.toBeNull();
+  });
+
+  it('holding a card on a touch screen opens its settings, and the lift that follows is not a second tap', () => {
+    vi.useFakeTimers();
+    const { host, card } = render();
+    press(card, 'pointerdown', 'touch');
+    vi.advanceTimersByTime(300);
+    expect(host.opened).toEqual([]);
+    vi.advanceTimersByTime(200);
+    expect(host.opened).toEqual(['a']);
+    press(card, 'pointerup', 'touch');
+    card.click();
+    expect(host.picked).toEqual([]);
+  });
+
+  it('a finger that moves (a scroll) never opens settings', () => {
+    vi.useFakeTimers();
+    const { host, card } = render();
+    press(card, 'pointerdown', 'touch', 10, 10);
+    press(window as unknown as HTMLElement, 'pointermove', 'touch', 10, 40);
+    vi.advanceTimersByTime(1000);
+    expect(host.opened).toEqual([]);
+  });
+
+  it('opens settings from the toolbar, a double-click or Enter', () => {
+    const { fx, host, card, el } = render();
+    card.click();
+    fx.detectChanges();
+    (el.querySelector('.tools [aria-label^="Settings for"]') as HTMLButtonElement).click();
+    card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(host.opened).toEqual(['a', 'a', 'a']);
+  });
+
+  it('a page can be deleted or moved from its menu', () => {
+    const def = form([f('a', 'text')]);
+    def.pages.push({ id: 'p2', title: 'Second', elements: [] });
+    const { fx, host, el } = render(def);
+    (el.querySelector('.page-more') as HTMLButtonElement).click();
+    fx.detectChanges();
+    const item = (label: string) => Array.from(document.querySelectorAll<HTMLButtonElement>('[role=menuitem]')).find((b) => b.textContent!.includes(label))!;
+    expect(item('Move earlier').disabled).toBe(true);
+    item('Delete page').click();
+    expect(host.deleted).toEqual(['p1']);
   });
 });

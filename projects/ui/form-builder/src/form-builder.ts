@@ -99,7 +99,7 @@ interface PendingDelete {
               <ui-fb-palette />
             </aside>
           }
-          <ui-fb-canvas class="center" (addAt)="openAdd($event)" (deleteRequest)="requestDelete($event.id)" (picked)="picked($event)" />
+          <ui-fb-canvas class="center" (addAt)="openAdd($event)" (deleteRequest)="requestDelete($event.id)" (open)="openSettings($event)" />
           @if (layout() !== 'narrow') {
             <aside class="pane right" aria-label="Settings">
               <ui-fb-inspector (deleteRequest)="requestDelete($event)" />
@@ -335,8 +335,11 @@ export class UiFormBuilder {
     if (this.layout() === 'narrow') this.sheetSnap.set(1);
   }
 
-  protected picked(id: string | null): void {
-    if (this.layout() === 'narrow' && id) this.sheetSnap.set(1);
+  /** Settings were asked for (toolbar button, long press, double-click, Enter). Wider layouts
+   *  already show them beside the canvas; on a phone they open in the sheet. */
+  protected openSettings(id: string): void {
+    this.select(id);
+    if (this.layout() === 'narrow') this.sheetSnap.set(1);
   }
 
   protected openFromLogic(id: string): void {

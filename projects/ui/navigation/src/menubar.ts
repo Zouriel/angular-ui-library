@@ -16,7 +16,7 @@ export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
           {{ menu.label }}
         </button>
         <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="o" [cdkConnectedOverlayOpen]="openIndex() === i"
-                     [cdkConnectedOverlayPositions]="positions" (overlayOutsideClick)="openIndex.set(null)">
+                     [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" (overlayOutsideClick)="openIndex.set(null)">
           <div class="panel" role="menu" (keydown)="onPanelKey($event)">
             @for (item of menu.items; track item.value) {
               <button type="button" role="menuitem" class="mi" [disabled]="item.disabled" (click)="choose(item)">{{ item.label }}</button>
@@ -55,6 +55,9 @@ export class UiMenubar {
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+    // Near the right edge of the screen, line up with the trigger's right edge instead.
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
 
   protected toggle(i: number): void { this.openIndex.update((cur) => (cur === i ? null : i)); }

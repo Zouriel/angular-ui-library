@@ -22,6 +22,9 @@ const STARTERS: { type: UiFbFieldType | 'group'; label: string }[] = [
   { type: 'group', label: 'Section' },
 ];
 
+/** How long a finger rests on a card before its settings open (matches the platform's long press). */
+const LONG_PRESS_MS = 450;
+
 export interface FbDeleteRequest {
   id: string;
 }
@@ -62,12 +65,18 @@ export interface FbDeleteRequest {
           @if (def.description) { <span class="form-desc">{{ def.description }}</span> }
         </button>
         @if (def.pages.length > 1) {
-          <button type="button" class="page-head" [class.selected]="store.selectedId() === page.id" (click)="store.select(page.id); $event.stopPropagation()">
-            <span class="page-title">{{ page.title || 'Page ' + (store.pageIndex() + 1) }}</span>
-            @if (page.visibility) { <span class="fb-chip logic" [title]="pageRule()">{{ page.visibility.action === 'show' ? 'Shown when…' : 'Skipped when…' }}</span> }
-            @if (page.jumps?.length) { <span class="fb-chip logic">{{ page.jumps!.length }} jump{{ page.jumps!.length > 1 ? 's' : '' }}</span> }
-            <span class="hint">Page settings</span>
-          </button>
+          <div class="page-head" [class.selected]="store.selectedId() === page.id">
+            <button type="button" class="page-open" (click)="openSettings(page.id, $event)" title="Page settings">
+              <span class="page-title">{{ page.title || 'Page ' + (store.pageIndex() + 1) }}</span>
+              @if (page.visibility) { <span class="fb-chip logic" [title]="pageRule()">{{ page.visibility.action === 'show' ? 'Shown when…' : 'Skipped when…' }}</span> }
+              @if (page.jumps?.length) { <span class="fb-chip logic">{{ page.jumps!.length }} jump{{ page.jumps!.length > 1 ? 's' : '' }}</span> }
+            </button>
+            <ui-menu [items]="pageItems()" (select)="pageAction(page.id, $event)">
+              <button menu-trigger type="button" class="fb-icon-btn page-more" [attr.aria-label]="'Actions for ' + (page.title || 'this page')" title="Page actions">
+                <hugeicons-icon aria-hidden="true" [icon]="moreIcon" [size]="16" [strokeWidth]="1.8" />
+              </button>
+            </ui-menu>
+          </div>
         }
 
         <div class="list" [attr.data-fb-list]="page.id" [class.over]="dropOver() === page.id">
@@ -118,6 +127,9 @@ export interface FbDeleteRequest {
     <ng-template #tools let-el>
       @if (store.selectedId() === el.id) {
         <div class="tools" (click)="$event.stopPropagation()">
+          <button type="button" class="fb-icon-btn" (click)="open.emit(el.id)" [attr.aria-label]="'Settings for ' + store.name(el.id)" title="Settings (double-click, or hold on a touch screen)">
+            <hugeicons-icon aria-hidden="true" [icon]="settingsIcon" [size]="15" [strokeWidth]="1.8" />
+          </button>
           <button type="button" class="fb-icon-btn" (click)="store.nudge(el.id, -1)" [attr.aria-label]="'Move ' + store.name(el.id) + ' up'" title="Move up (Alt+↑)">
             <hugeicons-icon aria-hidden="true" [icon]="upIcon" [size]="15" [strokeWidth]="1.8" />
           </button>
@@ -160,7 +172,7 @@ export interface FbDeleteRequest {
       @let info = typeInfo(f.type);
       <div class="card field" tabindex="0" role="group" [attr.aria-current]="store.selectedId() === f.id ? true : null"
         [attr.aria-label]="(f.label || info.label) + ', ' + info.label + ' field'"
-        (click)="pick(f.id, $event)" (keydown)="keys(f.id, $event)">
+        (click)="pick(f.id, $event)" (dblclick)="openSettings(f.id, $event)" (pointerdown)="pressStart(f.id, $event)" (contextmenu)="noTouchMenu($event)" (keydown)="keys(f.id, $event)">
         <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: f }" />
         <div class="main">
           <div class="head">
@@ -208,7 +220,7 @@ export interface FbDeleteRequest {
     <ng-template #staticCard let-el>
       @let s = asStatic(el);
       <div class="card static" tabindex="0" role="group" [attr.aria-current]="store.selectedId() === s.id ? true : null"
-        [attr.aria-label]="store.name(s.id)" (click)="pick(s.id, $event)" (keydown)="keys(s.id, $event)">
+        [attr.aria-label]="store.name(s.id)" (click)="pick(s.id, $event)" (dblclick)="openSettings(s.id, $event)" (pointerdown)="pressStart(s.id, $event)" (contextmenu)="noTouchMenu($event)" (keydown)="keys(s.id, $event)">
         <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: s }" />
         <div class="main">
           @switch (s.type) {
@@ -226,7 +238,7 @@ export interface FbDeleteRequest {
       <div class="card group" [class.repeat]="!!g.repeat">
         <div class="group-head" tabindex="0" role="group" [attr.aria-current]="store.selectedId() === g.id ? true : null"
           [attr.aria-label]="store.name(g.id) + (g.repeat ? ', repeating section' : ', section')"
-          (click)="pick(g.id, $event)" (keydown)="keys(g.id, $event)">
+          (click)="pick(g.id, $event)" (dblclick)="openSettings(g.id, $event)" (pointerdown)="pressStart(g.id, $event)" (contextmenu)="noTouchMenu($event)" (keydown)="keys(g.id, $event)">
           <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: g }" />
           <span class="type-ico"><hugeicons-icon aria-hidden="true" [icon]="g.repeat ? repeatIcon : groupIcon" [size]="13" [strokeWidth]="1.8" /></span>
           <span class="label strong">{{ g.title || (g.repeat ? 'Repeating section' : 'Section') }}</span>
@@ -266,16 +278,16 @@ export interface FbDeleteRequest {
     .dot-logic { width: 6px; height: 6px; border-radius: 50%; background: var(--ui-color-primary); flex: none; }
     .scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12); overscroll-behavior: contain; }
     .paper { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--ui-space-3); container: fb-paper / inline-size; }
-    .form-head, .page-head { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3);
+    .form-head, .page-open { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3);
       border: 1px solid transparent; border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
-    .page-head { flex-direction: row; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; padding-top: 4px; padding-bottom: 4px; }
+    .page-head { display: flex; align-items: center; gap: var(--ui-space-1); border: 1px solid transparent; border-radius: var(--ui-radius); padding-right: var(--ui-space-1); }
+    .page-open { flex: 1; min-width: 0; flex-direction: row; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; padding-top: 4px; padding-bottom: 4px; border: 0; }
     .form-head:hover, .page-head:hover { border-color: var(--ui-color-border); }
     .form-head.selected, .page-head.selected { border-color: var(--ui-color-primary); }
-    .form-head:focus-visible, .page-head:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .form-head:focus-visible, .page-open:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .form-title { font-family: var(--ui-font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
     .form-desc { color: var(--ui-color-text-secondary); font-size: 13px; }
     .page-title { font-size: 15px; font-weight: 600; }
-    .page-head .hint { margin-left: auto; font-size: 12px; color: var(--ui-color-text-muted); }
     .list { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--ui-space-2); border-radius: var(--ui-radius); min-height: 8px; transition: background var(--ui-motion-fast); }
     .list.over { background: color-mix(in srgb, var(--ui-color-primary) 6%, transparent); }
     @container fb-paper (max-width: 520px) { .item { grid-column: span 12 !important; } }
@@ -284,6 +296,8 @@ export interface FbDeleteRequest {
     .card { position: relative; display: flex; align-items: flex-start; gap: 4px; padding: var(--ui-space-2) var(--ui-space-2) var(--ui-space-2) 2px;
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface);
       cursor: pointer; transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast); }
+    /* Holding a card opens its settings: keep the phone's own text-selection / callout menu out of it. */
+    @media (pointer: coarse) { .card, .group-head { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; } }
     @media (hover: hover) { .card:hover, .card.group:has(> .group-head:hover) { border-color: var(--ui-color-border-strong, var(--ui-color-border)); } }
     .fb-item-in { animation: fb-item-in 160ms var(--ui-ease-decelerate, ease-out); }
     @keyframes fb-item-in { from { opacity: 0; transform: scale(0.98); } }
@@ -370,8 +384,10 @@ export class FbCanvas {
   /** Someone wants to add a field at a specific place (the shell shows the palette). */
   readonly addAt = output<UiFbDropTarget>();
   readonly deleteRequest = output<FbDeleteRequest>();
-  /** A card was chosen (the shell opens the inspector on small screens). */
+  /** A card was chosen (selected, showing its toolbar). */
   readonly picked = output<string | null>();
+  /** Open the settings of a card or page: its toolbar's settings button, a double-click, a long press, or Enter. */
+  readonly open = output<string>();
 
   protected readonly fieldIcons = FIELD_ICONS;
   protected readonly groupIcon = GROUP_ICON;
@@ -383,6 +399,10 @@ export class FbCanvas {
   protected readonly copyIcon = FB_ICONS.Copy01Icon;
   protected readonly deleteIcon = FB_ICONS.Delete02Icon;
   protected readonly moreIcon = FB_ICONS.MoreHorizontalIcon;
+  protected readonly settingsIcon = FB_ICONS.Settings02Icon;
+  private pressCleanup: (() => void) | null = null;
+  private suppressPick = false;
+  private touchPress = false;
   protected readonly calIcon = FB_ICONS.Calendar01Icon;
   protected readonly clockIcon = FB_ICONS.Clock02Icon;
   protected readonly starIcon = FB_ICONS.StarIcon;
@@ -403,7 +423,7 @@ export class FbCanvas {
     if (this.dnd.consumeClick()) return;
     if (this.store.pageIndex() === i) {
       this.store.select(this.store.def().pages[i].id);
-      this.picked.emit(this.store.def().pages[i].id);
+      this.open.emit(this.store.def().pages[i].id);
     } else {
       this.store.pageIndex.set(i);
       this.store.select(null);
@@ -431,15 +451,88 @@ export class FbCanvas {
 
   protected pick(id: string, e: Event): void {
     e.stopPropagation();
-    if (this.dnd.consumeClick()) return;
+    if (this.dnd.consumeClick() || this.suppressPick) return;
     this.store.select(id);
     this.picked.emit(id);
+  }
+
+  protected openSettings(id: string, e: Event): void {
+    e.stopPropagation();
+    if (this.dnd.consumeClick()) return;
+    this.store.select(id);
+    this.open.emit(id);
+  }
+
+  /**
+   * On a touch screen, holding a card still opens its settings; a tap only selects it (and shows
+   * its toolbar). Moving the finger first means a scroll, so the hold is dropped. Dragging is done
+   * from the grip, which stops the press before it gets here.
+   */
+  protected pressStart(id: string, e: PointerEvent): void {
+    this.touchPress = e.pointerType !== 'mouse';
+    if (e.pointerType === 'mouse' || !e.isPrimary) return;
+    this.pressCleanup?.();
+    const x = e.clientX;
+    const y = e.clientY;
+    const timer = setTimeout(() => {
+      this.pressCleanup?.();
+      this.suppressPick = true;
+      setTimeout(() => (this.suppressPick = false), 500);
+      navigator.vibrate?.(8);
+      this.store.select(id);
+      this.open.emit(id);
+    }, LONG_PRESS_MS);
+    const move = (ev: PointerEvent) => { if (Math.hypot(ev.clientX - x, ev.clientY - y) > 8) this.pressCleanup?.(); };
+    const stop = () => this.pressCleanup?.();
+    window.addEventListener('pointermove', move, { passive: true });
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    window.addEventListener('scroll', stop, true);
+    this.pressCleanup = () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('scroll', stop, true);
+      this.pressCleanup = null;
+    };
+  }
+
+  /** A held finger also fires the browser's context menu; on a card the hold means "settings". */
+  protected noTouchMenu(e: Event): void {
+    if (this.touchPress) e.preventDefault();
+  }
+
+  protected pageItems(): UiMenuItem[] {
+    const i = this.store.pageIndex();
+    const n = this.store.def().pages.length;
+    return [
+      { label: 'Page settings', value: 'settings' },
+      { label: 'Move earlier', value: 'earlier', disabled: i === 0 },
+      { label: 'Move later', value: 'later', disabled: i === n - 1 },
+      { label: 'Delete page', value: 'delete', danger: true, disabled: n < 2 },
+    ];
+  }
+
+  protected pageAction(id: string, item: UiMenuItem): void {
+    if (item.value === 'settings') {
+      this.store.select(id);
+      this.open.emit(id);
+    } else if (item.value === 'earlier' || item.value === 'later') {
+      this.store.movePage(id, item.value === 'earlier' ? -1 : 1);
+    } else if (item.value === 'delete') {
+      this.deleteRequest.emit({ id });
+    }
   }
 
   protected keys(id: string, e: KeyboardEvent): void {
     if (e.target !== e.currentTarget) return;
     const mod = e.ctrlKey || e.metaKey;
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.store.select(id);
+      this.open.emit(id);
+    } else if (e.key === ' ') {
       e.preventDefault();
       this.store.select(id);
       this.picked.emit(id);

@@ -29,7 +29,7 @@ let nextId = 0;
              (keydown)="onKeydown($event)" (blur)="onTouched()" />
     </div>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open()"
-                 [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayWidth]="width()" (overlayOutsideClick)="open.set(false)">
+                 [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" [cdkConnectedOverlayWidth]="width()" (overlayOutsideClick)="open.set(false)">
       <ul class="panel" role="listbox" aria-multiselectable="true" [id]="listId">
         @for (opt of filtered(); track opt.value; let i = $index) {
           <li role="option" class="opt" [id]="listId + '-' + i" [class.active]="i === activeIndex()" [attr.aria-selected]="value().includes(opt.value)"
@@ -113,6 +113,9 @@ export class UiMultiSelect implements ControlValueAccessor {
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
+    // Near the right edge of the screen, line up with the trigger's right edge instead.
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();

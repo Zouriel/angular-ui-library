@@ -19,6 +19,12 @@ import { UiFormBuilder, UiFormRenderer, provideUiFormValidators } from '@zouriel
   dragging it onto the page. On phones, tap **Add field** and pick from the sheet.
 - **Move** by dragging the handle, with Alt+↑/↓ on a focused card, or with the
   card's move buttons and **More → Move to…** menu.
+- **Select and edit**: tapping a card selects it and shows its toolbar (settings,
+  move, duplicate, delete, more). Its settings open from the toolbar's settings
+  button, a double-click, Enter, or holding the card on a touch screen. On wide
+  screens they're always shown beside the canvas.
+- **Pages** have a ⋯ menu on their heading: page settings, move earlier or later,
+  and delete.
 - **Sections** group questions, can use 2 or 3 columns, can **repeat** ("Add a
   dependant", min/max), and can keep their answers together under one key.
 - **Pages** split the form into steps. Pages can be skipped by rules, and can
