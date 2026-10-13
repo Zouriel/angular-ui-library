@@ -56,6 +56,15 @@ describe('style contract', () => {
     expect([...new Set(missing)]).toEqual([]);
   });
 
+  it('imports icons one file at a time', () => {
+    // The package root re-exports ~4,000 icons; one root import made the production build need
+    // about 9 GB and the server killed it. Applies to the showcase too, since it ships the same way.
+    const showcase = walk(join(process.cwd(), 'projects/showcase/src')).filter((f) => f.endsWith('.ts'));
+    const all = [...sources.map((s) => join(root, s.file)), ...showcase];
+    const bad = all.filter((f) => /from\s+['"]@hugeicons\/core-free-icons['"]/.test(readFileSync(f, 'utf8'))).map((f) => relative(process.cwd(), f));
+    expect(bad).toEqual([]);
+  });
+
   it('never transitions `all`', () => {
     const bad = everything.filter(({ text }) => /transition(-property)?\s*:\s*all\b/.test(withoutComments(text))).map((s) => s.file);
     expect(bad).toEqual([]);

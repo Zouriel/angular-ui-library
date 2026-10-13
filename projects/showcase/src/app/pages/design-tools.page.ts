@@ -8,7 +8,11 @@ import {
 import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
 import { UiTokenInput, UiNumberInput, UiNumberLabel, type UiTokenRun } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ArrowExpand01Icon, DropletIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icons';
+// One file per icon: importing from the package root makes the bundler read all ~4,000 icons,
+// which ran the production build out of memory on the server.
+import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
+import DropletIcon from '@hugeicons/core-free-icons/DropletIcon';
+import RotateClockwiseIcon from '@hugeicons/core-free-icons/RotateClockwiseIcon';
 import { UiMeter } from '@zouriel/ui/progress';
 import { UiDeviceFrame } from '@zouriel/ui/media';
 import { UiResizeHandle } from '@zouriel/ui/layout';
