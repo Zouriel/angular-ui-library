@@ -3,6 +3,9 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
 /**
  * `ui-splitter` — two resizable panes with a draggable divider. Project two
  * elements with `[split-a]` and `[split-b]`.
+ *
+ * The divider is a separator whose `aria-orientation` is the direction of the line itself: side-by-side
+ * panes (`orientation="horizontal"`) are split by a vertical line.
  */
 @Component({
   selector: 'ui-splitter',
@@ -10,7 +13,7 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
     <div class="sp" [class.vertical]="orientation() === 'vertical'" #root>
       <div class="pane" [style.flex-basis.%]="ratio()"><ng-content select="[split-a]" /></div>
       <div class="gutter" role="separator" tabindex="0" aria-label="Resize panes"
-           [attr.aria-orientation]="orientation()" [attr.aria-valuenow]="round(ratio())" aria-valuemin="10" aria-valuemax="90"
+           [attr.aria-orientation]="orientation() === 'vertical' ? 'horizontal' : 'vertical'" [attr.aria-valuenow]="round(ratio())" aria-valuemin="10" aria-valuemax="90"
            (pointerdown)="start($event)"
            (keydown)="onKey($event)"></div>
       <div class="pane"><ng-content select="[split-b]" /></div>
@@ -44,11 +47,13 @@ export class UiSplitter implements OnDestroy {
   private readonly up = () => this.end();
 
   protected start(e: PointerEvent): void {
+    if (e.button !== 0) return;
     e.preventDefault();
     this.dragging = true;
     this.zone.runOutsideAngular(() => {
       document.addEventListener('pointermove', this.move);
       document.addEventListener('pointerup', this.up);
+      document.addEventListener('pointercancel', this.up);
     });
   }
   private onMove(e: PointerEvent): void {
@@ -64,6 +69,7 @@ export class UiSplitter implements OnDestroy {
     this.dragging = false;
     document.removeEventListener('pointermove', this.move);
     document.removeEventListener('pointerup', this.up);
+    document.removeEventListener('pointercancel', this.up);
   }
   protected round(v: number): number { return Math.round(v); }
   protected onKey(e: KeyboardEvent): void {

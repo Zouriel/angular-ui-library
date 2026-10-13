@@ -29,7 +29,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     <doc-page eyebrow="Flagship" title="Design tools"
       lead="The pieces of a visual editor, as used by the invites.blog designer: handles for placing things on a stage, a vector editor for drawing and reshaping outlines, a timeline for when things move, text with inline variables, and the meters and frames around them.">
 
-      <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi" [outputs]="transformOutputs"
+      <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi" [outputs]="transformOutputs" [shapes]="transformShapes"
         summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre. From the keyboard, arrows nudge (Shift for 10), Alt+arrow resizes (width with left/right, height with up/down), and [ / ] rotate by 1° (15° with Shift). Two fingers pinch to scale about the point between them. Pair with uiSnap() and ui-snap-guides for alignment guides.">
         <doc-demo code="<div class=&quot;stage&quot;>
   <ui-transform-box [box]=&quot;box()&quot; [scale]=&quot;1&quot; showSize
@@ -49,7 +49,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs"
+      <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs" [shapes]="pathShapes"
         summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or wheel zooms. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
         <doc-demo code="<ui-path-editor #editor [items]=&quot;items()&quot; [width]=&quot;400&quot; [height]=&quot;260&quot; [mode]=&quot;mode()&quot; [brush]=&quot;brush()&quot;
   [(selectedId)]=&quot;selectedId&quot; (itemsChange)=&quot;commit($event)&quot; (stroke)=&quot;addStroke($event)&quot; />
@@ -75,7 +75,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Path & ink helpers" selector="@zouriel/ui/canvas" [api]="pathHelpersApi"
+      <doc-section name="Path & ink helpers" selector="@zouriel/ui/canvas" [api]="pathHelpersApi" [shapes]="inkShapes"
         summary="The pure functions under the editor, for building shapes in code, turning them into SVG and reading hand-drawn strokes. An outline is a UiPathContour { points, closed }, where each point may carry in/out curve handles; a UiPathItem is a list of them plus an optional fill and boolean op (cut, intersect, exclude).">
         <doc-demo lang="ts" code="const star = starContour(0, 0, 100, 100, 5, 0.45);
 const d = pathD([star]);                 // SVG path data for <path [attr.d]>
@@ -89,7 +89,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi" [outputs]="sequencerOutputs"
+      <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi" [outputs]="sequencerOutputs" [shapes]="sequencerShapes"
         summary="A timeline: a bar per layer for when it's active, diamonds for its keyframes, markers along a ruler and a playhead. Bars, edges and diamonds snap to markers, the playhead and other bars (hold Alt to place freely). Rows reorder by their grip. Keyboard: a focused bar moves with left/right (Shift for a larger step) and trims with [ and ]; a focused diamond retimes with left/right, Delete removes it, and the context-menu key opens its menu. It reports every change and mutates nothing.">
         <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [markers]=&quot;markers&quot;
   [(playhead)]=&quot;playhead&quot; (rangeChange)=&quot;onRange($event)&quot; (keyframeChange)=&quot;onKey($event)&quot; />">
@@ -110,7 +110,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi" [outputs]="scrubberOutputs"
+      <doc-section name="Scrubber" selector="ui-scrubber" [api]="scrubberApi" [outputs]="scrubberOutputs" [shapes]="scrubberShapes"
         summary="The phone answer to a timeline ruler: the strip slides under a playhead fixed at its centre, so the finger drags content rather than a tiny handle. Flicks glide, two fingers pinch to zoom, and a mouse drags or uses the wheel. It is a keyboard slider too: left/right (Shift for bigger steps), PageUp/PageDown and Home/End. Built on touch events, so a sideways drag works on a phone.">
         <doc-demo code="<ui-scrubber [length]=&quot;3376&quot; [markers]=&quot;markers&quot; [ticks]=&quot;ticks&quot; [(value)]=&quot;at&quot; [(zoom)]=&quot;zoom&quot; />">
           <div class="scrub-demo">
@@ -141,8 +141,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
         <doc-demo code="<ui-number-input label=&quot;X&quot; suffix=&quot;px&quot; [(ngModel)]=&quot;x&quot; size=&quot;sm&quot; [steppers]=&quot;false&quot; />">
           <div class="row">
             <ui-number-input label="X" suffix="px" size="sm" [steppers]="false" [(ngModel)]="nx" />
-            <ui-number-input label="↻" suffix="°" size="sm" [steppers]="false" [min]="-180" [max]="180" [(ngModel)]="nr" ariaLabel="Rotation" />
-            <ui-number-input label="α" size="sm" [steppers]="false" [min]="0" [max]="1" [step]="0.01" [precision]="2" [(ngModel)]="na" ariaLabel="Opacity" />
+            <ui-number-input label="Y" suffix="px" size="sm" [steppers]="false" [(ngModel)]="ny" />
+            <ui-number-input label="W" suffix="px" size="sm" [steppers]="false" [min]="0" [(ngModel)]="nw" ariaLabel="Width" />
           </div>
         </doc-demo>
         <doc-demo code="<ui-number-input label=&quot;Rotation&quot; suffix=&quot;°&quot; size=&quot;sm&quot; [steppers]=&quot;false&quot; [(ngModel)]=&quot;r&quot; ariaLabel=&quot;Rotation&quot;>
@@ -175,7 +175,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       </doc-section>
 
       <doc-section name="Device frame" selector="ui-device-frame" [api]="deviceApi"
-        summary="A phone whose screen is exactly width × height CSS pixels, scaled to fit its container. Content lays out at true phone size.">
+        summary="From @zouriel/ui/media. A phone whose screen is exactly width × height CSS pixels, scaled down (never up past maxScale) to fit its container, so give the host a height. Content lays out at true phone size and is only scaled visually.">
         <doc-demo code="<ui-device-frame [width]=&quot;390&quot; [height]=&quot;844&quot;> … </ui-device-frame>">
           <div class="device-box">
             <ui-device-frame [width]="390" [height]="844">
@@ -186,7 +186,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       </doc-section>
 
       <doc-section name="Resize handle" selector="ui-resize-handle" [api]="resizeApi" [outputs]="resizeOutputs"
-        summary="A draggable panel edge bound to a pixel size, with snap points. Releasing near a snap settles on it, and double-click cycles the snaps. Arrows resize by 16px (Shift: 64px); Home and End go to min and max. On coarse pointers the grab area grows.">
+        summary="From @zouriel/ui/layout. A draggable panel edge (role=separator) bound to a pixel size, with snap points. Put it on the panel's inner edge and set edge to where it sits: a bottom panel's handle is on its top, so dragging up grows it. Works with mouse, pen and touch. Releasing within snapDistance of a snap settles on it, and double-click cycles the snaps. From the keyboard, the arrow pointing away from the panel grows it by 16px (Shift: 64px), the opposite arrow shrinks it, and Home and End go to min and max. On coarse pointers the grab area grows.">
         <doc-demo code="<ui-resize-handle edge=&quot;top&quot; [(size)]=&quot;height&quot; [min]=&quot;40&quot; [max]=&quot;320&quot; [snaps]=&quot;[40, 160, 320]&quot; />">
           <div class="panel-demo">
             <div class="content">Main area</div>
@@ -365,14 +365,15 @@ export class DesignToolsPage {
     { name: 'items', type: 'UiPathItem[]', default: 'required', desc: '{ id, contours, fill?, op?, name? }. Never mutated.' },
     { name: 'width / height', type: 'number', default: '100 / 100', desc: 'The artboard, in editor units; the view fits it on first layout and on fit().' },
     { name: 'mode', type: "'objects' | 'points' | 'pen' | 'draw'", default: "'objects'", desc: 'What a press does.' },
-    { name: '[(selectedId)] / [(selectedPoint)] / [(selectedPoints)]', type: 'model', default: 'null / null / []', desc: 'The selected item, the point being worked on, and every selected point.' },
+    { name: 'selectedId', type: 'string | null', default: 'null', desc: 'Two-way (`[(selectedId)]`). The selected item.' },
+    { name: 'selectedPoint / selectedPoints', type: 'UiPointRef | null / UiPointRef[]', default: 'null / []', desc: 'Two-way (`[(selectedPoint)]`, `[(selectedPoints)]`). The point being worked on, and every selected point.' },
     { name: 'brush', type: 'UiBrush', default: "{ kind: 'pen', size: 4 }", desc: 'pen, marker, pencil, brush, calligraphy or eraser, and its width.' },
     { name: 'fill', type: 'string | null', default: 'null', desc: 'Paint for ink as it goes down and for items the pen makes.' },
     { name: 'fingerDraws', type: "boolean | 'auto'", default: "'auto'", desc: 'After a pen is seen, fingers pan instead of drawing (palm rejection).' },
     { name: 'snapToShape / freeHandles / lockAspect', type: 'boolean', default: 'true / false / false', desc: 'Hold-to-snap strokes; handles move independently (Alt for touch); keep proportions when scaling.' },
     { name: 'showArtboard / label', type: 'boolean / string', default: "true / 'Shape editor'", desc: 'Draw the artboard; accessible name.' },
-    { name: 'fit() / zoomBy(f) / selectAllPoints()', type: 'methods', default: '', desc: 'View and selection helpers.' },
-    { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'methods', default: '', desc: 'Pen-mode controls for a toolbar.' },
+    { name: 'fit() / zoomBy(f) / selectAllPoints()', type: 'method', default: '', desc: 'Frame the artboard and everything drawn; zoom by a factor about the centre; select every point of the selected item.' },
+    { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'method', default: '', desc: 'Pen-mode controls for a toolbar.' },
     { name: 'penCount', type: 'Signal<number>', default: '', desc: 'Points placed so far by the pen, to enable those toolbar buttons.' },
   ];
   protected readonly pathOutputs: ApiRow[] = [
@@ -388,7 +389,7 @@ export class DesignToolsPage {
     { name: 'pathD(contours) / segmentPathD(contour, i)', type: 'string', default: '', desc: 'SVG path data for a whole item, or one segment.' },
     { name: 'pathBounds / flattenContour / contourArea / insideContour', type: 'measure', default: '', desc: 'Bounding box (null when empty), a polyline approximation, signed area, point-in-outline.' },
     { name: 'translateContours / scaleContours / rotateContours / mapContours', type: 'transform', default: '', desc: 'Return moved copies; inputs are never mutated.' },
-    { name: 'insertPoint / deletePoint(s) / movePoint(s) / moveHandle / pullHandles', type: 'edit points', default: '', desc: 'What the editor does on each gesture, available to toolbars and keyboard shortcuts.' },
+    { name: 'insertPoint / deletePoint / deletePoints / movePoint / movePoints / moveHandle / pullHandles', type: 'edit points', default: '', desc: 'What the editor does on each gesture, available to toolbars and keyboard shortcuts. The plural forms take a list of UiPointRef (movePoints also dx, dy).' },
     { name: 'toggleSmooth / toggleClosed / breakAt / joinEnds / reverseContour / orientContours', type: 'edit outlines', default: '', desc: 'Corner/curve, open/close, cut and join, direction for fill rules.' },
     { name: 'nearestOnPath / pointOnSegment / segmentCount / allPoints', type: 'query', default: '', desc: 'Hit-testing and walking an outline.' },
     { name: 'recognizeShape(samples)', type: 'UiInkShape | null', default: '', desc: 'Reads a stroke as a line, ellipse or polygon (rectangle, triangle…), or null.' },
@@ -400,6 +401,8 @@ export class DesignToolsPage {
 
   // Number
   protected nx = 40;
+  protected ny = 24;
+  protected nw = 160;
   protected ns = 1;
   protected nr = 0;
   protected na = 1;
@@ -440,7 +443,7 @@ export class DesignToolsPage {
   protected readonly sequencerApi: ApiRow[] = [
     { name: 'rows', type: 'UiSequencerRow[]', default: '[]', desc: 'id, label, start, end, keyframes (at 0…1 within the bar), depth, muted, locked, kind, fixed (no trim edges).' },
     { name: 'length', type: 'number', default: '100', desc: 'Timeline length in units.' },
-    { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Ruler markers; also snap targets.' },
+    { name: 'markers', type: 'UiSequencerMarker[]', default: '[]', desc: 'Ruler markers; also snap targets.' },
     { name: 'showLabels', type: 'boolean', default: 'true', desc: 'Off: bars only. Tap a bar for its name (with hide/lock), hold to lift it and drag both ways, pinch to zoom.' },
     { name: 'compact', type: 'boolean', default: 'false', desc: 'Narrow screens: the label column shows only the grip, name and visibility toggle.' },
     { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
@@ -450,12 +453,14 @@ export class DesignToolsPage {
     { name: 'snapPixels', type: 'number', default: '6', desc: 'Snap distance in screen px.' },
     { name: 'keyStep', type: 'number', default: '0.01', desc: 'Keyboard step as a fraction of length.' },
     { name: 'reorderable', type: 'boolean', default: 'true', desc: 'Rows can be reordered by their grip.' },
-    { name: '[(playhead)] / [(selectedRowId)] / [(selectedKeyframeId)]', type: 'model', default: '0 / null / null', desc: 'Two-way state.' },
-    { name: 'zoom / maxZoom', type: 'number (model) / number', default: '1 / 16', desc: '1 fits the width; larger zooms in and scrolls. Pinch or Ctrl + wheel changes it — [(zoom)].' },
+    { name: 'playhead', type: 'number', default: '0', desc: 'Two-way (`[(playhead)]`). Playhead position in units.' },
+    { name: 'selectedRowId / selectedKeyframeId', type: 'string | null', default: 'null', desc: 'Two-way (`[(selectedRowId)]`, `[(selectedKeyframeId)]`). The selected bar and diamond.' },
+    { name: 'zoom', type: 'number', default: '1', desc: 'Two-way (`[(zoom)]`). 1 fits the width; larger zooms in and scrolls. Pinch or Ctrl + wheel changes it.' },
+    { name: 'maxZoom', type: 'number', default: '16', desc: 'Largest zoom.' },
   ];
   protected readonly sequencerOutputs: ApiRow[] = [
-    { name: 'rangeChange', type: '{ rowId, start, end, final }', desc: 'Bar moved or trimmed; final on release.' },
-    { name: 'keyframeChange', type: '{ rowId, keyframeId, at, final }', desc: 'Diamond retimed.' },
+    { name: 'rangeChange', type: 'UiSequencerRangeChange', desc: 'Bar moved or trimmed; final is true once, on release.' },
+    { name: 'keyframeChange', type: 'UiSequencerKeyframeChange', desc: 'Diamond retimed; final is true once, on release.' },
     { name: 'keyframeDelete', type: '{ rowId, keyframeId }', desc: 'Delete pressed on a focused diamond.' },
     { name: 'keyframeMenu', type: 'UiSequencerKeyframeRef', desc: 'Right-click or the context-menu key on a diamond.' },
     { name: 'rowReorder', type: '{ rowId, toIndex }', desc: 'A row was dropped at a new index.' },
@@ -471,12 +476,12 @@ export class DesignToolsPage {
   protected readonly scrubPresses = signal(0);
   protected readonly scrubberApi: ApiRow[] = [
     { name: 'length', type: 'number', default: '100', desc: 'Length in units.' },
-    { name: 'value', type: 'number (model)', default: '0', desc: 'Position under the playhead — [(value)].' },
-    { name: 'zoom', type: 'number (model)', default: '0.25', desc: 'Pixels per unit; a pinch changes it — [(zoom)].' },
+    { name: 'value', type: 'number', default: '0', desc: 'Two-way (`[(value)]`). Position under the playhead.' },
+    { name: 'zoom', type: 'number', default: '0.25', desc: 'Two-way (`[(zoom)]`). Pixels per unit; a pinch changes it.' },
     { name: 'minZoom / maxZoom', type: 'number', default: '0.02 / 4', desc: 'Pinch limits.' },
-    { name: 'markers', type: '{ at, label }[]', default: '[]', desc: 'Labelled segments along the strip.' },
-    { name: 'ticks', type: '{ at, active? }[]', default: '[]', desc: 'Points of interest, e.g. keyframes.' },
-    { name: 'lanes', type: '{ start, end, selected?, muted? }[]', default: '[]', desc: 'Layers as thin stacked lines — a flattened timeline.' },
+    { name: 'markers', type: 'UiScrubberMarker[]', default: '[]', desc: 'Labelled segments along the strip.' },
+    { name: 'ticks', type: 'UiScrubberTick[]', default: '[]', desc: 'Points of interest, e.g. keyframes.' },
+    { name: 'lanes', type: 'UiScrubberLane[]', default: '[]', desc: 'Layers as thin stacked lines — a flattened timeline.' },
     { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; shaded after.' },
     { name: 'label / valueText', type: 'string', default: "'Position' / ''", desc: 'Slider name and spoken value.' },
   ];
@@ -516,18 +521,52 @@ export class DesignToolsPage {
   ];
   protected readonly deviceApi: ApiRow[] = [
     { name: 'width / height', type: 'number', default: '390 / 844', desc: 'Screen size in CSS pixels.' },
-    { name: 'bezel / island', type: 'boolean', default: 'true', desc: 'Draw the phone body / the camera island.' },
+    { name: 'bezel / island', type: 'boolean', default: 'true', desc: 'Draw the phone body / the camera island (the island needs the bezel).' },
     { name: 'maxScale', type: 'number', default: '1', desc: 'Never scale above this.' },
-    { name: 'scale', type: 'Signal<number>', default: '', desc: 'Current scale, read from a template reference for overlays.' },
+    { name: 'scale', type: 'Signal<number>', default: '1', desc: 'Read-only current scale, read from a template reference (#f then f.scale()) to line overlays up with the screen.' },
     { name: '<ng-content>', type: 'slot', default: '', desc: 'The screen content, laid out at true size.' },
   ];
   protected readonly resizeApi: ApiRow[] = [
-    { name: '[(size)]', type: 'number', default: '240', desc: 'Panel size in px.' },
+    { name: 'size', type: 'number', default: '240', desc: 'Two-way (`[(size)]`). Panel size in px, clamped to min / max.' },
     { name: 'edge', type: "'top' | 'bottom' | 'left' | 'right'", default: "'top'", desc: 'Where the handle sits on the panel.' },
     { name: 'min / max', type: 'number', default: '0 / 10000', desc: 'Bounds in px.' },
     { name: 'snaps / snapDistance', type: 'number[] / number', default: '[] / 28', desc: 'Snap points, and how close (px) a release must be to settle on one.' },
     { name: 'label', type: 'string', default: "'Resize'", desc: 'Accessible name.' },
   ];
+  protected readonly transformShapes = `interface UiBox { x: number; y: number; w: number; h: number; rotate: number; }
+type UiTransformMode = 'move' | 'resize' | 'rotate';
+interface UiTransformTap { clientX: number; clientY: number; shiftKey: boolean; pointerType: string; }
+interface UiRect { x: number; y: number; w: number; h: number; }
+interface UiGuide { orientation: 'vertical' | 'horizontal'; at: number; from: number; to: number; }
+interface UiSnapResult { dx: number; dy: number; guides: UiGuide[]; }`;
+  protected readonly pathShapes = `type UiPathEditorMode = 'objects' | 'points' | 'draw' | 'pen';
+interface UiPathXY { x: number; y: number; }
+interface UiPathPoint extends UiPathXY { in?: UiPathXY | null; out?: UiPathXY | null; }
+interface UiPathContour { points: UiPathPoint[]; closed: boolean; }
+type UiPathOp = 'add' | 'cut' | 'intersect' | 'exclude';
+interface UiPathItem { id: string; contours: UiPathContour[]; cut?: boolean; op?: UiPathOp; fill?: string | null; name?: string; }
+interface UiPathBounds { x: number; y: number; w: number; h: number; }
+interface UiPointRef { contour: number; point: number; }
+interface UiInkStroke { samples: UiInkSample[]; brush: UiBrush; pieces: UiPathXY[][]; shape: UiInkShape | null; }`;
+  protected readonly inkShapes = `type UiBrushKind = 'pen' | 'marker' | 'pencil' | 'brush' | 'calligraphy' | 'eraser';
+interface UiBrush { kind: UiBrushKind; size: number; }
+interface UiInkSample extends UiPathXY { pressure: number; } // 0…1
+type UiInkShape =
+  | { kind: 'line'; from: UiPathXY; to: UiPathXY }
+  | { kind: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
+  | { kind: 'polygon'; points: UiPathXY[] };`;
+  protected readonly sequencerShapes = `interface UiSequencerKeyframe { id: string; at: number; label?: string; } // at: 0…1 within the bar
+interface UiSequencerRow {
+  id: string; label: string; start: number; end: number;
+  keyframes?: readonly UiSequencerKeyframe[]; depth?: number; muted?: boolean; locked?: boolean; kind?: string; fixed?: boolean;
+}
+interface UiSequencerMarker { at: number; label: string; }
+interface UiSequencerRangeChange { rowId: string; start: number; end: number; final: boolean; }
+interface UiSequencerKeyframeChange { rowId: string; keyframeId: string; at: number; final: boolean; }
+interface UiSequencerKeyframeRef { rowId: string; keyframeId: string; clientX: number; clientY: number; }`;
+  protected readonly scrubberShapes = `interface UiScrubberMarker { at: number; label: string; }
+interface UiScrubberTick { at: number; active?: boolean; }
+interface UiScrubberLane { start: number; end: number; selected?: boolean; muted?: boolean; }`;
   protected readonly resizeOutputs: ApiRow[] = [
     { name: 'resizeEnd', type: 'number', desc: 'After a drag, double-click or key.' },
   ];

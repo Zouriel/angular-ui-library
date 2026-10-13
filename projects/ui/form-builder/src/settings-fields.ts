@@ -15,7 +15,7 @@ import type { UiFbSettings } from './schema';
   template: `
     @let s = settings();
         <section class="group-sec">
-          <h4>Questions</h4>
+          <h3>Questions</h3>
           <div class="fb-grid2">
             <label class="fld"><span class="fb-label">Question text</span>
               <select class="fb-native-select" (change)="set({ labelPlacement: $any($event.target).value })">
@@ -41,7 +41,7 @@ import type { UiFbSettings } from './schema';
           </label>
         </section>
         <section class="group-sec">
-          <h4>Checking answers</h4>
+          <h3>Checking answers</h3>
           <label class="fld"><span class="fb-label">Show problems</span>
             <select class="fb-native-select" (change)="set({ validateOn: $any($event.target).value })">
               <option value="blur" [selected]="(s.validateOn ?? 'blur') === 'blur'">When someone leaves a question</option>
@@ -58,7 +58,7 @@ import type { UiFbSettings } from './schema';
           </label>
         </section>
         <section class="group-sec">
-          <h4>Buttons and steps</h4>
+          <h3>Buttons and steps</h3>
           <ui-switch [ngModel]="s.showProgress !== false" (ngModelChange)="set({ showProgress: $event ? undefined : false })">Show progress on multi-page forms</ui-switch>
           <div class="fb-grid2">
             <label class="fld"><span class="fb-label">Submit button</span><ui-input [ngModel]="s.submitLabel ?? ''" (ngModelChange)="set({ submitLabel: $event || undefined }, 'sl')" placeholder="Submit" /></label>
@@ -71,7 +71,7 @@ import type { UiFbSettings } from './schema';
     :host { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .fld { display: flex; flex-direction: column; min-width: 0; }
     .group-sec { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .group-sec h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
+    .group-sec h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
   `],
 })
 export class FbSettingsFields {

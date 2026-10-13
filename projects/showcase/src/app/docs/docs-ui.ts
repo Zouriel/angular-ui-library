@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
 import { UiTable, type UiColumn } from '@zouriel/ui/table';
 import { UiCodeBlock } from '@zouriel/ui/data';
@@ -28,6 +28,15 @@ export class DocPage {
   eyebrow = input('Component');
   title = input('');
   lead = input('');
+}
+
+/**
+ * The id a doc-section gets when it has no explicit `anchor`: its name in lower case, with every
+ * run of other characters turned into one hyphen. The command palette's section index uses the same
+ * function, so search results land on the right heading.
+ */
+export function docAnchor(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 export interface ApiRow extends Record<string, unknown> {
@@ -70,12 +79,12 @@ export class DocApi {
   selector: 'doc-section',
   imports: [UiText, UiCodeBlock, DocApi],
   template: `
-    <section class="sec" [attr.id]="anchor()">
-      <ui-text variant="h3">{{ name() }}</ui-text>
+    <section class="sec" [attr.id]="id()">
+      <ui-text variant="h2" class="title">{{ name() }}</ui-text>
       @if (selector()) { <code class="sel">{{ selector() }}</code> }
       @if (summary()) { <ui-text variant="body" class="sum">{{ summary() }}</ui-text> }
       <ng-content />
-      @if (api().length) { <doc-api [rows]="api()" title="Inputs" /> }
+      @if (api().length) { <doc-api [rows]="api()" [title]="apiTitle()" /> }
       @if (outputs().length) { <doc-api [rows]="outputs()" title="Outputs" /> }
       @if (shapes()) {
         <ui-text variant="label" class="cap">Data shapes</ui-text>
@@ -86,11 +95,16 @@ export class DocApi {
   styles: `
     :host { display: block; }
     .sec { padding: var(--ui-space-6) 0; border-top: 1px solid var(--ui-color-border); }
-    .sec:first-of-type { border-top: none; }
+    /* Each section is the only .sec in its own host, so the first host is what drops the rule. */
+    :host(:first-of-type) .sec { border-top: none; }
+    /* Sections are the page's second heading level (the page title is the h1) but read at h3 size. */
+    .title ::ng-deep h2 { font-size: 1.375rem; font-weight: 600; line-height: 1.35; letter-spacing: var(--ui-tracking-tight); }
+    .sec { scroll-margin-top: calc(52px + var(--ui-space-2)); } /* clears the sticky top bar */
     .sel { display: inline-block; margin: 4px 0 var(--ui-space-2); font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm);
       color: var(--ui-color-primary); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);
       border-radius: 6px; padding: 2px 8px; }
     .sum { color: var(--ui-color-text-muted); margin-bottom: var(--ui-space-4); display: block; max-width: 66ch; }
+    .title + .sum { margin-top: var(--ui-space-2); }
     .cap { display: block; margin: var(--ui-space-3) 0 var(--ui-space-1); color: var(--ui-color-text-muted); }
   `,
 })
@@ -98,11 +112,16 @@ export class DocSection {
   name = input('');
   selector = input('');
   summary = input('');
+  /** Element id for deep links; defaults to {@link docAnchor} of the name. */
   anchor = input('');
   api = input<ApiRow[]>([]);
+  /** Caption of the `api` table. */
+  apiTitle = input('Inputs');
   outputs = input<ApiRow[]>([]);
   /** Optional TS snippet documenting interface shapes for object inputs. */
   shapes = input('');
+
+  protected readonly id = computed(() => this.anchor() || docAnchor(this.name()));
 }
 
 /** Live example: a framed preview area with an optional code snippet beneath. */

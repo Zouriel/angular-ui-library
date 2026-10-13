@@ -16,13 +16,14 @@ export interface UiMenuItem {
 /**
  * `ui-menu` — dropdown menu anchored to a trigger (CDK Overlay). Project the
  * trigger with `[menu-trigger]`; pass `items` and listen to `(select)`.
- * Arrow keys move focus, Enter activates, Escape closes (WAI-ARIA menu).
+ * Arrow keys move focus, Enter activates, Escape closes (WAI-ARIA menu). Choosing an item or
+ * pressing Escape puts focus back on the trigger; Tab closes the menu and moves on from the trigger.
  */
 @Component({
   selector: 'ui-menu',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
-    <span class="trigger" cdkOverlayOrigin #origin="cdkOverlayOrigin" (click)="toggle()">
+    <span #trigger class="trigger" cdkOverlayOrigin #origin="cdkOverlayOrigin" (click)="toggle()">
       <ng-content select="[menu-trigger]" />
     </span>
 
@@ -94,6 +95,7 @@ export class UiMenu {
   radius = input<boolean>(this.config.radius);
 
   private panel = viewChild<ElementRef<HTMLElement>>('panel');
+  private trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
 
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
@@ -108,7 +110,15 @@ export class UiMenu {
   protected choose(item: UiMenuItem): void {
     if (item.disabled) return;
     this.select.emit(item);
+    this.close();
+  }
+
+  /** Closes and hands focus back to the trigger, so a keyboard user is not dropped onto <body>. */
+  private close(): void {
     this.open.set(false);
+    const host = this.trigger().nativeElement;
+    const target = host.querySelector<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])') ?? host;
+    target.focus();
   }
 
   protected focusFirst(): void {
@@ -123,7 +133,9 @@ export class UiMenu {
     else if (e.key === 'ArrowUp') { e.preventDefault(); els[(current - 1 + els.length) % els.length]?.focus(); }
     else if (e.key === 'Home') { e.preventDefault(); els[0]?.focus(); }
     else if (e.key === 'End') { e.preventDefault(); els[els.length - 1]?.focus(); }
-    else if (e.key === 'Escape') { e.preventDefault(); this.open.set(false); }
+    else if (e.key === 'Escape') { e.preventDefault(); this.close(); }
+    // Not prevented: with focus back on the trigger, the browser's own Tab moves on from there.
+    else if (e.key === 'Tab') this.close();
   }
 
   private itemEls(): HTMLButtonElement[] {

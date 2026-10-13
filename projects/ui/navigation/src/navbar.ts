@@ -12,7 +12,7 @@ import { UI_CONFIG } from '@zouriel/ui';
   // never stick to anything. Hosts are laid out by the page, so this is the element that can.
   host: { '[class.ui-navbar-sticky]': 'sticky()' },
   template: `
-    <nav class="ui-navbar" [class.glass]="glass()" [class.no-radius]="!radius()">
+    <nav class="ui-navbar" [attr.aria-label]="label() || null" [class.glass]="glass()" [class.no-radius]="!radius()">
       <div class="brand"><ng-content select="[navbar-brand]" /></div>
       <div class="links"><ng-content /></div>
       <div class="actions"><ng-content select="[navbar-actions]" /></div>
@@ -59,6 +59,8 @@ import { UI_CONFIG } from '@zouriel/ui';
 export class UiNavbar {
   private config = inject(UI_CONFIG);
   sticky = input(false);
+  /** Accessible name for the <nav>. Set it when the page has more than one navigation landmark. */
+  label = input<string>();
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
 }

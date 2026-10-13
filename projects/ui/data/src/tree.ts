@@ -1,17 +1,20 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, input, model, output, signal } from '@angular/core';
+import { Component, ElementRef, inject, input, model, output, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import type { IconSvgObject } from '@hugeicons/angular';
 
 export interface UiTreeNode {
   label: string;
   value: string;
-  icon?: string;
+  /** A HugeIcons icon (drawn in currentColor), or a short string such as a letter. */
+  icon?: string | IconSvgObject;
   children?: UiTreeNode[];
 }
 
 /** `ui-tree` — expandable hierarchy with selection (recursive, WAI-ARIA tree). */
 @Component({
   selector: 'ui-tree',
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, HugeiconsIconComponent],
   template: `
     <div class="tree" role="tree">
       @for (n of nodes(); track n.value) {
@@ -23,12 +26,18 @@ export interface UiTreeNode {
            [attr.aria-selected]="n.value === selected()" [attr.aria-level]="depth + 1"
            [class.selected]="n.value === selected()" [style.padding-left]="'calc(var(--ui-space-2) + ' + depth * 16 + 'px)'" (click)="choose(n)"
            (keydown.enter)="choose(n); $event.preventDefault()" (keydown.space)="choose(n); $event.preventDefault()"
-           (keydown.arrowright)="expand(n, true)" (keydown.arrowleft)="expand(n, false)">
+           (keydown.arrowright)="expand(n, true)" (keydown.arrowleft)="expand(n, false)"
+           (keydown.arrowdown)="move($event, 1)" (keydown.arrowup)="move($event, -1)"
+           (keydown.home)="move($event, 'first')" (keydown.end)="move($event, 'last')">
         @if (n.children?.length) {
           <button type="button" class="chev" tabindex="-1" [class.open]="expanded().has(n.value)" (click)="toggle(n, $event)"
                   [attr.aria-label]="(expanded().has(n.value) ? 'Collapse ' : 'Expand ') + n.label"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         } @else { <span class="chev spacer"></span> }
-        @if (n.icon) { <span class="icon">{{ n.icon }}</span> }
+        @if (n.icon) {
+          <span class="icon" aria-hidden="true">
+            @if (isSvg(n.icon)) { <hugeicons-icon [icon]="n.icon" [size]="16" [strokeWidth]="1.8" /> } @else { {{ n.icon }} }
+          </span>
+        }
         <span class="label">{{ n.label }}</span>
       </div>
       @if (n.children?.length && expanded().has(n.value)) {
@@ -53,7 +62,7 @@ export interface UiTreeNode {
     .chev.open { transform: rotate(90deg); }
     .chev:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .chev.spacer { cursor: default; }
-    .icon { font-size: 14px; }
+    .icon { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ui-color-text-muted); }
     .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `,
 })
@@ -62,6 +71,22 @@ export class UiTree {
   selected = model<string | null>(null);
   nodeSelect = output<UiTreeNode>();
   protected readonly expanded = signal<Set<string>>(new Set());
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  /** A HugeIcons icon is an array of [tag, attributes] pairs; a text icon is a string. */
+  protected isSvg(icon: string | IconSvgObject | undefined): icon is IconSvgObject {
+    return Array.isArray(icon);
+  }
+
+  /** Arrow Up/Down step through the visible rows; Home/End jump to the first/last. */
+  protected move(e: Event, step: number | 'first' | 'last'): void {
+    e.preventDefault();
+    const rows = [...this.host.nativeElement.querySelectorAll<HTMLElement>('.row')];
+    const at = rows.indexOf(e.currentTarget as HTMLElement);
+    const target = step === 'first' ? 0 : step === 'last' ? rows.length - 1 : at + step;
+    const next = Math.max(0, Math.min(rows.length - 1, target));
+    rows[next]?.focus();
+  }
 
   protected toggle(n: UiTreeNode, e: Event): void {
     e.stopPropagation();

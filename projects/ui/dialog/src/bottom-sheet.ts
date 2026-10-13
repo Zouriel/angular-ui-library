@@ -41,8 +41,9 @@ interface Drag {
  * and are ignored once a touch has been seen so one finger isn't read as two drags.</p>
  *
  * <p>It's non-modal by default: what's above stays usable, which is the point on an editor. Set
- * `backdrop` for a modal sheet. Escape closes it; the handle is a button that steps through the
- * snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
+ * `backdrop` to dim the page and close on a backdrop tap; focus is not trapped either way, and
+ * opening it does not move focus. Escape closes it while focus is inside, and focus then goes back
+ * to where it came from. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
  * rises to its tallest snap (turn that off with `expandOnFocus`), and while an on-screen keyboard is up
  * the sheet rests on top of it rather than behind it.</p>
  *
@@ -63,7 +64,7 @@ interface Drag {
     }
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="backdrop() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
-      (keydown.escape)="snap.set(0)" (focusin)="onFocusIn($event)">
+      (keydown.escape)="close()" (focusin)="onFocusIn($event)">
       <header class="grab"
         (touchstart)="onTouchStart($event, false)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)"
         (pointerdown)="onPointerDown($event)">
@@ -75,7 +76,7 @@ interface Drag {
             <span class="title">{{ title() }}</span>
             <span class="actions"><ng-content select="[sheet-actions]" /></span>
             @if (closable()) {
-              <button type="button" class="x" aria-label="Close" (click)="snap.set(0)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+              <button type="button" class="x" aria-label="Close" (click)="close()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             }
           </div>
         }
@@ -137,6 +138,9 @@ export class UiBottomSheet {
   private readonly zone = inject(NgZone);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
+  private readonly sheet = viewChild.required<ElementRef<HTMLElement>>('sheet');
+  /** Where focus came from when it first moved into the sheet; closing from the keyboard hands it back. */
+  private returnFocus: HTMLElement | null = null;
 
   /** Resting heights as fractions (0–1) of the room the sheet has; ascending. */
   snaps = input<readonly number[]>([0, 0.5, 1]);
@@ -244,7 +248,21 @@ export class UiBottomSheet {
     e.preventDefault();
   }
 
+  /**
+   * Closes it (snap 0). If focus is inside, it goes back to where it came from first: the closed
+   * sheet is inert, and the browser would otherwise drop focus on <body>.
+   */
+  close(): void {
+    const sheet = this.sheet().nativeElement;
+    const back = this.returnFocus;
+    this.returnFocus = null;
+    if (sheet.contains(document.activeElement) && back?.isConnected && !sheet.contains(back)) back.focus();
+    this.snap.set(0);
+  }
+
   protected onFocusIn(e: FocusEvent): void {
+    const from = e.relatedTarget;
+    if (from instanceof HTMLElement && !this.sheet().nativeElement.contains(from)) this.returnFocus = from;
     if (!this.expandOnFocus() || !(this.touched || window.matchMedia('(pointer: coarse)').matches)) return;
     const target = e.target as Element | null;
     if (target?.closest('input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea, [contenteditable="true"]'))

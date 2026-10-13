@@ -1,7 +1,7 @@
 import {
   CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition,
 } from '@angular/cdk/overlay';
-import { Component, inject, input, model } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, model, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
 export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end';
@@ -9,13 +9,15 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
 /**
  * `ui-popover` — click-triggered floating panel anchored to its trigger via the
  * CDK Overlay. Project the trigger with `[popover-trigger]` and the panel body
- * as default content. Dismisses on outside click and Escape.
+ * as default content. Dismisses on outside click and Escape. Focus is not moved into the panel;
+ * if it is inside when Escape closes it, it goes back to the trigger.
  */
 @Component({
   selector: 'ui-popover',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
     <span
+      #trigger
       class="trigger"
       cdkOverlayOrigin
       #origin="cdkOverlayOrigin"
@@ -27,7 +29,7 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
       cdkConnectedOverlay
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="open()"
-      [cdkConnectedOverlayPositions]="positions"
+      [cdkConnectedOverlayPositions]="positions()"
       [cdkConnectedOverlayPush]="true"
       [cdkConnectedOverlayViewportMargin]="8"
       [cdkConnectedOverlayHasBackdrop]="false"
@@ -38,7 +40,7 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
         [class.glass]="glass()"
         [class.no-radius]="!radius()"
         role="dialog"
-        (keydown.escape)="open.set(false)"
+        (keydown.escape)="closeFromPanel()"
         animate.enter="ui-scale-enter"
         animate.leave="ui-scale-leave">
         <ng-content />
@@ -67,11 +69,21 @@ export class UiPopover {
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
 
+  private trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
+
   protected toggle(): void {
     this.open.update((v) => !v);
   }
 
-  protected get positions(): ConnectedPosition[] {
+  /** Escape from inside the panel: close, and put focus back on the trigger rather than <body>. */
+  protected closeFromPanel(): void {
+    this.open.set(false);
+    const host = this.trigger().nativeElement;
+    (host.querySelector<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])') ?? host).focus();
+  }
+
+  /** A computed, not a getter: a fresh array on every check would make the overlay re-apply its positions each time. */
+  protected readonly positions = computed<ConnectedPosition[]>(() => {
     const map: Record<UiPopoverPlacement, ConnectedPosition> = {
       'bottom':       { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 4 },
       'bottom-start': { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
@@ -80,5 +92,5 @@ export class UiPopover {
     };
     const primary = map[this.placement()];
     return [primary, map['top']];
-  }
+  });
 }

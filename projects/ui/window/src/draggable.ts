@@ -51,6 +51,7 @@ export class UiDraggable implements OnDestroy {
     this.zone.runOutsideAngular(() => {
       document.addEventListener('pointermove', this.move);
       document.addEventListener('pointerup', this.up);
+      document.addEventListener('pointercancel', this.up);
     });
     this.dragStart.emit({ ...this.startPos, pointerX: e.clientX, pointerY: e.clientY });
     e.preventDefault();
@@ -78,6 +79,7 @@ export class UiDraggable implements OnDestroy {
   private teardown(): void {
     document.removeEventListener('pointermove', this.move);
     document.removeEventListener('pointerup', this.up);
+    document.removeEventListener('pointercancel', this.up);
   }
 
   ngOnDestroy(): void {

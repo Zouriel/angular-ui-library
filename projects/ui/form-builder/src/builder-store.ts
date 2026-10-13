@@ -16,8 +16,10 @@ import {
   moveElement,
   removeElement,
   removeReferences,
+  fbSlug,
   renameKey,
   subtreeIds,
+  uniqueKey,
   updateElement,
   updatePage,
   type UiFbDropTarget,
@@ -228,6 +230,21 @@ export class FbBuilderStore {
 
   updateGroup(id: string, patch: Partial<UiFbGroup> | ((g: UiFbGroup) => UiFbGroup), mergeKey?: string): void {
     this.commit(updateElement<UiFbGroup>(this.def(), id, (g) => (typeof patch === 'function' ? patch(g) : { ...g, ...patch })), mergeKey);
+  }
+
+  /**
+   * Retitles a section. Like a question's key following its label, a section's key follows its
+   * title while it still has the key it was given automatically and no answers are saved under it.
+   */
+  setGroupTitle(id: string, title: string): void {
+    const el = this.index().get(id)?.element;
+    if (!el || !('kind' in el) || el.kind !== 'group') return;
+    const g = el;
+    const slug = fbSlug(g.title || (g.repeat ? 'items' : 'section'));
+    const stem = (k: string) => k.replace(/_\d+$/, '');
+    const auto = !!g.key && !this.hasAnswers(id) && (stem(g.key) === 'items' || stem(g.key) === slug || stem(g.key) === 'section');
+    const key = auto && title.trim() ? uniqueKey(this.def(), fbSlug(title), id) : g.key;
+    this.updateGroup(id, { title: title || undefined, key }, `title:${id}`);
   }
 
   updateStatic(id: string, patch: Partial<UiFbStatic>, mergeKey?: string): void {

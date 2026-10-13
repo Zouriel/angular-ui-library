@@ -19,6 +19,26 @@ function store(def?: UiFormDefinition) {
 }
 
 describe('FbBuilderStore', () => {
+  it('lets a section key follow its title until it is renamed by hand', () => {
+    const g = { ...createGroup(undefined, true), id: 'g' };
+    const s = store(form([f('a', 'text'), g]));
+    expect(g.key).toBe('items');
+    s.setGroupTitle('g', 'Dependants');
+    const key = () => (s.def().pages[0].elements[1] as UiFbGroup).key;
+    expect(key()).toBe('dependants');
+    s.setGroupTitle('g', 'Children');
+    expect(key()).toBe('children');
+    s.updateGroup('g', { key: 'kids' });
+    s.setGroupTitle('g', 'Young people');
+    expect(key()).toBe('kids');
+  });
+
+  it('keeps a section without a key keyless when it is retitled', () => {
+    const s = store(form([{ ...createGroup(), id: 'g' }]));
+    s.setGroupTitle('g', 'Contact details');
+    expect((s.def().pages[0].elements[0] as UiFbGroup).key).toBeUndefined();
+  });
+
   it('adds right after the selection and selects the new field', () => {
     const s = store(form([f('a', 'text'), f('b', 'text')]));
     s.select('a');

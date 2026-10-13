@@ -6,6 +6,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   selector: 'ui-toggle-button',
   template: `
     <button
+      type="button"
       class="ui-toggle"
       [class.pressed]="pressed()"
       [class.no-radius]="!radius()"

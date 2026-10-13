@@ -1,37 +1,53 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { Component, computed, effect, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import type { IconSvgObject } from '@hugeicons/angular';
 import { UI_CONFIG } from '@zouriel/ui';
 
 export interface UiCommand {
   label: string;
+  /** Unique; also the `track` key of the list. */
   value: string;
+  /** Shown at the end of the row and matched by the filter. */
   group?: string;
-  icon?: string;
+  /** A HugeIcons icon (drawn in currentColor), or a short string such as a letter. */
+  icon?: string | IconSvgObject;
+  /** Display only, e.g. "Ctrl+S". The palette does not bind it. */
   shortcut?: string;
+  /** Extra words the filter matches but the row does not show. */
   keywords?: string;
 }
 
+let paletteSeq = 0;
+
 /**
- * `ui-command-palette` — ⌘K-style fuzzy command launcher. Bind `[(open)]`,
- * pass `commands`, listen to `(run)`. Filters as you type; Arrow/Enter to run.
+ * `ui-command-palette` — ⌘K-style command launcher. Bind `[(open)]`, pass `commands`, listen to
+ * `(run)`. Typing filters by case-insensitive substring over label, group and keywords;
+ * ArrowUp/Down move the highlight, Enter runs it, Escape or a backdrop click closes. Focus is
+ * trapped while open and returns to where it was on close. It binds no global shortcut: open it
+ * from your own keydown handler.
  */
 @Component({
   selector: 'ui-command-palette',
-  imports: [CdkTrapFocus],
+  imports: [CdkTrapFocus, HugeiconsIconComponent],
   template: `
     @if (open()) {
       <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
-        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus
+        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
              animate.enter="ui-scale-enter" animate.leave="ui-scale-leave">
           <input #input class="cp-input" [value]="query()" [attr.placeholder]="placeholder()"
-                 (input)="onInput($event)" role="combobox" aria-expanded="true" aria-controls="cp-list"
-                 aria-autocomplete="list" [attr.aria-activedescendant]="filtered().length ? 'cp-option-' + active() : null" />
-          <ul #list class="cp-list" id="cp-list" role="listbox">
+                 (input)="onInput($event)" role="combobox" aria-expanded="true" [attr.aria-controls]="listId"
+                 aria-autocomplete="list" [attr.aria-activedescendant]="filtered().length ? optionId(active()) : null" />
+          <ul #list class="cp-list" [id]="listId" role="listbox">
             @for (c of filtered(); track c.value; let i = $index) {
-              <li [id]="'cp-option-' + i" role="option" class="cp-item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
+              <li [id]="optionId(i)" role="option" class="cp-item" [class.active]="i === active()" [attr.aria-selected]="i === active()"
                   (mousedown)="$event.preventDefault(); pick(c)" (mouseenter)="active.set(i)">
-                @if (c.icon) { <span class="ci">{{ c.icon }}</span> }
+                @if (c.icon) {
+                  <span class="ci" aria-hidden="true">
+                    @if (isSvg(c.icon)) { <hugeicons-icon [icon]="c.icon" [size]="16" [strokeWidth]="1.8" /> } @else { {{ c.icon }} }
+                  </span>
+                }
                 <span class="cl">{{ c.label }}</span>
                 @if (c.group) { <span class="cg">{{ c.group }}</span> }
                 @if (c.shortcut) { <kbd class="ck">{{ c.shortcut }}</kbd> }
@@ -61,7 +77,7 @@ export interface UiCommand {
     .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; overscroll-behavior: contain; }
     .cp-item { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-sm); }
     .cp-item.active { background: var(--ui-color-elevated-hover); }
-    .ci { flex: none; width: 16px; text-align: center; color: var(--ui-color-text-muted); }
+    .ci { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); }
     .cl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cg { flex: none; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     /* Matches ui-kbd. */
@@ -79,6 +95,10 @@ export class UiCommandPalette {
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
   run = output<UiCommand>();
+
+  protected readonly listId = `ui-cp-list-${paletteSeq++}`;
+  protected optionId(i: number): string { return `${this.listId}-option-${i}`; }
+  protected isSvg(icon: string | IconSvgObject): icon is IconSvgObject { return Array.isArray(icon); }
 
   protected readonly query = signal('');
   protected readonly active = signal(0);
@@ -104,14 +124,14 @@ export class UiCommandPalette {
   protected onInput(e: Event): void { this.query.set((e.target as HTMLInputElement).value); this.active.set(0); }
   protected onKey(e: KeyboardEvent): void {
     const items = this.filtered();
-    if (e.key === 'ArrowDown') { e.preventDefault(); this.active.update((i) => Math.min(items.length - 1, i + 1)); this.revealActive(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); this.active.update((i) => Math.max(0, Math.min(items.length - 1, i + 1))); this.revealActive(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); this.active.update((i) => Math.max(0, i - 1)); this.revealActive(); }
     else if (e.key === 'Enter') { e.preventDefault(); const c = items[this.active()]; if (c) this.runCommand(c); }
     else if (e.key === 'Escape') { e.preventDefault(); this.open.set(false); }
   }
   /** Keeps the keyboard-highlighted option inside the scrolled list. */
   private revealActive(): void {
-    queueMicrotask(() => this.list()?.nativeElement.querySelector<HTMLElement>('#cp-option-' + this.active())?.scrollIntoView({ block: 'nearest' }));
+    queueMicrotask(() => this.list()?.nativeElement.querySelector<HTMLElement>('#' + this.optionId(this.active()))?.scrollIntoView({ block: 'nearest' }));
   }
   protected pick(c: UiCommand): void { this.runCommand(c); }
   private runCommand(c: UiCommand): void { this.run.emit(c); this.open.set(false); }

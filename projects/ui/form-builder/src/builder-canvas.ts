@@ -86,7 +86,7 @@ export interface FbDeleteRequest {
         @if (!page.elements.length) {
           <div class="empty">
             <p class="empty-title">{{ def.pages.length > 1 ? 'This page is empty' : 'Start your form' }}</p>
-            <p class="empty-text">Drag a field from the left, or start with one of these.</p>
+            <p class="empty-text"><span class="hint-wide">Drag a field from the left, or start with one of these.</span><span class="hint-compact">Add a field with the Add button, or start with one of these.</span></p>
             <div class="starters">
               @for (s of starters; track s.type) {
                 <button type="button" class="starter" (click)="addStarter(s.type)">
@@ -369,12 +369,18 @@ export interface FbDeleteRequest {
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
     .empty-title { margin: 0; font-size: 15px; font-weight: 600; }
     .empty-text { margin: 0; font-size: 13px; color: var(--ui-color-text-secondary); }
+    /* The palette is only beside the canvas in the wide layout; elsewhere fields come from the Add button. */
+    .hint-wide { display: none; }
+    :host-context(ui-form-builder[data-layout="wide"]) .hint-wide { display: inline; }
+    :host-context(ui-form-builder[data-layout="wide"]) .hint-compact { display: none; }
     .starters { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     .starter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: 13px; cursor: pointer; }
     .starter:hover { border-color: var(--ui-color-border-strong, var(--ui-color-primary)); background: var(--ui-color-surface-hover); }
     .starter:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     @media (pointer: coarse) { .starter, .add-in { min-height: 40px; } .tools { top: -20px; } }
+    /* The touch toolbar is taller and reaches into the card: push the selected card's content below it so its label stays readable. */
+    @media (pointer: coarse) { .item.selected > .card.field, .item.selected > .card.static { padding-top: calc(var(--ui-space-2) + var(--ui-space-3)); } }
   `],
 })
 export class FbCanvas {

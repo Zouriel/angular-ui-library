@@ -1,8 +1,9 @@
 # @zouriel/ui — Angular component library
 
 A token-driven, signal-first **Angular v22** component library. Standalone, zoneless,
-tree-shakeable across secondary entry points, themeable, and accessible
-(`@angular/aria` + CDK). About 140 components and directives across 34 entry points:
+tree-shakeable across secondary entry points, themeable, and accessible (ARIA roles,
+keyboard support, CDK focus handling). About 140 components and directives across
+34 secondary entry points, plus a small core (`@zouriel/ui`):
 - the everyday catalog;
 - design tools;
 - three flagships: a floating-window system, a multi-format file viewer and a form builder;
@@ -17,7 +18,7 @@ tree-shakeable across secondary entry points, themeable, and accessible
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
   set of token overrides. Ships **13 themes**:
   - **Winter**: Dark and Light, the defaults;
-  - **colour palettes**: light and dark Orange, Pink, Teal and Purple, plus Gold Black, Gold Red and Light Purple Gold;
+  - **colour palettes** (10): Light Orange; Light and Dark Pink, Teal and Purple; Gold Black, Gold Red and Light Purple Gold;
   - **Dark Orange**: a cinematic theme with web fonts and FX.
 
   All text and status colours meet WCAG AA in every theme. Switch at runtime with
@@ -50,22 +51,31 @@ The package is published to GitHub Packages, so point the scope there once:
 
 ```bash
 echo "@zouriel:registry=https://npm.pkg.github.com" >> .npmrc
-npm i @zouriel/ui @angular/cdk @angular/aria @hugeicons/angular @hugeicons/core-free-icons
-npm i pdfjs-dist        # only if you use the PDF viewer
+npm i @zouriel/ui @angular/cdk @hugeicons/angular @hugeicons/core-free-icons
+npm i pdfjs-dist        # only if you use the PDF viewer (ui-pdf-viewer, or PDFs in ui-file-viewer)
 ```
+
+Peer dependencies: `@angular/core`, `@angular/common`, `@angular/forms` and `@angular/cdk` ^22,
+`@hugeicons/angular` ^1.0.11, `@hugeicons/core-free-icons` ^4.3.0, and optionally `pdfjs-dist` ^4.10.38.
 
 Load the global styles once (e.g. in `angular.json` styles or your global stylesheet):
 
 ```css
 @import '@zouriel/ui/styles/tokens.css';
 @import '@zouriel/ui/styles/animations.css';
-/* optional: the colour palettes and their signature motion */
+/* optional: the ten colour palettes */
 @import '@zouriel/ui/styles/theme-palettes.css';
-@import '@zouriel/ui/styles/theme-animations.css';
-/* optional: the cinematic Dark Orange skin + FX utilities */
+/* optional: the cinematic Dark Orange skin (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';
+/* optional: FX utility classes (.ui-glow, .ui-gradient-text, .ui-underline)
+   and the palettes' signature motion on them */
 @import '@zouriel/ui/styles/fx.css';
+@import '@zouriel/ui/styles/theme-animations.css';
+/* optional: --color-* aliases for the --ui-color-* tokens, for your own app code */
+@import '@zouriel/ui/styles/color-aliases.css';
 ```
+
+Without `tokens.css` the components have no colours, spacing or sizes, so it is not optional.
 
 Use any component; they're standalone:
 
@@ -81,7 +91,7 @@ import { UiButton } from '@zouriel/ui/button';
 export class Demo {}
 ```
 
-Optional: set library-wide defaults.
+Optional: set library-wide defaults in the application providers.
 
 ```ts
 import { provideUiConfig } from '@zouriel/ui';
@@ -90,6 +100,18 @@ export const appConfig = {
   providers: [provideUiConfig({ glass: true, radius: true, animations: true })],
 };
 ```
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `glass` | `false` | Default glass surface for components with a `glass` input (card, modal, drawer, popover, menu, window, …). |
+| `radius` | `true` | Default rounded corners for components with a `radius` input. |
+| `animations` | `true` | `false` adds `.ui-no-anim` to `<html>`, which turns every library animation and transition off. |
+| `defaultFont` | `'var(--ui-font-default)'` | A font-family list; when given, it is written to the `--ui-font-default` token on `<html>`, so every component uses it. |
+
+A component's own input always wins over the config. The core entry point also exports
+`UI_CONFIG` (the injection token), `injectUiConfig()`, `defaultUiConfig`, the shared
+`UiSize` (`'sm' | 'md' | 'lg'`) and `UiStatus` types, and `UI_ANIM`, the class names of
+the shared enter/leave animations for Angular's `animate.enter` / `animate.leave`.
 
 ## Theming
 
@@ -101,11 +123,16 @@ this.theme.set('goldBlack');   // any of the 13, or your own
 this.theme.toggle();           // dark <-> light
 ```
 
-| Family | Themes |
-| --- | --- |
-| Winter (default) | `dark` (`winterDark`), `light` (`winterLight`) |
-| Palettes | `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed` |
-| Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow and grain |
+| Family | Themes | Stylesheet |
+| --- | --- | --- |
+| Winter (default) | `dark` (`winterDark`), `light` (`winterLight`) | `tokens.css` |
+| Palettes | `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed` | `theme-palettes.css` |
+| Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
+
+`toggle()` moves from `dark` to `light` and from any other theme to `dark`; `winterDark` and
+`winterLight` swap with each other.
+The darkOrange film grain and custom cursor are components (`ui-grain`, `ui-cursor` from
+`@zouriel/ui/fx`) that the app mounts itself.
 
 A custom theme is a `[data-theme="yours"]` block that sets the core `--ui-color-*` tokens;
 every other token is derived. See `projects/ui/styles/COLOR-SYSTEM.md`. `ui-theme-provider`

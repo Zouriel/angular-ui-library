@@ -9,8 +9,8 @@
  * Opt-in (it pulls web fonts). Include AFTER tokens.css, then switch with
  * UiThemeService.set('darkOrange') or <html data-theme="darkOrange">.
  *
- *   @import 'ui/styles/tokens.css';
- *   @import 'ui/styles/theme-dark-orange.css';
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/theme-dark-orange.css';
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap");

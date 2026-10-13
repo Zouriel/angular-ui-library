@@ -4,7 +4,7 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'ui-fab',
   template: `
-    <button class="ui-fab" [attr.data-position]="position()" [attr.data-size]="size()"
+    <button type="button" class="ui-fab" [attr.data-position]="position()" [attr.data-size]="size()"
             [attr.aria-label]="label()" [disabled]="disabled()">
       <ng-content />
     </button>

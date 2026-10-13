@@ -1,31 +1,41 @@
 import { Component, inject, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import ArrowDown01Icon from '@hugeicons/core-free-icons/ArrowDown01Icon';
+import FileAddIcon from '@hugeicons/core-free-icons/FileAddIcon';
+import Copy01Icon from '@hugeicons/core-free-icons/Copy01Icon';
+import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
+import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
+import Moon02Icon from '@hugeicons/core-free-icons/Moon02Icon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet } from '@zouriel/ui/dialog';
+import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n  disabled?: boolean;\n  danger?: boolean;\n}";
 
 @Component({
   selector: 'page-overlays',
-  imports: [ UiBottomSheet, UiBackdrop,
+  imports: [ UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
     UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog,
     DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Overlays & dialogs"
-      lead="Anchored overlays (tooltip, popover, menu, context-menu) use the CDK Overlay; dialogs (modal, drawer, confirm) trap focus and lock scroll. Toasts are a service.">
+      lead="Anchored overlays (tooltip, popover, menu, context menu) use the CDK Overlay and flip or shift to stay on screen. Dialogs (modal, drawer, confirm) trap focus, lock scroll and give focus back on close. Also here: backdrop, bottom sheet, toasts and the command palette. Overlays come from @zouriel/ui/overlay, dialogs and toasts from @zouriel/ui/dialog, the palette from @zouriel/ui/command-palette.">
 
       <doc-section name="Tooltip" selector="[uiTooltip]" [api]="tooltipApi"
-        summary="Directive. Hover/focus tooltip backed by the CDK Overlay; sets aria-describedby on the host while shown. The text is the directive value; an empty string shows nothing.">
-        <doc-demo code="<button uiTooltip=&quot;Saved to cloud&quot; uiTooltipPosition=&quot;top&quot;>Hover</button>">
+        summary="Directive. Shows on hover and keyboard focus, hides on leave, blur and Escape. Backed by the CDK Overlay: if there is no room on the chosen side it flips to the opposite one, and it is kept 8px inside the viewport. Sets aria-describedby on the host while shown. The text is the directive value; an empty string shows nothing.">
+        <doc-demo code="import { UiTooltip } from '@zouriel/ui/overlay';
+
+<button uiTooltip=&quot;Saved to cloud&quot; uiTooltipPosition=&quot;top&quot;>Hover</button>">
           <ui-button variant="outline" uiTooltip="Backed by the CDK Overlay">Hover me</ui-button>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Popover" selector="ui-popover" [api]="popoverApi" [outputs]="openOut"
-        summary="Click-triggered floating panel (role=&quot;dialog&quot;). Project [popover-trigger] and default content. open is a two-way model. Dismisses on outside click / Esc, and flips or shifts to stay on screen.">
+      <doc-section name="Popover" selector="ui-popover" [api]="popoverApi"
+        summary="Click-triggered floating panel (role=&quot;dialog&quot;). Project the trigger with [popover-trigger] and the panel body as default content. Closes on outside click and Escape. Focus is not moved into the panel; when Escape closes it from inside, focus goes back to the trigger. Falls back to above the trigger when there is no room below, and shifts sideways to stay on screen.">
         <doc-demo code="<ui-popover [(open)]=&quot;open&quot; placement=&quot;bottom-start&quot;>
   <ui-button popover-trigger>Open</ui-button>
   Panel content
@@ -39,26 +49,30 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Menu" selector="ui-menu" [api]="menuApi" [outputs]="menuOut" [shapes]="MENU_ITEM"
-        summary="Dropdown menu (WAI-ARIA menu). Opening focuses the first item; ArrowUp/Down, Home and End move focus, Enter activates, Escape closes. Project [menu-trigger]; pass items; listen to (select). Flips to stay on screen.">
-        <doc-demo code="<ui-menu [items]=&quot;items&quot; (select)=&quot;run($event)&quot;>
-  <ui-button menu-trigger>Menu ▾</ui-button>
+        summary="Dropdown menu (role=&quot;menu&quot;). Project the trigger with [menu-trigger]; pass items; listen to (select). Opening focuses the first enabled item; ArrowUp/Down, Home and End move focus, Enter activates. Choosing an item or pressing Escape closes it and puts focus back on the trigger; Tab closes it and moves on. Flips above, or lines up with the trigger's right edge, to stay on screen.">
+        <doc-demo code="import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+
+<ui-menu [items]=&quot;items&quot; (select)=&quot;run($event)&quot;>
+  <ui-button menu-trigger>Actions</ui-button>
 </ui-menu>">
           <ui-menu [items]="menuItems" (select)="toast.info($event.label)">
-            <ui-button menu-trigger variant="outline">Menu ▾</ui-button>
+            <ui-button menu-trigger variant="outline">Actions <hugeicons-icon aria-hidden="true" [icon]="icons.chevron" [size]="16" [strokeWidth]="1.8" /></ui-button>
           </ui-menu>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Context menu" selector="[uiContextMenu]" [api]="ctxApi" [outputs]="ctxOut" [shapes]="MENU_ITEM"
-        summary="Directive. Right-click menu opened at the pointer; it flips and shifts so it never runs off the edge. The first item gets focus on open, ArrowUp/Down, Home and End move between items, Escape closes. The directive value is the items array.">
+        summary="Directive. Right-click menu opened at the pointer; it flips and shifts so it never runs off the edge. The first item gets focus on open, ArrowUp/Down, Home and End move between items. Escape or choosing an item closes it and gives focus back to what had it before; an outside click or scrolling the page also closes it. The directive value is the items array.">
         <doc-demo code="<div [uiContextMenu]=&quot;items&quot; (contextSelect)=&quot;run($event)&quot;>Right-click</div>">
           <div class="ctx" [uiContextMenu]="menuItems" (contextSelect)="toast.info($event.label)">Right-click me</div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Modal" selector="ui-modal" [api]="modalApi" [outputs]="openOut"
-        summary="Centered dialog. open is a two-way model. Traps focus (CDK a11y), locks body scroll, closes on Esc / backdrop click, animates scale + backdrop-fade. size=&quot;full&quot; fills the screen with no padding, for editors opened over a page. Project default content + [modal-footer].">
-        <doc-demo code="<ui-modal [(open)]=&quot;open&quot; title=&quot;Title&quot; size=&quot;md&quot;>
+      <doc-section name="Modal" selector="ui-modal" [api]="modalApi"
+        summary="Centered dialog (role=&quot;dialog&quot;, aria-modal). Opens on its own layer at the end of <body>, so a transformed or clipped ancestor cannot squash it. Moves focus inside and traps it (CDK a11y), gives focus back to what had it when it closes, locks body scroll, and closes on Escape or a backdrop click. Only the body scrolls; the header and footer stay put. size=&quot;full&quot; fills the screen with no padding, for editors opened over a page.">
+        <doc-demo code="import { UiModal } from '@zouriel/ui/dialog';
+
+<ui-modal [(open)]=&quot;open&quot; title=&quot;Title&quot; size=&quot;md&quot;>
   Body…
   <div modal-footer><ui-button>Save</ui-button></div>
 </ui-modal>">
@@ -66,15 +80,15 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi" [outputs]="openOut"
-        summary="Edge-anchored sheet that slides in from side. open is a two-way model. Traps focus, locks scroll, closes on Esc / backdrop click. Project the body as content.">
-        <doc-demo code="<ui-drawer [(open)]=&quot;open&quot; side=&quot;right&quot; title=&quot;Panel&quot;> … </ui-drawer>">
+      <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi"
+        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content.">
+        <doc-demo code="<ui-drawer [(open)]=&quot;open&quot; side=&quot;right&quot; title=&quot;Panel&quot;>…</ui-drawer>">
           <ui-button variant="outline" (click)="drawer.set(true)">Open drawer</ui-button>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Confirm dialog" selector="ui-confirm-dialog" [api]="confirmApi" [outputs]="confirmOut"
-        summary="Focused confirm/cancel prompt built on a small ui-modal. Bind [(open)]; listen to (confirm)/(cancel). Normally both buttons sit right-aligned; with destructive the confirm button turns red and Cancel moves to the far left, away from it.">
+        summary="Confirm/cancel prompt built on a small ui-modal, so it traps and returns focus the same way. Bind [(open)]; listen to (confirm) and (cancel). (cancel) fires only for the Cancel button: Escape, the backdrop and the close button just set open to false. Normally both buttons sit right-aligned; with destructive the confirm button turns red and Cancel moves to the far left, away from it.">
         <doc-demo code="<ui-confirm-dialog [(open)]=&quot;open&quot; title=&quot;Delete?&quot; message=&quot;…&quot;
   confirmLabel=&quot;Delete&quot; [destructive]=&quot;true&quot; (confirm)=&quot;remove()&quot; />">
           <ui-button variant="destructive" (click)="confirm.set(true)">Delete…</ui-button>
@@ -82,7 +96,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Backdrop" selector="ui-backdrop" [api]="backdropApi" [outputs]="backdropOut"
-        summary="The dimmed full-screen layer behind an overlay of your own. Render it with @if; it fades in and out with the shared backdrop animation and reports clicks so you can close what it sits behind.">
+        summary="The dimmed full-screen layer behind an overlay of your own. Render it with @if; it fades in and out with the shared backdrop animation and reports clicks so you can close what it sits behind. It does nothing else: focus, Escape and scroll locking are up to you.">
         <doc-demo code="@if (open()) {
   <ui-backdrop [blur]=&quot;true&quot; (backdropClick)=&quot;open.set(false)&quot; />
   <my-panel />
@@ -92,8 +106,10 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi" [outputs]="sheetOut"
-        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same); Escape closes. Non-modal unless backdrop is set. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
-        <doc-demo code="<ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
+        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal: opening it does not move or trap focus, and backdrop only adds a dimmed layer that closes it on tap. Escape closes it while focus is inside, and focus then goes back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
+        <doc-demo code="import { UiBottomSheet } from '@zouriel/ui/dialog';
+
+<ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
   …content…
 </ui-bottom-sheet>">
           <div class="row">
@@ -105,9 +121,12 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Toast" selector="UiToastService · ui-toast-host" [api]="toastApi"
-        summary="Imperative notifications. Render <ui-toast-host /> once near the app root, then call the service: show/info/success/warning/danger(message, title?). Returns an id; dismiss(id) to remove. The countdown pauses while the pointer or focus is on a toast and resumes with the time left. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;."
+        summary="Imperative notifications. Render <ui-toast-host /> once near the app root (this site does), then call the service: show(options), or info/success/warning/danger(message, title?). Each returns an id; dismiss(id) removes it. Toasts stack in the host's corner, newest last, and leave on their own after duration ms (4000 by default; 0 keeps them). The countdown pauses while the pointer or focus is on a toast and resumes with the time left, at least one more second. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;, inside an aria-live=&quot;polite&quot; region."
         [shapes]="TOAST">
-        <doc-demo code="toast = inject(UiToastService);
+        <doc-demo lang="ts" code="import { UiToastService, UiToastHost } from '@zouriel/ui/dialog';
+
+// once, in the root component's template: <ui-toast-host position=&quot;bottom-right&quot; />
+toast = inject(UiToastService);
 this.toast.success('Saved', 'Done');
 this.toast.show({ message: 'Hi', duration: 0 });
 this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: () => undo() } });">
@@ -118,7 +137,33 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
           </div>
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Command palette" selector="ui-command-palette" [api]="paletteApi" [outputs]="paletteOut" [shapes]="COMMAND"
+        summary="A search-and-run dialog for commands, like the Search docs button in this site's header. Bind [(open)], pass commands, listen to (run). Typing filters by case-insensitive substring over label, group and keywords. ArrowUp/Down move the highlight (the field keeps focus, with aria-activedescendant), Enter runs it, and so does a click; running closes the palette. Escape or a backdrop click closes it. Focus is trapped while it is open and goes back to where it was on close. It binds no keyboard shortcut of its own: listen for Ctrl/Cmd+K yourself, as in the snippet. It renders where it is declared (position: fixed), so declare it near the root rather than inside a transformed element, and it does not lock page scroll.">
+        <doc-demo lang="ts" code="import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
+import FileAddIcon from '@hugeicons/core-free-icons/FileAddIcon';
+
+// template
+<ui-command-palette [(open)]=&quot;paletteOpen&quot; [commands]=&quot;commands&quot; (run)=&quot;run($event)&quot; />
+
+// component
+paletteOpen = signal(false);
+commands: UiCommand[] = [
+  { label: 'New file', value: 'new', group: 'File', icon: FileAddIcon, shortcut: 'Ctrl+N' },
+  { label: 'Toggle dark mode', value: 'theme', group: 'View', keywords: 'theme night' },
+];
+@HostListener('document:keydown', ['$event'])
+onKey(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key.toLowerCase() === 'k') { e.preventDefault(); this.paletteOpen.set(true); }
+}">
+          <div class="row">
+            <ui-button variant="outline" (click)="palette.set(true)">Open command palette</ui-button>
+          </div>
+        </doc-demo>
+      </doc-section>
     </doc-page>
+
+    <ui-command-palette [(open)]="palette" [commands]="commands" (run)="toast.info($event.label, 'Ran command')" />
 
     <ui-bottom-sheet [(snap)]="sheetSnap" [snaps]="[0, 0.4, 0.9]" title="Layers" [hasHeader]="true">
       <ui-button sheet-actions size="sm" variant="ghost">Add</ui-button>
@@ -163,11 +208,48 @@ export class OverlaysPage {
     { name: 'backdropClick', type: 'void', default: '—', desc: 'The backdrop itself was clicked.' },
   ];
   protected readonly MENU_ITEM = MENU_ITEM;
-  protected readonly TOAST = `interface UiToastOptions {
+  protected readonly icons = { chevron: ArrowDown01Icon };
+  protected readonly palette = signal(false);
+  protected readonly commands: UiCommand[] = [
+    { label: 'New file', value: 'new', group: 'File', icon: FileAddIcon, shortcut: 'Ctrl+N' },
+    { label: 'Duplicate', value: 'dup', group: 'Edit', icon: Copy01Icon, shortcut: 'Ctrl+D' },
+    { label: 'Delete', value: 'del', group: 'Edit', icon: Delete02Icon, keywords: 'remove trash' },
+    { label: 'Settings', value: 'settings', group: 'App', icon: Settings01Icon, keywords: 'preferences options' },
+    { label: 'Toggle dark mode', value: 'theme', group: 'View', icon: Moon02Icon, keywords: 'theme night' },
+  ];
+  protected readonly COMMAND = `interface UiCommand {
+  label: string;
+  value: string;                   // unique; also the list's track key
+  group?: string;                  // shown at the end of the row, and searched
+  icon?: string | IconSvgObject;   // a HugeIcons icon, or a short string
+  shortcut?: string;               // display only; the palette does not bind it
+  keywords?: string;               // searched, not shown
+}`;
+  protected readonly paletteApi: ApiRow[] = [
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the palette is showing; opening clears the query and highlights the first command.' },
+    { name: 'commands', type: 'UiCommand[]', default: '[]', desc: 'Everything it can run.' },
+    { name: 'placeholder', type: 'string', default: "'Type a command or search…'", desc: 'Search field placeholder.' },
+    { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
+    { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+  ];
+  protected readonly paletteOut: ApiRow[] = [
+    { name: 'run', type: 'UiCommand', default: '—', desc: 'A command was chosen (Enter or click). The palette closes after emitting.' },
+  ];
+  protected readonly TOAST = `type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
+interface UiToastOptions {
   message: string;
   title?: string;
-  tone?: 'info' | 'success' | 'warning' | 'danger';
-  duration?: number;   // ms; 0 = sticky; default 4000
+  tone?: UiToastTone;   // default 'info'
+  duration?: number;    // ms; 0 = stays until dismissed; default 4000
+  action?: UiToastAction;
+}
+// What service.toasts() holds: the options with defaults filled in, plus the id.
+interface UiToast {
+  id: number;
+  message: string;
+  title?: string;
+  tone: UiToastTone;
+  duration: number;
   action?: UiToastAction;
 }
 interface UiToastAction {
@@ -181,51 +263,55 @@ interface UiToastAction {
     { label: 'Edit', value: 'edit' }, { label: 'Duplicate', value: 'dup' }, { label: 'Delete', value: 'del', danger: true },
   ];
 
-  protected readonly openOut: ApiRow[] = [{ name: 'openChange', type: 'boolean', default: '—', desc: 'Two-way open model change.' }];
   protected readonly tooltipApi: ApiRow[] = [
-    { name: 'uiTooltip', type: 'string (required)', default: '—', desc: 'Tooltip text (the directive value).' },
-    { name: 'uiTooltipPosition', type: "'top'|'bottom'|'left'|'right'", default: "'top'", desc: 'Placement.' },
+    { name: 'uiTooltip', type: 'string (required)', default: '—', desc: 'Tooltip text (the directive value). Read when it opens.' },
+    { name: 'uiTooltipPosition', type: "UiTooltipPosition: 'top' | 'bottom' | 'left' | 'right'", default: "'top'", desc: 'Preferred side. The opposite side is used when this one has no room.' },
   ];
   protected readonly popoverApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state.' },
-    { name: 'placement', type: "'bottom'|'top'|'bottom-start'|'bottom-end'", default: "'bottom-start'", desc: 'Anchor placement.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the panel is showing.' },
+    { name: 'placement', type: "UiPopoverPlacement: 'bottom' | 'top' | 'bottom-start' | 'bottom-end'", default: "'bottom-start'", desc: 'Preferred position. Falls back to top (centred) when it does not fit.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: '[popover-trigger]', type: 'slot', default: '—', desc: 'The element that toggles the panel on click.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Panel content.' },
   ];
   protected readonly menuApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state.' },
-    { name: 'items', type: 'UiMenuItem[]', default: '[]', desc: 'Menu items.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the menu is showing.' },
+    { name: 'items', type: 'UiMenuItem[]', default: '[]', desc: 'Menu items. Disabled ones are skipped by the arrow keys.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: '[menu-trigger]', type: 'slot', default: '—', desc: 'The element that toggles the menu on click; focus returns to it on close.' },
   ];
   protected readonly menuOut: ApiRow[] = [
     { name: 'select', type: 'UiMenuItem', default: '—', desc: 'Chosen item.' },
-    { name: 'openChange', type: 'boolean', default: '—', desc: 'Two-way open model change.' },
   ];
   protected readonly ctxApi: ApiRow[] = [
-    { name: 'uiContextMenu', type: 'UiMenuItem[]', default: '[]', desc: 'Items (the directive value).' },
+    { name: 'uiContextMenu', type: 'UiMenuItem[]', default: '[]', desc: 'Items (the directive value). Read when the menu opens.' },
   ];
   protected readonly ctxOut: ApiRow[] = [{ name: 'contextSelect', type: 'UiMenuItem', default: '—', desc: 'Chosen item.' }];
   protected readonly modalApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state.' },
-    { name: 'title', type: 'string', default: '—', desc: 'Header title (adds aria-labelledby).' },
-    { name: 'size', type: "'sm' | 'md' | 'lg' | 'full'", default: "'md'", desc: 'Max width. full fills the screen with no padding.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the dialog is showing.' },
+    { name: 'title', type: 'string', default: 'undefined', desc: 'Header title, also the dialog\'s accessible name. Without it there is no header or close button, so give the dialog a way out in its content.' },
+    { name: 'size', type: "'sm' | 'md' | 'lg' | 'full'", default: "'md'", desc: 'Max width: 360, 480 or 720px. full fills the screen with no padding.' },
     { name: 'closeOnBackdrop', type: 'boolean', default: 'true', desc: 'Click backdrop to close.' },
     { name: 'closeOnEscape', type: 'boolean', default: 'true', desc: 'Esc to close.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls when it is taller than the dialog.' },
+    { name: '[modal-footer]', type: 'slot', default: '—', desc: 'Footer actions, right-aligned. A wrapping div lays its children out in a row with a gap.' },
   ];
   protected readonly drawerApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state.' },
-    { name: 'side', type: "'left'|'right'|'top'|'bottom'", default: "'right'", desc: 'Anchor edge.' },
-    { name: 'title', type: 'string', default: '—', desc: 'Header title.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the drawer is showing.' },
+    { name: 'side', type: "UiDrawerSide: 'left' | 'right' | 'top' | 'bottom'", default: "'right'", desc: 'Edge it slides in from.' },
+    { name: 'title', type: 'string', default: 'undefined', desc: 'Header title, also the accessible name. Without it there is no header or close button.' },
     { name: 'closeOnBackdrop', type: 'boolean', default: 'true', desc: 'Click backdrop to close.' },
     { name: 'closeOnEscape', type: 'boolean', default: 'true', desc: 'Esc to close.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls when it is taller than the drawer.' },
   ];
   protected readonly confirmApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the prompt is showing; both buttons set it to false.' },
     { name: 'title', type: 'string', default: "'Are you sure?'", desc: 'Prompt title.' },
     { name: 'message', type: 'string', default: "''", desc: 'Body text.' },
     { name: 'confirmLabel', type: 'string', default: "'Confirm'", desc: 'Confirm button text.' },
@@ -234,27 +320,27 @@ interface UiToastAction {
   ];
   protected readonly confirmOut: ApiRow[] = [
     { name: 'confirm', type: 'void', default: '—', desc: 'Confirm pressed.' },
-    { name: 'cancel', type: 'void', default: '—', desc: 'Cancel pressed.' },
-    { name: 'openChange', type: 'boolean', default: '—', desc: 'Two-way open model change.' },
+    { name: 'cancel', type: 'void', default: '—', desc: 'Cancel pressed. Not emitted for Escape, the backdrop or the close button.' },
   ];
   protected readonly sheetSnap = signal(0);
   protected readonly sheetRows = Array.from({ length: 30 }, (_, i) => i + 1);
   protected readonly sheetApi: ApiRow[] = [
     { name: 'snaps', type: 'readonly number[]', default: '[0, 0.5, 1]', desc: 'Resting heights as fractions of the room it has, ascending. A first snap of 0 is closed.' },
-    { name: 'snap', type: 'number (model)', default: '0', desc: 'Index it rests at — [(snap)].' },
-    { name: 'title', type: 'string', default: "''", desc: 'Header title and aria-label.' },
+    { name: 'snap', type: 'number', default: '0', desc: 'Two-way (`[(snap)]`). Index into snaps it rests at.' },
+    { name: 'title', type: 'string', default: "''", desc: 'Header title and aria-label. A title, or hasHeader, shows the header row.' },
     { name: 'offset', type: 'number', default: '0', desc: 'Px kept free below it, for a toolbar it sits on.' },
     { name: 'topInset', type: 'number', default: '0', desc: 'Px kept free above its tallest snap.' },
-    { name: 'backdrop', type: 'boolean', default: 'false', desc: 'Modal: dims the page and closes on a backdrop tap.' },
+    { name: 'backdrop', type: 'boolean', default: 'false', desc: 'Dims the page while open and closes on a backdrop tap. Focus is still not trapped.' },
     { name: 'closable', type: 'boolean', default: 'true', desc: 'Close button in the header.' },
     { name: 'hasHeader', type: 'boolean', default: 'false', desc: 'Show the header row without a title, for the close button and [sheet-actions].' },
     { name: 'expandOnFocus', type: 'boolean', default: 'true', desc: 'Rise to the tallest snap when a field inside gains focus on a touch screen.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
+    { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls inside the sheet.' },
     { name: '--ui-sheet-z', type: 'CSS variable', default: 'var(--ui-z-overlay)', desc: 'Stacking level, e.g. to sit under a toolbar but below dialogs.' },
   ];
   protected readonly sheetOut: ApiRow[] = [
-    { name: 'snapChange', type: 'number', default: '—', desc: 'Snap index model change.' },
     { name: 'heightChange', type: 'number', default: '—', desc: 'Px height once it settles.' },
     { name: 'coverChange', type: 'number', default: '—', desc: 'Px of the screen it takes from the bottom once settled, including what it rests on (offset or keyboard).' },
   ];
@@ -263,9 +349,10 @@ interface UiToastAction {
     { name: 'service.show(opts)', type: '(UiToastOptions) => number', default: '—', desc: 'Enqueue; returns id.' },
     { name: 'service.info / success / warning / danger', type: '(message: string, title?: string) => number', default: '—', desc: 'Shorthands for show() with a tone.' },
     { name: 'service.dismiss(id)', type: '(number) => void', default: '—', desc: 'Remove a toast.' },
+    { name: 'service.act(id)', type: '(number) => void', default: '—', desc: "Dismiss the toast and run its action. The action button calls this." },
     { name: 'service.pause(id) / resume(id)', type: '(number) => void', default: '—', desc: 'Hold or restart the countdown. The host calls these on hover and focus.' },
     { name: 'service.toasts', type: 'Signal<UiToast[]>', default: '[]', desc: 'The live queue.' },
-    { name: 'opts.action', type: '{ label: string; run: () => void }', default: '—', desc: 'One button in the toast, e.g. Undo. Running it dismisses the toast.' },
+    { name: 'opts.action', type: 'UiToastAction', default: '—', desc: 'One button in the toast, e.g. Undo. Running it dismisses the toast.' },
   ];
   protected readonly undoToast = () => this.toast.success('Restored');
 }

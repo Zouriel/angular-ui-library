@@ -85,10 +85,13 @@ export class UiContextMenu implements OnDestroy {
   items = input<UiMenuItem[]>([], { alias: 'uiContextMenu' });
   contextSelect = output<UiMenuItem>();
   private ref: OverlayRef | null = null;
+  /** What had focus before the menu opened; a keyboard close (Escape or choosing) gives it back. */
+  private returnTo: HTMLElement | null = null;
 
   protected open(e: MouseEvent): void {
     e.preventDefault();
     this.close();
+    this.returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // Anchored to the pointer, but flips and pushes so it never runs off the right or bottom edge.
     const positionStrategy = this.overlay.position()
       .flexibleConnectedTo({ x: e.clientX, y: e.clientY })
@@ -103,15 +106,18 @@ export class UiContextMenu implements OnDestroy {
     this.ref = this.overlay.create({ positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close() });
     const panel = this.ref.attach(new ComponentPortal(UiContextMenuPanel)).instance;
     panel.items.set(this.items());
-    panel.onPick = (item) => { this.contextSelect.emit(item); this.close(); };
-    panel.onClose = () => this.close();
+    panel.onPick = (item) => { this.contextSelect.emit(item); this.close(true); };
+    panel.onClose = () => this.close(true);
     panel.focusFirst();
     setTimeout(() => this.ref?.outsidePointerEvents().subscribe(() => this.close()));
   }
 
-  private close(): void {
+  private close(restoreFocus = false): void {
     this.ref?.dispose();
     this.ref = null;
+    const target = this.returnTo;
+    this.returnTo = null;
+    if (restoreFocus && target?.isConnected) target.focus();
   }
   ngOnDestroy(): void { this.close(); }
 }

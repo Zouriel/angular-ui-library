@@ -16,21 +16,21 @@ let nextId = 0;
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
     <div class="ms" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [class.invalid]="invalid()"
-         [attr.data-size]="size()" (click)="openPanel()">
+         [attr.data-size]="size()" (click)="openPanel(); entry.focus()">
       @for (v of value(); track v) {
         <span class="chip"><span class="chip-text" [attr.title]="labelOf(v)">{{ labelOf(v) }}</span><button type="button" class="x" tabindex="-1"
           [attr.aria-label]="'Remove ' + labelOf(v)" [disabled]="disabled()" (click)="toggle(v, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
       }
-      <input class="entry" [attr.placeholder]="value().length ? '' : placeholder()"
-             role="combobox" aria-autocomplete="list" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
+      <input #entry class="entry" [attr.placeholder]="value().length ? '' : placeholder()"
+             role="combobox" aria-autocomplete="list" [attr.aria-label]="label() || null" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
              [attr.aria-activedescendant]="open() && filtered().length ? listId + '-' + activeIndex() : null"
              [attr.aria-invalid]="invalid() || null"
              [value]="query()" [disabled]="disabled()" (input)="onInput($event)" (focus)="openPanel()"
-             (keydown)="onKeydown($event)" (blur)="onTouched()" />
+             (keydown)="onKeydown($event)" (blur)="open.set(false); onTouched()" />
     </div>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open()"
                  [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" [cdkConnectedOverlayWidth]="width()" (overlayOutsideClick)="open.set(false)">
-      <ul class="panel" role="listbox" aria-multiselectable="true" [id]="listId">
+      <ul class="panel" role="listbox" aria-multiselectable="true" [id]="listId" (mousedown)="$event.preventDefault()">
         @for (opt of filtered(); track opt.value; let i = $index) {
           <li role="option" class="opt" [id]="listId + '-' + i" [class.active]="i === activeIndex()" [attr.aria-selected]="value().includes(opt.value)"
               (mousedown)="$event.preventDefault(); toggle(opt.value)" (mouseenter)="activeIndex.set(i)">
@@ -97,6 +97,8 @@ export class UiMultiSelect implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Select…');
+  /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
+  label = input<string>();
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
   /** Control height, matching the other fields (min-height: chips may wrap onto more rows). */
@@ -144,10 +146,15 @@ export class UiMultiSelect implements ControlValueAccessor {
     this.openPanel();
   }
 
+  /** Keeps the keyboard-active option in view in a long, scrolling list. */
+  private revealActive(): void {
+    queueMicrotask(() => document.getElementById(`${this.listId}-${this.activeIndex()}`)?.scrollIntoView({ block: 'nearest' }));
+  }
+
   protected onKeydown(e: KeyboardEvent): void {
     const items = this.filtered();
-    if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); this.revealActive(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); this.revealActive(); }
     else if (e.key === 'Enter') {
       const opt = this.open() ? items[this.activeIndex()] : undefined;
       if (opt) { e.preventDefault(); this.toggle(opt.value); }

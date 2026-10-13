@@ -8,7 +8,7 @@ import { DOCUMENT } from '@angular/common';
     <div class="cb" [class.no-radius]="!radius()">
       <div class="bar">
         <span class="lang">{{ language() }}</span>
-        <button type="button" class="copy" (click)="copy()"><span aria-live="polite">{{ copied() ? 'Copied' : 'Copy' }}</span></button>
+        <button type="button" class="copy" (click)="copy()"><span aria-live="polite">{{ state() === 'copied' ? 'Copied' : state() === 'failed' ? 'Copy failed' : 'Copy' }}</span></button>
       </div>
       <pre class="code"><code>{{ code() }}</code></pre>
     </div>
@@ -35,16 +35,21 @@ export class UiCodeBlock {
   code = input('');
   language = input('text');
   radius = input(true);
-  protected readonly copied = signal(false);
+  protected readonly state = signal<'idle' | 'copied' | 'failed'>('idle');
+  private resetTimer?: ReturnType<typeof setTimeout>;
 
   protected async copy(): Promise<void> {
     const text = this.code();
+    const clipboard = this.doc.defaultView?.navigator.clipboard;
     try {
-      await this.doc.defaultView?.navigator.clipboard.writeText(text);
+      if (!clipboard) throw new Error('Clipboard unavailable');
+      await clipboard.writeText(text);
+      this.state.set('copied');
     } catch {
-      /* clipboard unavailable; ignore */
+      // Insecure context or permission denied: say so rather than claim it worked.
+      this.state.set('failed');
     }
-    this.copied.set(true);
-    setTimeout(() => this.copied.set(false), 1500);
+    clearTimeout(this.resetTimer);
+    this.resetTimer = setTimeout(() => this.state.set('idle'), 1500);
   }
 }

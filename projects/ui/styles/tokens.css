@@ -4,7 +4,7 @@
  * properties only; they never hardcode colors, sizes, radii, or timings.
  *
  * Consumer usage (e.g. in app styles.css or angular.json "styles"):
- *   @import 'ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/tokens.css';
  *
  * Colour architecture (see COLOR-SYSTEM.md):
  *   1. Primitives   --ui-winter-*          raw palette steps. Never read by components.
@@ -272,7 +272,8 @@
   --ui-switch-thumb-checked: var(--ui-winter-pine-950);
   --ui-slider-thumb: var(--ui-winter-blue-100);
   --ui-slider-thumb-border: var(--ui-winter-pine-950);
-  --ui-skeleton-base: var(--ui-winter-night-850);
+  /* One step above the raised surface, so a skeleton inside a card is still visible at rest. */
+  --ui-skeleton-base: var(--ui-winter-night-800);
   --ui-skeleton-highlight: var(--ui-winter-night-700);
   --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
   --ui-media-bg: var(--ui-winter-night-1000);

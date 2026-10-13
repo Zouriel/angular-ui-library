@@ -1,7 +1,10 @@
-import { Component, forwardRef, input, signal } from '@angular/core';
+import { Component, ElementRef, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
-/** `ui-rating` — star rating (CVA). */
+/**
+ * `ui-rating` — star rating (CVA). A radio group: one tab stop, arrow keys (and Home/End) move the
+ * rating, clicking the current star again clears it to 0.
+ */
 @Component({
   selector: 'ui-rating',
   template: `
@@ -14,8 +17,11 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
           role="radio"
           [attr.aria-checked]="i === value()"
           [attr.aria-label]="i + ' of ' + max()"
+          [attr.tabindex]="i === (value() || 1) ? 0 : -1"
           [disabled]="disabled()"
           (click)="set(i)"
+          (keydown)="onKey($event, i)"
+          (blur)="onTouched()"
           (mouseenter)="!disabled() && hover.set(i)"
           (mouseleave)="hover.set(0)"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 2.8l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36l-5.7 3 1.09-6.35-4.62-4.5 6.38-.93z"/></svg></button>
       }
@@ -37,6 +43,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiRating), multi: true }],
 })
 export class UiRating implements ControlValueAccessor {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   max = input(5);
   label = input('Rating');
 
@@ -54,6 +61,20 @@ export class UiRating implements ControlValueAccessor {
   registerOnChange(fn: (v: number) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }
+
+  protected onKey(e: KeyboardEvent, i: number): void {
+    const max = this.max();
+    const next = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? Math.min(max, i + 1)
+      : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? Math.max(1, i - 1)
+      : e.key === 'Home' ? 1 : e.key === 'End' ? max : 0;
+    if (!next) return;
+    e.preventDefault();
+    if (next !== this.value()) {
+      this.value.set(next);
+      this.onChange(next);
+    }
+    this.host.nativeElement.querySelectorAll<HTMLButtonElement>('.star')[next - 1]?.focus();
+  }
 
   protected set(v: number): void {
     const next = this.value() === v ? 0 : v;

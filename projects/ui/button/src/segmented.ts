@@ -1,4 +1,4 @@
-import { Component, ElementRef, forwardRef, inject, input, model, viewChildren } from '@angular/core';
+import { Component, ElementRef, forwardRef, input, model, signal, viewChildren } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { UiSize } from '@zouriel/ui';
 
@@ -22,8 +22,8 @@ export interface UiSegmentedOption {
       @for (o of options(); track o.value; let i = $index) {
         <button #opt type="button" role="radio" class="opt" [class.on]="o.value === value()"
           [attr.aria-checked]="o.value === value()" [attr.aria-label]="o.glyph ? o.label : null" [attr.title]="o.glyph ? o.label : null"
-          [attr.tabindex]="o.value === value() || (!hasValue() && i === 0) ? 0 : -1" [disabled]="o.disabled || disabled"
-          (click)="choose(o.value)" (keydown)="onKey($event, i)">{{ o.glyph ?? o.label }}</button>
+          [attr.tabindex]="o.value === value() || (!hasValue() && i === 0) ? 0 : -1" [disabled]="o.disabled || disabled()"
+          (click)="choose(o.value)" (keydown)="onKey($event, i)" (blur)="onTouched()">{{ o.glyph ?? o.label }}</button>
       }
     </div>
   `,
@@ -51,8 +51,10 @@ export class UiSegmented implements ControlValueAccessor {
   size = input<UiSize>('md');
 
   private readonly buttons = viewChildren<ElementRef<HTMLButtonElement>>('opt');
-  protected disabled = false;
+  /** A signal, so a form's disable() re-renders the buttons even with no event in flight (zoneless). */
+  protected readonly disabled = signal(false);
   private onChange: (v: string | null) => void = () => {};
+  protected onTouched: () => void = () => {};
 
   protected hasValue(): boolean {
     return this.options().some((o) => o.value === this.value());
@@ -80,6 +82,6 @@ export class UiSegmented implements ControlValueAccessor {
 
   writeValue(v: string | null): void { this.value.set(v); }
   registerOnChange(fn: (v: string | null) => void): void { this.onChange = fn; }
-  registerOnTouched(): void {}
-  setDisabledState(d: boolean): void { this.disabled = d; }
+  registerOnTouched(fn: () => void): void { this.onTouched = fn; }
+  setDisabledState(d: boolean): void { this.disabled.set(d); }
 }

@@ -12,10 +12,10 @@
  * animation is disabled under prefers-reduced-motion and the .ui-no-anim
  * escape hatch, exactly like animations.css.
  *
- *   @import 'ui/styles/tokens.css';
- *   @import 'ui/styles/theme-palettes.css';
- *   @import 'ui/styles/fx.css';
- *   @import 'ui/styles/theme-animations.css';
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/theme-palettes.css';
+ *   @import '@zouriel/ui/styles/fx.css';
+ *   @import '@zouriel/ui/styles/theme-animations.css';
  */
 
 /* ---- Keyframes ------------------------------------------------------- */

@@ -126,7 +126,9 @@ function collect() {
       const size = parseFloat(s.fontSize);
       if (size < 11) add('error', 'font-size', el, `${size}px text`);
       const fam = s.fontFamily.split(',')[0].trim().replace(/["']/g, '').toLowerCase();
-      if (families.length && !families.includes(fam) && !['monospace', 'inherit'].includes(fam) && !el.closest('code, pre, kbd, samp'))
+      // Inside a scoped theme (ui-theme-provider) the fonts are that theme's, not the page's.
+      const scoped = el.closest('[data-theme]') !== document.documentElement;
+      if (families.length && !scoped && !families.includes(fam) && !['monospace', 'inherit'].includes(fam) && !el.closest('code, pre, kbd, samp'))
         add('error', 'font-family', el, `uses “${fam}”, theme fonts are ${families.join(', ')}`);
 
       if (!disabled(el) && !el.closest('input, textarea, select')) {

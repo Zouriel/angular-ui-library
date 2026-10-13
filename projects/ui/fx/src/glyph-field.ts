@@ -32,6 +32,7 @@ export class UiGlyphField implements AfterViewInit, OnDestroy {
 
   private raf = 0;
   private ro?: ResizeObserver;
+  private mo?: MutationObserver;
   private destroyed = false;
 
   ngAfterViewInit(): void {
@@ -56,9 +57,17 @@ export class UiGlyphField implements AfterViewInit, OnDestroy {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     };
     size();
-    // Screen only lightens: on a light theme the field would vanish, so darken into it instead.
-    const scheme = getComputedStyle(canvas).colorScheme;
-    if (/light/.test(scheme) && !/dark/.test(scheme)) canvas.style.mixBlendMode = 'multiply';
+    // Screen only lightens: on a light theme the field would vanish, so darken into it instead. Checked
+    // again whenever the root element's attributes change, which is how a theme switch arrives.
+    const blend = () => {
+      const scheme = getComputedStyle(canvas).colorScheme;
+      canvas.style.mixBlendMode = /light/.test(scheme) && !/dark/.test(scheme) ? 'multiply' : '';
+    };
+    blend();
+    if (typeof MutationObserver !== 'undefined') {
+      this.mo = new MutationObserver(() => blend());
+      this.mo.observe(document.documentElement, { attributes: true });
+    }
     // Resizing clears the canvas; a static (reduced-motion) field has no next frame to repaint it.
     this.ro = new ResizeObserver(() => { size(); if (reduce) draw(0); });
     this.ro.observe(canvas);
@@ -111,5 +120,6 @@ export class UiGlyphField implements AfterViewInit, OnDestroy {
     this.destroyed = true;
     if (this.raf) cancelAnimationFrame(this.raf);
     this.ro?.disconnect();
+    this.mo?.disconnect();
   }
 }

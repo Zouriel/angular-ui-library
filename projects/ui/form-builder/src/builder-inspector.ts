@@ -195,7 +195,7 @@ const AUTOCOMPLETE = [
 
           @if (f.type !== 'hidden') {
             <section class="group-sec">
-              <h4>Layout</h4>
+              <h3>Layout</h3>
               <div class="fld"><span class="fb-label">Width</span>
                 <ui-segmented size="sm" label="Width" [options]="widths" [value]="f.layout?.width ?? 'full'" (valueChange)="layout(f, 'width', $event === 'full' ? undefined : $event)" />
               </div>
@@ -225,7 +225,7 @@ const AUTOCOMPLETE = [
           }
 
           <section class="group-sec">
-            <h4>Saved data</h4>
+            <h3>Saved data</h3>
             <label class="fld"><span class="fb-label">Saved as</span>
               <input class="key" [value]="keyDraft()" (input)="keyDraft.set($any($event.target).value)" (blur)="commitKey(f)" (keydown.enter)="commitKey(f)"
                 [class.bad]="keyError()" [attr.aria-invalid]="keyError() ? true : null" spellcheck="false" autocomplete="off" [attr.aria-describedby]="store.uid + '-key-hint'" />
@@ -290,17 +290,17 @@ const AUTOCOMPLETE = [
     <ng-template #logicTpl let-el>
       <div class="fb-stack">
         <section class="group-sec first">
-          <h4>{{ el.kind === 'group' ? 'Show this section' : el.kind === 'static' ? 'Show this' : 'Show this question' }}</h4>
+          <h3>{{ el.kind === 'group' ? 'Show this section' : el.kind === 'static' ? 'Show this' : 'Show this question' }}</h3>
           <ui-segmented size="sm" label="When to show it" [options]="visModes" [value]="visMode(el.visibility)" (valueChange)="setVisMode(el, $event)" />
           @if (el.visibility) {
             <ui-fb-condition [condition]="el.visibility.when" [forId]="el.id" (conditionChange)="setVisWhen(el, $event)" />
-            <p class="sentence">{{ el.visibility.action === 'show' ? 'Shown only when' : 'Hidden when' }} {{ store.describe(el.visibility.when) }}.</p>
+            <p class="sentence">@if (hasRules(el.visibility.when)) { {{ el.visibility.action === 'show' ? 'Shown only when' : 'Hidden when' }} {{ store.describe(el.visibility.when) }}. } @else { Add a rule to say when. }</p>
           }
         </section>
 
         @if (el.kind !== 'static') {
           <section class="group-sec">
-            <h4>Can people change it?</h4>
+            <h3>Can people change it?</h3>
             <ui-segmented size="sm" label="Can people change it" [options]="lockModes" [value]="lockMode(el.disabled)" (valueChange)="setLock(el, $event)" />
             @if (isObj(el.disabled)) {
               <ui-fb-condition [condition]="el.disabled.when" [forId]="el.id" (conditionChange)="setLockWhen(el, $event)" />
@@ -311,7 +311,7 @@ const AUTOCOMPLETE = [
 
         @if (el.kind === 'field' && el.type !== 'calculated') {
           <section class="group-sec">
-            <h4>Fill in automatically</h4>
+            <h3>Fill in automatically</h3>
             @for (sv of el.setValue ?? []; track sv.id) {
               <div class="setv">
                 <div class="fb-row"><span class="fb-label grow">When</span>
@@ -328,7 +328,7 @@ const AUTOCOMPLETE = [
         }
 
         <section class="group-sec">
-          <h4>Used by</h4>
+          <h3>Used by</h3>
           @for (r of usedBy(); track r.ownerId + r.kind) {
             <button type="button" class="ref" (click)="store.select(r.ownerId)">“{{ store.name(r.ownerId) }}” <span>{{ refWords[r.kind] }}</span></button>
           } @empty {
@@ -344,7 +344,7 @@ const AUTOCOMPLETE = [
         <div class="fb-stack">
           @if (g.archived) { <p class="fb-warn">This section is archived. <button type="button" class="fb-link" (click)="store.setArchived(g.id, false)">Restore it</button></p> }
           <label class="fld"><span class="fb-label">Title</span>
-            <ui-input [ngModel]="g.title ?? ''" (ngModelChange)="store.updateGroup(g.id, { title: $event || undefined }, 'title:' + g.id)" placeholder="e.g. Contact details" />
+            <ui-input [ngModel]="g.title ?? ''" (ngModelChange)="store.setGroupTitle(g.id, $event)" placeholder="e.g. Contact details" />
           </label>
           <label class="fld"><span class="fb-label">Description</span>
             <ui-textarea [ngModel]="g.description ?? ''" (ngModelChange)="store.updateGroup(g.id, { description: $event || undefined }, 'desc:' + g.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
@@ -356,7 +356,7 @@ const AUTOCOMPLETE = [
             <ui-segmented size="sm" label="Width" [options]="widths" [value]="g.layout?.width ?? 'full'" (valueChange)="store.updateGroup(g.id, { layout: $event === 'full' ? undefined : { width: $any($event) } })" />
           </div>
           <section class="group-sec">
-            <h4>Repeating</h4>
+            <h3>Repeating</h3>
             <ui-switch [ngModel]="!!g.repeat" (ngModelChange)="setRepeat(g, $event)" [disabled]="!!nestedRepeat(g)">People can add this section more than once</ui-switch>
             @if (nestedRepeat(g)) { <p class="fb-hint">A section inside a repeating section can’t repeat itself.</p> }
             @if (g.repeat) {
@@ -370,7 +370,7 @@ const AUTOCOMPLETE = [
             }
           </section>
           <section class="group-sec">
-            <h4>Saved data</h4>
+            <h3>Saved data</h3>
             <ui-switch [ngModel]="!!g.key" (ngModelChange)="setGroupKey(g, $event)" [disabled]="!!g.repeat">Keep its answers together</ui-switch>
             <p class="fb-hint">{{ g.repeat ? 'Entries are saved as a list under this name.' : 'Saves this section’s answers inside one object, e.g. address.street.' }}</p>
             @if (g.key) {
@@ -428,15 +428,15 @@ const AUTOCOMPLETE = [
       @if (tab() === 'logic') {
         <div class="fb-stack">
           <section class="group-sec first">
-            <h4>Show this page</h4>
+            <h3>Show this page</h3>
             <ui-segmented size="sm" label="When to show the page" [options]="pageVisModes" [value]="visMode(p.visibility)" (valueChange)="setPageVis(p, $event)" />
             @if (p.visibility) {
               <ui-fb-condition [condition]="p.visibility.when" [forId]="p.id" (conditionChange)="store.updatePage(p.id, { visibility: { action: p.visibility!.action, when: $event } }, 'pvis:' + p.id)" />
-              <p class="sentence">{{ p.visibility.action === 'show' ? 'Shown only when' : 'Skipped when' }} {{ store.describe(p.visibility.when) }}.</p>
+              <p class="sentence">@if (hasRules(p.visibility.when)) { {{ p.visibility.action === 'show' ? 'Shown only when' : 'Skipped when' }} {{ store.describe(p.visibility.when) }}. } @else { Add a rule to say when. }</p>
             }
           </section>
           <section class="group-sec">
-            <h4>After this page</h4>
+            <h3>After this page</h3>
             @for (j of p.jumps ?? []; track j.id) {
               <div class="setv">
                 <div class="fb-row"><span class="fb-label grow">When</span>
@@ -494,7 +494,7 @@ const AUTOCOMPLETE = [
     .fld { display: flex; flex-direction: column; min-width: 0; }
     .group-sec { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .group-sec.first { border-top: 0; padding-top: 0; }
-    .group-sec h4 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
+    .group-sec h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
     .key { height: 30px; padding: 0 var(--ui-space-2); box-sizing: border-box; border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font-family: var(--ui-font-mono); font-size: 12px; }
     .key:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 28%, transparent); }
@@ -541,6 +541,11 @@ export class FbInspector {
   protected readonly orientations = [{ value: 'vertical', label: 'Stacked' }, { value: 'horizontal', label: 'In a row' }];
   protected readonly visModes = [{ value: 'always', label: 'Always' }, { value: 'show', label: 'Only when…' }, { value: 'hide', label: 'Hide when…' }];
   protected readonly pageVisModes = [{ value: 'always', label: 'Always' }, { value: 'show', label: 'Only when…' }, { value: 'hide', label: 'Skip when…' }];
+  /** An "only when" with no rules yet would otherwise read "Shown only when always". */
+  protected hasRules(c: UiFbCondition | undefined): boolean {
+    return !!c && (!('conditions' in c) || c.conditions.length > 0);
+  }
+
   protected readonly lockModes = [{ value: 'no', label: 'Yes' }, { value: 'yes', label: 'Read-only' }, { value: 'when', label: 'Read-only when…' }];
   protected readonly staticKinds = [{ value: 'heading', label: 'Heading' }, { value: 'paragraph', label: 'Text' }, { value: 'divider', label: 'Divider' }];
 

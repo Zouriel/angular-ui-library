@@ -18,15 +18,19 @@ export interface UiBottomNavItem {
   badge?: string | number;
 }
 
-/** `ui-bottom-nav` — mobile-style bottom navigation bar (glass-capable). */
+/**
+ * `ui-bottom-nav` — mobile-style bottom navigation bar (glass-capable). A `<nav>` of buttons; the
+ * active one carries `aria-current="page"`. (It used to claim `role="tablist"` without tab panels or
+ * arrow-key handling, which told screen readers it was something it was not.)
+ */
 @Component({
   selector: 'ui-bottom-nav',
   imports: [HugeiconsIconComponent],
   template: `
-    <nav class="bn" [class.glass]="glass()" role="tablist">
+    <nav class="bn" [attr.aria-label]="label() || null" [class.glass]="glass()">
       @for (item of items(); track item.value) {
-        <button type="button" class="item" role="tab" [class.active]="item.value === active()"
-                [attr.aria-selected]="item.value === active()" (click)="active.set(item.value)">
+        <button type="button" class="item" [class.active]="item.value === active()"
+                [attr.aria-current]="item.value === active() ? 'page' : null" (click)="active.set(item.value)">
           <span class="icon" aria-hidden="true">
             @if (isSvg(item.icon)) {
               <hugeicons-icon [icon]="item.icon" [size]="iconSize()" [strokeWidth]="1.8" />
@@ -66,6 +70,8 @@ export class UiBottomNav {
   private config = inject(UI_CONFIG);
   items = input<UiBottomNavItem[]>([]);
   active = model<string>('');
+  /** Accessible name for the <nav>. Set it when the page has more than one navigation landmark. */
+  label = input<string>();
   glass = input<boolean>(this.config.glass);
   /** Drawn-icon size in px. Ignored by string icons, which follow `.icon`'s font-size. */
   iconSize = input<number>(22);

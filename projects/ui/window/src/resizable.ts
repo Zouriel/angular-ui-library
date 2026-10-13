@@ -58,6 +58,7 @@ export class UiResizable implements AfterViewInit, OnDestroy {
     this.zone.runOutsideAngular(() => {
       document.addEventListener('pointermove', this.move);
       document.addEventListener('pointerup', this.up);
+      document.addEventListener('pointercancel', this.up);
     });
   }
 
@@ -77,6 +78,7 @@ export class UiResizable implements AfterViewInit, OnDestroy {
     this.edge = null;
     document.removeEventListener('pointermove', this.move);
     document.removeEventListener('pointerup', this.up);
+    document.removeEventListener('pointercancel', this.up);
   }
 
   ngOnDestroy(): void {

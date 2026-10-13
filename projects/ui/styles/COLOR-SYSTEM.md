@@ -1,11 +1,11 @@
 # Winter colour system
 
-`@zouriel/ui` 0.7.0 ships one colour identity in two modes, built on a six-colour winter palette.
+`@zouriel/ui` ships one colour identity in two modes, built on a six-colour winter palette.
 
 | Mode | Theme names | Mood |
 |---|---|---|
 | Light | `light` (default light), `winterLight` | Fresh snow, pale ice and frosted glass in winter daylight: calm Nordic architecture |
-| Dark | `dark` (library default), `winterDark` | A black-pine forest beside a dark ocean under moonlight, with snow catching the last light |
+| Dark | `dark` (library default), `winterDark` | A pine forest beside a dark ocean under moonlight: a true-black ground, faintly blue-black surfaces and soft ice-blue text |
 
 ```html
 <html data-theme="winterLight">   <!-- or winterDark; `light` / `dark` resolve to the same tokens -->
@@ -39,7 +39,8 @@ Primitives are named `--ui-winter-*`. Components never read them; only the theme
 
 | Scale | Steps |
 |---|---|
-| Pine (night surfaces) | 950 `#152026` (Black Pine) · 900 `#19262e` · 850 `#1c2c37` |
+| Pine | 950 `#152026` (Black Pine) · 900 `#19262e` · 850 `#1c2c37` |
+| Night (dark-mode ground and surfaces) | 1000 `#000000` · 950 `#06080a` · 900 `#0b0f12` · 850 `#11171c` · 800 `#1a232a` · 700 `#26323b` |
 | Blue (ocean → ice → snow) | 900 `#1b3d59` (Deep Ocean) · 850 `#20364a` · 800 `#264460` · 700 `#3a6488` · 500 `#6a97c0` (Windstorm) · 400 `#8bb5db` · 300 `#b3d5f1` (Melting Ice) · 100 `#d4eef8` (Avalanche) · 75 `#e3f0f7` · 50 `#eef5f9` · 25 `#f7fbfd` · white `#ffffff` |
 | Slate (blue-grey neutrals) | 900 `#233441` · 800 `#2e4658` · 700 `#465d6f` · 600 `#587488` · 500 `#6c8497` · 400 `#93a6b5` · 300 `#c3d2dd` · 200 `#dae5ec` |
 | Sun | 50 `#f9f7ec` · 100 `#f3eed8` (Sun Beam) · 700 `#76591a` · 900 `#34393a` |
@@ -48,7 +49,7 @@ Primitives are named `--ui-winter-*`. Components never read them; only the theme
 Some reference colours fail contrast in some roles, so the palette adds these accessible variants:
 
 - **Blue 700 `#3a6488`.** Windstorm deepened for light mode. Raw Windstorm on the light background is only about 3:1, which fails as text and as a fill behind light labels.
-- **Blue 400 `#8bb5db`.** Windstorm brightened for dark mode. Raw Windstorm is below 4.5:1 on the elevated dark surface.
+- **Blue 400 `#8bb5db`.** Windstorm brightened for dark mode, where it is the primary colour.
 - **Sun 700 `#76591a`.** Sun Beam as readable text or an icon on light surfaces. Sun Beam itself is about 1.1:1 on snow.
 - **Status 700/300 pairs.** These are desaturated and cool-leaning so they sit inside the palette. The 700 steps are for light mode and the 300 steps for dark mode.
 
@@ -96,18 +97,18 @@ Some reference colours fail contrast in some roles, so the palette adds these ac
 
 | Role | Token | Value | Primitive |
 |---|---|---|---|
-| background.default | `--ui-color-bg` | `#152026` | Black Pine |
-| background.surface | `--ui-color-surface` | `#1c2c37` | pine-850 |
-| background.elevated | `--ui-color-surface-raised` | `#20364a` | blue-850 (Deep Ocean-inspired) |
-| background.subtle | `--ui-color-surface-subtle` | `#19262e` | pine-900 |
-| hover (surface / in panels) | `--ui-color-surface-hover`, `--ui-color-elevated-hover` | `#264460` | blue-800 |
-| text.primary | `--ui-color-text` | `#d4eef8` | Avalanche |
-| text.secondary | `--ui-color-text-secondary` | `#b3d5f1` | Melting Ice |
-| text.muted | `--ui-color-text-muted` | `#9dbad3` | softened Windstorm |
+| background.default | `--ui-color-bg` | `#000000` | night-1000 |
+| background.surface | `--ui-color-surface` | `#0b0f12` | night-900 |
+| background.elevated | `--ui-color-surface-raised` | `#11171c` | night-850 |
+| background.subtle | `--ui-color-surface-subtle` | `#06080a` | night-950 |
+| hover (surface / in panels) | `--ui-color-surface-hover`, `--ui-color-elevated-hover` | `#1a232a` | night-800 |
+| text.primary | `--ui-color-text` | `#b3cbdc` | softened Avalanche (Avalanche glares on black) |
+| text.secondary | `--ui-color-text-secondary` | `#a6c0d3` | softened Melting Ice |
+| text.muted | `--ui-color-text-muted` | `#8aa4b8` | softened Windstorm |
 | text.disabled | `--ui-color-text-disabled` | `#587488` | slate-600 |
 | text.inverse | `--ui-color-text-inverse` | `#152026` | Black Pine |
-| border.subtle | `--ui-color-border-subtle` | `#233441` | slate-900 |
-| border.default | `--ui-color-border` | `#2e4658` | slate-800 |
+| border.subtle | `--ui-color-border-subtle` | `#1a232a` | night-800 |
+| border.default | `--ui-color-border` | `#26323b` | night-700 |
 | border.strong | `--ui-color-border-strong` | `#6c8497` | slate-500 |
 | border.focus | `--ui-color-border-focus` | `#8bb5db` | blue-400 |
 | brand.primary | `--ui-color-primary` | `#8bb5db` | blue-400 (bright Windstorm) |
@@ -128,7 +129,7 @@ Some reference colours fail contrast in some roles, so the palette adds these ac
 | on status fills | `--ui-color-{success,warning,danger,info}-contrast` | `#152026` | Black Pine |
 | selected tint | `--ui-color-selected` | `rgba(139,181,219,.14)` | blue-400 14% |
 | track | `--ui-color-track` | `#2e4658` | slate-800 |
-| overlay scrim | `--ui-color-overlay` | `rgba(8,13,17,.66)` | |
+| overlay scrim | `--ui-color-overlay` | `rgba(0,0,0,.72)` | black 72% |
 
 ### Component tokens (both modes)
 
@@ -138,9 +139,9 @@ Some reference colours fail contrast in some roles, so the palette adds these ac
 | `--ui-switch-track` / `-checked` | `#6c8497` / `#1b3d59` | `#6c8497` / `#8bb5db` | switch |
 | `--ui-switch-thumb` / `-checked` | `#ffffff` / `#ffffff` | `#d4eef8` / `#152026` | switch |
 | `--ui-slider-thumb` / `-border` | `#ffffff` / control border | `#d4eef8` / `#152026` | slider |
-| `--ui-skeleton-base` / `-highlight` | `#e3f0f7` / `#f7fbfd` | `#233441` / `#2e4658` | skeleton |
+| `--ui-skeleton-base` / `-highlight` | `#e3f0f7` / `#f7fbfd` | `#1a232a` / `#26323b` | skeleton |
 | `--ui-scroll-progress-track` | Deep Ocean 6% | Melting Ice 6% | scroll progress |
-| `--ui-media-bg` / `-scrim` / `-on-scrim` / `-danger` | `#152026` / `#0b1216` / `#f7fbfd` / `#f0a3a3` | same | video player, carousel, gallery, media lightbox (always dark over photos) |
+| `--ui-media-bg` / `-scrim` / `-on-scrim` / `-danger` | `#152026` / `#0b1216` / `#f7fbfd` / `#f0a3a3` | `#000000` / `#000000` / `#f7fbfd` / `#f0a3a3` | video player, carousel, gallery, media lightbox (always dark over photos) |
 | `--ui-pdf-page-bg` | `#ffffff` | `#ffffff` | PDF viewer pages (paper) |
 | `--ui-cursor-color` | `#1b3d59` | `#d4eef8` | FX cursor |
 | `--ui-section-label-bracket` | `#76591a` (accent-strong) | `#f3eed8` (accent-strong) | section label |
@@ -150,13 +151,13 @@ Some reference colours fail contrast in some roles, so the palette adds these ac
 | Token | Light | Dark |
 |---|---|---|
 | `--ui-gradient-brand` (brand CTA, gradient text) | Deep Ocean → blue-700 `#1b3d59 → #3a6488` | blue-400 → Melting Ice `#8bb5db → #b3d5f1` |
-| `--ui-gradient-hero` | Deep Ocean → Windstorm | Black Pine → Deep Ocean |
+| `--ui-gradient-hero` | Deep Ocean → Windstorm | black → Deep Ocean |
 | `--ui-gradient-frost` | Windstorm → Melting Ice | Deep Ocean → Windstorm |
-| `--ui-gradient-snow` | Melting Ice → Avalanche | pine-850 → blue-850 |
+| `--ui-gradient-snow` | Melting Ice → Avalanche | night-900 → night-850 |
 | `--ui-gradient-highlight` | Avalanche 90% → transparent | Melting Ice 14% → transparent |
 | `--ui-glow-amber` (legacy name) | `0 8px 24px rgba(27,61,89,.18)` | `0 0 28px rgba(139,181,219,.26)` |
 | `--ui-glass-bg` / `-border` | white 62% / Deep Ocean 12% | Melting Ice 6% / 13% |
-| `--ui-shadow-1..3` | Black Pine / Deep Ocean tinted, 7–16% | near-black blue, 40–60% |
+| `--ui-shadow-1..3` | Black Pine / Deep Ocean tinted, 7–16% | black, 60–80% |
 
 The brand gradient is a deliberate accessibility deviation from the brief. The brief suggested Deep Ocean → Windstorm, but the brand button puts its label on the gradient. A light label on raw Windstorm is about 3:1, and a light label on the dark-mode Windstorm stop is about 2.4:1. Each mode therefore keeps both stops readable against its label, and the full brief gradients live in `--ui-gradient-hero` and `--ui-gradient-frost`, which are decoration only.
 
@@ -238,13 +239,13 @@ Result: **73 of 73 pairs pass in light and 73 of 73 in dark.**
 | Mode | Lowest text | Lowest label on fill | Lowest link / status text | Lowest non-text |
 |---|---|---|---|---|
 | Light | 5.56 (muted on selected) | 5.99 (label on warning) | 5.66 (warning on bg) | 3.05 (slider thumb ring on track) |
-| Dark | 4.72 (muted on selected) | 5.18 (label on secondary-hover) | 5.76 (primary on elevated) | 3.19 (control border on elevated) |
+| Dark | 5.39 (muted on selected) | 5.18 (label on secondary-hover) | 8.37 (primary on elevated) | 3.23 (switch thumb on track) |
 
 Adjustments made while validating:
 
-- **Dark `text-muted`.** Raised from `#8fb0cb` to `#9dbad3`. The first value was 4.45:1 on the hover surface.
+- **Dark ground.** Moved from Black Pine to true black (night-1000), with faintly blue-black surfaces (night-900/850). Text was softened from Avalanche to `#b3cbdc` because the brighter blue glares on black; it is still 10.7:1 or better on every surface.
 - **Dark `--ui-color-selected`.** Lowered from 20% to 14%, so muted text stays above 4.5:1 on selected rows.
-- **Dark switch track.** Moved from slate-600 to slate-500. The track was 2.5:1 against the elevated surface.
+- **Dark switch track.** slate-500, so the track stays above 3:1 against the surfaces it sits on.
 - **Dark slider thumb.** It has a Black Pine ring (`--ui-slider-thumb-border`). An Avalanche thumb on the bright fill was 1.8:1.
 - **Form controls.** They moved from `border` to `--ui-control-border`, which is border-strong. The default `border`, at about 1.4–1.7:1, is right for cards and dividers but not for input boundaries.
 
@@ -363,25 +364,25 @@ Adjustments made while validating:
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| text on bg | `#d4eef8` | `#152026` | 13.73 | 4.5 | Pass |
-| text-secondary on bg | `#b3d5f1` | `#152026` | 10.82 | 4.5 | Pass |
-| text-muted on bg | `#9dbad3` | `#152026` | 8.21 | 4.5 | Pass |
-| text on surface | `#d4eef8` | `#1c2c37` | 11.87 | 4.5 | Pass |
-| text-secondary on surface | `#b3d5f1` | `#1c2c37` | 9.36 | 4.5 | Pass |
-| text-muted on surface | `#9dbad3` | `#1c2c37` | 7.10 | 4.5 | Pass |
-| text on surface-raised | `#d4eef8` | `#20364a` | 10.30 | 4.5 | Pass |
-| text-secondary on surface-raised | `#b3d5f1` | `#20364a` | 8.12 | 4.5 | Pass |
-| text-muted on surface-raised | `#9dbad3` | `#20364a` | 6.16 | 4.5 | Pass |
-| text on surface-subtle | `#d4eef8` | `#19262e` | 12.80 | 4.5 | Pass |
-| text-secondary on surface-subtle | `#b3d5f1` | `#19262e` | 10.09 | 4.5 | Pass |
-| text-muted on surface-subtle | `#9dbad3` | `#19262e` | 7.66 | 4.5 | Pass |
-| text on surface-hover | `#d4eef8` | `#264460` | 8.37 | 4.5 | Pass |
-| text-muted on surface-hover | `#9dbad3` | `#264460` | 5.00 | 4.5 | Pass |
-| text-inverse on text | `#152026` | `#d4eef8` | 13.73 | 4.5 | Pass |
-| text on selected (raised) | `#d4eef8` | `#2f485e` | 7.89 | 4.5 | Pass |
-| text-muted on selected (raised) | `#9dbad3` | `#2f485e` | 4.72 | 4.5 | Pass |
-| text on primary 26% tint (raised) | `#d4eef8` | `#3c5770` | 6.24 | 4.5 | Pass |
-| text-secondary on primary 26% tint (raised) | `#b3d5f1` | `#3c5770` | 4.92 | 4.5 | Pass |
+| text on bg | `#b3cbdc` | `#000000` | 12.49 | 4.5 | Pass |
+| text-secondary on bg | `#a6c0d3` | `#000000` | 11.10 | 4.5 | Pass |
+| text-muted on bg | `#8aa4b8` | `#000000` | 8.08 | 4.5 | Pass |
+| text on surface | `#b3cbdc` | `#0b0f12` | 11.45 | 4.5 | Pass |
+| text-secondary on surface | `#a6c0d3` | `#0b0f12` | 10.17 | 4.5 | Pass |
+| text-muted on surface | `#8aa4b8` | `#0b0f12` | 7.41 | 4.5 | Pass |
+| text on surface-raised | `#b3cbdc` | `#11171c` | 10.74 | 4.5 | Pass |
+| text-secondary on surface-raised | `#a6c0d3` | `#11171c` | 9.54 | 4.5 | Pass |
+| text-muted on surface-raised | `#8aa4b8` | `#11171c` | 6.95 | 4.5 | Pass |
+| text on surface-subtle | `#b3cbdc` | `#06080a` | 11.93 | 4.5 | Pass |
+| text-secondary on surface-subtle | `#a6c0d3` | `#06080a` | 10.60 | 4.5 | Pass |
+| text-muted on surface-subtle | `#8aa4b8` | `#06080a` | 7.72 | 4.5 | Pass |
+| text on surface-hover | `#b3cbdc` | `#1a232a` | 9.48 | 4.5 | Pass |
+| text-muted on surface-hover | `#8aa4b8` | `#1a232a` | 6.13 | 4.5 | Pass |
+| text-inverse on text | `#152026` | `#b3cbdc` | 9.86 | 4.5 | Pass |
+| text on selected (raised) | `#b3cbdc` | `#222d37` | 8.33 | 4.5 | Pass |
+| text-muted on selected (raised) | `#8aa4b8` | `#222d37` | 5.39 | 4.5 | Pass |
+| text on primary 26% tint (raised) | `#b3cbdc` | `#31404e` | 6.33 | 4.5 | Pass |
+| text-secondary on primary 26% tint (raised) | `#a6c0d3` | `#31404e` | 5.63 | 4.5 | Pass |
 
 **Button & badge labels**
 
@@ -405,47 +406,47 @@ Adjustments made while validating:
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| primary on bg | `#8bb5db` | `#152026` | 7.68 | 4.5 | Pass |
-| primary-hover on bg | `#b3d5f1` | `#152026` | 10.82 | 4.5 | Pass |
-| danger on bg | `#f0a3a3` | `#152026` | 8.27 | 4.5 | Pass |
-| success on bg | `#8ccba9` | `#152026` | 8.87 | 4.5 | Pass |
-| warning on bg | `#e6c27d` | `#152026` | 9.77 | 4.5 | Pass |
-| info on bg | `#b3d5f1` | `#152026` | 10.82 | 4.5 | Pass |
-| accent-strong on bg | `#f3eed8` | `#152026` | 14.24 | 4.5 | Pass |
-| primary on surface | `#8bb5db` | `#1c2c37` | 6.64 | 4.5 | Pass |
-| primary-hover on surface | `#b3d5f1` | `#1c2c37` | 9.36 | 4.5 | Pass |
-| danger on surface | `#f0a3a3` | `#1c2c37` | 7.15 | 4.5 | Pass |
-| success on surface | `#8ccba9` | `#1c2c37` | 7.67 | 4.5 | Pass |
-| warning on surface | `#e6c27d` | `#1c2c37` | 8.45 | 4.5 | Pass |
-| info on surface | `#b3d5f1` | `#1c2c37` | 9.36 | 4.5 | Pass |
-| accent-strong on surface | `#f3eed8` | `#1c2c37` | 12.31 | 4.5 | Pass |
-| primary on surface-raised | `#8bb5db` | `#20364a` | 5.76 | 4.5 | Pass |
-| primary-hover on surface-raised | `#b3d5f1` | `#20364a` | 8.12 | 4.5 | Pass |
-| danger on surface-raised | `#f0a3a3` | `#20364a` | 6.20 | 4.5 | Pass |
-| success on surface-raised | `#8ccba9` | `#20364a` | 6.65 | 4.5 | Pass |
-| warning on surface-raised | `#e6c27d` | `#20364a` | 7.33 | 4.5 | Pass |
-| info on surface-raised | `#b3d5f1` | `#20364a` | 8.12 | 4.5 | Pass |
-| accent-strong on surface-raised | `#f3eed8` | `#20364a` | 10.68 | 4.5 | Pass |
+| primary on bg | `#8bb5db` | `#000000` | 9.73 | 4.5 | Pass |
+| primary-hover on bg | `#b3d5f1` | `#000000` | 13.70 | 4.5 | Pass |
+| danger on bg | `#f0a3a3` | `#000000` | 10.47 | 4.5 | Pass |
+| success on bg | `#8ccba9` | `#000000` | 11.23 | 4.5 | Pass |
+| warning on bg | `#e6c27d` | `#000000` | 12.38 | 4.5 | Pass |
+| info on bg | `#b3d5f1` | `#000000` | 13.70 | 4.5 | Pass |
+| accent-strong on bg | `#f3eed8` | `#000000` | 18.03 | 4.5 | Pass |
+| primary on surface | `#8bb5db` | `#0b0f12` | 8.92 | 4.5 | Pass |
+| primary-hover on surface | `#b3d5f1` | `#0b0f12` | 12.56 | 4.5 | Pass |
+| danger on surface | `#f0a3a3` | `#0b0f12` | 9.60 | 4.5 | Pass |
+| success on surface | `#8ccba9` | `#0b0f12` | 10.29 | 4.5 | Pass |
+| warning on surface | `#e6c27d` | `#0b0f12` | 11.34 | 4.5 | Pass |
+| info on surface | `#b3d5f1` | `#0b0f12` | 12.56 | 4.5 | Pass |
+| accent-strong on surface | `#f3eed8` | `#0b0f12` | 16.52 | 4.5 | Pass |
+| primary on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 4.5 | Pass |
+| primary-hover on surface-raised | `#b3d5f1` | `#11171c` | 11.78 | 4.5 | Pass |
+| danger on surface-raised | `#f0a3a3` | `#11171c` | 9.00 | 4.5 | Pass |
+| success on surface-raised | `#8ccba9` | `#11171c` | 9.66 | 4.5 | Pass |
+| warning on surface-raised | `#e6c27d` | `#11171c` | 10.64 | 4.5 | Pass |
+| info on surface-raised | `#b3d5f1` | `#11171c` | 11.78 | 4.5 | Pass |
+| accent-strong on surface-raised | `#f3eed8` | `#11171c` | 15.50 | 4.5 | Pass |
 
 **Controls & focus (non-text)**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| control-border on bg | `#6c8497` | `#152026` | 4.25 | 3 | Pass |
-| border-focus on bg | `#8bb5db` | `#152026` | 7.68 | 3 | Pass |
-| checked / selected indicator on bg | `#8bb5db` | `#152026` | 7.68 | 3 | Pass |
-| error border on bg | `#f0a3a3` | `#152026` | 8.27 | 3 | Pass |
-| switch-track on bg | `#6c8497` | `#152026` | 4.25 | 3 | Pass |
-| control-border on surface | `#6c8497` | `#1c2c37` | 3.68 | 3 | Pass |
-| border-focus on surface | `#8bb5db` | `#1c2c37` | 6.64 | 3 | Pass |
-| checked / selected indicator on surface | `#8bb5db` | `#1c2c37` | 6.64 | 3 | Pass |
-| error border on surface | `#f0a3a3` | `#1c2c37` | 7.15 | 3 | Pass |
-| switch-track on surface | `#6c8497` | `#1c2c37` | 3.68 | 3 | Pass |
-| control-border on surface-raised | `#6c8497` | `#20364a` | 3.19 | 3 | Pass |
-| border-focus on surface-raised | `#8bb5db` | `#20364a` | 5.76 | 3 | Pass |
-| checked / selected indicator on surface-raised | `#8bb5db` | `#20364a` | 5.76 | 3 | Pass |
-| error border on surface-raised | `#f0a3a3` | `#20364a` | 6.20 | 3 | Pass |
-| switch-track on surface-raised | `#6c8497` | `#20364a` | 3.19 | 3 | Pass |
+| control-border on bg | `#6c8497` | `#000000` | 5.39 | 3 | Pass |
+| border-focus on bg | `#8bb5db` | `#000000` | 9.73 | 3 | Pass |
+| checked / selected indicator on bg | `#8bb5db` | `#000000` | 9.73 | 3 | Pass |
+| error border on bg | `#f0a3a3` | `#000000` | 10.47 | 3 | Pass |
+| switch-track on bg | `#6c8497` | `#000000` | 5.39 | 3 | Pass |
+| control-border on surface | `#6c8497` | `#0b0f12` | 4.93 | 3 | Pass |
+| border-focus on surface | `#8bb5db` | `#0b0f12` | 8.92 | 3 | Pass |
+| checked / selected indicator on surface | `#8bb5db` | `#0b0f12` | 8.92 | 3 | Pass |
+| error border on surface | `#f0a3a3` | `#0b0f12` | 9.60 | 3 | Pass |
+| switch-track on surface | `#6c8497` | `#0b0f12` | 4.93 | 3 | Pass |
+| control-border on surface-raised | `#6c8497` | `#11171c` | 4.63 | 3 | Pass |
+| border-focus on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 3 | Pass |
+| checked / selected indicator on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 3 | Pass |
+| error border on surface-raised | `#f0a3a3` | `#11171c` | 9.00 | 3 | Pass |
+| switch-track on surface-raised | `#6c8497` | `#11171c` | 4.63 | 3 | Pass |
 | switch-thumb on switch-track | `#d4eef8` | `#6c8497` | 3.23 | 3 | Pass |
 | switch-thumb-checked on switch-track-checked | `#152026` | `#8bb5db` | 7.68 | 3 | Pass |
 | progress / slider fill on track | `#8bb5db` | `#2e4658` | 4.56 | 3 | Pass |
@@ -456,12 +457,12 @@ Adjustments made while validating:
 
 | Pair | Foreground | Background | Ratio |
 |---|---|---|---:|
-| text-disabled on bg | `#587488` | `#152026` | 3.37 |
-| text-disabled on surface-raised | `#587488` | `#20364a` | 2.53 |
-| border on bg | `#2e4658` | `#152026` | 1.68 |
-| border-subtle on surface-raised | `#233441` | `#20364a` | 1.03 |
-| surface-raised vs bg | `#20364a` | `#152026` | 1.33 |
-| skeleton on raised card | `#233441` | `#20364a` | 1.03 |
+| text-disabled on bg | `#587488` | `#000000` | 4.27 |
+| text-disabled on surface-raised | `#587488` | `#11171c` | 3.67 |
+| border on bg | `#26323b` | `#000000` | 1.60 |
+| border-subtle on surface-raised | `#1a232a` | `#11171c` | 1.13 |
+| surface-raised vs bg | `#11171c` | `#000000` | 1.16 |
+| skeleton on raised card | `#1a232a` | `#11171c` | 1.13 |
 
 ---
 
@@ -478,12 +479,14 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
 [data-theme="winterDark"] {
   color-scheme: dark;
 
-  --ui-color-bg: var(--ui-winter-pine-950);
-  --ui-color-surface: var(--ui-winter-pine-850);
-  --ui-color-surface-raised: var(--ui-winter-blue-850);
-  --ui-color-text: var(--ui-winter-blue-100);
-  --ui-color-text-muted: #9dbad3;
-  --ui-color-border: var(--ui-winter-slate-800);
+  --ui-color-bg: var(--ui-winter-night-1000);
+  --ui-color-surface: var(--ui-winter-night-900);
+  --ui-color-surface-raised: var(--ui-winter-night-850);
+  /* A soft, slightly grey blue rather than Avalanche itself: on a black ground the brighter blue
+     glares. 12.5:1 on the ground, 10.7:1 on raised surfaces. */
+  --ui-color-text: #b3cbdc;
+  --ui-color-text-muted: #8aa4b8;
+  --ui-color-border: var(--ui-winter-night-700);
   --ui-color-primary: var(--ui-winter-blue-400);
   --ui-color-primary-hover: var(--ui-winter-blue-300);
   --ui-color-primary-contrast: var(--ui-winter-pine-950);
@@ -496,13 +499,13 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
 :root:not([data-theme]),
 [data-theme="dark"],
 [data-theme="winterDark"] {
-  --ui-color-surface-subtle: var(--ui-winter-pine-900);
-  --ui-color-surface-hover: var(--ui-winter-blue-800);
-  --ui-color-elevated-hover: var(--ui-winter-blue-800);
-  --ui-color-text-secondary: var(--ui-winter-blue-300);
+  --ui-color-surface-subtle: var(--ui-winter-night-950);
+  --ui-color-surface-hover: var(--ui-winter-night-800);
+  --ui-color-elevated-hover: var(--ui-winter-night-800);
+  --ui-color-text-secondary: #a6c0d3;
   --ui-color-text-disabled: var(--ui-winter-slate-600);
   --ui-color-text-inverse: var(--ui-winter-pine-950);
-  --ui-color-border-subtle: var(--ui-winter-slate-900);
+  --ui-color-border-subtle: var(--ui-winter-night-800);
   --ui-color-border-strong: var(--ui-winter-slate-500);
   --ui-color-border-focus: var(--ui-winter-blue-400);
   --ui-color-primary-active: var(--ui-winter-blue-500);
@@ -520,35 +523,36 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
   --ui-color-danger-hover: #f5bcbc;
   --ui-color-selected: rgba(139, 181, 219, 0.14);
   --ui-color-track: var(--ui-winter-slate-800);
-  --ui-color-overlay: rgba(8, 13, 17, 0.66);
+  --ui-color-overlay: rgba(0, 0, 0, 0.72);
 
   --ui-switch-track: var(--ui-winter-slate-500);
   --ui-switch-thumb: var(--ui-winter-blue-100);
   --ui-switch-thumb-checked: var(--ui-winter-pine-950);
   --ui-slider-thumb: var(--ui-winter-blue-100);
   --ui-slider-thumb-border: var(--ui-winter-pine-950);
-  --ui-skeleton-base: var(--ui-winter-slate-900);
-  --ui-skeleton-highlight: var(--ui-winter-slate-800);
+  /* One step above the raised surface, so a skeleton inside a card is still visible at rest. */
+  --ui-skeleton-base: var(--ui-winter-night-800);
+  --ui-skeleton-highlight: var(--ui-winter-night-700);
   --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
-  --ui-media-bg: var(--ui-winter-pine-950);
-  --ui-media-scrim: #0b1216;
+  --ui-media-bg: var(--ui-winter-night-1000);
+  --ui-media-scrim: #000000;
   --ui-media-on-scrim: var(--ui-winter-blue-25);
   --ui-media-danger: var(--ui-winter-red-300);
   --ui-cursor-color: var(--ui-winter-blue-100);
   --ui-section-label-bracket: var(--ui-color-accent-strong);
 
   --ui-gradient-brand: linear-gradient(90deg, #8bb5db 0%, #b3d5f1 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #152026 0%, #1b3d59 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #000000 0%, #1b3d59 100%);
   --ui-gradient-frost: linear-gradient(135deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #1c2c37 0%, #20364a 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #0b0f12 0%, #11171c 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 213, 241, 0.14) 0%, rgba(179, 213, 241, 0) 100%);
   --ui-glow-amber: 0 0 28px rgba(139, 181, 219, 0.26);
 
   --ui-glass-bg: rgba(179, 213, 241, 0.06);
   --ui-glass-border: rgba(179, 213, 241, 0.13);
-  --ui-shadow-1: 0 1px 2px rgba(5, 10, 13, 0.4);
-  --ui-shadow-2: 0 8px 24px rgba(5, 10, 13, 0.5);
-  --ui-shadow-3: 0 16px 48px rgba(5, 10, 13, 0.6);
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.7);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.8);
 }
 
 /* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
@@ -658,7 +662,7 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
   - *Allowed:* hero sections, featured or marketing cards, background decoration, callouts, the single brand CTA per view (`variant="brand"`), and `.ui-gradient-text` display headings.
   - *Not allowed:* ordinary buttons, inputs, nav, tables, badges, alerts or body text.
   - Prefer `--ui-gradient-hero` for large decorative surfaces, `--ui-gradient-frost` / `--ui-gradient-snow` for featured cards, and `--ui-gradient-highlight` as a top-fade over a surface.
-- **Keep elevation quiet.** In light mode, elevation comes from the white raised surface plus a tinted shadow, not from heavier borders. In dark mode, the raised surface gets bluer (Deep Ocean) rather than greyer.
+- **Keep elevation quiet.** In light mode, elevation comes from the white raised surface plus a tinted shadow, not from heavier borders. In dark mode, surfaces step up from the black ground in faint blue-blacks (night-900, night-850) rather than greys.
 - **Write new skins against the core tokens.** Set the core 13 tokens. The derived block fills in the rest, and you can override any extended token when its formula is not good enough.
 
 ---
@@ -667,18 +671,18 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
 
 | Component | Light | Dark |
 |---|---|---|
-| Page | `#eef5f9` snow ground, `#152026` text | `#152026` pine ground, `#d4eef8` text |
-| Card | `#ffffff` on the snow ground, `#c3d2dd` hairline, soft Deep Ocean shadow | `#1c2c37` surface, `#2e4658` hairline, deep shadow |
+| Page | `#eef5f9` snow ground, `#152026` text | `#000000` ground, `#b3cbdc` text |
+| Card | `#ffffff` on the snow ground, `#c3d2dd` hairline, soft Deep Ocean shadow | `#0b0f12` surface, `#26323b` hairline, deep shadow |
 | Primary button | `#1b3d59` fill, `#f7fbfd` label (10.85:1); hover `#264460`; pressed `#152026` | `#8bb5db` fill, `#152026` label; hover `#b3d5f1`; pressed `#6a97c0` |
 | Secondary button | `#3a6488` fill, `#f7fbfd` label (6.01:1) | `#264460` fill, `#d4eef8` label |
 | Brand CTA | Deep Ocean → `#3a6488` pill, light label | `#8bb5db` → Melting Ice pill, Black Pine label, moonlight glow |
-| Input | `#f7fbfd` field, `#6c8497` outline; focus `#1b3d59` + halo; error `#a83a3f` | `#1c2c37` field, `#6c8497` outline; focus `#8bb5db` + halo; error `#f0a3a3` |
+| Input | `#f7fbfd` field, `#6c8497` outline; focus `#1b3d59` + halo; error `#a83a3f` | `#0b0f12` field, `#6c8497` outline; focus `#8bb5db` + halo; error `#f0a3a3` |
 | Checkbox checked | `#1b3d59` box, light tick | `#8bb5db` box, Black Pine tick |
 | Switch on | `#1b3d59` track, white thumb | `#8bb5db` track, Black Pine thumb |
-| Selected tab | `#152026` label, `#1b3d59` underline | `#d4eef8` label, `#8bb5db` underline |
-| Alert (warning) | `#f7fbfd` surface, `#85570f` stripe | `#1c2c37` surface, `#e6c27d` stripe |
+| Selected tab | `#152026` label, `#1b3d59` underline | `#b3cbdc` label, `#8bb5db` underline |
+| Alert (warning) | `#f7fbfd` surface, `#85570f` stripe | `#0b0f12` surface, `#e6c27d` stripe |
 | Badge (success) | `#2e6b50` fill, `#f7fbfd` label | `#8ccba9` fill, `#152026` label |
-| Modal | white panel over a 42% Black Pine scrim | `#20364a` panel over a 66% night scrim |
-| Skeleton | `#e3f0f7` shimmering to `#f7fbfd` | `#233441` shimmering to `#2e4658` |
+| Modal | white panel over a 42% Black Pine scrim | `#11171c` panel over a 72% black scrim |
+| Skeleton | `#e3f0f7` shimmering to `#f7fbfd` | `#1a232a` shimmering to `#26323b` |
 
-The standalone reference page, `winter-color-system.html`, renders these components live in both modes.
+The showcase's Foundation page renders these components live; switch the theme in its top bar to compare.

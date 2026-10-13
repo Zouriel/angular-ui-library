@@ -6,7 +6,8 @@ import { UiBottomSheet } from './bottom-sheet';
 @Component({
   imports: [UiBottomSheet],
   template: `
-    <ui-bottom-sheet [(snap)]="snap" [snaps]="[0, 0.5, 1]" title="Layers" (heightChange)="heights.push($event)">
+    <button id="opener" type="button" (click)="snap.set(1)">Open</button>
+    <ui-bottom-sheet [(snap)]="snap" [snaps]="[0, 0.5, 1]" title="Layers" [expandOnFocus]="false" (heightChange)="heights.push($event)">
       <input id="field" />
     </ui-bottom-sheet>
   `,
@@ -73,6 +74,23 @@ describe('UiBottomSheet', () => {
     sheet().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle();
     expect(fixture.componentInstance.snap()).toBe(0);
+  });
+
+  it('Escape from inside gives focus back to where it came from, not <body>', async () => {
+    const { fixture, el, settle } = await render();
+    document.body.appendChild(el);
+    const opener = el.querySelector<HTMLButtonElement>('#opener')!;
+    const field = el.querySelector<HTMLInputElement>('#field')!;
+    opener.focus();
+    opener.click();
+    await settle();
+    field.focus();
+    expect(document.activeElement).toBe(field);
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(fixture.componentInstance.snap()).toBe(0);
+    expect(document.activeElement).toBe(opener);
+    el.remove();
   });
 
   it('reports the height it settles at', async () => {

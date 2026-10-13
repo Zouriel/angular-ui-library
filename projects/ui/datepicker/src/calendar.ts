@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
-import { monthYear, WEEKDAYS } from './date-names';
+import { formatIsoDate, monthYear, WEEKDAYS } from './date-names';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
@@ -19,10 +19,11 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
         <button type="button" class="nav" aria-label="Next month" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
       </div>
       <div class="weekdays">@for (w of weekdays; track w) { <span>{{ w }}</span> }</div>
-      <div class="grid" role="grid">
+      <div class="grid">
         @for (b of leading(); track $index) { <span class="cell empty"></span> }
         @for (c of days(); track c.iso) {
-          <button type="button" class="cell" [class.selected]="c.iso === value()" [class.today]="c.today" [disabled]="disabled() || c.blocked" (click)="pick(c.iso)">{{ c.day }}</button>
+          <button type="button" class="cell" [class.selected]="c.iso === value()" [class.today]="c.today" [disabled]="disabled() || c.blocked"
+            [attr.aria-label]="c.label" [attr.aria-pressed]="c.iso === value()" [attr.aria-current]="c.today ? 'date' : null" (click)="pick(c.iso)">{{ c.day }}</button>
         }
       </div>
     </div>
@@ -76,7 +77,7 @@ export class UiCalendar implements ControlValueAccessor {
     const max = this.max();
     return Array.from({ length: count }, (_, i) => {
       const cellIso = iso(y, m, i + 1);
-      return { day: i + 1, iso: cellIso, today: cellIso === todayIso, blocked: (!!min && cellIso < min) || (!!max && cellIso > max) };
+      return { day: i + 1, iso: cellIso, label: formatIsoDate(cellIso), today: cellIso === todayIso, blocked: (!!min && cellIso < min) || (!!max && cellIso > max) };
     });
   });
 

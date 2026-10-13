@@ -1,5 +1,5 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
@@ -22,6 +22,7 @@ export interface UiComboboxOption {
       <input
         class="ui-combobox"
         role="combobox"
+        [attr.aria-label]="label() || null"
         [attr.aria-expanded]="open()"
         [attr.aria-invalid]="invalid() || null"
         aria-autocomplete="list"
@@ -32,6 +33,7 @@ export interface UiComboboxOption {
         [disabled]="disabled()"
         (input)="onInput($event)"
         (focus)="openPanel()"
+        (click)="openPanel()"
         (keydown)="onKeydown($event)"
         (blur)="onBlur()" />
       <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -44,7 +46,7 @@ export interface UiComboboxOption {
       [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
       [cdkConnectedOverlayWidth]="triggerWidth()"
       (overlayOutsideClick)="open.set(false)">
-      <ul class="panel" role="listbox" [id]="listId">
+      <ul class="panel" role="listbox" [id]="listId" (mousedown)="$event.preventDefault()">
         @for (opt of filtered(); track opt.value; let i = $index) {
           <li
             role="option"
@@ -98,6 +100,8 @@ export class UiCombobox implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Search…');
+  /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
+  label = input<string>();
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
@@ -135,6 +139,17 @@ export class UiCombobox implements ControlValueAccessor {
   private onChange: (v: string | null) => void = () => {};
   protected onTouched: () => void = () => {};
 
+  constructor() {
+    // Options that arrive after the value (loaded from a server) still show the chosen label.
+    effect(() => {
+      const options = this.options();
+      untracked(() => {
+        const match = options.find((o) => o.value === this.value());
+        if (match && !this.open()) this.query.set(match.label);
+      });
+    });
+  }
+
   writeValue(v: string | null): void {
     this.value.set(v ?? null);
     const match = this.options().find((o) => o.value === v);
@@ -150,10 +165,15 @@ export class UiCombobox implements ControlValueAccessor {
     this.activeIndex.set(0);
   }
 
+  /** Keeps the keyboard-active option in view in a long, scrolling list. */
+  private revealActive(): void {
+    queueMicrotask(() => document.getElementById(`${this.listId}-${this.activeIndex()}`)?.scrollIntoView({ block: 'nearest' }));
+  }
+
   protected onKeydown(e: KeyboardEvent): void {
     const items = this.filtered();
-    if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); this.revealActive(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); this.revealActive(); }
     else if (e.key === 'Enter') { if (!this.open()) return; e.preventDefault(); const opt = items[this.activeIndex()]; if (opt) this.select(opt); }
     else if (e.key === 'Escape') { this.open.set(false); }
   }
@@ -166,6 +186,8 @@ export class UiCombobox implements ControlValueAccessor {
   }
 
   protected onBlur(): void {
+    // Tabbing away closes the list; clicks inside it never take focus (mousedown is cancelled).
+    this.open.set(false);
     this.onTouched();
     // Restore the selected label if the typed query doesn't match a selection.
     const match = this.options().find((o) => o.value === this.value());

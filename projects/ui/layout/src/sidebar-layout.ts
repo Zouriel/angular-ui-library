@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, model, PLATFORM_ID, signal } from '@angular/core';
+import { booleanAttribute, Component, effect, inject, input, model, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 /**
@@ -39,7 +39,7 @@ import { isPlatformBrowser } from '@angular/common';
         }
         <ng-content select="[header]" />
       </header>
-      <main class="content"><ng-content /></main>
+      <div class="content" [attr.role]="mainLandmark() ? 'main' : null"><ng-content /></div>
     </div>
   `,
   styles: `
@@ -105,6 +105,11 @@ export class UiSidebarLayout {
   breakpoint = input(860);
   /** Sidebar width (any CSS length). */
   sidebarWidth = input('248px');
+  /**
+   * Whether the content region is the page's `main` landmark. Turn it off when the shell sits inside
+   * another `<main>` (a preview, a docs page), since a page should have only one.
+   */
+  mainLandmark = input(true, { transform: booleanAttribute });
   /** Two-way: whether the mobile drawer is open. Ignored above the breakpoint. */
   open = model(false);
 

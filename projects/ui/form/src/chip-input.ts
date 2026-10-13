@@ -10,7 +10,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       @for (chip of chips(); track $index) {
         <span class="chip"><span class="chip-text" [attr.title]="chip">{{ chip }}</span><button type="button" class="x" tabindex="-1" [attr.aria-label]="'Remove ' + chip" [disabled]="disabled()" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
       }
-      <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()"
+      <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()" [attr.aria-label]="label() || null"
              [attr.aria-invalid]="invalid() || null"
              [disabled]="disabled()" (keydown)="onKey($event)" (blur)="onTouched()" />
     </div>
@@ -47,6 +47,8 @@ import { UI_CONFIG } from '@zouriel/ui';
 export class UiChipInput implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
   placeholder = input('Add tag…');
+  /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
+  label = input<string>();
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
 

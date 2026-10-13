@@ -1,10 +1,18 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, output, input, signal } from '@angular/core';
+import { Component, ElementRef, inject, output, input, signal } from '@angular/core';
 
 export interface UiMenubarItem { label: string; value: string; disabled?: boolean; }
 export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
 
-/** `ui-menubar` — application-style horizontal menu bar with dropdown menus (one open at a time). */
+let menubarSeq = 0;
+
+/**
+ * `ui-menubar` — application-style horizontal menu bar with dropdown menus (one open at a time).
+ *
+ * <p>Keyboard: ArrowLeft/Right move between the top items (and between open menus); ArrowDown,
+ * Enter or Space open a menu and focus its first item; inside a menu ArrowUp/Down, Home and End move
+ * between items, Escape closes it and returns focus to its top item, and Tab closes it.</p>
+ */
 @Component({
   selector: 'ui-menubar',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
@@ -12,12 +20,14 @@ export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
     <div class="mb" role="menubar">
       @for (menu of menus(); track menu.label; let i = $index) {
         <button type="button" class="top" role="menuitem" cdkOverlayOrigin #o="cdkOverlayOrigin"
-                [class.open]="openIndex() === i" (click)="toggle(i)" (mouseenter)="hoverOpen(i)">
+                aria-haspopup="menu" [attr.aria-expanded]="openIndex() === i"
+                [class.open]="openIndex() === i" (click)="toggle(i)" (mouseenter)="hoverOpen(i)" (keydown)="onTopKey($event, i)">
           {{ menu.label }}
         </button>
         <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="o" [cdkConnectedOverlayOpen]="openIndex() === i"
-                     [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" (overlayOutsideClick)="openIndex.set(null)">
-          <div class="panel" role="menu" (keydown)="onPanelKey($event)">
+                     [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" (overlayOutsideClick)="openIndex.set(null)"
+                     (attach)="focusFirst()" (detach)="onDetach(i)">
+          <div class="panel" [attr.data-menubar-panel]="uid + '-' + i" role="menu" [attr.aria-label]="menu.label" (keydown)="onPanelKey($event, i)">
             @for (item of menu.items; track item.value) {
               <button type="button" role="menuitem" class="mi" [disabled]="item.disabled" (click)="choose(item)">{{ item.label }}</button>
             }
@@ -49,6 +59,7 @@ export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
   `,
 })
 export class UiMenubar {
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
   menus = input<UiMenubarMenu[]>([]);
   select = output<UiMenubarItem>();
   protected readonly openIndex = signal<number | null>(null);
@@ -61,10 +72,42 @@ export class UiMenubar {
   ];
 
   protected toggle(i: number): void { this.openIndex.update((cur) => (cur === i ? null : i)); }
-  protected hoverOpen(i: number): void { if (this.openIndex() !== null) this.openIndex.set(i); }
+  protected hoverOpen(i: number): void { if (this.openIndex() !== null && this.openIndex() !== i) this.openIndex.set(i); }
+
+  /** The overlay also closes itself (Escape is handled by the CDK too); keep the open index in step. */
+  protected onDetach(i: number): void { if (this.openIndex() === i) this.openIndex.set(null); }
+
+  protected focusFirst(): void {
+    // A task, not a microtask: the panel's items render on the change detection after the attach.
+    setTimeout(() => this.panelItems()[0]?.focus());
+  }
+
+  protected onTopKey(e: KeyboardEvent, i: number): void {
+    const count = this.menus().length;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const next = (i + (e.key === 'ArrowRight' ? 1 : -1) + count) % count;
+      this.topButtons()[next]?.focus();
+      if (this.openIndex() !== null) this.openIndex.set(next);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (this.openIndex() === i) this.focusFirst();
+      else this.openIndex.set(i);
+    }
+  }
+
   /** Arrow keys move between items, Escape closes the open menu. */
-  protected onPanelKey(e: KeyboardEvent): void {
-    if (e.key === 'Escape') { e.preventDefault(); this.openIndex.set(null); return; }
+  protected onPanelKey(e: KeyboardEvent, i: number): void {
+    if (e.key === 'Escape') { e.preventDefault(); this.closeTo(i); return; }
+    if (e.key === 'Tab') { this.closeTo(i); return; }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const count = this.menus().length;
+      const next = (i + (e.key === 'ArrowRight' ? 1 : -1) + count) % count;
+      this.topButtons()[next]?.focus();
+      this.openIndex.set(next);
+      return;
+    }
     const panel = e.currentTarget as HTMLElement;
     const els = Array.from(panel.querySelectorAll<HTMLButtonElement>('.mi:not([disabled])'));
     if (!els.length) return;
@@ -77,7 +120,27 @@ export class UiMenubar {
 
   protected choose(item: UiMenubarItem): void {
     if (item.disabled) return;
+    const i = this.openIndex();
     this.select.emit(item);
-    this.openIndex.set(null);
+    if (i !== null) this.closeTo(i);
   }
+
+  /** Closes the open menu and puts focus back on its top item. */
+  private closeTo(i: number): void {
+    this.openIndex.set(null);
+    this.topButtons()[i]?.focus();
+  }
+
+  private topButtons(): HTMLButtonElement[] {
+    return Array.from(this.host.nativeElement.querySelectorAll<HTMLButtonElement>('.mb > .top'));
+  }
+
+  /** The open panel lives in the overlay container, outside the host. */
+  private panelItems(): HTMLButtonElement[] {
+    const i = this.openIndex();
+    if (i === null) return [];
+    const panel = document.querySelector<HTMLElement>(`[data-menubar-panel="${this.uid}-${i}"]`);
+    return panel ? Array.from(panel.querySelectorAll<HTMLButtonElement>('.mi:not([disabled])')) : [];
+  }
+  protected readonly uid = menubarSeq++;
 }

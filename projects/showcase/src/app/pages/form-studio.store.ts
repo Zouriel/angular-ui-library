@@ -82,8 +82,10 @@ export class FormStudioStore {
 
   /** Adds a form from pasted or uploaded JSON. Throws if it isn't a form. */
   import(raw: unknown): StudioForm {
+    // migrateDefinition fills in a blank page, so check for pages before it does.
+    const pages = raw && typeof raw === 'object' ? (raw as { pages?: unknown }).pages : undefined;
+    if (!Array.isArray(pages) || !pages.length) throw new Error('That JSON has no pages, so it isn’t a form.');
     const draft = migrateDefinition(raw);
-    if (!draft.pages?.length) throw new Error('That JSON has no pages, so it isn’t a form.');
     const now = new Date().toISOString();
     const form: StudioForm = { id: fbUid('form'), draft: { ...draft, id: draft.id || fbUid('form') }, published: null, responses: [], createdAt: now, updatedAt: now };
     this.write([form, ...this.forms()]);
@@ -134,7 +136,7 @@ export class FormStudioStore {
     this.patch(id, (f) => ({ ...f, responses: f.responses.filter((r) => r.id !== responseId) }));
   }
 
-  /** Clears everything and puts the sample form back. */
+  /** Stores the app-wide settings (shared lists, new-form defaults). */
   saveSettings(settings: UiFormGlobalSettings): void {
     this.settings.set(settings);
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { this.saveError.set('This browser wouldn’t save the settings.'); }
@@ -148,6 +150,7 @@ export class FormStudioStore {
     return demoSettings();
   }
 
+  /** Clears every form and answer, puts the sample form back and restores the demo settings. */
   reset(): void {
     this.saveSettings(demoSettings());
     this.write(this.seed());

@@ -5,8 +5,8 @@
  * code prefers the generic naming (e.g. `background: var(--color-background-surface)`). Aliases
  * are re-declared on every [data-theme] element so scoped theme islands resolve correctly.
  *
- *   @import 'ui/styles/tokens.css';
- *   @import 'ui/styles/color-aliases.css';
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/color-aliases.css';
  */
 :root,
 [data-theme] {

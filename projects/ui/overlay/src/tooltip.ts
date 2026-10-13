@@ -8,6 +8,8 @@ export type UiTooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
 let tooltipSeq = 0;
 
+const OPPOSITE: Record<UiTooltipPosition, UiTooltipPosition> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+
 /** Internal panel rendered inside the CDK overlay. */
 @Component({
   selector: 'ui-tooltip-panel',
@@ -61,8 +63,11 @@ export class UiTooltip implements OnDestroy {
     this.ref = this.overlay.create({
       positionStrategy: this.overlay.position()
         .flexibleConnectedTo(this.el)
-        .withPositions([pos])
-        .withPush(true),
+        // The opposite side as a fallback, so a tooltip near a screen edge flips rather than being
+        // pushed back over the element it describes.
+        .withPositions([pos, this.positionFor(OPPOSITE[this.position()])])
+        .withPush(true)
+        .withViewportMargin(8),
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
     });
     const componentRef = this.ref.attach(new ComponentPortal(UiTooltipPanel));

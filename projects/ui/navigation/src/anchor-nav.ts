@@ -6,7 +6,10 @@ export interface UiAnchorItem {
   label: string;
 }
 
-/** `ui-anchor-nav` — scrollspy navigation: highlights the section in view and scrolls to it on click. */
+/**
+ * `ui-anchor-nav` — scrollspy navigation: highlights the section in view and scrolls to it on click.
+ * The sections are looked up by id once, just after init; sections added later are not watched.
+ */
 @Component({
   selector: 'ui-anchor-nav',
   template: `
@@ -37,7 +40,11 @@ export class UiAnchorNav implements OnInit, OnDestroy {
   private doc = inject(DOCUMENT);
   private zone = inject(NgZone);
   items = input<UiAnchorItem[]>([]);
-  /** CSS scroll-margin offset applied when scrolling to a section. */
+  /**
+   * Height in px of a fixed header above the content: a section only counts as in view below it.
+   * Read once at init. It does not change where a click scrolls to; give the sections a matching
+   * `scroll-margin-top` for that.
+   */
   offset = input(80);
   protected readonly active = signal<string>('');
   private observer?: IntersectionObserver;

@@ -21,11 +21,12 @@ export type UiDateRange = { start: string | null; end: string | null };
         <button type="button" class="nav" aria-label="Next month" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
       </div>
       <div class="weekdays">@for (w of weekdays; track w) { <span>{{ w }}</span> }</div>
-      <div class="grid" role="grid" [class.ranged]="ranged()" (mouseleave)="hover.set(null)">
+      <div class="grid" [class.ranged]="ranged()" (mouseleave)="hover.set(null)">
         @for (b of leading(); track $index) { <span class="cell empty"></span> }
         @for (c of days(); track c.iso) {
           <button type="button" class="cell" [class.start]="c.iso === range().start" [class.end]="c.iso === range().end"
-                  [class.inrange]="inRange(c.iso)" [disabled]="disabled()" (click)="pick(c.iso)" (mouseenter)="hover.set(c.iso)">{{ c.day }}</button>
+                  [class.inrange]="inRange(c.iso)" [disabled]="disabled()"
+                  [attr.aria-label]="c.label" [attr.aria-pressed]="c.iso === range().start || c.iso === range().end || inRange(c.iso)" (click)="pick(c.iso)" (mouseenter)="hover.set(c.iso)">{{ c.day }}</button>
         }
       </div>
       <div class="foot">{{ range().start ? fmt(range().start!) : '—' }} → {{ range().end ? fmt(range().end!) : '—' }}</div>
@@ -82,12 +83,16 @@ export class UiDateRangePicker implements ControlValueAccessor {
   protected readonly days = computed(() => {
     const [y, m] = this.view();
     const count = new Date(y, m + 1, 0).getDate();
-    return Array.from({ length: count }, (_, i) => ({ day: i + 1, iso: iso(y, m, i + 1) }));
+    return Array.from({ length: count }, (_, i) => ({ day: i + 1, iso: iso(y, m, i + 1), label: formatIsoDate(iso(y, m, i + 1)) }));
   });
 
   private onChange: (v: UiDateRange) => void = () => {};
   protected onTouched: () => void = () => {};
-  writeValue(v: UiDateRange | null): void { this.range.set(v ?? { start: null, end: null }); }
+  writeValue(v: UiDateRange | null): void {
+    this.range.set(v ?? { start: null, end: null });
+    // Show the month the range starts in, as ui-calendar does for its value.
+    if (v?.start) { const [y, m] = v.start.split('-').map(Number); this.view.set([y, m - 1]); }
+  }
   registerOnChange(fn: (v: UiDateRange) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }

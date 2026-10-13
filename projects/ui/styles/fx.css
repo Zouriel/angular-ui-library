@@ -2,7 +2,7 @@
  * UI Library — FX utility classes (optional). Token-driven, so they adapt to
  * the active theme (especially the "darkOrange" theme's glow + brand gradient).
  *
- *   @import 'ui/styles/fx.css';
+ *   @import '@zouriel/ui/styles/fx.css';
  */
 
 /* Ember/brand glow on text (no-op unless --ui-glow-amber is set by the theme). */

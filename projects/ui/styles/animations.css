@@ -9,8 +9,9 @@
  * All durations/easings come from the --ui-motion-* / --ui-ease-* tokens. Reduced motion calms
  * rather than removes (see the end of tokens.css): the timings stay, and the block at the end of
  * this file swaps travel, scale and spring overshoot for a plain fade.
- * The `animations: false` UiConfig flag is honored by the [class.ui-no-anim]
- * escape hatch components apply to their host.
+ * `provideUiConfig({ animations: false })` adds the `.ui-no-anim` class to <html>,
+ * which turns every animation and transition off (block below). The class also
+ * works on any element to switch motion off for one subtree.
  */
 
 /* ---- Keyframes ------------------------------------------------------- */

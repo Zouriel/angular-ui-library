@@ -97,3 +97,72 @@ describe('UiTable row actions', () => {
     expect(head.textContent.trim()).toBe('');
   });
 });
+
+describe('UiTable sorting and selection', () => {
+  type Item = Record<string, unknown> & { name: string; qty: number | null };
+  const a: Item = { name: 'banana', qty: 10 };
+  const b: Item = { name: 'Apple', qty: 2 };
+  const c: Item = { name: 'item 10', qty: null };
+  const d: Item = { name: 'item 9', qty: 1 };
+  let fixture: ComponentFixture<UiTable<Item>>;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const names = () => [...el().querySelectorAll('tbody tr')].map((tr) => tr.querySelectorAll('td')[0]?.textContent?.trim());
+  const sortButton = (i: number) => el().querySelectorAll<HTMLButtonElement>('th .sort')[i];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [UiTable] }).compileComponents();
+    fixture = TestBed.createComponent(UiTable<Item>);
+    fixture.componentRef.setInput('columns', [
+      { key: 'name', header: 'Name', sortable: true },
+      { key: 'qty', header: 'Qty', sortable: true },
+    ]);
+    fixture.componentRef.setInput('data', [a, b, c, d]);
+    fixture.detectChanges();
+  });
+
+  it('sorts text case-insensitively and numbers inside text in numeric order', () => {
+    sortButton(0).click();
+    fixture.detectChanges();
+    expect(names()).toEqual(['Apple', 'banana', 'item 9', 'item 10']);
+    expect(el().querySelectorAll('th')[0].getAttribute('aria-sort')).toBe('ascending');
+  });
+
+  it('cycles ascending, descending, unsorted; numbers compare as numbers and empties go last', () => {
+    const click = () => { sortButton(1).click(); fixture.detectChanges(); };
+    click();
+    expect(names()).toEqual(['item 9', 'Apple', 'banana', 'item 10']);
+    click();
+    expect(names()).toEqual(['banana', 'Apple', 'item 9', 'item 10']);
+    expect(el().querySelectorAll('th')[1].getAttribute('aria-sort')).toBe('descending');
+    click();
+    expect(names()).toEqual(['banana', 'Apple', 'item 10', 'item 9']);
+    expect(el().querySelectorAll('th')[1].hasAttribute('aria-sort')).toBe(false);
+  });
+
+  it('draws the sort indicator as an icon, not a text glyph', () => {
+    const btn = sortButton(0);
+    expect(btn.querySelector('svg.arrow')).not.toBeNull();
+    expect(btn.textContent?.trim()).toBe('Name');
+  });
+
+  it('forgets selected rows that leave the data', () => {
+    fixture.componentRef.setInput('selectable', true);
+    fixture.detectChanges();
+    const emitted: Item[][] = [];
+    fixture.componentInstance.selectionChange.subscribe((rows) => emitted.push(rows));
+    const all = el().querySelector<HTMLInputElement>('thead input')!;
+    all.click();
+    fixture.detectChanges();
+    expect(emitted.at(-1)).toHaveLength(4);
+
+    fixture.componentRef.setInput('data', [a, b]);
+    fixture.detectChanges();
+    expect(all.checked).toBe(true);
+    expect(all.indeterminate).toBe(false);
+
+    el().querySelectorAll<HTMLInputElement>('tbody input')[0].click();
+    fixture.detectChanges();
+    expect(emitted.at(-1)).toEqual([b]);
+    expect(all.indeterminate).toBe(true);
+  });
+});

@@ -5,15 +5,15 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  * Built-in theme names.
  *
  * - `dark` (default) and `light` are the Winter colour system (defined in
- *   `ui/styles/tokens.css`), also reachable by their explicit names
- *   `winterDark` and `winterLight`. See `ui/styles/COLOR-SYSTEM.md`.
+ *   `@zouriel/ui/styles/tokens.css`), also reachable by their explicit names
+ *   `winterDark` and `winterLight`. See `@zouriel/ui/styles/COLOR-SYSTEM.md`.
  * - The professional accent palettes — `lightOrange`, `lightPink`, `darkPink`,
  *   `goldBlack`, `goldRed`, `lightTeal`, `darkTeal`, `lightPurple`,
  *   `darkPurple`, `lightPurpleGold` — are colours-only skins in
- *   `ui/styles/theme-palettes.css`, with optional signature motion in
- *   `ui/styles/theme-animations.css`.
+ *   `@zouriel/ui/styles/theme-palettes.css`, with optional signature motion in
+ *   `@zouriel/ui/styles/theme-animations.css`.
  * - `darkOrange` is the cinematic ink/ember skin (grain, FX cursor, web fonts,
- *   glow) and requires `ui/styles/theme-dark-orange.css`. It was formerly
+ *   glow) and requires `@zouriel/ui/styles/theme-dark-orange.css`. It was formerly
  *   named `dramatic`.
  *
  * Consumers may register their own theme names too — any string is accepted by
@@ -39,7 +39,7 @@ export type UiTheme =
 
 /**
  * Global theme controller. Drives `data-theme` on the document root so the
- * token overrides in `ui/styles/tokens.css` take effect app-wide. For scoped
+ * token overrides in `@zouriel/ui/styles/tokens.css` take effect app-wide. For scoped
  * theming of a subtree, use {@link UiThemeProvider} instead.
  */
 @Injectable({ providedIn: 'root' })

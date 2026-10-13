@@ -1,21 +1,40 @@
-import { Component, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Component, computed, signal } from '@angular/core';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, type UiChoice,
+  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput,
+  type UiChoice, type UiAnchor, type UiTokenRun,
 } from '@zouriel/ui/form';
+import { UiButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
 import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepicker';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";
 const OPTION = "interface UiSelectOption { label: string; value: string; disabled?: boolean; }";
+const COMBO = "interface UiComboboxOption { label: string; value: string; }   // from @zouriel/ui/combobox";
+const CHOICE = `interface UiChoice {
+  value: string;
+  label: string;
+  description?: string;   // a second line under the label
+  group?: string;         // tiles with the same group sit under that heading
+  disabled?: boolean;
+}
+// context of the #tile template
+interface UiChoiceTileContext { $implicit: UiChoice; selected: boolean; }`;
+const TOKEN = `interface UiTokenRun {
+  text?: string;     // literal text ('\\n' for a line break)
+  token?: string;    // or an atomic token's machine value, e.g. 'event.date'
+  bold?: boolean;
+  italic?: boolean;
+}
+// Also exported: normalizeRuns(runs) merges neighbouring text runs with the same marks and drops empty ones.`;
 
 @Component({
   selector: 'page-forms',
   imports: [
-    ReactiveFormsModule,
+    ReactiveFormsModule, FormsModule, UiButton, UiTokenInput,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
     UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker,
@@ -24,16 +43,26 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
   ],
   template: `
     <doc-page eyebrow="Components" title="Form controls"
-      lead="Every control implements ControlValueAccessor, so it works with template-driven, reactive, and Signal Forms via formControlName / [(ngModel)] / [formControl]. Wrap any control with ui-form-field for label + hint + error. Common inputs: size ('sm'|'md'|'lg'), invalid (boolean), radius (boolean, defaults to UiConfig.radius).">
+      lead="Every value control implements ControlValueAccessor, so it works with [(ngModel)], [formControl] and formControlName, including disable() and touched. The file upload is the exception: it emits files instead. Wrap a control in ui-form-field for a label, hint and error. Most fields also take size ('sm' | 'md' | 'lg'), invalid and radius (defaults to UiConfig.radius); each table lists exactly what that control takes.">
+
+      <doc-section name="Forms integration" summary="Every control in the form below is bound with formControlName to one FormGroup. The switch is bound with ngModel and calls form.disable() / form.enable(), so you can check that each control greys out and stops responding. The live form value is printed underneath.">
+        <doc-demo code="<ui-switch [ngModel]=&quot;locked()&quot; (ngModelChange)=&quot;lock($event)&quot;>Disable every control</ui-switch>
+
+lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
+          <ui-switch [ngModel]="locked()" (ngModelChange)="lock($event)">Disable every control</ui-switch>
+          <pre class="json">{{ formJson() }}</pre>
+        </doc-demo>
+      </doc-section>
+
       <form [formGroup]="form">
 
       <doc-section name="Form field" selector="ui-form-field" [api]="fieldApi"
-        summary="Label + hint + error wrapper. Wraps its projected control in a <label> for implicit accessible-name association. When error is set it replaces the hint and is announced (role=alert).">
+        summary="Label, hint and error around one control. The projected control sits inside a <label>, so the label names the first focusable element in it and clicking the label focuses that element. When error is set it replaces the hint and is announced (role=alert). required only draws the * marker; validation stays with your form.">
         <doc-demo code="<ui-form-field label=&quot;Email&quot; hint=&quot;Work address&quot; [required]=&quot;true&quot; [error]=&quot;err()&quot;>
   <ui-input type=&quot;email&quot; formControlName=&quot;email&quot; [invalid]=&quot;!!err()&quot; />
 </ui-form-field>">
           <ui-form-field label="Email" [required]="true" [error]="emailError()" hint="Work address">
-            <ui-input type="email" formControlName="email" [invalid]="!!emailError()" placeholder="you@x.com" />
+            <ui-input type="email" formControlName="email" autocomplete="email" [invalid]="!!emailError()" placeholder="you@example.com" />
           </ui-form-field>
         </doc-demo>
       </doc-section>
@@ -68,42 +97,42 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
       </doc-section>
 
       <doc-section name="Search input" selector="ui-search-input" [api]="searchApi"
-        summary="Search field with icon and clear button. Value type: string.">
+        summary="Search field (type=search) with a search icon and a clear button that appears once there is text; clearing puts focus back in the field. Value type: string. Name it with ui-form-field, or with label when there is no visible label.">
         <doc-demo code="<ui-search-input formControlName=&quot;search&quot; placeholder=&quot;Search…&quot; />">
           <ui-search-input formControlName="search" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Time picker" selector="ui-time-picker" [api]="timeApi"
-        summary="Native time field. Value type: string ('HH:MM', or 'HH:MM:SS' when step=1).">
+        summary="Native time field. Value type: string, 'HH:MM' (24-hour, whatever the display format); with a step under 60 the browser shows seconds and the value can be 'HH:MM:SS'.">
         <doc-demo code="<ui-time-picker formControlName=&quot;time&quot; [step]=&quot;60&quot; />">
           <ui-time-picker formControlName="time" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Select" selector="ui-select" [api]="selectApi"
-        summary="Single-choice native dropdown. Value type: string. Options are {label,value,disabled?}." [shapes]="OPTION">
+        summary="Single choice on a native <select>, so the keyboard and screen readers work as the platform does; the option list takes the theme colours. Value type: string. A placeholder adds an empty, unselectable first option." [shapes]="OPTION">
         <doc-demo code="<ui-select formControlName=&quot;role&quot; [options]=&quot;roles&quot; placeholder=&quot;Choose…&quot; />">
           <ui-select formControlName="role" [options]="roles" placeholder="Choose…" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Combobox" selector="ui-combobox" [api]="comboApi"
-        summary="Filterable autocomplete (CDK Overlay). Value type: string. Type to filter; Arrow keys + Enter to choose; Escape closes." [shapes]="'interface UiComboboxOption { label: string; value: string; }'">
+        summary="Filterable autocomplete (CDK Overlay, WAI-ARIA combobox). Value type: string | null. Focus or click opens the list; type to filter by label; ArrowUp/Down move, Enter chooses, Escape, Tab or a click outside closes. Leaving the field puts the chosen label back, so typed text never becomes the value, and emptying the text does not clear it. Name it with ui-form-field, or with label when there is no visible label." [shapes]="COMBO">
         <doc-demo code="<ui-combobox formControlName=&quot;country&quot; [options]=&quot;countries&quot; />">
           <ui-combobox formControlName="country" [options]="countries" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Multi-select" selector="ui-multi-select" [api]="multiApi"
-        summary="Choose several options; selections render as chips. Value type: string[]. Type to filter; Arrow keys move, Enter toggles the active option, Backspace in an empty field removes the last chip, Escape closes. size matches the other fields; chips may wrap onto more rows.">
+        summary="Choose several options; selections render as chips with a remove button. Value type: string[], in the order chosen. Type to filter; ArrowUp/Down move, Enter toggles the active option, Backspace in an empty field removes the last chip, Escape, Tab or a click outside closes. size matches the other fields; chips may wrap onto more rows." [shapes]="COMBO">
         <doc-demo code="<ui-multi-select formControlName=&quot;skills&quot; [options]=&quot;countries&quot; />">
           <ui-multi-select formControlName="skills" [options]="countries" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Checkbox & switch" selector="ui-checkbox · ui-switch" [api]="checkApi"
-        summary="Boolean controls (value type: boolean), built on a native checkbox for a11y. ui-switch adds role=switch. Project the label as content.">
+        summary="Boolean controls (value type: boolean), each built on a native checkbox, so Space toggles. ui-switch adds role=switch. Project the label as content.">
         <doc-demo code="<ui-checkbox formControlName=&quot;terms&quot;>Accept terms</ui-checkbox>
 <ui-switch formControlName=&quot;news&quot;>Subscribe</ui-switch>">
           <div class="stack">
@@ -114,7 +143,7 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
       </doc-section>
 
       <doc-section name="Radio group" selector="ui-radio-group" [api]="radioApi"
-        summary="Single-choice from options. Value type: string | null. Built on native radios." [shapes]="'interface UiRadioOption { label: string; value: string; disabled?: boolean; }'">
+        summary="Single choice from options. Value type: string | null. Built on native radios sharing a generated name, so arrow keys move the choice and the group is one tab stop." [shapes]="'interface UiRadioOption { label: string; value: string; disabled?: boolean; }'">
         <doc-demo code="<ui-radio-group formControlName=&quot;plan&quot; orientation=&quot;horizontal&quot; [options]=&quot;plans&quot; />">
           <ui-radio-group formControlName="plan" orientation="horizontal" [options]="plans" />
         </doc-demo>
@@ -128,70 +157,70 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
       </doc-section>
 
       <doc-section name="Slider" selector="ui-slider" [api]="sliderApi"
-        summary="Themed range slider. Value type: number.">
+        summary="Themed native range input (arrow keys, Page Up/Down, Home/End). Value type: number; a null value shows min. The filled part of the track follows the value.">
         <doc-demo code="<ui-slider formControlName=&quot;volume&quot; [min]=&quot;0&quot; [max]=&quot;100&quot; [step]=&quot;1&quot; />">
           <ui-slider formControlName="volume" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Rating" selector="ui-rating" [api]="ratingApi"
-        summary="Star rating. Value type: number (0–max). Click an active star again to clear.">
+        summary="Star rating. Value type: number (0 to max, 0 meaning none). A radiogroup with one tab stop: arrow keys and Home/End move the rating, a click sets it, clicking the current star again clears it to 0.">
         <doc-demo code="<ui-rating formControlName=&quot;rating&quot; [max]=&quot;5&quot; />">
           <ui-rating formControlName="rating" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="OTP input" selector="ui-otp-input" [api]="otpApi"
-        summary="Fixed-length one-time-code entry. Value type: string (joined). Auto-advances; Backspace/Arrows navigate. Pasting or autofilling a whole code fills every cell from the first.">
+        summary="Fixed-length one-time-code entry. Value type: string (the cells joined). Typing moves to the next cell; Backspace in an empty cell and ArrowLeft/Right move between cells. Pasting or autofilling a whole code fills every cell from the first. The first cell has autocomplete=one-time-code.">
         <doc-demo code="<ui-otp-input formControlName=&quot;otp&quot; [length]=&quot;6&quot; [numeric]=&quot;true&quot; />">
           <ui-otp-input formControlName="otp" [length]="6" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Chip input" selector="ui-chip-input" [api]="chipApi"
-        summary="Tokenized text entry. Value type: string[]. Enter or comma adds; Backspace removes the last.">
+        summary="Free-text tags. Value type: string[]. Enter or comma adds the typed text (trimmed); Backspace in an empty field removes the last chip, and each chip has a remove button. Duplicates are kept.">
         <doc-demo code="<ui-chip-input formControlName=&quot;chips&quot; placeholder=&quot;Add tag…&quot; />">
           <ui-chip-input formControlName="chips" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Editable text" selector="ui-editable-text" [api]="editApi"
-        summary="Click-to-edit inline text. Value type: string. Enter commits, Escape cancels.">
+        summary="Click-to-edit inline text. Value type: string. Shows as a button; clicking (or Enter/Space) opens a field with the text selected. Enter or leaving the field commits, Escape cancels.">
         <doc-demo code="<ui-editable-text formControlName=&quot;nick&quot; placeholder=&quot;Empty&quot; />">
           <ui-editable-text formControlName="nick" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Color picker" selector="ui-color-picker" [api]="colorApi"
-        summary="Native color well + hex field + preset swatches. Value type: string (hex).">
+        summary="Native colour well, a hex field and preset swatches. Value type: string (hex). The hex field passes a colour on only once it is a whole #rgb or #rrggbb (the # is optional) and sends it as lower-case #rrggbb; leaving the field restores the current colour.">
         <doc-demo code="<ui-color-picker formControlName=&quot;color&quot; [swatches]=&quot;['#3d5afe','#2faa6e']&quot; />">
           <ui-color-picker formControlName="color" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="File upload" selector="ui-file-upload" [api]="uploadApi" [outputs]="uploadOut"
-        summary="Drag-and-drop / click dropzone that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple); not a CVA control.">
+        summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected).">
         <doc-demo code="<ui-file-upload [multiple]=&quot;true&quot; accept=&quot;image/*&quot; (filesSelected)=&quot;onFiles($event)&quot; />">
           <ui-file-upload [multiple]="true" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Date picker" selector="ui-date-picker" [api]="dateApi"
-        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD'. Closes on outside click or Escape. min/max limit which days can be picked. Month and weekday names come from the browser locale (Intl).">
+        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids. min/max limit which days can be picked. Names come from the browser locale (Intl); weeks start on Sunday.">
         <doc-demo code="<ui-date-picker formControlName=&quot;date&quot; />">
           <ui-date-picker formControlName="date" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Calendar" selector="ui-calendar" [api]="calendarApi"
-        summary="Inline month calendar. Value type: ISO string 'YYYY-MM-DD'. Month and weekday names come from the browser locale (Intl).">
+        summary="Inline month calendar. Value type: ISO string 'YYYY-MM-DD' (or null); it opens on the month of its value. Each day is a button named with its full date; the chosen day is aria-pressed and today is aria-current. Names come from the browser locale (Intl); weeks start on Sunday.">
         <doc-demo code="<ui-calendar formControlName=&quot;date2&quot; />">
           <ui-calendar formControlName="date2" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Date range picker" selector="ui-date-range-picker"
-        summary="Inline range selection; no inputs beyond the form control. Value type: { start: string | null; end: string | null } (ISO). Names come from the browser locale."
+        summary="Inline range selection; no inputs beyond the form control. Click a start day, then an end day (an earlier end swaps them); a third click starts a new range. While choosing the end, hovering previews the band. Value type: UiDateRange (ISO days); it opens on the month the range starts in. Names come from the browser locale."
         [shapes]="'type UiDateRange = { start: string | null; end: string | null };'">
         <doc-demo code="<ui-date-range-picker formControlName=&quot;range&quot; />">
           <ui-date-range-picker formControlName="range" />
@@ -201,24 +230,52 @@ const OPTION = "interface UiSelectOption { label: string; value: string; disable
       </form>
 
       <doc-section name="Choice grid" selector="ui-choice-grid" [api]="choiceApi" [outputs]="choiceOut"
-        summary="One of many options as tiles, grouped under headings; a radio group underneath (form control or [(value)]). Arrow keys move through tiles in reading order, only the chosen tile is in the tab order, Enter/Space choose. Project #tile (let-item, let-selected) to draw a picture above each label. (picked) fires on every choice, even the selected tile again."
-        [shapes]="'interface UiChoice { value: string; label: string; description?: string; group?: string; disabled?: boolean; }'">
-        <doc-demo code="<ui-choice-grid [options]=&quot;presets&quot; [(value)]=&quot;preset&quot;><ng-template #tile let-item>…</ng-template></ui-choice-grid>">
-          <ui-choice-grid [options]="choices" [(value)]="choice" label="Motion preset">
+        summary="One of many options as tiles, grouped under headings; a radio group underneath (form control or [(value)]). Arrow keys (and Home/End) move through the enabled tiles in reading order and choose as they go, only the chosen tile is in the tab order, Enter/Space choose. Project #tile (let-item, let-selected) to draw a picture above each label. (picked) fires on every choice, even the selected tile again."
+        [shapes]="CHOICE">
+        <doc-demo code="<ui-choice-grid [options]=&quot;presets&quot; [(value)]=&quot;preset&quot; label=&quot;Motion preset&quot;>
+  <ng-template #tile let-item let-selected=&quot;selected&quot;><img [src]=&quot;item.value + '.png'&quot; alt=&quot;&quot; /></ng-template>
+</ui-choice-grid>">
+          <ui-choice-grid [options]="choices" [(value)]="choice" label="Motion preset" (picked)="lastPick.set($event.label)">
             <ng-template #tile let-item let-selected="selected"><span class="swatch" [class.on]="selected">{{ item.label[0] }}</span></ng-template>
           </ui-choice-grid>
+          <span class="muted">value: {{ choice() }} · picked: {{ lastPick() }}</span>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Anchor picker" selector="ui-anchor-picker" [api]="anchorApi"
-        summary="The nine-dot grid for picking a point of a box — a pivot, an alignment. Value is {x, y} in fractions of the box; a point between dots shows none chosen. Arrow keys move the choice.">
+      <doc-section name="Anchor picker" selector="ui-anchor-picker" [api]="anchorApi" shapes="interface UiAnchor { x: number; y: number }   // fractions of the box: 0, 0.5 or 1 for the dots"
+        summary="The nine-dot grid for picking a point of a box, such as a pivot or an alignment. Value is {x, y} in fractions of the box; a point between dots shows none chosen. A radiogroup with one tab stop; arrow keys move the choice, and each dot is named (Top left, Centre…). Also a form control.">
         <doc-demo code="<ui-anchor-picker [(value)]=&quot;pivot&quot; label=&quot;Pivot&quot; />">
-          <ui-anchor-picker [(value)]="anchor" label="Pivot" /> <span>{{ anchor().x }}, {{ anchor().y }}</span>
+          <div class="row"><ui-anchor-picker [(value)]="anchor" label="Pivot" /> <span class="muted">x {{ anchor()?.x }}, y {{ anchor()?.y }}</span></div>
+        </doc-demo>
+      </doc-section>
+      <doc-section name="Token input" selector="ui-token-input" [api]="tokenApi" [outputs]="tokenOut" [shapes]="TOKEN"
+        summary="Rich text where some pieces are atomic tokens (variables, mentions) shown as chips. Value type: UiTokenRun[]. A chip acts like one character: the caret steps over it and one Backspace removes it. Ctrl/⌘+B and Ctrl/⌘+I toggle bold and italic; pasting always inserts plain text. Call insertToken() on the component to drop a chip at the caret (or at the end when the field has no caret). Built on a contenteditable div with role=textbox; give it a label for its accessible name. The design tools page shows it in a template editor.">
+        <doc-demo code="<ui-token-input #msg [(ngModel)]=&quot;runs&quot; [tokenLabel]=&quot;labelFor&quot; label=&quot;Message&quot; placeholder=&quot;Write a message&quot; />
+<ui-button (mousedown)=&quot;$event.preventDefault()&quot; (click)=&quot;msg.insertToken('guest.name')&quot;>Insert guest name</ui-button>
+
+labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date' })[token] ?? token;">
+          <ui-token-input #msg [(ngModel)]="runs" [tokenLabel]="labelFor" label="Message" placeholder="Write a message" (tokenClick)="tokenClicked.set($event)" />
+          <div class="row">
+            <ui-button size="sm" variant="outline" (mousedown)="$event.preventDefault()" (click)="msg.insertToken('guest.name')">Insert guest name</ui-button>
+            <ui-button size="sm" variant="outline" (mousedown)="$event.preventDefault()" (click)="msg.insertToken('event.date')">Insert date</ui-button>
+            <span class="muted">last chip clicked: {{ tokenClicked() }}</span>
+          </div>
+          <pre class="json">{{ runsJson(runs) }}</pre>
         </doc-demo>
       </doc-section>
     </doc-page>
   `,
-  styles: `.stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }`,
+  styles: `
+    .stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
+    .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
+    .json { margin: 0; padding: var(--ui-space-2) var(--ui-space-3); max-height: 160px; overflow: auto; border-radius: var(--ui-radius);
+      background: var(--ui-color-surface-subtle); color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono);
+      white-space: pre-wrap; overflow-wrap: anywhere; }
+    .swatch { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ui-color-surface-raised);
+      color: var(--ui-color-text-muted); font-weight: 600; transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .swatch.on { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
+  `,
 })
 export class FormsPage {
   protected readonly choices: UiChoice[] = [
@@ -227,22 +284,50 @@ export class FormsPage {
     { value: 'flip', label: 'Flip', group: 'Turn', disabled: true },
   ];
   protected readonly choice = signal<string | null>('rise');
-  protected readonly anchor = signal({ x: 0.5, y: 0 });
+  protected readonly lastPick = signal('—');
+  protected readonly anchor = signal<UiAnchor | null>({ x: 0.5, y: 0 });
+  protected readonly COMBO = COMBO;
+  protected readonly CHOICE = CHOICE;
+  protected readonly TOKEN = TOKEN;
+  protected runs: UiTokenRun[] = [{ text: 'Hi ' }, { token: 'guest.name', bold: true }, { text: ', see you on ' }, { token: 'event.date' }, { text: '.' }];
+  protected readonly tokenClicked = signal('—');
+  protected readonly labelFor = (t: string) => ({ 'event.date': 'Date', 'guest.name': 'Guest name' } as Record<string, string>)[t] ?? t;
+  protected runsJson(runs: UiTokenRun[]): string { return JSON.stringify(runs); }
+  protected readonly locked = signal(false);
+  protected lock(off: boolean): void {
+    this.locked.set(off);
+    if (off) this.form.disable(); else this.form.enable();
+  }
   protected readonly choiceApi: ApiRow[] = [
-    { name: 'options', type: 'UiChoice[]', default: '[]', desc: 'The tiles; items with a group sit under its heading.' },
-    { name: '[(value)] / ngModel', type: 'string | null', default: 'null', desc: 'The chosen value.' },
+    { name: 'options', type: 'readonly UiChoice[]', default: '[]', desc: 'The tiles; items with a group sit under its heading, groups in order of first appearance.' },
+    { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way (`[(value)]`). The chosen value. Also a form control (ngModel, formControl).' },
     { name: 'label', type: 'string', default: "'Choices'", desc: 'Accessible name of the group.' },
-    { name: 'minTile', type: 'string', default: "'88px'", desc: 'Narrowest a tile may get.' },
-    { name: '#tile (template)', type: 'TemplateRef', default: '—', desc: 'Picture above each label; context is the item and selected.' },
+    { name: 'minTile', type: 'string', default: "'88px'", desc: 'Narrowest a tile may get (CSS length).' },
+    { name: '#tile', type: 'slot (ng-template)', default: '—', desc: 'Picture above each label; context is UiChoiceTileContext.' },
   ];
   protected readonly choiceOut: ApiRow[] = [
     { name: 'picked', type: 'UiChoice', default: '—', desc: 'Every choice, including the chosen one again.' },
-    { name: 'valueChange', type: 'string | null', default: '—', desc: 'From [(value)].' },
   ];
   protected readonly anchorApi: ApiRow[] = [
-    { name: '[(value)] / ngModel', type: '{ x: number; y: number }', default: '{0.5, 0.5}', desc: 'Fractions of the box; between dots shows none chosen.' },
-    { name: 'label', type: 'string', default: "'Point'", desc: 'Accessible name.' },
+    { name: 'value', type: 'UiAnchor | null (model)', default: '{ x: 0.5, y: 0.5 }', desc: 'Two-way (`[(value)]`). Fractions of the box; a point between dots shows none chosen. Also a form control (ngModel, formControl).' },
+    { name: 'label', type: 'string', default: "'Point'", desc: 'Accessible name of the group.' },
   ];
+  protected readonly tokenApi: ApiRow[] = [
+    { name: 'ngModel / formControl', type: 'UiTokenRun[]', default: '[]', desc: 'The content, as runs of text and tokens (see Data shapes).' },
+    { name: 'tokenLabel', type: '(token: string) => string', default: 'token => token', desc: 'The text a chip shows for a token value.' },
+    { name: 'label', type: 'string', default: "''", desc: 'Accessible name (aria-label).' },
+    { name: 'placeholder', type: 'string', default: "''", desc: 'Shown while empty.' },
+    { name: 'multiline', type: 'boolean', default: 'true', desc: 'Enter inserts a line break; false keeps one line, one field high, and pastes newlines as spaces.' },
+    { name: 'minHeight', type: 'string | null', default: 'null', desc: 'CSS min-height of the field.' },
+    { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'insertToken(token)', type: 'method', default: '—', desc: 'Insert a chip at the caret, or at the end when the field has no caret.' },
+    { name: 'focus()', type: 'method', default: '—', desc: 'Focus the field with the caret at the end.' },
+  ];
+  protected readonly tokenOut: ApiRow[] = [
+    { name: 'tokenClick', type: 'string', default: '—', desc: 'A chip was clicked; its token value.' },
+    { name: 'focusChange', type: 'boolean', default: '—', desc: 'The field gained (true) or lost (false) focus.' },
+  ];
+  protected readonly formJson = computed(() => JSON.stringify(this.formValue()));
   protected readonly OPTION = OPTION;
   protected readonly roles = [{ label: 'Engineer', value: 'eng' }, { label: 'Designer', value: 'design' }, { label: 'PM', value: 'pm' }];
   protected readonly plans = [{ label: 'Free', value: 'free' }, { label: 'Pro', value: 'pro' }, { label: 'Enterprise', value: 'ent' }];
@@ -260,6 +345,11 @@ export class FormsPage {
     nick: new FormControl('ada'), color: new FormControl('#3d5afe'),
     date: new FormControl(''), date2: new FormControl(''), range: new FormControl<{ start: string | null; end: string | null }>({ start: null, end: null }),
   });
+  private readonly formValue = signal<unknown>(null);
+  constructor() {
+    this.formValue.set(this.form.getRawValue());
+    this.form.valueChanges.subscribe(() => this.formValue.set(this.form.getRawValue()));
+  }
   protected emailError(): string {
     const v = this.form.controls.email.value ?? '';
     return v && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? 'Enter a valid email' : '';
@@ -315,33 +405,36 @@ export class FormsPage {
   ];
   protected readonly searchApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Search…'", desc: 'Placeholder.' },
+    { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly timeApi: ApiRow[] = [
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
-    { name: 'step', type: 'number', default: '60', desc: 'Seconds granularity (1 shows seconds).' },
+    { name: 'step', type: 'number', default: '60', desc: 'Step in seconds; under 60 shows seconds.' },
     { name: 'invalid', type: 'boolean', default: 'false', desc: 'Error styling.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly selectApi: ApiRow[] = [
     { name: 'options', type: 'UiSelectOption[]', default: '[]', desc: 'Choices (see Data shapes).' },
-    { name: 'placeholder', type: 'string', default: '—', desc: 'Empty-state option.' },
-    { name: 'label', type: 'string', default: '—', desc: 'aria-label.' },
+    { name: 'placeholder', type: 'string', default: '—', desc: 'Text of an empty first option, shown while no value is chosen.' },
+    { name: 'label', type: 'string', default: '—', desc: 'aria-label (not needed inside ui-form-field).' },
     ...this.common,
   ];
   protected readonly comboApi: ApiRow[] = [
-    { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices.' },
+    { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices; filtered by label. Options that arrive after the value still show its label.' },
     { name: 'placeholder', type: 'string', default: "'Search…'", desc: 'Placeholder.' },
+    { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
     ...this.common,
   ];
   protected readonly multiApi: ApiRow[] = [
-    { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices.' },
-    { name: 'placeholder', type: 'string', default: "'Select…'", desc: 'Placeholder.' },
+    { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices; filtered by label. A value missing from options shows as its raw value.' },
+    { name: 'placeholder', type: 'string', default: "'Select…'", desc: 'Shown while nothing is chosen.' },
+    { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
     ...this.common,
   ];
   protected readonly checkApi: ApiRow[] = [
-    { name: 'invalid', type: 'boolean (checkbox only)', default: 'false', desc: 'Error styling.' },
+    { name: 'invalid', type: 'boolean (ui-checkbox only)', default: 'false', desc: 'Error styling and aria-invalid.' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The label text.' },
   ];
   protected readonly radioApi: ApiRow[] = [
@@ -374,14 +467,15 @@ export class FormsPage {
   ];
   protected readonly chipApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Add tag…'", desc: 'Placeholder.' },
+    { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
     { name: 'invalid', type: 'boolean', default: 'false', desc: 'Error styling.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly editApi: ApiRow[] = [
-    { name: 'placeholder', type: 'string', default: "'Empty'", desc: 'Shown when empty.' },
+    { name: 'placeholder', type: 'string', default: "'Empty'", desc: 'Shown (muted) when the value is empty.' },
   ];
   protected readonly colorApi: ApiRow[] = [
-    { name: 'swatches', type: 'string[]', default: '6 theme presets', desc: 'Preset hex swatches.' },
+    { name: 'swatches', type: 'string[]', default: '6 fixed presets', desc: 'Preset colours; each is a button named by its hex and aria-pressed when it matches the value.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly uploadApi: ApiRow[] = [
@@ -389,9 +483,11 @@ export class FormsPage {
     { name: 'accept', type: 'string', default: '—', desc: 'Accept filter (e.g. image/*); also shown under the hint.' },
     { name: 'acceptLabel', type: 'string', default: '—', desc: 'Text shown for the accepted types instead of accept, e.g. "PNG, JPEG or WebP".' },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Rounded corners.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Greys out the dropzone and ignores clicks and drops.' },
   ];
   protected readonly uploadOut: ApiRow[] = [
     { name: 'filesSelected', type: 'File[]', default: '—', desc: 'Chosen files.' },
+    { name: 'rejected', type: 'File[]', default: '—', desc: 'Dropped files that did not match accept.' },
   ];
   protected readonly dateApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Select a date'", desc: 'Placeholder.' },

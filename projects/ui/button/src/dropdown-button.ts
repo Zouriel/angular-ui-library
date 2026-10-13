@@ -10,7 +10,7 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
   selector: 'ui-dropdown-button',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
-    <button class="ddb" cdkOverlayOrigin #o="cdkOverlayOrigin" [attr.data-variant]="variant()" [attr.data-size]="size()"
+    <button type="button" class="ddb" cdkOverlayOrigin #o="cdkOverlayOrigin" [attr.data-variant]="variant()" [attr.data-size]="size()"
             [class.no-radius]="!radius()" [disabled]="disabled()" aria-haspopup="menu" [attr.aria-expanded]="open()" (click)="open.set(!open())">
       <ng-content /><svg class="caret" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>

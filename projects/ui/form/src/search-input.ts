@@ -14,16 +14,18 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         <hugeicons-icon [icon]="searchIcon" [size]="16" [strokeWidth]="1.8" />
       </span>
       <input
+        #inp
         class="ui-search"
         type="search"
         role="searchbox"
+        [attr.aria-label]="label() || null"
         [attr.placeholder]="placeholder()"
         [value]="value()"
         [disabled]="disabled()"
         (input)="handleInput($event)"
         (blur)="onTouched()" />
       @if (value()) {
-        <button type="button" class="clear" aria-label="Clear search" [disabled]="disabled()" (click)="clear()"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="clear" aria-label="Clear search" [disabled]="disabled()" (click)="clear(inp)"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       }
     </div>
   `,
@@ -58,6 +60,8 @@ export class UiSearchInput implements ControlValueAccessor {
 
   private config = inject(UI_CONFIG);
   placeholder = input('Search…');
+  /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
+  label = input<string>();
   size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
 
@@ -76,8 +80,10 @@ export class UiSearchInput implements ControlValueAccessor {
     this.value.set(v);
     this.onChange(v);
   }
-  protected clear(): void {
+  /** Clears and puts focus back in the field (the clear button itself disappears). */
+  protected clear(field: HTMLInputElement): void {
     this.value.set('');
     this.onChange('');
+    field.focus();
   }
 }

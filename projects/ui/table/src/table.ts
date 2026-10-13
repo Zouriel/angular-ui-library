@@ -29,6 +29,9 @@ export interface UiRowAction<T = Record<string, unknown>> {
 
 type SortDir = 'asc' | 'desc' | null;
 
+/** Case-insensitive, and "Item 2" sorts before "Item 10". */
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
 /**
  * `ui-table` — accessible data table with click-to-sort headers and optional
  * row selection. Pass `columns` + `data`; listen to `(selectionChange)`.
@@ -56,7 +59,7 @@ type SortDir = 'asc' | 'desc' | null;
                 @if (col.sortable) {
                   <button type="button" class="sort" (click)="sortBy(col.key)">
                     {{ col.header }}
-                    <span class="arrow" aria-hidden="true">{{ sortGlyph(col.key) }}</span>
+                    <svg class="arrow" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path [attr.d]="sortIcon(col.key)" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </button>
                 } @else {
                   {{ col.header }}
@@ -76,10 +79,10 @@ type SortDir = 'asc' | 'desc' | null;
         </thead>
         <tbody>
           @for (row of sorted(); track $index) {
-            <tr [class.selected]="selected().has(row)">
+            <tr [class.selected]="current().has(row)">
               @if (selectable()) {
                 <td class="sel">
-                  <input type="checkbox" [checked]="selected().has(row)"
+                  <input type="checkbox" [checked]="current().has(row)"
                          [attr.aria-label]="'Select row ' + ($index + 1)" (change)="toggleRow(row)" />
                 </td>
               }
@@ -121,7 +124,7 @@ type SortDir = 'asc' | 'desc' | null;
     .sort:hover { color: var(--ui-color-text); }
     th:not([aria-sort]) .arrow { opacity: .4; }
     .sort:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
-    .arrow { width: 1em; display: inline-block; }
+    .arrow { flex: none; }
     .sel { width: 1px; white-space: nowrap; }
     .sel input { accent-color: var(--ui-color-primary); width: 14px; height: 14px; margin: 0; vertical-align: middle; cursor: pointer; }
     .sel input:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 2px; }
@@ -157,6 +160,14 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
   protected readonly sortKey = signal<string | null>(null);
   protected readonly sortDir = signal<SortDir>(null);
   protected readonly selected = signal<Set<T>>(new Set());
+  /**
+   * The selection, limited to rows still in `data`. Rows are tracked by reference, so when the
+   * data is replaced (filtered, reloaded) a row that left must stop counting as selected.
+   */
+  protected readonly current = computed(() => {
+    const rows = new Set(this.data());
+    return new Set([...this.selected()].filter((r) => rows.has(r)));
+  });
 
   protected readonly sorted = computed(() => {
     const rows = this.data();
@@ -168,7 +179,9 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
       const av = a[key], bv = b[key];
       if (av == null) return 1;
       if (bv == null) return -1;
-      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      const cmp = typeof av === 'number' && typeof bv === 'number'
+        ? av - bv
+        : collator.compare(String(av), String(bv));
       return dir === 'asc' ? cmp : -cmp;
     });
     return copy;
@@ -177,8 +190,8 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
   protected readonly colspan = computed(
     () => this.columns().length + (this.selectable() ? 1 : 0) + (this.actions().length ? 1 : 0),
   );
-  protected readonly allSelected = computed(() => this.data().length > 0 && this.selected().size === this.data().length);
-  protected readonly someSelected = computed(() => this.selected().size > 0 && !this.allSelected());
+  protected readonly allSelected = computed(() => this.data().length > 0 && this.current().size === this.data().length);
+  protected readonly someSelected = computed(() => this.current().size > 0 && !this.allSelected());
 
   protected cell(row: T, col: UiColumn<T>): string {
     const value = row[col.key];
@@ -201,13 +214,14 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
     if (this.sortKey() !== key || !this.sortDir()) return null;
     return this.sortDir() === 'asc' ? 'ascending' : 'descending';
   }
-  protected sortGlyph(key: string): string {
-    if (this.sortKey() !== key) return '↕';
-    return this.sortDir() === 'asc' ? '↑' : this.sortDir() === 'desc' ? '↓' : '↕';
+  /** Up/down chevron pair when unsorted, one chevron for the active direction. */
+  protected sortIcon(key: string): string {
+    const dir = this.sortKey() === key ? this.sortDir() : null;
+    return dir === 'asc' ? 'M3 7.5l3-3 3 3' : dir === 'desc' ? 'M3 4.5l3 3 3-3' : 'M3.5 4.5L6 2l2.5 2.5M3.5 7.5L6 10l2.5-2.5';
   }
 
   protected toggleRow(row: T): void {
-    const next = new Set(this.selected());
+    const next = new Set(this.current());
     next.has(row) ? next.delete(row) : next.add(row);
     this.selected.set(next);
     this.selectionChange.emit([...next]);

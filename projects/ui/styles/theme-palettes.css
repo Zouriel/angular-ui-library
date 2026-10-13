@@ -10,8 +10,8 @@
  * Include AFTER tokens.css, then switch with UiThemeService.set('goldBlack')
  * or <html data-theme="goldBlack">.
  *
- *   @import 'ui/styles/tokens.css';
- *   @import 'ui/styles/theme-palettes.css';
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/theme-palettes.css';
  *
  * Roster:
  *   Light: lightOrange · lightPink · lightTeal · lightPurple · lightPurpleGold
@@ -99,7 +99,7 @@
   --ui-color-surface: #e6f6f3;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #0f2a26;
-  --ui-color-text-muted: #3f6b63;
+  --ui-color-text-muted: #365e57;
   --ui-color-border: #cde8e2;
   --ui-color-primary: #0f766e;
   --ui-color-primary-hover: #0d9488;

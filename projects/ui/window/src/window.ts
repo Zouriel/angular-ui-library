@@ -1,5 +1,5 @@
 import {
-  Component, ElementRef, NgZone, OnDestroy, OnInit, computed, inject, input, model, output, signal,
+  Component, NgZone, OnDestroy, OnInit, computed, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 import { UiDockSide, UiWindowBounds, UiWindowManager } from './window-manager';
@@ -12,10 +12,14 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
  * (left/right half, maximize). Resize from any edge/corner. Min/max/restore/
  * close chrome, focus-to-front z-index via {@link UiWindowManager}. Glass +
  * radius + open animation. Hosts any content via `<ng-content>`.
+ *
+ * `[(open)]` controls whether it is on screen: Close sets it false (and emits `closed`), and the
+ * window unregisters from the manager until it is opened again.
  */
 @Component({
   selector: 'ui-window',
   template: `
+    @if (open()) {
     @if (snap()) { <div class="snap-preview" [style.left.px]="snapBounds().x" [style.top.px]="snapBounds().y"
                         [style.width.px]="snapBounds().width" [style.height.px]="snapBounds().height"></div> }
     <section
@@ -47,6 +51,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
         }
       }
     </section>
+    }
   `,
   styles: `
     :host { display: contents; }
@@ -142,19 +147,37 @@ export class UiWindow implements OnInit, OnDestroy {
   private readonly rUp = () => this.onResizeUp();
 
   ngOnInit(): void {
-    this.x.set(this.initialX());
-    this.y.set(this.initialY());
-    this.width.set(this.initialWidth());
-    this.height.set(this.initialHeight());
-    this.mgr.register({
-      id: this.id,
-      minimize: () => this.minimized.set(true),
-      restore: () => this.restore(),
-      dock: (side) => this.dock(side),
-      focus: () => this.focus(),
-      setBounds: (b) => this.setBounds(b),
+    let x = this.initialX(), y = this.initialY(), w = this.initialWidth(), h = this.initialHeight();
+    // Open fully on screen: on a phone the requested bounds can reach past the edge, and a title bar
+    // that starts off-screen can't be grabbed to bring it back.
+    if (typeof window !== 'undefined' && window.innerWidth > 0 && window.innerHeight > 0) {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      w = Math.min(w, vw); h = Math.min(h, vh);
+      x = Math.max(0, Math.min(x, vw - w)); y = Math.max(0, Math.min(y, vh - h));
+    }
+    this.x.set(x);
+    this.y.set(y);
+    this.width.set(w);
+    this.height.set(h);
+  }
+
+  constructor() {
+    // A closed window leaves the screen and the manager; opening it again brings it back in front.
+    effect(() => {
+      const open = this.open();
+      untracked(() => {
+        if (!open) { this.mgr.unregister(this.id); return; }
+        this.mgr.register({
+          id: this.id,
+          minimize: () => this.minimized.set(true),
+          restore: () => this.restore(),
+          dock: (side) => this.dock(side),
+          focus: () => this.focus(),
+          setBounds: (b) => this.setBounds(b),
+        });
+        this.focus();
+      });
     });
-    this.focus();
   }
 
   ngOnDestroy(): void {
@@ -176,6 +199,7 @@ export class UiWindow implements OnInit, OnDestroy {
     this.zone.runOutsideAngular(() => {
       document.addEventListener('pointermove', this.dMove);
       document.addEventListener('pointerup', this.dUp);
+      document.addEventListener('pointercancel', this.dUp);
     });
     e.preventDefault();
   }
@@ -206,6 +230,7 @@ export class UiWindow implements OnInit, OnDestroy {
   private teardownDrag(): void {
     document.removeEventListener('pointermove', this.dMove);
     document.removeEventListener('pointerup', this.dUp);
+    document.removeEventListener('pointercancel', this.dUp);
   }
 
   private detectSnap(px: number, py: number): UiDockSide {
@@ -227,6 +252,7 @@ export class UiWindow implements OnInit, OnDestroy {
     this.zone.runOutsideAngular(() => {
       document.addEventListener('pointermove', this.rMove);
       document.addEventListener('pointerup', this.rUp);
+      document.addEventListener('pointercancel', this.rUp);
     });
   }
 
@@ -254,6 +280,7 @@ export class UiWindow implements OnInit, OnDestroy {
   private teardownResize(): void {
     document.removeEventListener('pointermove', this.rMove);
     document.removeEventListener('pointerup', this.rUp);
+    document.removeEventListener('pointercancel', this.rUp);
   }
 
   // ---- chrome / docking ----
@@ -268,7 +295,6 @@ export class UiWindow implements OnInit, OnDestroy {
   protected close(): void {
     this.open.set(false);
     this.closed.emit();
-    this.mgr.unregister(this.id);
   }
 
   dock(side: UiDockSide): void {
@@ -303,6 +329,7 @@ export class UiWindow implements OnInit, OnDestroy {
     switch (side) {
       case 'left': return { x: 0, y: 0, width: Math.floor(vw / 2), height: vh };
       case 'right': return { x: Math.ceil(vw / 2), y: 0, width: Math.floor(vw / 2), height: vh };
+      case 'top': return { x: 0, y: 0, width: vw, height: Math.floor(vh / 2) };
       case 'bottom': return { x: 0, y: Math.ceil(vh / 2), width: vw, height: Math.floor(vh / 2) };
       case 'maximize': return { x: 0, y: 0, width: vw, height: vh };
       default: return { x: this.x(), y: this.y(), width: this.width(), height: this.height() };

@@ -1,18 +1,18 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiSwipe, UiVirtualList } from '@zouriel/ui/behaviors';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiSwipe, UiVirtualList, type UiSize2D } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-behaviors',
   imports: [
-    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiSwipe, UiVirtualList,
+    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiSwipe, UiVirtualList,
     DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Motion" title="Behavior directives"
-      lead="Reusable interaction primitives from ui/behaviors — attach to any element. Plus clickOutside & focusTrap used across the overlay components.">
+      lead="Interaction primitives from @zouriel/ui/behaviors, attached to any element, plus a virtual list. The last section points to uiClickOutside (from @zouriel/ui/overlay) and CDK focus trapping, which the overlay components use.">
 
       <doc-section name="copyToClipboard" selector="[uiCopyToClipboard]" [api]="copyApi" [outputs]="copyOut"
         summary="Copies the bound text on click. For 1.5s after a copy, the copied() signal (exportAs 'uiCopy') is true and the host carries data-copied. The result is also announced to screen readers through a polite live region, including a hint to copy by hand when the clipboard refuses.">
@@ -24,14 +24,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="ripple" selector="[uiRipple]" [api]="rippleApi"
-        summary="Material-style ripple emanating from the pointer on press. Skipped when the user prefers reduced motion. Sets position: relative and overflow: hidden on the host.">
-        <doc-demo code="<button uiRipple uiRippleColor=&quot;#fff&quot;>Press</button>">
-          <ui-button variant="primary" uiRipple>Ripple me</ui-button>
+        summary="A ripple that spreads from the pointer on press (pointerdown, so mouse, pen and touch; a keyboard press shows none). Skipped under prefers-reduced-motion. Sets position: relative and overflow: hidden on the host, so put it on an element whose corners should clip the ripple.">
+        <doc-demo code="<button uiRipple uiRippleColor=&quot;var(--ui-color-primary-contrast)&quot;>Press</button>">
+          <button type="button" class="ripple-btn" uiRipple uiRippleColor="var(--ui-color-primary-contrast)">Press me</button>
         </doc-demo>
       </doc-section>
 
       <doc-section name="swipe" selector="[uiSwipe]" [api]="swipeApi" [outputs]="swipeOut"
-        summary="Reports a sideways swipe across the host, e.g. to move between tabs or screens, and stays out of the way of everything else: vertical scrolling, pinches, the screen edges (the browser's back gesture), anything that scrolls sideways under the finger, and fields and sliders. Mark any subtree data-no-swipe to opt it out. It never calls preventDefault, so the page still scrolls under the same finger.">
+        summary="Reports a sideways swipe across the host, e.g. to move between tabs or screens. It reads touch events for fingers, pointer events for a pen, and mouse drags only with uiSwipeMouse. It fires while the finger is still moving, as soon as the drag qualifies, and stays out of the way of everything else: mostly vertical drags, a second finger, gestures starting within 24px of the screen edge (the browser's back gesture), anything under the finger that scrolls sideways, and fields, editable text and draggable elements. Mark any subtree data-no-swipe to opt it out. It never calls preventDefault, so the page still scrolls under the same finger.">
         <doc-demo code="<main uiSwipe (uiSwipeLeft)=&quot;next()&quot; (uiSwipeRight)=&quot;previous()&quot;>…</main>">
           <div class="swipe" uiSwipe [uiSwipeMouse]="true" (uiSwipeLeft)="page.set(Math.min(page() + 1, 3))" (uiSwipeRight)="page.set(Math.max(page() - 1, 0))">
             <strong>{{ swipePages[page()] }}</strong>
@@ -47,14 +47,14 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="intersect" selector="[uiIntersect]" [api]="intersectApi" [outputs]="intersectOut"
-        summary="Emits visibility (boolean) as the host enters/leaves the viewport. uiIntersectOnce fires once then disconnects.">
+        summary="Emits true when the host enters the viewport and false when it leaves (the first report can be false if it starts out of view). With uiIntersectOnce it stops observing after the first true. The root margin is read once, on init.">
         <doc-demo code="<div (uiIntersect)=&quot;onVisible($event)&quot; [uiIntersectOnce]=&quot;true&quot;>…</div>">
           <ui-badge [tone]="vis() ? 'success' : 'neutral'" (uiIntersect)="vis.set($event)">{{ vis() ? 'in view' : 'out of view' }}</ui-badge>
         </doc-demo>
       </doc-section>
 
       <doc-section name="infiniteScroll" selector="[uiInfiniteScroll]" [api]="infApi" [outputs]="infOut"
-        summary="Emits (scrolledToEnd) when the host scrolls within threshold px of the bottom; re-arms when scrolled up.">
+        summary="Put it on the scrolling element itself (it needs a height and overflow: auto). Emits (scrolledToEnd) once when a scroll brings the host within threshold px of the bottom, and again only after it has been scrolled back above that line. It reacts to scroll events, so content shorter than the box never triggers it.">
         <doc-demo code="<div uiInfiniteScroll [uiInfiniteScrollThreshold]=&quot;120&quot; (scrolledToEnd)=&quot;loadMore()&quot;>…</div>">
           <div class="inf" uiInfiniteScroll (scrolledToEnd)="loadMore()">
             @for (n of items(); track n) { <div class="ln">Item {{ n }}</div> }
@@ -64,7 +64,7 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="virtual-list" selector="ui-virtual-list" [api]="vlApi"
-        summary="Renders only the visible slice of a large list via CDK virtual scroll. Provide the row template as a child ng-template let-item. Each row is itemSize px tall.">
+        summary="Renders only the visible slice of a large list with CDK virtual scroll. Provide the row template as a child ng-template let-item. Every row is exactly itemSize px tall, so use it for fixed-height rows.">
         <doc-demo code="<ui-virtual-list [items]=&quot;rows&quot; [itemSize]=&quot;32&quot; height=&quot;200px&quot;>
   <ng-template let-item>{{ '{{' }} item {{ '}}' }}</ng-template>
 </ui-virtual-list>">
@@ -75,17 +75,25 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="resizeObserver" selector="[uiResizeObserver]" [outputs]="roOut"
-        summary="Emits the host's content-box size whenever it changes.">
-        <doc-demo code="<div (uiResizeObserver)=&quot;onResize($event)&quot;>…</div>   // { width, height }"></doc-demo>
+        summary="Emits the host's content-box size (UiSize2D, in px) when it is first observed and whenever it changes."
+        [shapes]="'interface UiSize2D { width: number; height: number; }'">
+        <doc-demo code="<div (uiResizeObserver)=&quot;size.set($event)&quot;>…</div>">
+          <div class="ro" (uiResizeObserver)="roSize.set($event)">{{ roLabel() }}</div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="clickOutside & focusTrap" selector="[uiClickOutside] · CDK cdkTrapFocus"
-        summary="uiClickOutside (ui/overlay) emits the PointerEvent when a pointerdown lands outside the host — used to dismiss popovers/menus. Focus trapping inside modal/drawer uses CDK a11y's cdkTrapFocus (no separate UI wrapper needed).">
+        summary="uiClickOutside, from @zouriel/ui/overlay, emits the PointerEvent when a pointerdown lands outside the host; popovers and menus use it to dismiss. Focus trapping in ui-modal and ui-drawer uses the CDK's cdkTrapFocus from @angular/cdk/a11y; there is no separate wrapper.">
         <doc-demo code="<div (uiClickOutside)=&quot;close()&quot;>…</div>"></doc-demo>
       </doc-section>
     </doc-page>
   `,
   styles: `
+    .ro { width: 260px; max-width: 100%; height: 72px; min-width: 140px; min-height: 48px; resize: both; overflow: auto; padding: var(--ui-space-2) var(--ui-space-3);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .ripple-btn { align-self: flex-start; justify-self: start; height: var(--ui-size-md); padding: 0 var(--ui-space-4); border: 0; border-radius: var(--ui-radius); cursor: pointer;
+      background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: 600 var(--ui-font-size-sm) var(--ui-font-default); }
+    .ripple-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .inf { height: 160px; overflow: auto; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .ln { padding: 2px var(--ui-space-3); font-size: var(--ui-font-size-sm); }
     .ln.muted { color: var(--ui-color-text-muted); }
@@ -119,31 +127,36 @@ export class BehaviorsPage {
   protected readonly copyApi: ApiRow[] = [
     { name: 'uiCopyToClipboard', type: 'string', default: "''", desc: 'Text to copy (the value).' },
     { name: 'copied()', type: 'Signal<boolean>', default: 'false', desc: 'True for 1.5s after a successful copy. Read via #c="uiCopy".' },
-    { name: 'copy()', type: 'Promise<void>', default: '—', desc: 'Copy now (what a click does).' },
+    { name: 'copy()', type: 'method', default: '—', desc: 'Copy now (what a click does). Returns a Promise<void>.' },
   ];
   protected readonly copyOut: ApiRow[] = [
     { name: 'copied', type: 'string', default: '—', desc: 'Emitted with the copied text.' },
-    { name: 'copyFailed', type: 'unknown', default: '—', desc: 'Clipboard error.' },
+    { name: 'copyFailed', type: 'unknown', default: '—', desc: 'The clipboard refused (no permission, insecure context); the error.' },
   ];
   protected readonly rippleApi: ApiRow[] = [
-    { name: 'uiRippleColor', type: 'string', default: "'currentColor'", desc: 'Ripple color.' },
+    { name: 'uiRippleColor', type: 'string', default: "'currentColor'", desc: 'Any CSS colour, including var(--token).' },
     { name: 'uiRippleDisabled', type: 'boolean', default: 'false', desc: 'Disable the ripple.' },
   ];
   protected readonly intersectApi: ApiRow[] = [
     { name: 'uiIntersectRootMargin', type: 'string', default: "'0px'", desc: 'Observer root margin.' },
-    { name: 'uiIntersectOnce', type: 'boolean', default: 'false', desc: 'Fire once then stop.' },
+    { name: 'uiIntersectOnce', type: 'boolean', default: 'false', desc: 'Stop observing after the first true.' },
   ];
-  protected readonly intersectOut: ApiRow[] = [{ name: 'uiIntersect', type: 'boolean', default: '—', desc: 'isIntersecting.' }];
+  protected readonly intersectOut: ApiRow[] = [{ name: 'uiIntersect', type: 'boolean', default: '—', desc: 'Whether the host is now in the viewport.' }];
   protected readonly infApi: ApiRow[] = [
     { name: 'uiInfiniteScrollThreshold', type: 'number', default: '120', desc: 'Trigger distance from bottom (px).' },
-    { name: 'uiInfiniteScrollDisabled', type: 'boolean', default: 'false', desc: 'Disable.' },
+    { name: 'uiInfiniteScrollDisabled', type: 'boolean', default: 'false', desc: 'Ignore scrolling, e.g. while a page loads or when there is no more.' },
   ];
-  protected readonly infOut: ApiRow[] = [{ name: 'scrolledToEnd', type: 'void', default: '—', desc: 'Reached the bottom.' }];
+  protected readonly infOut: ApiRow[] = [{ name: 'scrolledToEnd', type: 'void', default: '—', desc: 'Scrolled within the threshold of the bottom.' }];
   protected readonly vlApi: ApiRow[] = [
     { name: 'items', type: 'T[]', default: '[]', desc: 'Full data set.' },
-    { name: 'itemSize', type: 'number', default: '32', desc: 'Row height (px).' },
+    { name: 'itemSize', type: 'number', default: '32', desc: 'Row height (px), applied to every row.' },
     { name: 'height', type: 'string', default: "'320px'", desc: 'Viewport height.' },
     { name: '<ng-template let-item>', type: 'slot', default: '—', desc: 'Row template; the item is the implicit context.' },
   ];
-  protected readonly roOut: ApiRow[] = [{ name: 'uiResizeObserver', type: 'UiSize2D { width, height }', default: '—', desc: 'Content-box size.' }];
+  protected readonly roOut: ApiRow[] = [{ name: 'uiResizeObserver', type: 'UiSize2D', default: '—', desc: 'Content-box width and height in px.' }];
+  protected readonly roSize = signal<UiSize2D | null>(null);
+  protected readonly roLabel = computed(() => {
+    const z = this.roSize();
+    return z ? `${Math.round(z.width)} × ${Math.round(z.height)} px. Drag the corner to resize.` : 'Measuring…';
+  });
 }

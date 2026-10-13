@@ -1,16 +1,16 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 import type { UiSize } from '@zouriel/ui';
 
 /**
  * `ui-avatar` — user/entity image with graceful initials fallback.
- * Provide `src`+`alt`, or `name` to render initials.
+ * Provide `src`+`alt`, or `name` to render initials. Initials also replace an image that fails to load.
  */
 @Component({
   selector: 'ui-avatar',
   template: `
     <span class="ui-avatar" [attr.data-size]="size()" [class.square]="square()" role="img" [attr.aria-label]="alt() || name() || 'avatar'">
-      @if (src()) {
-        <img [src]="src()" [alt]="alt() || name() || ''" />
+      @if (src() && !failed()) {
+        <img [src]="src()" [alt]="alt() || name() || ''" (error)="failed.set(true)" />
       } @else {
         <span class="initials" aria-hidden="true">{{ initials() }}</span>
       }
@@ -39,6 +39,8 @@ export class UiAvatar {
   name = input<string>();
   size = input<UiSize>('md');
   square = input(false);
+  /** The image failed to load; show initials instead. Resets when `src` changes. */
+  protected readonly failed = linkedSignal({ source: this.src, computation: () => false });
 
   protected readonly initials = computed(() => {
     const n = (this.name() ?? '').trim();

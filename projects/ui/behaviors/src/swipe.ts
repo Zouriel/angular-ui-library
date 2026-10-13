@@ -131,6 +131,9 @@ export class UiSwipe {
   private advance(event: TouchEvent): void {
     const from = this.from;
     if (!from) return;
+    // A move stamped before this touch began is a late leftover of the previous one (identifiers are
+    // reused), and judging it against this start reads a vertical drag as a swipe.
+    if (event.timeStamp < from.at) return;
     const touch = Array.from(event.changedTouches).find((t) => t.identifier === from.id);
     if (!touch) return;
     this.last = { id: from.id, x: touch.clientX, y: touch.clientY, at: event.timeStamp };

@@ -253,4 +253,19 @@ describe('UiSwipe', () => {
       expect(host.went).toEqual(['left']);
     });
   });
+
+  /**
+   * Seen in Chromium: a move from the previous touch delivered after the next touch has started,
+   * with the same identifier and its own (earlier) time stamp. Judged against the new start, a
+   * vertical drag read as a swipe.
+   */
+  it('ignores a late move that belongs to the previous touch', () => {
+    const target = el('plain');
+    target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 1000));
+    target.dispatchEvent(touch('touchmove', [{ x: 100, y: 240 }], 900));
+    target.dispatchEvent(touch('touchmove', [{ x: 205, y: 260 }], 1050));
+    target.dispatchEvent(touch('touchend', [{ x: 205, y: 260 }], 1080));
+    fixture.detectChanges();
+    expect(host.went).toEqual([]);
+  });
 });

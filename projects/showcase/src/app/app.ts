@@ -1,7 +1,10 @@
+import { Location } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Menu01Icon from '@hugeicons/core-free-icons/Menu01Icon';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import File01Icon from '@hugeicons/core-free-icons/File01Icon';
+import HashtagIcon from '@hugeicons/core-free-icons/HashtagIcon';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeService } from '@zouriel/ui/theme';
@@ -11,53 +14,57 @@ import { UiDrawer, UiToastHost } from '@zouriel/ui/dialog';
 import { UiSearchInput } from '@zouriel/ui/form';
 import { UiScrollProgress, UiCursor, UiGrain } from '@zouriel/ui/fx';
 import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
+import { UiKbd } from '@zouriel/ui/link';
 import { NAV } from './app.routes';
+import { DOC_SECTIONS } from './docs/doc-index';
 
 @Component({
   selector: 'app-root',
-  imports: [HugeiconsIconComponent, 
-    RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
-    UiSearchInput, UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost,
+  imports: [
+    HugeiconsIconComponent, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
+    UiSearchInput, UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiKbd,
   ],
+  host: { '(document:keydown)': 'onKey($event)' },
   template: `
+    <a class="skip" href="#main" (click)="skipToMain($event)">Skip to content</a>
     <div class="shell">
-      <aside class="sidebar">
-        <a class="brand" href="#/" (click)="go('', $event)">
+      <aside class="sidebar" aria-label="Documentation">
+        <a class="brand" routerLink="/">
           <img class="logo" src="favicon.svg" alt="" width="24" height="24" /><ui-text variant="label">UI Library</ui-text>
         </a>
-        <ui-search-input class="filter" placeholder="Filter…" (input)="onFilter($event)" />
+        <ui-search-input class="filter" placeholder="Filter pages" (input)="onFilter($event)" />
         <div class="nav-scroll">
-          <ui-side-nav [groups]="filtered()" [active]="active()" (navigate)="go($event.value)" />
+          <ui-side-nav label="Documentation" [groups]="filtered()" [active]="active()" (navigate)="go($event.value)" />
         </div>
         <div class="side-foot">
-          <ui-text variant="caption">34 entry points · {{ themeName() }}</ui-text>
+          <ui-text variant="caption">34 entry points · {{ themeLabel() }}</ui-text>
         </div>
       </aside>
 
       <div class="main-col">
         <header class="topbar">
           <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="navOpen.set(true)"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
-          <ui-button variant="ghost" size="sm" (click)="cmdOpen.set(true)" class="cmd">Search docs ⌘K</ui-button>
+          <ui-button variant="ghost" size="sm" (click)="cmdOpen.set(true)" class="cmd" aria-keyshortcuts="Control+K Meta+K">Search docs <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
           <span class="grow"></span>
           <label class="theme-picker">
             <span class="sr-only">Theme</span>
-            <select [value]="themeName()" (change)="theme.set($any($event.target).value)">
+            <select [value]="theme.theme()" (change)="theme.set($any($event.target).value)">
               @for (t of THEMES; track t.value) {
                 <option [value]="t.value">{{ t.label }}</option>
               }
             </select>
           </label>
         </header>
-        <main class="content" [class.full]="active() === 'form-studio'"><router-outlet /></main>
+        <main id="main" tabindex="-1" class="content" [class.full]="active() === 'form-studio'"><router-outlet /></main>
       </div>
     </div>
 
     <!-- Mobile sidebar -->
     <ui-drawer [(open)]="navOpen" side="left" title="UI Library">
-      <ui-side-nav [groups]="NAV" [active]="active()" (navigate)="go($event.value); navOpen.set(false)" />
+      <ui-side-nav label="Documentation" [groups]="nav" [active]="active()" (navigate)="go($event.value)" />
     </ui-drawer>
 
-    <ui-command-palette [(open)]="cmdOpen" [commands]="commands" (run)="go($event.value)" />
+    <ui-command-palette [(open)]="cmdOpen" [commands]="commands" placeholder="Search pages and components…" (run)="go($event.value)" />
 
     <ui-scroll-progress />
     @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
@@ -65,6 +72,14 @@ import { NAV } from './app.routes';
   `,
   styles: `
     :host { display: block; }
+    /* Hidden until focused: the first Tab on any page offers a jump past the sidebar. */
+    .skip { position: fixed; top: var(--ui-space-2); left: var(--ui-space-2); z-index: var(--ui-z-overlay);
+      padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius);
+      background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font-family: var(--ui-font-default);
+      font-size: var(--ui-font-size-sm); font-weight: 600; text-decoration: none; transform: translateY(-200%); }
+    .skip:focus-visible { transform: none; outline: none; box-shadow: var(--ui-focus-ring); }
+    .content:focus { outline: none; }
+    .hint { margin-left: var(--ui-space-1); }
     .shell { display: flex; min-height: 100vh; }
     .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none;
       display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-4);
@@ -104,6 +119,7 @@ import { NAV } from './app.routes';
       .theme-picker { min-width: 0; }
       .theme-picker select { max-width: 128px; text-overflow: ellipsis; }
       .topbar { gap: var(--ui-space-1); padding: 0 var(--ui-space-3); }
+      .hint { display: none; }
     }
   `,
 })
@@ -111,13 +127,20 @@ export class App {
   protected readonly icons = { menu: Menu01Icon };
   protected readonly theme = inject(UiThemeService);
   private readonly router = inject(Router);
-  protected readonly NAV = NAV;
+  private readonly location = inject(Location);
+  /** The sidebar, with real hrefs so pages can be opened in a new tab (a plain click still routes). */
+  protected readonly nav: UiSideNavGroup[] = NAV.map((g) => ({
+    ...g,
+    items: g.items.map((i) => ({ ...i, href: this.location.prepareExternalUrl('/' + i.value) })),
+  }));
 
   protected readonly active = signal('');
   protected readonly navOpen = signal(false);
   protected readonly cmdOpen = signal(false);
   protected readonly query = signal('');
-  protected readonly themeName = computed(() => this.theme.theme());
+  protected readonly themeLabel = computed(() => this.THEMES.find((t) => t.value === this.theme.theme())?.label ?? this.theme.theme());
+  /** The shortcut that opens search, written the way this platform's keyboard labels it. */
+  protected readonly shortcut = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '') ? '⌘ K' : 'Ctrl K';
   /** Themes that ship the cinematic FX layer (grain + custom cursor). */
   protected readonly fxTheme = computed(() => this.theme.theme() === 'darkOrange');
 
@@ -125,7 +148,7 @@ export class App {
   protected readonly THEMES = [
     { value: 'dark', label: 'Winter Dark' },
     { value: 'light', label: 'Winter Light' },
-    { value: 'darkOrange', label: 'Dark Orange ✦' },
+    { value: 'darkOrange', label: 'Dark Orange' },
     { value: 'lightOrange', label: 'Light Orange' },
     { value: 'lightPink', label: 'Light Pink' },
     { value: 'darkPink', label: 'Dark Pink' },
@@ -138,14 +161,18 @@ export class App {
     { value: 'lightPurpleGold', label: 'Light Purple Gold' },
   ];
 
-  protected readonly commands: UiCommand[] = NAV.flatMap((g) =>
-    g.items.map((i) => ({ label: i.label, value: i.value, group: g.label, icon: '→' })),
-  );
+  /** Search covers every page, then every documented section (value is the route plus its anchor). */
+  protected readonly commands: UiCommand[] = [
+    ...NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, value: i.value, group: 'Page', keywords: g.label, icon: File01Icon }))),
+    ...NAV.flatMap((g) => g.items.flatMap((i) =>
+      (DOC_SECTIONS[i.value] ?? []).map((s) => ({ label: s.name, value: `${i.value}#${s.anchor}`, group: i.label, icon: HashtagIcon })),
+    )),
+  ];
 
   protected readonly filtered = computed<UiSideNavGroup[]>(() => {
     const q = this.query().trim().toLowerCase();
-    if (!q) return this.NAV;
-    return this.NAV.map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
+    if (!q) return this.nav;
+    return this.nav.map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(q)) }))
       .filter((g) => g.items.length);
   });
 
@@ -155,10 +182,24 @@ export class App {
     });
   }
 
-  protected go(value: string, event?: Event): void {
-    event?.preventDefault();
-    this.router.navigateByUrl('/' + value);
+  /** Routes to a page, or to `page#anchor` and scrolls that section into view. */
+  protected go(value: string): void {
+    const [page, anchor] = value.split('#');
     this.navOpen.set(false);
+    this.router.navigateByUrl('/' + page + (anchor ? '#' + anchor : '')).then(() => {
+      // The router scrolls to a new fragment itself, but not to the one already in the URL.
+      if (anchor) requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView());
+    });
+  }
+  protected skipToMain(e: Event): void {
+    e.preventDefault();
+    document.getElementById('main')?.focus();
+  }
+  protected onKey(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      this.cmdOpen.set(true);
+    }
   }
   protected onFilter(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);

@@ -10,11 +10,11 @@ import type { UiButtonVariant } from './button';
   selector: 'ui-split-button',
   template: `
     <div class="split" [class.no-radius]="!radius()">
-      <button class="main" [attr.data-variant]="variant()" [attr.data-size]="size()"
+      <button type="button" class="main" [attr.data-variant]="variant()" [attr.data-size]="size()"
               [disabled]="disabled()" (click)="action.emit()">
         <ng-content />
       </button>
-      <button class="caret" [attr.data-variant]="variant()" [attr.data-size]="size()"
+      <button type="button" class="caret" [attr.data-variant]="variant()" [attr.data-size]="size()"
               aria-label="More actions" aria-haspopup="menu"
               [disabled]="disabled()" (click)="menu.emit()"><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>

@@ -10,7 +10,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       <label class="well" [style.background]="value()">
         <input type="color" [value]="value()" [disabled]="disabled()" (input)="set($any($event.target).value)" aria-label="Pick color" />
       </label>
-      <input class="hex" [value]="value()" [disabled]="disabled()" (input)="set($any($event.target).value)" (blur)="onTouched()" aria-label="Hex color" />
+      <input class="hex" [value]="value()" [disabled]="disabled()" (input)="typeHex($any($event.target).value)" (blur)="leaveHex($event)" aria-label="Hex color" />
       <div class="swatches">
         @for (c of swatches(); track c) {
           <button type="button" class="sw" [style.background]="c" [attr.aria-label]="c" [attr.aria-pressed]="c.toLowerCase() === (value() || '').toLowerCase()" [disabled]="disabled()" (click)="set(c)"></button>
@@ -62,4 +62,28 @@ export class UiColorPicker implements ControlValueAccessor {
     this.value.set(v);
     this.onChange(v);
   }
+
+  /**
+   * The hex field passes a colour on only once it is a whole one (#rgb or #rrggbb, the # optional).
+   * Passing on each keystroke sent "#3d" to the form and turned the well black, since a colour input
+   * can't hold a partial value.
+   */
+  protected typeHex(raw: string): void {
+    const hex = normalizeHex(raw);
+    if (hex && hex !== this.value().toLowerCase()) this.set(hex);
+  }
+
+  /** Leaving the field shows the current colour again, replacing any half-typed text. */
+  protected leaveHex(e: FocusEvent): void {
+    (e.target as HTMLInputElement).value = this.value();
+    this.onTouched();
+  }
+}
+
+/** `#RGB`, `RRGGBB` and the like as lower-case `#rrggbb`, or null when it isn't a whole hex colour. */
+function normalizeHex(raw: string): string | null {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(raw.trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  return '#' + h.toLowerCase();
 }

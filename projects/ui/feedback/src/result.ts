@@ -5,6 +5,8 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
 /** `ui-result` — full-page outcome state (success / error / 404 / 500). */
 @Component({
   selector: 'ui-result',
+  // `title` is an input here, not a tooltip: drop the native attribute so hovering doesn't show one.
+  host: { '[attr.title]': 'null' },
   template: `
     <div class="ui-result">
       <div class="glyph" [attr.data-status]="status()" aria-hidden="true">
@@ -13,7 +15,8 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
           @case ('error') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
           @case ('warning') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v10M12 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
           @case ('info') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 10v9M12 5h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
-          @default { {{ glyph[status()] }} }
+          @case ('404') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M9 9a3 3 0 1 1 4.5 2.6c-.9.5-1.5 1.3-1.5 2.4v.5M12 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
+          @case ('500') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v10M12 19h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
         }
       </div>
       <div class="title">{{ title() }}</div>
@@ -29,7 +32,7 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
     }
     .glyph {
       display: flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px; border-radius: 50%; font-size: 28px;
+      width: 56px; height: 56px; border-radius: 50%;
       background: var(--ui-color-surface-raised);
     }
     .glyph[data-status="success"] { color: var(--ui-color-success); }
@@ -49,7 +52,4 @@ export class UiResult {
   status = input<UiResultStatus>('info');
   title = input('');
   subtitle = input<string>();
-  protected readonly glyph: Record<UiResultStatus, string> = {
-    success: '✓', error: '✕', info: 'ℹ', warning: '⚠', '404': '?', '500': '!',
-  };
 }

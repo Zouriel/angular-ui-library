@@ -1,3 +1,4 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { Component, ElementRef, computed, input, signal, viewChild } from '@angular/core';
 
 export interface UiGalleryImage {
@@ -6,9 +7,13 @@ export interface UiGalleryImage {
   alt?: string;
 }
 
-/** `ui-gallery` — responsive thumbnail grid with a lightbox (prev/next, Esc to close). */
+/**
+ * `ui-gallery` — responsive thumbnail grid with a lightbox (prev/next, Esc to close). The lightbox
+ * is a modal dialog: Tab stays inside it, and closing returns focus to the thumbnail that opened it.
+ */
 @Component({
   selector: 'ui-gallery',
+  imports: [CdkTrapFocus],
   template: `
     <div class="grid" [style.--ui-gallery-min]="minThumb()">
       @for (img of images(); track $index) {
@@ -19,7 +24,7 @@ export interface UiGalleryImage {
     </div>
     @if (lightbox() >= 0) {
       <div #lb class="lb" (click)="close()" (keydown.escape)="close()" (keydown.arrowleft)="step(-1, $event)" (keydown.arrowright)="step(1, $event)"
-           tabindex="-1" role="dialog" aria-modal="true" aria-label="Image viewer"
+           tabindex="-1" role="dialog" aria-modal="true" aria-label="Image viewer" cdkTrapFocus
            animate.enter="ui-fade-enter" animate.leave="ui-fade-leave">
         <img [src]="current()?.src" [alt]="current()?.alt || ''" (click)="$event.stopPropagation()" />
         <button type="button" class="nav prev" aria-label="Previous" (click)="step(-1, $event)"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -64,7 +69,8 @@ export class UiGallery {
     this.opener = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
     this.lightbox.set(i);
     // Focus moves into the viewer so Esc and the arrow keys work straight away.
-    setTimeout(() => this.lb()?.nativeElement.focus());
+    // Only if it's still open: a quick Escape could otherwise send focus to a removed element.
+    setTimeout(() => { if (this.lightbox() >= 0) this.lb()?.nativeElement.focus(); });
   }
   protected close(): void {
     this.lightbox.set(-1);

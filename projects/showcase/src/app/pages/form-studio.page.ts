@@ -86,7 +86,10 @@ function comparable(def: UiFormDefinition | null): string {
       <div class="body">
         @switch (tab()) {
           @case ('build') {
-            @for (x of [f.id]; track x) {
+            <!-- The builder's panes use h3 headings; this keeps the outline h1 → h2 → h3. -->
+            <h2 class="sr-only">Edit form</h2>
+            <!-- A one-item loop keyed by the form: opening another form gives a fresh builder (and history). Not 'track x', which Angular warns about when it recreates. -->
+            @for (x of [f.id]; track 'form:' + x) {
               <ui-form-builder #builder class="builder" [globalSettings]="store.settings()"
                 [definition]="f.draft" (definitionChange)="store.setDraft(f.id, $event)"
                 [published]="f.published" [submissionCount]="f.responses.length">
@@ -149,7 +152,7 @@ function comparable(def: UiFormDefinition | null): string {
                     @if (f.published && r.revision < (f.published.revision ?? 0)) {
                       <p class="note">Saved with version {{ r.revision }}. It opens in the current version ({{ f.published.revision }}); answers the form no longer asks are kept.</p>
                     }
-                    @for (x of [r.id + editing()]; track x) {
+                    @for (x of [r.id + editing()]; track 'answer:' + x) {
                       <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [data]="r.data" [mode]="editing() ? 'edit' : 'view'"
                         [uploader]="uploader" [cancelLabel]="editing() ? 'Cancel' : ''" (cancelled)="editing.set(false)"
                         (submitted)="saveEdit(f, r, $event)" />
@@ -292,6 +295,7 @@ function comparable(def: UiFormDefinition | null): string {
       border-bottom: 1px solid var(--ui-color-border); background: var(--ui-color-surface); flex-wrap: wrap; }
     .title { display: flex; align-items: center; gap: var(--ui-space-2); min-width: 0; flex: 1; }
     .title ui-chip { flex: none; white-space: nowrap; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .st-short { display: none; }
     @media (max-width: 420px) { .st-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .st-short { display: inline; } }
     .title h1 { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }

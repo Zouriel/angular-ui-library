@@ -1,5 +1,6 @@
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, computed, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, Injector, afterNextRender, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
@@ -8,7 +9,7 @@ import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 import { formatIsoDate, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
 
-interface DayCell { day: number; iso: string; today: boolean; disabled: boolean; }
+interface DayCell { day: number; iso: string; label: string; today: boolean; disabled: boolean; }
 
 function iso(y: number, m: number, d: number): string {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -17,20 +18,28 @@ function iso(y: number, m: number, d: number): string {
 /**
  * `ui-date-picker` — calendar popover (CVA; value is an ISO `YYYY-MM-DD`
  * string). Backed by the CDK Overlay; closes on outside click / Escape.
+ *
+ * Keyboard: Enter, Space or ArrowDown on the field opens it with focus on the chosen day (or today).
+ * Arrow keys move by day and week (crossing months), PageUp/PageDown by month, Home/End to the
+ * month's ends; Enter picks. Tab stays inside the popover; Escape closes it and returns to the field.
  */
 @Component({
   selector: 'ui-date-picker',
-  imports: [CdkOverlayOrigin, CdkConnectedOverlay, HugeiconsIconComponent],
+  imports: [CdkOverlayOrigin, CdkConnectedOverlay, CdkTrapFocus, HugeiconsIconComponent],
   template: `
     <div class="wrap" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [attr.data-size]="size()">
       <input
+        #field
         class="ui-date"
         readonly
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="open()"
         [attr.placeholder]="placeholder()"
         [value]="display()"
         [disabled]="disabled()"
         (click)="toggle()"
-        (keydown.escape)="open.set(false)" />
+        (keydown)="onFieldKey($event)"
+        (blur)="onTouched()" />
       <span class="cal" aria-hidden="true">
         <hugeicons-icon [icon]="calendarIcon" [size]="16" [strokeWidth]="1.8" />
       </span>
@@ -41,8 +50,9 @@ function iso(y: number, m: number, d: number): string {
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="open()"
       [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
-      (overlayOutsideClick)="open.set(false)">
-      <div class="cal-panel" (keydown.escape)="open.set(false)">
+      (overlayOutsideClick)="onOutsideClick($event)"
+      (attach)="focusDay(value() ?? todayIso())">
+      <div class="cal-panel" role="dialog" aria-label="Choose a date" cdkTrapFocus (keydown.escape)="close()">
         <div class="cal-head">
           <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
           @if (mode() === 'days') {
@@ -62,7 +72,7 @@ function iso(y: number, m: number, d: number): string {
           <div class="weekdays">
             @for (w of weekdays; track w) { <span class="wd">{{ w }}</span> }
           </div>
-          <div class="grid" role="grid">
+          <div class="grid">
             @for (blank of leading(); track $index) { <span class="cell empty"></span> }
             @for (cell of days(); track cell.iso) {
               <button
@@ -71,12 +81,17 @@ function iso(y: number, m: number, d: number): string {
                 [class.selected]="cell.iso === value()"
                 [class.today]="cell.today"
                 [disabled]="cell.disabled"
-                [attr.aria-selected]="cell.iso === value()"
+                [attr.data-iso]="cell.iso"
+                [attr.aria-label]="cell.label"
+                [attr.aria-pressed]="cell.iso === value()"
+                [attr.aria-current]="cell.today ? 'date' : null"
+                [attr.tabindex]="cell.iso === tabDay() ? 0 : -1"
+                (keydown)="onDayKey($event, cell.iso)"
                 (click)="pick(cell.iso)">{{ cell.day }}</button>
             }
           </div>
         } @else if (mode() === 'months') {
-          <div class="mgrid" role="grid">
+          <div class="mgrid">
             @for (mo of months; track mo.index) {
               <button
                 type="button"
@@ -86,7 +101,7 @@ function iso(y: number, m: number, d: number): string {
             }
           </div>
         } @else {
-          <div class="mgrid" role="grid">
+          <div class="mgrid">
             @for (yr of years(); track yr) {
               <button
                 type="button"
@@ -175,6 +190,10 @@ export class UiDatePicker implements ControlValueAccessor {
 
   protected readonly value = signal<string | null>(null);
   protected readonly open = signal(false);
+  /** The day that holds the popover's single tab stop. */
+  protected readonly focusIso = signal<string>('');
+  private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
+  private readonly injector = inject(Injector);
   protected readonly disabled = signal(false);
   protected readonly weekdays = WEEKDAYS;
   protected readonly months = MONTHS_SHORT.map((short, index) => ({ index, short }));
@@ -223,8 +242,15 @@ export class UiDatePicker implements ControlValueAccessor {
       const min = this.min();
       const max = this.max();
       const disabled = (!!min && cellIso < min) || (!!max && cellIso > max);
-      return { day: d, iso: cellIso, today: cellIso === todayIso, disabled };
+      return { day: d, iso: cellIso, label: formatIsoDate(cellIso), today: cellIso === todayIso, disabled };
     });
+  });
+
+  /** The day in view that takes the tab stop: the focused one, else the chosen one, else the first that can be picked. */
+  protected readonly tabDay = computed(() => {
+    const days = this.days().filter((c) => !c.disabled);
+    const want = [this.focusIso(), this.value()];
+    return days.find((c) => want.includes(c.iso))?.iso ?? days[0]?.iso ?? null;
   });
 
   private initialView(): [number, number] {
@@ -248,8 +274,66 @@ export class UiDatePicker implements ControlValueAccessor {
   protected toggle(): void {
     if (this.disabled()) return;
     const next = !this.open();
-    if (next) this.mode.set('days');
+    if (next) {
+      this.mode.set('days');
+      // Reopening shows the chosen month again, not wherever the last visit was left.
+      const v = this.value();
+      if (v) { const [y, m] = v.split('-').map(Number); this.view.set([y, m - 1]); }
+    }
     this.open.set(next);
+  }
+
+  protected todayIso(): string {
+    const t = new Date();
+    return iso(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+
+  protected onFieldKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape') { this.open.set(false); return; }
+    if ((e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') && !this.open()) {
+      e.preventDefault();
+      this.toggle();
+    }
+  }
+
+  /** Clicking the field itself is handled by toggle(); any other outside click just closes. */
+  protected onOutsideClick(e: MouseEvent): void {
+    if (e.target !== this.field().nativeElement) this.open.set(false);
+  }
+
+  /** Closes and puts focus back on the field. */
+  protected close(): void {
+    this.open.set(false);
+    this.field().nativeElement.focus();
+  }
+
+  /** Shows the day's month and focuses it once rendered. */
+  protected focusDay(isoDate: string): void {
+    const [y, m] = isoDate.split('-').map(Number);
+    if (this.view()[0] !== y || this.view()[1] !== m - 1) this.view.set([y, m - 1]);
+    this.focusIso.set(isoDate);
+    afterNextRender(() => {
+      const cell = document.querySelector<HTMLButtonElement>(`.cal-panel .cell[data-iso="${isoDate}"]`);
+      // A day outside min/max can't take focus; fall back to the month's tab stop.
+      (cell && !cell.disabled ? cell : document.querySelector<HTMLElement>('.cal-panel .cell[tabindex="0"]'))?.focus();
+    }, { injector: this.injector });
+  }
+
+  protected onDayKey(e: KeyboardEvent, isoDate: string): void {
+    const [y, m, d] = isoDate.split('-').map(Number);
+    const at = (yy: number, mm: number, dd: number) => { const t = new Date(yy, mm, dd); return iso(t.getFullYear(), t.getMonth(), t.getDate()); };
+    const daysIn = new Date(y, m, 0).getDate();
+    const moves: Record<string, () => string> = {
+      ArrowLeft: () => at(y, m - 1, d - 1), ArrowRight: () => at(y, m - 1, d + 1),
+      ArrowUp: () => at(y, m - 1, d - 7), ArrowDown: () => at(y, m - 1, d + 7),
+      Home: () => at(y, m - 1, 1), End: () => at(y, m - 1, daysIn),
+      PageUp: () => at(y, m - 2, Math.min(d, new Date(y, m - 1, 0).getDate())),
+      PageDown: () => at(y, m, Math.min(d, new Date(y, m + 1, 0).getDate())),
+    };
+    const move = moves[e.key];
+    if (!move) return;
+    e.preventDefault();
+    this.focusDay(move());
   }
   // Prev/next stepping depends on the active sub-view: month, year, or 12-year page.
   protected shift(delta: number): void {
@@ -279,6 +363,6 @@ export class UiDatePicker implements ControlValueAccessor {
     this.value.set(isoDate);
     this.onChange(isoDate);
     this.onTouched();
-    this.open.set(false);
+    this.close();
   }
 }

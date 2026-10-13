@@ -1,10 +1,14 @@
 /**
  * Typed handles for the shared animation classes defined in
- * `ui/styles/animations.css`. Use these with Angular's modern CSS enter/leave
+ * `@zouriel/ui/styles/animations.css`. Use these with Angular's modern CSS enter/leave
  * bindings so durations/easings stay token-driven and reduced-motion-safe:
  *
  *   import { UI_ANIM } from '@zouriel/ui';
- *   <div [animate.enter]="UI_ANIM.scale.enter" [animate.leave]="UI_ANIM.scale.leave">
+ *   protected readonly anim = UI_ANIM;
+ *   <div [animate.enter]="anim.scale.enter" [animate.leave]="anim.scale.leave">
+ *
+ * Under prefers-reduced-motion the moving variants fall back to a plain fade, and
+ * `provideUiConfig({ animations: false })` turns them all off.
  */
 export const UI_ANIM = {
   fade: { enter: 'ui-fade-enter', leave: 'ui-fade-leave' },

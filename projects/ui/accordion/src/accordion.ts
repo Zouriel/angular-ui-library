@@ -7,6 +7,8 @@ let accSeq = 0;
 /** `ui-accordion-item` — a titled, collapsible panel. Use inside `ui-accordion`. */
 @Component({
   selector: 'ui-accordion-item',
+  // `title` is an input here, not a tooltip: drop the native attribute so hovering doesn't show one.
+  host: { '[attr.title]': 'null' },
   template: `
     <div class="item">
       <h3 class="head">
