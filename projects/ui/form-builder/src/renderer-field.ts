@@ -218,9 +218,9 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     .ui-fbf-files li { display: flex; align-items: center; gap: var(--ui-space-2); font-size: var(--ui-font-size-sm); padding: 4px var(--ui-space-2); border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); }
     .ui-fbf-files li a, .ui-fbf-files li > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-color-text); }
     .ui-fbf-files .size { color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
-    .ui-fbf-x { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer; }
+    .ui-fbf-x { display: inline-grid; place-items: center; width: 24px; height: 24px; margin: -1px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer; }
     .ui-fbf-x:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
-    @media (pointer: coarse) { .ui-fbf-x { width: 36px; height: 36px; } }
+    @media (pointer: coarse) { .ui-fbf-x { width: 36px; height: 36px; margin: 0; } }
     .ui-fbf-x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 
     /* Controls without their own invalid state. */
@@ -267,7 +267,8 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     }
     .ui-fbf-err-in > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ui-fbf-err-in hugeicons-icon { flex: none; }
-    .ui-fbf:has(ui-number-input) .ui-fbf-err-in { right: 36px; }
+    /* Clear of the number input's side-by-side steppers (2 x 24px plus dividers, ~49px); currency fields hide them. */
+    .ui-fbf:has(ui-number-input .steppers) .ui-fbf-err-in { right: 58px; }
     .ui-fbf:has(ui-textarea) .ui-fbf-err-in { top: auto; bottom: var(--ui-space-2); transform: none; }
     @media (prefers-reduced-motion: reduce) { .ui-fbf-float { transition: none !important; } }
   `,

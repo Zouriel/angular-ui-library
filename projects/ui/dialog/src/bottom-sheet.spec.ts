@@ -1,6 +1,7 @@
+import { InteractivityChecker } from '@angular/cdk/a11y';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiBottomSheet } from './bottom-sheet';
 
 @Component({
@@ -15,6 +16,20 @@ import { UiBottomSheet } from './bottom-sheet';
 class Host {
   snap = signal(0);
   heights: number[] = [];
+}
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `
+    <button id="opener" type="button" (click)="snap.set(1)">Open</button>
+    <ui-bottom-sheet [(snap)]="snap" [snaps]="[0, 0.5, 1]" title="Filters" [backdrop]="backdrop()" [expandOnFocus]="false">
+      <input id="field" />
+    </ui-bottom-sheet>
+  `,
+})
+class ModalHost {
+  snap = signal(0);
+  backdrop = signal(true);
 }
 
 /**
@@ -100,5 +115,96 @@ describe('UiBottomSheet', () => {
     const heights = fixture.componentInstance.heights;
     expect(heights[0]).toBe(0);
     expect(heights.at(-1)).toBeGreaterThan(0);
+  });
+});
+
+/** With `backdrop` the open sheet is a modal dialog: focus goes in, stays in, and comes back. */
+describe('UiBottomSheet with a backdrop', () => {
+  // jsdom has no layout, so the CDK would find nothing visible and therefore nothing tabbable.
+  beforeEach(() => vi.spyOn(InteractivityChecker.prototype, 'isVisible').mockReturnValue(true));
+  afterEach(() => vi.restoreAllMocks());
+
+  async function render(backdrop = true) {
+    const fixture = TestBed.createComponent(ModalHost);
+    fixture.componentInstance.backdrop.set(backdrop);
+    document.body.appendChild(fixture.nativeElement);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    const sheet = () => el.querySelector<HTMLElement>('.sheet')!;
+    const opener = el.querySelector<HTMLButtonElement>('#opener')!;
+    const settle = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+    return { fixture, el, sheet, opener, settle };
+  }
+
+  it('is aria-modal only while open, and moves focus into the sheet on open', async () => {
+    const { fixture, el, sheet, opener, settle } = await render();
+    expect(sheet().hasAttribute('aria-modal')).toBe(false);
+    opener.focus();
+    opener.click();
+    await settle();
+    expect(sheet().getAttribute('aria-modal')).toBe('true');
+    expect(sheet().contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).toBe(el.querySelector('.handle'));
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('traps Tab: focus anchors around the sheet are live only while it is open', async () => {
+    const { fixture, el, sheet, opener, settle } = await render();
+    const anchors = () => [...el.querySelectorAll<HTMLElement>('.cdk-focus-trap-anchor')];
+    expect(anchors().length).toBe(2);
+    expect(anchors().every((a) => a.getAttribute('tabindex') === null)).toBe(true);
+    opener.click();
+    await settle();
+    expect(anchors().every((a) => a.getAttribute('tabindex') === '0')).toBe(true);
+    // Tabbing past the last element lands on the end anchor, which wraps to the first.
+    anchors()[1].focus();
+    expect(document.activeElement).toBe(sheet().querySelector('.handle'));
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('Escape after Tab has wrapped still returns focus to the opener, not a trap anchor', async () => {
+    const { fixture, el, sheet, opener, settle } = await render();
+    opener.focus();
+    opener.click();
+    await settle();
+    // Wrapping passes through the end anchor, which sits outside the sheet.
+    el.querySelectorAll<HTMLElement>('.cdk-focus-trap-anchor')[1].focus();
+    expect(sheet().contains(document.activeElement)).toBe(true);
+    sheet().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(document.activeElement).toBe(opener);
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('a backdrop tap closes it and hands focus back to the opener', async () => {
+    const { fixture, el, opener, settle } = await render();
+    opener.focus();
+    opener.click();
+    await settle();
+    (document.activeElement as HTMLElement).blur(); // a click on the backdrop drops focus on <body>
+    el.querySelector<HTMLElement>('.backdrop')!.click();
+    await settle();
+    expect(fixture.componentInstance.snap()).toBe(0);
+    expect(document.activeElement).toBe(opener);
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('without a backdrop it stays non-modal: no aria-modal, focus stays put', async () => {
+    const { fixture, el, sheet, opener, settle } = await render(false);
+    opener.focus();
+    opener.click();
+    await settle();
+    expect(sheet().hasAttribute('aria-modal')).toBe(false);
+    expect(document.activeElement).toBe(opener);
+    fixture.destroy();
+    el.remove();
   });
 });

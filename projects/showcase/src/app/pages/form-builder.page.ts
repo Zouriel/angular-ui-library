@@ -251,7 +251,7 @@ update(id: string, s: UiFormSubmission) {
 </ui-form-builder>`;
 
   protected readonly builderApi: ApiRow[] = [
-    { name: 'definition', type: 'UiFormDefinition', default: 'createDefinition()', desc: 'Two-way (`[(definition)]`). The form being built; every edit writes back. Setting a different object loads it and clears undo history.' },
+    { name: 'definition', type: 'UiFormDefinition', default: 'createDefinition()', desc: 'Two-way (`[(definition)]`). The form being built; every edit writes back. Setting another form (a different id) or different content loads it and clears undo history; the same form handed back with only `revision` changed, as when a published copy is stored back, keeps it.' },
     { name: 'published', type: 'UiFormDefinition | null', default: 'null', desc: 'The version people answer now. Drives the unpublished-changes list and answer protection.' },
     { name: 'submissionCount', type: 'number', default: '0', desc: 'Answers the published version has. Above zero: archive instead of delete, lock saved option values, remember renamed keys, only allow similar type changes.' },
     { name: 'validators', type: 'readonly UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks for the “Add a check” list, on top of provideUiFormValidators.' },
@@ -261,7 +261,8 @@ update(id: string, s: UiFormSubmission) {
     { name: 'problems()', type: 'method', default: '—', desc: 'Signal of UiFbProblem[] ({ severity, targetId, message }): missing keys, loops between rules, rules pointing at deleted questions, backward jumps. Check for errors before publishing.' },
     { name: 'changes()', type: 'method', default: '—', desc: 'Signal of UiFbDiff | null: what changed since published (added, archived, renamed keys, type changes, removed options, changed rules, and summary lines).' },
     { name: 'select(id)', type: 'method', default: '—', desc: 'Selects a question, section or page and shows its settings; null selects the form itself.' },
-    { name: 'undo() / redo()', type: 'method', default: '—', desc: 'Step through the edit history.' },
+    { name: 'undo() / redo()', type: 'method', default: '—', desc: 'Step through the edit history. The current `revision` is kept.' },
+    { name: 'clearHistory()', type: 'method', default: '—', desc: 'Forget the undo/redo history, e.g. after saving when you want a fresh start.' },
   ];
 
   protected readonly rendererApi: ApiRow[] = [

@@ -68,7 +68,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
     .ui-btn[data-variant="destructive"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
     .ui-btn[data-variant="ghost"] { background: transparent; border-color: transparent; }
-    .ui-btn[data-variant="link"] { background: transparent; border-color: transparent; color: var(--ui-color-primary); text-decoration: underline; padding: 0; height: auto; }
+    /* Text-sized, but never a box under 24x24 (WCAG 2.5.8 target size). */
+    .ui-btn[data-variant="link"] { background: transparent; border-color: transparent; color: var(--ui-color-primary); text-decoration: underline; padding: 0; height: auto;
+      min-height: 24px; min-width: 24px; }
     .ui-btn[data-variant="link"]:hover:not(:disabled) { background: transparent; color: var(--ui-color-primary-hover); }
     /* Signature CTA — the theme's own purple→gold sweep (falls back to a primary→hover gradient
        on themes that don't define one), pill-shaped so it reads as a distinct "hero action" rather

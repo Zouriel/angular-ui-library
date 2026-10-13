@@ -1,5 +1,5 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, computed, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
@@ -13,13 +13,17 @@ export interface UiComboboxOption {
 /**
  * `ui-combobox` — filterable autocomplete (CVA). Type to filter; Arrow keys +
  * Enter to choose; Escape to close. Backed by the CDK Overlay (WAI-ARIA combobox).
+ *
+ * With `clearable` (the default) a chosen value can be removed: the Clear button next to the
+ * chevron, or emptying the text and leaving the field, sets the value to null.
  */
 @Component({
   selector: 'ui-combobox',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
   template: `
-    <div class="wrap" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [attr.data-size]="size()">
+    <div class="wrap" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [class.has-clear]="showClear()" [attr.data-size]="size()">
       <input
+        #field
         class="ui-combobox"
         role="combobox"
         [attr.aria-label]="label() || null"
@@ -35,7 +39,10 @@ export interface UiComboboxOption {
         (focus)="openPanel()"
         (click)="openPanel()"
         (keydown)="onKeydown($event)"
-        (blur)="onBlur()" />
+        (blur)="onBlur($event)" />
+      @if (showClear()) {
+        <button type="button" class="clear" tabindex="-1" aria-label="Clear" (mousedown)="$event.preventDefault()" (click)="clear()"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      }
       <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
 
@@ -84,6 +91,13 @@ export interface UiComboboxOption {
     .wrap[data-size="lg"] .ui-combobox { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted);
       transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    /* Room for the Clear button between the text and the chevron. */
+    .wrap.has-clear .ui-combobox { padding-right: calc(var(--ui-space-3) + 12px + var(--ui-space-1) + 24px); }
+    .clear { position: absolute; top: 50%; right: calc(var(--ui-space-3) + 12px); transform: translateY(-50%);
+      display: grid; place-items: center; box-sizing: border-box; width: 24px; height: 24px; padding: 0; border: none;
+      border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .clear:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .wrap:has([aria-expanded="true"]) .chevron { transform: translateY(-50%) rotate(180deg); }
     .panel { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; width: 100%;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
@@ -105,6 +119,8 @@ export class UiCombobox implements ControlValueAccessor {
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** Shows a Clear button while a value is chosen, and lets an emptied field clear the value on blur. */
+  clearable = input(true);
 
   protected readonly query = signal('');
   protected readonly value = signal<string | null>(null);
@@ -122,6 +138,8 @@ export class UiCombobox implements ControlValueAccessor {
   ];
   protected readonly listId = `ui-combobox-${nextId++}`;
   private readonly origin = viewChild.required(CdkOverlayOrigin);
+  private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
+  protected readonly showClear = computed(() => this.clearable() && this.value() !== null && !this.disabled());
 
   /** Opens the list at the field's width (measured on open, not on every render). */
   protected openPanel(): void {
@@ -185,12 +203,36 @@ export class UiCombobox implements ControlValueAccessor {
     this.onChange(opt.value);
   }
 
-  protected onBlur(): void {
+  /** Clears the value (null), tells the form, and leaves focus in the field with the list closed. */
+  clear(): void {
+    if (this.disabled()) return;
+    this.value.set(null);
+    this.query.set('');
+    this.open.set(false);
+    this.onChange(null);
+    this.field().nativeElement.focus({ preventScroll: true });
+    // Focusing opens the list; after an explicit clear, keep it closed until the user types or clicks.
+    this.open.set(false);
+  }
+
+  protected onBlur(e?: FocusEvent): void {
     // Tabbing away closes the list; clicks inside it never take focus (mousedown is cancelled).
     this.open.set(false);
     this.onTouched();
+    // An emptied field clears the value rather than snapping back to the old label.
+    if (this.clearable() && !this.query().trim() && this.value() !== null) {
+      this.value.set(null);
+      this.onChange(null);
+      return;
+    }
     // Restore the selected label if the typed query doesn't match a selection.
     const match = this.options().find((o) => o.value === this.value());
-    if (match && this.query() !== match.label) this.query.set(match.label);
+    if (match) {
+      this.query.set(match.label);
+      // The [value] binding skips the write when the label equals what it last rendered, which is the
+      // case when the text was edited and blurred before a render; put the label back directly.
+      const field = e?.target as HTMLInputElement | undefined;
+      if (field && field.value !== match.label) field.value = match.label;
+    }
   }
 }

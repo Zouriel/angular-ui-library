@@ -29,10 +29,11 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   `,
   styles: `
     :host { display: inline-block; }
-    .ui-rating { display: inline-flex; gap: 2px; }
+    /* 24x24 buttons (WCAG 2.5.8 target size) around 20px stars; no gap, so the stars sit as before. */
+    .ui-rating { display: inline-flex; }
     /* Drawn star (a ★ glyph fell back to Arial). Empty = outline in text-muted so it clears 3:1 in
        every theme (--ui-color-border measured 1.2–1.5:1); filled = solid warning. */
-    .star { display: grid; place-items: center; border: none; background: none; cursor: pointer; padding: 0; font: inherit;
+    .star { display: grid; place-items: center; box-sizing: border-box; width: 24px; height: 24px; border: none; background: none; cursor: pointer; padding: 0; font: inherit;
       color: var(--ui-color-text-muted); transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
     .star svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
     .star.filled { color: var(--ui-color-warning); }

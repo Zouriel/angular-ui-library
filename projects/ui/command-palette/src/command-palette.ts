@@ -1,5 +1,9 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { Component, computed, effect, ElementRef, inject, input, model, output, signal, viewChild } from '@angular/core';
+import { createBlockScrollStrategy } from '@angular/cdk/overlay';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import {
+  Component, computed, DestroyRef, effect, ElementRef, inject, Injector, input, model, output, PLATFORM_ID, signal, viewChild,
+} from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { UI_CONFIG } from '@zouriel/ui';
@@ -24,14 +28,17 @@ let paletteSeq = 0;
  * `ui-command-palette` — ⌘K-style command launcher. Bind `[(open)]`, pass `commands`, listen to
  * `(run)`. Typing filters by case-insensitive substring over label, group and keywords;
  * ArrowUp/Down move the highlight, Enter runs it, Escape or a backdrop click closes. Focus is
- * trapped while open and returns to where it was on close. It binds no global shortcut: open it
- * from your own keydown handler.
+ * trapped while open and returns to where it was on close. While open it sits on its own layer at
+ * the end of `<body>` (so a transformed or clipped ancestor can't trap it) and page scroll is
+ * blocked with the CDK's block scroll strategy (needs `@angular/cdk/overlay-prebuilt.css`, like the
+ * other overlays). It binds no global shortcut: open it from your own keydown handler.
  */
 @Component({
   selector: 'ui-command-palette',
   imports: [CdkTrapFocus, HugeiconsIconComponent],
   template: `
     @if (open()) {
+      <div #layer class="ui-layer">
       <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
         <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
@@ -58,9 +65,11 @@ let paletteSeq = 0;
           </ul>
         </div>
       </div>
+      </div>
     }
   `,
   styles: `
+    .ui-layer { display: contents; }
     .cp-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
     .cp-wrap { position: fixed; inset: 0; z-index: var(--ui-z-overlay); display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; pointer-events: none; }
     .cp { pointer-events: auto; width: min(560px, 92vw); background: var(--ui-color-surface-raised);
@@ -104,6 +113,13 @@ export class UiCommandPalette {
   protected readonly active = signal(0);
   private input = viewChild<ElementRef<HTMLInputElement>>('input');
   private list = viewChild<ElementRef<HTMLElement>>('list');
+  private layer = viewChild<ElementRef<HTMLElement>>('layer');
+  private readonly doc = inject(DOCUMENT);
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly scrollBlock = createBlockScrollStrategy(inject(Injector));
+  /** The layer last moved to <body>; kept after close so destroy can still find it. */
+  private moved: HTMLElement | null = null;
+  private blocking = false;
 
   protected readonly filtered = computed(() => {
     const q = this.query().trim().toLowerCase();
@@ -112,6 +128,27 @@ export class UiCommandPalette {
   });
 
   constructor() {
+    // Moves the open layer to the end of <body>, as ui-modal does. Angular still removes it when the
+    // palette closes (after the leave animations), but not when the owner is destroyed while open.
+    effect(() => {
+      const el = this.layer()?.nativeElement;
+      if (!this.browser || !el || el.parentNode === this.doc.body) return;
+      this.doc.body.appendChild(el);
+      this.moved = el;
+    });
+    effect(() => {
+      const open = this.open();
+      if (!this.browser || open === this.blocking) return;
+      if (open) this.scrollBlock.enable();
+      else this.scrollBlock.disable();
+      this.blocking = open;
+    });
+    inject(DestroyRef).onDestroy(() => {
+      if (this.moved?.parentNode === this.doc.body) this.moved.remove();
+      this.moved = null;
+      if (this.blocking) this.scrollBlock.disable();
+      this.blocking = false;
+    });
     effect(() => {
       if (this.open()) {
         this.query.set('');

@@ -313,14 +313,15 @@ revision it was made with.
 
 | | |
 | --- | --- |
-| `[(definition)]` | `UiFormDefinition`, two-way. Every edit writes back. Setting a different object loads it (and clears undo). |
+| `[(definition)]` | `UiFormDefinition`, two-way. Every edit writes back. Setting another form, or different content, loads it and clears undo. The same form handed back with only `revision` changed (a published copy stored back) keeps undo. |
 | `published` | `UiFormDefinition \| null`: the version people answer now. |
 | `submissionCount` | `number`: its answers. Above zero, saved data is protected. |
 | `validators`, `optionSources`, `globalSettings` | Extra checks and lists, on top of the providers. |
 | `[fbActions]` | Content slot for your buttons in the top bar. |
 | `problems()` | `UiFbProblem[]` (`{ severity, targetId, message }`): missing keys, rule loops, rules pointing at deleted questions, backward jumps. |
 | `changes()` | `UiFbDiff \| null`: what changed since `published` (added, archived, renamed keys, type changes, removed options, changed rules, and a `summary` of lines). |
-| `select(id)`, `undo()`, `redo()` | Select an element or page (`null` for the form); step through history. |
+| `select(id)`, `undo()`, `redo()` | Select an element or page (`null` for the form); step through history. Undo and redo keep the current `revision`. |
+| `clearHistory()` | Forget undo/redo history, e.g. after saving when you want a fresh start. |
 
 ## Running a form without UI
 

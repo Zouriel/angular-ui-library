@@ -13,7 +13,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       <input class="hex" [value]="value()" [disabled]="disabled()" (input)="typeHex($any($event.target).value)" (blur)="leaveHex($event)" aria-label="Hex color" />
       <div class="swatches">
         @for (c of swatches(); track c) {
-          <button type="button" class="sw" [style.background]="c" [attr.aria-label]="c" [attr.aria-pressed]="c.toLowerCase() === (value() || '').toLowerCase()" [disabled]="disabled()" (click)="set(c)"></button>
+          <button type="button" class="sw" [attr.aria-label]="c" [attr.aria-pressed]="c.toLowerCase() === (value() || '').toLowerCase()" [disabled]="disabled()" (click)="set(c)"><span class="dot" [style.background]="c"></span></button>
         }
       </div>
     </div>
@@ -33,11 +33,15 @@ import { UI_CONFIG } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .hex:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .hex:disabled { opacity: .5; cursor: not-allowed; }
-    .swatches { display: flex; gap: var(--ui-space-1); }
-    .sw { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); cursor: pointer; padding: 0;
+    /* Each swatch is a 24x24 button (WCAG 2.5.8 target size) drawing a 20px dot; no gap between
+       buttons, so the dots keep their 4px spacing. */
+    .swatches { display: flex; }
+    .sw { display: grid; place-items: center; box-sizing: border-box; width: 24px; height: 24px; border: none; border-radius: 50%;
+      background: transparent; cursor: pointer; padding: 0; }
+    .dot { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border);
       transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .sw:hover:not(:disabled) { transform: scale(1.1); }
-    .sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 3px var(--ui-color-text); }
+    .sw:hover:not(:disabled) .dot { transform: scale(1.1); }
+    .sw[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 3px var(--ui-color-text); }
     .sw:disabled { opacity: .5; cursor: not-allowed; }
     .sw:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,

@@ -31,14 +31,17 @@ import { UI_CONFIG } from '@zouriel/ui';
       background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 45%, transparent);
       border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .x { display: grid; place-items: center; flex: none; width: 16px; height: 16px; border: none; background: none; color: inherit; cursor: pointer;
-      font: inherit; padding: 0; border-radius: var(--ui-radius-pill); opacity: .7;
+    /* 24x24 hit box (WCAG 2.5.8) drawing the same 16px circle: 4px of padding outside the painted
+       background, and negative margins so the chip keeps its compact size. */
+    .x { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; margin: -2px -4px -2px -4px;
+      border: none; background: none; background-clip: content-box; color: inherit; cursor: pointer;
+      font: inherit; padding: 4px; border-radius: var(--ui-radius-pill); opacity: .7;
       transition: opacity var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
-    .x:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, currentColor 14%, transparent); }
+    .x:hover:not(:disabled) { opacity: 1; background-color: color-mix(in srgb, currentColor 14%, transparent); }
     .x:disabled { cursor: not-allowed; }
     .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
     .entry { flex: 1; min-width: 80px; box-sizing: border-box; padding: 0 var(--ui-space-2); border: none; background: transparent; outline: none; color: var(--ui-color-text);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); height: 22px; }
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); height: 24px; }
     .entry::placeholder { color: var(--ui-color-text-muted); }
     .entry:disabled { cursor: not-allowed; }
   `,

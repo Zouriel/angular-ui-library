@@ -1,15 +1,21 @@
 import {
-  Component, NgZone, OnDestroy, OnInit, computed, effect, inject, input, model, output, signal, untracked,
+  Component, ElementRef, NgZone, OnDestroy, OnInit, computed, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 import { UiDockSide, UiWindowBounds, UiWindowManager } from './window-manager';
+
+/** How much of the title bar (in px, horizontally) a drag always leaves on screen. */
+const GRAB_MARGIN = 48;
+/** Title-bar height used when it can't be measured (no layout, e.g. in tests). */
+const TITLEBAR_FALLBACK = 32;
 
 type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
 /**
  * `ui-window` — floating, draggable, resizable window shell ("a window inside
  * the window"). Drag the title bar to move; drag near a screen edge to snap
- * (left/right half, maximize). Resize from any edge/corner. Min/max/restore/
+ * (left/right half, maximize). A drag always leaves at least 48px of the title bar on screen, so
+ * the window can be grabbed again. Resize from any edge/corner. Min/max/restore/
  * close chrome, focus-to-front z-index via {@link UiWindowManager}. Glass +
  * radius + open animation. Hosts any content via `<ng-content>`.
  *
@@ -108,6 +114,7 @@ export class UiWindow implements OnInit, OnDestroy {
   private config = inject(UI_CONFIG);
   private mgr = inject(UiWindowManager);
   private zone = inject(NgZone);
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly id = this.mgr.nextId();
 
   open = model(true);
@@ -209,9 +216,10 @@ export class UiWindow implements OnInit, OnDestroy {
     const nx = this.dragStart.x + (e.clientX - this.dragStart.px);
     const ny = this.dragStart.y + (e.clientY - this.dragStart.py);
     const side = this.detectSnap(e.clientX, e.clientY);
+    const { x, y } = this.clampToViewport(nx, ny);
     this.zone.run(() => {
-      this.x.set(nx);
-      this.y.set(Math.max(0, ny));
+      this.x.set(x);
+      this.y.set(y);
       this.snap.set(side);
     });
   }
@@ -231,6 +239,27 @@ export class UiWindow implements OnInit, OnDestroy {
     document.removeEventListener('pointermove', this.dMove);
     document.removeEventListener('pointerup', this.dUp);
     document.removeEventListener('pointercancel', this.dUp);
+  }
+
+  /**
+   * Keep enough of the title bar on screen to grab it again: at least {@link GRAB_MARGIN}px of it
+   * horizontally, never above the top edge, and never below the bottom edge.
+   */
+  private clampToViewport(x: number, y: number): { x: number; y: number } {
+    if (typeof window === 'undefined' || window.innerWidth <= 0 || window.innerHeight <= 0) return { x, y: Math.max(0, y) };
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const w = this.width();
+    const keep = Math.min(GRAB_MARGIN, w);
+    const bar = this.titlebarHeight();
+    return {
+      x: Math.min(Math.max(x, keep - w), vw - keep),
+      y: Math.max(0, Math.min(y, vh - bar)),
+    };
+  }
+
+  private titlebarHeight(): number {
+    const h = this.host.nativeElement.querySelector<HTMLElement>('.titlebar')?.getBoundingClientRect().height;
+    return h && h > 0 ? h : TITLEBAR_FALLBACK;
   }
 
   private detectSnap(px: number, py: number): UiDockSide {

@@ -305,7 +305,8 @@ export class UiFormBuilder {
 
   constructor() {
     this.dnd.attach(this.host.nativeElement);
-    // Outside → in: a definition the host sets (a different form) replaces the builder's.
+    // Outside → in: a definition the host sets replaces the builder's. A different form clears history;
+    // the same form handed back with a new revision (a published copy) keeps it. See FbBuilderStore.load.
     effect(() => {
       const d = this.definition();
       if (d !== untracked(() => this.store.def())) untracked(() => this.store.load(d));
@@ -338,6 +339,8 @@ export class UiFormBuilder {
 
   undo(): void { this.store.undo(); }
   redo(): void { this.store.redo(); }
+  /** Forgets undo/redo history, e.g. after the host saves and wants a fresh start. */
+  clearHistory(): void { this.store.clearHistory(); }
 
   protected setView(v: View): void {
     this.view.set(v);

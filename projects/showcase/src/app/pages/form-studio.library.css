@@ -1,0 +1,28 @@
+/* Form studio: the list of saved forms, settings page and import dialog. */
+/* Library */
+.library { max-width: 1080px; margin: 0 auto; padding: var(--ui-space-6) var(--ui-space-6) var(--ui-space-4); }
+.lib-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--ui-space-4); flex-wrap: wrap; margin-bottom: var(--ui-space-6); }
+.eyebrow { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ui-color-primary); }
+.lib-head h1 { font-size: 28px; letter-spacing: -0.01em; }
+.lead { margin: var(--ui-space-2) 0 0; max-width: 62ch; color: var(--ui-color-text-secondary); font-size: 14px; line-height: 1.55; }
+.lead code { font-size: 12.5px; }
+.lib-actions { display: flex; gap: var(--ui-space-2); flex-wrap: wrap; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--ui-space-3); }
+.card { display: flex; flex-direction: column; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg, var(--ui-radius));
+  background: var(--ui-color-surface); transition: border-color var(--ui-motion-fast); min-width: 0; }
+.card:hover { border-color: color-mix(in srgb, var(--ui-color-primary) 45%, var(--ui-color-border)); }
+.card-open { display: flex; flex-direction: column; gap: 4px; padding: var(--ui-space-4); border: 0; background: none; text-align: left;
+  color: inherit; font: inherit; cursor: pointer; border-radius: inherit; min-width: 0; touch-action: manipulation; }
+.card-open:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.card-title { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.card-meta { font-size: 13px; color: var(--ui-color-text-muted); }
+.card-foot { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-2) var(--ui-space-4);
+  border-top: 1px solid var(--ui-color-border); flex-wrap: wrap; }
+.lib-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); flex-wrap: wrap; margin-top: var(--ui-space-6);
+  padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border); font-size: 12px; color: var(--ui-color-text-muted); }
+.import { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+.file { font-size: 13px; color: var(--ui-color-text-secondary); display: flex; flex-direction: column; gap: 4px; }
+
+@media (max-width: 900px) {
+  .library { padding: var(--ui-space-4); }
+}

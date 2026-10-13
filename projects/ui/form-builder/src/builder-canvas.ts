@@ -307,12 +307,13 @@ export interface FbDeleteRequest {
     .item.selected > .card { border-color: var(--ui-color-primary); box-shadow: 0 0 0 1px var(--ui-color-primary); }
     .item.problem > .card { border-color: color-mix(in srgb, var(--ui-color-danger) 60%, var(--ui-color-border)); }
     .item.archived > .card { opacity: 0.55; border-style: dashed; }
-    .grip { display: inline-grid; place-items: center; width: 20px; height: 24px; flex: none; padding: 0; border: 0; border-radius: var(--ui-radius-xs);
+    /* A 24px target that takes the 20px it always had: the extra 2px each side overlap the gap. */
+    .grip { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-inline: -2px; flex: none; padding: 0; border: 0; border-radius: var(--ui-radius-xs);
       background: transparent; color: var(--ui-color-text-muted); cursor: grab; touch-action: none; opacity: 0.5; }
     .card:hover .grip, .item.selected .grip, .group-head:hover .grip { opacity: 1; }
     .grip:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .grip:active { cursor: grabbing; }
-    @media (pointer: coarse) { .grip { width: 32px; height: 36px; opacity: 0.8; } }
+    @media (pointer: coarse) { .grip { width: 32px; height: 36px; margin-inline: 0; opacity: 0.8; } }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
     .head { display: flex; align-items: center; gap: 6px; min-height: 20px; flex-wrap: wrap; padding-right: 4px; }
     .type-ico { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: var(--ui-radius-xs); color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }

@@ -60,7 +60,8 @@ interface FlatRow { row: UiTreeTableRow; depth: number; }
     tbody tr { border-bottom: 1px solid var(--ui-color-border); }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--ui-color-surface-hover); }
-    .chev { width: 16px; height: 16px; flex: none; display: inline-grid; place-items: center; padding: 0; border: none; background: none;
+    /* 24px hit box (WCAG 2.5.8); the negative margins hand the extra 8px back so rows keep their height. */
+    .chev { width: 24px; height: 24px; margin: calc(var(--ui-space-1) * -1); flex: none; display: inline-grid; place-items: center; padding: 0; border: none; background: none;
       color: var(--ui-color-text-muted); font: inherit; cursor: pointer;
       border-radius: var(--ui-radius-xs); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .chev.open { transform: rotate(90deg); }

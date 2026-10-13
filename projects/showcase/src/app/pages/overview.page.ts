@@ -125,7 +125,8 @@ this.theme.theme();           // the current theme (a signal)"></doc-demo>
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--ui-space-3); }
     .tags { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); }
     .entries { display: block; margin-bottom: var(--ui-space-2); font-family: var(--ui-font-mono); }
-    .group-link { font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); text-decoration: none; }
+    /* 24px tall target; the negative margin keeps the card header the height it was. */
+    .group-link { display: inline-flex; align-items: center; min-height: 24px; margin-block: -3px; font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); text-decoration: none; }
     .group-link:hover { color: var(--ui-color-primary); text-decoration: underline; }
     .group-link:focus-visible { outline: none; border-radius: var(--ui-radius-xs); box-shadow: var(--ui-focus-ring); }
     .themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--ui-space-3); }

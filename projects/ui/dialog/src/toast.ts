@@ -1,6 +1,8 @@
-import { Component, Injectable, inject, input, signal } from '@angular/core';
+import { Component, Injectable, computed, inject, input, signal } from '@angular/core';
 
 export type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
+
+export type UiToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
 
 export interface UiToastOptions {
   message: string;
@@ -92,7 +94,10 @@ export class UiToastService {
   }
 }
 
-/** `ui-toast-host` — fixed-corner renderer for queued toasts. */
+/**
+ * `ui-toast-host` — fixed renderer for queued toasts, in a corner or centred on the top or bottom
+ * edge. Toasts slide in from the edge they sit against and slide back out that way.
+ */
 @Component({
   selector: 'ui-toast-host',
   template: `
@@ -102,8 +107,8 @@ export class UiToastService {
           class="toast"
           [attr.data-tone]="t.tone"
           [attr.role]="t.tone === 'danger' || t.tone === 'warning' ? 'alert' : 'status'"
-          animate.enter="ui-slide-left-enter"
-          animate.leave="ui-fade-leave"
+          [animate.enter]="motion().enter"
+          [animate.leave]="motion().leave"
           (mouseenter)="toasts.pause(t.id)" (mouseleave)="toasts.resume(t.id)"
           (focusin)="toasts.pause(t.id)" (focusout)="toasts.resume(t.id)">
           <span class="icon" aria-hidden="true">
@@ -139,6 +144,9 @@ export class UiToastService {
     .host[data-position="top-left"]     { top: 0; left: 0; }
     .host[data-position="bottom-right"] { bottom: 0; right: 0; }
     .host[data-position="bottom-left"]  { bottom: 0; left: 0; }
+    .host[data-position$="center"] { left: 50%; transform: translateX(-50%); }
+    .host[data-position="top-center"]    { top: 0; }
+    .host[data-position="bottom-center"] { bottom: 0; }
     .toast {
       pointer-events: auto;
       display: flex; align-items: flex-start; gap: var(--ui-space-2);
@@ -187,5 +195,14 @@ export class UiToastService {
 })
 export class UiToastHost {
   protected readonly toasts = inject(UiToastService);
-  position = input<'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'>('bottom-right');
+  position = input<UiToastPosition>('bottom-right');
+
+  /** Shared animation classes (styles/animations.css) that move toward and away from the toast's own edge. */
+  protected readonly motion = computed(() => {
+    const pos = this.position();
+    if (pos.endsWith('left')) return { enter: 'ui-slide-right-enter', leave: 'ui-slide-right-leave' };
+    if (pos === 'top-center') return { enter: 'ui-slide-down-enter', leave: 'ui-slide-down-leave' };
+    if (pos === 'bottom-center') return { enter: 'ui-slide-up-enter', leave: 'ui-slide-up-leave' };
+    return { enter: 'ui-slide-left-enter', leave: 'ui-slide-left-leave' };
+  });
 }

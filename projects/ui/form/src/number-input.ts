@@ -36,8 +36,8 @@ export class UiNumberLabel {}
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
       <div class="steppers">
-        <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button type="button" tabindex="-1" aria-label="Decrement" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       }
     </div>
@@ -70,11 +70,13 @@ export class UiNumberLabel {}
     .scrub:hover, .scrub.active { color: var(--ui-color-primary); }
     .suffix { display: flex; align-items: center; padding-right: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="sm"] .ui-number { padding: 0 var(--ui-space-2); }
-    .steppers { display: flex; flex-direction: column; border-left: 1px solid var(--ui-color-border); }
-    .steppers button { flex: 1; width: 22px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; font: inherit;
+    /* Side by side, not stacked: two stacked buttons in a 30px field are 14px tall each, under the
+       24x24 minimum target size (WCAG 2.5.8). Each one is 24px wide and the field's full height. */
+    .steppers { display: flex; border-left: 1px solid var(--ui-color-border); }
+    .steppers button { width: 24px; min-height: 24px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; font: inherit;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .steppers button:disabled { cursor: not-allowed; }
-    .steppers button:first-child { border-bottom: 1px solid var(--ui-color-border); }
+    .steppers button:first-child { border-right: 1px solid var(--ui-color-border); }
     .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .steppers button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
   `,

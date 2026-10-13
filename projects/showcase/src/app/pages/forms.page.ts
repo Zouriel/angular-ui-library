@@ -57,7 +57,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       <form [formGroup]="form">
 
       <doc-section name="Form field" selector="ui-form-field" [api]="fieldApi"
-        summary="Label, hint and error around one control. The projected control sits inside a <label>, so the label names the first focusable element in it and clicking the label focuses that element. When error is set it replaces the hint and is announced (role=alert). required only draws the * marker; validation stays with your form.">
+        summary="Label, hint and error around one control. The projected control sits inside a <label> whose for points at the control's text field (input, select or textarea; given an id if it has none), so the label names that field and clicking the label focuses it, even in ui-chip-input or ui-multi-select where chip remove buttons come first. A custom control can mark the element to name with a data-ui-field-control attribute; with no text field (e.g. ui-rating) the label wraps the control as before. When error is set it replaces the hint and is announced (role=alert). required only draws the * marker; validation stays with your form.">
         <doc-demo code="<ui-form-field label=&quot;Email&quot; hint=&quot;Work address&quot; [required]=&quot;true&quot; [error]=&quot;err()&quot;>
   <ui-input type=&quot;email&quot; formControlName=&quot;email&quot; [invalid]=&quot;!!err()&quot; />
 </ui-form-field>">
@@ -82,7 +82,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Number input" selector="ui-number-input" [api]="numberApi"
-        summary="Numeric field with stepper buttons. Value type: number | null. A value is passed on while typing once it is in range; Enter or leaving the field clamps to min/max and rounds to precision. Focus selects the number. Give it a label to get a handle you drag sideways to scrub the value (Shift for 10x, Alt for 0.1x); project an svg with uiNumberLabel to show an icon there instead.">
+        summary="Numeric field with decrement and increment buttons side by side at its right end, each at least 24x24. Value type: number | null. A value is passed on while typing once it is in range; Enter or leaving the field clamps to min/max and rounds to precision. Focus selects the number. Give it a label to get a handle you drag sideways to scrub the value (Shift for 10x, Alt for 0.1x); project an svg with uiNumberLabel to show an icon there instead.">
         <doc-demo code="<ui-number-input formControlName=&quot;age&quot; [min]=&quot;0&quot; [max]=&quot;120&quot; [step]=&quot;1&quot; />
 <ui-number-input formControlName=&quot;width&quot; label=&quot;W&quot; suffix=&quot;px&quot; [steppers]=&quot;false&quot; />">
           <ui-number-input formControlName="age" [min]="0" [max]="120" />
@@ -118,14 +118,14 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Combobox" selector="ui-combobox" [api]="comboApi"
-        summary="Filterable autocomplete (CDK Overlay, WAI-ARIA combobox). Value type: string | null. Focus or click opens the list; type to filter by label; ArrowUp/Down move, Enter chooses, Escape, Tab or a click outside closes. Leaving the field puts the chosen label back, so typed text never becomes the value, and emptying the text does not clear it. Name it with ui-form-field, or with label when there is no visible label." [shapes]="COMBO">
+        summary="Filterable autocomplete (CDK Overlay, WAI-ARIA combobox). Value type: string | null. Focus or click opens the list; type to filter by label; ArrowUp/Down move, Enter chooses, Escape, Tab or a click outside closes. Leaving the field puts the chosen label back, so typed text never becomes the value. With clearable (the default) a Clear button (aria-label Clear) shows while a value is chosen; it, or emptying the text and leaving the field, sets the value to null and keeps focus in the field. Name it with ui-form-field, or with label when there is no visible label." [shapes]="COMBO">
         <doc-demo code="<ui-combobox formControlName=&quot;country&quot; [options]=&quot;countries&quot; />">
           <ui-combobox formControlName="country" [options]="countries" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Multi-select" selector="ui-multi-select" [api]="multiApi"
-        summary="Choose several options; selections render as chips with a remove button. Value type: string[], in the order chosen. Type to filter; ArrowUp/Down move, Enter toggles the active option, Backspace in an empty field removes the last chip, Escape, Tab or a click outside closes. size matches the other fields; chips may wrap onto more rows." [shapes]="COMBO">
+        summary="Choose several options; selections render as chips with a remove button. Value type: string[], in the order chosen. Type to filter; ArrowUp/Down move, Enter toggles the active option, Backspace in an empty field removes the last chip, Escape, Tab or a click outside closes. With clearable (the default) a Clear all button at the end of the field empties the selection. size matches the other fields; chips may wrap onto more rows." [shapes]="COMBO">
         <doc-demo code="<ui-multi-select formControlName=&quot;skills&quot; [options]=&quot;countries&quot; />">
           <ui-multi-select formControlName="skills" [options]="countries" />
         </doc-demo>
@@ -171,7 +171,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="OTP input" selector="ui-otp-input" [api]="otpApi"
-        summary="Fixed-length one-time-code entry. Value type: string (the cells joined). Typing moves to the next cell; Backspace in an empty cell and ArrowLeft/Right move between cells. Pasting or autofilling a whole code fills every cell from the first. The first cell has autocomplete=one-time-code.">
+        summary="Fixed-length one-time-code entry. Value type: string, one character per cell in position: an empty cell before a filled one is a space and empty cells at the end are dropped, so 1, 2, empty, 4 reads '12 4' and writing '12 4' back fills the same cells. The control validates itself: a non-empty value with fewer than length filled cells gives the error otpIncomplete: { filled, length }; an empty value is valid, so add Validators.required to make it mandatory. Typing moves to the next cell; Backspace in an empty cell and ArrowLeft/Right move between cells. Pasting or autofilling a whole code fills every cell from the first. The first cell has autocomplete=one-time-code.">
         <doc-demo code="<ui-otp-input formControlName=&quot;otp&quot; [length]=&quot;6&quot; [numeric]=&quot;true&quot; />">
           <ui-otp-input formControlName="otp" [length]="6" />
         </doc-demo>
@@ -206,7 +206,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Date picker" selector="ui-date-picker" [api]="dateApi"
-        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids. min/max limit which days can be picked. Names come from the browser locale (Intl); weeks start on Sunday.">
+        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids, which focus the month or year in view and keep one tab stop: arrow keys move (Up/Down by a row of three), Home/End go to the first and last cell, PageUp/PageDown change the year (month grid) or the page of 12 years (year grid), Enter or Space picks. min/max limit which days can be picked. Names come from the browser locale (Intl); weeks start on Sunday.">
         <doc-demo code="<ui-date-picker formControlName=&quot;date&quot; />">
           <ui-date-picker formControlName="date" />
         </doc-demo>
@@ -393,7 +393,7 @@ export class FormsPage {
     { name: 'ariaLabel', type: 'string', default: "''", desc: 'Accessible name when the label is too terse.' },
     { name: 'suffix', type: 'string', default: "''", desc: 'Unit after the number, e.g. "px".' },
     { name: 'precision', type: 'number | null', default: 'null', desc: 'Decimal places kept; values are rounded to this.' },
-    { name: 'steppers', type: 'boolean', default: 'true', desc: 'Show the up/down buttons.' },
+    { name: 'steppers', type: 'boolean', default: 'true', desc: 'Show the decrement/increment buttons (side by side, 24px wide each).' },
     { name: '[uiNumberLabel] (slot)', type: 'content', default: '—', desc: 'An icon (e.g. svg) shown in place of the text label; needs label or ariaLabel set.' },
     ...this.common,
   ];
@@ -425,12 +425,16 @@ export class FormsPage {
     { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices; filtered by label. Options that arrive after the value still show its label.' },
     { name: 'placeholder', type: 'string', default: "'Search…'", desc: 'Placeholder.' },
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
+    { name: 'clearable', type: 'boolean', default: 'true', desc: 'Show a Clear button while a value is chosen (hidden when disabled), and clear the value when the text is emptied and the field is left. Off: leaving the field always restores the chosen label.' },
+    { name: 'clear()', type: 'method', default: '—', desc: 'Set the value to null, notify the form and focus the field.' },
     ...this.common,
   ];
   protected readonly multiApi: ApiRow[] = [
     { name: 'options', type: 'UiComboboxOption[]', default: '[]', desc: 'Choices; filtered by label. A value missing from options shows as its raw value.' },
     { name: 'placeholder', type: 'string', default: "'Select…'", desc: 'Shown while nothing is chosen.' },
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the text field, when no ui-form-field label names it.' },
+    { name: 'clearable', type: 'boolean', default: 'true', desc: 'Show a Clear all button while anything is selected (hidden when disabled).' },
+    { name: 'clear()', type: 'method', default: '—', desc: 'Empty the selection, notify the form and focus the field.' },
     ...this.common,
   ];
   protected readonly checkApi: ApiRow[] = [

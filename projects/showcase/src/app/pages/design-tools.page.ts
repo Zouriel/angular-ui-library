@@ -1,4 +1,4 @@
-import { Component, computed, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -92,9 +92,11 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi" [outputs]="sequencerOutputs" [shapes]="sequencerShapes"
         summary="A timeline: a bar per layer for when it's active, diamonds for its keyframes, markers along a ruler and a playhead. Bars, edges and diamonds snap to markers, the playhead and other bars (hold Alt to place freely). Rows reorder by their grip. Keyboard: a focused bar moves with left/right (Shift for a larger step) and trims with [ and ]; a focused diamond retimes with left/right, Delete removes it, and the context-menu key opens its menu. It reports every change and mutates nothing.">
         <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [markers]=&quot;markers&quot;
+  [compact]=&quot;narrow()&quot; [labelWidth]=&quot;narrow() ? 132 : 200&quot;
   [(playhead)]=&quot;playhead&quot; (rangeChange)=&quot;onRange($event)&quot; (keyframeChange)=&quot;onKey($event)&quot; />">
           <div class="seq">
             <ui-sequencer [rows]="rows()" [length]="1000" [markers]="markers" [(playhead)]="playhead"
+              [compact]="narrow()" [labelWidth]="narrow() ? 132 : 200"
               (rangeChange)="onRange($event)" (keyframeChange)="onKeyframe($event)" (rowReorder)="onReorder($event)"
               (muteToggle)="toggle($event, 'muted')" (lockToggle)="toggle($event, 'locked')" />
           </div>
@@ -230,6 +232,17 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
   `,
 })
 export class DesignToolsPage {
+  /** Phones: the sequencer demo switches to its compact label column so the timeline keeps room. */
+  protected readonly narrow = signal(false);
+  constructor() {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(max-width: 600px)');
+    this.narrow.set(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => this.narrow.set(e.matches);
+    mq.addEventListener('change', onChange);
+    inject(DestroyRef).onDestroy(() => mq.removeEventListener('change', onChange));
+  }
+
   // Transform box
   protected readonly others = [{ x: 40, y: 40, w: 120, h: 90 }, { x: 420, y: 180, w: 160, h: 100 }];
   protected readonly box = signal<UiBox>({ x: 220, y: 90, w: 160, h: 110, rotate: 0 });
@@ -449,7 +462,7 @@ export class DesignToolsPage {
     { name: 'end', type: 'number | null', default: 'null', desc: 'Where the content ends; the rest of the timeline is shaded.' },
     { name: 'endDraggable / endLabel', type: 'boolean / string', default: "false / 'Drag to change where it ends'", desc: 'Give the End a grip; drags and arrow keys report (endChange), not clamped to length so the host can grow it.' },
     { name: 'title / emptyText', type: 'string', default: "'Layers' / 'Nothing here yet'", desc: 'Label column heading and the empty message.' },
-    { name: 'labelWidth / rowHeight', type: 'number', default: '200 / 30', desc: 'Label column width and row height in px.' },
+    { name: 'labelWidth / rowHeight', type: 'number', default: '200 / 30', desc: 'Label column width and row height in px. Rows are never shorter than 25px, so each bar (the lane less its 1px divider) is a 24px-tall target; keyframe diamonds sit in a 24x24 target.' },
     { name: 'snapPixels', type: 'number', default: '6', desc: 'Snap distance in screen px.' },
     { name: 'keyStep', type: 'number', default: '0.01', desc: 'Keyboard step as a fraction of length.' },
     { name: 'reorderable', type: 'boolean', default: 'true', desc: 'Rows can be reordered by their grip.' },

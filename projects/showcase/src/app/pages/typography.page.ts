@@ -11,20 +11,22 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="ui-text is the text primitive: it renders the right semantic tag for each variant, so headings and paragraphs stay meaningful to screen readers and search engines. ui-link, ui-kbd, ui-inline-code and ui-blockquote (from @zouriel/ui/link) cover links and inline content.">
 
       <doc-section name="Text" selector="ui-text" [api]="textApi"
-        summary="Project the text as content. The variant picks the semantic tag and style: h1–h6, p (body), small (caption), span (label), code and blockquote (quote). h1–h3 use --ui-font-display. Add the bare inline attribute to render it inline instead of as a block."
+        summary="Project the text as content. The variant picks the style and, by default, the semantic tag: h1–h6, p (body), small (caption), span (label), code and blockquote (quote). h1–h3 use --ui-font-display. Add the bare inline attribute to render it inline instead of as a block. as swaps the element but keeps the variant's look, so the document outline stays right: variant=&quot;h1&quot; as=&quot;p&quot; is a big title that is not a heading, and variant=&quot;h4&quot; as=&quot;h2&quot; is a section heading in a smaller size. The headings in this demo use as=&quot;p&quot;, so the page keeps a single h1."
         [shapes]="VARIANT">
         <doc-demo code="<ui-text variant=&quot;h1&quot;>Heading</ui-text>
 <ui-text variant=&quot;body&quot;>Body copy</ui-text>
 <ui-text variant=&quot;caption&quot;>caption</ui-text>
 <ui-text variant=&quot;code&quot;>inline code</ui-text>
 <ui-text variant=&quot;label&quot; inline>Inline label</ui-text>
-<ui-text variant=&quot;body&quot; font=&quot;var(--ui-font-mono)&quot;>Override</ui-text>">
-          <ui-text variant="h1">Heading 1</ui-text>
-          <ui-text variant="h2">Heading 2</ui-text>
-          <ui-text variant="h3">Heading 3</ui-text>
-          <ui-text variant="h4">Heading 4</ui-text>
-          <ui-text variant="h5">Heading 5</ui-text>
-          <ui-text variant="h6">Heading 6</ui-text>
+<ui-text variant=&quot;body&quot; font=&quot;var(--ui-font-mono)&quot;>Override</ui-text>
+<ui-text variant=&quot;h1&quot; as=&quot;p&quot;>Looks like h1, is a paragraph</ui-text>
+<ui-text variant=&quot;h4&quot; as=&quot;h2&quot;>An h2 in the h4 size</ui-text>">
+          <ui-text variant="h1" as="p">Heading 1</ui-text>
+          <ui-text variant="h2" as="p">Heading 2</ui-text>
+          <ui-text variant="h3" as="p">Heading 3</ui-text>
+          <ui-text variant="h4" as="p">Heading 4</ui-text>
+          <ui-text variant="h5" as="p">Heading 5</ui-text>
+          <ui-text variant="h6" as="p">Heading 6</ui-text>
           <ui-text variant="body">Body — the default paragraph style.</ui-text>
           <ui-text variant="caption">A small muted caption.</ui-text>
           <ui-text variant="body"><ui-text variant="label" inline>Label, inline</ui-text> beside <ui-text variant="code" inline>code, inline</ui-text></ui-text>
@@ -70,9 +72,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 export class TypographyPage {
   protected readonly VARIANT = `type TextVariant =
   | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
-  | 'body' | 'caption' | 'label' | 'code' | 'quote';`;
+  | 'body' | 'caption' | 'label' | 'code' | 'quote';
+
+type TextTag =
+  | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+  | 'p' | 'div' | 'span' | 'small' | 'code' | 'blockquote';`;
   protected readonly textApi: ApiRow[] = [
-    { name: 'variant', type: 'TextVariant', default: "'body'", desc: 'Semantic tag and style.' },
+    { name: 'variant', type: 'TextVariant', default: "'body'", desc: 'Style, and the semantic tag unless as is set.' },
+    { name: 'as', type: 'TextTag', default: '—', desc: "Element to render instead of the variant's own tag; the variant still sets the look." },
     { name: 'font', type: 'string', default: '—', desc: 'CSS font-family override; the token applies when unset.' },
     { name: 'inline', type: 'attribute', default: '—', desc: 'Present: display inline instead of block.' },
   ];

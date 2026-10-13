@@ -255,6 +255,9 @@ function comparable(def: UiFormDefinition | null): string {
       title="Reset the studio?" message="Every form and answer saved here is deleted, and the sample form comes back." confirmLabel="Reset studio"
       (confirm)="reset()" />
   `,
+  // Split by view so no one stylesheet passes the component-style budget: shared + one form here,
+  // the library and the answers tab in their own files.
+  styleUrls: ['./form-studio.library.css', './form-studio.answers.css'],
   styles: `
     :host { display: flex; flex-direction: column; height: calc(100dvh - 52px); min-height: 520px; }
     h1, h2 { margin: 0; text-wrap: balance; }
@@ -265,30 +268,6 @@ function comparable(def: UiFormDefinition | null): string {
       color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
     .save-error { margin: 0; padding: var(--ui-space-2) var(--ui-space-4); font-size: 13px; color: var(--ui-color-text);
       background: color-mix(in srgb, var(--ui-color-danger) 14%, var(--ui-color-surface)); }
-
-    /* Library */
-    .library { max-width: 1080px; margin: 0 auto; padding: var(--ui-space-6) var(--ui-space-6) var(--ui-space-4); }
-    .lib-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--ui-space-4); flex-wrap: wrap; margin-bottom: var(--ui-space-6); }
-    .eyebrow { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--ui-color-primary); }
-    .lib-head h1 { font-size: 28px; letter-spacing: -0.01em; }
-    .lead { margin: var(--ui-space-2) 0 0; max-width: 62ch; color: var(--ui-color-text-secondary); font-size: 14px; line-height: 1.55; }
-    .lead code { font-size: 12.5px; }
-    .lib-actions { display: flex; gap: var(--ui-space-2); flex-wrap: wrap; }
-    .cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--ui-space-3); }
-    .card { display: flex; flex-direction: column; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg, var(--ui-radius));
-      background: var(--ui-color-surface); transition: border-color var(--ui-motion-fast); min-width: 0; }
-    .card:hover { border-color: color-mix(in srgb, var(--ui-color-primary) 45%, var(--ui-color-border)); }
-    .card-open { display: flex; flex-direction: column; gap: 4px; padding: var(--ui-space-4); border: 0; background: none; text-align: left;
-      color: inherit; font: inherit; cursor: pointer; border-radius: inherit; min-width: 0; touch-action: manipulation; }
-    .card-open:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .card-title { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
-    .card-meta { font-size: 13px; color: var(--ui-color-text-muted); }
-    .card-foot { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-2) var(--ui-space-4);
-      border-top: 1px solid var(--ui-color-border); flex-wrap: wrap; }
-    .lib-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); flex-wrap: wrap; margin-top: var(--ui-space-6);
-      padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border); font-size: 12px; color: var(--ui-color-text-muted); }
-    .import { display: flex; flex-direction: column; gap: var(--ui-space-3); }
-    .file { font-size: 13px; color: var(--ui-color-text-secondary); display: flex; flex-direction: column; gap: 4px; }
 
     /* One form */
     .bar { display: flex; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-2) var(--ui-space-4);
@@ -312,37 +291,13 @@ function comparable(def: UiFormDefinition | null): string {
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .json pre:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 
-    .answers { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px 1fr; }
-    .list { list-style: none; margin: 0; padding: var(--ui-space-2); overflow: auto; border-right: 1px solid var(--ui-color-border); }
-    .row { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3); border: 0; border-radius: var(--ui-radius);
-      background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; }
-    .row:hover { background: var(--ui-color-surface-hover); }
-    .row.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
-    .row:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .row-top { display: flex; align-items: baseline; gap: var(--ui-space-2); min-width: 0; }
-    .row-top strong { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .row-sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .edited { font-size: 11px; color: var(--ui-color-primary); }
-    .detail { overflow: auto; padding: var(--ui-space-6) var(--ui-space-6); min-width: 0; }
-    .detail > * { max-width: 760px; }
-    .detail-head { display: flex; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-4); flex-wrap: wrap; }
-    .detail-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .detail-title strong { font-size: 16px; overflow-wrap: anywhere; }
-    .back { display: none; }
-
     @media (max-width: 900px) {
-      .library { padding: var(--ui-space-4); }
       .sheet { padding: var(--ui-space-4); }
       .sheet.wide { grid-template-columns: 1fr; }
       .json pre { height: 420px; }
     }
     @media (max-width: 760px) {
       .tabs { order: 3; width: 100%; }
-      .answers { grid-template-columns: 1fr; }
-      .list { border-right: 0; }
-      .answers.has-pick .list, .answers:not(.has-pick) .detail { display: none; }
-      .detail { padding: var(--ui-space-4); }
-      .back { display: inline-flex; }
     }
   `,
 })

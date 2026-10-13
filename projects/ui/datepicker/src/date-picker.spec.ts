@@ -66,6 +66,63 @@ describe('UiDatePicker keyboard', () => {
   });
 });
 
+describe('UiDatePicker month and year grids', () => {
+  it('move a single tab stop with the arrow keys, Home/End and PageUp/PageDown', async () => {
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    await f.whenStable();
+    const field = f.nativeElement.querySelector('ui-date-picker input') as HTMLInputElement;
+    const active = () => document.activeElement as HTMLElement;
+    const press = async (k: string) => { key(active(), k); await f.whenStable(); };
+    key(field, 'Enter');
+    await f.whenStable();
+
+    // Month grid opens on the month in view (March 2026), with one tab stop.
+    (document.querySelectorAll('.cal-panel .lbl')[0] as HTMLElement).click();
+    await f.whenStable();
+    expect(active().getAttribute('data-month')).toBe('2');
+    expect(document.querySelectorAll('.cal-panel .mcell[tabindex="0"]').length).toBe(1);
+    await press('ArrowDown');
+    expect(active().getAttribute('data-month')).toBe('5');
+    await press('ArrowRight');
+    expect(active().getAttribute('data-month')).toBe('6');
+    await press('Home');
+    expect(active().getAttribute('data-month')).toBe('0');
+    await press('ArrowUp'); // off the top row: stays
+    expect(active().getAttribute('data-month')).toBe('0');
+    await press('End');
+    expect(active().getAttribute('data-month')).toBe('11');
+    await press('PageUp');
+    expect(active().getAttribute('aria-label')).toMatch(/2025$/);
+    // Enter/Space activate the native button, which is a click.
+    active().click();
+    await f.whenStable();
+    expect(active().getAttribute('data-iso')).toBe('2025-12-01');
+
+    // Year grid opens on the year in view and turns the page when moving past its ends.
+    (document.querySelectorAll('.cal-panel .lbl')[1] as HTMLElement).click();
+    await f.whenStable();
+    expect(active().getAttribute('data-year')).toBe('2025');
+    await press('ArrowUp');
+    expect(active().getAttribute('data-year')).toBe('2022');
+    await press('Home');
+    expect(active().getAttribute('data-year')).toBe('2016');
+    await press('ArrowLeft');
+    expect(active().getAttribute('data-year')).toBe('2015');
+    expect(document.querySelector('.cal-panel .mcell[data-year="2004"]')).not.toBeNull();
+    await press('PageDown');
+    expect(active().getAttribute('data-year')).toBe('2027');
+    await press('End');
+    expect(active().getAttribute('data-year')).toBe('2027');
+    active().click();
+    await f.whenStable();
+    // Picking a year goes to its months, focused on the month in view.
+    expect(active().getAttribute('data-month')).toBe('11');
+    expect(active().getAttribute('aria-label')).toMatch(/2027$/);
+    expect(f.componentInstance.date.value).toBe('2026-03-15');
+  });
+});
+
 describe('inline calendars', () => {
   it('name every day in full and mark the chosen ones', async () => {
     const f = TestBed.createComponent(Host);

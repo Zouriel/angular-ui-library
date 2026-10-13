@@ -1,5 +1,5 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 import type { UiComboboxOption } from './combobox';
@@ -9,7 +9,8 @@ let nextId = 0;
 /**
  * `ui-multi-select` — choose several options; selections shown as chips (CVA; value is string[]).
  * Type to filter; Arrow keys + Enter toggle the active option; Backspace in an empty field removes
- * the last chip; Escape closes.
+ * the last chip; Escape closes. With `clearable` (the default) a Clear all button at the end of the
+ * field empties the selection.
  */
 @Component({
   selector: 'ui-multi-select',
@@ -27,6 +28,9 @@ let nextId = 0;
              [attr.aria-invalid]="invalid() || null"
              [value]="query()" [disabled]="disabled()" (input)="onInput($event)" (focus)="openPanel()"
              (keydown)="onKeydown($event)" (blur)="open.set(false); onTouched()" />
+      @if (clearable() && value().length && !disabled()) {
+        <button type="button" class="clear" tabindex="-1" aria-label="Clear all" (mousedown)="$event.preventDefault()" (click)="clear($event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      }
     </div>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open()"
                  [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" [cdkConnectedOverlayWidth]="width()" (overlayOutsideClick)="open.set(false)">
@@ -49,7 +53,7 @@ let nextId = 0;
       padding: 2px var(--ui-space-1); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); cursor: text; line-height: 1.35;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ms[data-size="sm"] { min-height: var(--ui-size-sm); padding: 1px var(--ui-space-1); }
+    .ms[data-size="sm"] { min-height: var(--ui-size-sm); padding: 0 var(--ui-space-1); }
     .ms[data-size="lg"] { min-height: var(--ui-size-lg); }
     .ms:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ms.no-radius { border-radius: 0; }
@@ -60,17 +64,24 @@ let nextId = 0;
       padding: 0 var(--ui-space-1) 0 var(--ui-space-2);
       background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 45%, transparent);
       border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
-    .ms[data-size="sm"] .chip { height: 20px; }
+    .ms[data-size="sm"] .chip { height: 22px; }
     .chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .x { display: grid; place-items: center; flex: none; width: 16px; height: 16px; border: none; background: none; color: inherit; cursor: pointer;
-      font: inherit; padding: 0; border-radius: var(--ui-radius-pill); opacity: .7;
+    /* 24x24 hit box (WCAG 2.5.8) drawing the same 16px circle: 4px of padding outside the painted
+       background, and negative margins so the chip keeps its compact size. */
+    .x { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; margin: -2px -4px -2px -4px;
+      border: none; background: none; background-clip: content-box; color: inherit; cursor: pointer;
+      font: inherit; padding: 4px; border-radius: var(--ui-radius-pill); opacity: .7;
       transition: opacity var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
-    .x:hover:not(:disabled) { opacity: 1; background: color-mix(in srgb, currentColor 14%, transparent); }
+    .x:hover:not(:disabled) { opacity: 1; background-color: color-mix(in srgb, currentColor 14%, transparent); }
     .x:disabled { cursor: not-allowed; }
     .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
-    .entry { flex: 1; min-width: 80px; box-sizing: border-box; height: 22px; padding: 0 var(--ui-space-2); border: none; background: transparent; outline: none;
+    .clear { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; margin-left: auto; padding: 0;
+      border: none; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer;
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .clear:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .entry { flex: 1; min-width: 80px; box-sizing: border-box; height: 24px; padding: 0 var(--ui-space-2); border: none; background: transparent; outline: none;
       color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); }
-    .ms[data-size="sm"] .entry { height: 20px; font-size: var(--ui-font-size-sm); }
+    .ms[data-size="sm"] .entry { font-size: var(--ui-font-size-sm); }
     .ms[data-size="lg"] .entry { font-size: var(--ui-font-size-lg); }
     .entry::placeholder { color: var(--ui-color-text-muted); }
     .entry:disabled { cursor: not-allowed; }
@@ -103,6 +114,8 @@ export class UiMultiSelect implements ControlValueAccessor {
   radius = input<boolean>(this.config.radius);
   /** Control height, matching the other fields (min-height: chips may wrap onto more rows). */
   size = input<UiSize>('md');
+  /** Shows a Clear all button while anything is selected. */
+  clearable = input(true);
 
   protected readonly value = signal<string[]>([]);
   protected readonly query = signal('');
@@ -112,6 +125,7 @@ export class UiMultiSelect implements ControlValueAccessor {
   protected readonly width = signal<number | string>('auto');
   protected readonly listId = `ui-multi-select-${nextId++}`;
   private readonly origin = viewChild.required(CdkOverlayOrigin);
+  private readonly entry = viewChild.required<ElementRef<HTMLInputElement>>('entry');
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
     { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
@@ -161,6 +175,17 @@ export class UiMultiSelect implements ControlValueAccessor {
     }
     else if (e.key === 'Escape') { this.open.set(false); }
     else if (e.key === 'Backspace' && !this.query() && this.value().length) { this.toggle(this.value()[this.value().length - 1]); }
+  }
+
+  /** Empties the selection, tells the form, and leaves focus in the field with the list closed. */
+  clear(e?: Event): void {
+    e?.stopPropagation();
+    if (this.disabled()) return;
+    this.value.set([]);
+    this.onChange([]);
+    this.entry().nativeElement.focus({ preventScroll: true });
+    // Focusing opens the list; after an explicit clear, keep it closed until the user types or clicks.
+    this.open.set(false);
   }
 
   protected toggle(v: string, e?: Event): void {

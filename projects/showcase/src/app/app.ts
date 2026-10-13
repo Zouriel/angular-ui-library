@@ -4,25 +4,28 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Menu01Icon from '@hugeicons/core-free-icons/Menu01Icon';
 import File01Icon from '@hugeicons/core-free-icons/File01Icon';
 import HashtagIcon from '@hugeicons/core-free-icons/HashtagIcon';
+import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeService } from '@zouriel/ui/theme';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
+// Used only inside @defer blocks below, so each loads in its own chunk instead of the initial bundle.
+// (A library entry point the shell imports eagerly lands in the initial chunk with everything any page
+// uses from it, so the shell keeps its eager imports to what the first paint needs.)
 import { UiDrawer, UiToastHost } from '@zouriel/ui/dialog';
-import { UiSearchInput } from '@zouriel/ui/form';
 import { UiScrollProgress, UiCursor, UiGrain } from '@zouriel/ui/fx';
-import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
+import { UiCommandPalette } from '@zouriel/ui/command-palette';
+import type { UiCommand } from '@zouriel/ui/command-palette';
 import { UiKbd } from '@zouriel/ui/link';
 import { NAV } from './app.routes';
-import { DOC_SECTIONS } from './docs/doc-index';
 
 @Component({
   selector: 'app-root',
   imports: [
     HugeiconsIconComponent, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
-    UiSearchInput, UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiKbd,
+    UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
@@ -32,7 +35,11 @@ import { DOC_SECTIONS } from './docs/doc-index';
         <a class="brand" routerLink="/">
           <img class="logo" src="favicon.svg" alt="" width="24" height="24" /><ui-text variant="label">UI Library</ui-text>
         </a>
-        <ui-search-input class="filter" placeholder="Filter pages" (input)="onFilter($event)" />
+        <!-- A plain search box: the shell's one form control, so the form entry point stays out of the first load. -->
+        <label class="filter">
+          <hugeicons-icon class="filter-icon" aria-hidden="true" [icon]="icons.search" [size]="16" [strokeWidth]="1.8" />
+          <input type="search" placeholder="Filter pages" aria-label="Filter pages" (input)="onFilter($event)" />
+        </label>
         <div class="nav-scroll">
           <ui-side-nav label="Documentation" [groups]="filtered()" [active]="active()" (navigate)="go($event.value)" />
         </div>
@@ -43,8 +50,8 @@ import { DOC_SECTIONS } from './docs/doc-index';
 
       <div class="main-col">
         <header class="topbar">
-          <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="navOpen.set(true)"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
-          <ui-button variant="ghost" size="sm" (click)="cmdOpen.set(true)" class="cmd" aria-keyshortcuts="Control+K Meta+K">Search docs <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
+          <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="openNav()"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
+          <ui-button variant="ghost" size="sm" (click)="openSearch()" class="cmd" aria-keyshortcuts="Control+K Meta+K">Search docs <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
           <span class="grow"></span>
           <label class="theme-picker">
             <span class="sr-only">Theme</span>
@@ -59,16 +66,23 @@ import { DOC_SECTIONS } from './docs/doc-index';
       </div>
     </div>
 
-    <!-- Mobile sidebar -->
-    <ui-drawer [(open)]="navOpen" side="left" title="UI Library">
-      <ui-side-nav label="Documentation" [groups]="nav" [active]="active()" (navigate)="go($event.value)" />
-    </ui-drawer>
+    <!-- Mobile sidebar: loaded the first time the menu is opened (and fetched early when idle). -->
+    @defer (when navWanted(); prefetch on idle) {
+      <ui-drawer [(open)]="navOpen" side="left" title="UI Library">
+        <ui-side-nav label="Documentation" [groups]="nav" [active]="active()" (navigate)="go($event.value)" />
+      </ui-drawer>
+    }
 
-    <ui-command-palette [(open)]="cmdOpen" [commands]="commands" placeholder="Search pages and components…" (run)="go($event.value)" />
+    <!-- Search: loaded on first open (button or Ctrl/Cmd+K), together with the section index. -->
+    @defer (when commands().length; prefetch on idle) {
+      <ui-command-palette [(open)]="cmdOpen" [commands]="commands()" placeholder="Search pages and components…" (run)="go($event.value)" />
+    }
 
-    <ui-scroll-progress />
-    @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
-    <ui-toast-host position="bottom-right" />
+    @defer (on idle) {
+      <ui-scroll-progress />
+      @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
+      <ui-toast-host position="bottom-right" />
+    }
   `,
   styles: `
     :host { display: block; }
@@ -86,7 +100,14 @@ import { DOC_SECTIONS } from './docs/doc-index';
       border-right: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .brand { display: flex; align-items: center; gap: var(--ui-space-2); text-decoration: none; color: var(--ui-color-text); }
     .logo { display: block; flex: none; width: 24px; height: 24px; border-radius: 6px; }
-    .filter { display: block; }
+    .filter { position: relative; display: flex; align-items: center; }
+    .filter-icon { position: absolute; left: var(--ui-space-3); color: var(--ui-color-text-muted); pointer-events: none; }
+    .filter input { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-3) 0 calc(var(--ui-space-3) + 16px + var(--ui-space-2));
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface); color: var(--ui-color-text);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
+      transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
+    .filter input::placeholder { color: var(--ui-color-text-muted); }
+    .filter input:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .nav-scroll { flex: 1; overflow: auto; margin: 0 calc(-1 * var(--ui-space-2)); padding: 0 var(--ui-space-2); }
     .side-foot { border-top: 1px solid var(--ui-color-border); padding-top: var(--ui-space-2); }
     .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -124,7 +145,7 @@ import { DOC_SECTIONS } from './docs/doc-index';
   `,
 })
 export class App {
-  protected readonly icons = { menu: Menu01Icon };
+  protected readonly icons = { menu: Menu01Icon, search: Search01Icon };
   protected readonly theme = inject(UiThemeService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -136,6 +157,8 @@ export class App {
 
   protected readonly active = signal('');
   protected readonly navOpen = signal(false);
+  /** Set the first time the menu opens; until then the drawer isn't loaded. */
+  protected readonly navWanted = signal(false);
   protected readonly cmdOpen = signal(false);
   protected readonly query = signal('');
   protected readonly themeLabel = computed(() => this.THEMES.find((t) => t.value === this.theme.theme())?.label ?? this.theme.theme());
@@ -161,13 +184,33 @@ export class App {
     { value: 'lightPurpleGold', label: 'Light Purple Gold' },
   ];
 
-  /** Search covers every page, then every documented section (value is the route plus its anchor). */
-  protected readonly commands: UiCommand[] = [
-    ...NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, value: i.value, group: 'Page', keywords: g.label, icon: File01Icon }))),
-    ...NAV.flatMap((g) => g.items.flatMap((i) =>
-      (DOC_SECTIONS[i.value] ?? []).map((s) => ({ label: s.name, value: `${i.value}#${s.anchor}`, group: i.label, icon: HashtagIcon })),
-    )),
-  ];
+  /**
+   * Search covers every page, then every documented section (value is the route plus its anchor).
+   * Empty until search is first opened: the section index and the palette load then.
+   */
+  protected readonly commands = signal<UiCommand[]>([]);
+  private commandsLoading: Promise<void> | null = null;
+
+  /** Opens search, loading the section index first the first time (the palette chunk follows it). */
+  protected openSearch(): void {
+    this.commandsLoading ??= import('./docs/doc-index').then(({ DOC_SECTIONS }) => {
+      this.commands.set([
+        ...NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, value: i.value, group: 'Page', keywords: g.label, icon: File01Icon }))),
+        ...NAV.flatMap((g) => g.items.flatMap((i) =>
+          (DOC_SECTIONS[i.value] ?? []).map((s) => ({ label: s.name, value: `${i.value}#${s.anchor}`, group: i.label, icon: HashtagIcon })),
+        )),
+      ]);
+    }).catch((err: unknown) => {
+      this.commandsLoading = null; // let the next press retry
+      console.error('Search index failed to load', err);
+    });
+    void this.commandsLoading.then(() => { if (this.commands().length) this.cmdOpen.set(true); });
+  }
+
+  protected openNav(): void {
+    this.navWanted.set(true);
+    this.navOpen.set(true);
+  }
 
   protected readonly filtered = computed<UiSideNavGroup[]>(() => {
     const q = this.query().trim().toLowerCase();
@@ -198,7 +241,7 @@ export class App {
   protected onKey(e: KeyboardEvent): void {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
-      this.cmdOpen.set(true);
+      this.openSearch();
     }
   }
   protected onFilter(e: Event): void {

@@ -74,8 +74,13 @@
             "production": {
               "budgets": [
                 {
+                  // ~537 kB raw (~125 kB gzipped) after the shell lazy-loads search, the mobile drawer,
+                  // toasts and the FX layer. What remains is first-paint code: Angular core, router and
+                  // platform, plus ui-button (top bar) and ui-side-nav (sidebar). A library entry point
+                  // is one module, so those two bring the rest of their entry points and the CDK overlay
+                  // and @angular/forms code it uses. Raise this only for a reason like that one.
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "560kB",
                   "maximumError": "1MB"
                 },
                 {

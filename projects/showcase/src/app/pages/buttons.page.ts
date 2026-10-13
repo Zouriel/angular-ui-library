@@ -30,7 +30,7 @@ const SLOT = 'Projected content is the label (text, or an icon followed by text)
       <doc-section name="Button" selector="ui-button" [api]="buttonApi"
         shapes="// exported from @zouriel/ui/button; the variant input of every button here takes it
 type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand';"
-        summary="Seven variants, three sizes, loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
+        summary="Seven variants, three sizes, loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). The link variant is sized to its text but never smaller than 24x24. On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
         <doc-demo code="<ui-button variant=&quot;primary&quot;>Primary</ui-button>
 <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Outline</ui-button>
 <ui-button variant=&quot;destructive&quot;>Delete</ui-button>
@@ -218,7 +218,7 @@ export class ButtonsPage {
     { name: 'options', type: 'readonly UiSegmentedOption[]', default: '[]', desc: 'The choices, in order (see Data shapes).' },
     { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way (`[(value)]`). The chosen option. Also a form control: ngModel, formControl, formControlName (which also disable it).' },
     { name: 'label', type: 'string', default: "'Options'", desc: 'aria-label for the radiogroup.' },
-    { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
+    { name: 'size', type: SIZE, default: "'md'", desc: 'Control height. Options are never under 24px tall, so sm is 28px overall.' },
   ];
   protected readonly groupApi: ApiRow[] = [
     { name: 'label', type: 'string', default: '—', desc: 'aria-label for the group.' },

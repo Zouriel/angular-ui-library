@@ -35,8 +35,8 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Popover" selector="ui-popover" [api]="popoverApi"
-        summary="Click-triggered floating panel (role=&quot;dialog&quot;). Project the trigger with [popover-trigger] and the panel body as default content. Closes on outside click and Escape. Focus is not moved into the panel; when Escape closes it from inside, focus goes back to the trigger. Falls back to above the trigger when there is no room below, and shifts sideways to stay on screen.">
-        <doc-demo code="<ui-popover [(open)]=&quot;open&quot; placement=&quot;bottom-start&quot;>
+        summary="Click-triggered floating panel (role=&quot;dialog&quot;). Project the trigger with [popover-trigger] and the panel body as default content. Closes on outside click and Escape. Focus is not moved into the panel; when Escape closes it from inside, focus goes back to the trigger. The panel is named by label (aria-label) when set, otherwise by the trigger's text (aria-labelledby). Falls back to above the trigger when there is no room below, and shifts sideways to stay on screen.">
+        <doc-demo code="<ui-popover [(open)]=&quot;open&quot; placement=&quot;bottom-start&quot; label=&quot;Popover&quot;>
   <ui-button popover-trigger>Open</ui-button>
   Panel content
 </ui-popover>">
@@ -106,7 +106,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi" [outputs]="sheetOut"
-        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal: opening it does not move or trap focus, and backdrop only adds a dimmed layer that closes it on tap. Escape closes it while focus is inside, and focus then goes back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
+        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal by default: opening it does not move focus and Tab can leave it. With backdrop it is modal while open: the page dims and a tap on it closes the sheet, the sheet is aria-modal, focus moves in (to the element marked cdkFocusInitial, else the handle) and Tab is trapped inside. Escape closes it while focus is inside; closing either way sends focus back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
         <doc-demo code="import { UiBottomSheet } from '@zouriel/ui/dialog';
 
 <ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
@@ -115,13 +115,14 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
           <div class="row">
             <ui-button variant="secondary" (click)="sheetSnap.set(1)">Open half</ui-button>
             <ui-button variant="ghost" (click)="sheetSnap.set(2)">Open full</ui-button>
+            <ui-button variant="outline" (click)="sheetModal.set(true); sheetSnap.set(1)">Open with backdrop</ui-button>
             <span class="sheet-state">snap: {{ sheetSnap() }}</span>
           </div>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Toast" selector="UiToastService · ui-toast-host" [api]="toastApi"
-        summary="Imperative notifications. Render <ui-toast-host /> once near the app root (this site does), then call the service: show(options), or info/success/warning/danger(message, title?). Each returns an id; dismiss(id) removes it. Toasts stack in the host's corner, newest last, and leave on their own after duration ms (4000 by default; 0 keeps them). The countdown pauses while the pointer or focus is on a toast and resumes with the time left, at least one more second. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;, inside an aria-live=&quot;polite&quot; region."
+        summary="Imperative notifications. Render <ui-toast-host /> once near the app root (this site does), then call the service: show(options), or info/success/warning/danger(message, title?). Each returns an id; dismiss(id) removes it. Toasts stack at the host's position (a corner, or centred on the top or bottom edge), newest last, slide in from that edge and back out toward it, and leave on their own after duration ms (4000 by default; 0 keeps them). The countdown pauses while the pointer or focus is on a toast and resumes with the time left, at least one more second. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;, inside an aria-live=&quot;polite&quot; region."
         [shapes]="TOAST">
         <doc-demo lang="ts" code="import { UiToastService, UiToastHost } from '@zouriel/ui/dialog';
 
@@ -139,7 +140,7 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
       </doc-section>
 
       <doc-section name="Command palette" selector="ui-command-palette" [api]="paletteApi" [outputs]="paletteOut" [shapes]="COMMAND"
-        summary="A search-and-run dialog for commands, like the Search docs button in this site's header. Bind [(open)], pass commands, listen to (run). Typing filters by case-insensitive substring over label, group and keywords. ArrowUp/Down move the highlight (the field keeps focus, with aria-activedescendant), Enter runs it, and so does a click; running closes the palette. Escape or a backdrop click closes it. Focus is trapped while it is open and goes back to where it was on close. It binds no keyboard shortcut of its own: listen for Ctrl/Cmd+K yourself, as in the snippet. It renders where it is declared (position: fixed), so declare it near the root rather than inside a transformed element, and it does not lock page scroll.">
+        summary="A search-and-run dialog for commands, like the Search docs button in this site's header. Bind [(open)], pass commands, listen to (run). Typing filters by case-insensitive substring over label, group and keywords. ArrowUp/Down move the highlight (the field keeps focus, with aria-activedescendant), Enter runs it, and so does a click; running closes the palette. Escape or a backdrop click closes it. Focus is trapped while it is open and goes back to where it was on close. It binds no keyboard shortcut of its own: listen for Ctrl/Cmd+K yourself, as in the snippet. While open it sits on its own layer at the end of <body>, so a transformed or clipped ancestor cannot trap it, and page scroll is blocked (CDK block scroll strategy; needs @angular/cdk/overlay-prebuilt.css, like the other overlays).">
         <doc-demo lang="ts" code="import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import FileAddIcon from '@hugeicons/core-free-icons/FileAddIcon';
 
@@ -165,7 +166,7 @@ onKey(e: KeyboardEvent) {
 
     <ui-command-palette [(open)]="palette" [commands]="commands" (run)="toast.info($event.label, 'Ran command')" />
 
-    <ui-bottom-sheet [(snap)]="sheetSnap" [snaps]="[0, 0.4, 0.9]" title="Layers" [hasHeader]="true">
+    <ui-bottom-sheet [(snap)]="sheetSnap" (snapChange)="$event === 0 && sheetModal.set(false)" [snaps]="[0, 0.4, 0.9]" title="Layers" [hasHeader]="true" [backdrop]="sheetModal()">
       <ui-button sheet-actions size="sm" variant="ghost">Add</ui-button>
       <div class="sheet-rows">
         @for (n of sheetRows; track n) { <div class="sheet-row">Layer {{ n }}</div> }
@@ -236,6 +237,7 @@ export class OverlaysPage {
     { name: 'run', type: 'UiCommand', default: '—', desc: 'A command was chosen (Enter or click). The palette closes after emitting.' },
   ];
   protected readonly TOAST = `type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
+type UiToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
 interface UiToastOptions {
   message: string;
   title?: string;
@@ -272,6 +274,7 @@ interface UiToastAction {
     { name: 'placement', type: "UiPopoverPlacement: 'bottom' | 'top' | 'bottom-start' | 'bottom-end'", default: "'bottom-start'", desc: 'Preferred position. Falls back to top (centred) when it does not fit.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'label', type: 'string', default: "''", desc: "Accessible name for the panel (aria-label). Empty: the panel is labelled by the trigger's text." },
     { name: '[popover-trigger]', type: 'slot', default: '—', desc: 'The element that toggles the panel on click.' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Panel content.' },
   ];
@@ -323,6 +326,7 @@ interface UiToastAction {
     { name: 'cancel', type: 'void', default: '—', desc: 'Cancel pressed. Not emitted for Escape, the backdrop or the close button.' },
   ];
   protected readonly sheetSnap = signal(0);
+  protected readonly sheetModal = signal(false);
   protected readonly sheetRows = Array.from({ length: 30 }, (_, i) => i + 1);
   protected readonly sheetApi: ApiRow[] = [
     { name: 'snaps', type: 'readonly number[]', default: '[0, 0.5, 1]', desc: 'Resting heights as fractions of the room it has, ascending. A first snap of 0 is closed.' },
@@ -330,13 +334,14 @@ interface UiToastAction {
     { name: 'title', type: 'string', default: "''", desc: 'Header title and aria-label. A title, or hasHeader, shows the header row.' },
     { name: 'offset', type: 'number', default: '0', desc: 'Px kept free below it, for a toolbar it sits on.' },
     { name: 'topInset', type: 'number', default: '0', desc: 'Px kept free above its tallest snap.' },
-    { name: 'backdrop', type: 'boolean', default: 'false', desc: 'Dims the page while open and closes on a backdrop tap. Focus is still not trapped.' },
+    { name: 'backdrop', type: 'boolean', default: 'false', desc: 'Makes it modal while open: dims the page, closes on a backdrop tap, sets aria-modal, moves focus in and traps Tab.' },
     { name: 'closable', type: 'boolean', default: 'true', desc: 'Close button in the header.' },
     { name: 'hasHeader', type: 'boolean', default: 'false', desc: 'Show the header row without a title, for the close button and [sheet-actions].' },
     { name: 'expandOnFocus', type: 'boolean', default: 'true', desc: 'Rise to the tallest snap when a field inside gains focus on a touch screen.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },
+    { name: 'cdkFocusInitial', type: 'attribute', default: '—', desc: 'With backdrop: the element that gets focus on open (default: the first focusable one, the handle).' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls inside the sheet.' },
     { name: '--ui-sheet-z', type: 'CSS variable', default: 'var(--ui-z-overlay)', desc: 'Stacking level, e.g. to sit under a toolbar but below dialogs.' },
   ];
@@ -345,7 +350,7 @@ interface UiToastAction {
     { name: 'coverChange', type: 'number', default: '—', desc: 'Px of the screen it takes from the bottom once settled, including what it rests on (offset or keyboard).' },
   ];
   protected readonly toastApi: ApiRow[] = [
-    { name: 'host: position', type: "'top-right'|'top-left'|'bottom-right'|'bottom-left'", default: "'bottom-right'", desc: 'ui-toast-host corner.' },
+    { name: 'host: position', type: 'UiToastPosition', default: "'bottom-right'", desc: 'Where ui-toast-host stacks toasts: a corner, or centred on the top or bottom edge. Toasts slide in from that side.' },
     { name: 'service.show(opts)', type: '(UiToastOptions) => number', default: '—', desc: 'Enqueue; returns id.' },
     { name: 'service.info / success / warning / danger', type: '(message: string, title?: string) => number', default: '—', desc: 'Shorthands for show() with a tone.' },
     { name: 'service.dismiss(id)', type: '(number) => void', default: '—', desc: 'Remove a toast.' },

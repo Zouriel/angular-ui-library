@@ -32,7 +32,10 @@ export interface UiBreadcrumb {
     ol { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-1); margin: 0; padding: 0; list-style: none; }
     li { display: inline-flex; align-items: center; gap: var(--ui-space-1); }
     .crumb { display: inline-block; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
-      font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text-muted); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; }
+      font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 24px; color: var(--ui-color-text-muted); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer;
+      /* A 24px tall, at least 24px wide hit box (WCAG 2.5.8); the negative margins keep the trail as
+         tall as one line of text, so it sits on the page as before. */
+      min-width: 24px; text-align: center; margin-block: calc((1.35em - 24px) / 2); }
     a.crumb:hover, .crumb.link:hover { color: var(--ui-color-text); text-decoration: underline; }
     .crumb.current { color: var(--ui-color-text); font-weight: 500; cursor: default; }
     .crumb:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }

@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
-  Component, ElementRef, NgZone, OnDestroy, inject, input, model, output, signal, viewChild,
+  Component, ElementRef, NgZone, OnDestroy, computed, inject, input, model, output, signal, viewChild,
 } from '@angular/core';
 
 export interface UiSequencerKeyframe {
@@ -60,6 +60,11 @@ type DragKind = 'move' | 'start' | 'end' | 'keyframe' | 'playhead' | 'reorder' |
 const LONG_PRESS_MS = 380;
 /** How far a finger can wander and still count as holding still, or as a tap. */
 const TOUCH_SLOP = 8;
+/**
+ * The shortest row, in px. A bar fills its lane (row height less the 1px divider), so this keeps every
+ * bar's box at least 24px tall (WCAG 2.5.8 target size) whatever `rowHeight` asks for.
+ */
+const MIN_ROW_HEIGHT = 25;
 /** How long the name shown after a tap stays up. */
 const TIP_MS = 2600;
 
@@ -84,7 +89,7 @@ const TIP_MS = 2600;
   imports: [NgTemplateOutlet],
   host: {
     class: 'ui-sequencer', '[class.compact]': 'compact()', '[class.no-labels]': '!showLabels()', '[class.lifting]': 'liftedId() !== null',
-    '[style.--label-w.px]': 'showLabels() ? labelWidth() : 0', '[style.--row-h.px]': 'rowHeight()',
+    '[style.--label-w.px]': 'showLabels() ? labelWidth() : 0', '[style.--row-h.px]': 'rowH()',
     '(touchstart)': 'onTouchStart($event)', '(touchmove)': 'onTouchMove($event)', '(touchend)': 'onTouchEnd($event)',
     '(touchcancel)': 'onTouchEnd($event)', '(contextmenu)': 'onContextMenu($event)', '(wheel)': 'onWheel($event)',
   },
@@ -159,7 +164,7 @@ const TIP_MS = 2600;
             @if (row.id === t.id) {
               <div class="tip" role="status" [class.below]="i === 0" [class.from-left]="t.edge === 'left'" [class.from-right]="t.edge === 'right'"
                 [style.left]="t.x !== null ? t.x + 'px' : 'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct((row.start + row.end) / 2) / 100 + ')'"
-                [style.top.px]="(i === 0 ? i + 2 : i + 1) * rowHeight()">
+                [style.top.px]="(i === 0 ? i + 2 : i + 1) * rowH()">
                 @if (row.kind) { <span class="kind">{{ row.kind }}</span> }
                 <span class="tip-name">{{ row.label }}</span>
                 <ng-container [ngTemplateOutlet]="toggleButtons" [ngTemplateOutletContext]="{ $implicit: row }" />
@@ -232,22 +237,30 @@ const TIP_MS = 2600;
     .lane { position: relative; border-bottom: 1px solid var(--ui-color-border-subtle); }
     .lane.selected { background: color-mix(in srgb, var(--ui-color-selected) 60%, transparent); }
     .gridline { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--ui-color-border-subtle); }
-    .bar { position: absolute; top: 5px; bottom: 5px; min-width: 6px; box-sizing: border-box; border-radius: var(--ui-radius-sm);
+    /* The bar's box fills the lane height (at least 24px, a comfortable target); the visible bar is
+       drawn inset by ::before, so short rows don't shrink what the pointer has to hit. */
+    .bar { position: absolute; top: 0; bottom: 0; min-width: 6px; box-sizing: border-box; border-radius: var(--ui-radius-sm); cursor: grab; }
+    .bar::before { content: ''; position: absolute; inset: 5px 0; box-sizing: border-box; border-radius: inherit;
       background: color-mix(in srgb, var(--ui-color-primary) 22%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 55%, transparent);
-      cursor: grab; transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
-    .bar:not(.locked):hover { border-color: var(--ui-color-primary); }
-    .bar.selected { background: color-mix(in srgb, var(--ui-color-primary) 38%, var(--ui-color-surface)); border-color: var(--ui-color-primary); }
+      transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .bar:not(.locked):hover::before { border-color: var(--ui-color-primary); }
+    .bar.selected::before { background: color-mix(in srgb, var(--ui-color-primary) 38%, var(--ui-color-surface)); border-color: var(--ui-color-primary); }
     .bar.muted { opacity: .45; }
-    .bar.locked { cursor: not-allowed; background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ui-color-text) 8%, transparent) 5px 7px); }
-    .bar:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .bar.locked { cursor: not-allowed; }
+    .bar.locked::before { background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ui-color-text) 8%, transparent) 5px 7px); }
+    .bar:focus-visible { outline: none; }
+    .bar:focus-visible::before { box-shadow: var(--ui-focus-ring); }
     /* Mostly outside the bar: a keyframe at 0% or 100% sits over the inside, and keyframes win. */
-    .edge { position: absolute; top: -2px; bottom: -2px; width: 16px; cursor: ew-resize; z-index: 2; }
+    .edge { position: absolute; top: 0; bottom: 0; width: 16px; cursor: ew-resize; z-index: 2; }
     .edge.start { left: -14px; } .edge.end { right: -14px; }
     .bar.locked .edge { display: none; }
-    .diamond { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; rotate: 45deg; box-sizing: border-box;
-      background: var(--ui-color-surface); border: 1.5px solid var(--ui-color-primary); cursor: ew-resize; z-index: 3; }
-    .diamond.selected { background: var(--ui-color-primary); }
-    .diamond:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* A 24px target around a small diamond drawn by ::before. */
+    .diamond { position: absolute; top: 50%; width: 24px; height: 24px; margin: -12px 0 0 -12px; cursor: ew-resize; z-index: 3; }
+    .diamond::before { content: ''; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; rotate: 45deg; box-sizing: border-box;
+      background: var(--ui-color-surface); border: 1.5px solid var(--ui-color-primary); }
+    .diamond.selected::before { background: var(--ui-color-primary); }
+    .diamond:focus-visible { outline: none; }
+    .diamond:focus-visible::before { box-shadow: var(--ui-focus-ring); }
     .empty { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); height: calc(var(--row-h) * 2); }
     .drop-end { grid-column: 1 / 2; height: 0; box-shadow: 0 -2px 0 var(--ui-color-primary); }
     .end-handle { position: absolute; top: 0; bottom: 0; width: 14px; margin-left: -7px; z-index: 2; cursor: ew-resize; touch-action: none;
@@ -273,8 +286,8 @@ const TIP_MS = 2600;
     .tip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
     .tip .toggle { opacity: 1; }
     @keyframes tip-in { from { opacity: 0; scale: .92; } }
-    .bar.lifted { z-index: 5; cursor: grabbing; box-shadow: var(--ui-shadow-2); scale: 1.04 1.25;
-      background: color-mix(in srgb, var(--ui-color-primary) 48%, var(--ui-color-surface)); }
+    .bar.lifted { z-index: 5; cursor: grabbing; scale: 1.04 1.25; }
+    .bar.lifted::before { box-shadow: var(--ui-shadow-2); background: color-mix(in srgb, var(--ui-color-primary) 48%, var(--ui-color-surface)); }
     :host(.lifting) { cursor: grabbing; }
     @media (prefers-reduced-motion: reduce) {
       .tip { animation: none; }
@@ -304,7 +317,7 @@ const TIP_MS = 2600;
       .playhead-knob { width: 18px; height: 18px; margin-left: -9px; }
       .playhead-knob::after, .diamond::after, .grip::after { content: ''; position: absolute; inset: -10px; }
       .grip { position: relative; padding: 0 6px; font-size: 14px; }
-      .diamond { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+      .diamond::before { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
       /* Outside the bar, so a keyframe diamond sitting at 0% or 100% can't cover them; shown on the selected bar. */
       .edge { width: 22px; } .edge.start { left: -22px; } .edge.end { right: -22px; }
       .bar.selected .edge::before { content: ''; position: absolute; top: 20%; bottom: 20%; width: 4px; border-radius: 2px; background: var(--ui-color-primary); }
@@ -325,7 +338,9 @@ export class UiSequencer implements OnDestroy {
   title = input('Layers');
   emptyText = input('Nothing here yet');
   labelWidth = input(200);
+  /** Row height in px; never less than 25, so every bar stays a 24px-tall target. */
   rowHeight = input(30);
+  protected readonly rowH = computed(() => Math.max(MIN_ROW_HEIGHT, this.rowHeight() || 0));
   /** Snap distance in screen pixels. */
   snapPixels = input(6);
   /** Keyboard step as a fraction of the length. */
@@ -510,7 +525,7 @@ export class UiSequencer implements OnDestroy {
     e.preventDefault();
     e.stopPropagation();
     const labelEl = (e.target as HTMLElement).closest('.label') as HTMLElement | null;
-    const rowTop = (labelEl?.getBoundingClientRect().top ?? e.clientY) - index * this.rowHeight();
+    const rowTop = (labelEl?.getBoundingClientRect().top ?? e.clientY) - index * this.rowH();
     this.begin(e, { kind: 'reorder', row, index, origStart: 0, origEnd: 0, origAt: 0, rowTop });
   }
 
@@ -590,7 +605,7 @@ export class UiSequencer implements OnDestroy {
           break;
         }
         case 'reorder': {
-          const index = Math.round((e.clientY - (d.rowTop ?? 0)) / this.rowHeight() - 0.5 + 0.5);
+          const index = Math.round((e.clientY - (d.rowTop ?? 0)) / this.rowH() - 0.5 + 0.5);
           this.dropIndex.set(Math.max(0, Math.min(this.rows().length, index)));
           break;
         }
@@ -690,7 +705,7 @@ export class UiSequencer implements OnDestroy {
     const bar = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('.bar')).find((b) => b.dataset['row'] === row.id);
     const laneTop = bar?.parentElement?.getBoundingClientRect().top ?? y;
     this.lift = {
-      row, index, x, y, unitsPerPx: this.unitsPerPx(), rowTop: laneTop - index * this.rowHeight(),
+      row, index, x, y, unitsPerPx: this.unitsPerPx(), rowTop: laneTop - index * this.rowH(),
       scrollLeft: scroller?.scrollLeft ?? 0, scrollTop: scroller?.scrollTop ?? 0, start: row.start, moved: false,
     };
     this.hideTip();
@@ -709,7 +724,7 @@ export class UiSequencer implements OnDestroy {
       const edge = 28;
       if (x < r.left + edge) scroller.scrollLeft -= 12;
       else if (x > r.right - edge) scroller.scrollLeft += 12;
-      if (y < r.top + this.rowHeight() + edge) scroller.scrollTop -= 8;
+      if (y < r.top + this.rowH() + edge) scroller.scrollTop -= 8;
       else if (y > r.bottom - edge) scroller.scrollTop += 8;
     }
     const scrolledX = (scroller?.scrollLeft ?? 0) - l.scrollLeft;
@@ -731,8 +746,8 @@ export class UiSequencer implements OnDestroy {
     }
     // Up or down: only once the bar has left its own row, so a sideways move never reorders by accident.
     const rowTop = l.rowTop - scrolledY;
-    const over = (y - rowTop) / this.rowHeight();
-    if (Math.abs(y - l.y - scrolledY) < this.rowHeight() * 0.6) this.dropIndex.set(null);
+    const over = (y - rowTop) / this.rowH();
+    if (Math.abs(y - l.y - scrolledY) < this.rowH() * 0.6) this.dropIndex.set(null);
     else this.dropIndex.set(Math.max(0, Math.min(this.rows().length, Math.round(over))));
   }
 

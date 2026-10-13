@@ -259,3 +259,41 @@ describe('UiSequencer, a draggable end', () => {
     expect(plain.nativeElement.querySelector('.end-handle')).toBeNull();
   });
 });
+
+@Component({
+  imports: [UiSequencer],
+  template: `<ui-sequencer [rows]="rows" [length]="100" [rowHeight]="rowHeight()" />`,
+})
+class RowHeightHost {
+  readonly rowHeight = signal(18);
+  readonly rows: UiSequencerRow[] = [{ id: 'a', label: 'Title', start: 10, end: 40, keyframes: [{ id: 'k', at: 0.5 }] }];
+}
+
+describe('UiSequencer target sizes', () => {
+  it('never makes a row shorter than 25px, so a bar (its lane less the 1px divider) is a 24px target', () => {
+    const fixture = TestBed.createComponent(RowHeightHost);
+    fixture.detectChanges();
+    const el = fixture.nativeElement.querySelector('ui-sequencer') as HTMLElement;
+    expect(el.style.getPropertyValue('--row-h')).toBe('25px');
+    fixture.componentInstance.rowHeight.set(40);
+    fixture.detectChanges();
+    expect(el.style.getPropertyValue('--row-h')).toBe('40px');
+  });
+
+  it('draws the keyframe diamond inside its own box, so the focusable target is not the small rotated shape', () => {
+    const fixture = TestBed.createComponent(RowHeightHost);
+    fixture.detectChanges();
+    const diamond = fixture.nativeElement.querySelector('.diamond') as HTMLElement;
+    expect(diamond).not.toBeNull();
+    expect(diamond.children.length).toBe(0);
+    // The 24px box is unrotated; the 10px diamond is its ::before.
+    const d = getComputedStyle(diamond);
+    expect(d.width).toBe('24px');
+    expect(d.height).toBe('24px');
+    expect(d.rotate === '' || d.rotate === 'none').toBe(true);
+    // The bar's box fills the lane height; its visible shape is inset by ::before.
+    const bar = getComputedStyle(fixture.nativeElement.querySelector('.bar') as HTMLElement);
+    expect(bar.top).toBe('0px');
+    expect(bar.bottom).toBe('0px');
+  });
+});

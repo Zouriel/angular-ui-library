@@ -72,6 +72,40 @@ describe('FbBuilderStore', () => {
     expect(s.canRedo()).toBe(true);
   });
 
+  it('keeps history when the host hands back the same form with a new revision (publishing)', () => {
+    const s = store(form([f('a', 'text')]));
+    s.updateField('a', { label: 'Name' });
+    expect(s.canUndo()).toBe(true);
+    // The host publishes: a new object, revision bumped, content as the builder has it.
+    s.load({ ...s.def(), revision: 3 });
+    expect(s.canUndo()).toBe(true);
+    expect(s.def().revision).toBe(3);
+    // A copy that went through JSON (undefined keys dropped) is still the same form.
+    s.load(JSON.parse(JSON.stringify({ ...s.def(), revision: 4 })));
+    expect(s.canUndo()).toBe(true);
+    // Undo steps back through content; the revision the host gave stays.
+    s.undo();
+    expect(s.field('a')!.label).toBe('A');
+    expect(s.def().revision).toBe(4);
+    s.redo();
+    expect(s.field('a')!.label).toBe('Name');
+    expect(s.def().revision).toBe(4);
+  });
+
+  it('clears history for another form, for other content, or when asked', () => {
+    const s = store(form([f('a', 'text')]));
+    s.updateField('a', { label: 'Name' });
+    s.load(form([f('a', 'text', { label: 'Name' })], { id: 'other' }));
+    expect(s.canUndo()).toBe(false);
+    s.updateField('a', { label: 'Again' });
+    s.load(form([f('a', 'text', { label: 'Changed elsewhere' })], { id: 'other' }));
+    expect(s.canUndo()).toBe(false);
+    s.updateField('a', { label: 'Once more' });
+    s.clearHistory();
+    expect(s.canUndo()).toBe(false);
+    expect(s.canRedo()).toBe(false);
+  });
+
   it('moves out of a section when nudged past its edge', () => {
     const g: UiFbGroup = { kind: 'group', id: 'g', elements: [f('in', 'text')] };
     const s = store(form([f('a', 'text'), g]));
@@ -303,6 +337,27 @@ describe('UiFormBuilder', () => {
     expect(indexDefinition(host.def()).has('z')).toBe(true);
   });
 
+  it('keeps undo after the host stores a published copy back into [(definition)]', async () => {
+    const { fx, el, host, card } = await render();
+    const c = card('Second');
+    c.click();
+    fx.detectChanges();
+    c.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    fx.detectChanges();
+    const undo = () => el.querySelector('[aria-label="Undo"]') as HTMLButtonElement;
+    expect(undo().disabled).toBe(false);
+    // Publish, the way the README shows it.
+    host.def.set({ ...host.def(), revision: 1 });
+    fx.detectChanges();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(undo().disabled).toBe(false);
+    undo().click();
+    fx.detectChanges();
+    expect(host.def().pages[0].elements.length).toBe(2);
+    expect(host.def().revision).toBe(1);
+  });
+
   it('starts empty forms with a friendly way in', async () => {
     const { fx, el, host } = await render();
     host.def.set(createDefinition('Blank'));
@@ -399,5 +454,17 @@ describe('FbCanvas', () => {
     expect(item('Move earlier').disabled).toBe(true);
     item('Delete page').click();
     expect(host.deleted).toEqual(['p1']);
+  });
+});
+
+describe('FbCanvas target sizes', () => {
+  it('gives the drag grip a 24x24 box', () => {
+    const fx = TestBed.createComponent(CanvasHost);
+    fx.componentInstance.store.load(form([f('a', 'text', { label: 'First' })]));
+    fx.detectChanges();
+    const grip = (fx.nativeElement as HTMLElement).querySelector('.grip') as HTMLElement;
+    const cs = getComputedStyle(grip);
+    expect(cs.width).toBe('24px');
+    expect(cs.height).toBe('24px');
   });
 });

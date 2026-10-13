@@ -120,7 +120,9 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--ui-color-surface-hover); }
     tbody tr.selected { background: var(--ui-color-selected); }
-    .sort { display: inline-flex; align-items: center; gap: var(--ui-space-1); background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+    /* 24px tall hit box (WCAG 2.5.8); the negative margins give the extra height back to the cell's padding. */
+    .sort { display: inline-flex; align-items: center; gap: var(--ui-space-1); background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0;
+      min-height: 24px; min-width: 24px; margin-block: calc(var(--ui-space-1) * -1); vertical-align: middle; }
     .sort:hover { color: var(--ui-color-text); }
     th:not([aria-sort]) .arrow { opacity: .4; }
     .sort:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }

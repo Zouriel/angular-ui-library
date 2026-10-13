@@ -21,7 +21,11 @@ function iso(y: number, m: number, d: number): string {
  *
  * Keyboard: Enter, Space or ArrowDown on the field opens it with focus on the chosen day (or today).
  * Arrow keys move by day and week (crossing months), PageUp/PageDown by month, Home/End to the
- * month's ends; Enter picks. Tab stays inside the popover; Escape closes it and returns to the field.
+ * month's ends; Enter picks. The month and year grids (opened from the heading) work the same way:
+ * one tab stop, Arrow keys move (Up/Down by a row of three), Home/End to the first/last cell,
+ * PageUp/PageDown by a year (month grid) or a page of 12 years (year grid), Enter or Space picks;
+ * opening a grid focuses the month or year in view. Tab stays inside the popover; Escape closes it
+ * and returns to the field.
  */
 @Component({
   selector: 'ui-date-picker',
@@ -57,11 +61,11 @@ function iso(y: number, m: number, d: number): string {
           <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
           @if (mode() === 'days') {
             <span class="heading">
-              <button type="button" class="lbl" (click)="mode.set('months')">{{ monthName() }}</button>
-              <button type="button" class="lbl" (click)="mode.set('years')">{{ view()[0] }}</button>
+              <button type="button" class="lbl" (click)="showMonths()">{{ monthName() }}</button>
+              <button type="button" class="lbl" (click)="showYears()">{{ view()[0] }}</button>
             </span>
           } @else if (mode() === 'months') {
-            <button type="button" class="lbl" (click)="mode.set('years')">{{ view()[0] }}</button>
+            <button type="button" class="lbl" (click)="showYears()">{{ view()[0] }}</button>
           } @else {
             <span class="heading-static">{{ yearRange() }}</span>
           }
@@ -91,22 +95,31 @@ function iso(y: number, m: number, d: number): string {
             }
           </div>
         } @else if (mode() === 'months') {
-          <div class="mgrid">
+          <div class="mgrid" role="group" [attr.aria-label]="'Months of ' + view()[0]">
             @for (mo of months; track mo.index) {
               <button
                 type="button"
                 class="mcell"
                 [class.selected]="mo.index === view()[1]"
+                [attr.data-month]="mo.index"
+                [attr.aria-label]="mo.long + ' ' + view()[0]"
+                [attr.aria-pressed]="mo.index === view()[1]"
+                [attr.tabindex]="mo.index === gridMonth() ? 0 : -1"
+                (keydown)="onMonthKey($event, mo.index)"
                 (click)="pickMonth(mo.index)">{{ mo.short }}</button>
             }
           </div>
         } @else {
-          <div class="mgrid">
+          <div class="mgrid" role="group" [attr.aria-label]="'Years ' + yearRange()">
             @for (yr of years(); track yr) {
               <button
                 type="button"
                 class="mcell"
                 [class.selected]="yr === view()[0]"
+                [attr.data-year]="yr"
+                [attr.aria-pressed]="yr === view()[0]"
+                [attr.tabindex]="yr === gridYear() ? 0 : -1"
+                (keydown)="onYearKey($event, yr)"
                 (click)="pickYear(yr)">{{ yr }}</button>
             }
           </div>
@@ -196,7 +209,11 @@ export class UiDatePicker implements ControlValueAccessor {
   private readonly injector = inject(Injector);
   protected readonly disabled = signal(false);
   protected readonly weekdays = WEEKDAYS;
-  protected readonly months = MONTHS_SHORT.map((short, index) => ({ index, short }));
+  protected readonly months = MONTHS_SHORT.map((short, index) => ({ index, short, long: MONTHS[index] }));
+  /** The month (0-11) holding the month grid's single tab stop. */
+  protected readonly gridMonth = signal(0);
+  /** The year holding the year grid's single tab stop; it also decides which 12-year page shows. */
+  protected readonly gridYear = signal(new Date().getFullYear());
   // Which sub-view is showing: day grid, month grid, or year grid.
   protected readonly mode = signal<'days' | 'months' | 'years'>('days');
   // [year, monthIndex] currently displayed.
@@ -217,7 +234,7 @@ export class UiDatePicker implements ControlValueAccessor {
   });
   protected readonly monthName = computed(() => MONTHS[this.view()[1]]);
   // Start year of the current 12-year page shown in the year grid.
-  private readonly yearPageStart = computed(() => Math.floor(this.view()[0] / 12) * 12);
+  private readonly yearPageStart = computed(() => Math.floor(this.gridYear() / 12) * 12);
   protected readonly years = computed(() => {
     const start = this.yearPageStart();
     return Array.from({ length: 12 }, (_, i) => start + i);
@@ -345,16 +362,70 @@ export class UiDatePicker implements ControlValueAccessor {
     } else if (mode === 'months') {
       this.view.set([y + delta, m]);
     } else {
-      this.view.set([y + delta * 12, m]);
+      // Pages through the years without choosing one; the tab stop moves with the page.
+      this.gridYear.update((g) => g + delta * 12);
     }
+  }
+  /** Opens the month grid with focus on the month in view. */
+  protected showMonths(): void {
+    this.gridMonth.set(this.view()[1]);
+    this.mode.set('months');
+    this.focusGridCell(`.mcell[data-month="${this.gridMonth()}"]`);
+  }
+  /** Opens the year grid with focus on the year in view. */
+  protected showYears(): void {
+    this.gridYear.set(this.view()[0]);
+    this.mode.set('years');
+    this.focusGridCell(`.mcell[data-year="${this.gridYear()}"]`);
   }
   protected pickMonth(monthIndex: number): void {
     this.view.set([this.view()[0], monthIndex]);
     this.mode.set('days');
+    // The clicked cell is gone; carry focus to the day grid's tab stop so it isn't lost to <body>.
+    const v = this.value();
+    const [y, m] = this.view();
+    this.focusDay(v && v.startsWith(iso(y, m, 1).slice(0, 8)) ? v : iso(y, m, 1));
   }
   protected pickYear(year: number): void {
     this.view.set([year, this.view()[1]]);
-    this.mode.set('months');
+    this.showMonths();
+  }
+
+  /** Month grid keys: 3 columns within the year shown; PageUp/PageDown change the year. */
+  protected onMonthKey(e: KeyboardEvent, monthIndex: number): void {
+    const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 };
+    let next: number;
+    // A move off the grid (e.g. Up from the first row) stays put rather than jumping sideways.
+    if (e.key in moves) { const n = monthIndex + moves[e.key]; next = n < 0 || n > 11 ? monthIndex : n; }
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = 11;
+    else if (e.key === 'PageUp' || e.key === 'PageDown') {
+      e.preventDefault();
+      this.view.update(([y, m]) => [y + (e.key === 'PageUp' ? -1 : 1), m]);
+      this.focusGridCell(`.mcell[data-month="${monthIndex}"]`);
+      return;
+    } else return;
+    e.preventDefault();
+    this.gridMonth.set(next);
+    this.focusGridCell(`.mcell[data-month="${next}"]`);
+  }
+
+  /** Year grid keys: 3 columns; moving past either end of the page turns the page. */
+  protected onYearKey(e: KeyboardEvent, year: number): void {
+    const start = this.yearPageStart();
+    const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3, PageUp: -12, PageDown: 12 };
+    let next: number;
+    if (e.key in moves) next = year + moves[e.key];
+    else if (e.key === 'Home') next = start;
+    else if (e.key === 'End') next = start + 11;
+    else return;
+    e.preventDefault();
+    this.gridYear.set(next);
+    this.focusGridCell(`.mcell[data-year="${next}"]`);
+  }
+
+  private focusGridCell(selector: string): void {
+    afterNextRender(() => document.querySelector<HTMLElement>(`.cal-panel ${selector}`)?.focus(), { injector: this.injector });
   }
   protected pick(isoDate: string): void {
     const min = this.min();

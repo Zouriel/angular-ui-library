@@ -10,12 +10,14 @@ import { UiMultiSelect } from './multi-select';
   template: `
     <ui-combobox [options]="options()" [formControl]="country" />
     <ui-multi-select [options]="options()" [formControl]="many" />
+    <ui-combobox class="fixed" [options]="options()" [formControl]="fixed" [clearable]="false" />
   `,
 })
 class Host {
   options = signal<UiComboboxOption[]>([]);
   country = new FormControl<string | null>('ca');
   many = new FormControl<string[]>([]);
+  fixed = new FormControl<string | null>('ca');
 }
 
 describe('UiCombobox / UiMultiSelect', () => {
@@ -49,6 +51,67 @@ describe('UiCombobox / UiMultiSelect', () => {
       await f.whenStable();
       expect(panels()).toBe(0);
     }
+  });
+
+  it('clears a chosen value with the Clear button and returns focus to the field', async () => {
+    const { f, combo, panels } = await setup();
+    f.componentInstance.options.set([{ label: 'Canada', value: 'ca' }]);
+    await f.whenStable();
+    const clear = f.nativeElement.querySelector('ui-combobox .clear') as HTMLButtonElement;
+    expect(clear.getAttribute('aria-label')).toBe('Clear');
+    clear.click();
+    await f.whenStable();
+    expect(f.componentInstance.country.value).toBeNull();
+    expect(combo.value).toBe('');
+    expect(document.activeElement).toBe(combo);
+    expect(panels()).toBe(0);
+    // No value, no button.
+    expect(f.nativeElement.querySelector('ui-combobox .clear')).toBeNull();
+  });
+
+  it('clears when the text is emptied and the field is left', async () => {
+    const { f, combo } = await setup();
+    f.componentInstance.options.set([{ label: 'Canada', value: 'ca' }]);
+    await f.whenStable();
+    combo.value = '';
+    combo.dispatchEvent(new Event('input'));
+    combo.dispatchEvent(new FocusEvent('blur'));
+    await f.whenStable();
+    expect(f.componentInstance.country.value).toBeNull();
+    expect(f.componentInstance.country.touched).toBe(true);
+  });
+
+  it('keeps the value when clearable is off, and hides Clear when disabled', async () => {
+    const { f } = await setup();
+    f.componentInstance.options.set([{ label: 'Canada', value: 'ca' }]);
+    await f.whenStable();
+    const fixed = f.nativeElement.querySelector('ui-combobox.fixed input') as HTMLInputElement;
+    expect(f.nativeElement.querySelector('ui-combobox.fixed .clear')).toBeNull();
+    fixed.value = '';
+    fixed.dispatchEvent(new Event('input'));
+    fixed.dispatchEvent(new FocusEvent('blur'));
+    await f.whenStable();
+    expect(f.componentInstance.fixed.value).toBe('ca');
+    expect(fixed.value).toBe('Canada');
+    f.componentInstance.country.disable();
+    await f.whenStable();
+    expect(f.nativeElement.querySelector('ui-combobox .clear')).toBeNull();
+  });
+
+  it('empties a multi-select with Clear all', async () => {
+    const { f, multi, panels } = await setup();
+    f.componentInstance.options.set([{ label: 'Canada', value: 'ca' }, { label: 'Japan', value: 'jp' }]);
+    expect(f.nativeElement.querySelector('ui-multi-select .clear')).toBeNull();
+    f.componentInstance.many.setValue(['ca', 'jp']);
+    await f.whenStable();
+    const clear = f.nativeElement.querySelector('ui-multi-select .clear') as HTMLButtonElement;
+    expect(clear.getAttribute('aria-label')).toBe('Clear all');
+    clear.click();
+    await f.whenStable();
+    expect(f.componentInstance.many.value).toEqual([]);
+    expect(document.activeElement).toBe(multi);
+    expect(panels()).toBe(0);
+    expect(f.nativeElement.querySelector('ui-multi-select .clear')).toBeNull();
   });
 
   it('follows the form control disabled state', async () => {

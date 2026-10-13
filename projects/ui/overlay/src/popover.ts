@@ -4,13 +4,16 @@ import {
 import { Component, ElementRef, computed, inject, input, model, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
+let popoverSeq = 0;
+
 export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end';
 
 /**
  * `ui-popover` — click-triggered floating panel anchored to its trigger via the
  * CDK Overlay. Project the trigger with `[popover-trigger]` and the panel body
  * as default content. Dismisses on outside click and Escape. Focus is not moved into the panel;
- * if it is inside when Escape closes it, it goes back to the trigger.
+ * if it is inside when Escape closes it, it goes back to the trigger. The panel is a `role="dialog"`
+ * named by `label` when set, and otherwise by the trigger's text (`aria-labelledby`).
  */
 @Component({
   selector: 'ui-popover',
@@ -19,6 +22,7 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
     <span
       #trigger
       class="trigger"
+      [id]="triggerId"
       cdkOverlayOrigin
       #origin="cdkOverlayOrigin"
       (click)="toggle()">
@@ -40,6 +44,8 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
         [class.glass]="glass()"
         [class.no-radius]="!radius()"
         role="dialog"
+        [attr.aria-label]="label() || null"
+        [attr.aria-labelledby]="label() ? null : triggerId"
         (keydown.escape)="closeFromPanel()"
         animate.enter="ui-scale-enter"
         animate.leave="ui-scale-leave">
@@ -68,6 +74,10 @@ export class UiPopover {
   placement = input<UiPopoverPlacement>('bottom-start');
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
+  /** Accessible name for the panel. Without it the panel is named by the trigger's text. */
+  label = input('');
+
+  protected readonly triggerId = `ui-popover-trigger-${popoverSeq++}`;
 
   private trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');
 

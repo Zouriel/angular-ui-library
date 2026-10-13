@@ -34,7 +34,10 @@ export interface UiSegmentedOption {
     .opt { flex: 1 0 auto; min-width: 30px; height: calc(var(--ui-size-md) - 6px); padding: 0 var(--ui-space-3); border: 0; border-radius: calc(var(--ui-radius) - 2px);
       background: transparent; color: var(--ui-color-text-muted); font: 500 var(--ui-font-size-sm) var(--ui-font-default); cursor: pointer; white-space: nowrap;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
-    .seg[data-size="sm"] .opt { height: calc(var(--ui-size-sm) - 6px); padding: 0 var(--ui-space-2); }
+    /* Options stay at least 24px tall (WCAG 2.5.8 target size); the sm track drops to 1px of padding
+       to stay close to the other sm controls. */
+    .seg[data-size="sm"] { padding: 1px; gap: 1px; }
+    .seg[data-size="sm"] .opt { height: 24px; min-width: 24px; padding: 0 var(--ui-space-2); }
     .seg[data-size="lg"] .opt { height: calc(var(--ui-size-lg) - 6px); padding: 0 var(--ui-space-4); font-size: var(--ui-font-size-md); }
     .opt:hover:not(:disabled):not(.on) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .opt.on { background: var(--ui-color-surface-raised); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }

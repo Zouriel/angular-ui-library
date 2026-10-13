@@ -1,0 +1,26 @@
+/* Form studio: the Answers tab (list + detail). */
+.answers { flex: 1; min-height: 0; display: grid; grid-template-columns: 320px 1fr; }
+.list { list-style: none; margin: 0; padding: var(--ui-space-2); overflow: auto; border-right: 1px solid var(--ui-color-border); }
+.row { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3); border: 0; border-radius: var(--ui-radius);
+  background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; }
+.row:hover { background: var(--ui-color-surface-hover); }
+.row.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
+.row:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.row-top { display: flex; align-items: baseline; gap: var(--ui-space-2); min-width: 0; }
+.row-top strong { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edited { font-size: 11px; color: var(--ui-color-primary); }
+.detail { overflow: auto; padding: var(--ui-space-6) var(--ui-space-6); min-width: 0; }
+.detail > * { max-width: 760px; }
+.detail-head { display: flex; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-4); flex-wrap: wrap; }
+.detail-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.detail-title strong { font-size: 16px; overflow-wrap: anywhere; }
+.back { display: none; }
+
+@media (max-width: 760px) {
+  .answers { grid-template-columns: 1fr; }
+  .list { border-right: 0; }
+  .answers.has-pick .list, .answers:not(.has-pick) .detail { display: none; }
+  .detail { padding: var(--ui-space-4); }
+  .back { display: inline-flex; }
+}

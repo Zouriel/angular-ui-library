@@ -1,6 +1,8 @@
+import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 import { isPlatformBrowser } from '@angular/common';
 import {
-  Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, computed, effect, inject, input, model, output, signal, viewChild,
+  Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
+  untracked, viewChild,
 } from '@angular/core';
 
 /** A drag shorter than this is a tap, and a body drag is left to the browser until it's longer. */
@@ -40,10 +42,12 @@ interface Drag {
  * followed with touch events, which arrive complete. Pointer events serve the mouse and pen only,
  * and are ignored once a touch has been seen so one finger isn't read as two drags.</p>
  *
- * <p>It's non-modal by default: what's above stays usable, which is the point on an editor. Set
- * `backdrop` to dim the page and close on a backdrop tap; focus is not trapped either way, and
- * opening it does not move focus. Escape closes it while focus is inside, and focus then goes back
- * to where it came from. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
+ * <p>It's non-modal by default: what's above stays usable, which is the point on an editor, so
+ * opening it does not move focus and Tab can leave it. Set `backdrop` to make it modal while open:
+ * the page dims and a backdrop tap closes it, it is marked `aria-modal`, focus moves into it (to an
+ * element marked `cdkFocusInitial`, else the first focusable one, the handle), and Tab is trapped
+ * inside (CDK `FocusTrap`). Escape closes it while focus is inside; closing either way sends focus
+ * back to where it came from. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
  * rises to its tallest snap (turn that off with `expandOnFocus`), and while an on-screen keyboard is up
  * the sheet rests on top of it rather than behind it.</p>
  *
@@ -62,7 +66,7 @@ interface Drag {
     @if (backdrop() && isOpen()) {
       <div class="backdrop" (click)="snap.set(0)"></div>
     }
-    <section #sheet class="sheet" role="dialog" [attr.aria-modal]="backdrop() ? 'true' : null" [attr.aria-label]="title() || null"
+    <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
       (keydown.escape)="close()" (focusin)="onFocusIn($event)">
       <header class="grab"
@@ -104,7 +108,8 @@ interface Drag {
     :host(.dragging) .sheet { transition: none; }
     .grab { flex: none; touch-action: none; cursor: grab; user-select: none; }
     :host(.dragging) .grab { cursor: grabbing; }
-    .handle { display: flex; align-items: center; justify-content: center; width: 100%; padding: var(--ui-space-2) 0; border: 0; background: transparent; cursor: inherit; }
+    /* 24px is the WCAG 2.5.8 minimum target; the padding alone (8 + 5 + 8) came to 21. */
+    .handle { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 100%; min-height: 24px; padding: var(--ui-space-2) 0; border: 0; background: transparent; cursor: inherit; }
     @media (pointer: coarse) { .handle { min-height: var(--ui-size-touch); padding: 0; } }
     .handle span { width: 40px; height: 5px; border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); }
     .handle:focus-visible { outline: none; }
@@ -141,6 +146,9 @@ export class UiBottomSheet {
   private readonly sheet = viewChild.required<ElementRef<HTMLElement>>('sheet');
   /** Where focus came from when it first moved into the sheet; closing from the keyboard hands it back. */
   private returnFocus: HTMLElement | null = null;
+  /** Created once the sheet is rendered; enabled only while the sheet is modal (`backdrop` and open). */
+  private focusTrap: FocusTrap | null = null;
+  private readonly trapReady = signal(false);
 
   /** Resting heights as fractions (0–1) of the room the sheet has; ascending. */
   snaps = input<readonly number[]>([0, 0.5, 1]);
@@ -182,6 +190,8 @@ export class UiBottomSheet {
   protected readonly maxHeight = computed(() => Math.round(this.room() * Math.max(0, ...this.snaps())));
   private readonly snapHeight = (i: number) => Math.round(this.room() * (this.snaps()[i] ?? 0));
   protected readonly isOpen = computed(() => this.snapHeight(this.snap()) > 0);
+  /** With a backdrop and open, it's a modal dialog: focus moves in and is trapped. */
+  protected readonly modal = computed(() => this.backdrop() && this.isOpen());
   protected readonly translate = computed(() => this.maxHeight() - (this.dragHeight() ?? this.snapHeight(this.snap())));
   /** How far the sheet's settled position hangs below its resting edge. Not live while dragging, so content doesn't jump. */
   protected readonly hiddenBelow = computed(() => this.maxHeight() - this.snapHeight(this.snap()));
@@ -220,6 +230,31 @@ export class UiBottomSheet {
         this.detachPointer();
       });
     }
+    if (this.browser) {
+      const trapFactory = inject(FocusTrapFactory);
+      afterNextRender(() => {
+        this.focusTrap = trapFactory.create(this.sheet().nativeElement);
+        this.focusTrap.enabled = false;
+        this.trapReady.set(true);
+      });
+      inject(DestroyRef).onDestroy(() => this.focusTrap?.destroy());
+    }
+    effect(() => {
+      const modal = this.modal();
+      const trap = this.trapReady() ? this.focusTrap : null;
+      if (!trap || trap.enabled === modal) return;
+      untracked(() => {
+        trap.enabled = modal;
+        if (modal) {
+          const active = document.activeElement;
+          if (active instanceof HTMLElement && !this.sheet().nativeElement.contains(active)) this.returnFocus = active;
+          void trap.focusInitialElementWhenReady();
+        } else {
+          // Closed by a backdrop tap or from outside: focus is in the (now inert) sheet or already on <body>.
+          this.restoreFocus(true);
+        }
+      });
+    });
     effect(() => {
       if (this.dragHeight() !== null) return;
       const height = this.snapHeight(this.snap());
@@ -253,16 +288,24 @@ export class UiBottomSheet {
    * sheet is inert, and the browser would otherwise drop focus on <body>.
    */
   close(): void {
+    this.restoreFocus(false);
+    this.snap.set(0);
+  }
+
+  /** Hands focus back to where it came from, if it's in the sheet (or, when `fromBody`, lost to <body>). */
+  private restoreFocus(fromBody: boolean): void {
     const sheet = this.sheet().nativeElement;
     const back = this.returnFocus;
     this.returnFocus = null;
-    if (sheet.contains(document.activeElement) && back?.isConnected && !sheet.contains(back)) back.focus();
-    this.snap.set(0);
+    const active = document.activeElement;
+    const lost = sheet.contains(active) || (fromBody && (!active || active === document.body));
+    if (lost && back?.isConnected && !sheet.contains(back)) back.focus();
   }
 
   protected onFocusIn(e: FocusEvent): void {
     const from = e.relatedTarget;
-    if (from instanceof HTMLElement && !this.sheet().nativeElement.contains(from)) this.returnFocus = from;
+    // The focus trap's anchors sit just outside the sheet; Tab wrapping through one is not where focus came from.
+    if (from instanceof HTMLElement && !this.sheet().nativeElement.contains(from) && !from.classList.contains('cdk-focus-trap-anchor')) this.returnFocus = from;
     if (!this.expandOnFocus() || !(this.touched || window.matchMedia('(pointer: coarse)').matches)) return;
     const target = e.target as Element | null;
     if (target?.closest('input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea, [contenteditable="true"]'))

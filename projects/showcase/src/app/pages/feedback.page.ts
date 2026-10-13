@@ -51,10 +51,12 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
       <doc-section name="Progress bar" selector="ui-progress-bar" [api]="progressApi"
         summary="Determinate (value 0–100, clamped) or indeterminate (value null). role=progressbar with label as its name; aria-valuenow, -min and -max are set only when determinate. For a value against a budget that turns warning and danger, use ui-meter from the same entry point (documented on the Design tools page).">
         <doc-demo code="<ui-progress-bar [value]=&quot;70&quot; tone=&quot;success&quot; />
+<ui-progress-bar [value]=&quot;50&quot; tone=&quot;neutral&quot; label=&quot;Storage used&quot; />
 <ui-progress-bar [value]=&quot;null&quot; label=&quot;Uploading&quot; />">
           <div class="stack">
             <ui-progress-bar [value]="35" />
             <ui-progress-bar [value]="70" tone="success" />
+            <ui-progress-bar [value]="50" tone="neutral" label="Storage used" />
             <ui-progress-bar [value]="null" label="Uploading" />
           </div>
         </doc-demo>
@@ -149,7 +151,7 @@ export class FeedbackPage {
   ];
   protected readonly progressApi: ApiRow[] = [
     { name: 'value', type: 'number | null', default: 'null', desc: '0–100, determinate; null, indeterminate.' },
-    { name: 'tone', type: STATUS, default: "'primary'", desc: "Fill colour ('neutral' uses the primary fill)." },
+    { name: 'tone', type: STATUS, default: "'primary'", desc: "Fill colour. 'neutral' is a grey fill (the muted text colour) for progress that is not a status." },
     { name: 'label', type: 'string', default: "'Progress'", desc: 'Accessible name (aria-label); not shown.' },
   ];
   protected readonly skeletonApi: ApiRow[] = [

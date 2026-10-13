@@ -28,20 +28,23 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
     .ui-chip[data-tone="success"] { background: color-mix(in srgb, var(--ui-color-success) 22%, transparent); border-color: var(--ui-color-success); }
     .ui-chip[data-tone="warning"] { background: color-mix(in srgb, var(--ui-color-warning) 22%, transparent); border-color: var(--ui-color-warning); }
     .ui-chip[data-tone="danger"] { background: color-mix(in srgb, var(--ui-color-danger) 22%, transparent); border-color: var(--ui-color-danger); }
+    /* 24x24 hit box (WCAG 2.5.8) that still paints a 16px circle: 4px padding outside the painted
+       background, negative margins so the chip keeps its size. It fits inside the 26px chip, so
+       it never reaches over a neighbouring chip. */
     .x {
-      position: relative;
+      position: relative; box-sizing: border-box;
       display: inline-flex; align-items: center; justify-content: center;
-      width: 16px; height: 16px; border: none; border-radius: 50%;
-      flex: none; padding: 0; margin-right: calc(var(--ui-space-1) * -1);
-      background: transparent; color: inherit; cursor: pointer;
+      width: 24px; height: 24px; border: none; border-radius: 50%;
+      flex: none; padding: 4px; margin: -4px calc(var(--ui-space-1) * -2) -4px calc(var(--ui-space-1) * -1);
+      background: transparent; background-clip: content-box; color: inherit; cursor: pointer;
       font: inherit; font-size: 12px; line-height: 1;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
     /* Touch-only hit-slop. On desktop it would reach over neighbouring chips and remove the wrong one. */
     @media (pointer: coarse) {
-      .x::before { content: ''; position: absolute; inset: calc((16px - var(--ui-size-touch)) / 2); }
+      .x::before { content: ''; position: absolute; inset: calc((24px - var(--ui-size-touch)) / 2); }
     }
-    .x:hover { background: color-mix(in srgb, currentColor 18%, transparent); }
+    .x:hover { background-color: color-mix(in srgb, currentColor 18%, transparent); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,
 })

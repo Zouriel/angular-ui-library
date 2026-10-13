@@ -1,7 +1,20 @@
-import { Component, ElementRef, forwardRef, inject, input, signal } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Component, ElementRef, effect, forwardRef, inject, input, signal, untracked } from '@angular/core';
+import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator } from '@angular/forms';
 
-/** `ui-otp-input` — fixed-length one-time-code entry (CVA; value is the joined string). */
+/** The character an empty cell takes in the value when a later cell is filled. */
+const OTP_HOLE = ' ';
+
+/**
+ * `ui-otp-input` — fixed-length one-time-code entry (CVA; value is a string).
+ *
+ * The value keeps every character in its cell's position: an empty cell before a filled one is a
+ * space, and empty cells at the end are dropped. So `1`,`2`,empty,`4` reads `"12 4"`, writing
+ * `"12 4"` back fills the same cells, and an untouched control is `''`.
+ *
+ * It also validates itself: a value that is not empty but has fewer than `length` filled cells (a
+ * code still being typed, or one with a hole) gives the error `{ otpIncomplete: { filled, length } }`.
+ * An empty value is valid, so add `Validators.required` to make the code mandatory.
+ */
 @Component({
   selector: 'ui-otp-input',
   template: `
@@ -39,9 +52,12 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .cell[aria-invalid="true"] { border-color: var(--ui-color-danger); }
     .cell[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
   `,
-  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiOtpInput), multi: true }],
+  providers: [
+    { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiOtpInput), multi: true },
+    { provide: NG_VALIDATORS, useExisting: forwardRef(() => UiOtpInput), multi: true },
+  ],
 })
-export class UiOtpInput implements ControlValueAccessor {
+export class UiOtpInput implements ControlValueAccessor, Validator {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   length = input(6);
   numeric = input(true);
@@ -51,12 +67,28 @@ export class UiOtpInput implements ControlValueAccessor {
   protected readonly disabled = signal(false);
   private onChange: (v: string) => void = () => {};
   protected onTouched: () => void = () => {};
+  private onValidatorChange: () => void = () => {};
+
+  constructor() {
+    // A new length changes what counts as complete.
+    effect(() => { this.length(); untracked(() => this.onValidatorChange()); });
+  }
 
   protected slots(): number[] {
     return Array.from({ length: this.length() }, (_, i) => i);
   }
 
-  writeValue(v: string): void { this.chars.set((v ?? '').slice(0, this.length()).split('')); }
+  writeValue(v: string): void {
+    this.chars.set((v ?? '').slice(0, this.length()).split('').map((c) => (c === OTP_HOLE ? '' : c)));
+  }
+  validate(control: AbstractControl): ValidationErrors | null {
+    const v = typeof control.value === 'string' ? control.value : '';
+    if (!v) return null;
+    const length = this.length();
+    const filled = v.slice(0, length).split('').filter((c) => c !== OTP_HOLE).length;
+    return filled < length ? { otpIncomplete: { filled, length } } : null;
+  }
+  registerOnValidatorChange(fn: () => void): void { this.onValidatorChange = fn; }
   registerOnChange(fn: (v: string) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }
@@ -115,8 +147,10 @@ export class UiOtpInput implements ControlValueAccessor {
     this.focusCell(Math.min(start + value.length, len - 1));
   }
 
+  /** Holes keep their position as spaces; trailing empty cells are dropped (see the class doc). */
   private emit(): void {
-    this.onChange(this.chars().join(''));
+    const cells = Array.from({ length: this.length() }, (_, i) => this.chars()[i] || OTP_HOLE);
+    this.onChange(cells.join('').trimEnd());
   }
   private focusCell(i: number): void {
     const cells = this.host.nativeElement.querySelectorAll<HTMLInputElement>('.cell');

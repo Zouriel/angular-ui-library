@@ -80,15 +80,17 @@ const INTENT_PX = 8;
     .prev { left: var(--ui-space-2); } .next { right: var(--ui-space-2); }
     /* Fingers swipe; the arrows are for a mouse. */
     @media (hover: none) { .arrow { display: none; } }
-    .dots { position: absolute; bottom: var(--ui-space-2); left: 0; right: 0; display: flex; justify-content: center; gap: var(--ui-space-2); }
-    .dot { position: relative; width: 8px; height: 8px; border-radius: 50%; border: none; background: color-mix(in srgb, var(--ui-media-on-scrim) 50%, transparent); cursor: pointer; padding: 0;
+    .dots { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; }
+    /* The button is a 24px square (WCAG 2.5.8 target size); the visible dot is an 8px circle drawn inside it. */
+    .dot { width: 24px; height: 24px; display: grid; place-items: center; border: none; background: none; cursor: pointer; padding: 0; }
+    @media (pointer: coarse) { .dot { height: var(--ui-size-touch); } }
+    .dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ui-media-on-scrim) 50%, transparent);
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .dot::before { content: ''; position: absolute; inset: -4px; }
-    @media (pointer: coarse) { .dot::before { inset: -12px -4px; } }
-    .dot:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 75%, transparent); }
-    .dot:active { transform: scale(var(--ui-scale-press)); }
-    .dot:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .dot.active { background: var(--ui-media-on-scrim); }
+    .dot:hover::after { background: color-mix(in srgb, var(--ui-media-on-scrim) 75%, transparent); }
+    .dot:active::after { transform: scale(var(--ui-scale-press)); }
+    .dot:focus-visible { outline: none; }
+    .dot:focus-visible::after { box-shadow: var(--ui-focus-ring); }
+    .dot.active::after { background: var(--ui-media-on-scrim); }
   `,
 })
 export class UiCarousel implements OnInit, OnDestroy {

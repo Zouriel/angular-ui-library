@@ -17,7 +17,7 @@ export const FB_SHARED_STYLES = `
   .fb-hint { margin: 2px 0 0; font-size: 12px; line-height: 1.35; color: var(--ui-color-text-muted); }
   .fb-warn { margin: 0; padding: 6px var(--ui-space-2); font-size: 12px; line-height: 1.4; border-radius: var(--ui-radius-xs);
     color: var(--ui-color-text); background: color-mix(in srgb, var(--ui-color-warning) 14%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-warning) 35%, transparent); }
-  .fb-chip { display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: var(--ui-radius-xs);
+  .fb-chip { display: inline-flex; align-items: center; gap: var(--ui-space-1); height: 18px; padding: 0 6px; border-radius: var(--ui-radius-xs);
     font-size: 11px; font-weight: 550; white-space: nowrap; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
   .fb-chip.logic { color: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text)); background: color-mix(in srgb, var(--ui-color-primary) 13%, transparent); }
   .fb-chip.warn { color: var(--ui-color-warning); background: color-mix(in srgb, var(--ui-color-warning) 14%, transparent); }

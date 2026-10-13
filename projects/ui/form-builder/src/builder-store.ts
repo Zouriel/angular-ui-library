@@ -42,6 +42,38 @@ export interface UiFbRefOption {
 }
 
 const HISTORY_LIMIT = 200;
+
+/**
+ * Whether two definitions are the same form with the same content. `revision` is host metadata
+ * (bumped on publish) and is ignored; keys holding `undefined` count as absent, so a copy that went
+ * through JSON still matches.
+ */
+export function sameForm(a: UiFormDefinition, b: UiFormDefinition): boolean {
+  if (a === b) return true;
+  if (a.id !== b.id) return false;
+  const { revision: _ra, ...ra } = a;
+  const { revision: _rb, ...rb } = b;
+  return sameJson(ra, rb);
+}
+
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) return a.length === (b as unknown[]).length && a.every((x, i) => sameJson(x, (b as unknown[])[i]));
+  const oa = a as Record<string, unknown>, ob = b as Record<string, unknown>;
+  const ka = Object.keys(oa).filter((k) => oa[k] !== undefined);
+  const kb = Object.keys(ob).filter((k) => ob[k] !== undefined);
+  return ka.length === kb.length && ka.every((k) => sameJson(oa[k], ob[k]));
+}
+
+/** Undo and redo step through content; the revision the host gave the form stays as it is now. */
+function keepRevision(target: UiFormDefinition, current: UiFormDefinition): UiFormDefinition {
+  if (target.revision === current.revision) return target;
+  const next = { ...target };
+  if (current.revision === undefined) delete next.revision; else next.revision = current.revision;
+  return next;
+}
 let builderSeq = 0;
 /** Edits to the same setting within this window are undone together (typing a label). */
 const MERGE_MS = 1200;
@@ -102,16 +134,30 @@ export class FbBuilderStore {
 
   // ── History ─────────────────────────────────────────────────────────────
 
-  /** Replaces the whole definition (e.g. a different form was opened). Clears history. */
+  /**
+   * Takes a definition from the host. A different form (another id, or other content) replaces the
+   * builder's and clears history. The same form handed back with only its `revision` changed — the
+   * host stored a published copy into `definition` — is adopted and history is kept, so undo still
+   * works after publishing.
+   */
   load(raw: UiFormDefinition): void {
     const def = migrateDefinition(raw);
+    if (sameForm(def, this.def())) {
+      this.def.set(def);
+      return;
+    }
     this.def.set(def);
+    this.clearHistory();
+    if (this.selectedId() && !indexDefinition(def).has(this.selectedId()!)) this.selectedId.set(null);
+    this.pageIndex.set(Math.min(this.pageIndex(), def.pages.length - 1));
+  }
+
+  /** Forgets undo/redo history (e.g. the host saved and wants a fresh start). */
+  clearHistory(): void {
     this.past = [];
     this.future = [];
     this.lastMerge = null;
     this.syncHistory();
-    if (this.selectedId() && !indexDefinition(def).has(this.selectedId()!)) this.selectedId.set(null);
-    this.pageIndex.set(Math.min(this.pageIndex(), def.pages.length - 1));
   }
 
   /** Applies a change. Changes with the same `mergeKey` in quick succession undo as one. */
@@ -135,7 +181,7 @@ export class FbBuilderStore {
     const prev = this.past.pop();
     if (!prev) return;
     this.future.push(this.def());
-    this.def.set(prev);
+    this.def.set(keepRevision(prev, this.def()));
     this.afterTravel();
   }
 
@@ -143,7 +189,7 @@ export class FbBuilderStore {
     const next = this.future.pop();
     if (!next) return;
     this.past.push(this.def());
-    this.def.set(next);
+    this.def.set(keepRevision(next, this.def()));
     this.afterTravel();
   }
 

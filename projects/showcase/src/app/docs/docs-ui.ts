@@ -46,29 +46,42 @@ export interface ApiRow extends Record<string, unknown> {
   desc: string;
 }
 
+/** Whether an API row's default says something (not empty and not the '—' placeholder). */
+export function hasDefault(value: string | undefined): boolean {
+  const v = value?.trim();
+  return !!v && v !== '—' && v !== '-';
+}
+
 /** API reference table (inputs / outputs / models) rendered with ui-table. */
 @Component({
   selector: 'doc-api',
   imports: [UiTable, UiText],
   template: `
     @if (title()) { <ui-text variant="label" class="cap">{{ title() }}</ui-text> }
-    <ui-table [columns]="cols" [data]="rows()" />
+    <ui-table [columns]="cols()" [data]="rows()" />
   `,
   styles: `
-    :host { display: block; margin: var(--ui-space-3) 0; }
+    :host { display: block; margin: var(--ui-space-3) 0; container-type: inline-size; }
     .cap { display: block; margin-bottom: var(--ui-space-1); color: var(--ui-color-text-muted); }
+    /* Narrow: the table scrolls sideways inside its border (never the page), and the description keeps
+       a readable measure instead of being squeezed to a word per line. */
+    @container (max-width: 560px) {
+      :host ::ng-deep td:last-child { min-width: 15em; }
+      :host ::ng-deep th, :host ::ng-deep td { padding-inline: var(--ui-space-2); }
+    }
     ::ng-deep .doc-api-name { font-family: var(--ui-font-mono); color: var(--ui-color-primary); white-space: nowrap; }
   `,
 })
 export class DocApi {
   rows = input<ApiRow[]>([]);
   title = input('');
-  protected readonly cols: UiColumn[] = [
+  /** The Default column only appears when some row has a default worth showing. */
+  protected readonly cols = computed<UiColumn[]>(() => [
     { key: 'name', header: 'Property' },
     { key: 'type', header: 'Type' },
-    { key: 'default', header: 'Default' },
+    ...(this.rows().some((r) => hasDefault(r.default)) ? [{ key: 'default', header: 'Default' }] : []),
     { key: 'desc', header: 'Description' },
-  ];
+  ]);
 }
 
 /**

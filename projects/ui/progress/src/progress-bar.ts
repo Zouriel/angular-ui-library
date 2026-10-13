@@ -31,6 +31,8 @@ import type { UiStatus } from '@zouriel/ui';
       border-radius: inherit;
       transition: width var(--ui-motion-base) var(--ui-ease-standard);
     }
+    /* Neutral: the muted text colour, which keeps at least 3:1 against the track in every theme. */
+    .track[data-tone="neutral"] .fill { background: var(--ui-color-text-muted); }
     .track[data-tone="success"] .fill { background: var(--ui-color-success); }
     .track[data-tone="warning"] .fill { background: var(--ui-color-warning); }
     .track[data-tone="danger"] .fill { background: var(--ui-color-danger); }
