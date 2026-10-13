@@ -28,7 +28,7 @@ import { NAV } from './app.routes';
           <ui-side-nav [groups]="filtered()" [active]="active()" (navigate)="go($event.value)" />
         </div>
         <div class="side-foot">
-          <ui-text variant="caption">33 entry points · {{ themeName() }}</ui-text>
+          <ui-text variant="caption">34 entry points · {{ themeName() }}</ui-text>
         </div>
       </aside>
 
@@ -46,7 +46,7 @@ import { NAV } from './app.routes';
             </select>
           </label>
         </header>
-        <main class="content"><router-outlet /></main>
+        <main class="content" [class.full]="active() === 'form-studio'"><router-outlet /></main>
       </div>
     </div>
 
@@ -90,11 +90,14 @@ import { NAV } from './app.routes';
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .menu-btn { display: none; }
+    /* App-like pages (the form studio) use the whole area under the top bar. */
+    .content.full { max-width: none; padding: 0; }
     .content { padding: var(--ui-space-6); max-width: 1000px; margin: 0 auto; width: 100%; box-sizing: border-box; }
     @media (max-width: 900px) {
       .sidebar { display: none; }
       .menu-btn { display: inline-flex; }
       .content { padding: var(--ui-space-4); }
+      .content.full { padding: 0; }
     }
   `,
 })

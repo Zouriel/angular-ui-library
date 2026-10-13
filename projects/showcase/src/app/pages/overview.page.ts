@@ -45,7 +45,7 @@ this.theme.toggle();          // dark <-> light"></doc-demo>
       </doc-section>
 
       <doc-section name="What's inside" anchor="catalog"
-        summary="~110 components across 33 entry points covering the full catalog plus two flagships (window system, file viewer) and a motion/FX layer.">
+        summary="~110 components across 34 entry points covering the full catalog plus three flagships (window system, file viewer, form builder) and a motion/FX layer.">
         <div class="grid">
           @for (g of groups; track g.title) {
             <ui-card padding="sm">

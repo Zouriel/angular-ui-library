@@ -14,6 +14,8 @@ export const routes: Routes = [
   { path: 'media', loadComponent: () => import('./pages/media.page').then((m) => m.MediaPage), title: 'UI — Media' },
   { path: 'window', loadComponent: () => import('./pages/window.page').then((m) => m.WindowPage), title: 'UI — Window' },
   { path: 'design-tools', loadComponent: () => import('./pages/design-tools.page').then((m) => m.DesignToolsPage), title: 'UI — Design tools' },
+  { path: 'form-builder', loadComponent: () => import('./pages/form-builder.page').then((m) => m.FormBuilderPage), title: 'UI — Form builder' },
+  { path: 'form-studio', loadComponent: () => import('./pages/form-studio.page').then((m) => m.FormStudioPage), title: 'UI — Form studio' },
   { path: 'file-viewer', loadComponent: () => import('./pages/file-viewer.page').then((m) => m.FileViewerPage), title: 'UI — File Viewer' },
   { path: 'fx', loadComponent: () => import('./pages/fx.page').then((m) => m.FxPage), title: 'UI — Motion & FX' },
   { path: 'behaviors', loadComponent: () => import('./pages/behaviors.page').then((m) => m.BehaviorsPage), title: 'UI — Behaviors' },
@@ -52,6 +54,8 @@ export const NAV = [
       { label: 'Window system', value: 'window' },
       { label: 'File viewer', value: 'file-viewer' },
       { label: 'Design tools', value: 'design-tools' },
+      { label: 'Form builder', value: 'form-builder' },
+      { label: 'Form studio (playground)', value: 'form-studio' },
     ],
   },
   {
