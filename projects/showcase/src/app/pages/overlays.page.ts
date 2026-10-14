@@ -9,7 +9,7 @@ import Moon02Icon from '@hugeicons/core-free-icons/Moon02Icon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
-import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet } from '@zouriel/ui/dialog';
+import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService } from '@zouriel/ui/dialog';
 import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -18,7 +18,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 @Component({
   selector: 'page-overlays',
   imports: [ UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
-    UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog,
+    UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -122,7 +122,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Toast" selector="UiToastService · ui-toast-host" [api]="toastApi"
-        summary="Imperative notifications. Render <ui-toast-host /> once near the app root (this site does), then call the service: show(options), or info/success/warning/danger(message, title?). Each returns an id; dismiss(id) removes it. Toasts stack at the host's position (a corner, or centred on the top or bottom edge), newest last, slide in from that edge and back out toward it, and leave on their own after duration ms (4000 by default; 0 keeps them). The countdown pauses while the pointer or focus is on a toast and resumes with the time left, at least one more second. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;, inside an aria-live=&quot;polite&quot; region."
+        summary="Imperative notifications. Render <ui-toast-host /> once near the app root (this site does), then call the service: show(options), or info/success/warning/danger(message, title?). Each returns an id; dismiss(id) removes it. Toasts stack at the host's position (a corner, or centred on the top or bottom edge), newest last, slide in from that edge and back out toward it, and leave on their own after duration ms (4000 by default; 0 keeps them). The countdown pauses while the pointer or focus is on a toast and resumes with the time left, at least one more second. Warning and danger toasts use role=&quot;alert&quot;, the rest role=&quot;status&quot;, inside an aria-live=&quot;polite&quot; region. For a quick note about something the person just did, like Deleted with Undo, use the snackbar below."
         [shapes]="TOAST">
         <doc-demo lang="ts" code="import { UiToastService, UiToastHost } from '@zouriel/ui/dialog';
 
@@ -136,6 +136,26 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
             <ui-button variant="ghost" (click)="toast.danger('Could not connect', 'Error')">Error</ui-button>
             <ui-button variant="outline" (click)="toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: undoToast } })">With action</ui-button>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Snackbar" selector="UiSnackbarService · ui-snackbar-host · ui-snackbar" [api]="snackApi" [shapes]="SNACK"
+        summary="A short note about something the person just did, with at most one action: Deleted with Undo, Grouped, Keyframe added. It is a compact inverted bar centred at the bottom of the screen, the one the form builder uses. Only one shows at a time; a new one replaces it. Render <ui-snackbar-host /> once near the app root (this site does) and call the service: show('Saved'), or show({ message, title?, action?, duration? }). It leaves after 4 s, or 10 s when it has an action so there is time to reach Undo, and holds while the pointer or focus is on it. offset lifts it above a bottom bar. Screen readers hear it through an always-present polite live region. Use toasts instead for messages that should stack or carry a tone, such as errors. Editors that place it themselves (the form builder does) can use the bare ui-snackbar.">
+        <doc-demo lang="ts" code="import { UiSnackbarService, UiSnackbarHost } from '@zouriel/ui/dialog';
+
+// once, in the root component's template: <ui-snackbar-host [offset]=&quot;bottomBarHeight&quot; />
+snackbar = inject(UiSnackbarService);
+this.snackbar.show('Grouped');
+this.snackbar.show({ message: 'Deleted “Title”', action: { label: 'Undo', run: () => store.undo() } });
+
+// or just the bar, positioned by you:
+<ui-snackbar message=&quot;Deleted “Title”&quot; actionLabel=&quot;Undo&quot; (action)=&quot;undo()&quot; />">
+          <div class="row">
+            <ui-button variant="secondary" (click)="snackbar.show('Grouped')">Simple</ui-button>
+            <ui-button variant="outline" (click)="snackbar.show({ message: 'Deleted “Title”', action: { label: 'Undo', run: undoSnack } })">Deleted, with Undo</ui-button>
+            <ui-button variant="ghost" (click)="snackbar.show({ title: 'Stopped at a keyframe', message: 'Move or delete that keyframe to trim further.' })">With a title</ui-button>
+          </div>
+          <div class="row"><ui-snackbar message="Deleted “Title”" actionLabel="Undo" /></div>
         </doc-demo>
       </doc-section>
 
@@ -236,6 +256,18 @@ export class OverlaysPage {
   protected readonly paletteOut: ApiRow[] = [
     { name: 'run', type: 'UiCommand', default: '—', desc: 'A command was chosen (Enter or click). The palette closes after emitting.' },
   ];
+  protected readonly SNACK = `interface UiSnackbarOptions {
+  message: string;
+  title?: string;               // bold first line
+  action?: UiSnackbarAction;    // usually Undo
+  duration?: number;            // ms; 0 = stays; default 4000, or 10000 with an action
+}
+interface UiSnackbarAction {
+  label: string;
+  run: () => void;              // the snackbar is dismissed first
+}
+// What service.current() holds: the options with the duration filled in, plus the id.
+interface UiSnack { id: number; message: string; title?: string; action?: UiSnackbarAction; duration: number }`;
   protected readonly TOAST = `type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
 type UiToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
 interface UiToastOptions {
@@ -360,4 +392,15 @@ interface UiToastAction {
     { name: 'opts.action', type: 'UiToastAction', default: '—', desc: 'One button in the toast, e.g. Undo. Running it dismisses the toast.' },
   ];
   protected readonly undoToast = () => this.toast.success('Restored');
+  protected readonly snackbar = inject(UiSnackbarService);
+  protected readonly undoSnack = () => this.snackbar.show('Restored “Title”');
+  protected readonly snackApi: ApiRow[] = [
+    { name: 'host: offset', type: 'number', default: '0', desc: 'Extra px below the snackbar, e.g. the height of a bottom navigation bar or editor dock. The safe-area inset is added for you.' },
+    { name: 'service.show(opts | message)', type: '(UiSnackbarOptions | string) => number', default: '—', desc: 'Show a notice, replacing any current one; returns its id.' },
+    { name: 'service.dismiss(id?)', type: '(number?) => void', default: '—', desc: 'Hide it; with an id, only if that notice is still the one showing.' },
+    { name: 'service.act()', type: '() => void', default: '—', desc: 'Dismiss and run the action. The action button calls this.' },
+    { name: 'service.pause() / resume()', type: '() => void', default: '—', desc: 'Hold or restart the countdown with the time left. The host calls these on hover and focus.' },
+    { name: 'service.current', type: 'Signal<UiSnack | null>', default: 'null', desc: 'The notice showing now.' },
+    { name: 'ui-snackbar: message / title / actionLabel', type: 'string', default: '—', desc: 'The bare bar. actionLabel shows the action button, which emits (action).' },
+  ];
 }

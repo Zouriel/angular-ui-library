@@ -14,7 +14,7 @@ import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
 // Used only inside @defer blocks below, so each loads in its own chunk instead of the initial bundle.
 // (A library entry point the shell imports eagerly lands in the initial chunk with everything any page
 // uses from it, so the shell keeps its eager imports to what the first paint needs.)
-import { UiDrawer, UiToastHost } from '@zouriel/ui/dialog';
+import { UiDrawer, UiToastHost, UiSnackbarHost } from '@zouriel/ui/dialog';
 import { UiScrollProgress, UiCursor, UiGrain } from '@zouriel/ui/fx';
 import { UiCommandPalette } from '@zouriel/ui/command-palette';
 import type { UiCommand } from '@zouriel/ui/command-palette';
@@ -25,7 +25,7 @@ import { NAV } from './app.routes';
   selector: 'app-root',
   imports: [
     HugeiconsIconComponent, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
-    UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiKbd,
+    UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
@@ -82,6 +82,7 @@ import { NAV } from './app.routes';
       <ui-scroll-progress />
       @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
       <ui-toast-host position="bottom-right" />
+      <ui-snackbar-host />
     }
   `,
   styles: `

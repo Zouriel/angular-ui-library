@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
-import { UiBottomSheet, UiModal } from '@zouriel/ui/dialog';
+import { UiBottomSheet, UiModal, UiSnackbar } from '@zouriel/ui/dialog';
 import { FbCanvas } from './builder-canvas';
 import { FbDnd } from './builder-dnd';
 import { FbInspector } from './builder-inspector';
@@ -55,7 +55,7 @@ interface PendingDelete {
 @Component({
   selector: 'ui-form-builder',
   providers: [FbBuilderStore, FbDnd],
-  imports: [HugeiconsIconComponent, UiButton, UiSegmented, UiModal, UiBottomSheet, FbCanvas, FbInspector, FbPalette, FbLogicOverview, FbPreview],
+  imports: [HugeiconsIconComponent, UiButton, UiSegmented, UiModal, UiBottomSheet, UiSnackbar, FbCanvas, FbInspector, FbPalette, FbLogicOverview, FbPreview],
   host: {
     class: 'ui-form-builder',
     '[attr.data-layout]': 'layout()',
@@ -177,10 +177,8 @@ interface PendingDelete {
     }
 
     @if (toast(); as t) {
-      <div class="toast" (mouseenter)="holdToast()" (mouseleave)="releaseToast()" (focusin)="holdToast()" (focusout)="releaseToast()">
-        <span>{{ t }}</span>
-        <button type="button" class="fb-link" (click)="undoToast()">Undo</button>
-      </div>
+      <ui-snackbar class="toast" [message]="t" actionLabel="Undo" (action)="undoToast()"
+        (mouseenter)="holdToast()" (mouseleave)="releaseToast()" (focusin)="holdToast()" (focusout)="releaseToast()" />
     }
     <!-- Always present, so screen readers hear each change as its text is swapped. -->
     <div class="fb-sr" role="status" aria-live="polite">{{ toast() ? toast() + '. Press Ctrl+Z to undo.' : dnd.announcement() }}</div>
@@ -236,10 +234,8 @@ interface PendingDelete {
     .drop-line.vertical { transform: translateX(-1px); }
     .drop-line:not(.vertical) { transform: translateY(-1px); }
     .drop-line.invalid { background: var(--ui-color-danger); box-shadow: none; }
-    .toast { position: absolute; left: 50%; bottom: var(--ui-space-4); transform: translateX(-50%); z-index: 4; display: flex; align-items: center; gap: var(--ui-space-3);
-      padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius); background: var(--ui-color-text); color: var(--ui-color-bg);
-      font-size: 13px; box-shadow: var(--ui-shadow-2); animation: fb-toast-in var(--ui-motion-base) var(--ui-ease-decelerate, ease-out); }
-    .toast .fb-link { color: var(--ui-color-bg); text-decoration: underline; font-size: 13px; }
+    .toast { position: absolute; left: 50%; bottom: var(--ui-space-4); transform: translateX(-50%); z-index: 4; width: max-content;
+      animation: fb-toast-in var(--ui-motion-base) var(--ui-ease-decelerate, ease-out); }
     @keyframes fb-toast-in { from { opacity: 0; transform: translate(-50%, 6px); } }
     :host([data-layout="narrow"]) { border-radius: 0; border-left: 0; border-right: 0; }
     :host([data-layout="narrow"]) .title { max-width: 18ch; }

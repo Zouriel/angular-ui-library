@@ -323,7 +323,7 @@ describe('UiFormBuilder', () => {
     fx.detectChanges();
     expect(host.def().pages[0].elements.length).toBe(1);
     expect(el.querySelector('.toast')!.textContent).toContain('Deleted “Second”');
-    (el.querySelector('.toast .fb-link') as HTMLButtonElement).click();
+    (el.querySelector('.toast .act') as HTMLButtonElement).click();
     fx.detectChanges();
     expect(host.def().pages[0].elements.length).toBe(2);
   });
