@@ -156,10 +156,12 @@ export class UiSnackbarService {
     <div class="sr" role="status" aria-live="polite">{{ announcement() }}</div>
   `,
   styles: `
+    /* Full width, centring the bar inside: a box placed at left: 50% only gets half the screen to
+       lay out in, so the bar would wrap on a phone. */
     .host {
-      position: fixed; left: 50%; transform: translateX(-50%); z-index: var(--ui-z-toast);
+      position: fixed; left: 0; right: 0; z-index: var(--ui-z-toast);
       bottom: calc(var(--ui-space-4) + var(--ui-snackbar-offset, 0px) + env(safe-area-inset-bottom));
-      display: flex; justify-content: center; pointer-events: none;
+      display: flex; justify-content: center; padding: 0 var(--ui-space-4); pointer-events: none;
     }
     ui-snackbar { pointer-events: auto; }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
