@@ -219,12 +219,7 @@ export class FbDnd {
     const containerId = list.dataset['fbList']!;
     const items = Array.from(list.children).filter((c): c is HTMLElement => c instanceof HTMLElement && c.hasAttribute('data-fb-item'));
     const lr = list.getBoundingClientRect();
-    let index = items.length;
-    for (let i = 0; i < items.length; i++) {
-      const r = items[i].getBoundingClientRect();
-      if (y < r.top) { index = i; break; }
-      if (y <= r.bottom && x < r.left + r.width / 2) { index = i; break; }
-    }
+    const index = fbDropIndex(items.map((it) => it.getBoundingClientRect()), x, y);
     const line = this.lineFor(items, index, lr);
     const valid = canDrop(def, el, containerId) && !(movingId && isInside(def, containerId, movingId));
     this.drop.set({ target: { containerId, index }, valid, line, over: containerId });
@@ -244,4 +239,24 @@ export class FbDnd {
     if (l.right < lr.right - 24) return { x: l.right + 5, y: l.top, length: l.height, vertical: true };
     return { x: lr.left, y: l.bottom + 5, length: lr.width, vertical: false };
   }
+}
+
+/** A card's box on screen, as far as choosing a drop place needs. */
+export interface FbBox { top: number; bottom: number; left: number; width: number; height: number }
+
+/**
+ * Where a drop at (x, y) goes among a list's cards (in order): before the first card the pointer
+ * is above, or over. Over a card that shares its row with others, its left half means "before
+ * it"; over a card alone on its row (every card on a phone), its top half does. Halving by x
+ * there would put a card dragged by its grip, at the left edge, back where it started.
+ */
+export function fbDropIndex(boxes: readonly FbBox[], x: number, y: number): number {
+  for (let i = 0; i < boxes.length; i++) {
+    const r = boxes[i];
+    if (y < r.top) return i;
+    if (y > r.bottom) continue;
+    const shared = boxes.some((o, j) => j !== i && o.top < r.bottom - 1 && o.bottom > r.top + 1);
+    if (shared ? x < r.left + r.width / 2 : y < r.top + r.height / 2) return i;
+  }
+  return boxes.length;
 }
