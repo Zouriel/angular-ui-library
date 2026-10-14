@@ -212,7 +212,7 @@ export class UiCombobox implements ControlValueAccessor {
 
   /** Keeps the keyboard-active option in view in a long, scrolling list. */
   private revealActive(): void {
-    queueMicrotask(() => document.getElementById(`${this.listId}-${this.activeIndex()}`)?.scrollIntoView({ block: 'nearest' }));
+    queueMicrotask(() => document.getElementById(`${this.listId}-${this.activeIndex()}`)?.scrollIntoView?.({ block: 'nearest' }));
   }
 
   protected onKeydown(e: KeyboardEvent): void {

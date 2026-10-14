@@ -314,7 +314,7 @@ export class UiFbSourcePicker {
 
   private setActive(i: number): void {
     this.active.set(i);
-    queueMicrotask(() => document.getElementById(this.optId(i))?.scrollIntoView({ block: 'nearest' }));
+    queueMicrotask(() => document.getElementById(this.optId(i))?.scrollIntoView?.({ block: 'nearest' }));
     // Reaching the end with the keyboard loads the next page too.
     if (i >= this.items().length - 2) this.loadMore();
   }
