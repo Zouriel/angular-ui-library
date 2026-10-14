@@ -51,7 +51,7 @@ export interface UiBottomNavItem {
       padding-bottom: env(safe-area-inset-bottom); }
     .bn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-      min-width: 0; background: none; border: none; cursor: pointer; color: var(--ui-color-text-muted); font: inherit;
+      min-width: 0; padding: 0 var(--ui-space-1); background: none; border: none; cursor: pointer; color: var(--ui-color-text-muted); font: inherit;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       transition: color var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
@@ -63,7 +63,7 @@ export interface UiBottomNavItem {
     .badge { position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1); box-sizing: border-box;
       background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-radius: var(--ui-radius-pill);
       font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }
-    .label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 var(--ui-space-1); box-sizing: border-box; font-size: 11px; }
+    .label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   `,
 })
 export class UiBottomNav {
