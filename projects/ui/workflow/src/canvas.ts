@@ -1,4 +1,4 @@
-import { Component, Injectable, computed, inject, input, output, signal } from '@angular/core';
+import { Component, ElementRef, Injectable, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { WfDnd, type WfDropTarget } from './dnd';
@@ -419,7 +419,7 @@ export class WfStepPicker {
   selector: 'ui-wf-automation-canvas',
   imports: [WfTriggerCard, WfStepList],
   template: `
-    <div class="scroll" data-wf-scroll (click)="backgroundClick($event)">
+    <div #scroll class="scroll" data-wf-scroll (click)="backgroundClick($event)">
       <div class="flow">
         <ui-wf-trigger-card />
         <ui-wf-steps listId="root" [steps]="store.def().steps ?? []" [lead]="true" />
@@ -439,6 +439,23 @@ export class WfStepPicker {
 })
 export class WfAutomationCanvas {
   protected readonly store = inject(WfBuilderStore);
+  private readonly scroll = viewChild<ElementRef<HTMLElement>>('scroll');
+
+  constructor() {
+    // A canvas wider than the view (branches) opens on its middle, where the trigger and main line are.
+    effect(() => {
+      this.store.def().id;
+      const el = this.scroll()?.nativeElement;
+      if (!el) return;
+      // Two frames: the branches lay out (and widen the canvas) after the first.
+      untracked(() => requestAnimationFrame(() => requestAnimationFrame(() => {
+        const trigger = el.querySelector<HTMLElement>('ui-wf-trigger-card');
+        if (!trigger || el.scrollWidth <= el.clientWidth) return;
+        const box = trigger.getBoundingClientRect(), view = el.getBoundingClientRect();
+        el.scrollLeft += box.left + box.width / 2 - (view.left + view.width / 2);
+      })));
+    });
+  }
 
   protected backgroundClick(e: MouseEvent): void {
     // Clicking empty canvas shows the workflow's own settings.

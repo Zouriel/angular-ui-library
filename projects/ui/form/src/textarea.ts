@@ -81,7 +81,8 @@ export class UiTextarea implements ControlValueAccessor {
       const ro = new ResizeObserver(([e]) => {
         if (!this.autosize() || Math.abs(e.contentRect.width - width) < 1) return;
         width = e.contentRect.width;
-        this.fit();
+        // Next frame: resizing the box it is watching inside the callback would loop.
+        requestAnimationFrame(() => this.fit());
       });
       ro.observe(this.field().nativeElement);
       destroy.onDestroy(() => ro.disconnect());
