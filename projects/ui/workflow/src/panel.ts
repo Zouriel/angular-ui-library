@@ -13,6 +13,7 @@ import { WF_SHARED_STYLES } from './styles';
  * How `ui-workflow-panel` sits on the page:
  * - `vertical`: a panel in the page, the states top to bottom with history and actions under each;
  * - `horizontal`: the states left to right, the current state's actions and the history below;
+ * - `compact`: a state badge, a strip of the states, the actions and one flat history, for a narrow column;
  * - `side-drawer`: a column of dots on the screen's edge that opens the vertical panel in a drawer;
  * - `bottom-drawer`: a row of dots along the bottom that opens the horizontal panel in a drawer.
  */
@@ -30,8 +31,13 @@ export interface UiWfPanelStep {
  * The states a record shows, in order: the states it has been through (first visit first), then,
  * unless it has finished, the states it hasn't reached yet in the lifecycle's order. The active one
  * is the current state; a state it went back from (sent back for changes) counts as not reached.
+ *
+ * After a reset the path starts again: what happened before the latest reset is returned apart, in
+ * `earlier` (oldest first), so states visited only before starting over show as not reached. When the
+ * history is cut short (only the newest entries), entries before its first move belong to the state
+ * that move left.
  */
-export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): { steps: UiWfPanelStep[]; active: number } {
+export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): { steps: UiWfPanelStep[]; active: number; earlier: UiWfAuditEntry[] } {
   const label = (k: string) => r.states.find((s) => s.key === k)?.label ?? k;
   const steps: UiWfPanelStep[] = [];
   const byKey = new Map<string, UiWfPanelStep>();
@@ -40,10 +46,21 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     if (!st) { st = { key: k, label: label(k), entries: [] }; byKey.set(k, st); steps.push(st); }
     return st;
   };
-  let here: UiWfPanelStep | null = null;
-  for (const h of [...history].sort((a, b) => a.seq - b.seq)) {
-    const entered = h.category === 'lifecycle' ? wfAuditJson(h.after)['state'] : undefined;
-    if (typeof entered === 'string' && entered) here = visit(entered);
+  const sorted = [...history].sort((a, b) => a.seq - b.seq);
+  const lastReset = sorted.reduce((at, h, i) => (h.category === 'lifecycle' && h.action === 'reset' ? i : at), -1);
+  const earlier = lastReset > 0 ? sorted.slice(0, lastReset) : [];
+  const current = lastReset > 0 ? sorted.slice(lastReset) : sorted;
+  const entered = (h: UiWfAuditEntry) => {
+    const s = h.category === 'lifecycle' ? wfAuditJson(h.after)['state'] : undefined;
+    return typeof s === 'string' && s ? s : null;
+  };
+  // A cut-short history may begin mid-state: the first move says which state it left.
+  const firstMove = current.find((h) => entered(h));
+  const left = firstMove ? wfAuditJson(firstMove.before)['state'] : undefined;
+  let here: UiWfPanelStep | null = firstMove && firstMove !== current[0] && typeof left === 'string' && left ? visit(left) : null;
+  for (const h of current) {
+    const k = entered(h);
+    if (k) here = visit(k);
     // An entry belongs to the state the record was in when it happened (a move, to the state it entered).
     here?.entries.push(h);
   }
@@ -51,8 +68,18 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
   const active = r.state ? steps.findIndex((s) => s.key === r.state) : -1;
   const finished = r.states.find((s) => s.key === r.state)?.category === 'terminal';
   if (!finished) for (const s of r.states) if (!byKey.has(s.key)) visit(s.key);
-  return { steps, active: Math.max(0, active) };
+  return { steps, active: Math.max(0, active), earlier };
 }
+
+/** What `changed` compares between two reads: the state, its status, and each run's status. */
+function wfRecordSignature(r: UiWfRecord): string {
+  return JSON.stringify([r.state, r.status, r.instances.map((i) => `${i.id}:${i.status}`).sort()]);
+}
+
+/** How many history entries the panel reads; the engine returns the newest ones. */
+export const WF_PANEL_HISTORY_TAKE = 500;
+/** How often the panel looks again while one of the record's runs is still going (ms). */
+const RUNS_POLL_MS = 15_000;
 
 /**
  * `ui-workflow-panel` — the workflow of one record, to attach to the record's page: its states as a
@@ -78,8 +105,8 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     <!-- The record's workflows still running or stopped, each opening its steps (and, for people who may, try again, skip or cancel). -->
     <ng-template #runsTpl>
       @if (activeRuns().length) {
-        <section class="runs" aria-label="Workflows running">
-          <h3>Running</h3>
+        <section class="runs" [attr.aria-label]="runsHeading()">
+          <h3>{{ runsHeading() }}</h3>
           @for (run of activeRuns(); track run.id) {
             <div class="run" [attr.data-status]="run.status">
               <button type="button" class="run-row" (click)="toggleRun(run.id)" [attr.aria-expanded]="openRuns().has(run.id)">
@@ -98,6 +125,10 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     </ng-template>
 
     <ng-template #body let-mode>
+      @if (record() && error()) {
+        <!-- A reload failed: what is shown may be out of date. -->
+        <p class="wf-error stale" role="alert">{{ error() }} What is shown may be out of date. <button type="button" class="wf-link" (click)="reload()">Try again</button></p>
+      }
       @if (record(); as r) {
         @if (!r.state || mode === 'compact') {
           <!-- Compact, or no lifecycle: the state as a badge and a strip, the actions, and one flat history. -->
@@ -125,8 +156,9 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
               <ol class="log">
                 @for (h of newestFirst(); track h.seq) {
                   <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
-                } @empty { <li class="wf-hint">Nothing yet.</li> }
+                } @empty { <li class="wf-hint">{{ historyError() ? 'The history could not be loaded.' : 'Nothing yet.' }}</li> }
               </ol>
+              @if (historyNote(); as note) { <p class="wf-hint">{{ note }}</p> }
             </section>
           }
         } @else {
@@ -154,10 +186,22 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
                 }
               </ng-template>
             </ui-stepper>
+            @if (showHistory() && path().earlier.length) {
+              <details class="earlier">
+                <summary>Earlier, before starting over ({{ path().earlier.length }})</summary>
+                <ol class="log">
+                  @for (h of path().earlier; track h.seq) {
+                    <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
+                  }
+                </ol>
+              </details>
+            }
+            @if (showHistory() && (historyError() || historyNote())) { <p class="wf-hint">{{ historyError() ? 'The history could not be loaded.' : historyNote() }}</p> }
           } @else {
             <ui-stepper class="steps" tone="success" [label]="title()" [steps]="stepLabels()" [active]="path().active" />
             <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
             <ng-container *ngTemplateOutlet="runsTpl" />
+            @if (showHistory() && historyError()) { <p class="wf-hint">The history could not be loaded.</p> }
             @if (showHistory() && history().length) {
               <section>
                 <h3>History</h3>
@@ -210,7 +254,8 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     :host([data-layout="vertical"]), :host([data-layout="horizontal"]), :host([data-layout="compact"]) { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 var(--ui-space-2); padding: 0; list-style: none; }
     .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
-    .track li.done { color: var(--ui-color-text-secondary); }
+    /* Passed states read as done (a tint of success, like the stepper's), not as not reached. */
+    .track li.done { color: var(--ui-color-success); background: color-mix(in srgb, var(--ui-color-success) 12%, transparent); }
     .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
     /* Compact: the panel's own gap spaces the blocks, without the stepper layouts' margins on top. */
     :host([data-layout="compact"]) { gap: var(--ui-space-2); }
@@ -227,6 +272,9 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     .hw { font-size: 13px; }
     .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
     .in-drawer { display: flex; flex-direction: column; }
+    .stale { margin: 0 0 var(--ui-space-2); }
+    .earlier { margin-bottom: var(--ui-space-3); }
+    .earlier summary { cursor: pointer; font-size: 12.5px; color: var(--ui-color-text-secondary); margin-bottom: var(--ui-space-2); }
     .runs { display: flex; flex-direction: column; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     .runs h3 { margin: 0; }
     .run { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); overflow: hidden; }
@@ -268,12 +316,21 @@ export class UiWorkflowPanel extends WfWithApi {
   readonly emptyText = input('Nothing for you to do here right now.');
   /** Whether the drawer is open (drawer layouts). Two-way. */
   readonly open = model(false);
-  /** Fired after the record moved through the panel, so the page can reload its own data. */
+  /**
+   * Fired whenever the record's workflow changed as the panel saw it: a move made in the panel, and
+   * any reload that finds a new state or status or runs that started, finished or stopped (after a
+   * decision, a manual start, a retry, skip or cancel, or the panel looking again while runs go on).
+   */
   readonly changed = output<UiWfRecord>();
 
   protected readonly record = signal<UiWfRecord | null>(null);
   protected readonly history = signal<UiWfAuditEntry[]>([]);
+  /** The history could not be read (the record could). */
+  protected readonly historyError = signal(false);
   protected readonly error = signal('');
+  /** Said under the history when only the newest entries were read. */
+  protected readonly historyNote = computed(() =>
+    this.history().length >= WF_PANEL_HISTORY_TAKE ? `Showing the latest ${WF_PANEL_HISTORY_TAKE} entries.` : '');
   /** The drawer was opened by hovering the rail: it stays non-modal and closes when the pointer leaves. */
   protected readonly hoverOpened = signal(false);
   private seq = 0;
@@ -282,7 +339,7 @@ export class UiWorkflowPanel extends WfWithApi {
   protected readonly edge = computed(() => (this.layout() === 'bottom-drawer' ? 'bottom' : this.side()));
   protected readonly path = computed(() => {
     const r = this.record();
-    return r ? wfPanelPath(r, this.history()) : { steps: [], active: 0 };
+    return r ? wfPanelPath(r, this.history()) : { steps: [], active: 0, earlier: [] as UiWfAuditEntry[] };
   });
   /** The states as steps; a record type with no lifecycle still gets one dot, so a drawer's rail can open. */
   protected readonly stepLabels = computed<UiStep[]>(() => {
@@ -300,6 +357,8 @@ export class UiWorkflowPanel extends WfWithApi {
   protected readonly activeRuns = computed(() =>
     (this.record()?.instances ?? []).filter((i) => ['queued', 'running', 'waiting', 'incident'].includes(i.status))
       .sort((a, b) => Number(b.status === 'incident') - Number(a.status === 'incident')));
+  /** "Stopped" when every listed run stopped on an error, else "Running". */
+  protected readonly runsHeading = computed(() => (this.activeRuns().every((r) => r.status === 'incident') ? 'Stopped' : 'Running'));
   /** Runs shown open: a stopped run opens by itself the first time it is seen, so what to do is in view. */
   protected readonly openRuns = signal<ReadonlySet<string>>(new Set());
   private readonly seenStopped = new Set<string>();
@@ -315,16 +374,49 @@ export class UiWorkflowPanel extends WfWithApi {
     return `${this.title()}${now ? `: ${now}, step ${active + 1} of ${steps.length}` : ''}. ${this.open() ? 'Close' : 'Open'}`;
   });
 
+  /** The record the shown data belongs to (`entity/id`), so a switch can tell itself apart from a reload. */
+  private shownKey = '';
+  /** Whether the page is visible: looking again for running runs pauses while it is hidden. */
+  private readonly visible = signal(typeof document === 'undefined' || document.visibilityState !== 'hidden');
+  /** Some run of the record is still going (queued, running or waiting): worth looking again. */
+  private readonly runsGoing = computed(() => this.activeRuns().some((r) => r.status !== 'incident'));
+
   constructor() {
     super();
     effect(() => {
       const api = this.client();
       const e = this.entity(), id = this.entityId();
-      if (api) untracked(() => void this.load(api, e, id));
+      untracked(() => {
+        // Another record: drop the old one at once, so its buttons and history never show for the new one.
+        if (`${e}/${id}` !== this.shownKey) {
+          this.shownKey = `${e}/${id}`;
+          this.seq++;
+          this.record.set(null);
+          this.history.set([]);
+          this.historyError.set(false);
+          this.error.set('');
+          this.openRuns.set(new Set());
+          this.seenStopped.clear();
+        }
+        if (api) void this.load(api, e, id);
+      });
     });
     // Closing by any route (Escape, the close button, a tap outside) ends a hover-opened peek.
     effect(() => { if (!this.open()) untracked(() => this.hoverOpened.set(false)); });
-    inject(DestroyRef).onDestroy(() => clearTimeout(this.closeTimer));
+    // While a run is still going, look again now and then (not while the page is hidden).
+    const destroy = inject(DestroyRef);
+    let poll: ReturnType<typeof setInterval> | null = null;
+    const stopPoll = () => { if (poll) clearInterval(poll); poll = null; };
+    effect(() => {
+      const go = this.runsGoing() && this.visible();
+      untracked(() => { stopPoll(); if (go) poll = setInterval(() => void this.reload(), RUNS_POLL_MS); });
+    });
+    if (typeof document !== 'undefined') {
+      const onVisibility = () => this.visible.set(document.visibilityState !== 'hidden');
+      document.addEventListener('visibilitychange', onVisibility);
+      destroy.onDestroy(() => document.removeEventListener('visibilitychange', onVisibility));
+    }
+    destroy.onDestroy(() => { clearTimeout(this.closeTimer); stopPoll(); });
   }
 
   /** Reloads the record and its history (e.g. after the page changed the record itself). */
@@ -336,11 +428,19 @@ export class UiWorkflowPanel extends WfWithApi {
   private async load(api: UiWorkflowApi, entity: string, id: string): Promise<void> {
     const n = ++this.seq;
     try {
-      const [record, history] = await Promise.all([api.record(entity, id), this.showHistory() ? api.recordHistory(entity, id, 100).catch(() => []) : Promise.resolve([])]);
+      let historyFailed = false;
+      const [record, history] = await Promise.all([
+        api.record(entity, id),
+        this.showHistory() ? api.recordHistory(entity, id, WF_PANEL_HISTORY_TAKE).catch(() => { historyFailed = true; return [] as UiWfAuditEntry[]; }) : Promise.resolve([]),
+      ]);
       if (n !== this.seq) return;
+      const before = this.record();
       this.record.set(record);
-      this.history.set(history);
+      // A failed history read keeps what was shown rather than emptying it.
+      if (!historyFailed) this.history.set(history);
+      this.historyError.set(historyFailed);
       this.error.set('');
+      if (before && wfRecordSignature(before) !== wfRecordSignature(record)) this.changed.emit(record);
       const stopped = record.instances.filter((i) => i.status === 'incident' && !this.seenStopped.has(i.id)).map((i) => i.id);
       if (stopped.length) {
         stopped.forEach((id) => this.seenStopped.add(id));
@@ -351,6 +451,7 @@ export class UiWorkflowPanel extends WfWithApi {
     }
   }
 
+  /** A move made here: the record the engine answered with, then a fresh read for its history. */
   protected async moved(r: UiWfRecord): Promise<void> {
     this.record.set(r);
     this.changed.emit(r);

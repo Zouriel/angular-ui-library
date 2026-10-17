@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { UiWfApiError, type UiWfAuditEntry, type UiWfRecord, type UiWorkflowApi } from './api';
 import { createWorkflow } from './definition';
 import { UiWorkflowPanel, wfPanelPath, type UiWorkflowPanelLayout } from './panel';
@@ -452,3 +452,166 @@ describe('UiWorkflowPanel', () => {
     expect(loaded).toEqual(['s1', 'w1']);
   });
 });
+
+describe('wfPanelPath after a reset and with a cut-short history', () => {
+  it('groups what happened before the latest reset apart; states visited only before it count as not reached', () => {
+    const h = [
+      entry('created', 'Draft'), entry('transitioned', 'Submitted', 'Draft'), entry('transitioned', 'Review', 'Submitted'),
+      entry('reset', 'Draft', 'Review', { label: 'Start over' }), entry('transitioned', 'Submitted', 'Draft'),
+    ];
+    const p = wfPanelPath(record('Submitted'), h);
+    expect(p.earlier.map((e) => e.seq)).toEqual(h.slice(0, 3).map((e) => e.seq));
+    expect(keys(p)).toEqual(['Draft', 'Submitted', 'Review', 'Approved', 'Rejected']);
+    expect(p.steps[0].entries.map((e) => e.action)).toEqual(['reset']);
+    // "Under review" was only reached before starting over: no entries, so it reads as not reached.
+    expect(p.steps[2].entries).toEqual([]);
+    expect(p.active).toBe(1);
+  });
+
+  it('entries before the first move of a cut-short history belong to the state that move left', () => {
+    const task = entry('created', null, null, { title: 'Check' }, 'task');
+    const moved = entry('transitioned', 'Review', 'Submitted');
+    const p = wfPanelPath(record('Review'), [task, moved]);
+    expect(keys(p).slice(0, 2)).toEqual(['Submitted', 'Review']);
+    expect(p.steps[0].entries.map((e) => e.id)).toEqual([task.id]);
+  });
+});
+
+describe('UiWorkflowPanel reloads', () => {
+  async function settle(f: { detectChanges(): void; whenStable(): Promise<unknown> }, rounds = 4) {
+    for (let i = 0; i < rounds; i++) { await new Promise((r) => setTimeout(r)); f.detectChanges(); await f.whenStable(); }
+  }
+
+  it('drops the old record\'s buttons at once when it is pointed at another record', async () => {
+    const second = deferred<UiWfRecord>();
+    const api = {
+      record: (_e: string, id: string) => (id === '1'
+        ? Promise.resolve(record('Draft', { transitions: [{ key: 'submit', label: 'Submit', to: 'Submitted', toLabel: 'Submitted', tone: 'primary', confirm: null, form: null }] }))
+        : second.promise),
+      recordHistory: async () => [],
+    } as unknown as UiWorkflowApi;
+    const f2 = TestBed.createComponent(SwitchHost);
+    f2.componentInstance.api = api;
+    await settle(f2);
+    const el2 = f2.nativeElement as HTMLElement;
+    expect([...el2.querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toContain('Submit');
+    f2.componentInstance.id.set('2');
+    await settle(f2);
+    expect([...el2.querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).not.toContain('Submit');
+    expect(el2.textContent).toContain('Loading…');
+    second.resolve(record('Review', { id: '2' }));
+    await settle(f2);
+    expect(el2.textContent).toContain('Under review');
+  });
+
+  it('fires (changed) after any reload that finds a new state, not only for moves made in the panel', async () => {
+    let state = 'Submitted';
+    const changed: string[] = [];
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.api = { record: async () => record(state, { tasks: [] }), recordHistory: async () => [] } as unknown as UiWorkflowApi;
+    f.componentInstance.onChanged = (r) => changed.push(r.state ?? '');
+    await settle(f);
+    const panel = f.debugElement.query((d) => d.componentInstance instanceof UiWorkflowPanel).componentInstance as UiWorkflowPanel;
+    await panel.reload();
+    expect(changed).toEqual([]);
+    state = 'Review';
+    await panel.reload();
+    expect(changed).toEqual(['Review']);
+  });
+
+  it('shows a failed reload over the record it still shows, and a failed history as such', async () => {
+    let fail = false;
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.layout.set('compact');
+    f.componentInstance.api = {
+      record: async () => { if (fail) throw new UiWfApiError(503, 'unavailable', 'The engine is not answering.'); return record('Submitted'); },
+      recordHistory: async () => { throw new Error('nope'); },
+    } as unknown as UiWorkflowApi;
+    await settle(f);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('The history could not be loaded.');
+    expect(el.textContent).not.toContain('Nothing yet.');
+    fail = true;
+    const panel = f.debugElement.query((d) => d.componentInstance instanceof UiWorkflowPanel).componentInstance as UiWorkflowPanel;
+    await panel.reload();
+    f.detectChanges();
+    expect(el.querySelector('.stale')?.textContent).toContain('The engine is not answering.');
+    expect(el.querySelector('ui-workflow-state-badge')).not.toBeNull();
+  });
+
+  it('says "Stopped" over runs that all stopped, and looks again every 15 s while one is still going', async () => {
+    const run = (id: string, status: string) => ({ id, title: id, status, startedAt: new Date().toISOString(), error: null } as never);
+    let instances = [run('s1', 'incident')];
+    let reads = 0;
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const f = TestBed.createComponent(SwitchHost);
+      f.componentInstance.layout.set('compact');
+      f.componentInstance.api = {
+        record: async () => { reads++; return record('Submitted', { instances }); }, recordHistory: async () => [],
+        instance: () => new Promise(() => undefined), instanceDefinition: () => new Promise(() => undefined),
+      } as unknown as UiWorkflowApi;
+      await settle(f);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelector('.runs h3')?.textContent?.trim()).toBe('Stopped');
+      const before = reads;
+      vi.advanceTimersByTime(16_000);
+      await settle(f);
+      expect(reads).toBe(before);
+
+      instances = [run('s1', 'incident'), run('w1', 'waiting')];
+      const panel = f.debugElement.query((d) => d.componentInstance instanceof UiWorkflowPanel).componentInstance as UiWorkflowPanel;
+      await panel.reload();
+      await settle(f);
+      expect(el.querySelector('.runs h3')?.textContent?.trim()).toBe('Running');
+      const now = reads;
+      vi.advanceTimersByTime(15_000);
+      await settle(f);
+      expect(reads).toBe(now + 1);
+      f.destroy();
+      vi.advanceTimersByTime(30_000);
+      await new Promise((r) => setTimeout(r));
+      expect(reads).toBe(now + 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('vertical: what happened before starting over is grouped apart, not under states not reached', async () => {
+    const h = [entry('created', 'Draft'), entry('transitioned', 'Review', 'Draft'), entry('reset', 'Draft', 'Review', { label: 'Start over' })];
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.api = { record: async () => record('Draft'), recordHistory: async () => h } as unknown as UiWorkflowApi;
+    await settle(f);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('details.earlier summary')?.textContent?.trim()).toBe('Earlier, before starting over (2)');
+    const review = [...el.querySelectorAll('ui-stepper li.step')].find((s) => s.querySelector('.label')?.textContent?.trim() === 'Under review')!;
+    expect(review.textContent).toContain('Not reached yet');
+  });
+
+  it('reads 500 history entries and says when only the latest were read', async () => {
+    const takes: unknown[] = [];
+    const many = Array.from({ length: 500 }, () => entry('created', null, null, { title: 'x' }, 'task'));
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.layout.set('compact');
+    f.componentInstance.api = { record: async () => record('Submitted'), recordHistory: async (_e: string, _i: string, take: number) => { takes.push(take); return many; } } as unknown as UiWorkflowApi;
+    await settle(f);
+    expect(takes).toEqual([500]);
+    expect((f.nativeElement as HTMLElement).textContent).toContain('Showing the latest 500 entries.');
+  });
+
+  it('compact strip: passed states are styled as passed, not as not reached', () => {
+    const css = (UiWorkflowPanel as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n');
+    expect(css).toMatch(/\.track\S*\s+li\.done[^{]*\{[^}]*--ui-color-success/);
+  });
+});
+
+@Component({
+  imports: [UiWorkflowPanel],
+  template: `<ui-workflow-panel entity="application" [entityId]="id()" [layout]="layout()" [api]="api" (changed)="onChanged($event)" />`,
+})
+class SwitchHost {
+  id = signal('1');
+  layout = signal<UiWorkflowPanelLayout>('vertical');
+  api!: UiWorkflowApi;
+  onChanged: (r: UiWfRecord) => void = () => undefined;
+}
