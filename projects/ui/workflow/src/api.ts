@@ -201,6 +201,15 @@ export interface UiWfUser {
   groups?: string[] | null;
 }
 
+/** The signed-in person, as the engine sees them, and what they may do (`GET /me`). */
+export interface UiWfMe {
+  type: string;
+  id: string | null;
+  name: string | null;
+  roles: string[];
+  can: { edit: boolean; publish: boolean; settings: boolean; intervene: boolean; audit: boolean };
+}
+
 export interface UiWfTriggerOverview {
   definitionId: string;
   definitionKey: string;
@@ -283,6 +292,8 @@ export class UiWfApiError extends Error {
  */
 export interface UiWorkflowApi {
   schema(): Promise<UiWorkflowSchema>;
+  /** The signed-in person and what they may do. */
+  me(): Promise<UiWfMe>;
   settings(): Promise<{ settings: UiWorkflowSettings; revision: number }>;
   saveSettings(settings: UiWorkflowSettings, revision: number): Promise<{ revision: number }>;
   triggers(): Promise<UiWfTriggerOverview[]>;
@@ -343,14 +354,32 @@ export interface UiWorkflowHttpOptions {
 export const UI_WORKFLOW_API = new InjectionToken<UiWorkflowApi>('UI_WORKFLOW_API');
 
 /**
+ * The time the workflow views count from ("2 hours ago", "due in 3 days", "overdue"), as epoch
+ * milliseconds. Defaults to the browser's clock; provide the engine's clock when they differ (a
+ * sandbox whose clock was moved forward, or a server whose time is the one that counts).
+ */
+export const UI_WORKFLOW_CLOCK = new InjectionToken<() => number>('UI_WORKFLOW_CLOCK', { providedIn: 'root', factory: () => () => Date.now() });
+
+/** Provides the clock the workflow views count from (see `UI_WORKFLOW_CLOCK`). */
+export function provideUiWorkflowClock(now: () => number): Provider {
+  return { provide: UI_WORKFLOW_CLOCK, useValue: now };
+}
+
+/** The clock the workflow views count from: the provided one, else the browser's. */
+export function injectWorkflowClock(): () => number {
+  return inject(UI_WORKFLOW_CLOCK, { optional: true }) ?? (() => Date.now());
+}
+
+/**
  * Connects the workflow components to an engine's REST API.
  *
  * ```ts
  * providers: [provideUiWorkflow({ baseUrl: '/api/workflows' })]
  * ```
  */
-export function provideUiWorkflow(options: UiWorkflowHttpOptions | { api: UiWorkflowApi }): Provider {
-  return { provide: UI_WORKFLOW_API, useFactory: () => ('api' in options ? options.api : new UiWorkflowHttpApi(options)) };
+export function provideUiWorkflow(options: (UiWorkflowHttpOptions | { api: UiWorkflowApi }) & { now?: () => number }): Provider[] {
+  const api: Provider = { provide: UI_WORKFLOW_API, useFactory: () => ('api' in options ? options.api : new UiWorkflowHttpApi(options)) };
+  return options.now ? [api, provideUiWorkflowClock(options.now)] : [api];
 }
 
 /** The API the components use: the one passed as an input, else the provided one. */
@@ -401,6 +430,7 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   }
 
   schema() { return this.call<UiWorkflowSchema>('GET', '/schema'); }
+  me() { return this.call<UiWfMe>('GET', '/me'); }
   settings() { return this.call<{ settings: UiWorkflowSettings; revision: number }>('GET', '/settings'); }
   saveSettings(settings: UiWorkflowSettings, revision: number) { return this.call<{ revision: number }>('PUT', '/settings', { settings, revision }); }
   triggers() { return this.call<UiWfTriggerOverview[]>('GET', '/triggers'); }
