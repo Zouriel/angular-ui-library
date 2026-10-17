@@ -211,6 +211,34 @@ describe('UiWorkflowTasksDrawer', () => {
       expect(asked).toHaveLength(1);
     });
 
+    it('lists record instances and lifecycle child runs too, named "<lifecycle> · <record>", a record opening with Try again and Skip', async () => {
+      const error = 'A timer (auto:tx) failed 10 times and was stopped: InvalidOperationException: The database refused writing application.status.';
+      const rec = { id: 'ri1', title: 'Expiry', kind: 'record', entity: 'application', entityId: 'a1', entityTitle: 'Grant a1', status: 'incident', error, state: 'draft', stateLabel: 'Draft' };
+      const child = { id: 'cr1', title: 'Review', kind: 'run', parentId: 'x', entity: 'application', entityId: 'a2', entityTitle: null, status: 'incident', error: 'A timer (reminder) failed 10 times and was stopped: mail down' };
+      const f = TestBed.createComponent(UiWorkflowTasksDrawer);
+      f.componentRef.setInput('api', {
+        tasks: async () => ({ items: [], total: 0 }),
+        me: async () => ({ can: { intervene: true } }),
+        instances: async () => ({ items: [rec, child], total: 2 }),
+        instance: async () => ({ ...rec, steps: [], tokens: [], startedAt: new Date().toISOString() }),
+        instanceDefinition: async () => ({ specVersion: 1, id: 'd', key: 'expiry', kind: 'lifecycle', title: 'Expiry', lifecycle: { field: 'status', states: [], transitions: [] } }),
+      } as unknown as UiWorkflowApi);
+      f.componentRef.setInput('refreshSeconds', 0);
+      document.body.appendChild(f.nativeElement);
+      f.detectChanges();
+      for (let i = 0; i < 5; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      f.componentInstance.open.set(true);
+      for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      const items = [...document.querySelectorAll('.stop')] as HTMLButtonElement[];
+      expect(items.map((b) => b.querySelector('.st')?.textContent?.trim())).toEqual(['Expiry · Grant a1', 'Review · a2']);
+      expect(items[0].querySelector('.se')?.textContent?.trim()).toBe('An automatic move failed 10 times and was stopped: The database refused writing application.status.');
+      items[0].click();
+      for (let i = 0; i < 5; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      const view = document.querySelector('ui-wf-run-view')!;
+      expect([...view.querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toEqual(['Try again', 'Skip']);
+      expect(view.querySelector('.steps')).toBeNull();
+    });
+
     it('not for people who may not: nothing asked, nothing counted', async () => {
       const { el, asked } = await renderAs(false);
       expect(asked).toEqual([]);

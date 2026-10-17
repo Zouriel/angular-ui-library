@@ -156,12 +156,15 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   steps (done, waiting, failed, skipped, the paths not taken greyed out). One that stopped opens by
   itself; people the engine lets intervene (`me().can.intervene`) can try it again, skip the step
   (giving the results it would have produced, each in its type, the required ones required) or
-  cancel it with remarks. A run that is still waiting but carries an error (a reminder or escalation
-  timer that failed ten times, which the engine parks for an admin) is shown as **Needs attention**,
-  listed first and opened with the error; the engine only retries stopped runs, so it offers no
-  "Try again", only what still works (decide or reassign the task, or cancel the run). The run view
-  says the same for a lifecycle record whose automatic move or time limit was parked (move it by
-  hand). While a run is still going the panel looks again every 15 seconds (not
+  cancel it with remarks. A timer that keeps failing (ten times: a task's reminder or escalation, a
+  lifecycle's automatic move or time limit) is parked by the engine and stops its instance the same
+  way (`incident`, with the error): a run held by a parked reminder shows as Stopped with **Try again**
+  (re-arms the timer, due now) and **Skip** (drops it; the task stays open). When the record's own
+  lifecycle is stuck this way the record view says `status: 'incident'` with its `error`, and the
+  panel shows a **Needs attention** banner with the error; people who may intervene get Try again and
+  Skip (confirmed) for the record's lifecycle instance, others read that someone who looks after
+  workflows has been told. The record is not frozen: its moves stay offered, and any move clears the
+  banner. While a run is still going the panel looks again every 15 seconds (not
   while the page is hidden). After a reset, what happened before it is grouped under "Earlier,
   before starting over". `(changed)` fires whenever the panel sees the record's workflow change: a
   move made in it, or any reload that finds a new state, status or run status (after a decision, a
@@ -170,8 +173,11 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 - **Tasks drawer**: where people work through their approvals and tasks. A button with the number
   of open tasks (red when any is overdue) opens them in a drawer: due first and overdue marked, open
   or finished, each opening its decision with its form. `scope="all"` lists everyone's tasks, for
-  admins. People who may intervene also see **stopped workflows** there: counted in the badge (which
-  turns red) and listed above the tasks, each opening its steps with try again, skip and cancel. The
+  admins. People who may intervene also see **stopped workflows** there (every instance in
+  `incident`: automations, lifecycle child runs and records whose own lifecycle is stuck, listed as
+  "<lifecycle> · <record>"): counted in the badge (which turns red) and listed above the tasks, each
+  opening its steps with try again, skip and cancel (a record's lifecycle: the error with Try again and
+  Skip, and no step list). The
   count refreshes every `refreshSeconds` while the page is visible, and when the drawer opens or
   closes.
 - **Permissions**: one settings page listing, for every published workflow, who may make each move,

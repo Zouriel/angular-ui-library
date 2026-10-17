@@ -1,12 +1,14 @@
 import { Component, DestroyRef, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiDrawer } from '@zouriel/ui/dialog';
+import { UiAlert } from '@zouriel/ui/alert';
+import { UiButton } from '@zouriel/ui/button';
+import { UiDrawer, UiModal } from '@zouriel/ui/dialog';
 import { UiStepBody, UiStepper, type UiStep } from '@zouriel/ui/navigation';
 import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
 import { WF_ICONS } from './icons';
 import { WfRecordActions, WfRunView, UiWorkflowStateBadge } from './runtime';
-import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfReadableError, wfRunLabel, wfRunNeedsAttention, wfRunTone, wfStatePassed } from './runtime-shared';
+import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfParkedTimerName, wfReadableError, wfRunStatusLabel, wfRunStatusTone, wfStatePassed } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
 /**
@@ -99,7 +101,7 @@ const RUNS_POLL_MS = 15_000;
  */
 @Component({
   selector: 'ui-workflow-panel',
-  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiDrawer, UiStepper, UiStepBody, UiWorkflowStateBadge, WfRecordActions, WfRunView],
+  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiAlert, UiButton, UiDrawer, UiModal, UiStepper, UiStepBody, UiWorkflowStateBadge, WfRecordActions, WfRunView],
   host: { '[attr.data-layout]': 'layout()' },
   template: `
     <!-- The record's workflows still running or stopped, each opening its steps (and, for people who may, try again, skip or cancel). -->
@@ -108,11 +110,11 @@ const RUNS_POLL_MS = 15_000;
         <section class="runs" [attr.aria-label]="runsHeading()">
           <h3>{{ runsHeading() }}</h3>
           @for (run of activeRuns(); track run.id) {
-            <div class="run" [attr.data-status]="run.status" [attr.data-attention]="attention(run) ? '' : null">
+            <div class="run" [attr.data-status]="run.status">
               <button type="button" class="run-row" (click)="toggleRun(run.id)" [attr.aria-expanded]="openRuns().has(run.id)">
-                <span class="wf-chip" [attr.data-tone]="runTone(run)">{{ runLabel(run) }}</span>
+                <span class="wf-chip" [attr.data-tone]="runTone(run.status)">{{ runLabel(run.status) }}</span>
                 <span class="rt">{{ run.title }}</span>
-                <span class="rs">{{ attention(run) ? (readable(run.error) || 'Stopped') : 'since ' + ago(run.startedAt) }}</span>
+                <span class="rs">{{ run.status === 'incident' ? (readable(run.error) || 'Stopped') : 'since ' + ago(run.startedAt) }}</span>
                 <hugeicons-icon class="chev" aria-hidden="true" [icon]="icons.ArrowDown01Icon" [size]="14" [strokeWidth]="1.8" />
               </button>
               @if (openRuns().has(run.id)) {
@@ -130,6 +132,23 @@ const RUNS_POLL_MS = 15_000;
         <p class="wf-error stale" role="alert">{{ error() }} What is shown may be out of date. <button type="button" class="wf-link" (click)="reload()">Try again</button></p>
       }
       @if (record(); as r) {
+        @if (r.status === 'incident') {
+          <!-- The record's own lifecycle is stuck (spec §10: a timer that kept failing was parked). It is not frozen:
+               its moves below still work, and any move clears this. -->
+          <ui-alert class="stuck" tone="warning" heading="Needs attention">
+            <p>{{ readable(r.error) || 'Something in this record’s workflow stopped.' }}</p>
+            @if (mayIntervene()) {
+              <p class="wf-hint">Try again runs it now. Skip drops it, and the record stays {{ r.stateLabel ? 'in ' + r.stateLabel : 'where it is' }}. Moving the record also clears this.</p>
+              <div class="wf-row">
+                <ui-button size="sm" (click)="recordAct('retry')" [disabled]="recordBusy()">Try again</ui-button>
+                <ui-button size="sm" variant="outline" (click)="recordSkipping.set(true)" [disabled]="recordBusy()">Skip</ui-button>
+              </div>
+              @if (recordActError()) { <p class="wf-error" role="alert">{{ recordActError() }}</p> }
+            } @else {
+              <p class="wf-hint">The record can still be moved. Someone who looks after workflows has been told.</p>
+            }
+          </ui-alert>
+        }
         @if (!r.state || mode === 'compact') {
           <!-- Compact, or no lifecycle: the state as a badge and a strip, the actions, and one flat history. -->
           <div class="state">
@@ -248,6 +267,22 @@ const RUNS_POLL_MS = 15_000;
         </ui-drawer>
       }
     }
+
+    <!-- Skipping the record's stopped timer: what it would have done (an automatic move, a time limit) never happens. -->
+    <ui-modal [open]="recordSkipping()" (openChange)="!$event && recordSkipping.set(false)" [title]="'Skip ' + timerName()" size="md">
+      @if (recordSkipping()) {
+        <div class="dlg">
+          <p>It is dropped without running: the record stays where it is, with nothing scheduled in its place. It can still be moved by hand.</p>
+          @if (recordActError()) { <p class="wf-error" role="alert">{{ recordActError() }}</p> }
+        </div>
+      }
+      @if (recordSkipping()) {
+        <div modal-footer class="foot">
+          <ui-button variant="ghost" (click)="recordSkipping.set(false)" [disabled]="recordBusy()">Back</ui-button>
+          <ui-button (click)="recordAct('skip')" [disabled]="recordBusy()">Skip it</ui-button>
+        </div>
+      }
+    </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: block; font-size: 13.5px; color: var(--ui-color-text); }
@@ -278,16 +313,22 @@ const RUNS_POLL_MS = 15_000;
     .runs { display: flex; flex-direction: column; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     .runs h3 { margin: 0; }
     .run { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); overflow: hidden; }
-    .run[data-attention] { border-color: color-mix(in srgb, var(--ui-color-danger) 45%, var(--ui-color-border)); }
+    .run[data-status="incident"] { border-color: color-mix(in srgb, var(--ui-color-danger) 45%, var(--ui-color-border)); }
     .run-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; gap: 2px var(--ui-space-2); width: 100%;
       padding: var(--ui-space-2) var(--ui-space-3); border: 0; background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
     .run-row:hover { background: var(--ui-color-surface-hover); }
     .run-row:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
     .rt { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rs { grid-column: 1 / 3; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
-    .run[data-attention] .rs { color: var(--ui-color-danger); }
+    .run[data-status="incident"] .rs { color: var(--ui-color-danger); }
     .chev { grid-row: 1 / 3; grid-column: 3; transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .run-row[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .stuck { margin-bottom: var(--ui-space-3); }
+    .stuck p { margin: 0 0 var(--ui-space-1); }
+    .stuck .wf-row { flex-wrap: wrap; margin-top: var(--ui-space-2); }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .dlg p { margin: 0; }
+    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
     .run-view { display: flex; padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
 
     /* The rail: the record's states as dots on the screen's edge. Hover (desktop) or tap opens the drawer. */
@@ -350,21 +391,29 @@ export class UiWorkflowPanel extends WfWithApi {
   protected readonly recent = computed(() => this.newestFirst().slice(0, 8));
   protected readonly passed = wfStatePassed;
   protected readonly icons = WF_ICONS;
-  protected readonly runLabel = wfRunLabel;
-  protected readonly runTone = wfRunTone;
-  /** Stopped on an error, or parked with one while still waiting (a timer failed ten times): someone should look. */
-  protected readonly attention = wfRunNeedsAttention;
+  protected readonly runLabel = wfRunStatusLabel;
+  protected readonly runTone = wfRunStatusTone;
   protected readonly readable = wfReadableError;
-  /** The record's workflows still running or stopped, the ones needing attention (stopped or parked) first. */
+  /**
+   * The record's workflows still running or stopped (`incident`: a failed step, or a timer the engine
+   * parked after it kept failing), stopped ones first.
+   */
   protected readonly activeRuns = computed(() =>
     (this.record()?.instances ?? []).filter((i) => ['queued', 'running', 'waiting', 'incident'].includes(i.status))
-      .sort((a, b) => Number(wfRunNeedsAttention(b)) - Number(wfRunNeedsAttention(a))));
-  /** "Stopped" when every listed run stopped on an error, "Needs attention" when each stopped or is parked, else "Running". */
-  protected readonly runsHeading = computed(() => {
-    const runs = this.activeRuns();
-    return runs.every((r) => r.status === 'incident') ? 'Stopped' : runs.every(wfRunNeedsAttention) ? 'Needs attention' : 'Running';
-  });
-  /** Runs shown open: a stopped (or parked) run opens by itself the first time it is seen, so what to do is in view. */
+      .sort((a, b) => Number(b.status === 'incident') - Number(a.status === 'incident')));
+  /** "Stopped" when every listed run stopped, else "Running". */
+  protected readonly runsHeading = computed(() => (this.activeRuns().every((r) => r.status === 'incident') ? 'Stopped' : 'Running'));
+  /** Whether the engine lets this person intervene (`me().can.intervene`), asked when the record is stuck. */
+  protected readonly mayIntervene = signal(false);
+  private interveneAskedFor: unknown = null;
+  /** A retry or skip of the record's stopped timer is under way, and what went wrong with the last one. */
+  protected readonly recordBusy = signal(false);
+  protected readonly recordActError = signal('');
+  /** The skip confirmation is open. */
+  protected readonly recordSkipping = signal(false);
+  /** The stuck timer, as a sentence object ("the automatic move"). */
+  protected readonly timerName = computed(() => wfParkedTimerName(this.record()?.error));
+  /** Runs shown open: a stopped run opens by itself the first time it is seen, so what to do is in view. */
   protected readonly openRuns = signal<ReadonlySet<string>>(new Set());
   private readonly seenStopped = new Set<string>();
 
@@ -402,9 +451,23 @@ export class UiWorkflowPanel extends WfWithApi {
           this.error.set('');
           this.openRuns.set(new Set());
           this.seenStopped.clear();
+          this.recordActError.set('');
+          this.recordSkipping.set(false);
         }
         if (api) void this.load(api, e, id);
       });
+    });
+    // The record's lifecycle stuck: ask (once per API) whether this person may try it again or skip it.
+    effect(() => {
+      const api = this.client();
+      const stuck = this.record()?.status === 'incident';
+      if (!api || !stuck || this.interveneAskedFor === api) return;
+      this.interveneAskedFor = api;
+      untracked(() => void Promise.resolve(api.me?.()).then((me) => this.mayIntervene.set(!!me?.can?.intervene), () => {
+        this.mayIntervene.set(false);
+        // A failed answer is not kept: the next time the record is read stuck, ask again.
+        this.interveneAskedFor = null;
+      }));
     });
     // Closing by any route (Escape, the close button, a tap outside) ends a hover-opened peek.
     effect(() => { if (!this.open()) untracked(() => this.hoverOpened.set(false)); });
@@ -446,13 +509,40 @@ export class UiWorkflowPanel extends WfWithApi {
       this.historyError.set(historyFailed);
       this.error.set('');
       if (before && wfRecordSignature(before) !== wfRecordSignature(record)) this.changed.emit(record);
-      const stopped = record.instances.filter((i) => wfRunNeedsAttention(i) && !this.seenStopped.has(i.id)).map((i) => i.id);
+      const stopped = record.instances.filter((i) => i.status === 'incident' && !this.seenStopped.has(i.id)).map((i) => i.id);
       if (stopped.length) {
         stopped.forEach((id) => this.seenStopped.add(id));
         this.openRuns.set(new Set([...this.openRuns(), ...stopped]));
       }
     } catch (e) {
       if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
+    }
+  }
+
+  /**
+   * Tries the record's stopped timer again, or skips it. The record view does not carry its lifecycle
+   * instance's id, so it is looked up (the record's lifecycle instance in `incident`); if there is none
+   * any more (it was cleared meanwhile), the reload shows that.
+   */
+  protected async recordAct(kind: 'retry' | 'skip'): Promise<void> {
+    const api = this.client();
+    const r = this.record();
+    if (!api || !r || this.recordBusy()) return;
+    const shown = this.shownKey;
+    this.recordBusy.set(true);
+    this.recordActError.set('');
+    try {
+      const page = await api.instances({ entity: this.entity(), entityId: this.entityId(), kind: ['record'], status: ['incident'], take: 10 });
+      const own = page.items.find((i) => !r.lifecycle || i.definitionKey === r.lifecycle) ?? page.items[0];
+      if (own) await (kind === 'retry' ? api.retry(own.id) : api.skip(own.id));
+      // Pointed at another record meanwhile: nothing here to update.
+      if (shown !== this.shownKey) return;
+      this.recordSkipping.set(false);
+      await this.reload();
+    } catch (e) {
+      if (shown === this.shownKey) this.recordActError.set(wfErrorText(e, 'That did not work.'));
+    } finally {
+      this.recordBusy.set(false);
     }
   }
 

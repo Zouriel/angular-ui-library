@@ -153,7 +153,14 @@ export interface UiWfRecord {
   state: string | null;
   stateLabel: string | null;
   stateTone: string | null;
+  /**
+   * The record's lifecycle instance status: `active`, `outOfSync`, `completed`, or `incident` when a
+   * timer of its state (an automatic move or time limit) kept failing and was parked (spec §10). An
+   * `incident` record is not frozen: its transitions and reset are still offered, and any move clears it.
+   */
   status: UiWfInstanceStatus | null;
+  /** Why the record is in `incident` (masked); null otherwise. Older engines omit it. */
+  error?: string | null;
   stateEnteredAt: string | null;
   transitions: UiWfTransitionOption[];
   tasks: UiWfTask[];
@@ -370,13 +377,25 @@ export interface UiWorkflowApi {
   validate(def: UiWorkflowDefinition): Promise<UiWfProblem[]>;
   simulate(def: UiWorkflowDefinition, request: UiWfSimulationRequest): Promise<UiWfSimulationResult>;
 
+  /**
+   * Instances matching the query. Without `kind`, automations and record instances are listed; when
+   * `status` includes `incident`, lifecycle child runs too, so every stuck instance shows in one list.
+   */
   instances(q: UiWfInstanceQuery): Promise<UiWfPage<UiWfInstance>>;
   instance(id: string): Promise<UiWfInstance>;
   instanceDefinition(id: string): Promise<UiWorkflowDefinition>;
   cancel(id: string, reason?: string): Promise<UiWfInstance>;
-  /** Retries a stopped step. `target` picks the incident (a token id or failed step id) when several paths stopped. */
+  /**
+   * Retries an instance in `incident`: re-arms its parked timers (due now) if a timer kept failing, else
+   * runs the stopped step again. `target` picks one: a parked timer by bookmark id, purpose
+   * (`auto:<transition id>`, `sla:<state id>`, `reminder`, `escalation`) or step id, or a stopped path by
+   * token id or failed step id; without it, all parked timers (or the first stopped step).
+   */
   retry(id: string, target?: string): Promise<UiWfInstance>;
-  /** Skips a stopped step, optionally giving its outputs. `target` as for `retry`. */
+  /**
+   * Skips what holds an instance in `incident`: drops its parked timers unrun, or continues after the
+   * stopped step, optionally giving that step's outputs (ignored for a timer). `target` as for `retry`.
+   */
   skip(id: string, outputs?: Record<string, unknown>, target?: string): Promise<UiWfInstance>;
   migrate(id: string, version: number, stateMap?: Record<string, string>): Promise<UiWfInstance>;
 

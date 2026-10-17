@@ -7,7 +7,7 @@ import { UiDrawer } from '@zouriel/ui/dialog';
 import type { UiWfInstance, UiWfTask } from './api';
 import { WF_ICONS } from './icons';
 import { WfRunView, WfTaskInbox } from './runtime';
-import { WfWithApi, wfReadableError } from './runtime-shared';
+import { WfWithApi, wfReadableError, wfStoppedLabel } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
 /** How many open tasks one count asks for; overdue ones beyond this aren't seen. */
@@ -43,7 +43,7 @@ const COUNT_TAKE = 100;
     <ui-drawer [(open)]="open" [side]="side()" [title]="label()">
       @if (open()) {
         @if (openRun(); as run) {
-          <!-- One stopped workflow, with try again, skip and cancel. -->
+          <!-- One stopped workflow, with try again, skip and cancel (a record's lifecycle: try again and skip). -->
           <div class="detail">
             <ui-button size="sm" variant="ghost" (click)="openRun.set(null)">‹ Back to the list</ui-button>
             <ui-wf-run-view [instanceId]="run.id" [api]="client()" (changed)="onRunChanged()" />
@@ -52,11 +52,11 @@ const COUNT_TAKE = 100;
           @if (stopped().length) {
             <section class="stopped" aria-label="Stopped workflows">
               <h3>Stopped workflows</h3>
-              <p class="wf-hint">They need someone to try again, skip the step or cancel.</p>
+              <p class="wf-hint">They need someone to try again or skip what stopped them.</p>
               <ul>
                 @for (run of stopped(); track run.id) {
                   <li><button type="button" class="stop" (click)="openRun.set(run)">
-                    <span class="st">{{ run.title }}@if (run.entityTitle) { · {{ run.entityTitle }} }</span>
+                    <span class="st">{{ stoppedLabel(run) }}</span>
                     <span class="se">{{ readable(run.error) || 'Stopped' }}</span>
                   </button></li>
                 }
@@ -109,6 +109,7 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
 
   protected readonly icons = WF_ICONS;
   protected readonly readable = wfReadableError;
+  protected readonly stoppedLabel = wfStoppedLabel;
   /** Open tasks for the signed-in person, and how many of them are overdue. */
   protected readonly count = signal(0);
   protected readonly overdue = signal(0);
@@ -117,8 +118,9 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
   /** The overdue number as shown: "100+" when only the first page was looked at. */
   protected readonly overdueText = computed(() => `${this.overdue()}${this.capped() ? '+' : ''}`);
   /**
-   * Workflows that stopped and need someone to try again, skip or cancel: listed (and counted) only
-   * for people the engine lets intervene, since only they can act on them.
+   * Workflows that stopped and need someone to try again, skip or cancel: every instance in `incident`
+   * (automations, lifecycle child runs, and record instances whose timer was parked), listed (and
+   * counted) only for people the engine lets intervene, since only they can act on them.
    */
   protected readonly stopped = signal<UiWfInstance[]>([]);
   /** The stopped workflow opened in the drawer, if any. */

@@ -451,13 +451,14 @@ describe('UiWorkflowPanel', () => {
     expect(rows[1].querySelector('ui-wf-run-view')).not.toBeNull();
     expect(loaded).toEqual(['s1', 'w1']);
   });
-  it('a waiting run with an error (a timer parked after repeated failures) is listed first as needing attention, open, with the error', async () => {
+  it('a run stopped by a parked reminder (incident, task still open) is listed first, open, with the readable error and Try again', async () => {
     const run = (id: string, title: string, status: string, error: string | null = null) => ({
-      id, definitionId: 'd', definitionKey: 'k', title, version: 1, kind: 'automation', parentId: null, reason: null, entity: 'application', entityId: '1',
+      id, definitionId: 'd', definitionKey: 'k', title, version: 1, kind: 'run', parentId: 'rec', reason: 'onEnter:s', entity: 'application', entityId: '1',
       entityTitle: 'A', status, state: null, stateLabel: null, error, errorStepId: null, initiatorId: null, initiatorName: null,
-      startedAt: new Date().toISOString(), updatedAt: '', endedAt: null, trigger: null, steps: [], tokens: [], outputs: null, variables: null, tasks: null,
+      startedAt: new Date().toISOString(), updatedAt: '', endedAt: null, trigger: null, steps: [], tokens: [{ id: 'root', status: 'waiting', waiting: 'task', stepId: null }],
+      outputs: null, variables: null, tasks: null,
     });
-    const instances = [run('w1', 'Tell the panel', 'waiting'), run('p1', 'Remind the reviewer', 'waiting', 'A timer (reminder) failed 10 times and was stopped: mail down')];
+    const instances = [run('w1', 'Tell the panel', 'waiting'), run('p1', 'Remind the reviewer', 'incident', 'A timer (reminder) failed 10 times and was stopped: InvalidOperationException: mail down')];
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.layout.set('compact');
     fixture.componentInstance.api = {
@@ -471,15 +472,91 @@ describe('UiWorkflowPanel', () => {
     const el = fixture.nativeElement as HTMLElement;
     const rows = [...el.querySelectorAll('.run')] as HTMLElement[];
     expect(rows.map((r) => r.querySelector('.rt')?.textContent?.trim())).toEqual(['Remind the reviewer', 'Tell the panel']);
-    expect(rows[0].hasAttribute('data-attention')).toBe(true);
-    expect(rows[1].hasAttribute('data-attention')).toBe(false);
-    expect(rows[0].querySelector('.wf-chip')?.textContent?.trim()).toBe('Needs attention');
-    expect(rows[0].querySelector('.rs')?.textContent).toContain('mail down');
+    expect(rows[0].querySelector('.wf-chip')?.textContent?.trim()).toBe('Stopped');
+    expect(rows[0].querySelector('.rs')?.textContent?.trim()).toBe('A reminder failed 10 times and was stopped: mail down');
     expect(rows[0].querySelector('ui-wf-run-view')).not.toBeNull();
     expect(rows[1].querySelector('ui-wf-run-view')).toBeNull();
-    // The engine only retries stopped runs, so no "Try again" here.
-    expect([...rows[0].querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).not.toContain('Try again');
+    expect([...rows[0].querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toEqual(expect.arrayContaining(['Try again', 'Skip']));
     expect(el.querySelector('.runs h3')?.textContent?.trim()).toBe('Running');
+  });
+});
+
+describe('UiWorkflowPanel when the record itself is stuck (a parked timer: status incident)', () => {
+  const error = 'A timer (auto:tx) failed 10 times and was stopped: InvalidOperationException: The database refused writing application.status.';
+  const submit = { key: 'submit', label: 'Submit', to: 'Submitted', toLabel: 'Submitted', tone: 'primary', confirm: null, form: null };
+  const settle = async (f: { detectChanges(): void; whenStable(): Promise<unknown> }) => { for (let i = 0; i < 5; i++) { await new Promise((r) => setTimeout(r)); f.detectChanges(); await f.whenStable(); } };
+  const buttons = (root: ParentNode) => [...root.querySelectorAll('ui-button')].map((b) => b.textContent?.trim());
+  const press = (root: ParentNode, label: string) => ([...root.querySelectorAll('ui-button')].find((b) => b.textContent?.trim() === label) as HTMLElement).querySelector('button')!.click();
+
+  function stuckApi(intervene: boolean) {
+    const calls: unknown[][] = [];
+    let status = 'incident';
+    const api = {
+      record: async () => record('Draft', status === 'incident' ? { status: 'incident', error, transitions: [submit] } : { status: 'active', error: null, transitions: [submit] }),
+      recordHistory: async () => [],
+      me: async () => ({ can: { intervene } }),
+      instances: async (q: unknown) => {
+        calls.push(['instances', q]);
+        return { total: 2, items: [{ id: 'other', definitionKey: 'another', kind: 'record', status: 'incident' }, { id: 'ri1', definitionKey: 'review', kind: 'record', status: 'incident' }] };
+      },
+      retry: async (id: string) => { calls.push(['retry', id]); status = 'active'; return {}; },
+      skip: async (id: string) => { calls.push(['skip', id]); status = 'active'; return {}; },
+    } as unknown as UiWorkflowApi;
+    return { api, calls };
+  }
+
+  async function render(intervene: boolean, layout: UiWorkflowPanelLayout = 'compact') {
+    const { api, calls } = stuckApi(intervene);
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.layout.set(layout);
+    f.componentInstance.api = api;
+    await settle(f);
+    return { f, el: f.nativeElement as HTMLElement, calls };
+  }
+
+  it('shows a warning banner with the readable error, and the moves still work', async () => {
+    for (const layout of ['vertical', 'horizontal', 'compact'] as const) {
+      const { el } = await render(false, layout);
+      const banner = el.querySelector('ui-alert.stuck');
+      expect(banner?.getAttribute('ng-reflect-tone') ?? banner?.querySelector('[data-tone]')?.getAttribute('data-tone')).toBe('warning');
+      expect(banner?.textContent).toContain('Needs attention');
+      expect(banner?.textContent).toContain('An automatic move failed 10 times and was stopped: The database refused writing application.status.');
+      expect(buttons(el)).toContain('Submit');
+    }
+  });
+
+  it('people who may not intervene read the reason and that someone has been told, without buttons', async () => {
+    const { el } = await render(false);
+    const banner = el.querySelector('ui-alert.stuck')!;
+    expect(banner.textContent).toContain('Someone who looks after workflows has been told.');
+    expect(buttons(banner)).toEqual([]);
+  });
+
+  it('Try again finds the record\'s own lifecycle instance and retries it, then reads the record again', async () => {
+    const { f, el, calls } = await render(true);
+    const banner = el.querySelector('ui-alert.stuck')!;
+    expect(buttons(banner)).toEqual(['Try again', 'Skip']);
+    press(banner, 'Try again');
+    await settle(f);
+    expect(calls).toEqual([
+      ['instances', { entity: 'application', entityId: '1', kind: ['record'], status: ['incident'], take: 10 }],
+      ['retry', 'ri1'],
+    ]);
+    expect(el.querySelector('ui-alert.stuck')).toBeNull();
+  });
+
+  it('Skip asks first, then skips the record\'s lifecycle instance', async () => {
+    const { f, el, calls } = await render(true);
+    press(el.querySelector('ui-alert.stuck')!, 'Skip');
+    await settle(f);
+    expect(calls).toEqual([]);
+    expect(document.body.textContent).toContain('Skip the automatic move');
+    const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Skip it') as HTMLElement;
+    confirm.querySelector('button')!.click();
+    await settle(f);
+    expect(calls.map((c) => c[0])).toEqual(['instances', 'skip']);
+    expect(calls[1]).toEqual(['skip', 'ri1']);
+    expect(el.querySelector('ui-alert.stuck')).toBeNull();
   });
 });
 
@@ -605,19 +682,6 @@ describe('UiWorkflowPanel reloads', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it('says "Needs attention" over runs that each stopped or were parked with an error', async () => {
-    const run = (id: string, status: string, error: string | null) => ({ id, title: id, status, startedAt: new Date().toISOString(), error } as never);
-    const f = TestBed.createComponent(SwitchHost);
-    f.componentInstance.layout.set('compact');
-    f.componentInstance.api = {
-      record: async () => record('Submitted', { instances: [run('s1', 'incident', 'Bank API: 503'), run('p1', 'waiting', 'A timer (escalation) failed 10 times and was stopped: x')] }),
-      recordHistory: async () => [], instance: () => new Promise(() => undefined), instanceDefinition: () => new Promise(() => undefined),
-    } as unknown as UiWorkflowApi;
-    await settle(f);
-    expect((f.nativeElement as HTMLElement).querySelector('.runs h3')?.textContent?.trim()).toBe('Needs attention');
-    f.destroy();
   });
 
   it('vertical: what happened before starting over is grouped apart, not under states not reached', async () => {

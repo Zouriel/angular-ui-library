@@ -33,9 +33,10 @@ import {
   wfErrorText,
   wfHumanize,
   wfOutcomeLabel,
-  wfRunLabel,
-  wfRunParked,
-  wfRunTone,
+  wfParkedTimerName,
+  wfRunStatusLabel,
+  wfRunStatusTone,
+  wfTimerParked,
   wfReadableError,
   wfRemarksCounter,
   wfRemarksLabel,
@@ -783,7 +784,7 @@ export class WfTaskInbox extends WfWithApi {
       @if (showHead()) {
       <header class="head">
         <div class="t"><strong>{{ r.title }}</strong> <span class="v">v{{ r.version }}</span>
-          <span class="wf-chip" [attr.data-tone]="statusTone(r)">{{ statusLabel(r) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
+          <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
         <span class="m">{{ r.entityTitle ?? r.entityId ?? '' }} · started {{ ago(r.startedAt) }}{{ r.initiatorName ? ' by ' + r.initiatorName : '' }}</span>
       </header>
       }
@@ -791,7 +792,19 @@ export class WfTaskInbox extends WfWithApi {
         <div class="incident" role="alert">
           <p><strong>Stopped:</strong> {{ readable(r.error) }}</p>
           @if (mayIntervene()) {
-            @if (incidents().length > 1) {
+            @if (timerParked(r)) {
+              <!-- A timer kept failing and the engine parked it: try again re-arms it (due now), skip drops it unrun. -->
+              <p class="wf-hint">{{ r.kind === 'record'
+                ? 'Try again runs it now. Skip drops it: the record stays where it is. Moving the record by hand also clears this.'
+                : 'Try again runs it now. Skip drops it; the task stays open and can still be decided.' }}</p>
+              <div class="wf-row">
+                <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
+                <ui-button size="sm" variant="outline" (click)="askSkipTimer()" [disabled]="busy()">Skip</ui-button>
+                @if (r.kind !== 'record') {
+                  <ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button>
+                }
+              </div>
+            } @else if (incidents().length > 1) {
               <!-- Several paths stopped: each can be retried or skipped on its own. -->
               <ul class="stops">
                 @for (i of incidents(); track i.token) {
@@ -813,24 +826,12 @@ export class WfTaskInbox extends WfWithApi {
             <p class="wf-hint">Someone who looks after workflows can try it again or skip it.</p>
           }
         </div>
-      } @else if (parked(r)) {
-        <!-- Still waiting, but a timer it needs failed ten times and was parked: the engine can't retry or skip it (only
-             stopped runs can be), so this says what happened and what can still be done. -->
-        <div class="incident parked" role="alert">
-          <p><strong>Needs attention:</strong> {{ readable(r.error) }}</p>
-          @if (mayIntervene()) {
-            <p class="wf-hint">{{ r.kind === 'record' ? 'Its automatic move or time limit will not happen by itself. Fix the cause, then move the record by hand.' : 'A reminder or escalation could not be sent; the run still waits for its task. Fix the cause, then decide or reassign the task, or cancel the run.' }}</p>
-            @if (r.status === 'waiting' || r.status === 'running' || r.status === 'queued') {
-              <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button></div>
-            }
-          } @else {
-            <p class="wf-hint">Someone who looks after workflows needs to look at it.</p>
-          }
-        </div>
       } @else if (mayIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
         <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button></div>
       }
       @if (error()) { <p class="wf-error">{{ error() }}</p> }
+      <!-- A lifecycle record instance has no steps of its own: no empty list for it. -->
+      @if (rows().length) {
       <ol class="steps">
         @for (s of rows(); track s.id) {
           <li [attr.data-status]="s.status" [style.padding-left.px]="8 + s.depth * 16">
@@ -841,6 +842,7 @@ export class WfTaskInbox extends WfWithApi {
           </li>
         }
       </ol>
+      }
       @if (r.tasks?.length) {
         <section class="tasks"><h4>Tasks</h4>
           <ul>@for (t of r.tasks!; track t.id) { <li>{{ t.title }} — {{ t.status === 'open' ? 'waiting for ' + t.assigneeNames.join(', ') + ', due ' + ago(t.dueAt) : taskResult(t) }}</li> }</ul>
@@ -853,10 +855,16 @@ export class WfTaskInbox extends WfWithApi {
     }
 
     <!-- Skipping: the run carries on as if the step had finished, with the results given here. -->
-    <ui-modal [open]="!!skipping()" (openChange)="!$event && skipping.set(null)" [title]="'Skip “' + (skipping()?.name ?? '') + '”'" size="md">
+    <ui-modal [open]="!!skipping()" (openChange)="!$event && skipping.set(null)" [title]="skipping()?.timer ? 'Skip ' + (skipping()?.name ?? '') : 'Skip “' + (skipping()?.name ?? '') + '”'" size="md">
       @if (skipping(); as sk) {
         <div class="dlg">
-          <p>The run carries on as if this step had finished.@if (sk.outputs.length) { Give what it would have produced, for the steps after it. }</p>
+          @if (sk.timer) {
+            <p>{{ sk.timer === 'record'
+              ? 'It is dropped without running: the record stays where it is, with nothing scheduled in its place. It can still be moved by hand.'
+              : 'It is dropped without running. The task stays open and can still be decided.' }}</p>
+          } @else {
+            <p>The run carries on as if this step had finished.@if (sk.outputs.length) { Give what it would have produced, for the steps after it. }</p>
+          }
           @for (o of sk.outputs; track o.key) {
             <div class="lw"><span class="wf-label">{{ o.label }}{{ o.required ? ' (required)' : '' }}</span>
               <ui-wf-value-input [field]="o.options?.length ? { key: o.key, label: o.label, type: 'enum', options: o.options } : undefined" [type]="o.type"
@@ -868,7 +876,7 @@ export class WfTaskInbox extends WfWithApi {
       @if (skipping()) {
         <div modal-footer class="foot">
           <ui-button variant="ghost" (click)="skipping.set(null)" [disabled]="busy()">Back</ui-button>
-          <ui-button (click)="confirmSkip()" [disabled]="busy()">Skip the step</ui-button>
+          <ui-button (click)="confirmSkip()" [disabled]="busy()">{{ skipping()?.timer ? 'Skip it' : 'Skip the step' }}</ui-button>
         </div>
       }
     </ui-modal>
@@ -1011,14 +1019,17 @@ export class WfRunView extends WfWithApi {
     }
   }
 
-  protected readonly statusLabel = wfRunLabel;
-  protected readonly statusTone = wfRunTone;
+  protected readonly statusLabel = wfRunStatusLabel;
+  protected readonly statusTone = wfRunStatusTone;
   protected readonly readable = wfReadableError;
-  /** Waiting with an error: a timer failed ten times and was parked (see `wfRunParked`). */
-  protected readonly parked = wfRunParked;
+  /** Stopped by a timer the engine parked rather than a failed step (see `wfTimerParked`). */
+  protected readonly timerParked = wfTimerParked;
 
-  /** The step being skipped, with the results it would have produced (for the steps after it). */
-  protected readonly skipping = signal<{ target?: string; name: string; outputs: UiWfParamDescriptor[] } | null>(null);
+  /**
+   * What is being skipped: a stopped step, with the results it would have produced (for the steps
+   * after it), or a parked timer (`timer`: whose it is, a record's or a run's), dropped unrun.
+   */
+  protected readonly skipping = signal<{ target?: string; name: string; outputs: UiWfParamDescriptor[]; timer?: 'record' | 'run' } | null>(null);
   protected readonly skipValues = signal<Record<string, unknown>>({});
   protected readonly skipError = signal('');
   protected readonly cancelling = signal(false);
@@ -1038,6 +1049,15 @@ export class WfRunView extends WfWithApi {
     this.skipValues.set({});
     this.skipError.set('');
     this.skipping.set({ target, name: step ? stepName(step) : 'the step', outputs });
+  }
+
+  /** Skipping the parked timer(s) of an incident: confirmed first, since what it would have done never happens. */
+  protected askSkipTimer(): void {
+    const r = this.run();
+    if (!r) return;
+    this.skipValues.set({});
+    this.skipError.set('');
+    this.skipping.set({ name: wfParkedTimerName(r.error), outputs: [], timer: r.kind === 'record' ? 'record' : 'run' });
   }
 
   protected setSkipValue(key: string, value: unknown): void {

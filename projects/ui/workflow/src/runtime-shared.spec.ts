@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfReadableError, wfRemarksLabel, wfStepTimedOut } from './runtime-shared';
+import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfParkedTimerName, wfReadableError, wfRemarksLabel, wfStepTimedOut, wfStoppedLabel, wfTimerParked } from './runtime-shared';
 
 describe('wfActorLabel', () => {
   const titles = (k: string) => ({ financeSignOff: 'Pay approved scholarships' } as Record<string, string>)[k];
@@ -84,5 +84,43 @@ describe('wfReadableError', () => {
     expect(wfReadableError('Bank API: 503')).toBe('Bank API: 503');
     expect(wfReadableError('The approver left: no one to ask')).toBe('The approver left: no one to ask');
     expect(wfReadableError(null)).toBe('');
+  });
+
+  it('names a parked timer by what it was for, and drops the exception type after its own prefix', () => {
+    const tail = ' failed 10 times and was stopped: InvalidOperationException: The database refused writing application.status.';
+    expect(wfReadableError('A timer (auto:tx)' + tail)).toBe('An automatic move failed 10 times and was stopped: The database refused writing application.status.');
+    expect(wfReadableError('A timer (sla:s)' + tail)).toMatch(/^A time limit failed/);
+    expect(wfReadableError('A timer (reminder)' + tail)).toMatch(/^A reminder failed/);
+    expect(wfReadableError('A timer (escalation)' + tail)).toMatch(/^An escalation failed/);
+    expect(wfReadableError('A timer (somethingNew)' + tail)).toMatch(/^A timer failed/);
+    // Only an exception type right after a colon goes: words that merely end in "Exception" stay.
+    expect(wfReadableError('Step failed: NoException: x')).toBe('Step failed: x');
+    expect(wfReadableError('See MyException docs')).toBe('See MyException docs');
+  });
+});
+
+describe('parked timers', () => {
+  it('wfParkedTimerName: the timer an incident names, as a sentence object', () => {
+    expect(wfParkedTimerName('A timer (auto:tx) failed 2 times and was stopped: x')).toBe('the automatic move');
+    expect(wfParkedTimerName('A timer (sla:s) failed')).toBe('the time limit');
+    expect(wfParkedTimerName('A timer (reminder) failed')).toBe('the reminder');
+    expect(wfParkedTimerName('A timer (escalation) failed')).toBe('the escalation');
+    expect(wfParkedTimerName(null)).toBe('the timer');
+  });
+
+  it('wfTimerParked: a record instance in incident, or a run in incident with no path stopped on a step', () => {
+    const timer = 'A timer (reminder) failed 10 times and was stopped: mail down';
+    expect(wfTimerParked({ status: 'incident', kind: 'record', tokens: null, error: 'anything' })).toBe(true);
+    expect(wfTimerParked({ status: 'incident', kind: 'run', tokens: [{ id: 't', status: 'waiting', waiting: 'task', stepId: 'ap' }], error: timer })).toBe(true);
+    // A stopped step (a path waits on the incident), or a step error without the parked-timer wording, is not a timer.
+    expect(wfTimerParked({ status: 'incident', kind: 'run', tokens: [{ id: 't', status: 'waiting', waiting: 'incident', stepId: 'pay' }], error: timer })).toBe(false);
+    expect(wfTimerParked({ status: 'incident', kind: 'automation', tokens: [], error: 'Bank API: 503' })).toBe(false);
+    expect(wfTimerParked({ status: 'active', kind: 'record', tokens: null, error: null })).toBe(false);
+  });
+
+  it('wfStoppedLabel: "<workflow> · <record>", the record by title, else id', () => {
+    expect(wfStoppedLabel({ title: 'Expiry', entityTitle: 'Grant a1', entityId: 'a1' })).toBe('Expiry · Grant a1');
+    expect(wfStoppedLabel({ title: 'Expiry', entityTitle: null, entityId: 'a1' })).toBe('Expiry · a1');
+    expect(wfStoppedLabel({ title: 'Nightly', entityTitle: null, entityId: null })).toBe('Nightly');
   });
 });

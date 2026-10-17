@@ -1,5 +1,5 @@
 import { Directive, computed, input } from '@angular/core';
-import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfRecord, type UiWfTask, type UiWorkflowApi } from './api';
+import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfInstance, type UiWfRecord, type UiWfTask, type UiWorkflowApi } from './api';
 
 /**
  * Helpers shared by the runtime views (workflow panel, tasks, runs, audit). Internal:
@@ -79,29 +79,27 @@ export function wfRunStatusTone(s: string | null | undefined): string {
 }
 
 /**
- * A run that is still going (queued, running, waiting, or a record's `active`/`outOfSync`) but has an
- * error: a timer it depends on (a task's reminder or escalation, a lifecycle's automatic move or time
- * limit) failed ten times and the engine parked it for an admin, leaving the status as it was. The
- * engine refuses retry and skip for it (`notInIncident`: only `incident` runs can be retried), so the
- * views show the error and what can still be done instead of "Try again".
+ * An instance held in `incident` by a timer the engine parked (spec §10: it failed `MaxTimerAttempts`
+ * times) rather than by a stopped step: always so for a lifecycle record instance (it has no steps of
+ * its own), and for a run when none of its paths waits on a stopped step and its error is the
+ * engine's parked-timer message ("A timer (reminder) failed ..."): a task's reminder or escalation
+ * kept failing, and the task stays open. Retry re-arms the timer and skip drops it, so the views word
+ * them for a timer rather than a step. Needs a single-instance read (`tokens`).
  */
-export function wfRunParked(r: { status: string | null | undefined; error: string | null | undefined }): boolean {
-  return !!r.error?.trim() && ['queued', 'running', 'waiting', 'active', 'outOfSync'].includes(r.status ?? '');
+export function wfTimerParked(r: Pick<UiWfInstance, 'status' | 'kind' | 'tokens' | 'error'>): boolean {
+  if (r.status !== 'incident') return false;
+  if (r.kind === 'record') return true;
+  return !(r.tokens ?? []).some((t) => t.waiting === 'incident') && /^A timer \(/.test(r.error ?? '');
 }
 
-/** A run that needs someone: stopped on an error (`incident`) or parked with an error while still going. */
-export function wfRunNeedsAttention(r: { status: string | null | undefined; error: string | null | undefined }): boolean {
-  return r.status === 'incident' || wfRunParked(r);
-}
-
-/** A run's chip text: its status, or "Needs attention" for a parked run (see `wfRunParked`). */
-export function wfRunLabel(r: { status: string | null | undefined; error: string | null | undefined }): string {
-  return wfRunParked(r) ? 'Needs attention' : wfRunStatusLabel(r.status);
-}
-
-/** A run's chip tone: as its status, or `danger` for a parked run. */
-export function wfRunTone(r: { status: string | null | undefined; error: string | null | undefined }): string {
-  return wfRunParked(r) ? 'danger' : wfRunStatusTone(r.status);
+/**
+ * A stopped workflow as the tasks drawer lists it: a lifecycle record instance as "<lifecycle> ·
+ * <record>", a lifecycle's child run or an automation as "<workflow> · <record>" (the record's title,
+ * else its id); just the title when it is about no record.
+ */
+export function wfStoppedLabel(i: Pick<UiWfInstance, 'title' | 'entityTitle' | 'entityId'>): string {
+  const rec = i.entityTitle || i.entityId;
+  return rec ? `${i.title} · ${rec}` : i.title;
 }
 
 /** The audit log's categories, in the order filters list them. */
@@ -221,11 +219,33 @@ export function wfRemarksLabel(t: Pick<UiWfTask, 'requireComment' | 'kind' | 'ou
 }
 
 /**
- * A run's error as people read it: without the engine's exception-type prefix ("InvalidOperationException:
- * Bank API: 503" reads "Bank API: 503"). The step's own detail keeps the full text for whoever debugs it.
+ * A run's error as people read it: without the engine's exception-type prefixes ("InvalidOperationException:
+ * Bank API: 503" reads "Bank API: 503"), and a parked timer named by what it was for ("A timer (auto:t2)
+ * failed 10 times and was stopped: ..." reads "An automatic move failed 10 times and was stopped: ...").
+ * The step's own detail keeps the full text for whoever debugs it.
  */
 export function wfReadableError(error: string | null | undefined): string {
-  return (error ?? '').replace(/^[A-Z]\w*Exception:\s*/, '');
+  return (error ?? '')
+    // A parked timer (spec §10) names its purpose: say what it was for.
+    .replace(/^A timer \(([^)]*)\)/, (_m, purpose: string) => timerPurpose(purpose)[0])
+    .replace(/(^|:\s+)[A-Z]\w*Exception:\s*/g, '$1');
+}
+
+/** What a parked timer was for, by its purpose (`auto:<transition id>`, `sla:<state id>`, `reminder`, `escalation`). */
+const WF_TIMER_PURPOSES: readonly [string, string, string][] = [
+  ['auto', 'An automatic move', 'the automatic move'], ['sla', 'A time limit', 'the time limit'],
+  ['reminder', 'A reminder', 'the reminder'], ['escalation', 'An escalation', 'the escalation'],
+];
+
+function timerPurpose(purpose: string): [string, string] {
+  const hit = WF_TIMER_PURPOSES.find(([p]) => purpose === p || purpose.startsWith(p + ':'));
+  return hit ? [hit[1], hit[2]] : ['A timer', 'the timer'];
+}
+
+/** The parked timer an incident's error names, as a sentence object ("the automatic move", "the reminder"; else "the timer"). */
+export function wfParkedTimerName(error: string | null | undefined): string {
+  const m = /^A timer \(([^)]*)\)/.exec(error ?? '');
+  return timerPurpose(m ? m[1] : '')[1];
 }
 
 /** Whether a finished step ended by running out of time (an approval or task, or a wait, that timed out). */

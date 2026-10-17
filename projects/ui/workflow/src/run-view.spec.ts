@@ -23,11 +23,11 @@ function stuck(extra: Partial<UiWfInstance> = {}): UiWfInstance {
   };
 }
 
-function fakeApi(canIntervene: boolean, run: UiWfInstance = stuck()) {
+function fakeApi(canIntervene: boolean, run: UiWfInstance = stuck(), definition: UiWorkflowDefinition = def) {
   const calls: unknown[][] = [];
   const api = {
     instance: async () => run,
-    instanceDefinition: async () => def,
+    instanceDefinition: async () => definition,
     me: async () => ({ type: 'user', id: 'u', name: 'U', roles: [], can: { edit: false, publish: false, settings: false, intervene: canIntervene, audit: false } }),
     schema: async () => ({ specVersion: 1, steps: [], registry: { specVersion: 1, entities: [], actions: [{ key: 'bank.pay', label: 'Pay', inputs: [], outputs: [{ key: 'reference', label: 'Payment reference', type: 'text' }] }] } }),
     retry: async (...a: unknown[]) => { calls.push(['retry', ...a]); return stuck({ status: 'running', error: null, tokens: [] }); },
@@ -37,8 +37,8 @@ function fakeApi(canIntervene: boolean, run: UiWfInstance = stuck()) {
   return { api, calls };
 }
 
-async function render(canIntervene: boolean, run?: UiWfInstance) {
-  const { api, calls } = fakeApi(canIntervene, run);
+async function render(canIntervene: boolean, run?: UiWfInstance, definition?: UiWorkflowDefinition) {
+  const { api, calls } = fakeApi(canIntervene, run, definition);
   const f = TestBed.createComponent(WfRunView);
   f.componentRef.setInput('api', api);
   f.componentRef.setInput('instanceId', 'r1');
@@ -105,42 +105,75 @@ describe('WfRunView (inside the workflow panel and the tasks drawer)', () => {
     expect(el.textContent).toContain('Someone who looks after workflows can try it again or skip it.');
   });
 
-  // A reminder's timer failed ten times and the engine parked it: the run still waits for its task, with an error.
+  // A reminder's timer failed ten times and the engine parked it: the run is in incident with the error (spec §10),
+  // while its task stays open (its path waits on the task, not on a stopped step).
   const parked = () => stuck({
-    status: 'waiting', errorStepId: null, error: 'A timer (reminder) failed 10 times and was stopped: mail server down',
+    errorStepId: 'pay', error: 'A timer (reminder) failed 10 times and was stopped: InvalidOperationException: mail server down',
     steps: [{ id: 'sr1', nodeId: 'pay', type: 'action', title: null, attempt: 1, status: 'waiting', input: null, output: null, error: null, startedAt: '', endedAt: null }],
     tokens: [{ id: 't1', status: 'waiting', waiting: 'task', stepId: 'pay' }],
   });
 
-  it('shows a waiting run whose timer was parked as needing attention, with the error, and no retry (the engine refuses it)', async () => {
-    const { el } = await render(true, parked());
-    expect(el.querySelector('.head .wf-chip')?.textContent?.trim()).toBe('Needs attention');
-    expect(el.querySelector('.head .wf-chip')?.getAttribute('data-tone')).toBe('danger');
-    expect(el.querySelector('.parked[role="alert"]')?.textContent).toContain('Needs attention: A timer (reminder) failed 10 times and was stopped: mail server down');
-    expect(el.textContent).toContain('decide or reassign the task, or cancel the run');
-    expect(button(el, 'Try again')).toBeNull();
+  it('a run held by a parked timer shows as stopped with the readable error, and tries it again', async () => {
+    const { f, el, calls } = await render(true, parked());
+    expect(el.querySelector('.head .wf-chip')?.textContent?.trim()).toBe('Stopped');
+    expect(el.querySelector('.incident[role="alert"]')?.textContent).toContain('Stopped: A reminder failed 10 times and was stopped: mail server down');
+    expect(el.textContent).toContain('the task stays open');
     expect(button(el, 'Skip the step')).toBeNull();
     expect(button(el, 'Cancel the run')).not.toBeNull();
+    button(el, 'Try again')!.click();
+    await settle(f);
+    expect(calls).toEqual([['retry', 'r1', undefined]]);
   });
 
-  it('a parked lifecycle record says to move the record by hand, and offers no cancel', async () => {
-    const { el } = await render(true, stuck({ kind: 'record', status: 'active', tokens: [], steps: [], error: 'A timer (autoTransition) failed 10 times and was stopped: boom' }));
-    expect(el.querySelector('.parked')?.textContent).toContain('Needs attention: A timer (autoTransition) failed 10 times');
-    expect(el.textContent).toContain('move the record by hand');
+  it('skipping a parked timer is confirmed, asks for no results, and drops it', async () => {
+    const { f, el, calls } = await render(true, parked());
+    button(el, 'Skip')!.click();
+    await settle(f);
+    expect(calls).toEqual([]);
+    expect(document.body.textContent).toContain('Skip the reminder');
+    expect(document.body.textContent).toContain('The task stays open');
+    expect(document.body.querySelector('ui-modal input, .ui-layer input')).toBeNull();
+    dialogButton(el, 'Skip it').click();
+    await settle(f);
+    expect(calls).toEqual([['skip', 'r1', undefined, undefined]]);
+  });
+
+  it('a lifecycle record instance in incident shows its error with Try again and Skip, no step list and no cancel', async () => {
+    const lifecycle: UiWorkflowDefinition = {
+      ...createWorkflow('lifecycle', 'Expiry', 'application'),
+      lifecycle: { field: 'status', states: [{ id: 'd', key: 'draft', label: 'Draft', category: 'initial', onEnter: [mail] }], transitions: [] },
+    } as UiWorkflowDefinition;
+    const rec = stuck({
+      kind: 'record', title: 'Expiry', state: 'draft', stateLabel: 'Draft', steps: [], tokens: [], errorStepId: 'tx',
+      error: 'A timer (auto:tx) failed 2 times and was stopped: InvalidOperationException: The database refused writing application.status.',
+    });
+    const { f, el, calls } = await render(true, rec, lifecycle);
+    expect(el.querySelector('.head')?.textContent).toContain('Draft');
+    expect(el.querySelector('.incident')?.textContent).toContain('Stopped: An automatic move failed 2 times and was stopped: The database refused writing application.status.');
+    expect(el.textContent).toContain('Moving the record by hand also clears this.');
+    expect(el.querySelector('.steps')).toBeNull();
     expect(button(el, 'Cancel the run')).toBeNull();
-    expect(button(el, 'Try again')).toBeNull();
+    expect(button(el, 'Skip the step')).toBeNull();
+    button(el, 'Skip')!.click();
+    await settle(f);
+    expect(document.body.textContent).toContain('Skip the automatic move');
+    expect(document.body.textContent).toContain('the record stays where it is');
+    dialogButton(el, 'Skip it').click();
+    await settle(f);
+    expect(calls).toEqual([['skip', 'r1', undefined, undefined]]);
   });
 
-  it('people who may not intervene see a parked run needs someone, without buttons', async () => {
+  it('people who may not intervene see why a parked timer stopped it and who can fix it, without buttons', async () => {
     const { el } = await render(false, parked());
-    expect(el.textContent).toContain('Needs attention: A timer (reminder)');
-    expect(el.textContent).toContain('Someone who looks after workflows needs to look at it.');
-    expect(button(el, 'Cancel the run')).toBeNull();
+    expect(el.textContent).toContain('Stopped: A reminder failed 10 times');
+    expect(el.textContent).toContain('Someone who looks after workflows can try it again or skip it.');
+    expect(button(el, 'Try again')).toBeNull();
+    expect(button(el, 'Skip')).toBeNull();
   });
 
-  it('a waiting run without an error is not flagged', async () => {
-    const { el } = await render(true, stuck({ status: 'waiting', error: null, errorStepId: null, tokens: [{ id: 't1', status: 'waiting', waiting: 'task', stepId: 'pay' }] }));
-    expect(el.querySelector('.parked')).toBeNull();
+  it('a waiting run is not flagged, whatever its error field says', async () => {
+    const { el } = await render(true, stuck({ status: 'waiting', error: 'old', errorStepId: null, tokens: [{ id: 't1', status: 'waiting', waiting: 'task', stepId: 'pay' }] }));
+    expect(el.querySelector('.incident')).toBeNull();
     expect(el.querySelector('.head .wf-chip')?.textContent?.trim()).toBe('Waiting');
   });
 });
