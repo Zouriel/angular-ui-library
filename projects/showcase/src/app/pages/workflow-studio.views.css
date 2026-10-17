@@ -37,12 +37,20 @@
     .ch { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-color-text-muted); }
     .body { white-space: pre-wrap; color: var(--ui-color-text-secondary); }
     .settings { min-height: 560px; }
+    /* Below 1500px the record panel moves under the details; below 1000px everything stacks. */
     @media (max-width: 1500px) { .apps { grid-template-columns: 250px minmax(0, 1fr); } .panel { grid-column: 2; } }
+    @media (max-width: 1000px) {
+      .apps, .two, .runs { grid-template-columns: minmax(0, 1fr); }
+      .panel { grid-column: auto; }
+    }
     @media (max-width: 760px) {
-      .studio { --w: auto; margin-left: 0; height: auto; min-height: calc(100dvh - 72px); border-radius: 0; }
+      .studio { height: auto; min-height: calc(100dvh - 52px); }
       .main { flex-direction: column; }
       .tabs { width: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ui-color-border); }
       .tabs button { flex: none; }
-      .apps, .two, .runs { grid-template-columns: 1fr; }
       .sub { display: none; }
+      .fields { grid-template-columns: 88px minmax(0, 1fr); }
+      .editor { min-height: calc(100dvh - 160px); }
     }
+    .confirm { margin: 0; font-size: 14px; line-height: 1.5; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }

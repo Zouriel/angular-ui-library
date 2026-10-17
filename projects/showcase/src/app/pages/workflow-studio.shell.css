@@ -1,6 +1,6 @@
+/* The page uses the shell's full-width mode, so the studio simply fills what's beside the sidebar. */
 :host { display: block; }
-    .studio { --w: min(1600px, calc(100vw - 340px)); width: var(--w); margin-left: min(0px, calc((100% - var(--w)) / 2));
-  display: flex; flex-direction: column; height: calc(100dvh - 72px); min-height: 640px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-bg); }
+    .studio { display: flex; flex-direction: column; height: calc(100dvh - 52px); min-height: 600px; overflow: hidden; background: var(--ui-color-bg); }
     .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border); }
     .brand { font-size: 14px; }
     .sub { font-size: 12px; color: var(--ui-color-text-muted); }

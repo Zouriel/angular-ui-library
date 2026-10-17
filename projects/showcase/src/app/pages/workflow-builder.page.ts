@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { UiButton } from '@zouriel/ui/button';
 import {
   UI_WORKFLOW_API,
+  UI_WORKFLOW_CLOCK,
   UiWorkflowBuilder,
   UiWorkflowRecordPanel,
   UiWorkflowTasks,
@@ -12,10 +13,18 @@ import {
 import { DocDemo, DocPage, DocSection, type ApiRow } from '../docs/docs-ui';
 import { WorkflowPlayground } from './workflow-playground';
 
+/** Who the demos on this page act as: the head of office. */
+const DOCS_USER = 'hana';
+
 @Component({
   selector: 'page-workflow-builder',
   imports: [RouterLink, UiButton, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, DocDemo, DocPage, DocSection],
-  providers: [{ provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api }],
+  // This page always acts as Hana, the head of office (who may edit, test and see everything), with
+  // its own API, so it never changes the person the studio acts as. Times follow the sandbox clock.
+  providers: [
+    { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).apiAs(DOCS_USER) },
+    { provide: UI_WORKFLOW_CLOCK, useFactory: () => inject(WorkflowPlayground).now },
+  ],
   template: `
     <doc-page eyebrow="Flagship" title="Workflow builder"
       lead="Admins design workflows without code. Automations start when a record changes (a field becomes a value, a date comes up, a schedule, a button, an event from your app) and run approvals, waits, branches, parallel paths, loops, messages, record updates and your own actions. Lifecycles own a status field: states, who may move a record between them, checks, forms, and what runs on each move. Everything is audited in a tamper-evident log. A .NET engine runs it; Laravel and Go engines follow the same spec.">
@@ -30,7 +39,7 @@ import { WorkflowPlayground } from './workflow-playground';
 
       <doc-section name="How it fits together" selector="spec, engine, components"
         summary="One JSON format (the Zouriel Workflows spec) is written by the builder and run by the engine. Developers register which records, fields and actions workflows may use; admins only ever choose from that list. The engine checks every change to a registered record when it is saved and starts workflows through an outbox, so a rolled-back save starts nothing.">
-        <doc-demo lang="ts" [code]="install">
+        <doc-demo lang="csharp" [code]="install">
           <ol class="steps">
             <li><strong>Backend.</strong> Add <code>Zouriel.Workflows.AspNetCore</code> and <code>Zouriel.Workflows.EntityFrameworkCore</code>, call <code>modelBuilder.AddWorkflows()</code> in your DbContext and add the interceptor.</li>
             <li><strong>Register.</strong> In <code>AddWorkflows</code>, list the entities, the fields to watch or change, the field a lifecycle may own, your actions and events, and plug in your users and notifications.</li>
@@ -38,6 +47,7 @@ import { WorkflowPlayground } from './workflow-playground';
             <li><strong>Frontend.</strong> <code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
           </ol>
         </doc-demo>
+        <doc-demo lang="ts" [code]="frontend"></doc-demo>
       </doc-section>
 
       <doc-section name="Builder" selector="ui-workflow-builder" [api]="builderApi"
@@ -49,7 +59,7 @@ import { WorkflowPlayground } from './workflow-playground';
       </doc-section>
 
       <doc-section name="Record panel" selector="ui-workflow-record-panel" [api]="panelApi"
-        summary="Drop it onto a record's page: it shows the record's state, the moves this person may make (with their confirmation or form), open tasks they can decide, buttons for manual workflows, and the history. This one is an application in the playground, as its applicant.">
+        summary="Drop it onto a record's page: it shows the record's state, the moves this person may make (with their confirmation or form), open tasks they can decide, buttons for manual workflows, and the history. This one is an application in the playground, seen by Hana, the head of office: she may approve, reject or withdraw it and decide its tasks, while submitting or starting a review belong to the applicant and the reviewers. Act as them in the studio to see their buttons.">
         <div class="panel-demo"><ui-workflow-record-panel entity="application" entityId="1" /></div>
         <doc-demo [code]="panelCode"></doc-demo>
       </doc-section>
@@ -74,13 +84,7 @@ import { WorkflowPlayground } from './workflow-playground';
   `,
 })
 export class WorkflowBuilderPage {
-  private readonly pg = inject(WorkflowPlayground);
   protected readonly def = signal<UiWorkflowDefinition>(createWorkflow('automation', 'Remind reviewers', 'application'));
-
-  constructor() {
-    // The record panel demo acts as the applicant.
-    this.pg.user.set('ali');
-  }
 
   protected readonly install = `// Program.cs
 builder.Services.AddDbContext<AppDb>((sp, o) => o.UseNpgsql(cs).AddWorkflowInterceptor(sp));
@@ -98,10 +102,14 @@ builder.Services.AddWorkflows(wf => wf
 app.MapWorkflowApi("/api/workflows").RequireAuthorization();
 
 // AppDb.OnModelCreating
-modelBuilder.AddWorkflows();
+modelBuilder.AddWorkflows();`;
 
-// app.config.ts (Angular)
-providers: [provideUiWorkflow({ baseUrl: '/api/workflows' })]`;
+  protected readonly frontend = `// app.config.ts
+providers: [
+  provideUiWorkflow({ baseUrl: '/api/workflows' }),
+  // Optional: count "due in" and "ago" from the server's clock instead of the browser's.
+  // provideUiWorkflowClock(() => Date.now() + serverOffsetMs),
+]`;
 
   protected readonly builderCode = `<ui-workflow-builder [(definition)]="workflow" [published]="published" [persist]="true" (saved)="reload()" />`;
 
@@ -121,6 +129,7 @@ providers: [provideUiWorkflow({ baseUrl: '/api/workflows' })]`;
     { name: 'persist', type: 'boolean', default: 'false', desc: 'Show Save and Publish and save drafts through the API.' },
     { name: '(problemsChange)', type: 'UiWfProblem[]', desc: 'The engine’s problems after each check.' },
     { name: '(saved)', type: 'UiWorkflowDefinition', desc: 'After a successful save through the API.' },
+    { name: '(dirtyChange)', type: 'boolean', desc: 'True while there are unsaved edits (guard leaving the page with it).' },
     { name: '[wfActions]', type: 'content', desc: 'Your own buttons in the header.' },
   ];
 

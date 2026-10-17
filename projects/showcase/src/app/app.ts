@@ -62,7 +62,7 @@ import { NAV } from './app.routes';
             </select>
           </label>
         </header>
-        <main id="main" tabindex="-1" class="content" [class.full]="active() === 'form-studio'"><router-outlet /></main>
+        <main id="main" tabindex="-1" class="content" [class.full]="fullWidth.has(active() ?? '')"><router-outlet /></main>
       </div>
     </div>
 
@@ -146,6 +146,8 @@ import { NAV } from './app.routes';
   `,
 })
 export class App {
+  /** Pages that use the whole width beside the sidebar (apps rather than documentation). */
+  protected readonly fullWidth = new Set(['form-studio', 'workflow-studio']);
   protected readonly icons = { menu: Menu01Icon, search: Search01Icon };
   protected readonly theme = inject(UiThemeService);
   private readonly router = inject(Router);

@@ -1,6 +1,7 @@
 import { Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '@zouriel/ui/button';
+import { UiModal } from '@zouriel/ui/dialog';
 import { UiInput, UiNumberInput } from '@zouriel/ui/form';
 import {
   UiWorkflowAudit,
@@ -12,11 +13,14 @@ import {
   UiWorkflowTasks,
   createWorkflow,
   UI_WORKFLOW_API,
+  UI_WORKFLOW_CLOCK,
   type UiWfDefinitionSummary,
   type UiWfInstance,
   type UiWorkflowDefinition,
 } from '@zouriel/ui/workflow';
-import { WorkflowPlayground, type DemoApplication, type DemoMessage } from './workflow-playground';
+import { WorkflowPlayground, readStored, writeStored, type DemoApplication, type DemoMessage } from './workflow-playground';
+
+const TAB_KEY = 'zouriel-workflow-studio-tab';
 
 type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings';
 
@@ -27,8 +31,12 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowStateBadge],
-  providers: [{ provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api }],
+  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowStateBadge],
+  providers: [
+    { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
+    // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
+    { provide: UI_WORKFLOW_CLOCK, useFactory: () => inject(WorkflowPlayground).now },
+  ],
   template: `
     <div class="studio">
       <header class="bar">
@@ -36,17 +44,17 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings
         <span class="sub">A scholarship office on the real engine — your own sandbox</span>
         <span class="grow"></span>
         <label class="who">You are
-          <select class="sel" [ngModel]="pg.user()" (ngModelChange)="switchUser($event)" aria-label="Act as">
+          <select class="sel" [ngModel]="pg.user()" (ngModelChange)="guard(() => switchUser($event))" aria-label="Act as">
             @for (u of pg.users(); track u.id) { <option [value]="u.id">{{ u.name }} · {{ u.title }}</option> }
           </select>
         </label>
         <div class="clock" title="Move the sandbox clock to see waits, reminders and deadlines happen">
           <span class="now">{{ now() }}</span>
-          <ui-button size="sm" variant="ghost" (click)="advance('PT1H')">+1h</ui-button>
-          <ui-button size="sm" variant="ghost" (click)="advance('P1D')">+1 day</ui-button>
-          <ui-button size="sm" variant="ghost" (click)="advance('P3D')">+3 days</ui-button>
+          <ui-button size="sm" variant="ghost" (click)="advance('PT1H')" [disabled]="busy()">+1h</ui-button>
+          <ui-button size="sm" variant="ghost" (click)="advance('P1D')" [disabled]="busy()">+1 day</ui-button>
+          <ui-button size="sm" variant="ghost" (click)="advance('P3D')" [disabled]="busy()">+3 days</ui-button>
         </div>
-        <ui-button size="sm" variant="outline" (click)="reset()">Start over</ui-button>
+        <ui-button size="sm" variant="outline" (click)="askReset.set(true)" [disabled]="busy()">Start over</ui-button>
       </header>
 
       @if (pg.online() === false) {
@@ -60,7 +68,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
         <div class="main">
           <nav class="tabs" aria-label="Playground">
             @for (t of tabs; track t.value) {
-              <button type="button" [class.on]="tab() === t.value" [attr.aria-current]="tab() === t.value ? 'page' : null" (click)="tab.set(t.value)">
+              <button type="button" [class.on]="tab() === t.value" [attr.aria-current]="tab() === t.value ? 'page' : null" (click)="guard(() => setTab(t.value))">
                 {{ t.label }}@if (t.value === 'tasks' && taskCount()) { <span class="count">{{ taskCount() }}</span> }
               </button>
             }
@@ -71,10 +79,10 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                 @if (editing(); as def) {
                   <div class="editor">
                     <div class="editor-bar">
-                      <button type="button" class="link" (click)="closeEditor()">‹ All workflows</button>
+                      <button type="button" class="link" (click)="guard(() => closeEditor())">‹ All workflows</button>
                       <span class="hint">Changes save when you press Save; publish from Versions.</span>
                     </div>
-                    <ui-workflow-builder class="builder" [definition]="def" (definitionChange)="draft.set($event)" [published]="published()" [persist]="true" (saved)="loadWorkflows()" />
+                    <ui-workflow-builder class="builder" [definition]="def" (definitionChange)="draft.set($event)" [published]="published()" [persist]="true" (saved)="loadWorkflows()" (dirtyChange)="dirty.set($event)" />
                   </div>
                 } @else {
                   <div class="list-head">
@@ -112,7 +120,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                       <div class="new">
                         <ui-input size="sm" placeholder="Title" [ngModel]="newTitle()" (ngModelChange)="newTitle.set($event)" aria-label="Title" />
                         <ui-number-input size="sm" [ngModel]="newAmount()" (ngModelChange)="newAmount.set($event ?? 0)" ariaLabel="Amount" [min]="0" />
-                        <ui-button size="sm" (click)="createApp()">Create as {{ pg.currentUser()?.name }}</ui-button>
+                        <ui-button size="sm" (click)="createApp()" [disabled]="busy()">Create as {{ pg.currentUser()?.name }}</ui-button>
                       </div>
                     }
                     <ul class="apps-ul">
@@ -134,7 +142,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                         <dt>Priority</dt><dd><select class="sel" [ngModel]="a.priority" (ngModelChange)="patchApp(a.id, { priority: $event })" aria-label="Priority"><option>Low</option><option>Normal</option><option>High</option></select></dd>
                         <dt>Reviewer</dt><dd><select class="sel" [ngModel]="a.reviewer ?? ''" (ngModelChange)="patchApp(a.id, { reviewer: $event })" aria-label="Reviewer"><option value="">Nobody</option><option value="rana">Rana Ibrahim</option><option value="omar">Omar Saleem</option></select></dd>
                         <dt>Deadline</dt><dd><input class="sel" type="date" [ngModel]="a.deadline ?? ''" (ngModelChange)="patchApp(a.id, { deadline: $event })" aria-label="Deadline" /></dd>
-                        <dt>Paid</dt><dd>{{ a.paid ? 'Yes' : 'No' }} <ui-button size="sm" variant="ghost" (click)="pay(a.id)">Record a payment</ui-button></dd>
+                        <dt>Paid</dt><dd>{{ a.paid ? 'Yes' : 'No' }} @if (!a.paid) { <ui-button size="sm" variant="ghost" (click)="pay(a.id)" [disabled]="busy()">Record a payment</ui-button> }</dd>
                         <dt>Documents</dt><dd><ul class="docs">@for (d of a.documents; track d.id) { <li><label><input type="checkbox" [checked]="d.verified" (change)="verifyDoc(a.id, d.id)" /> {{ d.name }}</label></li> }</ul></dd>
                         @if (a.notes) { <dt>Notes</dt><dd>{{ a.notes }}</dd> }
                       </dl>
@@ -169,7 +177,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                       @for (i of instances(); track i.id) {
                         <li><button type="button" [class.on]="selectedRun() === i.id" (click)="selectedRun.set(i.id)">
                           <span class="t">{{ i.title }}</span>
-                          <span class="m">{{ i.entityTitle ?? i.entityId }} · {{ i.status }}{{ i.state ? ' · ' + (i.stateLabel ?? i.state) : '' }}</span>
+                          <span class="m">{{ i.entityTitle ?? i.entityId }} · {{ runStatus(i) }}{{ i.state ? ' · ' + (i.stateLabel ?? i.state) : '' }} · {{ started(i.startedAt) }}</span>
                         </button></li>
                       } @empty { <li class="hint">Nothing has run yet. Submit an application to start some.</li> }
                     </ul>
@@ -184,6 +192,22 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
         </div>
       }
     </div>
+
+    <ui-modal [open]="askReset()" (openChange)="askReset.set($event)" title="Start over?" size="sm">
+      <p class="confirm">You get a fresh sandbox: the sample workflows and applications come back, and everything you made or changed here is gone.</p>
+      <div modal-footer class="foot">
+        <ui-button variant="ghost" (click)="askReset.set(false)">Cancel</ui-button>
+        <ui-button variant="destructive" (click)="reset()" [disabled]="busy()">Start over</ui-button>
+      </div>
+    </ui-modal>
+
+    <ui-modal [open]="!!pendingLeave()" (openChange)="!$event && pendingLeave.set(null)" title="Leave without saving?" size="sm">
+      <p class="confirm">This workflow has changes that aren’t saved. They’ll be lost.</p>
+      <div modal-footer class="foot">
+        <ui-button variant="ghost" (click)="pendingLeave.set(null)">Keep editing</ui-button>
+        <ui-button variant="destructive" (click)="leave()">Discard changes</ui-button>
+      </div>
+    </ui-modal>
   `,
   styleUrls: ['./workflow-studio.shell.css', './workflow-studio.views.css'],
 })
@@ -194,7 +218,13 @@ export class WorkflowStudioPage {
     { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'My tasks' },
     { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'settings', label: 'Settings' },
   ];
-  protected readonly tab = signal<Tab>('applications');
+  protected readonly tab = signal<Tab>(this.storedTab());
+  protected readonly busy = signal(false);
+  /** The open builder has unsaved edits (from its dirtyChange). */
+  protected readonly dirty = signal(false);
+  protected readonly askReset = signal(false);
+  /** What to do once the person agrees to lose unsaved edits. */
+  protected readonly pendingLeave = signal<(() => void) | null>(null);
   protected readonly workflows = signal<UiWfDefinitionSummary[]>([]);
   protected readonly editing = signal<UiWorkflowDefinition | null>(null);
   protected readonly draft = signal<UiWorkflowDefinition | null>(null);
@@ -221,10 +251,33 @@ export class WorkflowStudioPage {
     });
   }
 
+  private storedTab(): Tab {
+    const t = readStored(TAB_KEY);
+    return t && ['workflows', 'applications', 'tasks', 'runs', 'audit', 'settings'].includes(t) ? (t as Tab) : 'applications';
+  }
+
+  protected setTab(t: Tab): void {
+    this.tab.set(t);
+    writeStored(TAB_KEY, t);
+  }
+
+  /** Runs `action` now, or after the person agrees to lose unsaved builder edits. */
+  protected guard(action: () => void): void {
+    if (this.editing() && this.dirty()) this.pendingLeave.set(action);
+    else action();
+  }
+
+  protected leave(): void {
+    const action = this.pendingLeave();
+    this.pendingLeave.set(null);
+    this.dirty.set(false);
+    action?.();
+  }
+
   private async load(): Promise<void> {
     try {
-      const clock = await this.pg.get<{ now: string }>('/demo/clock');
-      this.now.set(new Date(clock.now).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
+      const clock = await this.pg.syncClock();
+      this.now.set(clock.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
       const tasks = await this.pg.api.tasks({ scope: 'mine', status: ['open'], take: 1 });
       this.taskCount.set(tasks.total);
       switch (this.tab()) {
@@ -253,8 +306,10 @@ export class WorkflowStudioPage {
   }
 
   protected switchUser(id: string): void {
-    this.pg.user.set(id);
+    this.pg.setUser(id);
     this.editing.set(null);
+    this.dirty.set(false);
+    this.appError.set('');
   }
 
   protected async open(w: UiWfDefinitionSummary): Promise<void> {
@@ -270,57 +325,90 @@ export class WorkflowStudioPage {
 
   protected closeEditor(): void {
     this.editing.set(null);
+    this.dirty.set(false);
     void this.loadWorkflows();
   }
 
-  protected async createApp(): Promise<void> {
+  /** Runs a studio action once at a time (no double submits), clearing the last error first. */
+  private async act(f: () => Promise<unknown>): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
     this.appError.set('');
     try {
+      await f();
+    } catch (e) {
+      this.appError.set((e as Error).message);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected createApp(): Promise<void> {
+    return this.act(async () => {
       const a = await this.pg.send<DemoApplication>('POST', '/demo/applications', { title: this.newTitle() || 'New application', amount: this.newAmount(), programmeId: 1 });
       this.creating.set(false);
       this.newTitle.set('');
       this.selectedApp.set(a.id);
       this.refresh();
-    } catch (e) {
-      this.appError.set((e as Error).message);
-    }
+    });
   }
 
-  protected async patchApp(id: number, patch: Record<string, unknown>): Promise<void> {
-    this.appError.set('');
-    try {
+  protected patchApp(id: number, patch: Record<string, unknown>): Promise<void> {
+    return this.act(async () => {
       await this.pg.send('PATCH', `/demo/applications/${id}`, patch);
       this.refresh();
-    } catch (e) {
-      this.appError.set((e as Error).message);
-    }
+    });
   }
 
   protected forceStatus(id: number): void {
     void this.patchApp(id, { status: 'Approved' });
   }
 
-  protected async verifyDoc(appId: number, docId: number): Promise<void> {
-    await this.pg.send('POST', `/demo/applications/${appId}/documents/${docId}/verify`);
-    this.refresh();
+  protected verifyDoc(appId: number, docId: number): Promise<void> {
+    return this.act(async () => {
+      await this.pg.send('POST', `/demo/applications/${appId}/documents/${docId}/verify`);
+      this.refresh();
+    });
   }
 
-  protected async pay(id: number): Promise<void> {
-    await this.pg.send('POST', `/demo/applications/${id}/payment`);
-    this.refresh();
+  protected pay(id: number): Promise<void> {
+    return this.act(async () => {
+      await this.pg.send('POST', `/demo/applications/${id}/payment`);
+      this.refresh();
+    });
   }
 
-  protected async advance(d: string): Promise<void> {
-    await this.pg.advance(d);
+  protected advance(d: string): Promise<void> {
+    return this.act(() => this.pg.advance(d));
   }
 
-  protected async reset(): Promise<void> {
-    if (!confirm('Start over with a fresh sandbox? Your workflows and records here will be gone.')) return;
-    await this.pg.reset();
-    this.selectedApp.set(null);
-    this.editing.set(null);
-    this.selectedRun.set(null);
-    setTimeout(() => this.pg.changed(), 300);
+  /** Throws the sandbox away and clears everything the studio was showing from it. */
+  protected reset(): Promise<void> {
+    this.askReset.set(false);
+    return this.act(async () => {
+      await this.pg.reset();
+      this.editing.set(null);
+      this.draft.set(null);
+      this.published.set(null);
+      this.dirty.set(false);
+      this.selectedApp.set(null);
+      this.selectedRun.set(null);
+      this.creating.set(false);
+      this.workflows.set([]);
+      this.apps.set([]);
+      this.instances.set([]);
+      this.messages.set([]);
+      this.pg.changed();
+    });
+  }
+
+  protected runStatus(i: UiWfInstance): string {
+    return ({ queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' } as Record<string, string>)[i.status] ?? i.status;
+  }
+
+  protected started(iso: string): string {
+    const d = new Date(iso);
+    return isNaN(+d) ? '' : d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
   protected statusLabel(s: string): string {
