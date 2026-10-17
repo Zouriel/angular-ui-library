@@ -54,10 +54,5 @@
       .fields { grid-template-columns: 88px minmax(0, 1fr); }
       .editor { min-height: calc(100dvh - 160px); }
     }
-    .confirm { margin: 0; font-size: 14px; line-height: 1.5; }
-    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
-    .ok { color: var(--ui-color-success); font-size: 13px; margin: 0; }
-    .lab { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ui-color-text-secondary); }
-    .back { white-space: nowrap; }
     .apps-ul { margin-top: var(--ui-space-2); }
     .fields + .hint { margin-top: var(--ui-space-2); }

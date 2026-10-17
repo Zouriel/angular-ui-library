@@ -309,7 +309,8 @@ export class WorkflowStudioPage {
 
   private async load(): Promise<void> {
     try {
-      this.can.set((await this.pg.api.me()).can);
+      // An API without /me: assume editing is allowed and let the server decide.
+      this.can.set((await this.pg.api.me?.())?.can ?? { edit: true });
       const clock = await this.pg.syncClock();
       this.now.set(clock.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
       const tasks = await this.pg.api.tasks({ scope: 'mine', status: ['open'], take: 1 });

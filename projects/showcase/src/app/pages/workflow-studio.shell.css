@@ -20,3 +20,9 @@
     .tabs button.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); color: var(--ui-color-text); font-weight: 600; }
     .count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font-size: 11px; display: grid; place-items: center; }
     .content { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    /* Dialogs and small bits shared by the studio views. */
+    .confirm { margin: 0; font-size: 14px; line-height: 1.5; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
+    .ok { color: var(--ui-color-success); font-size: 13px; margin: 0; }
+    .lab { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ui-color-text-secondary); }
+    .back { white-space: nowrap; }
