@@ -225,7 +225,13 @@ export class WorkflowPlayground {
 
   /** Throws the sandbox away and starts a fresh one (its clock back at real time). */
   async reset(): Promise<void> {
-    await this.send('POST', '/playground/reset');
+    // The server retires the old session and answers with a new one; keep it so the next request
+    // doesn't need a round trip through noSession. (Older servers answer without one.)
+    const r = await this.send<{ session?: string } | undefined>('POST', '/playground/reset');
+    if (r?.session) {
+      this.session = r.session;
+      writeStored(SESSION_KEY, r.session);
+    }
     this.clockOffset.set(0);
     await this.syncClock().catch(() => undefined);
   }
