@@ -59,11 +59,15 @@ interface PendingDelete {
           <hugeicons-icon aria-hidden="true" [icon]="icons.Redo02Icon" [size]="16" [strokeWidth]="1.8" />
         </button>
         @if (store.errorCount()) {
-          <button type="button" class="issues" (click)="showProblems.set(true)" [attr.aria-label]="store.errorCount() + ' problems to fix'">
+          <button type="button" class="issues" (click)="showProblems.set(true)" [attr.aria-label]="problemsLabel()" [title]="problemsLabel()">
             <hugeicons-icon aria-hidden="true" [icon]="icons.Alert02Icon" [size]="13" [strokeWidth]="1.9" />{{ store.errorCount() }}
           </button>
+        } @else if (checkFailed()) {
+          <span class="unchecked" title="The engine could not check this workflow, so problems may be missing."><hugeicons-icon aria-hidden="true" [icon]="icons.Alert02Icon" [size]="13" [strokeWidth]="1.9" /><span class="ok-word">Not checked</span></span>
         } @else if (store.api() && !store.validating()) {
-          <span class="ok" title="No problems found"><hugeicons-icon aria-hidden="true" [icon]="icons.Tick02Icon" [size]="13" [strokeWidth]="2" /><span class="ok-word">Ready</span></span>
+          <button type="button" class="ok" (click)="store.problems().length && showProblems.set(true)" [title]="store.problems().length ? store.problems().length + ' warning' + (store.problems().length === 1 ? '' : 's') + ' (nothing blocks publishing)' : 'No problems found'">
+            <hugeicons-icon aria-hidden="true" [icon]="icons.Tick02Icon" [size]="13" [strokeWidth]="2" /><span class="ok-word">Ready</span>
+          </button>
         }
         @if (persist() && store.api()) {
           <span class="save-state" aria-live="polite">{{ saveState() }}</span>
@@ -170,7 +174,9 @@ interface PendingDelete {
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 2px; border: 0; border-radius: 12px; cursor: pointer;
       background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); color: var(--ui-color-danger); font: inherit; font-size: 12px; font-weight: 600; }
     .issues:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .ok { display: inline-flex; align-items: center; gap: 3px; margin: 0 4px; font-size: 12px; color: var(--ui-color-success); }
+    .ok, .unchecked { display: inline-flex; align-items: center; gap: 3px; margin: 0 4px; padding: 0 2px; border: 0; border-radius: var(--ui-radius-xs); background: none; font: inherit; font-size: 12px; color: var(--ui-color-success); }
+    .ok:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .unchecked { color: var(--ui-color-warning); }
     .save-state { font-size: 12px; color: var(--ui-color-text-muted); margin: 0 4px; white-space: nowrap; }
     .banner { flex: none; padding: 6px var(--ui-space-3); font-size: 13px; background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
     .main { flex: 1; min-height: 0; display: flex; }
@@ -232,6 +238,8 @@ export class UiWorkflowBuilder {
   readonly problemsChange = output<UiWfProblem[]>();
   /** Fired after a successful save through the API. */
   readonly saved = output<UiWorkflowDefinition>();
+  /** True while there are edits not yet saved through the API (with `persist`), so hosts can guard leaving. */
+  readonly dirtyChange = output<boolean>();
 
   protected readonly icons = WF_ICONS;
   protected readonly increment = (n: number) => n + 1;
@@ -244,6 +252,13 @@ export class UiWorkflowBuilder {
   private readonly lastSaved = signal<string | null>(null);
   protected readonly savedOnce = signal(false);
   protected readonly dirty = computed(() => this.lastSaved() !== JSON.stringify(this.store.def()));
+  /** The last check failed (offline, refused or broken), so "Ready" would be a guess. */
+  protected readonly checkFailed = signal(false);
+  protected readonly problemsLabel = computed(() => {
+    const errors = this.store.errorCount();
+    const warnings = this.store.problems().length - errors;
+    return `${errors} problem${errors === 1 ? '' : 's'} to fix${warnings ? `, ${warnings} warning${warnings === 1 ? '' : 's'}` : ''}`;
+  });
   protected readonly saveState = computed(() => (this.saving() ? 'Saving…' : this.dirty() ? 'Unsaved changes' : this.savedOnce() ? 'Saved' : ''));
   protected readonly viewOptions = computed(() => [
     { value: 'build', label: 'Build' },
@@ -291,6 +306,24 @@ export class UiWorkflowBuilder {
       const api = this.store.api();
       untracked(() => this.scheduleValidation(def, api));
     });
+    // Tell the host whether leaving now would lose edits, and warn on closing the tab.
+    let lastDirty: boolean | null = null;
+    effect(() => {
+      const d = this.persist() && !!this.store.api() && this.dirty();
+      if (d !== lastDirty) { lastDirty = d; untracked(() => this.dirtyChange.emit(d)); }
+    });
+    const beforeUnload = (e: BeforeUnloadEvent) => { if (lastDirty) e.preventDefault(); };
+    window.addEventListener('beforeunload', beforeUnload);
+    // Undo and redo also work when nothing on the page has focus (after a click on empty space).
+    const bodyKeys = (e: KeyboardEvent) => {
+      if (e.target !== document.body || !this.host.nativeElement.isConnected || !this.host.nativeElement.offsetParent) return;
+      if ((e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key)) this.shortcuts(e);
+    };
+    document.addEventListener('keydown', bodyKeys);
+    // A cleared selection on a phone closes the settings sheet rather than leaving it open on nothing.
+    effect(() => {
+      if (!this.store.selection() && this.ui.layout() === 'narrow') untracked(() => this.sheetSnap.set(0));
+    });
     effect(() => {
       this.ui.inspectRequest();
       untracked(() => { if (this.ui.layout() === 'narrow' && this.store.selection()) this.sheetSnap.set(1); });
@@ -307,6 +340,8 @@ export class UiWorkflowBuilder {
       ro.observe(this.host.nativeElement);
     });
     destroy.onDestroy(() => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      document.removeEventListener('keydown', bodyKeys);
       ro.disconnect();
       if (this.validateTimer) clearTimeout(this.validateTimer);
     });
@@ -339,10 +374,12 @@ export class UiWorkflowBuilder {
       try {
         const problems = await api.validate(def);
         if (seq !== this.validateSeq) return;
+        this.checkFailed.set(false);
         this.store.serverProblems.set(problems);
         this.problemsChange.emit(problems);
       } catch {
-        // A failed check leaves the previous problems in place.
+        // A failed check leaves the previous problems in place and says the workflow wasn't checked.
+        if (seq === this.validateSeq) this.checkFailed.set(true);
       } finally {
         if (seq === this.validateSeq) this.store.validating.set(false);
       }
@@ -352,7 +389,7 @@ export class UiWorkflowBuilder {
   /** Saves the draft through the API (creates it the first time). */
   async save(): Promise<void> {
     const api = this.store.api();
-    if (!api) return;
+    if (!api || this.saving()) return;
     this.saving.set(true);
     this.saveError.set('');
     const def = this.store.def();
@@ -474,11 +511,15 @@ export class UiWorkflowBuilder {
     const target = e.target as HTMLElement;
     const typing = target.closest('input, textarea, select, [contenteditable="true"]');
     const mod = e.ctrlKey || e.metaKey;
-    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void this.save(); return; }
+    if (mod && e.key.toLowerCase() === 's') {
+      // Only where the host turned saving on; otherwise leave Ctrl+S to the browser.
+      if (this.persist() && this.store.api()) { e.preventDefault(); void this.save(); }
+      return;
+    }
     if (typing) return;
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) this.store.redo(); else this.store.undo(); return; }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); this.store.redo(); return; }
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection()) { e.preventDefault(); this.requestDeleteSelected(); return; }
-    if (e.key === 'Escape') this.store.selection.set(null);
+    if (e.key === 'Escape') { this.store.selection.set(null); this.sheetSnap.set(0); }
   }
 }

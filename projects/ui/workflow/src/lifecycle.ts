@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiCanvasViewport, type UiMinimapItem } from '@zouriel/ui/canvas';
@@ -67,11 +67,14 @@ interface DrawnEdge {
             <span class="kind">{{ s.category === 'initial' ? 'Start' : s.category === 'terminal' ? 'Final' : '' }}</span>
             <span class="name">{{ s.label }}</span>
             <span class="meta">{{ outCount(s.id) }} way{{ outCount(s.id) === 1 ? '' : 's' }} out@if (s.sla) { · time limit }</span>
-            @if (s.category !== 'terminal') {
-              <button type="button" class="handle" (pointerdown)="pressHandle($event, s)" (click)="$event.stopPropagation(); tapHandle(s)"
-                [attr.aria-label]="'Add a transition from ' + s.label"></button>
-            }
           </div>
+          <!-- A sibling of the card, not inside it: a control can't sit inside another control. -->
+          @if (s.category !== 'terminal') {
+            <button type="button" class="handle" data-viewport-no-pan [class.on]="isSelected(s.id) || connectFrom() === s.id"
+              [style.left.px]="pos(s.id).x + nodeW" [style.top.px]="pos(s.id).y + nodeH / 2"
+              (pointerdown)="pressHandle($event, s)" (click)="tapHandle(s)"
+              [attr.aria-label]="'Add a transition from ' + s.label"></button>
+          }
         }
       </ui-canvas-viewport>
       @if (anyState().length) {
@@ -147,12 +150,12 @@ interface DrawnEdge {
     .kind:empty { display: none; }
     .name { font-size: 13px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meta { font-size: 11px; color: var(--ui-color-text-muted); }
-    .handle { position: absolute; right: -7px; top: 50%; width: 14px; height: 14px; margin-top: -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none;
+    .handle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none; z-index: 1;
       border: 2px solid var(--ui-color-surface); background: var(--ui-color-primary); opacity: 0; transition: opacity var(--ui-motion-fast), transform var(--ui-motion-fast); }
-    .state:hover .handle, .state.selected .handle, .state:focus-within .handle { opacity: 1; }
+    .state:hover + .handle, .state:focus-visible + .handle, .handle.on, .handle:hover { opacity: 1; }
     .handle:hover { transform: scale(1.25); }
     .handle:focus-visible { opacity: 1; outline: none; box-shadow: var(--ui-focus-ring); }
-    @media (pointer: coarse) { .handle { opacity: 1; width: 22px; height: 22px; margin-top: -11px; right: -11px; } }
+    @media (pointer: coarse) { .handle { opacity: 1; width: 24px; height: 24px; margin: -12px 0 0 -12px; } }
     .any { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 6px var(--ui-space-2); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); background: var(--ui-color-surface); }
     .any .wf-label { margin: 0; }
     .anychip { border: 0; cursor: pointer; font: inherit; font-size: 11.5px; height: 22px; }
@@ -177,6 +180,7 @@ interface DrawnEdge {
 export class WfLifecycleCanvas {
   protected readonly store = inject(WfBuilderStore);
   private readonly ui = inject(WfBuilderUi);
+  private readonly destroyed = inject(DestroyRef).onDestroy(() => this.unlisten());
   private readonly viewport = viewChild(UiCanvasViewport);
   protected readonly icons = WF_ICONS;
   protected readonly nodeW = WF_NODE_W;
@@ -289,10 +293,25 @@ export class WfLifecycleCanvas {
   }
 
   private suppressClick = false;
+  /** Removes the window listeners of the drag in progress (also when the diagram goes away mid-drag). */
+  private unlisten: () => void = () => undefined;
+
+  private listen(move: (e: PointerEvent) => void, up: (e: PointerEvent) => void): void {
+    this.unlisten();
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+    this.unlisten = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      this.unlisten = () => undefined;
+    };
+  }
 
   /** Drag a card to move it; a short press is a click. */
   protected pressState(e: PointerEvent, s: UiWfState): void {
-    if (e.button !== 0 || (e.target as HTMLElement).classList.contains('handle')) return;
+    if (e.button !== 0) return;
     const vp = this.viewport();
     if (!vp) return;
     const start = vp.toWorld(e.clientX, e.clientY);
@@ -311,9 +330,7 @@ export class WfLifecycleCanvas {
     };
     const up = (ev: PointerEvent) => {
       if (ev.pointerId !== e.pointerId) return;
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
+      this.unlisten();
       el.classList.remove('dragging');
       const d = this.dragPos();
       this.dragPos.set(null);
@@ -323,9 +340,7 @@ export class WfLifecycleCanvas {
         this.store.placeState(s.id, d.x, d.y);
       }
     };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
+    this.listen(move, up);
   }
 
   /** Drag from the handle onto another card to add a transition. */
@@ -342,21 +357,19 @@ export class WfLifecycleCanvas {
       this.rubber.set({ x1, y1, x2: w.x, y2: w.y });
     };
     const up = (ev: PointerEvent) => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', up);
+      this.unlisten();
       this.rubber.set(null);
       const target = (document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null)?.closest<HTMLElement>('[data-state]');
       const to = target?.dataset['state'];
       if (to && to !== s.id && ev.type === 'pointerup') {
+        // The pointerup lands on the target card and its click follows; swallow just that one.
         this.suppressClick = true;
+        setTimeout(() => (this.suppressClick = false), 0);
         this.store.addTransition(s.id, to);
         this.ui.inspectRequest.update((n) => n + 1);
       }
     };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', up);
+    this.listen(move, up);
   }
 
   protected tapHandle(s: UiWfState): void {
