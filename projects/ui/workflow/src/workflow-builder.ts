@@ -4,7 +4,7 @@ import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiBottomSheet, UiModal } from '@zouriel/ui/dialog';
 import { UiWfApiError, injectWorkflowApi, type UiWfDefinitionSummary, type UiWfProblem, type UiWorkflowApi } from './api';
 import { WfAutomationCanvas, WfBuilderUi, WfStepPicker, type WfLayout } from './canvas';
-import { createWorkflow, indexSteps, stepName, stepReferences } from './definition';
+import { createWorkflow, indexSteps, listSteps, stepName, stepReferences } from './definition';
 import { WfDnd } from './dnd';
 import { WF_ICONS } from './icons';
 import { WfInspector } from './inspector';
@@ -418,7 +418,7 @@ export class UiWorkflowBuilder {
   /** Saves the draft through the API (creates it the first time). */
   async save(): Promise<void> {
     const api = this.store.api();
-    if (!api || this.saving()) return;
+    if (!api || this.saving() || this.store.readOnly()) return;
     this.saving.set(true);
     this.saveError.set('');
     const def = this.store.def();
@@ -444,14 +444,13 @@ export class UiWorkflowBuilder {
   }
 
   protected addFromPalette(type: UiWfStepType): void {
-    // Clicking a step in the side palette adds it after the selection (or at the end).
+    // Clicking a step in the side palette adds it after the selection (or at the end of the list).
     const sel = this.store.selection();
     const loc = sel?.kind === 'step' ? this.store.steps().get(sel.id) : null;
     if (loc) { this.store.addStep(type, loc.listId, loc.index + 1); return; }
     const listId = this.defaultList();
     if (!listId) return;
-    const steps = listId === 'root' ? this.store.def().steps ?? [] : [];
-    this.store.addStep(type, listId, steps.length);
+    this.store.addStep(type, listId, (listSteps(this.store.def(), listId) ?? []).length);
   }
 
   /** The list new steps go to when nothing says otherwise. */
@@ -474,6 +473,7 @@ export class UiWorkflowBuilder {
   }
 
   protected requestDeleteSelected(): void {
+    if (this.store.readOnly()) return;
     const s = this.store.selection();
     if (s?.kind === 'step') this.ui.deleteRequest.set(s.id);
     else if (s?.kind === 'state' || s?.kind === 'transition') this.askDelete(s.kind, s.id);
@@ -490,6 +490,7 @@ export class UiWorkflowBuilder {
   });
 
   private askDelete(kind: PendingDelete['kind'], id: string): void {
+    if (this.store.readOnly()) return;
     const def = this.store.def();
     if (kind === 'step') {
       const loc = indexSteps(def).get(id);
@@ -559,14 +560,14 @@ export class UiWorkflowBuilder {
     const typing = target.closest('input, textarea, select, [contenteditable="true"]');
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === 's') {
-      // Only where the host turned saving on; otherwise leave Ctrl+S to the browser.
-      if (this.persist() && this.store.api()) { e.preventDefault(); void this.save(); }
+      // Only where the host turned saving on (and this person may edit); otherwise leave Ctrl+S to the browser.
+      if (this.persist() && this.store.api() && !this.store.readOnly()) { e.preventDefault(); void this.save(); }
       return;
     }
     if (typing) return;
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) this.store.redo(); else this.store.undo(); return; }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); this.store.redo(); return; }
-    if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection()) { e.preventDefault(); this.requestDeleteSelected(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && this.store.selection() && !this.store.readOnly()) { e.preventDefault(); this.requestDeleteSelected(); return; }
     if (e.key === 'Escape') { this.store.selection.set(null); this.sheetSnap.set(0); }
   }
 }

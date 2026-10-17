@@ -6,6 +6,7 @@ import {
   collectionsOf,
   entityOf,
   fieldOf,
+  forEachItemsAt,
   goToTargets,
   stepName,
   wfId,
@@ -32,6 +33,7 @@ import type {
   UiWfSubWorkflowStep,
   UiWfSwitchStep,
   UiWfTaskStep,
+  UiWfTemplate,
   UiWfWaitStep,
   UiWfWaitUntil,
   UiWfWebhookStep,
@@ -248,10 +250,16 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
         @case ('setFields') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Record</span>
-              <select class="wf-select" (change)="patch({ target: $any($event.target).value === 'self' ? undefined : $any($event.target).value, values: [] })">
+              <select class="wf-select" (change)="setTarget($any($event.target).value)">
                 <option value="self" [selected]="!setFields().target || setFields().target === 'self'">This {{ entityLabel() }}</option>
+                @if (loopItem(); as it) {
+                  <option value="item" [selected]="setFields().target === 'item'">Current {{ it.label.toLowerCase() }} (each item of the For each)</option>
+                } @else if (setFields().target === 'item') {
+                  <option value="item" selected>Current item (needs a For each around this step)</option>
+                }
                 @for (r of relations(); track r.key) { <option [value]="'entity.' + r.key" [selected]="setFields().target === 'entity.' + r.key">{{ r.label }}</option> }
               </select></label>
+            @if (setFields().target === 'item' && !loopItem()) { <p class="wf-warn">This step isn’t inside a For each, so there is no current item to change. Move it into one, or choose another record.</p> }
             @for (v of setFields().values; track $index; let i = $index) {
               <div class="assign">
                 <select class="wf-select" (change)="setFieldAt(i, $any($event.target).value)" [attr.aria-label]="'Field ' + (i + 1)">
@@ -322,6 +330,10 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
               </select></label>
             <label class="lw"><span class="wf-label">Transition (key)</span>
               <ui-input size="sm" [ngModel]="applyTransition().transition" (ngModelChange)="patch({ transition: $event }, 'transition')" placeholder="e.g. approve" /></label>
+            <div><span class="wf-label">Remarks (optional)</span>
+              <ui-wf-template [value]="applyTransition().comment" [tokens]="tokens()" [multiline]="false" label="Remarks"
+                placeholder="e.g. Approved automatically: score above 80" (valueChange)="patch({ comment: templateOrNothing($event) }, 'comment')" /></div>
+            <p class="wf-hint">Recorded with the move in the history; workflows it starts read them as “Remarks”.</p>
             <label class="lw"><span class="wf-label">If it isn’t possible</span>
               <select class="wf-select" (change)="patch({ ifNotAllowed: $any($event.target).value })">
                 <option value="fail" [selected]="applyTransition().ifNotAllowed !== 'skip'">Stop with an error</option>
@@ -367,7 +379,7 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             <div><span class="wf-label">Path</span>
               <ui-wf-template [value]="webhook().path" [tokens]="tokens()" [multiline]="false" label="Path" placeholder="/orders/" (valueChange)="patch({ path: $event || undefined }, 'path')" /></div>
             <label class="lw"><span class="wf-label">Body (JSON; use {{ '{' }}"ref": "entity.title"{{ '}' }} for values)</span>
-              <ui-textarea [ngModel]="bodyText()" (ngModelChange)="setBody($event)" [rows]="5" [invalid]="bodyInvalid()" /></label>
+              <ui-textarea [ngModel]="bodyShown()" (ngModelChange)="setBody($event)" (focusout)="tidyBody()" [rows]="5" [invalid]="bodyInvalid()" /></label>
             @if (bodyInvalid()) { <p class="wf-error">That isn’t valid JSON yet.</p> }
             <p class="wf-hint">Only addresses allowed in the workflow settings can be called.</p>
           </div>
@@ -540,6 +552,7 @@ export class WfStepEditor {
     if (this.step().type === 'createRecord') return this.createRecord().entity || undefined;
     const t = this.setFields().target;
     if (!t || t === 'self') return this.store.def().entity;
+    if (t === 'item') return this.loopItem()?.entity;
     return fieldOf(this.store.registry(), this.store.def().entity, t.split('.')[1])?.entity;
   });
   protected readonly settable = computed(() => {
@@ -565,7 +578,23 @@ export class WfStepEditor {
   protected readonly automations = computed(() => this.store.others().filter((o) => o.kind === 'automation' && o.key !== this.store.def().key && o.version > 0));
   protected readonly earlierSteps = computed(() => goToTargets(this.store.def(), this.step().id).map((x) => ({ id: x.id, name: stepName(x) })));
   protected readonly bodyText = computed(() => (this.webhook().body === undefined ? '' : JSON.stringify(this.webhook().body, null, 2)));
-  protected readonly bodyInvalid = signal(false);
+  /**
+   * What is typed in the Body box, as typed (not reformatted on every key). It belongs to one step and
+   * to the body it was typed over: another step, or an undo that changes the body, shows the saved one.
+   */
+  private readonly bodyDraft = signal<{ stepId: string; basis: string; text: string } | null>(null);
+  private readonly draft = computed(() => {
+    const d = this.bodyDraft();
+    return d && d.stepId === this.step().id && d.basis === JSON.stringify(this.webhook().body ?? null) ? d.text : null;
+  });
+  protected readonly bodyShown = computed(() => this.draft() ?? this.bodyText());
+  protected readonly bodyInvalid = computed(() => {
+    const t = this.draft();
+    if (t === null || !t.trim()) return false;
+    try { JSON.parse(t); return false; } catch { return true; }
+  });
+  /** The For each this step is inside (innermost), whose current item "Update record" can change. */
+  protected readonly loopItem = computed(() => forEachItemsAt(this.store.def(), this.store.registry(), { stepId: this.step().id }).at(-1) ?? null);
 
   protected patch(patch: Partial<UiWfStep> | Record<string, unknown>, mergeKey?: string): void {
     this.store.updateStep(this.step().id, patch as Record<string, unknown>, mergeKey ? `${this.step().id}:${mergeKey}` : undefined);
@@ -581,6 +610,18 @@ export class WfStepEditor {
 
   protected outputsText(outs: { label: string }[]): string {
     return outs.map((o) => o.label).join(', ');
+  }
+
+  /** An empty template is no template (the key is left out). */
+  protected templateOrNothing(t: UiWfTemplate | null | undefined): UiWfTemplate | undefined {
+    return !t || !t.length || (Array.isArray(t) && t.every((x) => x === '')) ? undefined : t;
+  }
+
+  /** Changing which record "Update record" changes empties its fields (they belong to the old one). */
+  protected setTarget(v: string): void {
+    const next = v === 'self' ? undefined : v;
+    if (next === (this.setFields().target === 'self' ? undefined : this.setFields().target)) return;
+    this.patch({ target: next, values: [] });
   }
 
   protected splitList(text: string): string[] {
@@ -708,18 +749,21 @@ export class WfStepEditor {
     this.patch(key ? { connection: key, url: undefined } : { connection: undefined, url: '' });
   }
   protected setBody(text: string): void {
-    if (!text.trim()) {
-      this.bodyInvalid.set(false);
-      this.patch({ body: undefined }, 'body');
-      return;
+    let body: unknown = undefined;
+    let valid = true;
+    if (text.trim()) {
+      try { body = JSON.parse(text); } catch { valid = false; }
     }
-    try {
-      const body = JSON.parse(text);
-      this.bodyInvalid.set(false);
-      this.patch({ body }, 'body');
-    } catch {
-      this.bodyInvalid.set(true);
-    }
+    if (valid) this.patch({ body }, 'body');
+    // The box keeps the text as typed; it is tidied when the person leaves it.
+    // The basis is the body as stored now (the step input catches up on the next render).
+    const stored = this.store.steps().get(this.step().id)?.step as UiWfWebhookStep | undefined;
+    this.bodyDraft.set({ stepId: this.step().id, basis: JSON.stringify(stored?.body ?? null), text });
+  }
+
+  /** Leaving the Body box shows valid JSON neatly formatted; invalid text stays as typed to be fixed. */
+  protected tidyBody(): void {
+    if (!this.bodyInvalid()) this.bodyDraft.set(null);
   }
   protected setActionInput(key: string, value: NonNullable<UiWfActionStep['input']>[string]): void {
     this.patch({ input: { ...(this.action().input ?? {}), [key]: value } }, `input:${key}`);

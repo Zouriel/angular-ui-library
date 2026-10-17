@@ -1,8 +1,9 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UiButton } from '@zouriel/ui/button';
 import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
-import { describeTrigger, fieldOf, indexSteps, stepName, wfId, wfKey, wfStatesFrom } from './definition';
+import { describeTrigger, fieldOf, indexSteps, stepName, updateLifecycle, wfId, wfKey, wfStatesFrom } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
 import type { UiWfConditionGroup, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
@@ -450,12 +451,13 @@ export class WfStateEditor {
 
   protected setCategory(category: UiWfState['category']): void {
     const s = this.state();
-    if (!s) return;
-    // Only one starting state: making this one the start turns the old start into an ordinary state.
-    if (category === 'initial') {
-      for (const o of this.store.def().lifecycle?.states ?? []) if (o.id !== s.id && o.category === 'initial') this.store.updateState(o.id, { category: 'active' });
-    }
-    this.patch({ category });
+    if (!s || s.category === category) return;
+    // Only one starting state: making this one the start turns the old start into an ordinary state,
+    // in the same change, so one undo puts both back.
+    this.store.commit(updateLifecycle(this.store.def(), (lc) => ({
+      ...lc,
+      states: lc.states.map((o) => (o.id === s.id ? { ...o, category } : category === 'initial' && o.category === 'initial' ? { ...o, category: 'active' as const } : o)),
+    })));
   }
 }
 
@@ -496,7 +498,7 @@ export class WfStateEditor {
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Check before</h4>
-          <ui-wf-condition [value]="t.when" [tokens]="tokens()" emptyText="Always possible from the states above." (valueChange)="patch({ when: $event.conditions.length ? $event : undefined })" />
+          <ui-wf-condition [value]="t.when" [tokens]="checkTokens()" emptyText="Always possible from the states above." (valueChange)="patch({ when: $event.conditions.length ? $event : undefined })" />
         </section>
 
         <section class="wf-section wf-stack">
@@ -529,7 +531,7 @@ export class WfStateEditor {
             <ui-wf-duration [value]="$any(t.auto).after" label="After" (valueChange)="patch({ auto: { ...$any(t.auto), after: $event } })" />
           }
           @if (t.auto && 'when' in t.auto) {
-            <ui-wf-condition [value]="$any(t.auto).when" [tokens]="tokens()" emptyText="Add the condition." (valueChange)="patch({ auto: { when: $event } })" />
+            <ui-wf-condition [value]="$any(t.auto).when" [tokens]="checkTokens()" emptyText="Add the condition." (valueChange)="patch({ auto: { when: $event } })" />
           }
         </section>
         <p class="wf-hint">Edit what happens afterwards (“Then do”) in the steps panel under the diagram.</p>
@@ -554,6 +556,12 @@ export class WfTransitionEditor {
     const t = this.transition();
     return this.store.tokens(t ? { listId: `transition:${t.id}`, index: 0 } : undefined);
   });
+  /**
+   * What "Check before" and an automatic move can read: not the move's form answers, its remarks or
+   * who made it, which don't exist yet when the check runs (and never for a move that happens by itself).
+   */
+  protected readonly checkTokens = computed(() =>
+    this.tokens().filter((t) => !t.path.startsWith('input.') && t.path !== 'trigger.comment' && t.path !== 'trigger.actor'));
 
   protected patch(p: Partial<UiWfTransition>, mergeKey?: string): void {
     const t = this.transition();
@@ -591,7 +599,7 @@ export class WfTransitionEditor {
         <label class="lw"><span class="wf-label">Button label</span>
           <ui-input size="sm" [ngModel]="r.label ?? ''" (ngModelChange)="store.updateReset({ label: $event || undefined }, 'label')" placeholder="Reset workflow" /></label>
         <label class="lw"><span class="wf-label">Back to</span>
-          <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="store.updateReset({ to: $event || undefined })" /></label>
+          <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="setBackTo($event)" /></label>
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Offer it</h4>
@@ -605,6 +613,7 @@ export class WfTransitionEditor {
               }
             </div>
             @if (!r.states.length) { <p class="wf-hint">Tick at least one state, or nobody can start a record over.</p> }
+            @else if (!fromState()) { <p class="wf-hint stale">The ticked states aren’t one state and the ones after it, as the lifecycle is now. Keep them if that is what you meant, or choose a state under “From” to tick its states again.</p> }
           }
         </section>
 
@@ -673,6 +682,20 @@ export class WfResetEditor {
     this.store.updateReset({ states: first ? wfStatesFrom(this.store.def(), first) : [] });
   }
 
+  /**
+   * Changes where the reset goes back to. When the ticks were "from a state onwards", they are worked
+   * out again for the new target in the same change (the onward states stop at the reset's target).
+   */
+  protected setBackTo(value: string | null): void {
+    const to = value || undefined;
+    const reset = this.reset();
+    if (!reset || (reset.to ?? undefined) === to) return;
+    const from = this.fromState();
+    if (!from) { this.store.updateReset({ to }); return; }
+    const next = updateLifecycle(this.store.def(), (lc) => ({ ...lc, reset: { ...lc.reset!, to } }));
+    this.store.updateReset({ to, states: wfStatesFrom(next, from) });
+  }
+
   protected offerFrom(stateId: string): void {
     if (stateId) this.store.updateReset({ states: wfStatesFrom(this.store.def(), stateId) });
   }
@@ -687,7 +710,7 @@ export class WfResetEditor {
 /** The right-hand panel: settings for whatever is selected, with a short header and problems. */
 @Component({
   selector: 'ui-wf-inspector',
-  imports: [HugeiconsIconComponent, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
+  imports: [HugeiconsIconComponent, UiButton, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
   template: `
     @if (showHead()) {
       <header class="head">
@@ -702,6 +725,17 @@ export class WfResetEditor {
           }
         </div>
       </header>
+    } @else if (parentLabel() || canDelete()) {
+      <!-- In the phone sheet the title is the sheet's own; the way back up and Delete still belong here. -->
+      <div class="sheet-bar">
+        @if (parentLabel(); as p) { <button type="button" class="wf-link back" (click)="selectParent()">‹ {{ p }}</button> }
+        <span class="grow"></span>
+        @if (canDelete()) {
+          <ui-button size="sm" variant="outline" (click)="deleteRequest.emit()" [attr.aria-label]="'Delete ' + heading()">
+            <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />Delete
+          </ui-button>
+        }
+      </div>
     }
     <div class="body">
       @if (problems().length) {
@@ -726,6 +760,9 @@ export class WfResetEditor {
     :host { display: flex; flex-direction: column; min-height: 0; container-type: inline-size; }
     .head { flex: none; display: flex; flex-direction: column; gap: 2px; padding: var(--ui-space-3) var(--ui-space-3) var(--ui-space-2); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .back { align-self: flex-start; }
+    .sheet-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); padding: 0 var(--ui-space-3) var(--ui-space-2);
+      border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
+    .sheet-bar .grow { flex: 1; }
     h2 { flex: 1; margin: 0; font-size: 14px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }

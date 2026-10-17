@@ -66,7 +66,8 @@ export class WfDnd {
   }
 
   begin(payload: WfDragPayload, e: PointerEvent, opts: { immediate?: boolean } = {}): void {
-    if (e.button !== 0 || this.cleanup || !this.root) return;
+    // Nothing moves for someone only looking: no drag, no ghost, nothing announced.
+    if (e.button !== 0 || this.cleanup || !this.root || this.store.readOnly()) return;
     const start = { x: e.clientX, y: e.clientY };
     const touch = e.pointerType === 'touch';
     let active = false;

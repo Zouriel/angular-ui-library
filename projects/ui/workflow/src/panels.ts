@@ -21,7 +21,7 @@ function when(iso: string | null | undefined): string {
 /** Versions: what changed since publishing, publish with a note, earlier versions, roll back. */
 @Component({
   selector: 'ui-wf-versions',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiModal, UiTextarea],
+  imports: [FormsModule, UiButton, UiModal, UiTextarea],
   template: `
     <div class="wrap">
       @if (!store.api()) {

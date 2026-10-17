@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { WF_NODE_H, WF_NODE_W, autoLayout, edgePath, lifecycleEdges } from './layout';
+import { WF_NODE_H, WF_NODE_W, autoLayout, edgePath, lifecycleEdges, lifecycleSelfLoops, selfLoopPath } from './layout';
 import type { UiWfLifecycle } from './schema';
 
 interface LayoutCase {
@@ -93,5 +93,21 @@ describe('edgePath', () => {
     const b = edgePath({ x: 268, y: 0 }, { x: 0, y: 0 }, true, 1);
     expect(a.label.y).toBe(WF_NODE_H + 28);
     expect(b.label.y).toBeGreaterThan(a.label.y);
+  });
+});
+
+describe('self-transitions', () => {
+  it('are listed as loops (the layout leaves them out) and drawn over the top of their card', () => {
+    const lc = {
+      field: 'status', mode: 'enforce',
+      states: [{ id: 'a', key: 'a', label: 'A', category: 'initial' }, { id: 'b', key: 'b', label: 'B', category: 'active' }],
+      transitions: [{ id: 'more', key: 'more', label: 'Ask for more', from: ['a', 'b'], to: 'b', who: [] }, { id: 'any', key: 'any', label: 'Any', from: '*', to: 'b', who: [] }],
+    } as unknown as UiWfLifecycle;
+    expect(lifecycleEdges(lc).map((e) => e.id)).toEqual(['more:a']);
+    expect(lifecycleSelfLoops(lc)).toEqual([{ id: 'more:b', state: 'b' }]);
+    const loop = selfLoopPath({ x: 100, y: 200 });
+    expect(loop.d.startsWith('M ')).toBe(true);
+    expect(loop.label.y).toBeLessThan(200);
+    expect(selfLoopPath({ x: 100, y: 200 }, 1).label.y).toBeLessThan(loop.label.y);
   });
 });

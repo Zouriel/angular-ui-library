@@ -207,6 +207,8 @@ export interface UiWfApplyTransitionStep extends UiWfStepBase {
   lifecycle: string;
   transition: string;
   input?: Record<string, UiWfOperand>;
+  /** Remarks recorded with the move (read as `trigger.comment`); the transition's required check is skipped. */
+  comment?: UiWfTemplate;
   ifNotAllowed?: 'fail' | 'skip';
 }
 

@@ -44,6 +44,22 @@ export function lifecycleEdges(lc: UiWfLifecycle): { id: string; from: string; t
   return out;
 }
 
+/**
+ * Transitions that leave a state and come back to it (e.g. "Ask for more documents" from Review to
+ * Review). They don't take part in the layout; the diagram draws each as a loop over its card.
+ */
+export function lifecycleSelfLoops(lc: UiWfLifecycle): { id: string; state: string }[] {
+  const ids = new Set(lc.states.map((s) => s.id));
+  return lc.transitions.filter((t) => t.from !== '*' && ids.has(t.to) && t.from.includes(t.to)).map((t) => ({ id: `${t.id}:${t.to}`, state: t.to }));
+}
+
+/** A loop over the top of a card (`at` is its top-left corner), and where its label goes. */
+export function selfLoopPath(at: UiWfPoint, lane = 0): { d: string; label: UiWfPoint } {
+  const x1 = at.x + WF_NODE_W * 0.62 + lane * 8, x2 = at.x + WF_NODE_W * 0.38 - lane * 8, y = at.y;
+  const top = y - 30 - lane * 12;
+  return { d: `M ${x1} ${y} C ${x1} ${top}, ${x2} ${top}, ${x2} ${y}`, label: { x: (x1 + x2) / 2, y: top + 4 } };
+}
+
 export function autoLayout(lc: UiWfLifecycle, keepManual = true): UiWfLayout {
   const states = lc.states;
   const index = new Map(states.map((s, i) => [s.id, i]));

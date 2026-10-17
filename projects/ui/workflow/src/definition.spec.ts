@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cloneStep, createStep, createWorkflow, formFields, describeDuration, describeStep, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
+  cloneStep, createStep, createWorkflow, forEachItemsAt, formFields, describeDuration, describeStep, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
   insertStep, isInsideStep, listSteps, mapLists, moveStep, removeState, removeStep, stepReferences, stepSlots, tokensAt,
   transitionAllows, upstreamSteps, wfId, wfKey, wfStatesFrom, withSlot,
 } from './definition';
@@ -329,5 +329,49 @@ describe('wfStatesFrom', () => {
     d.lifecycle!.reset = { to: 'sub' };
     expect(wfStatesFrom(d, 'draft')).toEqual(['draft', 'wd']);
     expect(wfStatesFrom(d, 'unknown')).toEqual([]);
+  });
+});
+
+describe('removeState and the reset', () => {
+  const life = (): UiWorkflowDefinition => {
+    const d = createWorkflow('lifecycle', 'Life', 'application');
+    return {
+      ...d,
+      lifecycle: {
+        field: 'status',
+        states: [
+          { id: 'draft', key: 'draft', label: 'Draft', category: 'initial' }, { id: 'sub', key: 'sub', label: 'Submitted', category: 'active' },
+          { id: 'rev', key: 'rev', label: 'Review', category: 'active' },
+        ],
+        transitions: [{ id: 't1', key: 'submit', label: 'Submit', from: ['draft'], to: 'sub' }, { id: 't2', key: 'start', label: 'Start', from: ['sub'], to: 'rev' }],
+        reset: { to: 'sub', states: ['sub', 'rev'], who: [] },
+      },
+    } as UiWorkflowDefinition;
+  };
+
+  it('a reset back to the deleted state goes back to the start, and is no longer offered in it', () => {
+    const next = removeState(life(), 'sub');
+    expect(next.lifecycle!.reset!.to).toBeUndefined();
+    expect(next.lifecycle!.reset!.states).toEqual(['rev']);
+    expect(next.lifecycle!.reset!.who).toEqual([]);
+  });
+
+  it('leaves the reset alone when it doesn\'t mention the state', () => {
+    const d = life();
+    d.lifecycle!.reset = { to: 'rev', who: [] };
+    expect(removeState(d, 'sub').lifecycle!.reset).toEqual({ to: 'rev', who: [] });
+  });
+});
+
+describe('forEachItemsAt', () => {
+  it('names the item of the For each a step is inside, and nothing outside it', () => {
+    let d = sample();
+    d = insertStep(d, 'root', 4, { ...step('loop', 'forEach'), collection: 'entity.documents' } as UiWfStep);
+    d = insertStep(d, 'loop/each', 0, step('inside', 'setFields'));
+    expect(forEachItemsAt(d, registry, { stepId: 'inside' })).toEqual([{ stepId: 'loop', entity: 'document', label: 'Document' }]);
+    expect(forEachItemsAt(d, registry, { stepId: 'a' })).toEqual([]);
+    // Each item token once, however deep the step sits.
+    const paths = tokensAt({ def: d, registry, at: { stepId: 'inside' } }).map((t) => t.path);
+    expect(paths.filter((x) => x === 'item.name')).toHaveLength(1);
   });
 });

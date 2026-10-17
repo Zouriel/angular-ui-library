@@ -5,7 +5,7 @@ import { UiCanvasViewport, type UiMinimapItem } from '@zouriel/ui/canvas';
 import { WfBuilderUi, WfStepList } from './canvas';
 import { listSteps, transitionAllows } from './definition';
 import { WF_ICONS } from './icons';
-import { WF_NODE_H, WF_NODE_W, autoLayout, edgePath, type UiWfPoint } from './layout';
+import { WF_NODE_H, WF_NODE_W, autoLayout, edgePath, lifecycleSelfLoops, selfLoopPath, type UiWfPoint } from './layout';
 import type { UiWfState, UiWfTransition } from './schema';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
@@ -84,14 +84,14 @@ interface DrawnEdge {
       </ui-canvas-viewport>
       @if (anyState().length || lifecycle()?.reset) {
         <div class="any">
-          <span class="wf-label">From any state</span>
+          <span class="wf-label">{{ anyState().length ? 'From any state' : 'Starting over' }}</span>
           @for (t of anyState(); track t.id) {
             <button type="button" class="wf-chip anychip" [class.on]="isTransitionSelected(t.id)" (click)="selectTransition(t.id)">{{ t.label }} → {{ stateLabel(t.to) }}</button>
           }
           @if (lifecycle()?.reset; as r) {
             <button type="button" class="wf-chip anychip reset" [class.on]="store.selection()?.kind === 'reset'" (click)="selectReset()"
-              [attr.aria-label]="'Reset: ' + (r.label ?? 'Reset workflow') + ', back to ' + resetTarget()">
-              <hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="12" [strokeWidth]="2" />{{ r.label ?? 'Reset workflow' }} → {{ resetTarget() }}
+              [attr.aria-label]="'Reset: ' + (r.label ?? 'Reset workflow') + ', ' + resetFrom() + ', back to ' + resetTarget()">
+              <hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="12" [strokeWidth]="2" />{{ r.label ?? 'Reset workflow' }} → {{ resetTarget() }}@if (r.states) { · {{ resetFrom() }} }
             </button>
           }
         </div>
@@ -120,7 +120,7 @@ interface DrawnEdge {
         @if (lifecycle()?.reset; as r) {
           <section class="lstate" role="listitem" [class.selected]="store.selection()?.kind === 'reset'">
             <button type="button" class="lhead" (click)="selectReset()">
-              <span class="name">{{ r.label ?? 'Reset workflow' }}</span><span class="wf-chip">from any state → {{ resetTarget() }}</span>
+              <span class="name">{{ r.label ?? 'Reset workflow' }}</span><span class="wf-chip">{{ resetFrom() }} → {{ resetTarget() }}</span>
             </button>
           </section>
         }
@@ -244,7 +244,14 @@ export class WfLifecycleCanvas {
       const t = lc.transitions.find((x) => e.id.startsWith(`${x.id}:`))!;
       const { d, label } = edgePath(this.pos(e.from), this.pos(e.to), e.back, lane);
       return { id: e.id, transition: t, d, label, auto: !!t.auto, selected: sel?.kind === 'transition' && sel.id === t.id };
-    });
+    }).concat(lifecycleSelfLoops(lc).map((loop) => {
+      // Several moves back to the same state stack their loops.
+      const lane = lanes.get(`${loop.state}|self`) ?? 0;
+      lanes.set(`${loop.state}|self`, lane + 1);
+      const t = lc.transitions.find((x) => loop.id.startsWith(`${x.id}:`))!;
+      const { d, label } = selfLoopPath(this.pos(loop.state), lane);
+      return { id: loop.id, transition: t, d, label, auto: !!t.auto, selected: sel?.kind === 'transition' && sel.id === t.id };
+    }));
   });
   protected readonly minimap = computed<UiMinimapItem[]>(() =>
     this.states().map((s) => ({ ...this.pos(s.id), w: WF_NODE_W, h: WF_NODE_H, active: this.isSelected(s.id) })));
@@ -293,6 +300,14 @@ export class WfLifecycleCanvas {
     this.connectFrom.set(null);
     this.store.selection.set({ kind: 'workflow' });
   }
+
+  /** Where the reset is offered, as people read it: "from any state", "from Review", "from 3 states". */
+  protected readonly resetFrom = computed(() => {
+    const states = this.lifecycle()?.reset?.states;
+    if (!states) return 'from any state';
+    if (!states.length) return 'offered in no state';
+    return states.length === 1 ? `from ${this.stateLabel(states[0])}` : `from ${states.length} states`;
+  });
 
   /** The state a reset goes back to (its own `to`, else the starting state). */
   protected readonly resetTarget = computed(() => {
@@ -365,7 +380,8 @@ export class WfLifecycleCanvas {
 
   /** Drag a card to move it; a short press is a click. */
   protected pressState(e: PointerEvent, s: UiWfState): void {
-    if (e.button !== 0) return;
+    // Someone only looking can't move cards (a press is still a click that selects).
+    if (e.button !== 0 || this.store.readOnly()) return;
     const vp = this.viewport();
     if (!vp) return;
     const start = vp.toWorld(e.clientX, e.clientY);
@@ -437,7 +453,7 @@ export class WfLifecycleCanvas {
     const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.clickState(s); return; }
     const m = moves[e.key];
-    if (!m) return;
+    if (!m || this.store.readOnly()) return;
     e.preventDefault();
     this.store.placeState(s.id, p.x + m[0], p.y + m[1]);
   }
@@ -508,7 +524,8 @@ export class WfLifecycleRuns {
     const st = this.store.def().lifecycle?.states.find((x) => x.id === o.id);
     if (!st) return [];
     const out = [{ value: `onEnter:${o.id}`, label: 'On entering' }];
-    if (st.category !== 'initial') out.push({ value: `onExit:${o.id}`, label: 'On leaving' });
+    // Any state can run steps on leaving (spec §6), the starting state included.
+    out.push({ value: `onExit:${o.id}`, label: 'On leaving' });
     if (st.sla) out.push({ value: `sla:${o.id}`, label: 'When late' });
     return out;
   });

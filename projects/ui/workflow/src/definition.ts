@@ -593,6 +593,27 @@ function inputFieldsAt(def: UiWorkflowDefinition, at: UiWfTokenContext['at']): {
   return [];
 }
 
+/**
+ * The For each loops a position is inside, outermost first, with the kind of record each one's item
+ * is (`item.*` reads the innermost). Loops over a collection the registry doesn't know are left out.
+ */
+export function forEachItemsAt(def: UiWorkflowDefinition, reg: UiWorkflowRegistry | null, at: UiWfTokenContext['at']): { stepId: string; entity: string; label: string }[] {
+  if (!at) return [];
+  const idx = indexSteps(def);
+  const listId = 'stepId' in at ? idx.get(at.stepId)?.listId : at.listId;
+  const path = listId ? [...(('stepId' in at ? idx.get(at.stepId)?.path : undefined) ?? []), listId] : [];
+  const out: { stepId: string; entity: string; label: string }[] = [];
+  for (const l of new Set(path)) {
+    const slash = l.indexOf('/');
+    if (slash < 0 || l.slice(slash + 1) !== 'each') continue;
+    const fe = idx.get(l.slice(0, slash))?.step;
+    if (fe?.type !== 'forEach') continue;
+    const coll = collectionField(reg, def.entity, fe.collection);
+    if (coll?.entity) out.push({ stepId: fe.id, entity: coll.entity, label: entityOf(reg, coll.entity)?.label ?? 'Item' });
+  }
+  return out;
+}
+
 /** Everything a value can be read from at a position, grouped for a picker. */
 export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
   const { def, registry: reg } = ctx;
@@ -631,23 +652,11 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
   tokens.push({ path: 'trigger.actor', label: 'Person who started it', group: 'What started it', type: 'user' }, { path: 'trigger.at', label: 'When it started', group: 'What started it', type: 'dateTime' });
   for (const f of ctx.inputFields ?? inputFieldsAt(def, ctx.at)) tokens.push({ path: `input.${f.key}`, label: f.label, group: 'Form answers', type: 'any' });
   // Inside a forEach, the current item.
-  if (ctx.at) {
-    const idx = indexSteps(def);
-    const listId = 'stepId' in ctx.at ? idx.get(ctx.at.stepId)?.listId : ctx.at.listId;
-    const path = listId ? [...(('stepId' in ctx.at ? idx.get(ctx.at.stepId)?.path : undefined) ?? []), listId] : [];
-    for (const l of path) {
-      const slash = l.indexOf('/');
-      if (slash < 0 || l.slice(slash + 1) !== 'each') continue;
-      const fe = idx.get(l.slice(0, slash))?.step;
-      if (fe?.type !== 'forEach') continue;
-      const coll = collectionField(reg, def.entity, fe.collection);
-      if (coll?.entity) {
-        const label = entityOf(reg, coll.entity)?.label ?? 'Item';
-        tokens.push({ path: 'item.id', label: `${label} id`, group: `Current ${label.toLowerCase()}`, type: 'text' },
-          { path: 'item.index', label: 'Position (from 0)', group: `Current ${label.toLowerCase()}`, type: 'number' },
-          ...entityTokens(reg, coll.entity, 'item', `Current ${label.toLowerCase()}`));
-      }
-    }
+  for (const it of forEachItemsAt(def, reg, ctx.at)) {
+    const group = `Current ${it.label.toLowerCase()}`;
+    tokens.push({ path: 'item.id', label: `${it.label} id`, group, type: 'text' },
+      { path: 'item.index', label: 'Position (from 0)', group, type: 'number' },
+      ...entityTokens(reg, it.entity, 'item', group));
   }
   for (const s of upstreamSteps(def, ctx.at)) {
     const outs = s.type === 'action'
@@ -864,13 +873,23 @@ export function updateTransition(def: UiWorkflowDefinition, id: string, patch: P
   return updateLifecycle(def, (lc) => ({ ...lc, transitions: lc.transitions.map((t) => (t.id === id ? (typeof patch === 'function' ? patch(t) : { ...t, ...patch }) : t)) }));
 }
 
-/** Removes a state with the transitions into and out of it. */
+/**
+ * Removes a state with the transitions into and out of it, and the reset's references to it: a reset
+ * back to it goes back to the starting state instead, and it is no longer among the states the reset
+ * is offered in.
+ */
 export function removeState(def: UiWorkflowDefinition, id: string): UiWorkflowDefinition {
   return updateLifecycle(def, (lc) => {
     const layout = { ...(lc.layout ?? {}) };
     delete layout[id];
+    let reset = lc.reset;
+    if (reset && (reset.to === id || reset.states?.includes(id))) {
+      const { to, ...rest } = reset;
+      reset = { ...rest, ...(to && to !== id ? { to } : {}), ...(reset.states ? { states: reset.states.filter((s) => s !== id) } : {}) };
+    }
     return {
       ...lc,
+      ...(reset ? { reset } : {}),
       states: lc.states.filter((s) => s.id !== id),
       transitions: lc.transitions
         .filter((t) => t.to !== id)
