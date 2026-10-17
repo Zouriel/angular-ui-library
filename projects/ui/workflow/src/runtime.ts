@@ -33,6 +33,8 @@ import {
   wfRunStatusLabel,
   wfRunStatusTone,
   wfStatePassed,
+  wfActorLabel,
+  wfStepTimedOut,
   wfTaskResult,
 } from './runtime-shared';
 import { WF_ICONS, WF_STEP_ICONS } from './icons';
@@ -411,7 +413,7 @@ export class WfRecordActions extends WfWithApi {
           <h3>History</h3>
           <ol class="history">
             @for (h of history(); track h.seq) {
-              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
+              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
             } @empty { <li class="wf-hint">Nothing yet.</li> }
           </ol>
         </section>
@@ -484,6 +486,10 @@ export class UiWorkflowRecordPanel extends WfWithApi {
   }
 
   protected readonly passed = wfStatePassed;
+
+  protected actor(h: UiWfAuditEntry): string {
+    return wfActorLabel(h, (k) => this.record()?.instances.find((i) => i.definitionKey === k)?.title);
+  }
 
   protected async moved(r: UiWfRecord): Promise<void> {
     const n = ++this.seq;
@@ -692,6 +698,7 @@ export class UiWorkflowTasks extends WfWithApi {
     .steps li[data-status="waiting"], .steps li[data-status="running"] { --wf-s: var(--ui-color-primary); border-left-color: var(--ui-color-primary); }
     .steps li[data-status="failed"] { --wf-s: var(--ui-color-danger); border-left-color: var(--ui-color-danger); }
     .steps li[data-status="skipped"], .steps li[data-status="cancelled"] { --wf-s: var(--ui-color-warning); }
+    .steps li[data-status="timedOut"] { --wf-s: var(--ui-color-warning); border-left-color: var(--ui-color-warning); }
     .name { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .st { font-size: 11.5px; color: var(--ui-color-text-secondary); white-space: nowrap; }
     .detail { grid-column: 2 / 4; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
@@ -738,12 +745,13 @@ export class UiWorkflowRun extends WfWithApi {
       if (loc.path[0] !== rootList) continue;
       const runs = byNode.get(loc.step.id) ?? [];
       const last = runs[runs.length - 1];
-      const status = last?.status ?? 'notRun';
+      // A step that finished because its time ran out isn't "done": it took its timeout path.
+      const status = last?.status === 'completed' && wfStepTimedOut(last.output) ? 'timedOut' : last?.status ?? 'notRun';
       out.push({
         id: loc.step.id, name: stepName(loc.step), depth: loc.path.length - 1, status,
-        statusText: { completed: 'Done', waiting: 'Waiting', running: 'Running', failed: 'Failed', skipped: 'Skipped', cancelled: 'Cancelled', notRun: '' }[status] ?? status,
+        statusText: { completed: 'Done', timedOut: 'Out of time', waiting: 'Waiting', running: 'Running', failed: 'Failed', skipped: 'Skipped', cancelled: 'Cancelled', notRun: '' }[status] ?? status,
         detail: last?.error ?? (runs.length > 1 ? `${runs.length} attempts` : ''),
-        icon: status === 'completed' ? WF_ICONS.Tick02Icon : status === 'failed' ? WF_ICONS.Cancel01Icon : WF_STEP_ICONS[loc.step.type] ?? WF_ICONS.FlashIcon,
+        icon: status === 'completed' ? WF_ICONS.Tick02Icon : status === 'timedOut' ? WF_ICONS.Clock02Icon : status === 'failed' ? WF_ICONS.Cancel01Icon : WF_STEP_ICONS[loc.step.type] ?? WF_ICONS.FlashIcon,
       });
     }
     return out;
@@ -845,7 +853,7 @@ function auditRows(text: string | null): AuditRow[] {
           <button type="button" class="row" (click)="toggle(e.seq)" [attr.aria-expanded]="open().has(e.seq)">
             <span class="seq">#{{ e.seq }}</span>
             <span class="what"><span class="cat" [attr.data-cat]="e.category">{{ categoryLabel(e.category) }}</span> {{ actionLabel(e.category, e.action) }}</span>
-            <span class="who">{{ e.actorName ?? e.actorId ?? e.actorType }}</span>
+            <span class="who">{{ actor(e) }}</span>
             <span class="at" [attr.title]="e.at">{{ when(e.at) }}</span>
           </button>
           @if (open().has(e.seq)) {
@@ -934,12 +942,23 @@ export class UiWorkflowAudit extends WfWithApi {
   protected readonly error = signal('');
   protected override readonly when = (iso: string | null | undefined) => wfDateTime(iso);
 
+  /** Workflow titles by key, so entries by a workflow name it rather than its key. */
+  private readonly titles = signal<ReadonlyMap<string, string>>(new Map());
+
   constructor() {
     super();
     effect(() => {
       this.client(); this.category(); this.recordFilter(); this.entity(); this.entityId(); this.instanceId();
       untracked(() => void this.load(false));
     });
+    effect(() => {
+      const api = this.client();
+      if (api) untracked(() => void api.definitions().then((d) => this.titles.set(new Map(d.map((x) => [x.key, x.title])))).catch(() => undefined));
+    });
+  }
+
+  protected actor(e: UiWfAuditEntry): string {
+    return wfActorLabel(e, (k) => this.titles().get(k));
   }
 
   private query(): UiWfAuditQuery {

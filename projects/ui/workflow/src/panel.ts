@@ -4,7 +4,7 @@ import { UiDrawer } from '@zouriel/ui/dialog';
 import { UiStepBody, UiStepper, type UiStep } from '@zouriel/ui/navigation';
 import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
 import { WfRecordActions, UiWorkflowStateBadge } from './runtime';
-import { WfWithApi, wfAuditJson, wfDescribeHistory, wfErrorText } from './runtime-shared';
+import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
 /**
@@ -86,7 +86,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
                 @if (showHistory() && st.entries.length) {
                   <ol class="log">
                     @for (h of st.entries; track h.seq) {
-                      <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
+                      <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
                     }
                   </ol>
                 }
@@ -105,7 +105,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
                 <h3>History</h3>
                 <ol class="log">
                   @for (h of recent(); track h.seq) {
-                    <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
+                    <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
                   }
                 </ol>
               </section>
@@ -243,6 +243,10 @@ export class UiWorkflowPanel extends WfWithApi {
     this.record.set(r);
     this.changed.emit(r);
     await this.reload();
+  }
+
+  protected actor(h: UiWfAuditEntry): string {
+    return wfActorLabel(h, (k) => this.record()?.instances.find((i) => i.definitionKey === k)?.title);
   }
 
   protected describe(h: UiWfAuditEntry): string {

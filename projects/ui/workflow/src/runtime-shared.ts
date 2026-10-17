@@ -148,6 +148,27 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
   }
 }
 
+/**
+ * Who did something, as people read it: a person's name; for a workflow, "Workflow: <title>" (the
+ * actor id is the workflow's key, looked up with `workflowTitle`); "System" for the engine itself.
+ */
+export function wfActorLabel(e: Pick<UiWfAuditEntry, 'actorType' | 'actorId' | 'actorName'>, workflowTitle?: (key: string) => string | undefined): string {
+  if (e.actorType === 'workflow') {
+    const key = e.actorId ?? '';
+    return `Workflow: ${e.actorName || workflowTitle?.(key) || (key ? wfHumanize(key) : 'unknown')}`;
+  }
+  if (e.actorName) return e.actorName;
+  if (e.actorType === 'system') return 'System';
+  return e.actorId ?? wfHumanize(e.actorType);
+}
+
+/** Whether a finished step ended by running out of time (an approval or task, or a wait, that timed out). */
+export function wfStepTimedOut(output: unknown): boolean {
+  if (!output || typeof output !== 'object') return false;
+  const o = output as Record<string, unknown>;
+  return o['outcome'] === 'timedOut' || o['timedOut'] === true;
+}
+
 /** Whether state `key` comes before the record's current state in the lifecycle's order. */
 export function wfStatePassed(r: UiWfRecord, key: string): boolean {
   const i = r.states.findIndex((s) => s.key === key);
