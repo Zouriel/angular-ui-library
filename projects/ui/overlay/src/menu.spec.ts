@@ -34,6 +34,15 @@ describe('UiMenu focus', () => {
     return { f, trigger, item, settle };
   }
 
+  it('the trigger says it opens a menu and whether it is open', async () => {
+    const { trigger, settle } = await setup();
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    trigger.click();
+    await settle();
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('Escape closes and focuses the trigger', async () => {
     const { f, trigger, item, settle } = await setup();
     trigger.click();

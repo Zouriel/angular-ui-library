@@ -2,7 +2,7 @@ import {
   CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition,
 } from '@angular/cdk/overlay';
 import {
-  Component, ElementRef, inject, input, model, output, viewChild,
+  Component, ElementRef, effect, inject, input, model, output, viewChild,
 } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
@@ -104,6 +104,15 @@ export class UiMenu {
     { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
     { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
   ];
+
+  /** The trigger tells screen readers it opens a menu, and whether the menu is open. */
+  private readonly triggerAria = effect(() => {
+    const open = this.open();
+    const host = this.trigger().nativeElement;
+    const el = host.querySelector<HTMLElement>('button, [href], [tabindex]:not([tabindex="-1"])') ?? host;
+    el.setAttribute('aria-haspopup', 'menu');
+    el.setAttribute('aria-expanded', String(open));
+  });
 
   protected toggle(): void { this.open.update((v) => !v); }
 
