@@ -393,11 +393,18 @@ export class UiWorkflowPermissions extends WfWithApi {
     }
   }
 
-  /** What a save did, in words: the version in use, records that now follow it, and draft steps it couldn't change. */
+  /**
+   * What a save did, in words: the version in use, records that now follow it, records left on an older
+   * version because its states or transitions differ, and draft steps it couldn't change.
+   */
   private savedMessage(summary: UiWfPermissionsSummary, rows: readonly UiWfPermissionRow[]): string {
     if (summary.changed === false) return `Nothing changed: version ${summary.version} stays in use.`;
     const moved = summary.recordsMoved ?? 0;
-    const parts = [`Saved: version ${summary.version} is now in use${moved ? `, and ${moved} existing record${moved === 1 ? '' : 's'} follow${moved === 1 ? 's' : ''} it` : ''}.`];
+    const kept = summary.recordsKept ?? 0;
+    const movedPart = moved ? `, and ${moved} existing record${moved === 1 ? '' : 's'} follow${moved === 1 ? 's' : ''} it` : '';
+    const keptWho = moved ? `${kept}` : `${kept} existing record${kept === 1 ? '' : 's'}`;
+    const keptPart = kept ? `; ${keptWho} ${kept === 1 ? 'stays on its' : 'stay on their'} version because it differs` : '';
+    const parts = [`Saved: version ${summary.version} is now in use${movedPart}${keptPart}.`];
     const skipped = (summary.draftSkipped ?? []).map((n) => { const r = rows.find((x) => x.node === n); return `“${r?.label ?? n}”`; });
     if (skipped.length) parts.push(`Your draft no longer has ${skipped.join(', ')}, so the draft kept ${skipped.length === 1 ? 'it' : 'them'} as before.`);
     return parts.join(' ');

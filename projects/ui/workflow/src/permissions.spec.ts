@@ -70,7 +70,7 @@ interface FakeOptions {
   /** Overrides the lifecycle fixture. */
   lifecycleDef?: UiWorkflowDefinition;
   /** Extra fields of the engine's answer to a permissions change. */
-  saved?: { changed?: boolean; draftSkipped?: string[]; recordsMoved?: number };
+  saved?: { changed?: boolean; draftSkipped?: string[]; recordsMoved?: number; recordsKept?: number };
 }
 
 function fakeApi(canPublish: boolean, o: FakeOptions = {}) {
@@ -312,6 +312,26 @@ describe('UiWorkflowPermissions', () => {
     await settle(f);
     expect(el.textContent).toContain('Saved: version 2 is now in use, and 3 existing records follow it.');
     expect(el.textContent).toContain('Your draft no longer has “Submit”, so the draft kept it as before.');
+  });
+
+  it('says how many records stay on their version because it differs, after those that follow it', async () => {
+    const { f, el, cmp } = await render(true, { saved: { recordsMoved: 3, recordsKept: 2 } });
+    const w = wf(cmp, 'wf_l');
+    cmp['edit'](w, w.rows[0], [{ role: 'head' }]);
+    f.detectChanges();
+    button(el, 'Save 1 change')!.click();
+    await settle(f);
+    expect(el.textContent).toContain('Saved: version 2 is now in use, and 3 existing records follow it; 2 stay on their version because it differs.');
+  });
+
+  it('names records kept on their version even when none moved (one record)', async () => {
+    const { f, el, cmp } = await render(true, { saved: { recordsMoved: 0, recordsKept: 1 } });
+    const w = wf(cmp, 'wf_l');
+    cmp['edit'](w, w.rows[0], [{ role: 'head' }]);
+    f.detectChanges();
+    button(el, 'Save 1 change')!.click();
+    await settle(f);
+    expect(el.textContent).toContain('Saved: version 2 is now in use; 1 existing record stays on its version because it differs.');
   });
 
   it('says so when the engine found nothing to change', async () => {

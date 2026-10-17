@@ -47,6 +47,9 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
  * Settings for one step. Each step type gets its own section; common settings (name, note,
  * retries, what happens on failure) come after it.
  */
+/** HTTP methods a webhook step may use, in the order the picker lists them (spec §13; others are lint `badMethod`). */
+export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
+
 @Component({
   selector: 'ui-wf-step-editor',
   imports: EDITOR_IMPORTS,
@@ -369,6 +372,8 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             <div class="wf-grid2 method">
               <label class="lw"><span class="wf-label">Method</span>
                 <select class="wf-select" (change)="patch({ method: $any($event.target).value })">
+                  <!-- A method the engine refuses (lint badMethod), e.g. from imported JSON: shown as it is, never offered. -->
+                  @if (!methods.includes(webhook().method)) { <option [value]="webhook().method" selected disabled>{{ webhook().method || '(none)' }}: not allowed</option> }
                   @for (m of methods; track m) { <option [value]="m" [selected]="m === webhook().method">{{ m }}</option> }
                 </select></label>
               @if (!webhook().connection) {
@@ -513,7 +518,8 @@ export class WfStepEditor {
   readonly step = input.required<UiWfStep>();
   protected readonly icons = WF_ICONS;
   protected readonly tones = ['neutral', 'primary', 'success', 'warning', 'danger'];
-  protected readonly methods = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
+  /** The only methods a webhook may use (spec §13: GET, POST, PUT, PATCH, DELETE in capitals; anything else is `badMethod`). */
+  protected readonly methods: readonly string[] = WF_WEBHOOK_METHODS;
   protected readonly str = String;
   protected readonly newId = wfId;
 

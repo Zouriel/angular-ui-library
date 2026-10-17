@@ -29,6 +29,75 @@ const AUDIT_CATEGORIES: { value: string; label: string }[] = [
 
 type Settings = UiWorkflowSettings;
 
+/**
+ * Where a settings problem is shown: a field (`timeZone`, `days`, `hours`, `holidays`, `retry`, `reminders`,
+ * `concurrency`, `maxChainDepth`, `forEachMax`, `origins`, `retention`, `masked`, `paused`), one connection
+ * (`conn:<index>`), the connections as a whole, or `general` (the footer).
+ */
+export type WfSettingsProblemField = string;
+
+/**
+ * Places one of the engine's `invalidSettings` problems (its `details` is a list of plain messages, spec
+ * §12, wording from the .NET engine's `GlobalSettings.Problems`) next to the field it is about. A message
+ * that names a value is matched by that value; anything not recognised goes to `general`.
+ */
+export function wfSettingsProblemField(message: string, st: Settings): WfSettingsProblemField {
+  const quoted = /'([^']*)'/.exec(message)?.[1];
+  const conns = st.webhooks?.connections ?? [];
+  if (/^Connection key '|^Two connections are called '|^Connection '/.test(message)) {
+    const i = conns.findIndex((c) => c.key === quoted);
+    return i >= 0 ? `conn:${i}` : 'connections';
+  }
+  if (/time zone/i.test(message)) return 'timeZone';
+  if (/is not a day|working day/i.test(message)) return 'days';
+  if (/working hours/i.test(message)) return 'hours';
+  if (/is not a date/i.test(message)) return 'holidays';
+  if (/retries/i.test(message)) return 'retry';
+  if (/is not a duration/i.test(message)) return quoted !== undefined && (st.defaults?.reminders ?? []).includes(quoted) ? 'reminders' : 'retry';
+  if (/concurrency/i.test(message)) return 'concurrency';
+  if (/maxChainDepth/.test(message)) return 'maxChainDepth';
+  if (/forEachMax/.test(message)) return 'forEachMax';
+  if (/is not an origin/i.test(message)) return 'origins';
+  if (/must be kept at least/i.test(message)) return 'retention';
+  if (/masked field/i.test(message)) return 'masked';
+  if (/paused entry/i.test(message)) return 'paused';
+  return 'general';
+}
+
+/** The part of the settings a problem field is about, to tell when it has been changed since the save was refused. */
+function problemValue(field: WfSettingsProblemField, st: Settings): unknown {
+  if (field.startsWith('conn:')) return st.webhooks?.connections?.[Number(field.slice(5))];
+  const d = st.defaults;
+  return ({
+    timeZone: st.timeZone, days: st.calendar?.days, hours: st.calendar?.hours, holidays: st.calendar?.holidays, retry: d?.retry,
+    reminders: d?.reminders, concurrency: d?.concurrency, maxChainDepth: d?.maxChainDepth, forEachMax: d?.forEachMax,
+    origins: st.webhooks?.allowedOrigins, connections: st.webhooks?.connections, retention: st.audit?.retentionDays,
+    masked: st.audit?.maskedFields, paused: st.paused,
+  } as Record<string, unknown>)[field];
+}
+
+/** The section of the page a problem field is on. */
+function problemSection(field: WfSettingsProblemField): Section | null {
+  if (['timeZone', 'days', 'hours', 'holidays'].includes(field)) return 'time';
+  if (['retry', 'reminders', 'concurrency', 'maxChainDepth', 'forEachMax'].includes(field)) return 'defaults';
+  if (field === 'origins' || field === 'connections' || field.startsWith('conn:')) return 'webhooks';
+  if (field === 'retention' || field === 'masked') return 'audit';
+  if (field === 'paused') return 'watching';
+  return null;
+}
+
+/**
+ * The settings without fields the engine no longer has (`defaults.taskDue`, `people.escalationDefault`,
+ * `channels.*.sender`, removed from the spec), so settings kept from before are not sent back with them.
+ */
+export function wfWithoutRemovedSettings(st: Settings): Settings {
+  const out = structuredClone(st) as Settings & { defaults?: Record<string, unknown>; people?: Record<string, unknown> };
+  if (out.defaults) delete out.defaults['taskDue'];
+  if (out.people) delete out.people['escalationDefault'];
+  for (const c of Object.values(out.channels ?? {})) delete (c as Record<string, unknown>)['sender'];
+  return out;
+}
+
 /** The settings with a record type paused or resumed. */
 function withPaused(st: Settings, entity: string, on: boolean): Settings {
   const list = (st.paused ?? []).filter((p) => p.entity !== entity);
@@ -52,7 +121,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     <div class="gs">
     <nav class="nav" aria-label="Settings sections">
       @for (s of sections; track s.value) {
-        <button type="button" [class.on]="section() === s.value" [attr.aria-current]="section() === s.value ? 'page' : null" (click)="section.set(s.value)">{{ s.label }}</button>
+        <button type="button" [class.on]="section() === s.value" [attr.aria-current]="section() === s.value ? 'page' : null" (click)="section.set(s.value)">{{ s.label }}@if (badSections().has(s.value)) { <span class="bad" role="img" aria-label="needs fixing"></span> }</button>
       }
     </nav>
     <div class="body">
@@ -62,36 +131,37 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           <p class="wf-hint">Deadlines, reminders and time limits marked “working time” only count these hours.</p>
           <div class="lw zone"><span class="wf-label">Time zone</span>
             <ui-combobox size="sm" label="Time zone" placeholder="Search time zones" [options]="zoneOptions()" [clearable]="false"
-              [ngModel]="s().timeZone ?? 'UTC'" (ngModelChange)="$event && patch({ timeZone: $event })" /></div>
+              [ngModel]="s().timeZone ?? 'UTC'" (ngModelChange)="$event && patch({ timeZone: $event })" />@for (m of problemsFor('timeZone'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
           <div><span class="wf-label">Working days</span>
             <div class="days">@for (d of days; track d.value) {
-              <ui-checkbox [ngModel]="workDays().includes(d.value)" (ngModelChange)="toggleDay(d.value, $event)">{{ d.label }}</ui-checkbox> }</div></div>
+              <ui-checkbox [ngModel]="workDays().includes(d.value)" (ngModelChange)="toggleDay(d.value, $event)">{{ d.label }}</ui-checkbox> }</div>@for (m of problemsFor('days'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
           <div class="wf-grid2">
             <label class="lw"><span class="wf-label">From</span><ui-time-picker [ngModel]="hours()[0]" (ngModelChange)="setHours(0, $event)" /></label>
             <label class="lw"><span class="wf-label">To</span><ui-time-picker [ngModel]="hours()[1]" (ngModelChange)="setHours(1, $event)" /></label>
           </div>
+          @for (m of problemsFor('hours'); track $index) { <p class="wf-error">{{ m }}</p> }
           <div><span class="wf-label">Holidays</span>
             <ul class="items">@for (h of s().calendar?.holidays ?? []; track h) {
               <li>{{ h }} <button type="button" class="wf-icon-btn danger" (click)="removeHoliday(h)" [attr.aria-label]="'Remove ' + h"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
             <div class="holiday"><ui-date-picker size="sm" placeholder="Add a holiday" [ngModel]="holidayDraft()" (ngModelChange)="pickHoliday($event)" aria-label="Holiday date" /></div>
+            @for (m of problemsFor('holidays'); track $index) { <p class="wf-error">{{ m }}</p> }
           </div>
         }
         @case ('defaults') {
           <h2>Defaults</h2>
-          <div><span class="wf-label">Tasks are due within</span><ui-wf-duration [value]="s().defaults?.taskDue ?? 'P3D'" label="Task due" (valueChange)="patchDefaults({ taskDue: $event })" /></div>
-          <div><span class="wf-label">Reminder before then</span><ui-wf-duration [value]="s().defaults?.reminders?.[0] ?? 'P1D'" label="Reminder" (valueChange)="patchDefaults({ reminders: [$event] })" /></div>
+          <div><span class="wf-label">Remind people of an open task after</span><ui-wf-duration [value]="s().defaults?.reminders?.[0] ?? 'P1D'" label="Reminder" (valueChange)="patchDefaults({ reminders: [$event] })" />@for (m of problemsFor('reminders'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
           <div class="wf-grid2">
-            <label class="lw"><span class="wf-label">Retry failed calls</span><ui-number-input size="sm" [ngModel]="s().defaults?.retry?.max ?? 0" (ngModelChange)="patchDefaults({ retry: { ...(s().defaults?.retry ?? {}), max: $event ?? 0, backoff: 'exponential', initial: s().defaults?.retry?.initial ?? 'PT1M' } })" [min]="0" [max]="10" suffix="times" /></label>
-            <label class="lw"><span class="wf-label">At most, for each</span><ui-number-input size="sm" [ngModel]="s().defaults?.forEachMax ?? 500" (ngModelChange)="patchDefaults({ forEachMax: $event ?? 500 })" [min]="1" [max]="500" suffix="items" /></label>
+            <label class="lw"><span class="wf-label">Retry failed calls</span><ui-number-input size="sm" [ngModel]="s().defaults?.retry?.max ?? 0" (ngModelChange)="patchDefaults({ retry: { ...(s().defaults?.retry ?? {}), max: $event ?? 0, backoff: 'exponential', initial: s().defaults?.retry?.initial ?? 'PT1M' } })" [min]="0" [max]="10" suffix="times" />@for (m of problemsFor('retry'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
+            <label class="lw"><span class="wf-label">At most, for each</span><ui-number-input size="sm" [ngModel]="s().defaults?.forEachMax ?? 500" (ngModelChange)="patchDefaults({ forEachMax: $event ?? 500 })" [min]="1" [max]="500" suffix="items" />@for (m of problemsFor('forEachMax'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
           </div>
           <label class="lw"><span class="wf-label">A workflow starts again for the same record while running</span>
             <select class="wf-select" (change)="patchDefaults({ concurrency: $any($event.target).value })">
               <option value="perRecordSerial" [selected]="(s().defaults?.concurrency ?? 'perRecordSerial') === 'perRecordSerial'">Wait for the earlier run</option>
               <option value="parallel" [selected]="s().defaults?.concurrency === 'parallel'">Run both</option>
               <option value="skipIfRunning" [selected]="s().defaults?.concurrency === 'skipIfRunning'">Don’t start it again</option>
-            </select></label>
+            </select>@for (m of problemsFor('concurrency'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
           <label class="lw"><span class="wf-label">Stop chains of workflows starting workflows after</span>
-            <ui-number-input size="sm" [ngModel]="s().defaults?.maxChainDepth ?? 5" (ngModelChange)="patchDefaults({ maxChainDepth: $event ?? 5 })" [min]="1" [max]="20" suffix="levels" /></label>
+            <ui-number-input size="sm" [ngModel]="s().defaults?.maxChainDepth ?? 5" (ngModelChange)="patchDefaults({ maxChainDepth: $event ?? 5 })" [min]="1" [max]="20" suffix="levels" />@for (m of problemsFor('maxChainDepth'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
           <label class="wf-row small"><ui-switch [ngModel]="!!s().people?.delegation" (ngModelChange)="patch({ people: { ...s().people, delegation: $event || undefined } })" /> People may hand tasks to someone else</label>
         }
         @case ('channels') {
@@ -114,6 +184,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
             <div class="wf-row"><ui-input size="sm" placeholder="https://hooks.example.com" [ngModel]="newOrigin()" (ngModelChange)="newOrigin.set($event)" (keydown.enter)="addOrigin()" aria-label="Address" />
               <button type="button" class="wf-link" (click)="addOrigin()">Add</button></div>
             @if (originError()) { <p class="wf-error">{{ originError() }}</p> }
+            @for (m of problemsFor('origins'); track $index) { <p class="wf-error">{{ m }}</p> }
           </div>
           <div><span class="wf-label">Connections</span>
             @for (c of s().webhooks?.connections ?? []; track $index; let i = $index) {
@@ -129,8 +200,10 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
                 }
                 <span class="key">Key <code>{{ c.key }}</code>@if (isSaved(c.key)) { <span class="wf-hint">· webhook steps use it, so it stays when the name changes</span> }</span>
                 <button type="button" class="wf-link danger" (click)="removeConnection(i)">Remove</button>
+                @for (m of problemsFor('conn:' + i); track $index) { <p class="wf-error full">{{ m }}</p> }
               </div>
             }
+            @for (m of problemsFor('connections'); track $index) { <p class="wf-error">{{ m }}</p> }
             <button type="button" class="wf-link" (click)="addConnection()">Add a connection</button>
           </div>
         }
@@ -143,6 +216,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
                 <ui-number-input size="sm" [ngModel]="s().audit?.retentionDays?.[c.value] ?? null" (ngModelChange)="setRetention(c.value, $event)" [min]="1" suffix="days" placeholder="Keep" [ariaLabel]="c.label + ': days to keep'" /></label>
             }
           </div>
+          @for (m of problemsFor('retention'); track $index) { <p class="wf-error">{{ m }}</p> }
           <div><span class="wf-label">Hide these values in the log and run views</span>
             <ul class="items">@for (m of s().audit?.maskedFields ?? []; track m) {
               <li>{{ fieldName(m) }}<button type="button" class="wf-icon-btn danger" (click)="removeMasked(m)" [attr.aria-label]="'Stop hiding ' + fieldName(m)"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
@@ -150,6 +224,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
               <option value="">Add a field…</option>
               @for (f of maskable(); track f.value) { <option [value]="f.value">{{ f.label }}</option> }
             </select>
+            @for (m of problemsFor('masked'); track $index) { <p class="wf-error">{{ m }}</p> }
             <p class="wf-hint">Fields the app marks as sensitive are always hidden.</p>
           </div>
         }
@@ -157,6 +232,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           <h2>What is being watched</h2>
           <p class="wf-hint">Every published workflow and what starts it, by record type. Pause a record type to stop new runs while you sort something out; pausing saves at once and leaves other unsaved changes as they are.</p>
           @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> } @else if (status()) { <p class="wf-hint" role="status">{{ status() }}</p> }
+          @for (m of problemsFor('paused'); track $index) { <p class="wf-error">{{ m }}</p> }
           @for (g of watchGroups(); track g.entity) {
             <div class="card">
               <div class="wf-row"><strong class="grow">{{ g.label }}</strong>
@@ -205,6 +281,9 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .nav button:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav button.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); color: var(--ui-color-text); font-weight: 600; }
     .nav button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .nav .bad { display: inline-block; width: 6px; height: 6px; margin-left: var(--ui-space-2); border-radius: 50%; background: var(--ui-color-danger); vertical-align: middle; }
+    .body .wf-error { margin: var(--ui-space-1) 0 0; }
+    .conn .full { grid-column: 1 / -1; }
     .body { overflow: auto; padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 760px; }
     h2 { margin: 0; font-size: 16px; font-weight: 650; }
     h3 { margin: var(--ui-space-2) 0 0; font-size: 13px; }
@@ -285,6 +364,18 @@ export class UiWorkflowGlobalSettings {
   protected readonly status = signal('');
   protected readonly newOrigin = signal('');
   protected readonly originError = signal('');
+  /**
+   * The engine's reasons for refusing the last save (`invalidSettings`), each placed at its field with
+   * the value it was about: a problem stops showing once that value is changed.
+   */
+  private readonly problems = signal<{ field: WfSettingsProblemField; message: string; value: string }[]>([]);
+  /** The problems still showing (their field unchanged since the refused save). */
+  private readonly openProblems = computed(() => {
+    const st = this.s();
+    return this.problems().filter((p) => p.field === 'general' || JSON.stringify(problemValue(p.field, st) ?? null) === p.value);
+  });
+  /** Sections with a problem showing, marked in the section list so they can be found. */
+  protected readonly badSections = computed(() => new Set(this.openProblems().map((p) => problemSection(p.field)).filter((x): x is Section => !!x)));
   protected readonly dirty = computed(() => JSON.stringify(this.s()) !== this.saved());
   protected readonly workDays = computed(() => this.s().calendar?.days ?? ['mon', 'tue', 'wed', 'thu', 'fri']);
   protected readonly hours = computed<[string, string]>(() => this.s().calendar?.hours ?? ['09:00', '17:00']);
@@ -318,7 +409,7 @@ export class UiWorkflowGlobalSettings {
     });
     effect(() => {
       const s = this.settings();
-      if (s && !this.client()) untracked(() => { this.s.set(s); this.saved.set(JSON.stringify(s)); });
+      if (s && !this.client()) untracked(() => { const clean = wfWithoutRemovedSettings(s); this.s.set(clean); this.saved.set(JSON.stringify(clean)); });
     });
     effect(() => { const r = this.registryInput(); if (r) this.registry.set(r); });
   }
@@ -327,14 +418,43 @@ export class UiWorkflowGlobalSettings {
     if (!api) return;
     try {
       const [st, schema, triggers] = await Promise.all([api.settings(), this.registryInput() ? Promise.resolve(null) : api.schema(), api.triggers().catch(() => [])]);
-      this.s.set(st.settings);
-      this.saved.set(JSON.stringify(st.settings));
+      const clean = wfWithoutRemovedSettings(st.settings);
+      this.s.set(clean);
+      this.saved.set(JSON.stringify(clean));
       this.revision.set(st.revision);
       if (schema) this.registry.set(schema.registry);
       this.triggers.set(triggers);
     } catch (e) {
       this.error.set(e instanceof UiWfApiError ? e.message : 'Could not load the settings.');
     }
+  }
+
+  /** The engine's messages about one field, shown next to it. */
+  protected problemsFor(field: WfSettingsProblemField): string[] {
+    return this.openProblems().filter((p) => p.field === field).map((p) => p.message);
+  }
+
+  /**
+   * Shows a refused save: an `invalidSettings` refusal lists each problem (`details`, a list of messages),
+   * placed next to its field; the footer says how many and repeats those that belong to no field.
+   */
+  private showSaveError(e: unknown, sent: Settings): void {
+    const details = e instanceof UiWfApiError && e.code === 'invalidSettings' && Array.isArray(e.details)
+      ? (e.details as unknown[]).filter((d): d is string => typeof d === 'string' && !!d.trim()) : [];
+    if (!details.length) {
+      this.problems.set([]);
+      this.error.set(e instanceof UiWfApiError ? e.message : 'Saving failed.');
+      return;
+    }
+    const placed = details.map((message) => {
+      const field = wfSettingsProblemField(message, sent);
+      return { field, message, value: JSON.stringify(problemValue(field, sent) ?? null) };
+    });
+    this.problems.set(placed);
+    const general = placed.filter((p) => p.field === 'general').map((p) => p.message);
+    const n = placed.length - general.length;
+    const head = n ? `${n === 1 ? 'One setting needs' : `${n} settings need`} fixing before saving (marked in the sections).` : '';
+    this.error.set([head, ...general].filter(Boolean).join(' '));
   }
 
   protected patch(p: Partial<UiWorkflowSettings>): void {
@@ -491,7 +611,7 @@ export class UiWorkflowGlobalSettings {
     } catch (e) {
       // Put the switch back; the rest of the page keeps its edits.
       this.s.set(withPaused(this.s(), entity, !on));
-      this.error.set(e instanceof UiWfApiError ? e.message : 'Saving failed.');
+      this.showSaveError(e, toSave);
     } finally {
       this.busy.set(false);
     }
@@ -500,6 +620,7 @@ export class UiWorkflowGlobalSettings {
   protected discard(): void {
     this.s.set(JSON.parse(this.saved()));
     this.error.set('');
+    this.problems.set([]);
   }
 
   async save(): Promise<void> {
@@ -519,10 +640,11 @@ export class UiWorkflowGlobalSettings {
       this.revision.set(r.revision);
       // What was sent is what's saved; anything typed while it was on its way stays unsaved.
       this.saved.set(JSON.stringify(sent));
+      this.problems.set([]);
       this.status.set('Saved.');
       this.settingsChange.emit(sent);
     } catch (e) {
-      this.error.set(e instanceof UiWfApiError ? e.message : 'Saving failed.');
+      this.showSaveError(e, sent);
     } finally {
       this.busy.set(false);
     }

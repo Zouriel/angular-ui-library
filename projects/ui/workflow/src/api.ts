@@ -200,6 +200,8 @@ export interface UiWfPermissionsSummary extends UiWfDefinitionSummary {
   draftSkipped?: string[];
   /** Records moved onto the new version, so the new permissions apply to them too. */
   recordsMoved?: number;
+  /** Records left on an older version whose states or transitions differ (they need an explicit migration). Older engines omit it. */
+  recordsKept?: number;
 }
 
 export interface UiWfAuditEntry {

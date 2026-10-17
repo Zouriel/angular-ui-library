@@ -162,6 +162,33 @@ describe('Webhook body box', () => {
   });
 });
 
+describe('Webhook method picker', () => {
+  const options = (f: { nativeElement: HTMLElement }) =>
+    [...(f.nativeElement.querySelector('.method select') as HTMLSelectElement).options].map((o) => ({ v: o.value, t: o.textContent?.trim(), on: o.selected, off: o.disabled }));
+
+  it('offers only GET, POST, PUT, PATCH and DELETE', () => {
+    let def: UiWorkflowDefinition = createWorkflow('automation', 'Hooks', 'application');
+    def = insertStep(def, 'root', 0, { ...createStep('webhook'), id: 'w1' } as UiWfStep);
+    const f = editStep(storeWith(def), 'w1');
+    expect(options(f).map((o) => o.v).sort()).toEqual(['DELETE', 'GET', 'PATCH', 'POST', 'PUT']);
+    expect(options(f).find((o) => o.on)?.v).toBe('POST');
+  });
+
+  it('shows a method the engine refuses as it is (not allowed, not offered), instead of pretending it is POST', () => {
+    let def: UiWorkflowDefinition = createWorkflow('automation', 'Hooks', 'application');
+    def = insertStep(def, 'root', 0, { ...createStep('webhook'), id: 'w1', method: 'post' } as unknown as UiWfStep);
+    const store = storeWith(def);
+    const f = editStep(store, 'w1');
+    const first = options(f)[0];
+    expect(first).toEqual({ v: 'post', t: 'post: not allowed', on: true, off: true });
+    expect(options(f).filter((o) => !o.off).map((o) => o.v).sort()).toEqual(['DELETE', 'GET', 'PATCH', 'POST', 'PUT']);
+    const select = (f.nativeElement as HTMLElement).querySelector('.method select') as HTMLSelectElement;
+    select.value = 'POST';
+    select.dispatchEvent(new Event('change'));
+    expect(store.steps().get('w1')!.step).toMatchObject({ method: 'POST' });
+  });
+});
+
 describe('Move lifecycle step', () => {
   it('has a remarks template, stored as comment (left out when empty)', () => {
     let def: UiWorkflowDefinition = createWorkflow('automation', 'Move', 'application');

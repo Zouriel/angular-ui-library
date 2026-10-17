@@ -33,8 +33,9 @@ import {
   wfErrorText,
   wfHumanize,
   wfOutcomeLabel,
-  wfRunStatusLabel,
-  wfRunStatusTone,
+  wfRunLabel,
+  wfRunParked,
+  wfRunTone,
   wfReadableError,
   wfRemarksCounter,
   wfRemarksLabel,
@@ -782,7 +783,7 @@ export class WfTaskInbox extends WfWithApi {
       @if (showHead()) {
       <header class="head">
         <div class="t"><strong>{{ r.title }}</strong> <span class="v">v{{ r.version }}</span>
-          <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
+          <span class="wf-chip" [attr.data-tone]="statusTone(r)">{{ statusLabel(r) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
         <span class="m">{{ r.entityTitle ?? r.entityId ?? '' }} · started {{ ago(r.startedAt) }}{{ r.initiatorName ? ' by ' + r.initiatorName : '' }}</span>
       </header>
       }
@@ -810,6 +811,20 @@ export class WfTaskInbox extends WfWithApi {
             }
           } @else {
             <p class="wf-hint">Someone who looks after workflows can try it again or skip it.</p>
+          }
+        </div>
+      } @else if (parked(r)) {
+        <!-- Still waiting, but a timer it needs failed ten times and was parked: the engine can't retry or skip it (only
+             stopped runs can be), so this says what happened and what can still be done. -->
+        <div class="incident parked" role="alert">
+          <p><strong>Needs attention:</strong> {{ readable(r.error) }}</p>
+          @if (mayIntervene()) {
+            <p class="wf-hint">{{ r.kind === 'record' ? 'Its automatic move or time limit will not happen by itself. Fix the cause, then move the record by hand.' : 'A reminder or escalation could not be sent; the run still waits for its task. Fix the cause, then decide or reassign the task, or cancel the run.' }}</p>
+            @if (r.status === 'waiting' || r.status === 'running' || r.status === 'queued') {
+              <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button></div>
+            }
+          } @else {
+            <p class="wf-hint">Someone who looks after workflows needs to look at it.</p>
           }
         </div>
       } @else if (mayIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
@@ -996,9 +1011,11 @@ export class WfRunView extends WfWithApi {
     }
   }
 
-  protected readonly statusLabel = wfRunStatusLabel;
-  protected readonly statusTone = wfRunStatusTone;
+  protected readonly statusLabel = wfRunLabel;
+  protected readonly statusTone = wfRunTone;
   protected readonly readable = wfReadableError;
+  /** Waiting with an error: a timer failed ten times and was parked (see `wfRunParked`). */
+  protected readonly parked = wfRunParked;
 
   /** The step being skipped, with the results it would have produced (for the steps after it). */
   protected readonly skipping = signal<{ target?: string; name: string; outputs: UiWfParamDescriptor[] } | null>(null);

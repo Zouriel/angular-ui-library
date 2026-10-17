@@ -451,6 +451,36 @@ describe('UiWorkflowPanel', () => {
     expect(rows[1].querySelector('ui-wf-run-view')).not.toBeNull();
     expect(loaded).toEqual(['s1', 'w1']);
   });
+  it('a waiting run with an error (a timer parked after repeated failures) is listed first as needing attention, open, with the error', async () => {
+    const run = (id: string, title: string, status: string, error: string | null = null) => ({
+      id, definitionId: 'd', definitionKey: 'k', title, version: 1, kind: 'automation', parentId: null, reason: null, entity: 'application', entityId: '1',
+      entityTitle: 'A', status, state: null, stateLabel: null, error, errorStepId: null, initiatorId: null, initiatorName: null,
+      startedAt: new Date().toISOString(), updatedAt: '', endedAt: null, trigger: null, steps: [], tokens: [], outputs: null, variables: null, tasks: null,
+    });
+    const instances = [run('w1', 'Tell the panel', 'waiting'), run('p1', 'Remind the reviewer', 'waiting', 'A timer (reminder) failed 10 times and was stopped: mail down')];
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.layout.set('compact');
+    fixture.componentInstance.api = {
+      ...fakeApi(record('Submitted', { instances: instances as never }), []),
+      instance: async (id: string) => instances.find((i) => i.id === id),
+      instanceDefinition: async () => ({ ...createWorkflow('automation', 'W', 'application'), steps: [] }),
+      me: async () => ({ can: { intervene: true } }),
+    } as unknown as UiWorkflowApi;
+    fixture.detectChanges();
+    for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); fixture.detectChanges(); await fixture.whenStable(); }
+    const el = fixture.nativeElement as HTMLElement;
+    const rows = [...el.querySelectorAll('.run')] as HTMLElement[];
+    expect(rows.map((r) => r.querySelector('.rt')?.textContent?.trim())).toEqual(['Remind the reviewer', 'Tell the panel']);
+    expect(rows[0].hasAttribute('data-attention')).toBe(true);
+    expect(rows[1].hasAttribute('data-attention')).toBe(false);
+    expect(rows[0].querySelector('.wf-chip')?.textContent?.trim()).toBe('Needs attention');
+    expect(rows[0].querySelector('.rs')?.textContent).toContain('mail down');
+    expect(rows[0].querySelector('ui-wf-run-view')).not.toBeNull();
+    expect(rows[1].querySelector('ui-wf-run-view')).toBeNull();
+    // The engine only retries stopped runs, so no "Try again" here.
+    expect([...rows[0].querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).not.toContain('Try again');
+    expect(el.querySelector('.runs h3')?.textContent?.trim()).toBe('Running');
+  });
 });
 
 describe('wfPanelPath after a reset and with a cut-short history', () => {
@@ -575,6 +605,19 @@ describe('UiWorkflowPanel reloads', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('says "Needs attention" over runs that each stopped or were parked with an error', async () => {
+    const run = (id: string, status: string, error: string | null) => ({ id, title: id, status, startedAt: new Date().toISOString(), error } as never);
+    const f = TestBed.createComponent(SwitchHost);
+    f.componentInstance.layout.set('compact');
+    f.componentInstance.api = {
+      record: async () => record('Submitted', { instances: [run('s1', 'incident', 'Bank API: 503'), run('p1', 'waiting', 'A timer (escalation) failed 10 times and was stopped: x')] }),
+      recordHistory: async () => [], instance: () => new Promise(() => undefined), instanceDefinition: () => new Promise(() => undefined),
+    } as unknown as UiWorkflowApi;
+    await settle(f);
+    expect((f.nativeElement as HTMLElement).querySelector('.runs h3')?.textContent?.trim()).toBe('Needs attention');
+    f.destroy();
   });
 
   it('vertical: what happened before starting over is grouped apart, not under states not reached', async () => {

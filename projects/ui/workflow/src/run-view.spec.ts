@@ -23,10 +23,10 @@ function stuck(extra: Partial<UiWfInstance> = {}): UiWfInstance {
   };
 }
 
-function fakeApi(canIntervene: boolean) {
+function fakeApi(canIntervene: boolean, run: UiWfInstance = stuck()) {
   const calls: unknown[][] = [];
   const api = {
-    instance: async () => stuck(),
+    instance: async () => run,
     instanceDefinition: async () => def,
     me: async () => ({ type: 'user', id: 'u', name: 'U', roles: [], can: { edit: false, publish: false, settings: false, intervene: canIntervene, audit: false } }),
     schema: async () => ({ specVersion: 1, steps: [], registry: { specVersion: 1, entities: [], actions: [{ key: 'bank.pay', label: 'Pay', inputs: [], outputs: [{ key: 'reference', label: 'Payment reference', type: 'text' }] }] } }),
@@ -37,8 +37,8 @@ function fakeApi(canIntervene: boolean) {
   return { api, calls };
 }
 
-async function render(canIntervene: boolean) {
-  const { api, calls } = fakeApi(canIntervene);
+async function render(canIntervene: boolean, run?: UiWfInstance) {
+  const { api, calls } = fakeApi(canIntervene, run);
   const f = TestBed.createComponent(WfRunView);
   f.componentRef.setInput('api', api);
   f.componentRef.setInput('instanceId', 'r1');
@@ -103,5 +103,44 @@ describe('WfRunView (inside the workflow panel and the tasks drawer)', () => {
     expect(el.textContent).toContain('Stopped: Bank API');
     expect(button(el, 'Try again')).toBeNull();
     expect(el.textContent).toContain('Someone who looks after workflows can try it again or skip it.');
+  });
+
+  // A reminder's timer failed ten times and the engine parked it: the run still waits for its task, with an error.
+  const parked = () => stuck({
+    status: 'waiting', errorStepId: null, error: 'A timer (reminder) failed 10 times and was stopped: mail server down',
+    steps: [{ id: 'sr1', nodeId: 'pay', type: 'action', title: null, attempt: 1, status: 'waiting', input: null, output: null, error: null, startedAt: '', endedAt: null }],
+    tokens: [{ id: 't1', status: 'waiting', waiting: 'task', stepId: 'pay' }],
+  });
+
+  it('shows a waiting run whose timer was parked as needing attention, with the error, and no retry (the engine refuses it)', async () => {
+    const { el } = await render(true, parked());
+    expect(el.querySelector('.head .wf-chip')?.textContent?.trim()).toBe('Needs attention');
+    expect(el.querySelector('.head .wf-chip')?.getAttribute('data-tone')).toBe('danger');
+    expect(el.querySelector('.parked[role="alert"]')?.textContent).toContain('Needs attention: A timer (reminder) failed 10 times and was stopped: mail server down');
+    expect(el.textContent).toContain('decide or reassign the task, or cancel the run');
+    expect(button(el, 'Try again')).toBeNull();
+    expect(button(el, 'Skip the step')).toBeNull();
+    expect(button(el, 'Cancel the run')).not.toBeNull();
+  });
+
+  it('a parked lifecycle record says to move the record by hand, and offers no cancel', async () => {
+    const { el } = await render(true, stuck({ kind: 'record', status: 'active', tokens: [], steps: [], error: 'A timer (autoTransition) failed 10 times and was stopped: boom' }));
+    expect(el.querySelector('.parked')?.textContent).toContain('Needs attention: A timer (autoTransition) failed 10 times');
+    expect(el.textContent).toContain('move the record by hand');
+    expect(button(el, 'Cancel the run')).toBeNull();
+    expect(button(el, 'Try again')).toBeNull();
+  });
+
+  it('people who may not intervene see a parked run needs someone, without buttons', async () => {
+    const { el } = await render(false, parked());
+    expect(el.textContent).toContain('Needs attention: A timer (reminder)');
+    expect(el.textContent).toContain('Someone who looks after workflows needs to look at it.');
+    expect(button(el, 'Cancel the run')).toBeNull();
+  });
+
+  it('a waiting run without an error is not flagged', async () => {
+    const { el } = await render(true, stuck({ status: 'waiting', error: null, errorStepId: null, tokens: [{ id: 't1', status: 'waiting', waiting: 'task', stepId: 'pay' }] }));
+    expect(el.querySelector('.parked')).toBeNull();
+    expect(el.querySelector('.head .wf-chip')?.textContent?.trim()).toBe('Waiting');
   });
 });

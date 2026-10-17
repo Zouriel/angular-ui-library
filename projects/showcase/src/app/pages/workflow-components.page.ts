@@ -62,7 +62,7 @@ const ENTITY = 'application';
       }
 
       <doc-section name="Workflow panel" anchor="panel" selector="ui-workflow-panel" [api]="panelApi" [outputs]="panelOutputs"
-        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, a compact one for a side column or details card (a badge, a strip of states, the actions and one history), or a drawer that waits on the screen's edge as a rail of dots when the page is busy. A record type with no lifecycle still shows its manual workflows, open tasks and history. Under Running (Stopped, when all of them stopped) it lists the record's workflows still going, each opening its steps; one that stopped (a payment the bank refused, say) opens by itself, and people who may intervene try it again, skip the step giving what it would have produced, or cancel it, right there.">
+        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, a compact one for a side column or details card (a badge, a strip of states, the actions and one history), or a drawer that waits on the screen's edge as a rail of dots when the page is busy. A record type with no lifecycle still shows its manual workflows, open tasks and history. Under Running (Stopped, when all of them stopped) it lists the record's workflows still going, each opening its steps; one that stopped (a payment the bank refused, say) opens by itself, and people who may intervene try it again, skip the step giving what it would have produced, or cancel it, right there. A run still waiting with an error (a reminder timer the engine parked after ten failures) shows as Needs attention with the error, without Try again, which the engine only accepts for stopped runs.">
         @if (ready(); as id) {
           <div class="actions">
             <ui-button size="sm" variant="outline" [disabled]="busy() || !stoppable()" (click)="stopPayment()">Show a stopped payment</ui-button>
@@ -131,7 +131,7 @@ const ENTITY = 'application';
       </doc-section>
 
       <doc-section name="Permissions" anchor="permissions" selector="ui-workflow-permissions" [api]="permissionsApi" [outputs]="permissionsOutputs"
-        summary="Who may do what in every published workflow, on one page: who may make each lifecycle move, start a record over, press a start button, and decide each approval or task. Saving publishes a new version with only those changes. Use it on a settings page so admins can swap people without opening the builder; people who may not publish see it read-only.">
+        summary="Who may do what in every published workflow, on one page: who may make each lifecycle move, start a record over, press a start button, and decide each approval or task. Saving publishes a new version with only those changes, and says how many existing records follow it and how many stay on an older version that differs. Use it on a settings page so admins can swap people without opening the builder; people who may not publish see it read-only.">
         @if (online()) {
           @for (k of [user()]; track k) {
             <div class="frame scroll"><ui-workflow-permissions [api]="api()" (saved)="onChanged()" /></div>
@@ -141,7 +141,7 @@ const ENTITY = 'application';
       </doc-section>
 
       <doc-section name="Global settings" anchor="global-settings" selector="ui-workflow-global-settings" [api]="settingsApi" [outputs]="settingsOutputs"
-        summary="The app-wide workflow settings: working hours and holidays, defaults for new steps, notification channels, which addresses webhooks may call, audit retention and masking, pausing triggers per record type, what is being watched, and what the app lets workflows use. Use it on a settings page; without an API, bind settings and save them yourself.">
+        summary="The app-wide workflow settings: working hours and holidays, defaults for new steps, notification channels, which addresses webhooks may call, audit retention and masking, pausing triggers per record type, what is being watched, and what the app lets workflows use. The engine checks every field on save; what it refuses is shown next to each field, with the sections marked. Use it on a settings page; without an API, bind settings and save them yourself.">
         @if (online()) {
           @for (k of [user()]; track k) {
             <div class="settings-box"><ui-workflow-global-settings class="settings" [api]="api()" /></div>

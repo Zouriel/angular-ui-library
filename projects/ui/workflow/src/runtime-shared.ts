@@ -78,6 +78,32 @@ export function wfRunStatusTone(s: string | null | undefined): string {
   return s === 'completed' ? 'success' : s === 'incident' || s === 'failed' ? 'danger' : s === 'cancelled' || s === 'outOfSync' ? 'warning' : 'info';
 }
 
+/**
+ * A run that is still going (queued, running, waiting, or a record's `active`/`outOfSync`) but has an
+ * error: a timer it depends on (a task's reminder or escalation, a lifecycle's automatic move or time
+ * limit) failed ten times and the engine parked it for an admin, leaving the status as it was. The
+ * engine refuses retry and skip for it (`notInIncident`: only `incident` runs can be retried), so the
+ * views show the error and what can still be done instead of "Try again".
+ */
+export function wfRunParked(r: { status: string | null | undefined; error: string | null | undefined }): boolean {
+  return !!r.error?.trim() && ['queued', 'running', 'waiting', 'active', 'outOfSync'].includes(r.status ?? '');
+}
+
+/** A run that needs someone: stopped on an error (`incident`) or parked with an error while still going. */
+export function wfRunNeedsAttention(r: { status: string | null | undefined; error: string | null | undefined }): boolean {
+  return r.status === 'incident' || wfRunParked(r);
+}
+
+/** A run's chip text: its status, or "Needs attention" for a parked run (see `wfRunParked`). */
+export function wfRunLabel(r: { status: string | null | undefined; error: string | null | undefined }): string {
+  return wfRunParked(r) ? 'Needs attention' : wfRunStatusLabel(r.status);
+}
+
+/** A run's chip tone: as its status, or `danger` for a parked run. */
+export function wfRunTone(r: { status: string | null | undefined; error: string | null | undefined }): string {
+  return wfRunParked(r) ? 'danger' : wfRunStatusTone(r.status);
+}
+
 /** The audit log's categories, in the order filters list them. */
 export const WF_AUDIT_CATEGORIES: readonly { value: string; label: string }[] = [
   { value: 'lifecycle', label: 'Record moves' }, { value: 'task', label: 'Tasks and decisions' }, { value: 'instance', label: 'Runs' },

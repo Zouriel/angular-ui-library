@@ -474,14 +474,13 @@ export interface UiWorkflowSettings {
   calendar?: { days?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[]; hours?: [string, string]; holidays?: string[] };
   defaults?: {
     retry?: UiWfRetry;
-    taskDue?: string;
     reminders?: string[];
     concurrency?: 'perRecordSerial' | 'parallel' | 'skipIfRunning';
     maxChainDepth?: number;
     forEachMax?: number;
   };
-  people?: { delegation?: boolean; escalationDefault?: UiWfAssignee[] };
-  channels?: Record<string, { enabled?: boolean; sender?: string; footer?: string }>;
+  people?: { delegation?: boolean };
+  channels?: Record<string, { enabled?: boolean; footer?: string }>;
   webhooks?: {
     allowedOrigins?: string[];
     connections?: { key: string; label: string; baseUrl: string; auth?: 'none' | 'secret'; secretName?: string; header?: string }[];

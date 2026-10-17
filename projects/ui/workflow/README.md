@@ -156,7 +156,12 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   steps (done, waiting, failed, skipped, the paths not taken greyed out). One that stopped opens by
   itself; people the engine lets intervene (`me().can.intervene`) can try it again, skip the step
   (giving the results it would have produced, each in its type, the required ones required) or
-  cancel it with remarks. While a run is still going the panel looks again every 15 seconds (not
+  cancel it with remarks. A run that is still waiting but carries an error (a reminder or escalation
+  timer that failed ten times, which the engine parks for an admin) is shown as **Needs attention**,
+  listed first and opened with the error; the engine only retries stopped runs, so it offers no
+  "Try again", only what still works (decide or reassign the task, or cancel the run). The run view
+  says the same for a lifecycle record whose automatic move or time limit was parked (move it by
+  hand). While a run is still going the panel looks again every 15 seconds (not
   while the page is hidden). After a reset, what happened before it is grouped under "Earlier,
   before starting over". `(changed)` fires whenever the panel sees the record's workflow change: a
   move made in it, or any reload that finds a new state, status or run status (after a decision, a
@@ -177,8 +182,16 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 - **Audit**: filter by kind and record, page back through older entries, export as CSV, and check
   the hash chain. Limited to one run (`instanceId`) it offers no export, since the engine's export
   can't be narrowed to one run; export the record's log instead.
-- **Global settings**: working hours and holidays, defaults, notification channels, webhook
-  connections, audit retention and masking, and pausing workflows per record type.
+- **Global settings**: working hours and holidays, defaults (retries, reminders, concurrency, loop
+  and for-each limits, delegation), notification channels (on/off and a footer), webhook allowed
+  addresses and connections, audit retention and masking, and pausing workflows per record type.
+  The engine checks every field when saving; when it refuses (`invalidSettings`), each problem is
+  shown next to its field, the sections with problems are marked, and a problem disappears once
+  its field is changed.
+- **Webhook steps** use `GET`, `POST`, `PUT`, `PATCH` or `DELETE`; a definition with any other
+  method shows it as "not allowed" in the picker, and the engine reports `badMethod`.
+- **Permissions** save messages also say how many records stay on an older version because its
+  states or transitions differ (`recordsKept`; they need an explicit migration).
 
 | `<ui-workflow-panel>` | Type | Default | Notes |
 | --- | --- | --- | --- |
