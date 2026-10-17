@@ -42,8 +42,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
     JSON in, JSON out; see [`projects/ui/form-builder/README.md`](projects/ui/form-builder/README.md).
   - **Workflow builder**: `ui-workflow-builder` for automations (a trigger and a tree of steps:
     approvals, waits, branches, parallel paths, loops, messages, record updates, your actions) and
-    lifecycles (states and transitions that own a status field), plus `ui-workflow-record-panel`,
-    `ui-workflow-tasks`, `ui-workflow-run`, `ui-workflow-audit` and `ui-workflow-global-settings`.
+    lifecycles (states and transitions that own a status field), plus the components that run them:
+    `ui-workflow-panel` (a record's workflow: vertical, horizontal, compact or a drawer),
+    `ui-workflow-tasks`, `ui-workflow-tasks-drawer`, `ui-workflow-run`, `ui-workflow-audit`,
+    `ui-workflow-permissions` and `ui-workflow-global-settings`.
     Runs on the Zouriel Workflows engine (.NET first); see [`projects/ui/workflow/README.md`](projects/ui/workflow/README.md).
 - **Design tools**: transform box with snapping, vector path editor (pen, points, brushes),
   timeline sequencer, scrubber, token input, device frame.

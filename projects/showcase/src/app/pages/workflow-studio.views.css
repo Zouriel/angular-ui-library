@@ -37,7 +37,7 @@
     .ch { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-color-text-muted); }
     .body { white-space: pre-wrap; color: var(--ui-color-text-secondary); }
     .settings { min-height: 560px; }
-    /* Below 1500px the record panel moves under the details; below 1000px everything stacks. */
+    /* Below 1500px the workflow panel moves under the details; below 1000px everything stacks. */
     @media (max-width: 1500px) { .apps { grid-template-columns: 250px minmax(0, 1fr); } .panel { grid-column: 2; } }
     @media (max-width: 1000px) {
       .apps, .two, .runs { grid-template-columns: minmax(0, 1fr); }

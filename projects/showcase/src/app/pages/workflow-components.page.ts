@@ -138,7 +138,7 @@ const ENTITY = 'application';
       </doc-section>
 
       <doc-section name="State badge" anchor="state-badge" selector="ui-workflow-state-badge" [api]="badgeApi"
-        summary="A record's state as a small coloured chip, in the tone its lifecycle gives it. Use it in tables and cards wherever a record's state is listed; the panels use it themselves.">
+        summary="A record's state as a small coloured chip, in the tone its lifecycle gives it. Use it in tables and cards wherever a record's state is listed; the workflow panel uses it too.">
         <doc-demo [code]="badgeCode">
           <div class="badges">
             @for (t of tones; track t.tone) { <ui-workflow-state-badge [label]="t.label" [tone]="t.tone" /> }
