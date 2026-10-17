@@ -9,7 +9,7 @@ import {
   UiWorkflowGlobalSettings,
   UiWorkflowPermissions,
   UiWorkflowTasksDrawer,
-  UiWorkflowRecordPanel,
+  UiWorkflowPanel,
   UiWorkflowRun,
   UiWorkflowStateBadge,
   UiWorkflowTasks,
@@ -33,7 +33,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'permissi
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
+  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
   providers: [
     { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
     // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
@@ -156,11 +156,10 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                       <p class="hint">Try changing the status directly: <button type="button" class="link" (click)="forceStatus(a.id)">set status to Approved</button> — the lifecycle refuses it.</p>
                       @if (appError()) { <p class="err">{{ appError() }}</p> }
                       @if (notice()) { <p class="ok" role="status">{{ notice() }}</p> }
-                      @if (notice()) { <p class="ok" role="status">{{ notice() }}</p> }
                     </div>
                     <aside class="panel">
                       <h3>Workflow</h3>
-                      <ui-workflow-record-panel #panel entity="application" [entityId]="'' + a.id" (changed)="refresh()" />
+                      <ui-workflow-panel #panel layout="compact" title="" entity="application" [entityId]="'' + a.id" (changed)="refresh()" />
                     </aside>
                   }
                 </div>
@@ -227,7 +226,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
 })
 export class WorkflowStudioPage {
   protected readonly pg = inject(WorkflowPlayground);
-  private readonly panel = viewChild<UiWorkflowRecordPanel>('panel');
+  private readonly panel = viewChild<UiWorkflowPanel>('panel');
   protected readonly tabs: { value: Tab; label: string }[] = [
     { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'My tasks' },
     { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'permissions', label: 'Permissions' }, { value: 'settings', label: 'Settings' },

@@ -165,7 +165,6 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   ],
   'workflow-components': [
     { name: 'Workflow panel', anchor: 'panel' },
-    { name: 'Record panel', anchor: 'record-panel' },
     { name: 'My tasks drawer', anchor: 'tasks-drawer' },
     { name: 'Task inbox', anchor: 'tasks' },
     { name: 'Run', anchor: 'run' },

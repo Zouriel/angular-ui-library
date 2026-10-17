@@ -10,7 +10,6 @@ import {
   UiWorkflowGlobalSettings,
   UiWorkflowPanel,
   UiWorkflowPermissions,
-  UiWorkflowRecordPanel,
   UiWorkflowRun,
   UiWorkflowStateBadge,
   UiWorkflowTasks,
@@ -32,7 +31,7 @@ const ENTITY = 'application';
   selector: 'page-workflow-components',
   imports: [
     FormsModule, RouterLink, UiButton, UiSegmented, UiSelect, UiTab, UiTabs,
-    UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPanel, UiWorkflowPermissions, UiWorkflowRecordPanel,
+    UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPanel, UiWorkflowPermissions,
     UiWorkflowRun, UiWorkflowStateBadge, UiWorkflowTasks, UiWorkflowTasksDrawer,
     DocDemo, DocPage, DocSection,
   ],
@@ -44,7 +43,7 @@ const ENTITY = 'application';
       <div class="where" aria-labelledby="where-title">
         <h2 id="where-title" class="where-title">Which component goes where</h2>
         <dl class="where-list">
-          <div><dt>A record's page</dt><dd><a routerLink="." fragment="panel">Workflow panel</a> or <a routerLink="." fragment="record-panel">record panel</a></dd></div>
+          <div><dt>A record's page</dt><dd><a routerLink="." fragment="panel">Workflow panel</a></dd></div>
           <div><dt>The app's header</dt><dd><a routerLink="." fragment="tasks-drawer">My tasks drawer</a></dd></div>
           <div><dt>An inbox page</dt><dd><a routerLink="." fragment="tasks">Task inbox</a></dd></div>
           <div><dt>Admin pages</dt><dd><a routerLink="." fragment="run">Run</a> and <a routerLink="." fragment="audit">audit log</a></dd></div>
@@ -67,10 +66,10 @@ const ENTITY = 'application';
       }
 
       <doc-section name="Workflow panel" anchor="panel" selector="ui-workflow-panel" [api]="panelApi" [outputs]="panelOutputs"
-        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, or a drawer that waits on the screen's edge as a rail of dots when the page is busy.">
+        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, a compact one for a side column or details card (a badge, a strip of states, the actions and one history), or a drawer that waits on the screen's edge as a rail of dots when the page is busy. A record type with no lifecycle still shows its manual workflows, open tasks and history.">
         @if (ready(); as id) {
           <ui-segmented size="sm" label="Layout" [options]="layouts" [value]="layout()" (valueChange)="layout.set($any($event))" />
-          @if (layout() === 'vertical' || layout() === 'horizontal') {
+          @if (layout() === 'vertical' || layout() === 'horizontal' || layout() === 'compact') {
             <div class="frame" [attr.data-layout]="layout()">
               <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onChanged()" />
             </div>
@@ -82,16 +81,6 @@ const ENTITY = 'application';
           }
         }
         <doc-demo [code]="panelCode"></doc-demo>
-      </doc-section>
-
-      <doc-section name="Record panel" anchor="record-panel" selector="ui-workflow-record-panel" [api]="recordPanelApi" [outputs]="recordPanelOutputs"
-        summary="A compact card for a record's page: the state as a badge, the moves this person may make, open tasks they can decide, manual workflow buttons and the history. Use it in a side column or a details card, where a full stepper would take too much room.">
-        @if (ready(); as id) {
-          <div class="frame narrow">
-            <ui-workflow-record-panel [entity]="entity" [entityId]="id" [api]="api()" (changed)="onChanged()" />
-          </div>
-        }
-        <doc-demo [code]="recordPanelCode"></doc-demo>
       </doc-section>
 
       <doc-section name="My tasks drawer" anchor="tasks-drawer" selector="ui-workflow-tasks-drawer" [api]="drawerApi" [outputs]="drawerOutputs"
@@ -220,7 +209,7 @@ const ENTITY = 'application';
     .pick.wide { display: block; max-width: 520px; }
     .err { margin: 0; font-size: 13px; color: var(--ui-color-danger); }
     .frame { min-width: 0; padding: var(--ui-space-4); margin: var(--ui-space-3) 0 var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
-    .frame[data-layout="vertical"], .frame.narrow { max-width: 460px; }
+    .frame[data-layout="vertical"], .frame[data-layout="compact"] { max-width: 460px; }
     .frame.scroll { max-height: 560px; overflow: auto; }
     .hint p { margin: 0; font-size: 13.5px; color: var(--ui-color-text-secondary); max-width: 70ch; }
     .offline { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; margin: 0 0 var(--ui-space-4); }
@@ -266,6 +255,7 @@ export class WorkflowComponentsPage {
   protected readonly layouts: UiSegmentedOption[] = [
     { value: 'vertical', label: 'Vertical' },
     { value: 'horizontal', label: 'Horizontal' },
+    { value: 'compact', label: 'Compact' },
     { value: 'side-drawer', label: 'Side drawer' },
     { value: 'bottom-drawer', label: 'Bottom drawer' },
   ];
@@ -384,15 +374,14 @@ export class WorkflowComponentsPage {
 <!-- states left to right, details below -->
 <ui-workflow-panel entity="application" [entityId]="app.id" layout="horizontal" />
 
+<!-- a side column or details card: badge, states, actions, one history -->
+<ui-workflow-panel entity="application" [entityId]="app.id" layout="compact" title="" />
+
 <!-- a rail of dots on the right edge; hover (desktop) or tap opens the drawer -->
 <ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" side="right" />
 
 <!-- a rail of dots along the bottom, opened from code too -->
 <ui-workflow-panel entity="application" [entityId]="app.id" layout="bottom-drawer" [(open)]="panelOpen" />`;
-
-  protected readonly recordPanelCode = `<aside class="side">
-  <ui-workflow-record-panel entity="application" [entityId]="app.id" (changed)="reloadApp()" />
-</aside>`;
 
   protected readonly drawerCode = `<header class="app-header">
   <a routerLink="/">Scholarship office</a>
@@ -468,7 +457,7 @@ export class WorkflowSettingsPage {
   protected readonly panelApi: ApiRow[] = [
     { name: 'entity', type: 'string', default: 'required', desc: 'The record type key, as registered.' },
     { name: 'entityId', type: 'string', default: 'required', desc: 'The record id.' },
-    { name: 'layout', type: "'vertical' | 'horizontal' | 'side-drawer' | 'bottom-drawer'", default: "'vertical'", desc: 'How it sits on the page.' },
+    { name: 'layout', type: "'vertical' | 'horizontal' | 'compact' | 'side-drawer' | 'bottom-drawer'", default: "'vertical'", desc: 'How it sits on the page; compact suits a side column or details card.' },
     { name: 'side', type: "'right' | 'left'", default: "'right'", desc: 'Which edge the side drawer opens from.' },
     { name: 'title', type: 'string', default: "'Workflow'", desc: 'The heading (and the drawer title).' },
     { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show what happened in each state.' },
@@ -477,14 +466,6 @@ export class WorkflowSettingsPage {
     WorkflowComponentsPage.apiRow,
   ];
   protected readonly panelOutputs: ApiRow[] = [{ name: '(changed)', type: 'UiWfRecord', desc: 'After the record moved through the panel, so the page can reload its own data.' }];
-
-  protected readonly recordPanelApi: ApiRow[] = [
-    { name: 'entity', type: 'string', default: 'required', desc: 'The record type key, as registered.' },
-    { name: 'entityId', type: 'string', default: 'required', desc: 'The record id.' },
-    { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show the history of what happened.' },
-    WorkflowComponentsPage.apiRow,
-  ];
-  protected readonly recordPanelOutputs: ApiRow[] = [{ name: '(changed)', type: 'UiWfRecord', desc: 'After the record changed through the panel.' }];
 
   protected readonly drawerApi: ApiRow[] = [
     { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open. Two-way, so it can be opened from code.' },

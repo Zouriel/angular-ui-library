@@ -4,7 +4,7 @@ import { UiDrawer } from '@zouriel/ui/dialog';
 import { UiStepBody, UiStepper, type UiStep } from '@zouriel/ui/navigation';
 import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
 import { WfRecordActions, UiWorkflowStateBadge } from './runtime';
-import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText } from './runtime-shared';
+import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfStatePassed } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
 /**
@@ -14,7 +14,7 @@ import { WF_SHARED_STYLES } from './styles';
  * - `side-drawer`: a column of dots on the screen's edge that opens the vertical panel in a drawer;
  * - `bottom-drawer`: a row of dots along the bottom that opens the horizontal panel in a drawer.
  */
-export type UiWorkflowPanelLayout = 'vertical' | 'horizontal' | 'side-drawer' | 'bottom-drawer';
+export type UiWorkflowPanelLayout = 'vertical' | 'horizontal' | 'compact' | 'side-drawer' | 'bottom-drawer';
 
 /** One state on the record's path, with what happened while it was there. */
 export interface UiWfPanelStep {
@@ -57,8 +57,12 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
  * stepper (green for states it has been through, dark for those not reached), what happened in each,
  * and in the current state the moves this person may make, open tasks and manual workflows.
  *
- * Choose where it sits with `layout`. The drawer layouts collapse to a rail of dots on the screen's
- * edge: hovering it opens the drawer on a desktop (moving away closes it), tapping it does on touch.
+ * Choose where it sits with `layout`: `vertical` (a stepper with what happened in each state),
+ * `horizontal` (states left to right, details below), `compact` (a badge, a strip of states, the
+ * actions and a flat history, for a narrow column), or a drawer. The drawer layouts collapse to a rail
+ * of dots on the screen's edge: hovering it opens the drawer on a desktop (moving away closes it),
+ * tapping it does on touch. A record type with no lifecycle still shows its manual workflows, open
+ * tasks and history.
  *
  * ```html
  * <ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" (changed)="reload()" />
@@ -71,8 +75,35 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
   template: `
     <ng-template #body let-mode>
       @if (record(); as r) {
-        @if (!r.state) {
-          <p class="wf-hint">No lifecycle for this record type.</p>
+        @if (!r.state || mode === 'compact') {
+          <!-- Compact, or no lifecycle: the state as a badge and a strip, the actions, and one flat history. -->
+          <div class="state">
+            @if (r.state) {
+              <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
+              <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
+              @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
+            } @else {
+              <span class="wf-hint">No lifecycle for this record type.</span>
+            }
+          </div>
+          @if (r.states.length > 1) {
+            <ol class="track" aria-label="Lifecycle">
+              @for (s of r.states; track s.key) {
+                <li [class.here]="s.key === r.state" [class.done]="passed(r, s.key)" [attr.data-tone]="s.tone ?? 'neutral'"><span>{{ s.label }}</span></li>
+              }
+            </ol>
+          }
+          <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="r.state ? emptyText() : ''" />
+          @if (showHistory()) {
+            <section>
+              <h3>History</h3>
+              <ol class="log">
+                @for (h of newestFirst(); track h.seq) {
+                  <li><span class="hw">{{ describe(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
+                } @empty { <li class="wf-hint">Nothing yet.</li> }
+              </ol>
+            </section>
+          }
         } @else {
           <div class="state">
             <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
@@ -128,6 +159,10 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
         <h2 class="title">{{ title() }}</h2>
         <ng-container *ngTemplateOutlet="body; context: { $implicit: 'horizontal' }" />
       }
+      @case ('compact') {
+        @if (title()) { <h2 class="title">{{ title() }}</h2> }
+        <ng-container *ngTemplateOutlet="body; context: { $implicit: 'compact' }" />
+      }
       @default {
         <button type="button" class="rail" [attr.data-edge]="edge()" [attr.aria-expanded]="open()" [attr.aria-label]="railLabel()"
           (pointerenter)="hoverIn($event)" (pointerleave)="hoverOut($event)" (click)="toggle()">
@@ -145,7 +180,15 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: block; font-size: 13.5px; color: var(--ui-color-text); }
-    :host([data-layout="vertical"]), :host([data-layout="horizontal"]) { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+    :host([data-layout="vertical"]), :host([data-layout="horizontal"]), :host([data-layout="compact"]) { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+    .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 var(--ui-space-2); padding: 0; list-style: none; }
+    .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
+    .track li.done { color: var(--ui-color-text-secondary); }
+    .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
+    /* Compact: the panel's own gap spaces the blocks, without the stepper layouts' margins on top. */
+    :host([data-layout="compact"]) { gap: var(--ui-space-2); }
+    :host([data-layout="compact"]) .state, :host([data-layout="compact"]) .track, :host([data-layout="compact"]) .now { margin: 0; }
+    :host([data-layout="compact"]) h3 { margin-top: var(--ui-space-2); }
     .title { margin: 0; font-size: var(--ui-font-size-md); font-weight: 600; }
     .state { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; margin-bottom: var(--ui-space-3); }
     .since { font-size: 12px; color: var(--ui-color-text-muted); }
@@ -200,8 +243,14 @@ export class UiWorkflowPanel extends WfWithApi {
     const r = this.record();
     return r ? wfPanelPath(r, this.history()) : { steps: [], active: 0 };
   });
-  protected readonly stepLabels = computed<UiStep[]>(() => this.path().steps.map((s) => ({ label: s.label })));
-  protected readonly recent = computed(() => [...this.history()].sort((a, b) => b.seq - a.seq).slice(0, 8));
+  /** The states as steps; a record type with no lifecycle still gets one dot, so a drawer's rail can open. */
+  protected readonly stepLabels = computed<UiStep[]>(() => {
+    const steps = this.path().steps.map((s) => ({ label: s.label }));
+    return steps.length || !this.record() ? steps : [{ label: this.title() || 'Workflow' }];
+  });
+  protected readonly newestFirst = computed(() => [...this.history()].sort((a, b) => b.seq - a.seq));
+  protected readonly recent = computed(() => this.newestFirst().slice(0, 8));
+  protected readonly passed = wfStatePassed;
   protected readonly railLabel = computed(() => {
     const { steps, active } = this.path();
     const now = steps[active]?.label;

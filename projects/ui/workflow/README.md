@@ -1,7 +1,7 @@
 # `@zouriel/ui/workflow`
 
 A builder where admins design workflows without code, and the components that run
-them in your app: a record panel, a task inbox, a run view, an audit log and a
+them in your app: a workflow panel for each record, a task inbox, a run view, an audit log and a
 settings screen. Workflows are JSON in the Zouriel Workflows format, run by an
 engine on your server (the .NET engine first; Laravel and Go engines follow the
 same spec and REST API).
@@ -9,8 +9,7 @@ same spec and REST API).
 ```ts
 import {
   UiWorkflowBuilder,        // <ui-workflow-builder>: where admins design workflows
-  UiWorkflowRecordPanel,    // <ui-workflow-record-panel>: a record's state, moves, tasks and history
-  UiWorkflowPanel,          // <ui-workflow-panel>: a record's workflow as a stepper, inline or in a drawer
+  UiWorkflowPanel,          // <ui-workflow-panel>: a record's state, moves, tasks and history: stepper, compact or drawer
   UiWorkflowTasks,          // <ui-workflow-tasks>: the signed-in person's approvals and tasks
   UiWorkflowTasksDrawer,    // <ui-workflow-tasks-drawer>: a "My tasks" button with a count, opening the inbox
   UiWorkflowRun,            // <ui-workflow-run>: one run over its workflow, with retry/skip/cancel
@@ -40,7 +39,7 @@ import {
   A lifecycle can also let chosen people **reset** a record: its open tasks and runs stop, it goes
   back to the starting state (or another you pick), and the reset's own steps run, which can change
   the record, related records and each item of a list. Set it up under "Starting over" in the
-  lifecycle settings; the record panel and the workflow panel then show the button to those allowed.
+  lifecycle settings; the workflow panel then shows the button to those allowed.
   "Offer it" limits it to some states: from a state you pick onwards (that state and every state
   after it, final states included), with a checklist to adjust.
   The reset dialog lists what the workflow did since the record last started over (fields it
@@ -130,11 +129,10 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 ## Running workflows in your app
 
 ```html
-<!-- on a record's page -->
-<ui-workflow-record-panel entity="application" [entityId]="app.id" (changed)="reloadApp()" />
-
-<!-- the same, as a stepper beside the record, or in a drawer on the screen's edge -->
-<ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" (changed)="reloadApp()" />
+<!-- on a record's page: a stepper, compact in a side column, or a drawer on the screen's edge -->
+<ui-workflow-panel entity="application" [entityId]="app.id" (changed)="reloadApp()" />
+<ui-workflow-panel entity="application" [entityId]="app.id" layout="compact" title="" />
+<ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" />
 
 <!-- an inbox -->
 <ui-workflow-tasks scope="mine" (decided)="refresh()" />
@@ -149,11 +147,13 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 <ui-workflow-permissions (saved)="reload()" />
 ```
 
-- **Record panel**: the record's state, the moves this person may make (with confirmation or
-  form), open tasks they can decide, buttons for manual workflows, and the history.
-- **Workflow panel**: the record's states as a stepper (where it has been, where it is), what
-  happened in each, and in the current state the moves, tasks and manual workflows. `layout` is
-  `vertical`, `horizontal`, `side-drawer` or `bottom-drawer`; the drawers collapse to a rail of dots.
+- **Workflow panel**: the record's states (where it has been, where it is), what happened, and in
+  the current state the moves this person may make (with confirmation, form or remarks), open tasks
+  they can decide and manual workflows. `layout` is `vertical` (a stepper with what happened in each
+  state), `horizontal`, `compact` (a badge, a strip of states, the actions and one history, for a side
+  column or details card; `title=""` hides its heading), `side-drawer` or `bottom-drawer` (a rail of
+  dots on the screen's edge). A record type with no lifecycle still shows its manual workflows, open
+  tasks and history.
 - **Tasks**: approvals and tasks, due first and overdue marked; deciding opens the task's form.
 - **Tasks drawer**: a button with the number of open tasks (red when any is overdue) that opens the
   inbox in a drawer. The count refreshes every `refreshSeconds` while the page is visible, and when

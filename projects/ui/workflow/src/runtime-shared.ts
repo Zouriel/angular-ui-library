@@ -2,7 +2,7 @@ import { Directive, computed, input } from '@angular/core';
 import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfRecord, type UiWfTask, type UiWorkflowApi } from './api';
 
 /**
- * Helpers shared by the runtime views (record panel, workflow panel, tasks, runs, audit). Internal:
+ * Helpers shared by the runtime views (workflow panel, tasks, runs, audit). Internal:
  * not exported from the entry point.
  */
 
@@ -67,7 +67,7 @@ export function wfTaskResult(t: Pick<UiWfTask, 'status' | 'outcome' | 'outcomes'
   return wfOutcomeLabel(t.outcome, t.outcomes);
 }
 
-/** A run's status as people read it; the run view, the runs list and the record panel all use it. */
+/** A run's status as people read it; the run view, the runs list and the workflow panel all use it. */
 export function wfRunStatusLabel(s: string | null | undefined): string {
   if (!s) return '';
   return ({ queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' } as Record<string, string>)[s] ?? wfHumanize(s);

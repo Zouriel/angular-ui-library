@@ -113,6 +113,54 @@ describe('UiWorkflowPanel', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
 
+  it('compact: the state as a badge and a strip, the moves, and one flat history newest first (what the record panel was)', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.layout.set('compact');
+    fixture.componentInstance.api = fakeApi(record('Submitted', { transitions: [{ key: 'approve', label: 'Approve', to: 'Approved', toLabel: 'Approved', tone: 'success', confirm: null, form: null }] }),
+      [entry('created', 'Draft'), entry('transitioned', 'Submitted', 'Draft', { label: 'Submit' })]);
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('ui-stepper')).toBeNull();
+    expect([...el.querySelectorAll('.track li')].map((l) => l.textContent?.trim())).toEqual(['Draft', 'Submitted', 'Under review', 'Approved', 'Rejected']);
+    expect(el.querySelector('.track li.here')?.textContent?.trim()).toBe('Submitted');
+    expect(el.querySelector('.track li.done')?.textContent?.trim()).toBe('Draft');
+    expect([...el.querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toContain('Approve');
+    expect([...el.querySelectorAll('.log li .hw')].map((h) => h.textContent?.trim())).toEqual(['Submit: Draft → Submitted', 'Started in Draft']);
+  });
+
+  it('a record type with no lifecycle still shows its manual workflows and history, in every layout', async () => {
+    for (const layout of ['vertical', 'horizontal', 'compact'] as const) {
+      const fixture = TestBed.createComponent(Host);
+      fixture.componentInstance.layout.set(layout);
+      fixture.componentInstance.api = fakeApi(
+        { ...record('Draft'), lifecycle: null, lifecycleTitle: null, state: null, stateLabel: null, status: null, stateEnteredAt: null, states: [], manual: [{ key: 'remind', label: 'Send a reminder', form: null }] },
+        [entry('started', null, null, {}, 'instance')]);
+      fixture.detectChanges();
+      await new Promise((r) => setTimeout(r));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('No lifecycle for this record type.');
+      expect([...el.querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toContain('Send a reminder');
+      expect(el.querySelectorAll('.log li').length).toBe(1);
+    }
+  });
+
+  it('a drawer still opens for a record with no lifecycle: its rail keeps one dot', async () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.layout.set('side-drawer');
+    fixture.componentInstance.api = fakeApi({ ...record('Draft'), lifecycle: null, state: null, stateLabel: null, status: null, states: [] }, []);
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.rail ui-stepper li').length).toBe(1);
+  });
+
   it('vertical: every state with its history, the current one marked', async () => {
     const { el } = await render('vertical');
     const steps = [...el.querySelectorAll('ui-stepper li.step')];

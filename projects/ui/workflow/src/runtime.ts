@@ -69,7 +69,7 @@ export class UiWorkflowStateBadge {
   readonly tone = input<string | null | undefined>('neutral');
 }
 
-// ── Task decision (shared by the inbox and the record panel) ──────────────
+// ── Task decision (shared by the inbox and the workflow panel) ──────────────
 
 /** The decide dialog: instructions, the task's form, a comment, and its buttons. */
 @Component({
@@ -235,8 +235,8 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
 
 /**
  * The moves a person may make on a record now, its manual workflows and open tasks, with the
- * dialogs that go with them (confirmation, transition form, decision). Shared by the record panel
- * and the workflow panel; internal, but exported so both entry points can use it.
+ * dialogs that go with them (confirmation, transition form, decision). Used by the workflow panel;
+ * internal, but exported so the panel's entry point can use it.
  */
 @Component({
   selector: 'ui-wf-record-actions',
@@ -332,6 +332,8 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
     :host(.idle) { display: none; }
+    /* The dialogs open on a fixed layer; their empty host elements (and the decide dialog's own modal) must not add gaps to this column. */
+    ui-modal, ui-wf-decide { position: absolute; }
     .actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
     .reset { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ui-space-2); padding-top: var(--ui-space-2);
       border-top: 1px dashed var(--ui-color-border); }
@@ -366,7 +368,7 @@ export class WfRecordActions extends WfWithApi {
   readonly record = input.required<UiWfRecord>();
   readonly entity = input.required<string>();
   readonly entityId = input.required<string>();
-  /** List the record's open tasks (the record panel does; the workflow panel shows them per state too). */
+  /** List the record's open tasks. */
   readonly showTasks = input(true);
   /** Said when this person has nothing to do here (no moves, manual workflows or tasks); empty says nothing. */
   readonly emptyText = input('');
@@ -584,129 +586,6 @@ export class WfRecordActions extends WfWithApi {
   protected afterDecide(): void {
     this.openTask.set(null);
     this.reload.emit();
-  }
-}
-
-/**
- * `ui-workflow-record-panel` — drop onto a record's page: its lifecycle state, the moves the
- * signed-in person may make (with their forms), open tasks, buttons for manual workflows, and the
- * history of what happened.
- */
-@Component({
-  selector: 'ui-workflow-record-panel',
-  imports: [UiWorkflowStateBadge, WfRecordActions],
-  template: `
-    @if (record(); as r) {
-      <div class="state">
-        @if (r.state) {
-          <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
-          <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
-          @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
-        } @else {
-          <span class="wf-hint">No lifecycle for this record type.</span>
-        }
-      </div>
-      @if (r.states.length > 1) {
-        <ol class="track" aria-label="Lifecycle">
-          @for (s of r.states; track s.key) {
-            <li [class.here]="s.key === r.state" [class.done]="passed(r, s.key)" [attr.data-tone]="s.tone ?? 'neutral'"><span>{{ s.label }}</span></li>
-          }
-        </ol>
-      }
-      <ui-wf-record-actions [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" />
-      @if (showHistory()) {
-        <section>
-          <h3>History</h3>
-          <ol class="history">
-            @for (h of history(); track h.seq) {
-              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ actor(h) }} · {{ ago(h.at) }}</span></li>
-            } @empty { <li class="wf-hint">Nothing yet.</li> }
-          </ol>
-        </section>
-      }
-    } @else if (error()) {
-      <p class="wf-error" role="alert">{{ error() }}</p>
-    } @else {
-      <p class="wf-hint">Loading…</p>
-    }
-  `,
-  styles: [WF_SHARED_STYLES, `
-    :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
-    .state { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
-    .since { font-size: 12px; color: var(--ui-color-text-muted); }
-    .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
-    .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
-    .track li.done { color: var(--ui-color-text-secondary); }
-    .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
-    h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
-    .history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .history li { display: flex; flex-direction: column; padding: 4px 0 4px 12px; border-left: 2px solid var(--ui-color-border); }
-    .hw { font-size: 13px; }
-    .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
-  `],
-})
-export class UiWorkflowRecordPanel extends WfWithApi {
-  readonly entity = input.required<string>();
-  readonly entityId = input.required<string>();
-  readonly showHistory = input(true);
-  /** Fired after the record changed through the panel (so the page can reload its own data). */
-  readonly changed = output<UiWfRecord>();
-  protected readonly record = signal<UiWfRecord | null>(null);
-  protected readonly history = signal<UiWfAuditEntry[]>([]);
-  protected readonly error = signal('');
-  /** Bumped by every load and change, so a slower older answer never replaces a newer one. */
-  private seq = 0;
-
-  constructor() {
-    super();
-    effect(() => {
-      const api = this.client();
-      const e = this.entity(), id = this.entityId();
-      if (api) untracked(() => void this.load(api, e, id));
-    });
-  }
-
-  /** Reloads the panel (e.g. after the page changed the record itself). */
-  async reload(): Promise<void> {
-    const api = this.client();
-    if (api) await this.load(api, this.entity(), this.entityId());
-  }
-
-  private async load(api: UiWorkflowApi, entity: string, id: string): Promise<void> {
-    const n = ++this.seq;
-    try {
-      const record = await api.record(entity, id);
-      if (n !== this.seq) return;
-      this.record.set(record);
-      this.error.set('');
-      await this.loadHistory(api, n);
-    } catch (e) {
-      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
-    }
-  }
-
-  private async loadHistory(api: UiWorkflowApi, n: number): Promise<void> {
-    if (!this.showHistory()) return;
-    const history = await api.recordHistory(this.entity(), this.entityId(), 50).catch(() => null);
-    if (history && n === this.seq) this.history.set(history);
-  }
-
-  protected readonly passed = wfStatePassed;
-
-  protected actor(h: UiWfAuditEntry): string {
-    return wfActorLabel(h, (k) => this.record()?.instances.find((i) => i.definitionKey === k)?.title);
-  }
-
-  protected async moved(r: UiWfRecord): Promise<void> {
-    const n = ++this.seq;
-    this.record.set(r);
-    this.changed.emit(r);
-    const api = this.client();
-    if (api) await this.loadHistory(api, n);
-  }
-
-  protected describeHistory(h: UiWfAuditEntry): string {
-    return wfDescribeHistory(h, (k) => this.record()?.states.find((s) => s.key === k)?.label ?? String(k ?? ''));
   }
 }
 
