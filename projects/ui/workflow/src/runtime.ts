@@ -97,7 +97,9 @@ export class UiWorkflowStateBadge {
   selector: 'ui-wf-decide',
   imports: [FormsModule, UiButton, UiModal, UiTextarea, UiFormRenderer, UiCombobox],
   template: `
-    <ui-modal [open]="!!task()" (openChange)="!$event && closed.emit()" [title]="task()?.title ?? ''" size="md">
+    <!-- While a decision (or hand-over) is on its way, Close, Escape, the backdrop and the header's cross all wait. -->
+    <ui-modal [open]="!!task()" (openChange)="openChange($event)" [title]="task()?.title ?? ''" size="md"
+      [closeOnBackdrop]="!busy()" [closeOnEscape]="!busy()">
       @if (task(); as t) {
         <div class="body">
           @if (t.entityTitle) { <p class="rec">{{ t.entityTitle }}</p> }
@@ -124,8 +126,8 @@ export class UiWorkflowStateBadge {
       }
       @if (task(); as t) {
         <div modal-footer class="foot">
-          <ui-button variant="ghost" (click)="closed.emit()">Close</ui-button>
-          <div class="wf-row">
+          <ui-button variant="ghost" (click)="close()" [disabled]="busy()">Close</ui-button>
+          <div class="wf-row outcomes">
             @for (o of t.outcomes; track o.key) {
               <ui-button [variant]="o.tone === 'danger' ? 'destructive' : o.tone === 'success' || o.tone === 'primary' ? 'primary' : 'outline'" (click)="decide(o.key)" [disabled]="busy() || !t.canDecide">{{ o.label }}</ui-button>
             }
@@ -145,7 +147,9 @@ export class UiWorkflowStateBadge {
     .delegate summary { font-size: 12.5px; color: var(--ui-color-primary); cursor: pointer; margin-bottom: 6px; }
     .people { flex: 1; min-width: 0; }
     .count { align-self: flex-end; margin: 0; }
+    /* The whole footer's width: Close at the left, the outcomes at the right (wrapping under it when narrow). */
     .foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--ui-space-2); flex-wrap: wrap; }
+    .foot .outcomes { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
   `],
 })
 export class WfDecideDialog {
@@ -154,6 +158,7 @@ export class WfDecideDialog {
   readonly closed = output<void>();
   readonly decided = output<UiWfTask>();
   private readonly form = viewChild(UiFormRenderer);
+  private readonly modal = viewChild(UiModal);
   protected readonly comment = signal('');
   /** Set when a decision that needs remarks was made without them. */
   protected readonly commentMissing = signal(false);
@@ -180,6 +185,21 @@ export class WfDecideDialog {
 
   protected outcomeLabel(t: UiWfTask, key: string): string {
     return wfOutcomeLabel(key, t.outcomes);
+  }
+
+  /** Close: not while a decision is on its way (its answer would land in a closed dialog). */
+  protected close(): void {
+    if (!this.busy()) this.closed.emit();
+  }
+
+  /**
+   * The modal asked to close (its cross, Escape or the backdrop). While busy it is kept open: the
+   * modal has already set itself closed, so it is set open again before anything renders.
+   */
+  protected openChange(open: boolean): void {
+    if (open) return;
+    if (this.busy()) { this.modal()?.open.set(true); return; }
+    this.closed.emit();
   }
 
   /** Looks people up as the name is typed (debounced; a slower older answer never replaces a newer one). */
@@ -1144,7 +1164,8 @@ function auditRows(text: string | null): AuditRow[] {
 }
 
 /**
- * `ui-workflow-audit` — the tamper-evident audit log: filter by record, run, kind or person, see
+ * `ui-workflow-audit` — the tamper-evident audit log: filter by kind or record id (or show one
+ * record's or one run's entries with the `entity`/`entityId` and `instanceId` inputs), see
  * before/after values, export, and check the hash chain.
  */
 @Component({

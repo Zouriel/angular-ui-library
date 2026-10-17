@@ -124,6 +124,41 @@ describe('WfDecideDialog', () => {
     expect(calls).toBe(1);
   });
 
+  it('Close, Escape, the backdrop and the cross wait while a decision is on its way', async () => {
+    let finish!: () => void;
+    const f = await open(task(), { decide: () => new Promise<UiWfTask>((r) => (finish = () => r(task()))) });
+    let closed = 0;
+    f.componentInstance.closed.subscribe(() => closed++);
+    layerButton('Approve').click();
+    f.detectChanges();
+    expect(layerButton('Close').disabled).toBe(true);
+    layerButton('Close').click();
+    (document.querySelector('.ui-layer .panel-wrap') as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    (document.querySelector('.ui-layer .backdrop') as HTMLElement).click();
+    (document.querySelector('.ui-layer .hd .x') as HTMLButtonElement).click();
+    await settle(f);
+    expect(closed).toBe(0);
+    expect(document.querySelector('.ui-layer [role="dialog"]')).not.toBeNull();
+    finish();
+    await settle(f);
+    // Once it has landed, closing works again.
+    (document.querySelector('.ui-layer .hd .x') as HTMLButtonElement).click();
+    await settle(f);
+    expect(closed).toBe(1);
+  });
+
+  it('its footer spans the dialog: Close at the left, the outcomes at the right, wrapping when narrow', async () => {
+    await open(task(), { decide: async () => task() });
+    const foot = document.querySelector('.ui-layer footer.ft div[modal-footer].foot') as HTMLElement;
+    expect(foot).not.toBeNull();
+    expect(foot.firstElementChild?.textContent?.trim()).toBe('Close');
+    expect(foot.lastElementChild?.classList.contains('outcomes')).toBe(true);
+    const css = (WfDecideDialog as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('\n');
+    expect(css).toMatch(/\.foot\S*\s*\{[^}]*width:\s*100%[^}]*\}/);
+    expect(css).toMatch(/\.foot\S*\s*\{[^}]*justify-content:\s*space-between/);
+    expect(css).toMatch(/\.foot\S*\s+\.outcomes\S*\s*\{[^}]*flex-wrap:\s*wrap[^}]*margin-left:\s*auto/);
+  });
+
   it('hands the task to someone found in the directory, leaving out people already on it', async () => {
     const handed: unknown[][] = [];
     const f = await open(task({ allowDelegation: true }), {

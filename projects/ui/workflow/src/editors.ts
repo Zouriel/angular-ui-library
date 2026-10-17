@@ -352,7 +352,8 @@ export class WfAssigneesEditor {
     const api = this.api();
     const n = ++this.searchSeq;
     if (!api || !q.trim()) { this.results.set([]); return; }
-    api.searchUsers(q.trim(), 10).then((r) => { if (n === this.searchSeq) this.results.set(r); }).catch(() => this.results.set([]));
+    // Only the newest search's answer counts, a failure included: an older one failing must not clear newer results.
+    api.searchUsers(q.trim(), 10).then((r) => { if (n === this.searchSeq) this.results.set(r); }, () => { if (n === this.searchSeq) this.results.set([]); });
   }
 
   protected pickUser(u: UiWfUser): void {
