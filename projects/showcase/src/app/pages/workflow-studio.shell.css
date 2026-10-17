@@ -1,0 +1,20 @@
+:host { display: block; }
+    .studio { --w: min(1600px, calc(100vw - 340px)); width: var(--w); margin-left: min(0px, calc((100% - var(--w)) / 2));
+  display: flex; flex-direction: column; height: calc(100dvh - 72px); min-height: 640px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-bg); }
+    .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border); }
+    .brand { font-size: 14px; }
+    .sub { font-size: 12px; color: var(--ui-color-text-muted); }
+    .grow { flex: 1; }
+    .who { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ui-color-text-secondary); }
+    .sel { height: 28px; padding: 0 8px; border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: 13px; }
+    .clock { display: flex; align-items: center; gap: 2px; }
+    .now { font-size: 12px; color: var(--ui-color-text-secondary); margin-right: 4px; font-variant-numeric: tabular-nums; }
+    .offline { padding: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+    .offline pre { margin: 0; padding: 10px; background: var(--ui-color-surface); border-radius: var(--ui-radius); font-size: 12px; }
+    .main { flex: 1; min-height: 0; display: flex; }
+    .tabs { flex: none; width: 168px; display: flex; flex-direction: column; gap: 2px; padding: 8px; background: var(--ui-color-surface); border-right: 1px solid var(--ui-color-border); }
+    .tabs button { display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 10px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+    .tabs button:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .tabs button.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); color: var(--ui-color-text); font-weight: 600; }
+    .count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font-size: 11px; display: grid; place-items: center; }
+    .content { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }

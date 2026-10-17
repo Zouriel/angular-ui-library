@@ -15,6 +15,8 @@ export const routes: Routes = [
   { path: 'window', loadComponent: () => import('./pages/window.page').then((m) => m.WindowPage), title: 'Window system · @zouriel/ui' },
   { path: 'design-tools', loadComponent: () => import('./pages/design-tools.page').then((m) => m.DesignToolsPage), title: 'Design tools · @zouriel/ui' },
   { path: 'form-builder', loadComponent: () => import('./pages/form-builder.page').then((m) => m.FormBuilderPage), title: 'Form builder · @zouriel/ui' },
+  { path: 'workflow-builder', loadComponent: () => import('./pages/workflow-builder.page').then((m) => m.WorkflowBuilderPage), title: 'Workflow builder · @zouriel/ui' },
+  { path: 'workflow-studio', loadComponent: () => import('./pages/workflow-studio.page').then((m) => m.WorkflowStudioPage), title: 'Workflow studio (playground) · @zouriel/ui' },
   { path: 'form-studio', loadComponent: () => import('./pages/form-studio.page').then((m) => m.FormStudioPage), title: 'Form studio (playground) · @zouriel/ui' },
   { path: 'file-viewer', loadComponent: () => import('./pages/file-viewer.page').then((m) => m.FileViewerPage), title: 'File viewer · @zouriel/ui' },
   { path: 'fx', loadComponent: () => import('./pages/fx.page').then((m) => m.FxPage), title: 'Motion & FX · @zouriel/ui' },
@@ -56,6 +58,8 @@ export const NAV = [
       { label: 'Design tools', value: 'design-tools' },
       { label: 'Form builder', value: 'form-builder' },
       { label: 'Form studio (playground)', value: 'form-studio' },
+      { label: 'Workflow builder', value: 'workflow-builder' },
+      { label: 'Workflow studio (playground)', value: 'workflow-studio' },
     ],
   },
   {
