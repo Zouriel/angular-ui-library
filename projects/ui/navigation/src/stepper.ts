@@ -109,7 +109,7 @@ export class UiStepBody {
     :host([data-variant="dots"]) .bar { flex: none; width: 8px; min-width: 8px; margin: 0 2px; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step { padding-bottom: 12px; align-items: center; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step:last-child { padding-bottom: 0; }
-    :host([data-variant="dots"][data-orientation="vertical"]) .bar { left: 4.5px; top: 12px; bottom: 2px; width: 1px; }
+    :host([data-variant="dots"][data-orientation="vertical"]) .bar { left: 4.5px; top: 12px; bottom: 2px; width: 1px; min-width: 0; margin: 0; }
 
     /* Narrow screens: keep only the active step labelled so all markers fit without clipping. */
     @media (max-width: 560px) {

@@ -218,6 +218,8 @@ export class WfDecideDialog {
 @Component({
   selector: 'ui-wf-record-actions',
   imports: [UiButton, UiModal, UiFormRenderer, WfDecideDialog],
+  // Nothing this person can do here: take no room (the dialogs only open from these buttons).
+  host: { '[class.idle]': 'idle()' },
   template: `
     @let r = record();
     @if (r.transitions.length || r.manual.length) {
@@ -265,6 +267,7 @@ export class WfDecideDialog {
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
+    :host(.idle) { display: none; }
     .actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
     h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .tasks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
@@ -299,6 +302,10 @@ export class WfRecordActions extends WfWithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
+  protected readonly idle = computed(() => {
+    const r = this.record();
+    return !r.transitions.length && !r.manual.length && !(this.showTasks() && r.tasks.length) && !this.error() && !this.pending() && !this.openTask();
+  });
 
   protected start(t: UiWfTransitionOption): void {
     if (this.busy()) return;
