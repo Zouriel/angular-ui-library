@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
@@ -44,11 +44,11 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings
         <span class="sub">A scholarship office on the real engine — your own sandbox</span>
         <span class="grow"></span>
         <label class="who">You are
-          <select class="sel" [ngModel]="pg.user()" (ngModelChange)="guard(() => switchUser($event))" aria-label="Act as">
+          <select #who class="sel" [ngModel]="pg.user()" (ngModelChange)="guard(() => switchUser($event), resetWho)" aria-label="Act as">
             @for (u of pg.users(); track u.id) { <option [value]="u.id">{{ u.name }} · {{ u.title }}</option> }
           </select>
         </label>
-        <div class="clock" title="Move the sandbox clock to see waits, reminders and deadlines happen">
+        <div class="clock" title="The sandbox clock (your local time). Move it to see waits, reminders and deadlines happen.">
           <span class="now">{{ now() }}</span>
           <ui-button size="sm" variant="ghost" (click)="advance('PT1H')" [disabled]="busy()">+1h</ui-button>
           <ui-button size="sm" variant="ghost" (click)="advance('P1D')" [disabled]="busy()">+1 day</ui-button>
@@ -79,8 +79,9 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                 @if (editing(); as def) {
                   <div class="editor">
                     <div class="editor-bar">
-                      <button type="button" class="link" (click)="guard(() => closeEditor())">‹ All workflows</button>
-                      <span class="hint">Changes save when you press Save; publish from Versions.</span>
+                      <button type="button" class="link back" (click)="guard(() => closeEditor())">‹ All workflows</button>
+                      @if (canEdit()) { <span class="hint">Changes save when you press Save; publish from Versions.</span> }
+                      @else { <span class="hint">You can look at workflows; Hana (head of office) can change them.</span> }
                     </div>
                     <ui-workflow-builder class="builder" [definition]="def" (definitionChange)="draft.set($event)" [published]="published()" [persist]="true" (saved)="loadWorkflows()" (dirtyChange)="dirty.set($event)" />
                   </div>
@@ -88,8 +89,10 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                   <div class="list-head">
                     <h2>Workflows</h2>
                     <span class="grow"></span>
-                    <ui-button size="sm" variant="outline" (click)="newWorkflow('lifecycle')">New lifecycle</ui-button>
-                    <ui-button size="sm" (click)="newWorkflow('automation')">New automation</ui-button>
+                    @if (canEdit()) {
+                      <ui-button size="sm" variant="outline" (click)="newWorkflow('lifecycle')">New lifecycle</ui-button>
+                      <ui-button size="sm" (click)="newWorkflow('automation')">New automation</ui-button>
+                    }
                   </div>
                   <table class="grid">
                     <thead><tr><th>Name</th><th>Kind</th><th>Record</th><th>Version</th><th>Running</th></tr></thead>
@@ -118,8 +121,8 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                     </div>
                     @if (creating()) {
                       <div class="new">
-                        <ui-input size="sm" placeholder="Title" [ngModel]="newTitle()" (ngModelChange)="newTitle.set($event)" aria-label="Title" />
-                        <ui-number-input size="sm" [ngModel]="newAmount()" (ngModelChange)="newAmount.set($event ?? 0)" ariaLabel="Amount" [min]="0" />
+                        <label class="lab"><span>Title</span><ui-input size="sm" placeholder="e.g. Medicine scholarship" [ngModel]="newTitle()" (ngModelChange)="newTitle.set($event)" /></label>
+                        <label class="lab"><span>Amount</span><ui-number-input size="sm" [ngModel]="newAmount()" (ngModelChange)="newAmount.set($event ?? 0)" ariaLabel="Amount" [min]="0" /></label>
                         <ui-button size="sm" (click)="createApp()" [disabled]="busy()">Create as {{ pg.currentUser()?.name }}</ui-button>
                       </div>
                     }
@@ -142,12 +145,14 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                         <dt>Priority</dt><dd><select class="sel" [ngModel]="a.priority" (ngModelChange)="patchApp(a.id, { priority: $event })" aria-label="Priority"><option>Low</option><option>Normal</option><option>High</option></select></dd>
                         <dt>Reviewer</dt><dd><select class="sel" [ngModel]="a.reviewer ?? ''" (ngModelChange)="patchApp(a.id, { reviewer: $event })" aria-label="Reviewer"><option value="">Nobody</option><option value="rana">Rana Ibrahim</option><option value="omar">Omar Saleem</option></select></dd>
                         <dt>Deadline</dt><dd><input class="sel" type="date" [ngModel]="a.deadline ?? ''" (ngModelChange)="patchApp(a.id, { deadline: $event })" aria-label="Deadline" /></dd>
-                        <dt>Paid</dt><dd>{{ a.paid ? 'Yes' : 'No' }} @if (!a.paid) { <ui-button size="sm" variant="ghost" (click)="pay(a.id)" [disabled]="busy()">Record a payment</ui-button> }</dd>
+                        <dt>Paid</dt><dd>{{ a.paid ? 'Yes' : 'No' }} @if (!a.paid && a.status === 'Approved' && canPay()) { <ui-button size="sm" variant="ghost" (click)="pay(a.id)" [disabled]="busy()">Record a payment</ui-button> }</dd>
                         <dt>Documents</dt><dd><ul class="docs">@for (d of a.documents; track d.id) { <li><label><input type="checkbox" [checked]="d.verified" (change)="verifyDoc(a.id, d.id)" /> {{ d.name }}</label></li> }</ul></dd>
                         @if (a.notes) { <dt>Notes</dt><dd>{{ a.notes }}</dd> }
                       </dl>
                       <p class="hint">Try changing the status directly: <button type="button" class="link" (click)="forceStatus(a.id)">set status to Approved</button> — the lifecycle refuses it.</p>
                       @if (appError()) { <p class="err">{{ appError() }}</p> }
+                      @if (notice()) { <p class="ok" role="status">{{ notice() }}</p> }
+                      @if (notice()) { <p class="ok" role="status">{{ notice() }}</p> }
                     </div>
                     <aside class="panel">
                       <h3>Workflow</h3>
@@ -201,10 +206,10 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
       </div>
     </ui-modal>
 
-    <ui-modal [open]="!!pendingLeave()" (openChange)="!$event && pendingLeave.set(null)" title="Leave without saving?" size="sm">
+    <ui-modal [open]="!!pendingLeave()" (openChange)="!$event && keep()" title="Leave without saving?" size="sm">
       <p class="confirm">This workflow has changes that aren’t saved. They’ll be lost.</p>
       <div modal-footer class="foot">
-        <ui-button variant="ghost" (click)="pendingLeave.set(null)">Keep editing</ui-button>
+        <ui-button variant="ghost" (click)="keep()">Keep editing</ui-button>
         <ui-button variant="destructive" (click)="leave()">Discard changes</ui-button>
       </div>
     </ui-modal>
@@ -220,6 +225,13 @@ export class WorkflowStudioPage {
   ];
   protected readonly tab = signal<Tab>(this.storedTab());
   protected readonly busy = signal(false);
+  protected readonly notice = signal('');
+  private readonly who = viewChild<ElementRef<HTMLSelectElement>>('who');
+  /** What the current person may do (from /me), for showing only the buttons that will work. */
+  private readonly can = signal<{ edit: boolean } | null>(null);
+  protected readonly canEdit = computed(() => this.can()?.edit ?? false);
+  /** Recording a payment is finance's job (and the head's); others only see whether it's paid. */
+  protected readonly canPay = computed(() => (this.pg.currentUser()?.roles ?? []).some((r) => r === 'finance' || r === 'head' || r === 'admin'));
   /** The open builder has unsaved edits (from its dirtyChange). */
   protected readonly dirty = signal(false);
   protected readonly askReset = signal(false);
@@ -261,21 +273,34 @@ export class WorkflowStudioPage {
     writeStored(TAB_KEY, t);
   }
 
-  /** Runs `action` now, or after the person agrees to lose unsaved builder edits. */
-  protected guard(action: () => void): void {
-    if (this.editing() && this.dirty()) this.pendingLeave.set(action);
+  /** Runs `action` now, or after the person agrees to lose unsaved builder edits (`cancelled` if not). */
+  protected guard(action: () => void, cancelled?: () => void): void {
+    if (this.editing() && this.dirty()) { this.pendingLeave.set(action); this.onKeep = cancelled ?? null; }
     else action();
   }
+
+  private onKeep: (() => void) | null = null;
+
+  /** "Keep editing": nothing happens, and a choice already shown (the person picker) goes back. */
+  protected keep(): void {
+    this.pendingLeave.set(null);
+    this.onKeep?.();
+    this.onKeep = null;
+  }
+
+  protected readonly resetWho = () => { const el = this.who()?.nativeElement; if (el) el.value = this.pg.user(); };
 
   protected leave(): void {
     const action = this.pendingLeave();
     this.pendingLeave.set(null);
+    this.onKeep = null;
     this.dirty.set(false);
     action?.();
   }
 
   private async load(): Promise<void> {
     try {
+      this.can.set((await this.pg.api.me()).can);
       const clock = await this.pg.syncClock();
       this.now.set(clock.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
       const tasks = await this.pg.api.tasks({ scope: 'mine', status: ['open'], take: 1 });
@@ -334,6 +359,7 @@ export class WorkflowStudioPage {
     if (this.busy()) return;
     this.busy.set(true);
     this.appError.set('');
+    this.notice.set('');
     try {
       await f();
     } catch (e) {
@@ -373,7 +399,8 @@ export class WorkflowStudioPage {
 
   protected pay(id: number): Promise<void> {
     return this.act(async () => {
-      await this.pg.send('POST', `/demo/applications/${id}/payment`);
+      const r = await this.pg.send<{ resumed: number }>('POST', `/demo/applications/${id}/payment`);
+      this.notice.set(r?.resumed ? 'Payment recorded: the waiting workflow carries on.' : 'Payment recorded. No workflow was waiting for it.');
       this.refresh();
     });
   }

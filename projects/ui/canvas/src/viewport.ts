@@ -197,7 +197,8 @@ export class UiCanvasViewport {
     const p = this.padding();
     const cw = Math.max(1, this.contentWidth()), ch = Math.max(1, this.contentHeight());
     const zoom = this.clamp(Math.max(Math.min(this.fitMinZoom(), 1), Math.min(1, (w - p * 2) / cw, (h - p * 2) / ch)));
-    const place = (room: number, size: number) => (size * zoom <= room - p * 2 ? (room - size * zoom) / 2 : p);
+    // Too big to fit: start at the top-left edge (the content brings its own margin), not a padding in.
+    const place = (room: number, size: number) => (size * zoom <= room - p * 2 ? (room - size * zoom) / 2 : 0);
     this.setView({ zoom, x: place(w, cw), y: place(h, ch) });
     this.auto = true;
   }

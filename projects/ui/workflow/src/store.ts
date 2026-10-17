@@ -114,6 +114,7 @@ export class WfBuilderStore {
       def: this.def(),
       tokens,
       workflowTitle: (key) => this.others().find((o) => o.key === key)?.title,
+      lifecycle: (key) => { this.loadLifecycle(key); return this.lifecycleCache()[key]; },
     };
   }
 

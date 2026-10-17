@@ -36,8 +36,8 @@ export class UiNumberLabel {}
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
       <div class="steppers">
-        <button type="button" tabindex="-1" aria-label="Decrement" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button type="button" tabindex="-1" aria-label="Increment" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" [attr.aria-label]="'Decrease ' + (ariaLabel() || label() || 'value')" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" [attr.aria-label]="'Increase ' + (ariaLabel() || label() || 'value')" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       }
     </div>

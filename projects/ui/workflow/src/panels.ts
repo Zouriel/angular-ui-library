@@ -128,7 +128,8 @@ export class WfVersions {
     try {
       const d = await api.definition(this.store.def().id);
       this.detail.set(d);
-      this.diff.set(d.summary.version > 0 ? await api.diff(d.summary.id) : []);
+      // The engine's own flag says whether anything is unpublished; the diff only explains what.
+      this.diff.set(d.summary.version > 0 && d.summary.hasDraftChanges ? await api.diff(d.summary.id) : []);
       void this.loadNames(d.versions.map((v) => v.publishedBy).filter((x): x is string => !!x));
     } catch {
       this.detail.set(null);
@@ -144,6 +145,8 @@ export class WfVersions {
   }
 
   private async run(f: () => Promise<unknown>): Promise<void> {
+    // One at a time: a double click must not publish (or roll back) twice.
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set('');
     try {

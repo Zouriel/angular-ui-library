@@ -1,4 +1,4 @@
-import { Component, HostAttributeToken, ElementRef, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG } from '@zouriel/ui';
 
@@ -73,6 +73,18 @@ export class UiTextarea implements ControlValueAccessor {
     afterRenderEffect(() => {
       this.value();
       if (this.autosize()) this.fit();
+    });
+    // A width change rewraps the text (a panel settling, a phone rotating): measure again then.
+    const destroy = inject(DestroyRef);
+    afterNextRender(() => {
+      let width = 0;
+      const ro = new ResizeObserver(([e]) => {
+        if (!this.autosize() || Math.abs(e.contentRect.width - width) < 1) return;
+        width = e.contentRect.width;
+        this.fit();
+      });
+      ro.observe(this.field().nativeElement);
+      destroy.onDestroy(() => ro.disconnect());
     });
   }
 

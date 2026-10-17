@@ -39,8 +39,8 @@ interface DrawnEdge {
       @if (connectFrom()) {
         <span class="connect-hint">Now tap the state it goes to <button type="button" class="wf-link" (click)="connectFrom.set(null)">Cancel</button></span>
       }
-      <ui-button size="sm" variant="ghost" (click)="tidy()" [disabled]="!hasManual()"><hugeicons-icon aria-hidden="true" [icon]="icons.GridViewIcon" [size]="14" [strokeWidth]="1.8" />Tidy up</ui-button>
-      <ui-button size="sm" variant="outline" (click)="addState()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="14" [strokeWidth]="1.8" />State</ui-button>
+      <ui-button size="sm" variant="ghost" (click)="tidy()" [disabled]="!hasManual() || store.readOnly()"><hugeicons-icon aria-hidden="true" [icon]="icons.GridViewIcon" [size]="14" [strokeWidth]="1.8" />Tidy up</ui-button>
+      <ui-button size="sm" variant="outline" (click)="addState()" [disabled]="store.readOnly()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="14" [strokeWidth]="1.8" />State</ui-button>
     </div>
 
     @if (view() === 'diagram') {
@@ -74,7 +74,7 @@ interface DrawnEdge {
             <span class="meta">{{ outCount(s.id) }} way{{ outCount(s.id) === 1 ? '' : 's' }} out@if (s.sla) { · time limit }</span>
           </div>
           <!-- A sibling of the card, not inside it: a control can't sit inside another control. -->
-          @if (s.category !== 'terminal') {
+          @if (s.category !== 'terminal' && !store.readOnly()) {
             <button type="button" class="handle" data-viewport-no-pan [class.on]="isSelected(s.id) || connectFrom() === s.id"
               [style.left.px]="pos(s.id).x + nodeW" [style.top.px]="pos(s.id).y + nodeH / 2"
               (pointerdown)="pressHandle($event, s)" (click)="tapHandle(s)"
@@ -155,7 +155,8 @@ interface DrawnEdge {
     .kind:empty { display: none; }
     .name { font-size: 13px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meta { font-size: 11px; color: var(--ui-color-text-muted); }
-    .handle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none; z-index: 1;
+    /* Above the cards (z-index 2), or the card under the handle's centre would take the press. */
+    .handle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none; z-index: 3;
       border: 2px solid var(--ui-color-surface); background: var(--ui-color-primary); opacity: 0; transition: opacity var(--ui-motion-fast), transform var(--ui-motion-fast); }
     .state:hover + .handle, .state:focus-visible + .handle, .handle.on, .handle:hover { opacity: 1; }
     .handle:hover { transform: scale(1.25); }

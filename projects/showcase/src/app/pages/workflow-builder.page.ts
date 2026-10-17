@@ -43,8 +43,8 @@ const DOCS_USER = 'hana';
           <ol class="steps">
             <li><strong>Backend.</strong> Add <code>Zouriel.Workflows.AspNetCore</code> and <code>Zouriel.Workflows.EntityFrameworkCore</code>, call <code>modelBuilder.AddWorkflows()</code> in your DbContext and add the interceptor.</li>
             <li><strong>Register.</strong> In <code>AddWorkflows</code>, list the entities, the fields to watch or change, the field a lifecycle may own, your actions and events, and plug in your users and notifications.</li>
-            <li><strong>Serve.</strong>&#32;<code>app.MapWorkflowApi("/api/workflows")</code> with your authorization policies.</li>
-            <li><strong>Frontend.</strong>&#32;<code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
+            <li><strong>Serve.</strong>{{ ' ' }}<code>app.MapWorkflowApi("/api/workflows")</code> with your authorization policies.</li>
+            <li><strong>Frontend.</strong>{{ ' ' }}<code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
           </ol>
         </doc-demo>
         <doc-demo lang="ts" [code]="frontend"></doc-demo>
@@ -78,6 +78,7 @@ const DOCS_USER = 'hana';
     .steps { margin: 0; padding-left: var(--ui-space-4); display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.5; }
     .builder-frame { --w: min(1480px, calc(100vw - 360px)); width: var(--w); margin-left: min(0px, calc((100% - var(--w)) / 2)); height: min(820px, calc(100dvh - 120px)); }
     .builder-frame ui-workflow-builder { height: 100%; }
+    .builder-frame { margin-bottom: var(--ui-space-4); }
     .panel-demo { max-width: 520px; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     @media (max-width: 900px) { .builder-frame { --w: 100%; margin-left: 0; } }
     @media (max-width: 720px) { .builder-frame { width: auto; height: calc(100dvh - 120px); min-height: 520px; margin: 0 calc(-1 * var(--ui-space-4)); } }

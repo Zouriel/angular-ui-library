@@ -570,13 +570,16 @@ export class WfTransitionEditor {
           @for (p of problems(); track $index) { <li [class.warn]="p.severity === 'warning'">{{ p.message }}</li> }
         </ul>
       }
-      @switch (kind()) {
-        @case ('step') { @if (store.selectedStep(); as s) { <ui-wf-step-editor [step]="s" /> } }
-        @case ('trigger') { <ui-wf-trigger-editor /> }
-        @case ('state') { <ui-wf-state-editor /> }
-        @case ('transition') { <ui-wf-transition-editor /> }
-        @default { <ui-wf-workflow-editor /> }
-      }
+      <!-- Someone only looking sees every setting, but none of the controls take input. -->
+      <fieldset class="fields" [disabled]="store.readOnly()">
+        @switch (kind()) {
+          @case ('step') { @if (store.selectedStep(); as s) { <ui-wf-step-editor [step]="s" /> } }
+          @case ('trigger') { <ui-wf-trigger-editor /> }
+          @case ('state') { <ui-wf-state-editor /> }
+          @case ('transition') { <ui-wf-transition-editor /> }
+          @default { <ui-wf-workflow-editor /> }
+        }
+      </fieldset>
     </div>
   `,
   styles: [WF_SHARED_STYLES, `
@@ -586,6 +589,7 @@ export class WfTransitionEditor {
     h2 { flex: 1; margin: 0; font-size: 14px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }
+    .fields { min-width: 0; margin: 0; padding: 0; border: 0; }
     .problems { margin: 0 0 var(--ui-space-3); padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .problems li { padding: 6px 8px; border-radius: var(--ui-radius-xs); font-size: 12.5px; line-height: 1.4;
       background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); color: var(--ui-color-text); border-left: 3px solid var(--ui-color-danger); }
@@ -616,7 +620,7 @@ export class WfInspector {
       default: return WF_ICONS.Settings02Icon;
     }
   });
-  protected readonly canDelete = computed(() => ['step', 'state', 'transition'].includes(this.kind()));
+  protected readonly canDelete = computed(() => !this.store.readOnly() && ['step', 'state', 'transition'].includes(this.kind()));
   protected readonly problems = computed(() => {
     const s = this.store.selection();
     const node = !s || s.kind === 'workflow' || s.kind === 'trigger' ? null : s.id;

@@ -675,6 +675,8 @@ export interface UiWfDescribeContext {
   tokens?: readonly UiWfToken[];
   /** Other workflows' titles by key (for sub-workflows and lifecycle triggers). */
   workflowTitle?: (key: string) => string | undefined;
+  /** Another lifecycle's published definition by key, when loaded (names its states and transitions). */
+  lifecycle?: (key: string) => UiWorkflowDefinition | undefined;
   userName?: (id: string) => string | undefined;
 }
 
@@ -723,8 +725,16 @@ export function describeTrigger(t: UiWfTrigger | undefined, ctx: UiWfDescribeCon
     case 'fieldChanged':
       if (!t.field) return `When ${aRec} changes`;
       return `When ${f?.label ?? t.field} ${t.from?.length ? `changes from ${vals(t.from)} ` : 'changes '}${t.to?.length ? `to ${vals(t.to)}` : ''}`.trim();
-    case 'stateEntered': return `When ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'} enters ${(t.states ?? []).join(' or ') || '…'}`;
-    case 'transitionApplied': return `After ${(t.transitions ?? []).join(' or ') || '…'} in ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'}`;
+    case 'stateEntered': {
+      const states = ctx.lifecycle?.(t.lifecycle ?? '')?.lifecycle?.states ?? [];
+      const names = (t.states ?? []).map((k) => states.find((s) => s.key === k)?.label ?? k);
+      return `When ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'} enters ${names.join(' or ') || '…'}`;
+    }
+    case 'transitionApplied': {
+      const moves = ctx.lifecycle?.(t.lifecycle ?? '')?.lifecycle?.transitions ?? [];
+      const names = (t.transitions ?? []).map((k) => `“${moves.find((m) => m.key === k)?.label ?? k}”`);
+      return `After ${names.join(' or ') || '…'} in ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'}`;
+    }
     case 'dateReached': return `${describeDuration(t.offset)} ${f?.label ?? t.field ?? 'a date'}`.replace(/^no time set /, 'On ');
     case 'schedule': return `On a schedule (${t.cron ?? '…'})${t.forEach ? ` for each matching ${rec}` : ''}`;
     case 'manual': return `When someone presses “${t.label || 'Start'}”`;

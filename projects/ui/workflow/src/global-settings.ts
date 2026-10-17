@@ -141,7 +141,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           </div>
           <div><span class="wf-label">Hide these values in the log and run views</span>
             <ul class="items">@for (m of s().audit?.maskedFields ?? []; track m) {
-              <li><code>{{ m }}</code><button type="button" class="wf-icon-btn danger" (click)="removeMasked(m)" [attr.aria-label]="'Stop hiding ' + m"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
+              <li>{{ fieldName(m) }}<button type="button" class="wf-icon-btn danger" (click)="removeMasked(m)" [attr.aria-label]="'Stop hiding ' + fieldName(m)"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
             <select class="wf-select" (change)="addMasked($any($event.target).value); $any($event.target).value = ''" aria-label="Add a field to hide">
               <option value="">Add a field…</option>
               @for (f of maskable(); track f.value) { <option [value]="f.value">{{ f.label }}</option> }
@@ -156,7 +156,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           @for (g of watchGroups(); track g.entity) {
             <div class="card">
               <div class="wf-row"><strong class="grow">{{ g.label }}</strong>
-                <label class="wf-row small"><ui-switch [ngModel]="isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, $event)" [disabled]="busy()" /> Paused</label></div>
+                <label class="wf-row small"><ui-switch [ngModel]="isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, $event)" [disabled]="busy()" [attr.aria-label]="'Pause workflows for ' + g.label" /> {{ isPaused(g.entity) ? 'Paused' : 'Running' }}</label></div>
               <ul class="watch">@for (t of g.triggers; track t.definitionId) {
                 <li [class.conflict]="conflicts().has(t.definitionId)"><span class="wf-chip">{{ t.kind === 'lifecycle' ? 'Lifecycle' : 'Automation' }}</span> {{ t.title }} <span class="sum">— {{ t.summary }}</span></li> }</ul>
               @if (g.conflict) { <p class="wf-warn">Two workflows start on the same change here. Check they don’t work against each other.</p> }
@@ -422,6 +422,14 @@ export class UiWorkflowGlobalSettings {
 
   protected removeMasked(v: string): void {
     this.patch({ audit: { ...(this.s().audit ?? {}), maskedFields: (this.s().audit?.maskedFields ?? []).filter((x) => x !== v) } });
+  }
+
+  /** `application.applicantEmail` → "Application › Applicant email". */
+  protected fieldName(path: string): string {
+    const [entity, field] = path.split('.');
+    const e = this.registry()?.entities.find((x) => x.key === entity);
+    const f = e?.fields.find((x) => x.key === field);
+    return e && f ? `${e.label} › ${f.label}` : path;
   }
 
   protected isPaused(entity: string): boolean {

@@ -48,8 +48,11 @@ export class WfBuilderUi {
     </button>
   `,
   styles: [WF_SHARED_STYLES, `
-    /* Long titles never widen the canvas: cards take their column's width and truncate. */
-    :host { display: block; contain: inline-size; }
+    /*
+     * Long titles never widen the canvas: cards take their column's width and truncate. On a canvas
+     * widened by a branch further down, top-level cards stay readable and centred, menus in reach.
+     */
+    :host { display: block; contain: inline-size; width: 100%; max-width: 560px; margin-inline: auto; }
     .card { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; cursor: pointer; font: inherit; color: var(--ui-color-text);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast); }
@@ -110,8 +113,12 @@ export class WfTriggerCard {
     </div>
   `,
   styles: [WF_SHARED_STYLES, `
-    /* Long titles never widen the canvas: cards take their column's width and truncate. */
-    :host { display: block; contain: inline-size; }
+    /*
+     * Long titles never widen the canvas: cards take their column's width and truncate. On a canvas
+     * widened by a branch further down, top-level cards stay readable and centred, menus in reach.
+     */
+    :host { display: block; contain: inline-size; width: 100%; max-width: 560px; margin-inline: auto; }
+    :host-context(.read-only) .grip, :host-context(.read-only) ui-menu { visibility: hidden; }
     .card { position: relative; display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 0; min-height: 46px; box-sizing: border-box;
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast), opacity var(--ui-motion-fast); }
@@ -212,6 +219,8 @@ export class WfStepCard {
   `,
   styles: [`
     :host { display: flex; justify-content: center; position: relative; height: 26px; }
+    /* Someone only looking can't add steps: the connector stays, the + goes. */
+    :host-context(.read-only) button { visibility: hidden; }
     :host::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-1px);
       background: var(--ui-color-border); }
     :host(.first)::before { top: 50%; }

@@ -180,8 +180,9 @@ export function formatSimpleDuration(n: number, unit: Unit, negative = false): s
     }
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: grid; grid-template-columns: minmax(64px, 96px) minmax(0, 1fr); gap: 6px; align-items: center; min-width: 0; }
-    :host(.signed) { grid-template-columns: minmax(64px, 88px) minmax(0, 1fr) minmax(0, 0.9fr); }
+    /* The unit select keeps room for its longest word ("minutes", "months"). */
+    :host { display: grid; grid-template-columns: minmax(64px, 96px) minmax(88px, 1fr); gap: 6px; align-items: center; min-width: 0; }
+    :host(.signed) { grid-template-columns: minmax(64px, 88px) minmax(88px, 1fr) minmax(76px, 0.9fr); }
     .wf-select { height: var(--ui-size-sm); }
   `],
   host: { '[class.signed]': 'signed()' },

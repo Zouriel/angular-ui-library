@@ -84,11 +84,10 @@ interface PendingDelete {
 
     @if (saveError()) { <div class="banner" role="alert">{{ saveError() }} <button type="button" class="wf-link" (click)="saveError.set('')">Dismiss</button></div> }
 
-    <!-- Disabled as a whole when looking only: every control inside stops taking input. -->
-    <fieldset class="main" [disabled]="store.readOnly()" [class.read-only]="store.readOnly()">
+    <div class="main" [class.read-only]="store.readOnly()">
       @switch (view()) {
         @case ('build') {
-          @if (ui.layout() === 'wide') {
+          @if (ui.layout() === 'wide' && !store.readOnly()) {
             <aside class="pane left" aria-label="Steps to add">
               <h2 class="pane-title">Add a step</h2>
               <ui-wf-step-picker (chosen)="addFromPalette($event)" />
@@ -111,7 +110,7 @@ interface PendingDelete {
         @case ('versions') { <ui-wf-versions class="center" [saved]="savedOnce()" (synced)="synced($event)" /> }
         @case ('test') { <ui-wf-test class="center" /> }
       }
-    </fieldset>
+    </div>
 
     @if (ui.layout() === 'narrow' && view() === 'build') {
       <ui-bottom-sheet [snaps]="[0, 0.62, 0.94]" [snap]="sheetSnap()" (snapChange)="sheetSnap.set($event)" [title]="sheetTitle()">
@@ -184,8 +183,7 @@ interface PendingDelete {
     .unchecked { color: var(--ui-color-warning); }
     .save-state { font-size: 12px; color: var(--ui-color-text-muted); margin: 0 4px; white-space: nowrap; }
     .banner { flex: none; padding: 6px var(--ui-space-3); font-size: 13px; background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
-    .main { flex: 1; min-height: 0; display: flex; min-width: 0; margin: 0; padding: 0; border: 0; }
-    .main.read-only { --wf-read-only: 1; }
+    .main { flex: 1; min-height: 0; display: flex; min-width: 0; }
     .view-only { margin: 0 4px; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
     .center { flex: 1; min-width: 0; min-height: 0; }
     .split { display: flex; flex-direction: column; }
@@ -246,7 +244,8 @@ export class UiWorkflowBuilder {
    * edit workflows; true or false decides it here.
    */
   readonly readOnly = input<boolean | null>(null);
-  private readonly mayEdit = signal(true);
+  /** From /me: whether this person may edit (null until it answers). */
+  private readonly mayEdit = signal<boolean | null>(null);
   /** The engine's problems after each check (empty when none or offline). */
   readonly problemsChange = output<UiWfProblem[]>();
   /** Fired after a successful save through the API. */
@@ -306,7 +305,7 @@ export class UiWorkflowBuilder {
     });
     effect(() => this.store.published.set(this.published()));
     effect(() => {
-      const ro = this.readOnly() ?? !this.mayEdit();
+      const ro = this.readOnly() ?? this.mayEdit() === false;
       untracked(() => {
         this.store.readOnly.set(ro);
         if (ro && this.view() !== 'build') this.view.set('build');
@@ -321,16 +320,17 @@ export class UiWorkflowBuilder {
     });
     effect(() => { const s = this.schema(); if (s) this.store.schema.set(s); });
     effect(() => { const s = this.settings(); if (s) this.store.settings.set(s); });
-    // Ask the engine for problems shortly after each change.
+    // Ask the engine for problems shortly after each change (and once it's known the person may edit).
     effect(() => {
       const def = this.store.def();
       const api = this.store.api();
+      this.mayEdit();
       untracked(() => this.scheduleValidation(def, api));
     });
     // Tell the host whether leaving now would lose edits, and warn on closing the tab.
     let lastDirty: boolean | null = null;
     effect(() => {
-      const d = this.persist() && !!this.store.api() && this.dirty();
+      const d = this.persist() && !!this.store.api() && !this.store.readOnly() && this.dirty();
       if (d !== lastDirty) { lastDirty = d; untracked(() => this.dirtyChange.emit(d)); }
     });
     const beforeUnload = (e: BeforeUnloadEvent) => { if (lastDirty) e.preventDefault(); };
@@ -382,15 +382,20 @@ export class UiWorkflowBuilder {
     } catch (e) {
       this.saveError.set(e instanceof UiWfApiError ? e.message : 'Could not load the app’s record types.');
     }
-    // Settings are optional for builders (only admins can read them).
-    api.settings().then((s) => this.store.settings.set(s.settings)).catch(() => undefined);
-    // Whether this person may edit; an API without /me (or an error) leaves editing on, and the server still decides.
-    api.me?.().then((me) => this.mayEdit.set(me.can.edit)).catch(() => undefined);
+    // Whether this person may edit; an API without /me (or an error) leaves editing on, and the server
+    // still decides. Settings (webhook connections) are only for editors, so they wait for the answer.
+    const me = api.me ? api.me().then((m) => m.can.edit).catch(() => true) : Promise.resolve(true);
+    void me.then((canEdit) => {
+      this.mayEdit.set(canEdit);
+      if (canEdit) api.settings().then((s) => this.store.settings.set(s.settings)).catch(() => undefined);
+    });
   }
 
   private scheduleValidation(def: UiWorkflowDefinition, api: UiWorkflowApi | null): void {
     if (this.validateTimer) clearTimeout(this.validateTimer);
-    if (!api || this.store.readOnly()) return;
+    // Checking needs the right to edit: wait for /me, and never check for someone only looking.
+    const lookOnly = this.readOnly() ?? (this.mayEdit() === null ? null : !this.mayEdit());
+    if (!api || lookOnly !== false) return;
     this.store.validating.set(true);
     const seq = ++this.validateSeq;
     this.validateTimer = setTimeout(async () => {
