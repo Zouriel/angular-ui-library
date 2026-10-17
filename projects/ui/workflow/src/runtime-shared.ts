@@ -1,5 +1,5 @@
 import { Directive, computed, input } from '@angular/core';
-import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfRecord, type UiWorkflowApi } from './api';
+import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfRecord, type UiWfTask, type UiWorkflowApi } from './api';
 
 /**
  * Helpers shared by the runtime views (record panel, workflow panel, tasks, runs, audit). Internal:
@@ -46,6 +46,76 @@ export function wfAuditJson(text: string | null): Record<string, unknown> {
   }
 }
 
+/** "someKey" → "Some key": the last resort for a key nobody gave a label. */
+export function wfHumanize(key: string): string {
+  const words = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_.-]+/g, ' ').trim().toLowerCase();
+  return words ? words[0].toUpperCase() + words.slice(1) : key;
+}
+
+/** A decision's outcome as people read it: the task's own label when known, else a sensible default. */
+export function wfOutcomeLabel(key: unknown, outcomes?: readonly { key: string; label: string }[] | null): string {
+  const k = key === null || key === undefined ? '' : String(key);
+  const own = outcomes?.find((o) => o.key === k)?.label;
+  if (own) return own;
+  return ({ approved: 'Approved', rejected: 'Rejected', timedOut: 'Out of time', cancelled: 'Cancelled', completed: 'Done' } as Record<string, string>)[k] ?? (k ? wfHumanize(k) : 'Done');
+}
+
+/** How a finished task ended ("Approved", "Out of time", "Cancelled"). */
+export function wfTaskResult(t: Pick<UiWfTask, 'status' | 'outcome' | 'outcomes'>): string {
+  if (t.status === 'timedOut') return 'Out of time';
+  if (t.status === 'cancelled') return 'Cancelled';
+  return wfOutcomeLabel(t.outcome, t.outcomes);
+}
+
+/** A run's status as people read it; the run view, the runs list and the record panel all use it. */
+export function wfRunStatusLabel(s: string | null | undefined): string {
+  if (!s) return '';
+  return ({ queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' } as Record<string, string>)[s] ?? wfHumanize(s);
+}
+
+/** The tone a run status is shown in. */
+export function wfRunStatusTone(s: string | null | undefined): string {
+  return s === 'completed' ? 'success' : s === 'incident' || s === 'failed' ? 'danger' : s === 'cancelled' || s === 'outOfSync' ? 'warning' : 'info';
+}
+
+/** The audit log's categories, in the order filters list them. */
+export const WF_AUDIT_CATEGORIES: readonly { value: string; label: string }[] = [
+  { value: 'lifecycle', label: 'Record moves' }, { value: 'task', label: 'Tasks and decisions' }, { value: 'instance', label: 'Runs' },
+  { value: 'step', label: 'Steps' }, { value: 'trigger', label: 'Triggers' }, { value: 'definition', label: 'Workflow changes' },
+  { value: 'settings', label: 'Settings' }, { value: 'audit', label: 'The audit log itself' },
+];
+
+/** An audit category's label ("lifecycle" → "Record moves"). */
+export function wfAuditCategoryLabel(category: string): string {
+  return WF_AUDIT_CATEGORIES.find((c) => c.value === category)?.label ?? wfHumanize(category);
+}
+
+const AUDIT_ACTIONS: Record<string, string> = {
+  'definition.created': 'Workflow created', 'definition.draftSaved': 'Draft saved', 'definition.published': 'Published',
+  'definition.archived': 'Archived', 'definition.restored': 'Restored', 'definition.rolledBack': 'Rolled back to an earlier version',
+  'definition.deleted': 'Workflow deleted',
+  'instance.started': 'Run started', 'instance.queued': 'Run queued', 'instance.completed': 'Run finished', 'instance.failed': 'Run failed',
+  'instance.cancelled': 'Run cancelled', 'instance.migrated': 'Run moved to another version', 'instance.retried': 'Stopped step tried again',
+  'instance.skipped': 'Stopped step skipped', 'instance.incident': 'Run stopped on an error', 'instance.timerFailed': 'A timer could not run',
+  'step.started': 'Step started', 'step.completed': 'Step done', 'step.failed': 'Step failed', 'step.retryScheduled': 'Retry scheduled',
+  'step.skipped': 'Step skipped', 'step.branchTaken': 'Path chosen', 'step.waiting': 'Step waiting',
+  'lifecycle.created': 'Lifecycle started', 'lifecycle.transitioned': 'Record moved', 'lifecycle.autoTransitioned': 'Moved automatically',
+  'lifecycle.autoSkipped': 'Automatic move skipped', 'lifecycle.slaBreached': 'Stayed too long in a state', 'lifecycle.forced': 'Moved by an admin',
+  'lifecycle.writeRefused': 'Direct state change refused', 'lifecycle.writeObserved': 'Direct state change seen', 'lifecycle.outOfSync': 'State out of sync',
+  'task.created': 'Task created', 'task.assigned': 'Task assigned', 'task.reminded': 'Reminder sent', 'task.escalated': 'Task escalated',
+  'task.delegated': 'Task handed to someone else', 'task.reassigned': 'Task reassigned', 'task.decided': 'Decided', 'task.cancelled': 'Task cancelled',
+  'task.timedOut': 'Task ran out of time',
+  'trigger.suppressed': 'Start held back', 'trigger.skipped': 'Start skipped', 'trigger.paused': 'Starts paused', 'trigger.resumed': 'Starts resumed',
+  'trigger.failed': 'A workflow could not start',
+  'settings.updated': 'Settings changed',
+  'audit.exported': 'Audit log exported', 'audit.purged': 'Old entries removed',
+};
+
+/** An audit action's label ("lifecycle", "slaBreached" → "Stayed too long in a state"). */
+export function wfAuditActionLabel(category: string, action: string): string {
+  return AUDIT_ACTIONS[`${category}.${action}`] ?? wfHumanize(action);
+}
+
 /** How a record history entry reads ("Submit: Draft → Submitted"). `stateLabel` turns state keys into labels. */
 export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) => string): string {
   const data = wfAuditJson(h.data);
@@ -62,7 +132,7 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
     case 'lifecycle.slaBreached': return `Stayed too long in ${stateLabel(data['state'] ?? before['state'] ?? after['state'])}`;
     case 'lifecycle.outOfSync': return 'The state was changed outside the workflow';
     case 'task.created': return `Waiting for: ${text(data['title'])}`;
-    case 'task.decided': return `${text(data['outcomeLabel'] ?? data['outcome']) || 'Decided'}${data['comment'] ? ` (“${text(data['comment'])}”)` : ''}`;
+    case 'task.decided': return `Decided: ${text(data['outcomeLabel']) || wfOutcomeLabel(data['outcome'])}${data['comment'] ? ` (“${text(data['comment'])}”)` : ''}`;
     case 'task.timedOut': return `Ran out of time: ${text(data['title'])}`;
     case 'task.delegated': return 'A task was handed to someone else';
     case 'task.reassigned': return 'A task was reassigned';
@@ -73,8 +143,8 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
     case 'instance.cancelled': return 'A workflow was cancelled';
     case 'instance.incident': return 'A workflow stopped on an error';
     case 'instance.timerFailed': return 'A timer could not run';
-    case 'trigger.failed': return 'A workflow could not start';
-    default: return `${h.category} ${h.action}`.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+    case 'trigger.failed': return `A workflow could not start${data['error'] ? `: ${text(data['error'])}` : ''}`;
+    default: return wfAuditActionLabel(h.category, h.action);
   }
 }
 

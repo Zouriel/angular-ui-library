@@ -1,9 +1,10 @@
 import { Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiButton } from '@zouriel/ui/button';
+import { UiButton, UiIconButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
-import { UiInput, UiTextarea } from '@zouriel/ui/form';
+import { UiCombobox, type UiComboboxOption } from '@zouriel/ui/combobox';
+import { UiInput, UiSelect, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
 import { UiFormRenderer } from '@zouriel/ui/form-builder';
 import {
   injectWorkflowClock,
@@ -17,7 +18,23 @@ import {
   type UiWorkflowApi,
 } from './api';
 import { indexSteps, stepName } from './definition';
-import { WfWithApi, wfAgo, wfDateTime, wfDescribeHistory, wfErrorText, wfStatePassed } from './runtime-shared';
+import {
+  WF_AUDIT_CATEGORIES,
+  WfWithApi,
+  wfAgo,
+  wfAuditActionLabel,
+  wfAuditCategoryLabel,
+  wfAuditJson,
+  wfDateTime,
+  wfDescribeHistory,
+  wfErrorText,
+  wfHumanize,
+  wfOutcomeLabel,
+  wfRunStatusLabel,
+  wfRunStatusTone,
+  wfStatePassed,
+  wfTaskResult,
+} from './runtime-shared';
 import { WF_ICONS, WF_STEP_ICONS } from './icons';
 import type { UiWorkflowDefinition } from './schema';
 import { WF_SHARED_STYLES } from './styles';
@@ -50,7 +67,7 @@ export class UiWorkflowStateBadge {
 /** The decide dialog: instructions, the task's form, a comment, and its buttons. */
 @Component({
   selector: 'ui-wf-decide',
-  imports: [FormsModule, UiButton, UiModal, UiTextarea, UiFormRenderer, UiInput],
+  imports: [FormsModule, UiButton, UiModal, UiTextarea, UiFormRenderer, UiCombobox],
   template: `
     <ui-modal [open]="!!task()" (openChange)="!$event && closed.emit()" [title]="task()?.title ?? ''" size="md">
       @if (task(); as t) {
@@ -59,7 +76,7 @@ export class UiWorkflowStateBadge {
           @if (t.instructions) { <p class="instructions">{{ t.instructions }}</p> }
           <p class="meta">Due {{ when(t.dueAt) }}@if (t.overdue) { · <strong class="late">overdue</strong> }</p>
           @if (t.decisions.length) {
-            <ul class="decisions">@for (d of t.decisions; track d.userId) { <li><strong>{{ d.name ?? d.userId }}</strong> chose {{ outcomeLabel(t, d.outcome) }}{{ d.comment ? ': “' + d.comment + '”' : '' }}</li> }</ul>
+            <ul class="decisions">@for (d of t.decisions; track d.userId) { <li><strong>{{ d.name ?? d.userId }}</strong> chose “{{ outcomeLabel(t, d.outcome) }}”{{ d.comment ? ': “' + d.comment + '”' : '' }}</li> }</ul>
           }
           @if (t.form) {
             <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" (valueChange)="answers.set($event)" />
@@ -67,8 +84,9 @@ export class UiWorkflowStateBadge {
           <label class="lw"><span class="wf-label">Comment{{ t.requireComment === 'always' ? ' (required)' : t.requireComment === 'reject' ? ' (required to reject)' : '' }}</span>
             <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event)" [rows]="2" [autosize]="true" /></label>
           @if (t.allowDelegation) {
-            <details class="delegate"><summary>Hand it to someone else</summary>
-              <div class="wf-row"><ui-input size="sm" placeholder="Their user id" [ngModel]="delegateTo()" (ngModelChange)="delegateTo.set($event)" aria-label="User id" />
+            <details class="delegate" (toggle)="$any($event.target).open && searchPeople('')"><summary>Hand it to someone else</summary>
+              <div class="wf-row"><ui-combobox class="people" size="sm" placeholder="Search for a person" label="Hand it to" [options]="people()"
+                  [ngModel]="delegateTo() || null" (ngModelChange)="delegateTo.set($event ?? '')" (input)="searchPeople($any($event.target).value ?? '')" />
                 <ui-button size="sm" variant="outline" (click)="delegate()" [disabled]="busy() || !delegateTo()">Hand over</ui-button></div>
             </details>
           }
@@ -96,6 +114,7 @@ export class UiWorkflowStateBadge {
     .decisions { margin: 0; padding-left: var(--ui-space-4); font-size: 13px; }
     .lw { display: block; }
     .delegate summary { font-size: 12.5px; color: var(--ui-color-primary); cursor: pointer; margin-bottom: 6px; }
+    .people { flex: 1; min-width: 0; }
     .foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--ui-space-2); flex-wrap: wrap; }
   `],
 })
@@ -107,6 +126,10 @@ export class WfDecideDialog {
   private readonly form = viewChild(UiFormRenderer);
   protected readonly comment = signal('');
   protected readonly delegateTo = signal('');
+  /** People to hand the task to, from the API's directory search. */
+  protected readonly people = signal<UiComboboxOption[]>([]);
+  private peopleSeq = 0;
+  private peopleTimer: ReturnType<typeof setTimeout> | undefined;
   protected readonly answers = signal<Record<string, unknown>>({});
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -116,18 +139,45 @@ export class WfDecideDialog {
   constructor() {
     effect(() => {
       this.task();
-      untracked(() => { this.comment.set(''); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); });
+      untracked(() => { this.comment.set(''); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); this.people.set([]); });
     });
   }
 
   protected outcomeLabel(t: UiWfTask, key: string): string {
-    return t.outcomes.find((o) => o.key === key)?.label.toLowerCase() ?? key;
+    return wfOutcomeLabel(key, t.outcomes);
+  }
+
+  /** Looks people up as the name is typed (debounced; a slower older answer never replaces a newer one). */
+  protected searchPeople(query: string): void {
+    clearTimeout(this.peopleTimer);
+    this.peopleTimer = setTimeout(() => void this.loadPeople(query.trim()), query ? 250 : 0);
+  }
+
+  private async loadPeople(query: string): Promise<void> {
+    const api = this.api();
+    const t = this.task();
+    if (!api || !t) return;
+    const n = ++this.peopleSeq;
+    try {
+      const found = await api.searchUsers(query, 20);
+      if (n !== this.peopleSeq) return;
+      // People already on the task (or who decided) can't take it over; the engine refuses them too.
+      const taken = new Set([...t.assignees, ...t.decisions.map((d) => d.userId)]);
+      const chosen = this.people().find((p) => p.value === this.delegateTo());
+      const options = found.filter((u) => !taken.has(u.id)).map((u) => ({ value: u.id, label: u.email ? `${u.name} (${u.email})` : u.name }));
+      // Keep the chosen person listed so the field keeps showing their name.
+      if (chosen && !options.some((o) => o.value === chosen.value)) options.unshift(chosen);
+      this.people.set(options);
+    } catch {
+      if (n === this.peopleSeq) this.people.set([]);
+    }
   }
 
   protected async decide(outcome: string): Promise<void> {
     const t = this.task();
     const api = this.api();
-    if (!t || !api) return;
+    // A second click while the first is on its way would send the decision twice.
+    if (!t || !api || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (t.form && !this.form()?.submit()) return;
     this.busy.set(true);
@@ -145,8 +195,9 @@ export class WfDecideDialog {
   protected async delegate(): Promise<void> {
     const t = this.task();
     const api = this.api();
-    if (!t || !api) return;
+    if (!t || !api || this.busy() || !this.delegateTo()) return;
     this.busy.set(true);
+    this.error.set('');
     try {
       this.decided.emit(await api.delegate(t.id, this.delegateTo()));
     } catch (e) {
@@ -166,7 +217,7 @@ export class WfDecideDialog {
  */
 @Component({
   selector: 'ui-workflow-record-panel',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiModal, UiFormRenderer, UiWorkflowStateBadge, WfDecideDialog],
+  imports: [FormsModule, UiButton, UiModal, UiFormRenderer, UiWorkflowStateBadge, WfDecideDialog],
   template: `
     @if (record(); as r) {
       <div class="state">
@@ -286,6 +337,8 @@ export class UiWorkflowRecordPanel extends WfWithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
+  /** Bumped by every load and change, so a slower older answer never replaces a newer one. */
+  private seq = 0;
 
   constructor() {
     super();
@@ -303,18 +356,28 @@ export class UiWorkflowRecordPanel extends WfWithApi {
   }
 
   private async load(api: UiWorkflowApi, entity: string, id: string): Promise<void> {
+    const n = ++this.seq;
     try {
-      this.record.set(await api.record(entity, id));
+      const record = await api.record(entity, id);
+      if (n !== this.seq) return;
+      this.record.set(record);
       this.error.set('');
-      if (this.showHistory()) this.history.set(await api.recordHistory(entity, id, 50).catch(() => []));
+      await this.loadHistory(api, n);
     } catch (e) {
-      this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
+      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
     }
+  }
+
+  private async loadHistory(api: UiWorkflowApi, n: number): Promise<void> {
+    if (!this.showHistory()) return;
+    const history = await api.recordHistory(this.entity(), this.entityId(), 50).catch(() => null);
+    if (history && n === this.seq) this.history.set(history);
   }
 
   protected readonly passed = wfStatePassed;
 
   protected start(t: UiWfTransitionOption): void {
+    if (this.busy()) return;
     this.pendingManual.set(null);
     this.pendingError.set('');
     this.input.set({});
@@ -323,6 +386,7 @@ export class UiWorkflowRecordPanel extends WfWithApi {
   }
 
   protected startManual(m: UiWfRecord['manual'][number]): void {
+    if (this.busy()) return;
     this.pendingManual.set(m.key);
     this.pendingError.set('');
     this.input.set({});
@@ -332,7 +396,8 @@ export class UiWorkflowRecordPanel extends WfWithApi {
 
   protected confirm(): void {
     const p = this.pending();
-    if (!p) return;
+    // A double click on the confirm button must not apply the move twice.
+    if (!p || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (p.form && !this.form()?.submit()) return;
     if (this.pendingManual()) void this.runManual(p.key);
@@ -345,10 +410,12 @@ export class UiWorkflowRecordPanel extends WfWithApi {
     this.busy.set(true);
     try {
       const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input());
+      const n = ++this.seq;
       this.record.set(r);
+      this.error.set('');
       this.pending.set(null);
       this.changed.emit(r);
-      if (this.showHistory()) this.history.set(await api.recordHistory(this.entity(), this.entityId(), 50).catch(() => []));
+      await this.loadHistory(api, n);
     } catch (e) {
       const msg = wfErrorText(e, 'That did not work.');
       if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
@@ -388,14 +455,11 @@ export class UiWorkflowRecordPanel extends WfWithApi {
 /** `ui-workflow-tasks` — the signed-in person's approvals and tasks: due first, overdue marked. */
 @Component({
   selector: 'ui-workflow-tasks',
-  imports: [HugeiconsIconComponent, UiButton, WfDecideDialog],
+  imports: [HugeiconsIconComponent, UiButton, UiIconButton, UiSegmented, WfDecideDialog],
   template: `
     <div class="head">
-      <div class="tabs" role="tablist">
-        <button type="button" role="tab" [attr.aria-selected]="status() === 'open'" [class.on]="status() === 'open'" (click)="status.set('open')">Open</button>
-        <button type="button" role="tab" [attr.aria-selected]="status() === 'done'" [class.on]="status() === 'done'" (click)="status.set('done')">Done</button>
-      </div>
-      <button type="button" class="wf-icon-btn" (click)="reload()" aria-label="Refresh"><hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="15" [strokeWidth]="1.8" /></button>
+      <ui-segmented size="sm" label="Which tasks" [options]="statusOptions" [value]="status()" (valueChange)="status.set($event === 'done' ? 'done' : 'open')" />
+      <ui-icon-button size="sm" label="Refresh" (click)="reload()"><hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="15" [strokeWidth]="1.8" /></ui-icon-button>
     </div>
     @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
     <ul class="list" role="list">
@@ -417,16 +481,12 @@ export class UiWorkflowRecordPanel extends WfWithApi {
         <li class="empty">{{ status() === 'open' ? 'Nothing is waiting for you.' : 'No finished tasks yet.' }}</li>
       }
     </ul>
-    @if (total() > tasks().length) { <ui-button size="sm" variant="ghost" (click)="more()">Show more</ui-button> }
+    @if (total() > tasks().length) { <div><ui-button size="sm" variant="outline" (click)="more()">Show more</ui-button></div> }
     <ui-wf-decide [task]="openTask()" [api]="client()" (closed)="openTask.set(null)" (decided)="afterDecide($event)" />
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-2); }
-    .head { display: flex; align-items: center; justify-content: space-between; }
-    .tabs { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--ui-radius); background: var(--ui-color-surface-hover); }
-    .tabs button { height: 24px; padding: 0 12px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 12.5px; font-weight: 550; cursor: pointer; }
-    .tabs button.on { background: var(--ui-color-surface); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }
-    .tabs button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
     .list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
@@ -450,6 +510,8 @@ export class UiWorkflowTasks extends WfWithApi {
   readonly decided = output<UiWfTask>();
   protected readonly icons = WF_ICONS;
   protected readonly status = signal<'open' | 'done'>('open');
+  protected readonly statusOptions: UiSegmentedOption[] = [{ value: 'open', label: 'Open' }, { value: 'done', label: 'Done' }];
+  private seq = 0;
   protected readonly tasks = signal<UiWfTask[]>([]);
   protected readonly total = signal(0);
   protected readonly error = signal('');
@@ -470,13 +532,15 @@ export class UiWorkflowTasks extends WfWithApi {
   async reload(): Promise<void> {
     const api = this.client();
     if (!api) return;
+    const n = ++this.seq;
     try {
       const page = await api.tasks({ scope: this.scope(), status: this.status() === 'open' ? ['open'] : ['completed', 'timedOut', 'cancelled'], take: this.take });
+      if (n !== this.seq) return;
       this.tasks.set(page.items);
       this.total.set(page.total);
       this.error.set('');
     } catch (e) {
-      this.error.set(wfErrorText(e, 'Could not load tasks.'));
+      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load tasks.'));
     }
   }
 
@@ -485,11 +549,7 @@ export class UiWorkflowTasks extends WfWithApi {
     void this.reload();
   }
 
-  protected outcomeLabel(t: UiWfTask): string {
-    if (t.status === 'timedOut') return 'Out of time';
-    if (t.status === 'cancelled') return 'Cancelled';
-    return t.outcomes.find((o) => o.key === t.outcome)?.label ?? t.outcome ?? 'Done';
-  }
+  protected readonly outcomeLabel = wfTaskResult;
 
   protected afterDecide(t: UiWfTask): void {
     this.openTask.set(null);
@@ -511,13 +571,13 @@ export class UiWorkflowTasks extends WfWithApi {
     @if (run(); as r) {
       <header class="head">
         <div class="t"><strong>{{ r.title }}</strong> <span class="v">v{{ r.version }}</span>
-          <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span></div>
+          <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
         <span class="m">{{ r.entityTitle ?? r.entityId ?? '' }} · started {{ ago(r.startedAt) }}{{ r.initiatorName ? ' by ' + r.initiatorName : '' }}</span>
       </header>
       @if (r.status === 'incident') {
         <div class="incident" role="alert">
           <p><strong>Stopped:</strong> {{ r.error }}</p>
-          @if (canIntervene()) {
+          @if (mayIntervene()) {
             @if (incidents().length > 1) {
               <!-- Several paths stopped: each can be retried or skipped on its own. -->
               <ul class="stops">
@@ -528,18 +588,18 @@ export class UiWorkflowTasks extends WfWithApi {
                   </li>
                 }
               </ul>
-              <div class="wf-row"><ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+              <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
             } @else {
               <div class="wf-row">
                 <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
                 <ui-button size="sm" variant="outline" (click)="act('skip')" [disabled]="busy()">Skip the step</ui-button>
-                <ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
+                <ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
               </div>
             }
           }
         </div>
-      } @else if (canIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
-        <div class="wf-row"><ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+      } @else if (mayIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
+        <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
       }
       @if (error()) { <p class="wf-error">{{ error() }}</p> }
       <ol class="steps">
@@ -554,7 +614,7 @@ export class UiWorkflowTasks extends WfWithApi {
       </ol>
       @if (r.tasks?.length) {
         <section class="tasks"><h4>Tasks</h4>
-          <ul>@for (t of r.tasks!; track t.id) { <li>{{ t.title }} — {{ t.status === 'open' ? 'waiting for ' + t.assigneeNames.join(', ') : (t.outcome ?? t.status) }}</li> }</ul>
+          <ul>@for (t of r.tasks!; track t.id) { <li>{{ t.title }} — {{ t.status === 'open' ? 'waiting for ' + t.assigneeNames.join(', ') + ', due ' + ago(t.dueAt) : taskResult(t) }}</li> }</ul>
         </section>
       }
     } @else if (error()) {
@@ -572,7 +632,8 @@ export class UiWorkflowTasks extends WfWithApi {
     .incident { padding: 8px 10px; border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
     .incident p { margin: 0 0 6px; }
     .stops { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .stops li { display: flex; align-items: center; gap: var(--ui-space-2); }
+    .stops li { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
+    .wf-row { flex-wrap: wrap; }
     .stops span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
     .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 5px 8px; border-left: 2px solid var(--ui-color-border); }
@@ -592,13 +653,20 @@ export class UiWorkflowTasks extends WfWithApi {
 })
 export class UiWorkflowRun extends WfWithApi {
   readonly instanceId = input.required<string>();
-  /** Show retry, skip and cancel (needs the intervention permission on the server). */
-  readonly canIntervene = input(false);
+  /**
+   * Show retry, skip and cancel. Left unset, the view asks the engine (`me().can.intervene`), so only
+   * people the server lets intervene see them; the server checks again either way.
+   */
+  readonly canIntervene = input<boolean | null>(null);
   readonly changed = output<UiWfInstance>();
   protected readonly run = signal<UiWfInstance | null>(null);
   private readonly definition = signal<UiWorkflowDefinition | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+  private readonly allowed = signal(false);
+  protected readonly mayIntervene = computed(() => this.canIntervene() ?? this.allowed());
+  protected readonly taskResult = wfTaskResult;
+  private seq = 0;
 
   /** The paths stopped by a failure: one per token waiting on an incident, named after its step. */
   protected readonly incidents = computed(() => {
@@ -640,6 +708,11 @@ export class UiWorkflowRun extends WfWithApi {
       const id = this.instanceId();
       if (api) untracked(() => void this.load(api, id));
     });
+    effect(() => {
+      const api = this.client();
+      if (!api || this.canIntervene() !== null) return;
+      untracked(() => void Promise.resolve(api.me?.()).then((me) => this.allowed.set(!!me?.can?.intervene), () => this.allowed.set(false)));
+    });
   }
 
   async reload(): Promise<void> {
@@ -648,31 +721,30 @@ export class UiWorkflowRun extends WfWithApi {
   }
 
   private async load(api: UiWorkflowApi, id: string): Promise<void> {
+    const n = ++this.seq;
     try {
       const [run, def] = await Promise.all([api.instance(id), api.instanceDefinition(id)]);
+      if (n !== this.seq) return;
       this.run.set(run);
       this.definition.set(def);
       this.error.set('');
     } catch (e) {
-      this.error.set(wfErrorText(e, 'Could not load the run.'));
+      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the run.'));
     }
   }
 
-  protected statusLabel(s: string): string {
-    return { queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' }[s] ?? s;
-  }
-
-  protected statusTone(s: string): string {
-    return s === 'completed' ? 'success' : s === 'incident' || s === 'failed' ? 'danger' : s === 'cancelled' || s === 'outOfSync' ? 'warning' : 'info';
-  }
+  protected readonly statusLabel = wfRunStatusLabel;
+  protected readonly statusTone = wfRunStatusTone;
 
   protected async act(kind: 'retry' | 'skip' | 'cancel', target?: string): Promise<void> {
     const api = this.client();
     const r = this.run();
-    if (!api || !r) return;
+    if (!api || !r || this.busy()) return;
     this.busy.set(true);
+    this.error.set('');
     try {
       const next = kind === 'retry' ? await api.retry(r.id, target) : kind === 'skip' ? await api.skip(r.id, undefined, target) : await api.cancel(r.id, 'Cancelled from the run view');
+      this.seq++;
       this.run.set(next);
       this.changed.emit(next);
     } catch (e) {
@@ -685,7 +757,16 @@ export class UiWorkflowRun extends WfWithApi {
 
 // ── Audit log ─────────────────────────────────────────────────────────────
 
-const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trigger', 'settings', 'audit'];
+/** One line of an audit entry's before/after/details, for people to read. */
+interface AuditRow { key: string; value: string }
+
+function auditRows(text: string | null): AuditRow[] {
+  const v = wfAuditJson(text);
+  return Object.entries(v).map(([k, x]) => ({
+    key: wfHumanize(k),
+    value: x === null || x === undefined ? '—' : typeof x === 'object' ? JSON.stringify(x) : typeof x === 'boolean' ? (x ? 'Yes' : 'No') : String(x),
+  }));
+}
 
 /**
  * `ui-workflow-audit` — the tamper-evident audit log: filter by record, run, kind or person, see
@@ -693,15 +774,12 @@ const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trig
  */
 @Component({
   selector: 'ui-workflow-audit',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, UiSelect],
   template: `
     <div class="filters">
-      <select class="wf-select" aria-label="Kind" (change)="category.set($any($event.target).value)">
-        <option value="">Everything</option>
-        @for (c of categories; track c) { <option [value]="c" [selected]="c === category()">{{ c }}</option> }
-      </select>
+      <ui-select class="kind" size="sm" label="Kind" [options]="categories" [ngModel]="category()" (ngModelChange)="category.set($event ?? '')" />
       @if (!entityId()) {
-        <ui-input size="sm" placeholder="Record id" [ngModel]="recordFilter()" (ngModelChange)="recordFilter.set($event)" aria-label="Record id" />
+        <ui-input size="sm" placeholder="Record id" [ngModel]="recordText()" (ngModelChange)="typeRecord($event)" aria-label="Record id" />
       }
       <span class="grow"></span>
       <ui-button size="sm" variant="ghost" (click)="verify()" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.SecurityCheckIcon" [size]="14" [strokeWidth]="1.8" />Check integrity</ui-button>
@@ -718,19 +796,29 @@ const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trig
         <li>
           <button type="button" class="row" (click)="toggle(e.seq)" [attr.aria-expanded]="open().has(e.seq)">
             <span class="seq">#{{ e.seq }}</span>
-            <span class="what"><span class="cat" [attr.data-cat]="e.category">{{ e.category }}</span> {{ e.action }}</span>
+            <span class="what"><span class="cat" [attr.data-cat]="e.category">{{ categoryLabel(e.category) }}</span> {{ actionLabel(e.category, e.action) }}</span>
             <span class="who">{{ e.actorName ?? e.actorId ?? e.actorType }}</span>
             <span class="at" [attr.title]="e.at">{{ when(e.at) }}</span>
           </button>
           @if (open().has(e.seq)) {
             <div class="more">
               <dl>
-                <dt>Subject</dt><dd>{{ e.subjectType }} {{ e.subjectId }}{{ e.entity ? ' (' + e.entity + ' ' + e.entityId + ')' : '' }}</dd>
-                @if (e.before) { <dt>Before</dt><dd><code>{{ e.before }}</code></dd> }
-                @if (e.after) { <dt>After</dt><dd><code>{{ e.after }}</code></dd> }
-                @if (e.data) { <dt>Details</dt><dd><code>{{ e.data }}</code></dd> }
+                <dt>About</dt><dd>{{ subjectLabel(e) }}</dd>
+                @if (raw().has(e.seq)) {
+                  @if (e.before) { <dt>Before</dt><dd><code>{{ e.before }}</code></dd> }
+                  @if (e.after) { <dt>After</dt><dd><code>{{ e.after }}</code></dd> }
+                  @if (e.data) { <dt>Details</dt><dd><code>{{ e.data }}</code></dd> }
+                } @else {
+                  @for (part of parts(e); track part.label) {
+                    <dt>{{ part.label }}</dt>
+                    <dd><dl class="kv">@for (row of part.rows; track row.key) { <dt>{{ row.key }}</dt><dd>{{ row.value }}</dd> }</dl></dd>
+                  }
+                }
                 <dt>Hash</dt><dd><code class="hash">{{ e.hash }}</code></dd>
               </dl>
+              @if (e.before || e.after || e.data) {
+                <ui-button size="sm" variant="outline" (click)="toggleRaw(e.seq)">{{ raw().has(e.seq) ? 'Show as a list' : 'Show the raw data' }}</ui-button>
+              }
             </div>
           }
         </li>
@@ -738,12 +826,12 @@ const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trig
         <li class="empty">No entries.</li>
       }
     </ol>
-    @if (hasMore()) { <ui-button size="sm" variant="ghost" (click)="older()">Older entries</ui-button> }
+    @if (hasMore()) { <div><ui-button size="sm" variant="outline" (click)="older()">Older entries</ui-button></div> }
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
-    .filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    .filters .wf-select { width: auto; height: var(--ui-size-sm); }
+    .filters { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); align-items: center; }
+    .filters .kind { width: 200px; }
     .filters ui-input { width: 140px; }
     .filters ui-button hugeicons-icon { margin-right: 4px; }
     .grow { flex: 1; }
@@ -761,8 +849,9 @@ const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trig
     .cat[data-cat="settings"], .cat[data-cat="definition"] { color: var(--ui-color-warning); }
     .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-color-text-secondary); }
     .at { font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; }
-    .more { padding: 6px 10px 10px 66px; background: var(--ui-color-bg); }
+    .more { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); padding: 6px 10px 10px 66px; background: var(--ui-color-bg); }
     dl { display: grid; grid-template-columns: 70px 1fr; gap: 4px 10px; margin: 0; font-size: 12px; }
+    dl.kv { grid-template-columns: minmax(80px, max-content) 1fr; gap: 2px 10px; }
     dt { color: var(--ui-color-text-muted); }
     dd { margin: 0; overflow-wrap: anywhere; }
     code { font-family: var(--ui-font-mono); font-size: 11.5px; }
@@ -779,16 +868,23 @@ export class UiWorkflowAudit extends WfWithApi {
   readonly instanceId = input<string | null>(null);
   readonly pageSize = input(50);
   protected readonly icons = WF_ICONS;
-  protected readonly categories = CATEGORIES;
+  protected readonly categories: UiSelectOption[] = [{ value: '', label: 'Everything' }, ...WF_AUDIT_CATEGORIES];
+  protected readonly categoryLabel = wfAuditCategoryLabel;
+  protected readonly actionLabel = wfAuditActionLabel;
   protected readonly category = signal('');
+  /** What is typed in the record filter; it reaches `recordFilter` (and the server) after a pause. */
+  protected readonly recordText = signal('');
   protected readonly recordFilter = signal('');
+  private recordTimer: ReturnType<typeof setTimeout> | undefined;
+  protected readonly raw = signal<ReadonlySet<number>>(new Set());
+  private seq = 0;
   protected readonly entries = signal<UiWfAuditEntry[]>([]);
   protected readonly hasMore = signal(false);
   protected readonly open = signal<ReadonlySet<number>>(new Set());
   protected readonly verification = signal<UiWfAuditVerification | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected override readonly when = wfDateTime;
+  protected override readonly when = (iso: string | null | undefined) => wfDateTime(iso);
 
   constructor() {
     super();
@@ -811,15 +907,45 @@ export class UiWorkflowAudit extends WfWithApi {
   async load(older: boolean): Promise<void> {
     const api = this.client();
     if (!api) return;
+    const n = ++this.seq;
     try {
       const before = older ? this.entries()[this.entries().length - 1]?.seq : undefined;
       const page = await api.audit({ ...this.query(), before });
+      if (n !== this.seq) return;
       this.entries.set(older ? [...this.entries(), ...page] : page);
       this.hasMore.set(page.length === this.pageSize());
       this.error.set('');
     } catch (e) {
-      this.error.set(wfErrorText(e, 'Could not load the audit log.'));
+      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the audit log.'));
     }
+  }
+
+  protected typeRecord(v: string): void {
+    this.recordText.set(v ?? '');
+    clearTimeout(this.recordTimer);
+    this.recordTimer = setTimeout(() => this.recordFilter.set((v ?? '').trim()), 350);
+  }
+
+  protected subjectLabel(e: UiWfAuditEntry): string {
+    const record = e.entity ? `${wfHumanize(e.entity)} ${e.entityId ?? ''}`.trim() : '';
+    const subject = `${wfHumanize(e.subjectType)} ${e.subjectId}`;
+    return record && e.subjectType !== e.entity ? `${subject} (${record})` : record || subject;
+  }
+
+  protected parts(e: UiWfAuditEntry): { label: string; rows: AuditRow[] }[] {
+    return [
+      { label: 'Before', rows: auditRows(e.before) },
+      { label: 'After', rows: auditRows(e.after) },
+      { label: 'Details', rows: auditRows(e.data) },
+    ].filter((p) => p.rows.length);
+  }
+
+  protected toggleRaw(seq: number): void {
+    this.raw.update((s) => {
+      const n = new Set(s);
+      if (n.has(seq)) n.delete(seq); else n.add(seq);
+      return n;
+    });
   }
 
   protected older(): void {
@@ -836,7 +962,7 @@ export class UiWorkflowAudit extends WfWithApi {
 
   protected async verify(): Promise<void> {
     const api = this.client();
-    if (!api) return;
+    if (!api || this.busy()) return;
     this.busy.set(true);
     try {
       this.verification.set(await api.verifyAudit());
@@ -849,7 +975,7 @@ export class UiWorkflowAudit extends WfWithApi {
 
   protected async exportAs(format: 'csv' | 'json'): Promise<void> {
     const api = this.client();
-    if (!api) return;
+    if (!api || this.busy()) return;
     this.busy.set(true);
     try {
       const blob = await api.exportAudit({ ...this.query(), format });
