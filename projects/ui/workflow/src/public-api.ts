@@ -8,4 +8,5 @@ export * from './definition';
 export * from './layout';
 export * from './workflow-builder';
 export * from './runtime';
+export * from './panel';
 export * from './global-settings';

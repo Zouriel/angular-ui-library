@@ -211,70 +211,39 @@ export class WfDecideDialog {
 // ── Record panel ──────────────────────────────────────────────────────────
 
 /**
- * `ui-workflow-record-panel` — drop onto a record's page: its lifecycle state, the moves the
- * signed-in person may make (with their forms), open tasks, buttons for manual workflows, and the
- * history of what happened.
+ * The moves a person may make on a record now, its manual workflows and open tasks, with the
+ * dialogs that go with them (confirmation, transition form, decision). Shared by the record panel
+ * and the workflow panel; internal, but exported so both entry points can use it.
  */
 @Component({
-  selector: 'ui-workflow-record-panel',
-  imports: [FormsModule, UiButton, UiModal, UiFormRenderer, UiWorkflowStateBadge, WfDecideDialog],
+  selector: 'ui-wf-record-actions',
+  imports: [UiButton, UiModal, UiFormRenderer, WfDecideDialog],
   template: `
-    @if (record(); as r) {
-      <div class="state">
-        @if (r.state) {
-          <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
-          <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
-          @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
-        } @else {
-          <span class="wf-hint">No lifecycle for this record type.</span>
+    @let r = record();
+    @if (r.transitions.length || r.manual.length) {
+      <div class="actions">
+        @for (t of r.transitions; track t.key) {
+          <ui-button size="sm" [variant]="t.tone === 'danger' ? 'destructive' : t.tone === 'success' || t.tone === 'primary' ? 'primary' : 'outline'" (click)="start(t)" [disabled]="busy()">{{ t.label }}</ui-button>
+        }
+        @for (m of r.manual; track m.key) {
+          <ui-button size="sm" variant="outline" (click)="startManual(m)" [disabled]="busy()">{{ m.label }}</ui-button>
         }
       </div>
-      @if (r.states.length > 1) {
-        <ol class="track" aria-label="Lifecycle">
-          @for (s of r.states; track s.key) {
-            <li [class.here]="s.key === r.state" [class.done]="passed(r, s.key)" [attr.data-tone]="s.tone ?? 'neutral'"><span>{{ s.label }}</span></li>
-          }
-        </ol>
-      }
-      @if (r.transitions.length || r.manual.length) {
-        <div class="actions">
-          @for (t of r.transitions; track t.key) {
-            <ui-button size="sm" [variant]="t.tone === 'danger' ? 'destructive' : t.tone === 'success' || t.tone === 'primary' ? 'primary' : 'outline'" (click)="start(t)" [disabled]="busy()">{{ t.label }}</ui-button>
-          }
-          @for (m of r.manual; track m.key) {
-            <ui-button size="sm" variant="ghost" (click)="startManual(m)" [disabled]="busy()">{{ m.label }}</ui-button>
-          }
-        </div>
-      }
-      @if (r.tasks.length) {
-        <section>
-          <h3>Waiting for</h3>
-          <ul class="tasks">
-            @for (t of r.tasks; track t.id) {
-              <li><button type="button" class="task" (click)="openTask.set(t)" [disabled]="!t.canDecide">
-                <span class="tt">{{ t.title }}</span><span class="who">{{ t.assigneeNames.join(', ') }} · due {{ ago(t.dueAt) }}</span>
-                @if (t.canDecide) { <span class="wf-chip" data-tone="primary">Your turn</span> }
-              </button></li>
-            }
-          </ul>
-        </section>
-      }
-      @if (showHistory()) {
-        <section>
-          <h3>History</h3>
-          <ol class="history">
-            @for (h of history(); track h.seq) {
-              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
-            } @empty { <li class="wf-hint">Nothing yet.</li> }
-          </ol>
-        </section>
-      }
-      @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
-    } @else if (error()) {
-      <p class="wf-error" role="alert">{{ error() }}</p>
-    } @else {
-      <p class="wf-hint">Loading…</p>
     }
+    @if (showTasks() && r.tasks.length) {
+      <section>
+        <h3>Waiting for</h3>
+        <ul class="tasks">
+          @for (t of r.tasks; track t.id) {
+            <li><button type="button" class="task" (click)="openTask.set(t)" [disabled]="!t.canDecide">
+              <span class="tt">{{ t.title }}</span><span class="who">{{ t.assigneeNames.join(', ') }} · due {{ ago(t.dueAt) }}</span>
+              @if (t.canDecide) { <span class="wf-chip" data-tone="primary">Your turn</span> }
+            </button></li>
+          }
+        </ul>
+      </section>
+    }
+    @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
 
     <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" size="md">
       @if (pending(); as p) {
@@ -296,15 +265,9 @@ export class WfDecideDialog {
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
-    .state { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
-    .since { font-size: 12px; color: var(--ui-color-text-muted); }
-    .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
-    .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
-    .track li.done { color: var(--ui-color-text-secondary); }
-    .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
-    .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
     h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
-    .tasks, .history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .tasks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .task { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
     .task:disabled { cursor: default; }
@@ -313,12 +276,154 @@ export class WfDecideDialog {
     .tt { font-weight: 600; }
     .who { grid-column: 1; font-size: 12px; color: var(--ui-color-text-muted); }
     .task .wf-chip { grid-row: 1 / 3; grid-column: 2; }
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .confirm p { margin: 0; }
+    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
+  `],
+})
+export class WfRecordActions extends WfWithApi {
+  readonly record = input.required<UiWfRecord>();
+  readonly entity = input.required<string>();
+  readonly entityId = input.required<string>();
+  /** List the record's open tasks (the record panel does; the workflow panel shows them per state too). */
+  readonly showTasks = input(true);
+  /** A move was applied: the record as it is now. */
+  readonly changed = output<UiWfRecord>();
+  /** Something changed that needs a fresh read (a decision, a manual start). */
+  readonly reload = output<void>();
+  private readonly form = viewChild(UiFormRenderer);
+  protected readonly busy = signal(false);
+  protected readonly error = signal('');
+  protected readonly pending = signal<UiWfTransitionOption | null>(null);
+  protected readonly pendingManual = signal<string | null>(null);
+  protected readonly pendingError = signal('');
+  protected readonly input = signal<Record<string, unknown>>({});
+  protected readonly openTask = signal<UiWfTask | null>(null);
+
+  protected start(t: UiWfTransitionOption): void {
+    if (this.busy()) return;
+    this.pendingManual.set(null);
+    this.pendingError.set('');
+    this.input.set({});
+    if (!t.form && !t.confirm) { void this.apply(t.key); return; }
+    this.pending.set(t);
+  }
+
+  protected startManual(m: UiWfRecord['manual'][number]): void {
+    if (this.busy()) return;
+    this.pendingManual.set(m.key);
+    this.pendingError.set('');
+    this.input.set({});
+    if (!m.form) { void this.runManual(m.key); return; }
+    this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form });
+  }
+
+  protected confirm(): void {
+    const p = this.pending();
+    // A double click on the confirm button must not apply the move twice.
+    if (!p || this.busy()) return;
+    // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
+    if (p.form && !this.form()?.submit()) return;
+    if (this.pendingManual()) void this.runManual(p.key);
+    else void this.apply(p.key);
+  }
+
+  private async apply(key: string): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input());
+      this.error.set('');
+      this.pending.set(null);
+      this.changed.emit(r);
+    } catch (e) {
+      const msg = wfErrorText(e, 'That did not work.');
+      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async runManual(key: string): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      await api.startManual(key, this.entity(), this.entityId(), this.input());
+      this.error.set('');
+      this.pending.set(null);
+      this.reload.emit();
+    } catch (e) {
+      const msg = wfErrorText(e, 'That did not work.');
+      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected afterDecide(): void {
+    this.openTask.set(null);
+    this.reload.emit();
+  }
+}
+
+/**
+ * `ui-workflow-record-panel` — drop onto a record's page: its lifecycle state, the moves the
+ * signed-in person may make (with their forms), open tasks, buttons for manual workflows, and the
+ * history of what happened.
+ */
+@Component({
+  selector: 'ui-workflow-record-panel',
+  imports: [UiWorkflowStateBadge, WfRecordActions],
+  template: `
+    @if (record(); as r) {
+      <div class="state">
+        @if (r.state) {
+          <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
+          <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
+          @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
+        } @else {
+          <span class="wf-hint">No lifecycle for this record type.</span>
+        }
+      </div>
+      @if (r.states.length > 1) {
+        <ol class="track" aria-label="Lifecycle">
+          @for (s of r.states; track s.key) {
+            <li [class.here]="s.key === r.state" [class.done]="passed(r, s.key)" [attr.data-tone]="s.tone ?? 'neutral'"><span>{{ s.label }}</span></li>
+          }
+        </ol>
+      }
+      <ui-wf-record-actions [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" />
+      @if (showHistory()) {
+        <section>
+          <h3>History</h3>
+          <ol class="history">
+            @for (h of history(); track h.seq) {
+              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
+            } @empty { <li class="wf-hint">Nothing yet.</li> }
+          </ol>
+        </section>
+      }
+    } @else if (error()) {
+      <p class="wf-error" role="alert">{{ error() }}</p>
+    } @else {
+      <p class="wf-hint">Loading…</p>
+    }
+  `,
+  styles: [WF_SHARED_STYLES, `
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
+    .state { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
+    .since { font-size: 12px; color: var(--ui-color-text-muted); }
+    .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
+    .track li.done { color: var(--ui-color-text-secondary); }
+    .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
+    h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
+    .history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .history li { display: flex; flex-direction: column; padding: 4px 0 4px 12px; border-left: 2px solid var(--ui-color-border); }
     .hw { font-size: 13px; }
     .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
-    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
-    .confirm p { margin: 0; }
-    .foot { display: flex; justify-content: space-between; width: 100%; }
   `],
 })
 export class UiWorkflowRecordPanel extends WfWithApi {
@@ -327,16 +432,9 @@ export class UiWorkflowRecordPanel extends WfWithApi {
   readonly showHistory = input(true);
   /** Fired after the record changed through the panel (so the page can reload its own data). */
   readonly changed = output<UiWfRecord>();
-  private readonly form = viewChild(UiFormRenderer);
   protected readonly record = signal<UiWfRecord | null>(null);
   protected readonly history = signal<UiWfAuditEntry[]>([]);
-  protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly pending = signal<UiWfTransitionOption | null>(null);
-  protected readonly pendingManual = signal<string | null>(null);
-  protected readonly pendingError = signal('');
-  protected readonly input = signal<Record<string, unknown>>({});
-  protected readonly openTask = signal<UiWfTask | null>(null);
   /** Bumped by every load and change, so a slower older answer never replaces a newer one. */
   private seq = 0;
 
@@ -376,73 +474,12 @@ export class UiWorkflowRecordPanel extends WfWithApi {
 
   protected readonly passed = wfStatePassed;
 
-  protected start(t: UiWfTransitionOption): void {
-    if (this.busy()) return;
-    this.pendingManual.set(null);
-    this.pendingError.set('');
-    this.input.set({});
-    if (!t.form && !t.confirm) { void this.apply(t.key); return; }
-    this.pending.set(t);
-  }
-
-  protected startManual(m: UiWfRecord['manual'][number]): void {
-    if (this.busy()) return;
-    this.pendingManual.set(m.key);
-    this.pendingError.set('');
-    this.input.set({});
-    if (!m.form) { void this.runManual(m.key); return; }
-    this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form });
-  }
-
-  protected confirm(): void {
-    const p = this.pending();
-    // A double click on the confirm button must not apply the move twice.
-    if (!p || this.busy()) return;
-    // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
-    if (p.form && !this.form()?.submit()) return;
-    if (this.pendingManual()) void this.runManual(p.key);
-    else void this.apply(p.key);
-  }
-
-  private async apply(key: string): Promise<void> {
+  protected async moved(r: UiWfRecord): Promise<void> {
+    const n = ++this.seq;
+    this.record.set(r);
+    this.changed.emit(r);
     const api = this.client();
-    if (!api) return;
-    this.busy.set(true);
-    try {
-      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input());
-      const n = ++this.seq;
-      this.record.set(r);
-      this.error.set('');
-      this.pending.set(null);
-      this.changed.emit(r);
-      await this.loadHistory(api, n);
-    } catch (e) {
-      const msg = wfErrorText(e, 'That did not work.');
-      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  private async runManual(key: string): Promise<void> {
-    const api = this.client();
-    if (!api) return;
-    this.busy.set(true);
-    try {
-      await api.startManual(key, this.entity(), this.entityId(), this.input());
-      this.pending.set(null);
-      await this.reload();
-    } catch (e) {
-      const msg = wfErrorText(e, 'That did not work.');
-      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  protected afterDecide(): void {
-    this.openTask.set(null);
-    void this.reload();
+    if (api) await this.loadHistory(api, n);
   }
 
   protected describeHistory(h: UiWfAuditEntry): string {

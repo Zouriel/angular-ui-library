@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, output, viewChild } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
@@ -18,17 +18,21 @@ let drawerSeq = 0;
   template: `
     @if (open()) {
       <div #layer class="ui-layer">
-      <div class="backdrop" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave" (click)="onBackdrop()"></div>
+      @if (modal()) {
+        <div class="backdrop" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave" (click)="onBackdrop()"></div>
+      }
       <div
         class="panel"
-        cdkTrapFocus
-        [cdkTrapFocusAutoCapture]="true"
+        [cdkTrapFocus]="modal()"
+        [cdkTrapFocusAutoCapture]="modal()"
         [attr.data-side]="side()"
         [class.glass]="glass()"
         [class.no-radius]="!radius()"
         [style.--ui-slide-from]="slideFrom()"
         role="dialog"
-        aria-modal="true"
+        [attr.aria-modal]="modal() ? 'true' : null"
+        (pointerenter)="panelEnter.emit()"
+        (pointerleave)="panelLeave.emit()"
         [attr.aria-labelledby]="title() ? labelId : null"
         (keydown.escape)="onEscape()"
         animate.enter="ui-sheet-enter"
@@ -87,6 +91,14 @@ export class UiDrawer {
   title = input<string>();
   closeOnBackdrop = input(true);
   closeOnEscape = input(true);
+  /**
+   * Modal (default): a backdrop, locked page scroll and focus kept inside. Set false for a panel that
+   * sits over the page without blocking it (a peek opened on hover); Escape still closes it.
+   */
+  modal = input(true);
+  /** The pointer entered or left the panel (for hover-opened drawers that close when it leaves). */
+  readonly panelEnter = output<void>();
+  readonly panelLeave = output<void>();
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
   protected readonly labelId = `ui-drawer-${drawerSeq++}`;
@@ -122,7 +134,7 @@ export class UiDrawer {
     });
 
     effect(() => {
-      const open = this.open();
+      const open = this.open() && this.modal();
       if (!this.browser) return;
       if (open && !this.locked) {
         lockBodyScroll(this.doc);
