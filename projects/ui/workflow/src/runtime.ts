@@ -56,7 +56,9 @@ import { WF_SHARED_STYLES } from './styles';
       color: var(--wf-c); background: color-mix(in srgb, var(--wf-c) 13%, transparent); }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
     .badge[data-tone="neutral"] { --wf-c: var(--ui-color-text-secondary); }
-    .badge[data-tone="info"], .badge[data-tone="primary"] { --wf-c: var(--ui-color-primary); }
+    .badge[data-tone="primary"] { --wf-c: var(--ui-color-primary); }
+    /* Themes that give info its own colour show it; the rest fall back to primary through the token. */
+    .badge[data-tone="info"] { --wf-c: var(--ui-color-info); }
     .badge[data-tone="success"] { --wf-c: var(--ui-color-success); }
     .badge[data-tone="warning"] { --wf-c: var(--ui-color-warning); }
     .badge[data-tone="danger"] { --wf-c: var(--ui-color-danger); }

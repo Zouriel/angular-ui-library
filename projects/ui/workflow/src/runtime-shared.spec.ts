@@ -4,6 +4,10 @@ import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfRemarksLabel, wfS
 describe('wfActorLabel', () => {
   const titles = (k: string) => ({ financeSignOff: 'Pay approved scholarships' } as Record<string, string>)[k];
 
+  it('prefers the title over a name that is only the key', () => {
+    expect(wfActorLabel({ actorType: 'workflow', actorId: 'financeSignOff', actorName: 'financeSignOff' }, titles)).toBe('Workflow: Pay approved scholarships');
+  });
+
   it('names a workflow by its title, never its key', () => {
     expect(wfActorLabel({ actorType: 'workflow', actorId: 'financeSignOff', actorName: null }, titles)).toBe('Workflow: Pay approved scholarships');
   });

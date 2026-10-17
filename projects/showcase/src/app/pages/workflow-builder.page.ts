@@ -5,10 +5,6 @@ import {
   UI_WORKFLOW_API,
   UI_WORKFLOW_CLOCK,
   UiWorkflowBuilder,
-  UiWorkflowPermissions,
-  UiWorkflowTasksDrawer,
-  UiWorkflowRecordPanel,
-  UiWorkflowTasks,
   createWorkflow,
   type UiWorkflowDefinition,
 } from '@zouriel/ui/workflow';
@@ -20,7 +16,7 @@ const DOCS_USER = 'hana';
 
 @Component({
   selector: 'page-workflow-builder',
-  imports: [RouterLink, UiButton, UiWorkflowBuilder, UiWorkflowPermissions, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowTasksDrawer, DocDemo, DocPage, DocSection],
+  imports: [RouterLink, UiButton, UiWorkflowBuilder, DocDemo, DocPage, DocSection],
   // This page always acts as Hana, the head of office (who may edit, test and see everything), with
   // its own API, so it never changes the person the studio acts as. Times follow the sandbox clock.
   providers: [
@@ -46,43 +42,27 @@ const DOCS_USER = 'hana';
             <li><strong>Backend.</strong> Add <code>Zouriel.Workflows.AspNetCore</code> and <code>Zouriel.Workflows.EntityFrameworkCore</code>, call <code>modelBuilder.AddWorkflows()</code> in your DbContext and add the interceptor.</li>
             <li><strong>Register.</strong> In <code>AddWorkflows</code>, list the entities, the fields to watch or change, the field a lifecycle may own, your actions and events, and plug in your users and notifications.</li>
             <li><strong>Serve.</strong>{{ ' ' }}<code>app.MapWorkflowApi("/api/workflows")</code> with your authorization policies.</li>
-            <li><strong>Frontend.</strong>{{ ' ' }}<code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
+            <li><strong>Frontend.</strong>{{ ' ' }}<code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components (see Workflow components).</li>
           </ol>
         </doc-demo>
         <doc-demo lang="ts" [code]="frontend"></doc-demo>
       </doc-section>
 
       <doc-section name="Builder" selector="ui-workflow-builder" [api]="builderApi"
-        summary="Automations are a trigger card and a list of steps: press + between steps (or drag one in from the left) and branches, outcomes and parallel paths appear as columns. Drag a step by its grip to move it anywhere, including into another branch; the ⋯ menu also moves, duplicates, turns off or deletes it. Lifecycles are a diagram: drag a state to move it, drag from its handle onto another state to add a transition (tap the handle, then the target, on touch), and edit what each transition or state runs underneath. A lifecycle can also let chosen people start a record over (Starting over, in its settings): the reset chip beside “From any state” sets who may, where it goes back to, a reason form, and the steps it runs, which can change the record, related records and each item of a list. When someone resets a record, the dialog lists what the workflow did (fields it changed anywhere, records it created, actions, messages), all ticked, and they untick what should stay. Applies to, in a lifecycle's settings, limits it to some records (e.g. applications whose type is Passport), and the Create record step adds a record of any kind, which a reset can delete again. Every change is checked by the engine as you go; Versions publishes and rolls back, Test runs the draft against a real record without changing anything. Below 1100px the palette moves into a dialog, and on phones the settings open in a bottom sheet.">
+        summary="Automations are a trigger card and a list of steps: press + between steps (or drag one in from the left) and branches, outcomes and parallel paths appear as columns. Drag a step by its grip to move it anywhere, including into another branch; the ⋯ menu also moves, duplicates, turns off or deletes it. Lifecycles are a diagram: drag a state to move it, drag from its handle onto another state to add a transition (tap the handle, then the target, on touch), and edit what each transition or state runs underneath. A lifecycle can also let chosen people start a record over (Starting over, in its settings): the reset chip beside “From any state” sets who may, where it goes back to, a reason form, and the steps it runs, which can change the record, related records and each item of a list. “Offer it” limits Start over to a state onwards. When someone resets a record, the dialog lists what the workflow did (fields it changed anywhere, records it created, actions, messages), with everything that can be undone ticked, and they untick what should stay. Red moves, Start over, rejections and a task’s red buttons ask for remarks; each has a Remarks setting to make them optional or required. Applies to, in a lifecycle's settings, limits it to some records (e.g. applications whose type is Passport), and the Create record step adds a record of any kind, which a reset can delete again. Every change is checked by the engine as you go; Versions publishes and rolls back, Test runs the draft against a real record without changing anything. Below 1100px the palette moves into a dialog, and on phones the settings open in a bottom sheet.">
         <div class="builder-frame">
           <ui-workflow-builder [definition]="def()" (definitionChange)="def.set($event)" />
         </div>
         <doc-demo [code]="builderCode"></doc-demo>
       </doc-section>
 
-      <doc-section name="Record panel" selector="ui-workflow-record-panel" [api]="panelApi"
-        summary="Drop it onto a record's page: it shows the record's state, the moves this person may make (with their confirmation or form), open tasks they can decide, buttons for manual workflows, and the history. This one is an application in the playground, seen by Hana, the head of office: she may approve, reject or withdraw it and decide its tasks, while submitting or starting a review belong to the applicant and the reviewers. Act as them in the studio to see their buttons.">
-        <div class="panel-demo"><ui-workflow-record-panel entity="application" entityId="1" /></div>
-        <doc-demo [code]="panelCode"></doc-demo>
-      </doc-section>
-
-      <doc-section name="Tasks, runs, audit and settings" selector="ui-workflow-tasks · ui-workflow-run · ui-workflow-audit · ui-workflow-global-settings"
-        summary="The task inbox lists the signed-in person's approvals and tasks (due first, overdue marked) and opens the decision with its form. The run view draws one run over its workflow, with retry, skip and cancel for admins. The audit view filters, exports and checks the hash chain. Global settings hold working hours and holidays, defaults, channels, webhook addresses, audit retention and masking, and pausing per record type. See them all working in the studio.">
-        <div class="panel-demo"><ui-workflow-tasks /></div>
-        <doc-demo [code]="runtimeCode"></doc-demo>
-      </doc-section>
-
-      <doc-section name="My tasks drawer" selector="ui-workflow-tasks-drawer" [api]="drawerApi"
-        summary="A button for an app's header: it shows how many approvals and tasks wait for the signed-in person (red when one is overdue) and opens the task inbox in a drawer. Open it from code too, for a link in an email or a keyboard shortcut.">
-        <div class="drawer-demo"><ui-workflow-tasks-drawer /></div>
-        <doc-demo [code]="drawerCode"></doc-demo>
-      </doc-section>
-
-      <doc-section name="Permissions" selector="ui-workflow-permissions" [api]="permissionsApi"
-        summary="One settings page for who may do what across every published workflow: who may make each lifecycle move, start a record over, press a start button, and decide each approval or task. Saving publishes a new version with only those changes, straight away, so nobody has to open the builder to swap an approver. People without the right to publish see the same list, read-only.">
-        <div class="permissions-demo"><ui-workflow-permissions /></div>
-        <doc-demo [code]="permissionsCode"></doc-demo>
-      </doc-section>
+      <aside class="studio-cta">
+        <div>
+          <strong>Running workflows in your app</strong>
+          <p>The panels, the task inbox and drawer, run and audit views, and the permissions and settings pages are on their own page, each with a live demo and its inputs.</p>
+        </div>
+        <ui-button variant="outline" routerLink="/workflow-components">See the workflow components</ui-button>
+      </aside>
     </doc-page>
   `,
   styles: `
@@ -92,10 +72,7 @@ const DOCS_USER = 'hana';
     .steps { margin: 0; padding-left: var(--ui-space-4); display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.5; }
     .builder-frame { --w: min(1480px, calc(100vw - 360px)); width: var(--w); margin-left: min(0px, calc((100% - var(--w)) / 2)); height: min(820px, calc(100dvh - 120px)); }
     .builder-frame ui-workflow-builder { height: 100%; }
-    .drawer-demo { padding: var(--ui-space-3); margin-bottom: var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
-    .permissions-demo { max-height: 560px; overflow: auto; margin-bottom: var(--ui-space-4); }
     .builder-frame { margin-bottom: var(--ui-space-4); }
-    .panel-demo { max-width: 520px; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     @media (max-width: 900px) { .builder-frame { --w: 100%; margin-left: 0; } }
     @media (max-width: 720px) { .builder-frame { width: auto; height: calc(100dvh - 120px); min-height: 520px; margin: 0 calc(-1 * var(--ui-space-4)); } }
   `,
@@ -130,13 +107,6 @@ providers: [
 
   protected readonly builderCode = `<ui-workflow-builder [(definition)]="workflow" [published]="published" [persist]="true" (saved)="reload()" />`;
 
-  protected readonly panelCode = `<ui-workflow-record-panel entity="application" [entityId]="app.id" (changed)="reloadApp()" />`;
-
-  protected readonly runtimeCode = `<ui-workflow-tasks />                                   <!-- my approvals and tasks -->
-<ui-workflow-run [instanceId]="runId" [canIntervene]="isAdmin" />
-<ui-workflow-audit entity="application" [entityId]="app.id" />
-<ui-workflow-global-settings />                         <!-- your settings page -->`;
-
   protected readonly builderApi: ApiRow[] = [
     { name: 'definition', type: 'model<UiWorkflowDefinition>', desc: 'The workflow being built (spec JSON). Two-way.' },
     { name: 'published', type: 'UiWorkflowDefinition | null', default: 'null', desc: 'The published version; locks the record type and key.' },
@@ -148,43 +118,5 @@ providers: [
     { name: '(saved)', type: 'UiWorkflowDefinition', desc: 'After a successful save through the API.' },
     { name: '(dirtyChange)', type: 'boolean', desc: 'True while there are unsaved edits (guard leaving the page with it).' },
     { name: '[wfActions]', type: 'content', desc: 'Your own buttons in the header.' },
-  ];
-
-  protected readonly drawerCode = `<!-- in the app header -->
-<ui-workflow-tasks-drawer (decided)="reload()" />
-
-<!-- your own control, opening it from code -->
-<ui-workflow-tasks-drawer [showButton]="false" [(open)]="tasksOpen" />`;
-
-  protected readonly drawerApi: ApiRow[] = [
-    { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open. Two-way.' },
-    { name: 'label', type: 'string', default: "'My tasks'", desc: 'The button and drawer title.' },
-    { name: 'side', type: "'left' | 'right'", default: "'right'", desc: 'Where the drawer opens.' },
-    { name: 'size / variant', type: 'UiSize / button variant', default: "'sm' / 'outline'", desc: 'How the button looks.' },
-    { name: 'showButton', type: 'boolean', default: 'true', desc: 'Show the built-in button (off to open it from your own control).' },
-    { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes while the page is visible (0: only on open, close and decisions).' },
-    { name: 'pageSize', type: 'number', default: '25', desc: 'Tasks per page in the inbox.' },
-    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API.' },
-    { name: '(decided)', type: 'UiWfTask', desc: 'After a task was decided in the drawer.' },
-  ];
-
-  protected readonly permissionsCode = `<!-- a settings page -->
-<ui-workflow-permissions (saved)="reload()" />
-
-// The engine endpoint it saves through (PublishPolicy):
-// POST /api/workflows/definitions/{id}/permissions
-// { "changes": [{ "node": "<transition or step id | reset | trigger>", "who": [{ "role": "finance" }] }], "note": "…" }`;
-
-  protected readonly permissionsApi: ApiRow[] = [
-    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API. Needs updatePermissions to save; me is optional (without it, editing is offered and the server decides).' },
-    { name: '(saved)', type: 'UiWfDefinitionSummary', desc: 'After a workflow’s permissions were saved (the new version).' },
-  ];
-
-  protected readonly panelApi: ApiRow[] = [
-    { name: 'entity', type: 'string', desc: 'The record type key, as registered.' },
-    { name: 'entityId', type: 'string', desc: 'The record id.' },
-    { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show the record’s workflow history.' },
-    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API.' },
-    { name: '(changed)', type: 'UiWfRecord', desc: 'After a transition was applied through the panel.' },
   ];
 }

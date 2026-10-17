@@ -47,6 +47,8 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
   selector: 'ui-workflow-global-settings',
   imports: [FormsModule, HugeiconsIconComponent, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfDurationInput],
   template: `
+    <!-- The host is the size container, so the layout lives on this wrapper (a container query can't restyle the container itself). -->
+    <div class="gs">
     <nav class="nav" aria-label="Settings sections">
       @for (s of sections; track s.value) {
         <button type="button" [class.on]="section() === s.value" [attr.aria-current]="section() === s.value ? 'page' : null" (click)="section.set(s.value)">{{ s.label }}</button>
@@ -190,10 +192,12 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
         <ui-button size="sm" (click)="save()" [disabled]="!dirty() || busy()">Save settings</ui-button>
       </footer>
     }
+    </div>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; min-height: 420px; border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius); background: var(--ui-color-bg); color: var(--ui-color-text); font-size: 13.5px; overflow: hidden; container-type: inline-size; }
+    :host { display: block; container-type: inline-size; }
+    .gs { display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: 100%; min-height: 420px; border: 1px solid var(--ui-color-border);
+      border-radius: var(--ui-radius); background: var(--ui-color-bg); color: var(--ui-color-text); font-size: 13.5px; overflow: hidden; }
     .nav { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 2px; padding: var(--ui-space-2); background: var(--ui-color-surface); border-right: 1px solid var(--ui-color-border); }
     .nav button { height: 30px; padding: 0 10px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
     .nav button:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
@@ -226,7 +230,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .foot { display: flex; align-items: center; gap: 8px; padding: 8px var(--ui-space-4); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .foot .wf-error { margin: 0; }
     @container (max-width: 620px) {
-      :host { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; }
+      .gs { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; }
       .nav { grid-row: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ui-color-border); }
       .nav button { flex: none; }
       .conn { grid-template-columns: 1fr; }

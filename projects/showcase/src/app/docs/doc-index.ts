@@ -159,6 +159,22 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'JSON format', anchor: 'json-format' },
     { name: 'Reference', anchor: 'reference' },
   ],
+  'workflow-builder': [
+    { name: 'How it fits together', anchor: 'how-it-fits-together' },
+    { name: 'Builder', anchor: 'builder' },
+  ],
+  'workflow-components': [
+    { name: 'Workflow panel', anchor: 'panel' },
+    { name: 'Record panel', anchor: 'record-panel' },
+    { name: 'My tasks drawer', anchor: 'tasks-drawer' },
+    { name: 'Task inbox', anchor: 'tasks' },
+    { name: 'Run', anchor: 'run' },
+    { name: 'Audit log', anchor: 'audit' },
+    { name: 'State badge', anchor: 'state-badge' },
+    { name: 'Permissions', anchor: 'permissions' },
+    { name: 'Global settings', anchor: 'global-settings' },
+    { name: 'Putting a settings page together', anchor: 'settings-page' },
+  ],
   'file-viewer': [
     { name: 'File viewer (dispatcher)', anchor: 'file-viewer-dispatcher' },
     { name: 'Image viewer', anchor: 'image-viewer' },
