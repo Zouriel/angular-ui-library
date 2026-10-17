@@ -123,7 +123,7 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
   protected readonly stopped = signal<UiWfInstance[]>([]);
   /** The stopped workflow opened in the drawer, if any. */
   protected readonly openRun = signal<UiWfInstance | null>(null);
-  /** Whether the engine lets this person intervene, asked once per API. */
+  /** Whether the engine lets this person intervene, asked once per API (asked again after a failed answer). */
   private interveneFor: { api: unknown; may: Promise<boolean> } | null = null;
   /** What the badge counts: open tasks and stopped workflows. */
   protected readonly total = computed(() => this.count() + this.stopped().length);
@@ -138,11 +138,16 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
 
   constructor() {
     super();
-    // Count on start, whenever the API changes, and each time the drawer opens or closes.
+    // Count on start, whenever the API or the scope changes, and each time the drawer opens or closes.
     effect(() => {
       this.client();
-      this.open();
-      untracked(() => void this.refresh());
+      this.scope();
+      const open = this.open();
+      untracked(() => {
+        // Closing goes back to the list: the next opening starts there, not on an old run.
+        if (!open) this.openRun.set(null);
+        void this.refresh();
+      });
     });
     const destroy = inject(DestroyRef);
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -174,7 +179,15 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
     const seq = ++this.seq;
     try {
       if (this.interveneFor?.api !== api) {
-        this.interveneFor = { api, may: Promise.resolve(api.me?.()).then((me) => !!me?.can?.intervene, () => false) };
+        const asked: { api: unknown; may: Promise<boolean> } = {
+          api,
+          // A failed answer is not cached: the next refresh asks again.
+          may: Promise.resolve(api.me?.()).then((me) => !!me?.can?.intervene, () => {
+            if (this.interveneFor === asked) this.interveneFor = null;
+            return false;
+          }),
+        };
+        this.interveneFor = asked;
       }
       const [page, may] = await Promise.all([api.tasks({ scope: this.scope(), status: ['open'], take: COUNT_TAKE }), this.interveneFor.may]);
       const stopped = may ? (await api.instances({ status: ['incident'], take: COUNT_TAKE }).catch(() => null))?.items ?? [] : [];

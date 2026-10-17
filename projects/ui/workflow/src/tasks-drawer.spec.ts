@@ -76,6 +76,13 @@ describe('UiWorkflowTasksDrawer', () => {
     expect(document.body.textContent).toContain('All tasks');
   });
 
+  it('counts again when the scope changes', async () => {
+    const { f, scopes } = await render([task('a')]);
+    f.componentRef.setInput('scope', 'all');
+    for (let i = 0; i < 3; i++) { await f.whenStable(); f.detectChanges(); }
+    expect(scopes.at(-1)).toBe('all');
+  });
+
   it('can be opened from code without its button', async () => {
     const { f, el } = await render([task('a')], { showButton: false });
     expect(el.querySelector('ui-button')).toBeNull();
@@ -169,6 +176,39 @@ describe('UiWorkflowTasksDrawer', () => {
       for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
       expect(document.querySelector('ui-wf-run-view')).not.toBeNull();
       expect(document.querySelector('ui-wf-task-inbox')).toBeNull();
+    });
+
+    it('a closed drawer opens on the list again, not on the run that was open', async () => {
+      const { f } = await renderAs(true);
+      f.componentInstance.open.set(true);
+      for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      (document.querySelector('.stop') as HTMLButtonElement).click();
+      for (let i = 0; i < 3; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      expect(document.querySelector('ui-wf-run-view')).not.toBeNull();
+      f.componentInstance.open.set(false);
+      for (let i = 0; i < 3; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      f.componentInstance.open.set(true);
+      for (let i = 0; i < 3; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      expect(document.querySelector('ui-wf-run-view')).toBeNull();
+      expect(document.querySelector('ui-wf-task-inbox')).not.toBeNull();
+    });
+
+    it('asks again whether this person may intervene after a failed answer', async () => {
+      let fail = true;
+      const asked: unknown[] = [];
+      const f = TestBed.createComponent(UiWorkflowTasksDrawer);
+      f.componentRef.setInput('api', {
+        tasks: async () => ({ items: [], total: 0 }),
+        me: async () => { if (fail) throw new Error('offline'); return { can: { intervene: true } }; },
+        instances: async (q: unknown) => { asked.push(q); return { items: [stuck], total: 1 }; },
+      } as unknown as UiWorkflowApi);
+      f.componentRef.setInput('refreshSeconds', 0);
+      f.detectChanges();
+      for (let i = 0; i < 3; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      expect(asked).toEqual([]);
+      fail = false;
+      await f.componentInstance.refresh();
+      expect(asked).toHaveLength(1);
     });
 
     it('not for people who may not: nothing asked, nothing counted', async () => {
