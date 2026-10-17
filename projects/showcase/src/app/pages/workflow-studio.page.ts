@@ -7,6 +7,8 @@ import {
   UiWorkflowAudit,
   UiWorkflowBuilder,
   UiWorkflowGlobalSettings,
+  UiWorkflowPermissions,
+  UiWorkflowTasksDrawer,
   UiWorkflowRecordPanel,
   UiWorkflowRun,
   UiWorkflowStateBadge,
@@ -22,7 +24,7 @@ import { WorkflowPlayground, readStored, writeStored, type DemoApplication, type
 
 const TAB_KEY = 'zouriel-workflow-studio-tab';
 
-type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings';
+type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'permissions' | 'settings';
 
 /**
  * The workflow playground: a small scholarship office running on the real .NET engine (a private
@@ -31,7 +33,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowStateBadge],
+  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
   providers: [
     { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
     // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
@@ -54,6 +56,8 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'settings
           <ui-button size="sm" variant="ghost" (click)="advance('P1D')" [disabled]="busy()">+1 day</ui-button>
           <ui-button size="sm" variant="ghost" (click)="advance('P3D')" [disabled]="busy()">+3 days</ui-button>
         </div>
+        <!-- The person's own approvals and tasks, from anywhere in the app. -->
+        <ui-workflow-tasks-drawer (decided)="refresh()" />
         <ui-button size="sm" variant="outline" (click)="askReset.set(true)" [disabled]="busy()">Start over</ui-button>
       </header>
 
@@ -191,6 +195,11 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                 </div>
               }
               @case ('audit') { <h2>Audit log</h2><ui-workflow-audit /> }
+              @case ('permissions') {
+                <h2>Who may do what</h2>
+                <p class="hint">Every published workflow's moves, start buttons and approvals, and who may do each. Saving publishes a new version at once.</p>
+                <ui-workflow-permissions (saved)="pg.changed()" />
+              }
               @case ('settings') { <h2>Settings</h2><ui-workflow-global-settings class="settings" /> }
             }
           </section>
@@ -221,7 +230,7 @@ export class WorkflowStudioPage {
   private readonly panel = viewChild<UiWorkflowRecordPanel>('panel');
   protected readonly tabs: { value: Tab; label: string }[] = [
     { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'My tasks' },
-    { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'settings', label: 'Settings' },
+    { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'permissions', label: 'Permissions' }, { value: 'settings', label: 'Settings' },
   ];
   protected readonly tab = signal<Tab>(this.storedTab());
   protected readonly busy = signal(false);
@@ -265,7 +274,7 @@ export class WorkflowStudioPage {
 
   private storedTab(): Tab {
     const t = readStored(TAB_KEY);
-    return t && ['workflows', 'applications', 'tasks', 'runs', 'audit', 'settings'].includes(t) ? (t as Tab) : 'applications';
+    return t && ['workflows', 'applications', 'tasks', 'runs', 'audit', 'permissions', 'settings'].includes(t) ? (t as Tab) : 'applications';
   }
 
   protected setTab(t: Tab): void {

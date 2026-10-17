@@ -5,6 +5,8 @@ import {
   UI_WORKFLOW_API,
   UI_WORKFLOW_CLOCK,
   UiWorkflowBuilder,
+  UiWorkflowPermissions,
+  UiWorkflowTasksDrawer,
   UiWorkflowRecordPanel,
   UiWorkflowTasks,
   createWorkflow,
@@ -18,7 +20,7 @@ const DOCS_USER = 'hana';
 
 @Component({
   selector: 'page-workflow-builder',
-  imports: [RouterLink, UiButton, UiWorkflowBuilder, UiWorkflowRecordPanel, UiWorkflowTasks, DocDemo, DocPage, DocSection],
+  imports: [RouterLink, UiButton, UiWorkflowBuilder, UiWorkflowPermissions, UiWorkflowRecordPanel, UiWorkflowTasks, UiWorkflowTasksDrawer, DocDemo, DocPage, DocSection],
   // This page always acts as Hana, the head of office (who may edit, test and see everything), with
   // its own API, so it never changes the person the studio acts as. Times follow the sandbox clock.
   providers: [
@@ -69,6 +71,18 @@ const DOCS_USER = 'hana';
         <div class="panel-demo"><ui-workflow-tasks /></div>
         <doc-demo [code]="runtimeCode"></doc-demo>
       </doc-section>
+
+      <doc-section name="My tasks drawer" selector="ui-workflow-tasks-drawer" [api]="drawerApi"
+        summary="A button for an app's header: it shows how many approvals and tasks wait for the signed-in person (red when one is overdue) and opens the task inbox in a drawer. Open it from code too, for a link in an email or a keyboard shortcut.">
+        <div class="drawer-demo"><ui-workflow-tasks-drawer /></div>
+        <doc-demo [code]="drawerCode"></doc-demo>
+      </doc-section>
+
+      <doc-section name="Permissions" selector="ui-workflow-permissions" [api]="permissionsApi"
+        summary="One settings page for who may do what across every published workflow: who may make each lifecycle move, start a record over, press a start button, and decide each approval or task. Saving publishes a new version with only those changes, straight away, so nobody has to open the builder to swap an approver. People without the right to publish see the same list, read-only.">
+        <div class="permissions-demo"><ui-workflow-permissions /></div>
+        <doc-demo [code]="permissionsCode"></doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `
@@ -78,6 +92,8 @@ const DOCS_USER = 'hana';
     .steps { margin: 0; padding-left: var(--ui-space-4); display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.5; }
     .builder-frame { --w: min(1480px, calc(100vw - 360px)); width: var(--w); margin-left: min(0px, calc((100% - var(--w)) / 2)); height: min(820px, calc(100dvh - 120px)); }
     .builder-frame ui-workflow-builder { height: 100%; }
+    .drawer-demo { padding: var(--ui-space-3); margin-bottom: var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
+    .permissions-demo { max-height: 560px; overflow: auto; margin-bottom: var(--ui-space-4); }
     .builder-frame { margin-bottom: var(--ui-space-4); }
     .panel-demo { max-width: 520px; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     @media (max-width: 900px) { .builder-frame { --w: 100%; margin-left: 0; } }
@@ -132,6 +148,35 @@ providers: [
     { name: '(saved)', type: 'UiWorkflowDefinition', desc: 'After a successful save through the API.' },
     { name: '(dirtyChange)', type: 'boolean', desc: 'True while there are unsaved edits (guard leaving the page with it).' },
     { name: '[wfActions]', type: 'content', desc: 'Your own buttons in the header.' },
+  ];
+
+  protected readonly drawerCode = `<!-- in the app header -->
+<ui-workflow-tasks-drawer (decided)="reload()" />
+
+<!-- your own control, opening it from code -->
+<ui-workflow-tasks-drawer [showButton]="false" [(open)]="tasksOpen" />`;
+
+  protected readonly drawerApi: ApiRow[] = [
+    { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open. Two-way.' },
+    { name: 'label', type: 'string', default: "'My tasks'", desc: 'The button and drawer title.' },
+    { name: 'side', type: "'left' | 'right'", default: "'right'", desc: 'Where the drawer opens.' },
+    { name: 'size / variant', type: 'UiSize / button variant', default: "'sm' / 'outline'", desc: 'How the button looks.' },
+    { name: 'showButton', type: 'boolean', default: 'true', desc: 'Show the built-in button (off to open it from your own control).' },
+    { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes (0: only on open, close and decisions).' },
+    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API.' },
+    { name: '(decided)', type: 'UiWfTask', desc: 'After a task was decided in the drawer.' },
+  ];
+
+  protected readonly permissionsCode = `<!-- a settings page -->
+<ui-workflow-permissions (saved)="reload()" />
+
+// The engine endpoint it saves through (PublishPolicy):
+// POST /api/workflows/definitions/{id}/permissions
+// { "changes": [{ "node": "<transition or step id | reset | trigger>", "who": [{ "role": "finance" }] }], "note": "…" }`;
+
+  protected readonly permissionsApi: ApiRow[] = [
+    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API (needs updatePermissions and me).' },
+    { name: '(saved)', type: 'UiWfDefinitionSummary', desc: 'After a workflow’s permissions were saved (the new version).' },
   ];
 
   protected readonly panelApi: ApiRow[] = [

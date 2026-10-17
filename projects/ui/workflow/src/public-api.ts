@@ -10,3 +10,5 @@ export * from './workflow-builder';
 export * from './runtime';
 export * from './panel';
 export * from './global-settings';
+export * from './tasks-drawer';
+export * from './permissions';

@@ -1,6 +1,6 @@
 import { InjectionToken, inject, type Provider } from '@angular/core';
 import type { UiFormDefinition } from '@zouriel/ui/form-builder';
-import type { UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
+import type { UiWfAssignee, UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
 
 // Shapes returned by the workflow REST API (spec api/openapi.yaml). Engines in every language
 // return these; the components below only talk to an engine through `UiWorkflowApi`.
@@ -25,6 +25,12 @@ export interface UiWfDefinitionSummary {
   updatedAt: string;
   updatedBy: string | null;
   runningInstances: number;
+}
+
+/** One "who" to replace in `updatePermissions`: a transition or step id, `'reset'` or `'trigger'`. */
+export interface UiWfPermissionChange {
+  node: string;
+  who: UiWfAssignee[];
 }
 
 export interface UiWfVersionInfo {
@@ -311,6 +317,12 @@ export interface UiWorkflowApi {
   archive(id: string): Promise<UiWfDefinitionSummary>;
   restore(id: string): Promise<UiWfDefinitionSummary>;
   rollback(id: string, version: number): Promise<UiWfDefinitionSummary>;
+  /**
+   * Changes who may do what in a published workflow, at once: publishes a new version that is the
+   * current one plus only these changes (and applies them to the draft, if any). `node` is a transition
+   * or step id, `'reset'` or `'trigger'`.
+   */
+  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string): Promise<UiWfDefinitionSummary>;
   version(id: string, version: number): Promise<UiWorkflowDefinition>;
   diff(id: string): Promise<string[]>;
   validate(def: UiWorkflowDefinition): Promise<UiWfProblem[]>;
@@ -453,6 +465,7 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   archive(id: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/archive`); }
   restore(id: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/restore`); }
   rollback(id: string, version: number) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/rollback`, { version }); }
+  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/permissions`, { changes, note: note ?? null }); }
   version(id: string, version: number) { return this.call<UiWorkflowDefinition>('GET', `/definitions/${encodeURIComponent(id)}/versions/${version}`); }
   diff(id: string) { return this.call<string[]>('GET', `/definitions/${encodeURIComponent(id)}/diff`); }
   validate(def: UiWorkflowDefinition) { return this.call<UiWfProblem[]>('POST', '/validate', def); }
