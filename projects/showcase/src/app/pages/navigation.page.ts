@@ -10,7 +10,7 @@ import CreditCardIcon from '@hugeicons/core-free-icons/CreditCardIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import {
-  UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
+  UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
   type UiBreadcrumb, type UiBottomNavItem, type UiSideNavGroup, type UiMenubarMenu, type UiAnchorItem, type UiStep,
 } from '@zouriel/ui/navigation';
 import { UiTabs, UiTab } from '@zouriel/ui/tabs';
@@ -19,7 +19,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-navigation',
   imports: [
-    UiText, UiButton, UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
+    UiText, UiButton, UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
     UiTabs, UiTab, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -83,10 +83,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Stepper" selector="ui-stepper" [api]="stepApi" anchor="nav-stepper"
-        summary="Horizontal progress through ordered steps. Display only, with no clicks or outputs: steps before active show as done, and the active step gets aria-current=&quot;step&quot;. Below 560px only the active step keeps its label."
+        summary="Progress through ordered steps. Display only, with no clicks or outputs: steps before active show as done, and the active step gets aria-current=&quot;step&quot;. Horizontal by default (below 560px only the active step keeps its label); orientation=&quot;vertical&quot; stacks the steps and shows a uiStepBody template under each one (details, history, actions). variant=&quot;dots&quot; draws a compact strip of dots: finished and current steps in the tone (the current one ringed), steps not reached in the text colour, labels kept for screen readers. tone=&quot;success&quot; colours finished steps green."
         [shapes]="'interface UiStep { label: string; description?: string; }'">
         <doc-demo code="<ui-stepper [steps]=&quot;steps&quot; [active]=&quot;step&quot; />">
           <ui-stepper [steps]="steps" [active]="step()" />
+          <ui-stepper [steps]="steps" [active]="step()" orientation="vertical" tone="success" label="Checkout">
+            <ng-template uiStepBody let-state="state"><span class="step-note">{{ state === 'done' ? 'Done' : state === 'active' ? 'In progress' : 'Not started' }}</span></ng-template>
+          </ui-stepper>
+          <ui-stepper [steps]="steps" [active]="step()" variant="dots" tone="success" label="Checkout progress" />
           <div class="row">
             <ui-button size="sm" variant="outline" (click)="step.set(Math.max(0, step()-1))">Back</ui-button>
             <ui-button size="sm" (click)="step.set(Math.min(3, step()+1))">Next</ui-button>
@@ -125,6 +129,7 @@ section[id] { scroll-margin-top: 80px; }">
     </doc-page>
   `,
   styles: `
+    .step-note { font-size: 12.5px; color: var(--ui-color-text-muted); }
     .row { display: flex; gap: var(--ui-space-3); }
     .boxed { max-width: 260px; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
   `,
@@ -195,6 +200,11 @@ export class NavigationPage {
   protected readonly stepApi: ApiRow[] = [
     { name: 'steps', type: 'UiStep[]', default: '[]', desc: 'Ordered steps.' },
     { name: 'active', type: 'number', default: '0', desc: 'Index of the current step. Steps before it show as done; set it past the last to show all done.' },
+    { name: 'orientation', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Vertical stacks the steps and shows a uiStepBody template under each.' },
+    { name: 'variant', type: "'default' | 'dots'", default: "'default'", desc: 'Dots: small dots only, labels kept for screen readers and as tooltips.' },
+    { name: 'tone', type: "'primary' | 'success'", default: "'primary'", desc: 'The colour of finished and current steps.' },
+    { name: 'label', type: 'string', default: "''", desc: 'An accessible name for the list of steps.' },
+    { name: 'uiStepBody', type: 'ng-template', default: '—', desc: 'Content under each step in a vertical stepper; context: $implicit (the step), index, state (done | active | todo).' },
   ];
   protected readonly menubarApi: ApiRow[] = [{ name: 'menus', type: 'UiMenubarMenu[]', default: '[]', desc: 'Top-level menus.' }];
   protected readonly menubarOut: ApiRow[] = [{ name: 'select', type: 'UiMenubarItem', default: '—', desc: 'Chosen item.' }];

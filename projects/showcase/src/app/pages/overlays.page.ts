@@ -80,8 +80,8 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi"
-        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content.">
+      <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi" [outputs]="drawerOut"
+        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. With [modal]=&quot;false&quot; it sits over the page without blocking it (no backdrop, scroll lock or focus trap; Escape still closes it), for a peek opened on hover; (panelEnter) and (panelLeave) say when the pointer enters or leaves it. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content.">
         <doc-demo code="<ui-drawer [(open)]=&quot;open&quot; side=&quot;right&quot; title=&quot;Panel&quot;>…</ui-drawer>">
           <ui-button variant="outline" (click)="drawer.set(true)">Open drawer</ui-button>
         </doc-demo>
@@ -343,7 +343,13 @@ interface UiToastAction {
     { name: 'closeOnEscape', type: 'boolean', default: 'true', desc: 'Esc to close.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'modal', type: 'boolean', default: 'true', desc: 'False: no backdrop, scroll lock or focus trap, so the page stays usable (a hover peek).' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls when it is taller than the drawer.' },
+  ];
+  protected readonly drawerOut: ApiRow[] = [
+    { name: 'openChange', type: 'boolean', default: '—', desc: 'From `[(open)]`.' },
+    { name: 'panelEnter', type: 'void', default: '—', desc: 'The pointer entered the panel.' },
+    { name: 'panelLeave', type: 'void', default: '—', desc: 'The pointer left the panel (for drawers that close when it leaves).' },
   ];
   protected readonly confirmApi: ApiRow[] = [
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the prompt is showing; both buttons set it to false.' },
