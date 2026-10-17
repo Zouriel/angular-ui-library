@@ -43,8 +43,8 @@ const DOCS_USER = 'hana';
           <ol class="steps">
             <li><strong>Backend.</strong> Add <code>Zouriel.Workflows.AspNetCore</code> and <code>Zouriel.Workflows.EntityFrameworkCore</code>, call <code>modelBuilder.AddWorkflows()</code> in your DbContext and add the interceptor.</li>
             <li><strong>Register.</strong> In <code>AddWorkflows</code>, list the entities, the fields to watch or change, the field a lifecycle may own, your actions and events, and plug in your users and notifications.</li>
-            <li><strong>Serve.</strong> <code>app.MapWorkflowApi("/api/workflows")</code> with your authorization policies.</li>
-            <li><strong>Frontend.</strong> <code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
+            <li><strong>Serve.</strong>&#32;<code>app.MapWorkflowApi("/api/workflows")</code> with your authorization policies.</li>
+            <li><strong>Frontend.</strong>&#32;<code>provideUiWorkflow(&#123; baseUrl: '/api/workflows' &#125;)</code>, then drop in the components below.</li>
           </ol>
         </doc-demo>
         <doc-demo lang="ts" [code]="frontend"></doc-demo>
