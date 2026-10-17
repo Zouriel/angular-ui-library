@@ -162,4 +162,31 @@ describe('UiWorkflowPanel', () => {
     await new Promise((r) => setTimeout(r, 350));
     expect(fixture.componentInstance.open()).toBe(false);
   });
+
+  it('offers the reset to those allowed: confirm first, then the engine starts the record over', async () => {
+    const calls: unknown[] = [];
+    const fixture = TestBed.createComponent(Host);
+    const r = record('Review', { reset: { label: 'Start over', to: 'Draft', toLabel: 'Draft', confirm: 'Start this application over?', form: null } });
+    fixture.componentInstance.api = {
+      record: async () => r,
+      recordHistory: async () => [entry('created', 'Draft'), entry('transitioned', 'Review', 'Draft')],
+      resetRecord: async (...args: unknown[]) => { calls.push(args); return record('Draft'); },
+    } as unknown as UiWorkflowApi;
+    fixture.detectChanges();
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const btn = [...el.querySelectorAll('ui-button')].find((b) => b.textContent?.trim() === 'Start over') as HTMLElement;
+    expect(btn).toBeTruthy();
+    expect(el.textContent).toContain('Back to “Draft”');
+    btn.querySelector('button')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.body.textContent).toContain('Start this application over?');
+    const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
+    confirm.querySelector('button')!.click();
+    await new Promise((res) => setTimeout(res));
+    expect(calls).toEqual([['application', '1', {}]]);
+  });
 });
+

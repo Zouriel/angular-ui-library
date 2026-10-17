@@ -82,11 +82,17 @@ interface DrawnEdge {
           }
         }
       </ui-canvas-viewport>
-      @if (anyState().length) {
+      @if (anyState().length || lifecycle()?.reset) {
         <div class="any">
           <span class="wf-label">From any state</span>
           @for (t of anyState(); track t.id) {
             <button type="button" class="wf-chip anychip" [class.on]="isTransitionSelected(t.id)" (click)="selectTransition(t.id)">{{ t.label }} → {{ stateLabel(t.to) }}</button>
+          }
+          @if (lifecycle()?.reset; as r) {
+            <button type="button" class="wf-chip anychip reset" [class.on]="store.selection()?.kind === 'reset'" (click)="selectReset()"
+              [attr.aria-label]="'Reset: ' + (r.label ?? 'Reset workflow') + ', back to ' + resetTarget()">
+              <hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="12" [strokeWidth]="2" />{{ r.label ?? 'Reset workflow' }} → {{ resetTarget() }}
+            </button>
           }
         </div>
       }
@@ -109,6 +115,13 @@ interface DrawnEdge {
                 <li><button type="button" class="wf-link" (click)="addFromList(s)">Add a transition</button></li>
               }
             </ul>
+          </section>
+        }
+        @if (lifecycle()?.reset; as r) {
+          <section class="lstate" role="listitem" [class.selected]="store.selection()?.kind === 'reset'">
+            <button type="button" class="lhead" (click)="selectReset()">
+              <span class="name">{{ r.label ?? 'Reset workflow' }}</span><span class="wf-chip">from any state → {{ resetTarget() }}</span>
+            </button>
           </section>
         }
       </div>
@@ -166,6 +179,7 @@ interface DrawnEdge {
     .any .wf-label { margin: 0; }
     .anychip { border: 0; cursor: pointer; font: inherit; font-size: 11.5px; height: 22px; }
     .anychip.on { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
+    .anychip.reset { display: inline-flex; align-items: center; gap: 4px; }
     .list { flex: 1; overflow: auto; padding: var(--ui-space-2); display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .lstate { border: 1px solid var(--ui-color-border); border-left: 3px solid var(--wf-tone, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .lstate[data-tone="info"] { --wf-tone: var(--ui-color-primary); }
@@ -278,6 +292,18 @@ export class WfLifecycleCanvas {
   protected background(): void {
     this.connectFrom.set(null);
     this.store.selection.set({ kind: 'workflow' });
+  }
+
+  /** The state a reset goes back to (its own `to`, else the starting state). */
+  protected readonly resetTarget = computed(() => {
+    const lc = this.lifecycle();
+    const id = lc?.reset?.to ?? lc?.states.find((s) => s.category === 'initial')?.id;
+    return id ? this.stateLabel(id) : '';
+  });
+
+  protected selectReset(): void {
+    this.store.selection.set({ kind: 'reset' });
+    this.ui.inspectRequest.update((n) => n + 1);
   }
 
   protected selectTransition(id: string): void {
@@ -463,10 +489,11 @@ export class WfLifecycleRuns {
   private readonly owner = computed(() => {
     const s = this.store.selection();
     if (!s) return null;
-    if (s.kind === 'state' || s.kind === 'transition') return s;
+    if (s.kind === 'state' || s.kind === 'transition' || s.kind === 'reset') return s;
     if (s.kind === 'step') {
       const root = this.store.steps().get(s.id)?.path[0];
       if (!root || root === 'root') return null;
+      if (root === 'reset') return { kind: 'reset' as const };
       const [kind, id] = root.split(':');
       return kind === 'transition' ? { kind: 'transition' as const, id } : { kind: 'state' as const, id };
     }
@@ -476,6 +503,7 @@ export class WfLifecycleRuns {
   protected readonly lists = computed(() => {
     const o = this.owner();
     if (!o) return [];
+    if (o.kind === 'reset') return [{ value: 'reset', label: 'On reset' }];
     if (o.kind === 'transition') return [{ value: `transition:${o.id}`, label: 'Then do' }];
     const st = this.store.def().lifecycle?.states.find((x) => x.id === o.id);
     if (!st) return [];
@@ -500,11 +528,13 @@ export class WfLifecycleRuns {
   protected readonly title = computed(() => {
     const o = this.owner();
     const lc = this.store.def().lifecycle;
+    if (o?.kind === 'reset') return `On “${lc?.reset?.label ?? 'Reset workflow'}”`;
     if (o?.kind === 'transition') return `After “${lc?.transitions.find((t) => t.id === o.id)?.label ?? ''}”`;
     return `In “${lc?.states.find((s) => s.id === o?.id)?.label ?? ''}”`;
   });
   protected readonly hint = computed(() => {
     const k = this.activeList().split(':')[0];
+    if (k === 'reset') return 'These run after the record is back at the start, once its open tasks and runs have stopped. Change this record, related records or each item of a list (Update record, For each), tell people, or run your own actions.';
     return k === 'transition' ? 'These run right after the record moves (the person who moved it is “whoever started it”).'
       : k === 'onEnter' ? 'These run every time a record arrives in this state. They stop if it leaves.'
         : k === 'onExit' ? 'These run every time a record leaves this state.'

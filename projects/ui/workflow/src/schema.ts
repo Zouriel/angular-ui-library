@@ -296,6 +296,33 @@ export interface UiWfLifecycle {
   transitions: UiWfTransition[];
   /** Positions on the diagram, by state id. States without one are placed automatically. */
   layout?: Record<string, [number, number]>;
+  /** Lets people start a record's workflow over (spec §6 reset). Absent: no reset. */
+  reset?: UiWfLifecycleReset;
+}
+
+/**
+ * Starting a record's workflow over: the people in `who` move the record back to `to` (the initial
+ * state when absent). Its open tasks and runs stop first; then `steps` run, which can change this
+ * record, related records (`setFields` with a relation `target`) and each item of a collection
+ * (`forEach` + `setFields` with `target: 'item'`).
+ */
+export interface UiWfLifecycleReset {
+  /** The button text (default "Reset workflow"). */
+  label?: string;
+  /** The state id to go back to; absent = the initial state. */
+  to?: string;
+  /** Who may reset; empty = nobody. */
+  who?: UiWfAssignee[];
+  /** A confirmation question asked first. */
+  confirm?: string;
+  /** A form (e.g. a reason); the steps read the answers as `input.*`. */
+  input?: { form: UiFormDefinition };
+  /** Also run the current state's "on leaving" and the target's "on entering" steps (default no). */
+  runExitEnter?: boolean;
+  /** Also stop automations running about the record (default yes). */
+  cancelAutomations?: boolean;
+  /** What happens on reset (list id `reset`). */
+  steps?: UiWfStep[];
 }
 
 // ── Definition ────────────────────────────────────────────────────────────

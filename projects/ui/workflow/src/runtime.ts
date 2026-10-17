@@ -234,6 +234,12 @@ export class WfDecideDialog {
         }
       </div>
     }
+    @if (r.reset; as rs) {
+      <div class="reset">
+        <span class="reset-note">Back to “{{ rs.toLabel }}”: open tasks and runs stop.</span>
+        <ui-button [size]="buttonSize" variant="outline" (click)="startReset()" [disabled]="busy()">{{ rs.label }}</ui-button>
+      </div>
+    }
     @if (showTasks() && r.tasks.length) {
       <section>
         <h3>Waiting for</h3>
@@ -272,6 +278,9 @@ export class WfDecideDialog {
     :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
     :host(.idle) { display: none; }
     .actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); }
+    .reset { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--ui-space-2); padding-top: var(--ui-space-2);
+      border-top: 1px dashed var(--ui-color-border); }
+    .reset-note { font-size: 12px; color: var(--ui-color-text-muted); }
     h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .tasks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .task { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
@@ -307,16 +316,19 @@ export class WfRecordActions extends WfWithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
+  /** The open dialog is the reset's (not a move's or a manual start's). */
+  private pendingReset = false;
   /** Small buttons with a mouse; the regular size on touch screens, where 26px looks cramped. */
   protected readonly buttonSize: 'sm' | 'md' = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'md' : 'sm';
   protected readonly nothingToDo = computed(() => {
     const r = this.record();
-    return !r.transitions.length && !r.manual.length && !(this.showTasks() && r.tasks.length) && !this.pending() && !this.openTask();
+    return !r.transitions.length && !r.manual.length && !r.reset && !(this.showTasks() && r.tasks.length) && !this.pending() && !this.openTask();
   });
   protected readonly idle = computed(() => this.nothingToDo() && !this.emptyText() && !this.error());
 
   protected start(t: UiWfTransitionOption): void {
     if (this.busy()) return;
+    this.pendingReset = false;
     this.pendingManual.set(null);
     this.pendingError.set('');
     this.input.set({});
@@ -324,8 +336,21 @@ export class WfRecordActions extends WfWithApi {
     this.pending.set(t);
   }
 
+  /** Starting over: asks its confirmation or form first when it has one. */
+  protected startReset(): void {
+    const rs = this.record().reset;
+    if (this.busy() || !rs) return;
+    this.pendingManual.set(null);
+    this.pendingReset = true;
+    this.pendingError.set('');
+    this.input.set({});
+    // Always confirmed: a reset stops work in progress.
+    this.pending.set({ key: '', label: rs.label, to: rs.to, toLabel: rs.toLabel, tone: 'danger', confirm: rs.confirm ?? `Start over from “${rs.toLabel}”? Open tasks and runs stop.`, form: rs.form });
+  }
+
   protected startManual(m: UiWfRecord['manual'][number]): void {
     if (this.busy()) return;
+    this.pendingReset = false;
     this.pendingManual.set(m.key);
     this.pendingError.set('');
     this.input.set({});
@@ -339,7 +364,8 @@ export class WfRecordActions extends WfWithApi {
     if (!p || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (p.form && !this.form()?.submit()) return;
-    if (this.pendingManual()) void this.runManual(p.key);
+    if (this.pendingReset) void this.reset();
+    else if (this.pendingManual()) void this.runManual(p.key);
     else void this.apply(p.key);
   }
 
@@ -355,6 +381,23 @@ export class WfRecordActions extends WfWithApi {
     } catch (e) {
       const msg = wfErrorText(e, 'That did not work.');
       if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async reset(): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      const r = await api.resetRecord(this.entity(), this.entityId(), this.input());
+      this.error.set('');
+      this.pending.set(null);
+      this.pendingReset = false;
+      this.changed.emit(r);
+    } catch (e) {
+      this.pendingError.set(wfErrorText(e, 'The workflow could not be reset.'));
     } finally {
       this.busy.set(false);
     }

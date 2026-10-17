@@ -17,7 +17,7 @@ import { WF_SHARED_STYLES } from './styles';
 type View = 'build' | 'versions' | 'test';
 
 interface PendingDelete {
-  kind: 'step' | 'state' | 'transition';
+  kind: 'step' | 'state' | 'transition' | 'reset';
   id: string;
   name: string;
   detail: string[];
@@ -283,6 +283,7 @@ export class UiWorkflowBuilder {
     if (s.kind === 'trigger') return 'What starts it';
     if (s.kind === 'step') { const st = this.store.selectedStep(); return st ? stepName(st) : 'Step'; }
     if (s.kind === 'state') return this.store.selectedState()?.label ?? 'State';
+    if (s.kind === 'reset') return this.store.def().lifecycle?.reset?.label ?? 'Reset workflow';
     return this.store.selectedTransition()?.label ?? 'Transition';
   });
 
@@ -460,6 +461,7 @@ export class UiWorkflowBuilder {
     const s = this.store.selection();
     if (s?.kind === 'transition') return `transition:${s.id}`;
     if (s?.kind === 'state') return `onEnter:${s.id}`;
+    if (s?.kind === 'reset') return 'reset';
     return null;
   }
 
@@ -475,6 +477,7 @@ export class UiWorkflowBuilder {
     const s = this.store.selection();
     if (s?.kind === 'step') this.ui.deleteRequest.set(s.id);
     else if (s?.kind === 'state' || s?.kind === 'transition') this.askDelete(s.kind, s.id);
+    else if (s?.kind === 'reset') this.askDelete('reset', '');
   }
 
   private readonly deleteWatcher = effect(() => {
@@ -502,6 +505,14 @@ export class UiWorkflowBuilder {
       return;
     }
     const lc = def.lifecycle;
+    if (kind === 'reset') {
+      const n = lc?.reset?.steps?.length ?? 0;
+      this.pendingDelete.set({ kind, id, name: lc?.reset?.label ?? 'Reset workflow', detail: [
+        'People will no longer be able to start records over.',
+        ...(n ? [`Its ${n} step${n === 1 ? '' : 's'} will be deleted too.`] : []),
+      ] });
+      return;
+    }
     if (kind === 'state') {
       const st = lc?.states.find((s) => s.id === id);
       if (!st) return;
@@ -519,6 +530,7 @@ export class UiWorkflowBuilder {
     this.pendingDelete.set(null);
     if (p.kind === 'step') this.store.removeStep(p.id);
     else if (p.kind === 'state') this.store.removeState(p.id);
+    else if (p.kind === 'reset') this.store.removeReset();
     else this.store.removeTransition(p.id);
     this.store.selection.set(null);
   }

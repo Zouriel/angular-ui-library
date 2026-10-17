@@ -1,7 +1,7 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiInput, UiNumberInput, UiSwitch, UiTextarea } from '@zouriel/ui/form';
+import { UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
 import { describeTrigger, fieldOf, indexSteps, stepName, wfId, wfKey } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
@@ -255,6 +255,17 @@ export class WfTriggerEditor {
       }
       <label class="wf-row small"><ui-switch [ngModel]="def().settings?.calendar === 'working'" (ngModelChange)="patch({ settings: { ...def().settings, calendar: $event ? 'working' : undefined } })" />
         Count deadlines in working time</label>
+
+      @if (def().kind === 'lifecycle') {
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">Starting over</h4>
+          <label class="wf-row small"><ui-switch [ngModel]="!!def().lifecycle?.reset" (ngModelChange)="$event ? store.enableReset() : store.removeReset()" />
+            Let people reset a record's workflow</label>
+          @if (def().lifecycle?.reset) {
+            <button type="button" class="wf-link" (click)="store.selection.set({ kind: 'reset' })">Who, where to and what changes on reset ›</button>
+          }
+        </section>
+      }
 
       <section class="wf-section wf-stack">
         <h4 class="wf-section-title">Looked after by</h4>
@@ -545,10 +556,64 @@ export class WfTransitionEditor {
   }
 }
 
+/** The lifecycle's reset: who may start a record over, back to which state, what it asks, and what else stops. */
+@Component({
+  selector: 'ui-wf-reset-editor',
+  imports: [FormsModule, UiInput, UiSelect, UiSwitch, WfAssigneesEditor, WfFormField],
+  template: `
+    @if (reset(); as r) {
+      <div class="wf-stack">
+        <p class="wf-hint">Starting over stops the record's open tasks and runs, moves it back, then runs the steps under the diagram (“On reset”), which can change this record, related records and each item of a list.</p>
+        <label class="lw"><span class="wf-label">Button label</span>
+          <ui-input size="sm" [ngModel]="r.label ?? ''" (ngModelChange)="store.updateReset({ label: $event || undefined }, 'label')" placeholder="Reset workflow" /></label>
+        <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="store.updateReset({ to: $event || undefined })" />
+
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">Who can reset</h4>
+          <ui-wf-assignees [value]="r.who ?? []" [registry]="store.registry()" [api]="store.api()" label="people"
+            emptyText="Nobody yet: choose who may start records over." (valueChange)="store.updateReset({ who: $any($event) })" />
+        </section>
+
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">Ask for</h4>
+          <ui-wf-form-field [value]="r.input?.form" [title]="(r.label ?? 'Reset') + ' form'" addLabel="Add questions (e.g. a reason)"
+            (valueChange)="store.updateReset({ input: $event ? { form: $event } : undefined })" />
+          <label class="lw"><span class="wf-label">Confirmation message</span>
+            <ui-input size="sm" [ngModel]="r.confirm ?? ''" (ngModelChange)="store.updateReset({ confirm: $event || undefined }, 'confirm')" placeholder="e.g. Start this application over?" /></label>
+        </section>
+
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">What else happens</h4>
+          <label class="wf-row small"><ui-switch [ngModel]="r.cancelAutomations !== false" (ngModelChange)="store.updateReset({ cancelAutomations: $event ? undefined : false })" />
+            Also stop other workflows running about the record</label>
+          <label class="wf-row small"><ui-switch [ngModel]="!!r.runExitEnter" (ngModelChange)="store.updateReset({ runExitEnter: $event || undefined })" />
+            Run the state's “on leaving” and the start's “on entering” steps</label>
+        </section>
+      </div>
+    }
+  `,
+  styles: [WF_SHARED_STYLES, `
+    .lw { display: block; min-width: 0; }
+    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+  `],
+})
+export class WfResetEditor {
+  protected readonly store = inject(WfBuilderStore);
+  protected readonly reset = computed(() => this.store.def().lifecycle?.reset ?? null);
+  protected readonly stateOptions = computed<UiSelectOption[]>(() => {
+    const states = this.store.def().lifecycle?.states ?? [];
+    const start = states.find((s) => s.category === 'initial');
+    return [
+      { value: '', label: `The starting state${start ? ` (${start.label})` : ''}` },
+      ...states.filter((s) => s.id !== start?.id).map((s) => ({ value: s.id, label: s.label })),
+    ];
+  });
+}
+
 /** The right-hand panel: settings for whatever is selected, with a short header and problems. */
 @Component({
   selector: 'ui-wf-inspector',
-  imports: [HugeiconsIconComponent, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor],
+  imports: [HugeiconsIconComponent, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
   template: `
     @if (showHead()) {
       <header class="head">
@@ -577,6 +642,7 @@ export class WfTransitionEditor {
           @case ('trigger') { <ui-wf-trigger-editor /> }
           @case ('state') { <ui-wf-state-editor /> }
           @case ('transition') { <ui-wf-transition-editor /> }
+          @case ('reset') { <ui-wf-reset-editor /> }
           @default { <ui-wf-workflow-editor /> }
         }
       </fieldset>
@@ -608,6 +674,7 @@ export class WfInspector {
       case 'trigger': return 'What starts it';
       case 'state': return this.store.selectedState()?.label ?? 'State';
       case 'transition': return this.store.selectedTransition()?.label ?? 'Transition';
+      case 'reset': return this.store.def().lifecycle?.reset?.label ?? 'Reset workflow';
       default: return this.store.def().kind === 'lifecycle' ? 'Lifecycle settings' : 'Workflow settings';
     }
   });
@@ -617,13 +684,15 @@ export class WfInspector {
       case 'trigger': return WF_ICONS.FlashIcon;
       case 'state': return WF_ICONS.Flag01Icon;
       case 'transition': return WF_ICONS.ArrowRight02Icon;
+      case 'reset': return WF_ICONS.RefreshIcon;
       default: return WF_ICONS.Settings02Icon;
     }
   });
-  protected readonly canDelete = computed(() => !this.store.readOnly() && ['step', 'state', 'transition'].includes(this.kind()));
+  protected readonly canDelete = computed(() => !this.store.readOnly() && ['step', 'state', 'transition', 'reset'].includes(this.kind()));
   protected readonly problems = computed(() => {
     const s = this.store.selection();
-    const node = !s || s.kind === 'workflow' || s.kind === 'trigger' ? null : s.id;
+    // Reset problems have no node of their own; they show with the workflow's.
+    const node = !s || s.kind === 'workflow' || s.kind === 'trigger' || s.kind === 'reset' ? null : s.id;
     return this.store.problemsByNode().get(node) ?? [];
   });
   /** For a step inside a lifecycle run: the state or transition it belongs to. */
@@ -633,8 +702,9 @@ export class WfInspector {
     const loc = indexSteps(this.store.def()).get(s.id);
     const root = loc?.path[0];
     if (!root || root === 'root') return null;
-    const [kind, id] = root.split(':');
     const lc = this.store.def().lifecycle;
+    if (root === 'reset') return lc?.reset ? { kind: 'reset' as const, id: '', label: lc.reset.label ?? 'Reset workflow' } : null;
+    const [kind, id] = root.split(':');
     if (kind === 'transition') { const t = lc?.transitions.find((x) => x.id === id); return t ? { kind: 'transition' as const, id, label: t.label } : null; }
     const st = lc?.states.find((x) => x.id === id);
     return st ? { kind: 'state' as const, id, label: st.label } : null;
@@ -643,6 +713,7 @@ export class WfInspector {
 
   protected selectParent(): void {
     const p = this.parent();
-    if (p) this.store.selection.set({ kind: p.kind, id: p.id });
+    if (!p) return;
+    this.store.selection.set(p.kind === 'reset' ? { kind: 'reset' } : { kind: p.kind, id: p.id });
   }
 }

@@ -21,14 +21,16 @@ import {
   type UiWfToken,
   type UiWfTokenContext,
 } from './definition';
-import type { UiWfState, UiWfStep, UiWfStepType, UiWfTransition, UiWfTrigger, UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
+import type { UiWfLifecycleReset, UiWfState, UiWfStep, UiWfStepType, UiWfTransition, UiWfTrigger, UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
 
 export type WfSelection =
   | { kind: 'workflow' }
   | { kind: 'trigger' }
   | { kind: 'step'; id: string }
   | { kind: 'state'; id: string }
-  | { kind: 'transition'; id: string };
+  | { kind: 'transition'; id: string }
+  /** The lifecycle's reset (its settings, and the steps it runs). */
+  | { kind: 'reset' };
 
 const HISTORY_LIMIT = 200;
 /** Edits to the same setting within this window are undone together (typing a title). */
@@ -187,6 +189,7 @@ export class WfBuilderStore {
     const def = this.def();
     const exists =
       s.kind === 'workflow' || s.kind === 'trigger' ? true
+        : s.kind === 'reset' ? !!def.lifecycle?.reset
         : s.kind === 'step' ? this.steps().has(s.id)
           : s.kind === 'state' ? !!def.lifecycle?.states.some((x) => x.id === s.id)
             : !!def.lifecycle?.transitions.some((x) => x.id === s.id);
@@ -279,6 +282,31 @@ export class WfBuilderStore {
 
   removeTransition(id: string): void {
     this.commit(updateLifecycle(this.def(), (lc) => ({ ...lc, transitions: lc.transitions.filter((t) => t.id !== id) })));
+  }
+
+  /** Lets people start records over (a reset back to the starting state, nobody allowed yet) and selects it. */
+  enableReset(): void {
+    if (this.def().lifecycle?.reset) { this.selection.set({ kind: 'reset' }); return; }
+    this.commit(updateLifecycle(this.def(), (lc) => ({ ...lc, reset: { label: 'Reset workflow', who: [], steps: [] } })));
+    this.selection.set({ kind: 'reset' });
+  }
+
+  /** Changes the reset's settings (keys set to `undefined` are removed). */
+  updateReset(patch: Partial<UiWfLifecycleReset>, mergeKey?: string): void {
+    this.commit(updateLifecycle(this.def(), (lc) => {
+      if (!lc.reset) return lc;
+      const next = { ...lc.reset, ...patch } as Record<string, unknown>;
+      for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
+      return { ...lc, reset: next as UiWfLifecycleReset };
+    }), mergeKey ? `reset:${mergeKey}` : undefined);
+  }
+
+  /** Takes the reset away (its steps too). */
+  removeReset(): void {
+    this.commit(updateLifecycle(this.def(), (lc) => {
+      const { reset: _drop, ...rest } = lc;
+      return rest;
+    }));
   }
 
   /** Stores a state's position on the diagram (one undo step per drag). */

@@ -152,6 +152,8 @@ export interface UiWfRecord {
   instances: UiWfInstance[];
   manual: { key: string; label: string; form: UiFormDefinition | null }[];
   states: { key: string; label: string; category: string; tone: string | null }[];
+  /** Starting the workflow over, when this person may and it would change something (else null). */
+  reset?: { label: string; to: string; toLabel: string; confirm: string | null; form: UiFormDefinition | null } | null;
 }
 
 export interface UiWfAuditEntry {
@@ -334,6 +336,8 @@ export interface UiWorkflowApi {
   recordHistory(entity: string, id: string, take?: number): Promise<UiWfAuditEntry[]>;
   applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>): Promise<UiWfRecord>;
   forceState(entity: string, id: string, state: string, reason: string, skipSteps?: boolean): Promise<UiWfRecord>;
+  /** Starts the record's workflow over (the lifecycle's reset), with the reset form's answers. */
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>): Promise<UiWfRecord>;
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>): Promise<UiWfInstance>;
 
   audit(q: UiWfAuditQuery): Promise<UiWfAuditEntry[]>;
@@ -479,6 +483,9 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   }
   forceState(entity: string, id: string, state: string, reason: string, skipSteps = false) {
     return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/force-state`, { state, reason, skipSteps });
+  }
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>) {
+    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`, { input: input ?? {} });
   }
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>) {
     const path = entity && id ? `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/manual/${encodeURIComponent(workflow)}` : `/manual/${encodeURIComponent(workflow)}`;

@@ -1,4 +1,4 @@
-import type { UiFbValueKind } from '@zouriel/ui/form-builder';
+import type { UiFbElement, UiFbValueKind, UiFormDefinition } from '@zouriel/ui/form-builder';
 import type {
   UiWfAssignee,
   UiWfEntityDescriptor,
@@ -245,6 +245,7 @@ export function rootLists(def: UiWorkflowDefinition): { id: string; label: strin
     if (s.sla) out.push({ id: `sla:${s.id}`, label: `When ${s.label} runs late`, steps: s.sla.steps });
   }
   for (const t of lc.transitions) if (t.steps) out.push({ id: `transition:${t.id}`, label: `After ${t.label}`, steps: t.steps });
+  if (lc.reset?.steps) out.push({ id: 'reset', label: `On ${lc.reset.label ?? 'reset'}`, steps: lc.reset.steps });
   return out;
 }
 
@@ -319,7 +320,12 @@ export function mapLists(def: UiWorkflowDefinition, f: (listId: string, steps: U
     lcChanged = true;
     return { ...t, steps: l };
   });
-  return lcChanged ? { ...def, lifecycle: { ...lc, states, transitions } } : def;
+  let reset = lc.reset;
+  if (reset?.steps) {
+    const l = mapList('reset', reset.steps);
+    if (l !== reset.steps) { reset = { ...reset, steps: l }; lcChanged = true; }
+  }
+  return lcChanged ? { ...def, lifecycle: { ...lc, states, transitions, ...(reset ? { reset } : {}) } } : def;
 }
 
 /** Replaces one step (found anywhere) with `f(step)`. */
@@ -338,6 +344,7 @@ export function ensureList(def: UiWorkflowDefinition, listId: string): UiWorkflo
   if (listSteps(def, listId) || !def.lifecycle) return def;
   const [kind, id] = listId.split(':');
   const lc = def.lifecycle;
+  if (kind === 'reset') return lc.reset ? { ...def, lifecycle: { ...lc, reset: { ...lc.reset, steps: lc.reset.steps ?? [] } } } : def;
   if (kind === 'transition') return { ...def, lifecycle: { ...lc, transitions: lc.transitions.map((t) => (t.id === id ? { ...t, steps: t.steps ?? [] } : t)) } };
   return {
     ...def,
@@ -557,6 +564,32 @@ export function upstreamSteps(def: UiWorkflowDefinition, at: UiWfTokenContext['a
   return out;
 }
 
+/** The questions of a form (fields on every page, inside groups too), as answer keys and labels. */
+export function formFields(form: UiFormDefinition | undefined | null): { key: string; label: string }[] {
+  const out: { key: string; label: string }[] = [];
+  const walk = (els: readonly UiFbElement[], prefix: string) => {
+    for (const e of els) {
+      if (e.kind === 'field') out.push({ key: prefix + e.key, label: e.label || e.key });
+      else if (e.kind === 'group') walk(e.elements, e.key ? `${prefix}${e.key}.` : prefix);
+    }
+  };
+  for (const page of form?.pages ?? []) walk(page.elements, '');
+  return out;
+}
+
+/** The form answers (`input.*`) steps at a position can read: the transition's or the reset's form. */
+function inputFieldsAt(def: UiWorkflowDefinition, at: UiWfTokenContext['at']): { key: string; label: string }[] {
+  if (!at || !def.lifecycle) return [];
+  const idx = indexSteps(def);
+  // The top-level list the position is in (a nested list belongs to the step that holds it).
+  const root = 'stepId' in at ? idx.get(at.stepId)?.path[0] : at.listId.includes('/') ? idx.get(at.listId.split('/')[0])?.path[0] : at.listId;
+  if (!root) return [];
+  if (root === 'reset') return formFields(def.lifecycle.reset?.input?.form);
+  const [kind, id] = root.split(':');
+  if (kind === 'transition') return formFields(def.lifecycle.transitions.find((t) => t.id === id)?.input?.form);
+  return [];
+}
+
 /** Everything a value can be read from at a position, grouped for a picker. */
 export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
   const { def, registry: reg } = ctx;
@@ -591,7 +624,7 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
     );
   }
   tokens.push({ path: 'trigger.actor', label: 'Person who started it', group: 'What started it', type: 'user' }, { path: 'trigger.at', label: 'When it started', group: 'What started it', type: 'dateTime' });
-  for (const f of ctx.inputFields ?? []) tokens.push({ path: `input.${f.key}`, label: f.label, group: 'Form answers', type: 'any' });
+  for (const f of ctx.inputFields ?? inputFieldsAt(def, ctx.at)) tokens.push({ path: `input.${f.key}`, label: f.label, group: 'Form answers', type: 'any' });
   // Inside a forEach, the current item.
   if (ctx.at) {
     const idx = indexSteps(def);

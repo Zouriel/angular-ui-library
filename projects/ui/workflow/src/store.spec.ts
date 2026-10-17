@@ -117,4 +117,20 @@ describe('WfBuilderStore', () => {
     expect(s.def()).toBe(before);
     expect(s.moveStep(a, 'root', 2)).toBe(true);
   });
+
+  it('reset: turned on, edited, undone and removed; its selection goes with it', () => {
+    const s = fresh();
+    s.load(createWorkflow('lifecycle', 'Life', 'application'));
+    s.enableReset();
+    expect(s.def().lifecycle!.reset).toEqual({ label: 'Reset workflow', who: [], steps: [] });
+    expect(s.selection()).toEqual({ kind: 'reset' });
+    s.updateReset({ label: 'Start over', confirm: 'Sure?' });
+    s.updateReset({ confirm: undefined });
+    expect(s.def().lifecycle!.reset).toEqual({ label: 'Start over', who: [], steps: [] });
+    s.removeReset();
+    expect(s.def().lifecycle!.reset).toBeUndefined();
+    expect(s.selection()).toBeNull();
+    s.undo();
+    expect(s.def().lifecycle!.reset?.label).toBe('Start over');
+  });
 });

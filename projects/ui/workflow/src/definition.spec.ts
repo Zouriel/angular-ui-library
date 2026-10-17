@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cloneStep, createStep, createWorkflow, describeDuration, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
+  cloneStep, createStep, createWorkflow, formFields, describeDuration, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
   insertStep, isInsideStep, listSteps, mapLists, moveStep, removeState, removeStep, stepReferences, stepSlots, tokensAt,
   transitionAllows, upstreamSteps, wfId, wfKey, withSlot,
 } from './definition';
@@ -246,3 +246,34 @@ describe('lifecycle helpers', () => {
     expect(transitionAllows(d, { ...t, to: done.id }, draft.id)).toBe(true);
   });
 });
+
+describe('reset', () => {
+  const withReset = () => {
+    const d = createWorkflow('lifecycle', 'Life', 'application');
+    return { ...d, lifecycle: { ...d.lifecycle!, reset: { who: [], input: { form: { schemaVersion: 1, id: 'f', title: 'Reset', pages: [{ id: 'p', elements: [
+      { kind: 'field', id: 'r', key: 'reason', type: 'textarea', label: 'Why' },
+      { kind: 'group', id: 'g', key: 'extra', elements: [{ kind: 'field', id: 'n', key: 'note', type: 'text', label: 'Note' }] },
+    ] }] } as never } } } } as UiWorkflowDefinition;
+  };
+
+  it('its steps are a list called reset, created on first use', () => {
+    const d = withReset();
+    expect(listSteps(d, 'reset')).toBeNull();
+    const next = insertStep(d, 'reset', 0, step('x'));
+    expect(ids(listSteps(next, 'reset'))).toEqual(['x']);
+    expect(indexSteps(next).get('x')?.listId).toBe('reset');
+  });
+
+  it('no reset, no list', () => {
+    const d = createWorkflow('lifecycle');
+    expect(insertStep(d, 'reset', 0, step('x'))).toEqual(d);
+  });
+
+  it('steps on reset can read the reset form\'s answers, groups included', () => {
+    const d = insertStep(withReset(), 'reset', 0, step('x'));
+    const paths = tokensAt({ def: d, registry, at: { stepId: 'x' } }).map((t) => t.path);
+    expect(paths).toEqual(expect.arrayContaining(['input.reason', 'input.extra.note']));
+    expect(formFields(undefined)).toEqual([]);
+  });
+});
+
