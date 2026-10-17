@@ -166,7 +166,6 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'workflow-components': [
     { name: 'Workflow panel', anchor: 'panel' },
     { name: 'My tasks drawer', anchor: 'tasks-drawer' },
-    { name: 'Task inbox', anchor: 'tasks' },
     { name: 'Run', anchor: 'run' },
     { name: 'Audit log', anchor: 'audit' },
     { name: 'State badge', anchor: 'state-badge' },

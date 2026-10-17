@@ -13,14 +13,15 @@ function task(id: string, overdue = false): UiWfTask {
 
 function fakeApi(tasks: UiWfTask[], total = tasks.length) {
   let calls = 0;
+  const scopes: (string | undefined)[] = [];
   const api = {
-    tasks: async (q: { take?: number }) => { calls++; return { items: tasks.slice(0, q.take ?? tasks.length), total }; },
+    tasks: async (q: { take?: number; scope?: string }) => { calls++; scopes.push(q.scope); return { items: tasks.slice(0, q.take ?? tasks.length), total }; },
   } as unknown as UiWorkflowApi;
-  return { api, calls: () => calls };
+  return { api, calls: () => calls, scopes };
 }
 
 async function render(tasks: UiWfTask[], inputs: Record<string, unknown> = {}, total = tasks.length) {
-  const { api, calls } = fakeApi(tasks, total);
+  const { api, calls, scopes } = fakeApi(tasks, total);
   const f = TestBed.createComponent(UiWorkflowTasksDrawer);
   f.componentRef.setInput('api', api);
   f.componentRef.setInput('refreshSeconds', 0);
@@ -28,7 +29,7 @@ async function render(tasks: UiWfTask[], inputs: Record<string, unknown> = {}, t
   document.body.appendChild(f.nativeElement);
   f.detectChanges();
   for (let i = 0; i < 4; i++) { await f.whenStable(); f.detectChanges(); }
-  return { f, el: f.nativeElement as HTMLElement, calls };
+  return { f, el: f.nativeElement as HTMLElement, calls, scopes };
 }
 
 describe('UiWorkflowTasksDrawer', () => {
@@ -62,8 +63,17 @@ describe('UiWorkflowTasksDrawer', () => {
     el.querySelector<HTMLButtonElement>('ui-button button')!.click();
     for (let i = 0; i < 4; i++) { await f.whenStable(); f.detectChanges(); }
     expect(f.componentInstance.open()).toBe(true);
-    expect(document.querySelector('ui-workflow-tasks')).not.toBeNull();
+    expect(document.querySelector('ui-wf-task-inbox')).not.toBeNull();
     expect(calls()).toBeGreaterThan(before);
+  });
+
+  it('with scope "all" counts and lists everyone\'s tasks (an admin\'s drawer)', async () => {
+    const { f, scopes } = await render([task('a')], { scope: 'all', label: 'All tasks' });
+    f.componentInstance.open.set(true);
+    for (let i = 0; i < 4; i++) { await f.whenStable(); f.detectChanges(); }
+    expect(scopes.length).toBeGreaterThan(1);
+    expect(new Set(scopes)).toEqual(new Set(['all']));
+    expect(document.body.textContent).toContain('All tasks');
   });
 
   it('can be opened from code without its button', async () => {
@@ -71,7 +81,7 @@ describe('UiWorkflowTasksDrawer', () => {
     expect(el.querySelector('ui-button')).toBeNull();
     f.componentInstance.open.set(true);
     for (let i = 0; i < 4; i++) { await f.whenStable(); f.detectChanges(); }
-    expect(document.querySelector('ui-workflow-tasks')).not.toBeNull();
+    expect(document.querySelector('ui-wf-task-inbox')).not.toBeNull();
   });
 
   it('says "100+" overdue when more tasks are open than one count looks at', async () => {

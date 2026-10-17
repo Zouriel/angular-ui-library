@@ -59,7 +59,7 @@ const DOCS_USER = 'hana';
       <aside class="studio-cta">
         <div>
           <strong>Running workflows in your app</strong>
-          <p>The workflow panel, the task inbox and drawer, run and audit views, and the permissions and settings pages are on their own page, each with a live demo and its inputs.</p>
+          <p>The workflow panel, the tasks drawer, run and audit views, and the permissions and settings pages are on their own page, each with a live demo and its inputs.</p>
         </div>
         <ui-button variant="outline" routerLink="/workflow-components">See the workflow components</ui-button>
       </aside>

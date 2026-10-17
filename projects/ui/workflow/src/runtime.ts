@@ -591,9 +591,12 @@ export class WfRecordActions extends WfWithApi {
 
 // ── Task inbox ────────────────────────────────────────────────────────────
 
-/** `ui-workflow-tasks` — the signed-in person's approvals and tasks: due first, overdue marked. */
+/**
+ * The task inbox inside `ui-workflow-tasks-drawer`: approvals and tasks, due first, overdue marked,
+ * open or finished, each opening its decision. Internal: apps use the drawer.
+ */
 @Component({
-  selector: 'ui-workflow-tasks',
+  selector: 'ui-wf-task-inbox',
   imports: [HugeiconsIconComponent, UiButton, UiIconButton, UiSegmented, WfDecideDialog],
   template: `
     <div class="head">
@@ -641,7 +644,7 @@ export class WfRecordActions extends WfWithApi {
     .empty { padding: var(--ui-space-6) 0; text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
   `],
 })
-export class UiWorkflowTasks extends WfWithApi {
+export class WfTaskInbox extends WfWithApi {
   /** `mine` (the signed-in person's) or `all` (needs admin rights). */
   readonly scope = input<'mine' | 'all'>('mine');
   readonly pageSize = input(25);

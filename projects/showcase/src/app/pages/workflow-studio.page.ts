@@ -12,7 +12,6 @@ import {
   UiWorkflowPanel,
   UiWorkflowRun,
   UiWorkflowStateBadge,
-  UiWorkflowTasks,
   createWorkflow,
   UI_WORKFLOW_API,
   UI_WORKFLOW_CLOCK,
@@ -33,7 +32,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'permissi
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowTasks, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
+  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
   providers: [
     { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
     // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
@@ -73,7 +72,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
           <nav class="tabs" aria-label="Playground">
             @for (t of tabs; track t.value) {
               <button type="button" [class.on]="tab() === t.value" [attr.aria-current]="tab() === t.value ? 'page' : null" (click)="guard(() => setTab(t.value))">
-                {{ t.label }}@if (t.value === 'tasks' && taskCount()) { <span class="count">{{ taskCount() }}</span> }
+                {{ t.label }}
               </button>
             }
           </nav>
@@ -165,10 +164,10 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                 </div>
               }
               @case ('tasks') {
-                <div class="two">
-                  <div><h2>My tasks</h2><ui-workflow-tasks (decided)="refresh()" /></div>
+                <div>
                   <div>
-                    <h2>My messages</h2>
+                    <h2>Messages to {{ pg.currentUser()?.name }}</h2>
+                    <p class="hint">What the workflows sent this person by email and in the app. Their approvals and tasks are under “My tasks” at the top.</p>
                     <ul class="msgs">
                       @for (m of messages(); track $index) {
                         <li><span class="ch">{{ m.channel === 'email' ? 'Email' : 'In-app' }}</span><strong>{{ m.subject }}</strong><span class="body">{{ m.body }}</span></li>
@@ -228,7 +227,7 @@ export class WorkflowStudioPage {
   protected readonly pg = inject(WorkflowPlayground);
   private readonly panel = viewChild<UiWorkflowPanel>('panel');
   protected readonly tabs: { value: Tab; label: string }[] = [
-    { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'My tasks' },
+    { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'Messages' },
     { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'permissions', label: 'Permissions' }, { value: 'settings', label: 'Settings' },
   ];
   protected readonly tab = signal<Tab>(this.storedTab());
@@ -259,7 +258,6 @@ export class WorkflowStudioPage {
   protected readonly messages = signal<DemoMessage[]>([]);
   protected readonly instances = signal<UiWfInstance[]>([]);
   protected readonly selectedRun = signal<string | null>(null);
-  protected readonly taskCount = signal(0);
   protected readonly now = signal('');
 
   constructor() {
@@ -312,8 +310,6 @@ export class WorkflowStudioPage {
       this.can.set((await this.pg.api.me?.())?.can ?? { edit: true });
       const clock = await this.pg.syncClock();
       this.now.set(clock.toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
-      const tasks = await this.pg.api.tasks({ scope: 'mine', status: ['open'], take: 1 });
-      this.taskCount.set(tasks.total);
       switch (this.tab()) {
         case 'workflows': await this.loadWorkflows(); break;
         case 'applications': {

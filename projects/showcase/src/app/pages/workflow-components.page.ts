@@ -12,7 +12,6 @@ import {
   UiWorkflowPermissions,
   UiWorkflowRun,
   UiWorkflowStateBadge,
-  UiWorkflowTasks,
   UiWorkflowTasksDrawer,
   type UiWfInstance,
   type UiWfRecord,
@@ -32,7 +31,7 @@ const ENTITY = 'application';
   imports: [
     FormsModule, RouterLink, UiButton, UiSegmented, UiSelect, UiTab, UiTabs,
     UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPanel, UiWorkflowPermissions,
-    UiWorkflowRun, UiWorkflowStateBadge, UiWorkflowTasks, UiWorkflowTasksDrawer,
+    UiWorkflowRun, UiWorkflowStateBadge, UiWorkflowTasksDrawer,
     DocDemo, DocPage, DocSection,
   ],
   providers: [{ provide: UI_WORKFLOW_CLOCK, useFactory: () => inject(WorkflowPlayground).now }],
@@ -44,8 +43,7 @@ const ENTITY = 'application';
         <h2 id="where-title" class="where-title">Which component goes where</h2>
         <dl class="where-list">
           <div><dt>A record's page</dt><dd><a routerLink="." fragment="panel">Workflow panel</a></dd></div>
-          <div><dt>The app's header</dt><dd><a routerLink="." fragment="tasks-drawer">My tasks drawer</a></dd></div>
-          <div><dt>An inbox page</dt><dd><a routerLink="." fragment="tasks">Task inbox</a></dd></div>
+          <div><dt>Approvals and tasks</dt><dd><a routerLink="." fragment="tasks-drawer">My tasks drawer</a> (in the app's header; everyone's tasks for admins)</dd></div>
           <div><dt>Admin pages</dt><dd><a routerLink="." fragment="run">Run</a> and <a routerLink="." fragment="audit">audit log</a></dd></div>
           <div><dt>A settings page</dt><dd><a routerLink="." fragment="permissions">Permissions</a> and <a routerLink="." fragment="global-settings">global settings</a> (<a routerLink="." fragment="settings-page">put together</a>)</dd></div>
           <div><dt>The builder page</dt><dd>See <a routerLink="/workflow-builder">Workflow builder</a></dd></div>
@@ -84,7 +82,7 @@ const ENTITY = 'application';
       </doc-section>
 
       <doc-section name="My tasks drawer" anchor="tasks-drawer" selector="ui-workflow-tasks-drawer" [api]="drawerApi" [outputs]="drawerOutputs"
-        summary="A button for the app's header with the number of open approvals and tasks (red when one is overdue) that opens the task inbox in a drawer. Use it so people can act from any page; open it from code too, for a link in an email or a keyboard shortcut.">
+        summary="Where people work through their approvals and tasks: a button for the app's header with the number open (red when one is overdue) that opens them in a drawer, open or finished, each opening its decision with its form. People act from any page; open it from code too, for a link in an email or a keyboard shortcut. With scope=&quot;all&quot; it lists everyone's tasks, for admins.">
         @if (online()) {
           @for (k of [rev()]; track k) {
             <div class="app-bar">
@@ -98,16 +96,6 @@ const ENTITY = 'application';
           </div>
         }
         <doc-demo [code]="drawerCode"></doc-demo>
-      </doc-section>
-
-      <doc-section name="Task inbox" anchor="tasks" selector="ui-workflow-tasks" [api]="tasksApi" [outputs]="tasksOutputs"
-        summary="The signed-in person's approvals and tasks, due first and overdue marked, each opening its decision with its form. Use it as an app's inbox page (the tasks drawer shows the same list in a drawer).">
-        @if (online()) {
-          @for (k of [rev()]; track k) {
-            <div class="frame"><ui-workflow-tasks [api]="api()" (decided)="onChanged()" /></div>
-          }
-        }
-        <doc-demo [code]="tasksCode"></doc-demo>
       </doc-section>
 
       <doc-section name="Run" anchor="run" selector="ui-workflow-run" [api]="runApi" [outputs]="runOutputs"
@@ -389,14 +377,10 @@ export class WorkflowComponentsPage {
 </header>
 
 <!-- your own button, or a link in an email (?tasks=1) -->
-<ui-workflow-tasks-drawer [showButton]="false" [(open)]="tasksOpen" label="Approvals" />`;
-
-  protected readonly tasksCode = `<!-- /inbox -->
-<h1>My tasks</h1>
-<ui-workflow-tasks (decided)="reload()" />
+<ui-workflow-tasks-drawer [showButton]="false" [(open)]="tasksOpen" label="Approvals" />
 
 <!-- everyone's tasks, for admins -->
-<ui-workflow-tasks scope="all" [pageSize]="50" />`;
+<ui-workflow-tasks-drawer scope="all" label="All tasks" [pageSize]="50" />`;
 
   protected readonly runCode = `<!-- /admin/runs/:id -->
 <ui-workflow-run [instanceId]="runId" [canIntervene]="isAdmin" (changed)="reload()" />`;
@@ -476,16 +460,10 @@ export class WorkflowSettingsPage {
     { name: 'showButton', type: 'boolean', default: 'true', desc: 'Show the built-in button; off when the app opens the drawer from its own control.' },
     { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes (0: only on open, close and decisions).' },
     { name: 'pageSize', type: 'number', default: '25', desc: 'Tasks per page in the drawer.' },
+    { name: 'scope', type: "'mine' | 'all'", default: "'mine'", desc: "The signed-in person's tasks, or everyone's (for admins; give it a label such as 'All tasks'). The count follows it." },
     WorkflowComponentsPage.apiRow,
   ];
   protected readonly drawerOutputs: ApiRow[] = [{ name: '(decided)', type: 'UiWfTask', desc: 'After a task was decided in the drawer.' }];
-
-  protected readonly tasksApi: ApiRow[] = [
-    { name: 'scope', type: "'mine' | 'all'", default: "'mine'", desc: "The signed-in person's tasks, or everyone's (needs admin rights)." },
-    { name: 'pageSize', type: 'number', default: '25', desc: 'Tasks per page.' },
-    WorkflowComponentsPage.apiRow,
-  ];
-  protected readonly tasksOutputs: ApiRow[] = [{ name: '(decided)', type: 'UiWfTask', desc: 'After a decision, so the host can refresh related views.' }];
 
   protected readonly runApi: ApiRow[] = [
     { name: 'instanceId', type: 'string', default: 'required', desc: 'The run to show.' },

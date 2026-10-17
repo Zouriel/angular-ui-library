@@ -6,7 +6,7 @@ import { UiButton } from '@zouriel/ui/button';
 import { UiDrawer } from '@zouriel/ui/dialog';
 import type { UiWfTask } from './api';
 import { WF_ICONS } from './icons';
-import { UiWorkflowTasks } from './runtime';
+import { WfTaskInbox } from './runtime';
 import { WfWithApi } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
@@ -14,18 +14,20 @@ import { WF_SHARED_STYLES } from './styles';
 const COUNT_TAKE = 100;
 
 /**
- * `ui-workflow-tasks-drawer` — a "My tasks" button with the number of open tasks (red when any is
- * overdue) that opens the task inbox in a drawer. Put it in an app's header; open it from code with
- * `[(open)]`.
+ * `ui-workflow-tasks-drawer` — where people work through their approvals and tasks: a "My tasks"
+ * button with the number of open tasks (red when any is overdue) that opens them in a drawer, open
+ * or finished, each opening its decision. Put it in an app's header; open it from code with
+ * `[(open)]`; with `scope="all"` admins see everyone's.
  *
  * ```html
  * <ui-workflow-tasks-drawer />
  * <ui-workflow-tasks-drawer [(open)]="tasksOpen" label="Approvals" (decided)="reload()" />
+ * <ui-workflow-tasks-drawer scope="all" label="All tasks" />
  * ```
  */
 @Component({
   selector: 'ui-workflow-tasks-drawer',
-  imports: [HugeiconsIconComponent, UiBadge, UiButton, UiDrawer, UiWorkflowTasks],
+  imports: [HugeiconsIconComponent, UiBadge, UiButton, UiDrawer, WfTaskInbox],
   template: `
     @if (showButton()) {
       <ui-button class="trigger" [size]="size()" [variant]="variant()" (click)="open.set(true)">
@@ -40,7 +42,7 @@ const COUNT_TAKE = 100;
     }
     <ui-drawer [(open)]="open" [side]="side()" [title]="label()">
       @if (open()) {
-        <ui-workflow-tasks class="inbox" [api]="client()" [pageSize]="pageSize()" (decided)="onDecided($event)" />
+        <ui-wf-task-inbox class="inbox" [api]="client()" [scope]="scope()" [pageSize]="pageSize()" (decided)="onDecided($event)" />
       }
     </ui-drawer>
   `,
@@ -63,6 +65,11 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
   /** How often to refresh the count, in seconds (0: only on open, close and decisions). */
   readonly refreshSeconds = input(60);
   readonly pageSize = input(25);
+  /**
+   * Whose tasks: the signed-in person's (`mine`), or everyone's (`all`, for admins who oversee the
+   * work; give it a label such as "All tasks"). The count follows it.
+   */
+  readonly scope = input<'mine' | 'all'>('mine');
   /** After a task was decided in the drawer. */
   readonly decided = output<UiWfTask>();
 
@@ -119,7 +126,7 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
     if (!api) return;
     const seq = ++this.seq;
     try {
-      const page = await api.tasks({ scope: 'mine', status: ['open'], take: COUNT_TAKE });
+      const page = await api.tasks({ scope: this.scope(), status: ['open'], take: COUNT_TAKE });
       if (seq !== this.seq) return;
       this.count.set(page.total);
       this.overdue.set(page.items.filter((t) => t.overdue).length);

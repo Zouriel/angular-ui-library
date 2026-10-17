@@ -1,7 +1,7 @@
 # `@zouriel/ui/workflow`
 
 A builder where admins design workflows without code, and the components that run
-them in your app: a workflow panel for each record, a task inbox, a run view, an audit log and a
+them in your app: a workflow panel for each record, a tasks drawer, a run view, an audit log and a
 settings screen. Workflows are JSON in the Zouriel Workflows format, run by an
 engine on your server (the .NET engine first; Laravel and Go engines follow the
 same spec and REST API).
@@ -10,8 +10,7 @@ same spec and REST API).
 import {
   UiWorkflowBuilder,        // <ui-workflow-builder>: where admins design workflows
   UiWorkflowPanel,          // <ui-workflow-panel>: a record's state, moves, tasks and history: stepper, compact or drawer
-  UiWorkflowTasks,          // <ui-workflow-tasks>: the signed-in person's approvals and tasks
-  UiWorkflowTasksDrawer,    // <ui-workflow-tasks-drawer>: a "My tasks" button with a count, opening the inbox
+  UiWorkflowTasksDrawer,    // <ui-workflow-tasks-drawer>: a "My tasks" button with a count, where people decide their tasks
   UiWorkflowRun,            // <ui-workflow-run>: one run over its workflow, with retry/skip/cancel
   UiWorkflowAudit,          // <ui-workflow-audit>: the tamper-evident log, filter, export, verify
   UiWorkflowGlobalSettings, // <ui-workflow-global-settings>: working hours, channels, webhooks, retention
@@ -134,11 +133,10 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 <ui-workflow-panel entity="application" [entityId]="app.id" layout="compact" title="" />
 <ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" />
 
-<!-- an inbox -->
-<ui-workflow-tasks scope="mine" (decided)="refresh()" />
-
-<!-- in the app header: "My tasks" with a count, opening the inbox in a drawer -->
+<!-- in the app header: "My tasks" with a count, opening the tasks in a drawer -->
 <ui-workflow-tasks-drawer (decided)="refresh()" />
+<!-- everyone's tasks, for admins -->
+<ui-workflow-tasks-drawer scope="all" label="All tasks" />
 
 <!-- admin views -->
 <ui-workflow-run [instanceId]="runId" [canIntervene]="isAdmin" />
@@ -154,10 +152,11 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   column or details card; `title=""` hides its heading), `side-drawer` or `bottom-drawer` (a rail of
   dots on the screen's edge). A record type with no lifecycle still shows its manual workflows, open
   tasks and history.
-- **Tasks**: approvals and tasks, due first and overdue marked; deciding opens the task's form.
-- **Tasks drawer**: a button with the number of open tasks (red when any is overdue) that opens the
-  inbox in a drawer. The count refreshes every `refreshSeconds` while the page is visible, and when
-  the drawer opens or closes.
+- **Tasks drawer**: where people work through their approvals and tasks. A button with the number
+  of open tasks (red when any is overdue) opens them in a drawer: due first and overdue marked, open
+  or finished, each opening its decision with its form. `scope="all"` lists everyone's tasks, for
+  admins. The count refreshes every `refreshSeconds` while the page is visible, and when the drawer
+  opens or closes.
 - **Permissions**: one settings page listing, for every published workflow, who may make each move,
   start a record over, press a start button and decide each approval or task. Saving publishes a new
   version with only those changes (`updatePermissions`); if someone else published since the page
@@ -177,7 +176,8 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 | `size` / `variant` | `UiSize` / `'outline' \| 'ghost' \| 'primary'` | `'sm'` / `'outline'` | How the button looks. |
 | `showButton` | `boolean` | `true` | Show the built-in button (off to open it from your own control). |
 | `refreshSeconds` | `number` | `60` | How often the count refreshes while the page is visible (0: only on open, close and decisions). |
-| `pageSize` | `number` | `25` | Tasks per page in the inbox. |
+| `pageSize` | `number` | `25` | Tasks per page in the drawer. |
+| `scope` | `'mine' \| 'all'` | `'mine'` | The signed-in person's tasks, or everyone's (for admins; give it a label such as "All tasks"). The count follows it. |
 | `api` | `UiWorkflowApi \| null` | provided | The engine API. |
 | `(decided)` | `UiWfTask` | | After a task was decided in the drawer. |
 
