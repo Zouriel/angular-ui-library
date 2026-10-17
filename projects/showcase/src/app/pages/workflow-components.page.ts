@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { UiButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
@@ -35,7 +35,7 @@ const ENTITY = 'application';
   providers: [{ provide: UI_WORKFLOW_CLOCK, useFactory: () => inject(WorkflowPlayground).now }],
   template: `
     <doc-page eyebrow="Flagship" title="Workflow components"
-      lead="Everything an app puts on its own pages once workflows run: a record's workflow on the record's page, a task button in the header, an inbox, run and audit views for admins, and the pieces of a workflow settings page. Each one talks to the engine through the workflow API, and each person only sees what they may do.">
+      lead="Everything an app puts on its own pages once workflows run: a record's workflow on the record's page, a task button in the header that opens people's tasks (and, for those who may fix them, stopped workflows), an audit log for admins, and the pieces of a workflow settings page. Each one talks to the engine through the workflow API, and each person only sees what they may do.">
 
       <div class="where" aria-labelledby="where-title">
         <h2 id="where-title" class="where-title">Which component goes where</h2>
@@ -62,25 +62,31 @@ const ENTITY = 'application';
       }
 
       <doc-section name="Workflow panel" anchor="panel" selector="ui-workflow-panel" [api]="panelApi" [outputs]="panelOutputs"
-        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, a compact one for a side column or details card (a badge, a strip of states, the actions and one history), or a drawer that waits on the screen's edge as a rail of dots when the page is busy. A record type with no lifecycle still shows its manual workflows, open tasks and history. Under Running it lists the record's workflows still going, each opening its steps; one that stopped (a payment the bank refused, say) opens by itself, and people who may intervene try it again, skip the step giving what it would have produced, or cancel it, right there.">
+        summary="The record's workflow on the record's own page: its states as a stepper (green for states it has been through), what happened in each, and in the current state the moves this person may make, with their forms and confirmations, open tasks and manual workflows. Use it when the workflow is part of the page's story; choose a vertical or horizontal panel, a compact one for a side column or details card (a badge, a strip of states, the actions and one history), or a drawer that waits on the screen's edge as a rail of dots when the page is busy. A record type with no lifecycle still shows its manual workflows, open tasks and history. Under Running (Stopped, when all of them stopped) it lists the record's workflows still going, each opening its steps; one that stopped (a payment the bank refused, say) opens by itself, and people who may intervene try it again, skip the step giving what it would have produced, or cancel it, right there.">
         @if (ready(); as id) {
           <div class="actions">
             <ui-button size="sm" variant="outline" [disabled]="busy() || !stoppable()" (click)="stopPayment()">Show a stopped payment</ui-button>
-            <span class="note">Approves this application and has finance sign it off while the demo bank is down: the payment fails, and the panel shows it under Running with Try again, Skip and Cancel (the bank is back by then).</span>
+            <span class="note">
+              @if (!stoppable()) {
+                Every application is already past approval, so there is no payment left to make fail. Reset one (Start over, as the head of office) to try again.
+              } @else if (stoppable()!.id + '' !== id) {
+                This application is already past approval, so the demo uses {{ stoppable()!.title }}: it approves it and has finance sign it off while the demo bank is down. The payment fails, and the panel (switched to that application) shows it under Stopped with Try again, Skip and Cancel.
+              } @else {
+                Approves this application and has finance sign it off while the demo bank is down: the payment fails, and the panel shows it under Stopped with Try again, Skip and Cancel (the bank is back by then).
+              }
+            </span>
           </div>
           <ui-segmented size="sm" label="Layout" [options]="layouts" [value]="layout()" (valueChange)="layout.set($any($event))" />
           @if (layout() === 'vertical' || layout() === 'horizontal' || layout() === 'compact') {
             <div class="frame" [attr.data-layout]="layout()">
-              <!-- Drawn again after the page itself changes the application (Show a stopped payment). -->
-              @for (k of [rev()]; track k) {
-                <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onPanelChanged()" />
-              }
+              <!-- Reloaded (not drawn again) after the page itself changes the application. -->
+              <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onPanelChanged()" />
             </div>
           } @else {
             <div class="frame hint">
               <p>The panel is on the {{ layout() === 'side-drawer' ? 'right edge' : 'bottom edge' }} of the screen as a rail of dots: one per state, green up to where the application is now. Hover it with a mouse to peek, or tap or click it to open the drawer.</p>
             </div>
-            <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onChanged()" />
+            <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onPanelChanged()" />
           }
         }
         <doc-demo [code]="panelCode"></doc-demo>
@@ -89,12 +95,11 @@ const ENTITY = 'application';
       <doc-section name="My tasks drawer" anchor="tasks-drawer" selector="ui-workflow-tasks-drawer" [api]="drawerApi" [outputs]="drawerOutputs"
         summary="Where people work through their approvals and tasks: a button for the app's header with the number open (red when one is overdue) that opens them in a drawer, open or finished, each opening its decision with its form. People act from any page; open it from code too, for a link in an email or a keyboard shortcut. With scope=&quot;all&quot; it lists everyone's tasks, for admins. People who may intervene also find stopped workflows here, counted in the badge (red) and listed above the tasks, each opening its steps with try again, skip and cancel.">
         @if (online()) {
-          @for (k of [rev()]; track k) {
-            <div class="app-bar">
-              <span class="app-name">Scholarship office</span>
-              <ui-workflow-tasks-drawer [api]="api()" (decided)="onChanged()" />
-            </div>
-          }
+          <!-- Not drawn again on changes (that would close it after every decision): it counts again itself, or on refresh(). -->
+          <div class="app-bar">
+            <span class="app-name">Scholarship office</span>
+            <ui-workflow-tasks-drawer [api]="api()" (decided)="onDecided()" />
+          </div>
           <div class="actions">
             <ui-button size="sm" variant="outline" [disabled]="busy() || !approvable()" (click)="makeTasks()">Approve another application</ui-button>
             <span class="note">No tasks yet? Approving one starts the finance sign-off: a task for Farah (finance), and for large amounts one for Hana (head of office) too.</span>
@@ -104,7 +109,7 @@ const ENTITY = 'application';
       </doc-section>
 
       <doc-section name="Audit log" anchor="audit" selector="ui-workflow-audit" [api]="auditApi"
-        summary="The tamper-evident audit log: filter by record, run, kind or person, open an entry for its before and after values, export it, and check the hash chain. Use it on an admin page, or scoped to one record (as here) on that record's page. Reading it needs admin rights, so applicants see the engine's refusal.">
+        summary="The tamper-evident audit log: filter by record or kind, page back through older entries, open an entry for its before and after values, export it as CSV, and check the hash chain. Use it on an admin page, or scoped to one record (as here) on that record's page. Reading it needs admin rights, so applicants see the engine's refusal.">
         @if (ready(); as id) {
           @for (k of [rev()]; track k) {
             <div class="frame scroll"><ui-workflow-audit [entity]="entity" [entityId]="id" [api]="api()" [pageSize]="20" /></div>
@@ -216,6 +221,8 @@ export class WorkflowComponentsPage {
   protected readonly rev = signal(0);
   private readonly apps = signal<DemoApplication[]>([]);
   protected readonly record = signal<UiWfRecord | null>(null);
+  private readonly panel = viewChild(UiWorkflowPanel);
+  private readonly drawer = viewChild(UiWorkflowTasksDrawer);
   /** Whether the first load (and preparing an application past Draft) has finished. */
   private readonly loaded = signal(false);
 
@@ -312,8 +319,12 @@ export class WorkflowComponentsPage {
     await this.pg.settle().catch(() => undefined);
   }
 
-  /** The picked application, while it can still be approved (so its payment can be made to fail). */
-  protected readonly stoppable = computed(() => this.apps().find((a) => String(a.id) === this.appId() && isOpen(a.status)) ?? null);
+  /**
+   * The application whose payment the demo makes fail: the picked one while it can still be approved,
+   * else the next one that can (the page says so and switches to it).
+   */
+  protected readonly stoppable = computed(() =>
+    this.apps().find((a) => String(a.id) === this.appId() && isOpen(a.status)) ?? this.apps().find((a) => isOpen(a.status)) ?? null);
 
   /**
    * The scenario from the docs: with the demo bank down, approve the picked application and have
@@ -327,6 +338,8 @@ export class WorkflowComponentsPage {
     const id = String(app.id);
     this.busy.set(true);
     this.prepError.set('');
+    // Show the application whose payment is about to stop.
+    if (id !== this.appId()) this.appId.set(id);
     try {
       await this.pg.send('POST', '/demo/bank', { down: true });
       await this.moveOn(app, 'Approved');
@@ -368,14 +381,26 @@ export class WorkflowComponentsPage {
     }
   }
 
+  /** The page itself changed applications: everything shows the change (the panel and drawer read again in place). */
   protected onChanged(): void {
     void this.loadApps();
     this.rev.update((n) => n + 1);
+    void this.panel()?.reload();
+    void this.drawer()?.refresh();
   }
 
-  /** The panel changed the application itself: refresh the rest of the page, not the panel (it already shows the change). */
+  /** A decision in the drawer: the drawer counts again itself; the rest of the page reads again. */
+  protected onDecided(): void {
+    void this.loadApps();
+    this.rev.update((n) => n + 1);
+    void this.panel()?.reload();
+  }
+
+  /** The panel saw the application change: refresh the rest of the page, not the panel (it already shows it). */
   protected onPanelChanged(): void {
     void this.loadApps();
+    this.rev.update((n) => n + 1);
+    void this.drawer()?.refresh();
   }
 
   // ── Snippets ──────────────────────────────────────────────────────────
@@ -465,12 +490,15 @@ export class WorkflowSettingsPage {
     { name: 'layout', type: "'vertical' | 'horizontal' | 'compact' | 'side-drawer' | 'bottom-drawer'", default: "'vertical'", desc: 'How it sits on the page; compact suits a side column or details card.' },
     { name: 'side', type: "'right' | 'left'", default: "'right'", desc: 'Which edge the side drawer opens from.' },
     { name: 'title', type: 'string', default: "'Workflow'", desc: 'The heading (and the drawer title).' },
-    { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show what happened in each state.' },
+    { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show what happened in each state (the latest 500 entries; what came before a reset is grouped apart).' },
     { name: 'emptyText', type: 'string', default: "'Nothing for you to do here right now.'", desc: 'Said in the current state when this person has nothing to do; empty hides it.' },
     { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open (drawer layouts). Two-way.' },
     WorkflowComponentsPage.apiRow,
   ];
-  protected readonly panelOutputs: ApiRow[] = [{ name: '(changed)', type: 'UiWfRecord', desc: 'After the record moved through the panel, so the page can reload its own data.' }];
+  protected readonly panelOutputs: ApiRow[] = [
+    { name: '(changed)', type: 'UiWfRecord', desc: "The record's workflow changed: a move made in the panel, or any reload that finds a new state, status or run status (after a decision, a manual start, a retry, skip or cancel). Reload the page's own data with it." },
+    { name: 'reload()', type: 'Promise<void>', desc: 'Reads the record and its history again, e.g. after the page changed the record itself.' },
+  ];
 
   protected readonly drawerApi: ApiRow[] = [
     { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open. Two-way, so it can be opened from code.' },
@@ -490,7 +518,7 @@ export class WorkflowSettingsPage {
   protected readonly auditApi: ApiRow[] = [
     { name: 'entity', type: 'string | null', default: 'null', desc: "Show only one record's entries (with entityId)." },
     { name: 'entityId', type: 'string | null', default: 'null', desc: 'The record id.' },
-    { name: 'instanceId', type: 'string | null', default: 'null', desc: "Show only one run's entries." },
+    { name: 'instanceId', type: 'string | null', default: 'null', desc: "Show only one run's entries. No export then: the engine's export can't be limited to one run." },
     { name: 'pageSize', type: 'number', default: '50', desc: 'Entries per page.' },
     WorkflowComponentsPage.apiRow,
   ];

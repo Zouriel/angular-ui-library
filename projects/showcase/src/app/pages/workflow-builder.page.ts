@@ -49,7 +49,7 @@ const DOCS_USER = 'hana';
       </doc-section>
 
       <doc-section name="Builder" selector="ui-workflow-builder" [api]="builderApi"
-        summary="Automations are a trigger card and a list of steps: press + between steps (or drag one in from the left) and branches, outcomes and parallel paths appear as columns. Drag a step by its grip to move it anywhere, including into another branch; the ⋯ menu also moves, duplicates, turns off or deletes it. Lifecycles are a diagram: drag a state to move it, drag from its handle onto another state to add a transition (tap the handle, then the target, on touch), and edit what each transition or state runs underneath. A lifecycle can also let chosen people start a record over (Starting over, in its settings): the reset chip beside “From any state” sets who may, where it goes back to, a reason form, and the steps it runs, which can change the record, related records and each item of a list. “Offer it” limits Start over to a state onwards. When someone resets a record, the dialog lists what the workflow did (fields it changed anywhere, records it created, actions, messages), with everything that can be undone ticked, and they untick what should stay. Red moves, Start over, rejections and a task’s red buttons ask for remarks; each has a Remarks setting to make them optional or required. Applies to, in a lifecycle's settings, limits it to some records (e.g. applications whose type is Passport), and the Create record step adds a record of any kind, which a reset can delete again. Every change is checked by the engine as you go; Versions publishes and rolls back, Test runs the draft against a real record without changing anything. Below 1100px the palette moves into a dialog, and on phones the settings open in a bottom sheet.">
+        summary="Automations are a trigger card and a list of steps: press + between steps (or drag one in from the left) and branches, outcomes and parallel paths appear as columns. Drag a step by its grip to move it anywhere, including into another branch; the ⋯ menu also moves, duplicates, turns off or deletes it. Lifecycles are a diagram: drag a state to move it, drag from its handle onto another state to add a transition (tap the handle, then the target, on touch), and edit what each transition or state runs underneath. A lifecycle can also let chosen people start a record over (Starting over, in its settings): the reset chip under the diagram sets who may, where it goes back to, a reason form, and the steps it runs, which can change the record, related records and each item of a list (Update record inside a For each). “Offer it” limits Start over to a state onwards. When someone resets a record, the dialog lists what the workflow did (fields it changed anywhere, records it created, actions, messages), with everything that can be undone ticked, and they untick what should stay. Red moves, Start over, rejections and a task’s red buttons ask for remarks; each has a Remarks setting to make them optional or required. Applies to, in a lifecycle's settings, limits it to some records (e.g. applications whose type is Passport), and the Create record step adds a record of any kind, which a reset can delete again. Every change is checked by the engine as you go; Versions publishes and rolls back, Test runs the draft against a real record without changing anything. Below 1100px the palette moves into a dialog, and on phones the settings open in a bottom sheet.">
         <div class="builder-frame">
           <ui-workflow-builder [definition]="def()" (definitionChange)="def.set($event)" />
         </div>
@@ -59,7 +59,7 @@ const DOCS_USER = 'hana';
       <aside class="studio-cta">
         <div>
           <strong>Running workflows in your app</strong>
-          <p>The workflow panel, the tasks drawer, run and audit views, and the permissions and settings pages are on their own page, each with a live demo and its inputs.</p>
+          <p>The workflow panel (with each record's runs), the tasks drawer, the audit log, and the permissions and settings pages are on their own page, each with a live demo and its inputs.</p>
         </div>
         <ui-button variant="outline" routerLink="/workflow-components">See the workflow components</ui-button>
       </aside>
@@ -114,9 +114,10 @@ providers: [
     { name: 'schema', type: 'UiWorkflowSchema | null', default: 'null', desc: 'Registry and step outputs, when there is no API.' },
     { name: 'settings', type: 'UiWorkflowSettings | null', default: 'null', desc: 'Global settings (webhook connections), when there is no API.' },
     { name: 'persist', type: 'boolean', default: 'false', desc: 'Show Save and Publish and save drafts through the API.' },
+    { name: 'readOnly', type: 'boolean | null', default: 'null', desc: 'Look without changing anything. Null asks the API (me().can.edit); true or false decides here. Nothing can be edited, deleted, dragged or saved.' },
     { name: '(problemsChange)', type: 'UiWfProblem[]', desc: 'The engine’s problems after each check.' },
     { name: '(saved)', type: 'UiWorkflowDefinition', desc: 'After a successful save through the API.' },
-    { name: '(dirtyChange)', type: 'boolean', desc: 'True while there are unsaved edits (guard leaving the page with it).' },
-    { name: '[wfActions]', type: 'content', desc: 'Your own buttons in the header.' },
+    { name: '(dirtyChange)', type: 'boolean', desc: 'With persist: true while there are edits not saved through the API (guard leaving the page with it).' },
+    { name: '[wfActions]', type: 'content', desc: 'Your own buttons in the header, after Save and Publish: <ui-button wfActions>Close</ui-button>.' },
   ];
 }
