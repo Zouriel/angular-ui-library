@@ -2,7 +2,9 @@ import { Component, computed, effect, input, output, signal, untracked } from '@
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
-import { UiInput, UiNumberInput, UiSwitch } from '@zouriel/ui/form';
+import { UiCombobox } from '@zouriel/ui/combobox';
+import { UiDatePicker } from '@zouriel/ui/datepicker';
+import { UiCheckbox, UiInput, UiNumberInput, UiSwitch, UiTimePicker } from '@zouriel/ui/form';
 import { UiWfApiError, injectWorkflowApi, type UiWfTriggerOverview, type UiWorkflowApi } from './api';
 import { WfDurationInput } from './editors';
 import { WF_ICONS } from './icons';
@@ -17,7 +19,22 @@ const DAYS: { value: Day; label: string }[] = [
   { value: 'fri', label: 'Fri' }, { value: 'sat', label: 'Sat' }, { value: 'sun', label: 'Sun' },
 ];
 
-const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'definition', 'settings'];
+/** Audit categories whose entries can be removed after a while, with names for people. */
+const AUDIT_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'step', label: 'Steps' }, { value: 'instance', label: 'Runs' }, { value: 'task', label: 'Tasks and approvals' },
+  { value: 'lifecycle', label: 'Record moves' }, { value: 'trigger', label: 'Triggers' }, { value: 'definition', label: 'Workflow changes' },
+  { value: 'settings', label: 'Settings changes' },
+];
+
+type Settings = UiWorkflowSettings;
+
+/** The settings with a record type paused or resumed. */
+function withPaused(st: Settings, entity: string, on: boolean): Settings {
+  const list = (st.paused ?? []).filter((p) => p.entity !== entity);
+  const next = { ...st, paused: on ? [...list, { entity }] : list } as Record<string, unknown>;
+  if (!(next['paused'] as unknown[]).length) delete next['paused'];
+  return next as unknown as Settings;
+}
 
 /**
  * `ui-workflow-global-settings` — the app's workflow settings page: working hours and holidays,
@@ -28,7 +45,7 @@ const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'd
  */
 @Component({
   selector: 'ui-workflow-global-settings',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, UiNumberInput, UiSwitch, WfDurationInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfDurationInput],
   template: `
     <nav class="nav" aria-label="Settings sections">
       @for (s of sections; track s.value) {
@@ -40,21 +57,20 @@ const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'd
         @case ('time') {
           <h2>Time and working hours</h2>
           <p class="wf-hint">Deadlines, reminders and time limits marked “working time” only count these hours.</p>
-          <label class="lw"><span class="wf-label">Time zone</span>
-            <select class="wf-select" (change)="patch({ timeZone: $any($event.target).value })">
-              @for (z of zones; track z) { <option [value]="z" [selected]="z === (s().timeZone ?? 'UTC')">{{ z }}</option> }
-            </select></label>
+          <div class="lw zone"><span class="wf-label">Time zone</span>
+            <ui-combobox size="sm" label="Time zone" placeholder="Search time zones" [options]="zoneOptions()" [clearable]="false"
+              [ngModel]="s().timeZone ?? 'UTC'" (ngModelChange)="$event && patch({ timeZone: $event })" /></div>
           <div><span class="wf-label">Working days</span>
             <div class="days">@for (d of days; track d.value) {
-              <label class="day"><input type="checkbox" [checked]="workDays().includes(d.value)" (change)="toggleDay(d.value, $any($event.target).checked)" />{{ d.label }}</label> }</div></div>
+              <ui-checkbox [ngModel]="workDays().includes(d.value)" (ngModelChange)="toggleDay(d.value, $event)">{{ d.label }}</ui-checkbox> }</div></div>
           <div class="wf-grid2">
-            <label class="lw"><span class="wf-label">From</span><input class="wf-select native" type="time" [value]="hours()[0]" (change)="setHours(0, $any($event.target).value)" /></label>
-            <label class="lw"><span class="wf-label">To</span><input class="wf-select native" type="time" [value]="hours()[1]" (change)="setHours(1, $any($event.target).value)" /></label>
+            <label class="lw"><span class="wf-label">From</span><ui-time-picker [ngModel]="hours()[0]" (ngModelChange)="setHours(0, $event)" /></label>
+            <label class="lw"><span class="wf-label">To</span><ui-time-picker [ngModel]="hours()[1]" (ngModelChange)="setHours(1, $event)" /></label>
           </div>
           <div><span class="wf-label">Holidays</span>
             <ul class="items">@for (h of s().calendar?.holidays ?? []; track h) {
               <li>{{ h }} <button type="button" class="wf-icon-btn danger" (click)="removeHoliday(h)" [attr.aria-label]="'Remove ' + h"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
-            <div class="wf-row"><input class="wf-select native date" type="date" #hd aria-label="Holiday date" /><button type="button" class="wf-link" (click)="addHoliday(hd.value); hd.value = ''">Add holiday</button></div>
+            <div class="holiday"><ui-date-picker size="sm" placeholder="Add a holiday" [ngModel]="holidayDraft()" (ngModelChange)="pickHoliday($event)" aria-label="Holiday date" /></div>
           </div>
         }
         @case ('defaults') {
@@ -118,9 +134,9 @@ const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'd
           <h2>Audit log</h2>
           <p class="wf-hint">Every change and decision is recorded in a tamper-evident chain. Old entries can be removed after a while; the chain stays checkable.</p>
           <div class="retention">
-            @for (c of auditCategories; track c) {
-              <label class="lw"><span class="wf-label">{{ c }}</span>
-                <ui-number-input size="sm" [ngModel]="s().audit?.retentionDays?.[c] ?? null" (ngModelChange)="setRetention(c, $event)" [min]="1" suffix="days" placeholder="Keep" /></label>
+            @for (c of auditCategories; track c.value) {
+              <label class="lw"><span class="wf-label">{{ c.label }}</span>
+                <ui-number-input size="sm" [ngModel]="s().audit?.retentionDays?.[c.value] ?? null" (ngModelChange)="setRetention(c.value, $event)" [min]="1" suffix="days" placeholder="Keep" [ariaLabel]="c.label + ': days to keep'" /></label>
             }
           </div>
           <div><span class="wf-label">Hide these values in the log and run views</span>
@@ -135,11 +151,12 @@ const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'd
         }
         @case ('watching') {
           <h2>What is being watched</h2>
-          <p class="wf-hint">Every published workflow and what starts it, by record type. Pause a record type to stop new runs while you sort something out.</p>
+          <p class="wf-hint">Every published workflow and what starts it, by record type. Pause a record type to stop new runs while you sort something out; pausing saves at once and leaves other unsaved changes as they are.</p>
+          @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> } @else if (status()) { <p class="wf-hint" role="status">{{ status() }}</p> }
           @for (g of watchGroups(); track g.entity) {
             <div class="card">
               <div class="wf-row"><strong class="grow">{{ g.label }}</strong>
-                <label class="wf-row small"><ui-switch [ngModel]="isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, $event)" /> Paused</label></div>
+                <label class="wf-row small"><ui-switch [ngModel]="isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, $event)" [disabled]="busy()" /> Paused</label></div>
               <ul class="watch">@for (t of g.triggers; track t.definitionId) {
                 <li [class.conflict]="conflicts().has(t.definitionId)"><span class="wf-chip">{{ t.kind === 'lifecycle' ? 'Lifecycle' : 'Automation' }}</span> {{ t.title }} <span class="sum">— {{ t.summary }}</span></li> }</ul>
               @if (g.conflict) { <p class="wf-warn">Two workflows start on the same change here. Check they don’t work against each other.</p> }
@@ -186,11 +203,9 @@ const AUDIT_CATEGORIES = ['step', 'instance', 'task', 'lifecycle', 'trigger', 'd
     h2 { margin: 0; font-size: 16px; font-weight: 650; }
     h3 { margin: var(--ui-space-2) 0 0; font-size: 13px; }
     .lw { display: block; min-width: 0; }
-    .native { background-image: none; padding-right: var(--ui-space-2); }
-    .date { width: auto; }
+    .zone ui-combobox { display: block; max-width: 360px; }
+    .holiday { max-width: 220px; }
     .days { display: flex; flex-wrap: wrap; gap: 6px 14px; }
-    .day { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
-    .day input { accent-color: var(--ui-color-primary); margin: 0; }
     .items { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
     .items li { display: inline-flex; align-items: center; gap: 2px; padding-left: 8px; border-radius: var(--ui-radius-xs); background: var(--ui-color-surface-hover); font-size: 12.5px; }
     .card { display: flex; flex-direction: column; gap: 6px; padding: var(--ui-space-2) var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
@@ -234,13 +249,23 @@ export class UiWorkflowGlobalSettings {
     { value: 'time', label: 'Time & calendar' }, { value: 'defaults', label: 'Defaults' }, { value: 'channels', label: 'Channels' },
     { value: 'webhooks', label: 'Webhooks' }, { value: 'audit', label: 'Audit log' }, { value: 'watching', label: 'Watching' }, { value: 'registry', label: 'What’s available' },
   ];
-  protected readonly zones = (() => {
+  /** IANA zones the browser knows. `supportedValuesOf` leaves out UTC itself, so it is added first. */
+  private readonly zones = (() => {
+    let list: string[] = [];
     try {
-      return (Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf('timeZone');
+      list = (Intl as unknown as { supportedValuesOf(k: string): string[] }).supportedValuesOf('timeZone');
     } catch {
-      return ['UTC'];
+      list = [];
     }
+    return ['UTC', ...list.filter((z) => z !== 'UTC')];
   })();
+  /** The zones to choose from, keeping a saved zone this browser doesn't list. */
+  protected readonly zoneOptions = computed(() => {
+    const cur = this.s().timeZone;
+    const list = cur && !this.zones.includes(cur) ? [cur, ...this.zones] : this.zones;
+    return list.map((z) => ({ value: z, label: z === 'UTC' ? 'UTC (Coordinated Universal Time)' : z.replace(/_/g, ' ') }));
+  });
+  protected readonly holidayDraft = signal<string | null>(null);
   protected readonly section = signal<Section>('time');
   protected readonly s = signal<UiWorkflowSettings>({ version: 1 });
   private readonly saved = signal<string>(JSON.stringify({ version: 1 }));
@@ -321,6 +346,8 @@ export class UiWorkflowGlobalSettings {
   }
 
   protected setHours(i: 0 | 1, v: string): void {
+    // The time field reports each keystroke; only whole times are kept.
+    if (!/^\d{2}:\d{2}$/.test(v ?? '') || v === this.hours()[i]) return;
     const h: [string, string] = [...this.hours()];
     h[i] = v;
     this.patch({ calendar: { ...(this.s().calendar ?? {}), hours: h } });
@@ -330,6 +357,14 @@ export class UiWorkflowGlobalSettings {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     const list = [...new Set([...(this.s().calendar?.holidays ?? []), d])].sort();
     this.patch({ calendar: { ...(this.s().calendar ?? {}), holidays: list } });
+  }
+
+  protected pickHoliday(d: string | null): void {
+    this.holidayDraft.set(d);
+    if (!d) return;
+    this.addHoliday(d);
+    // Empty the picker again for the next one.
+    setTimeout(() => this.holidayDraft.set(null));
   }
 
   protected removeHoliday(d: string): void {
@@ -393,10 +428,36 @@ export class UiWorkflowGlobalSettings {
     return !!this.s().paused?.some((p) => p.entity === entity);
   }
 
-  protected setPaused(entity: string, on: boolean): void {
-    const list = (this.s().paused ?? []).filter((p) => p.entity !== entity);
-    this.patch({ paused: on ? [...list, { entity }] : list.length ? list : undefined });
-    void this.save();
+  /**
+   * Pauses or resumes a record type at once. Only that change is saved: it is applied to the last
+   * saved settings, and any other edits on the page stay unsaved, as they were.
+   */
+  protected async setPaused(entity: string, on: boolean): Promise<void> {
+    if (this.busy() || this.isPaused(entity) === on) return;
+    const toSave = withPaused(JSON.parse(this.saved()) as Settings, entity, on);
+    this.s.set(withPaused(this.s(), entity, on));
+    this.error.set('');
+    const api = this.client();
+    if (!api) {
+      this.saved.set(JSON.stringify(toSave));
+      this.settingsChange.emit(toSave);
+      this.status.set(on ? 'Paused.' : 'Running again.');
+      return;
+    }
+    this.busy.set(true);
+    try {
+      const r = await api.saveSettings(toSave, this.revision());
+      this.revision.set(r.revision);
+      this.saved.set(JSON.stringify(toSave));
+      this.settingsChange.emit(toSave);
+      this.status.set(`${on ? 'Paused.' : 'Running again.'}${this.dirty() ? ' Your other changes are not saved yet.' : ''}`);
+    } catch (e) {
+      // Put the switch back; the rest of the page keeps its edits.
+      this.s.set(withPaused(this.s(), entity, !on));
+      this.error.set(e instanceof UiWfApiError ? e.message : 'Saving failed.');
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected discard(): void {
@@ -405,6 +466,7 @@ export class UiWorkflowGlobalSettings {
   }
 
   async save(): Promise<void> {
+    if (this.busy()) return;
     const api = this.client();
     this.error.set('');
     if (!api) {
@@ -414,12 +476,14 @@ export class UiWorkflowGlobalSettings {
       return;
     }
     this.busy.set(true);
+    const sent = this.s();
     try {
-      const r = await api.saveSettings(this.s(), this.revision());
+      const r = await api.saveSettings(sent, this.revision());
       this.revision.set(r.revision);
-      this.saved.set(JSON.stringify(this.s()));
+      // What was sent is what's saved; anything typed while it was on its way stays unsaved.
+      this.saved.set(JSON.stringify(sent));
       this.status.set('Saved.');
-      this.settingsChange.emit(this.s());
+      this.settingsChange.emit(sent);
     } catch (e) {
       this.error.set(e instanceof UiWfApiError ? e.message : 'Saving failed.');
     } finally {
