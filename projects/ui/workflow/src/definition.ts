@@ -93,6 +93,7 @@ export const UI_WF_STEP_TYPES: readonly UiWfStepInfo[] = [
   { type: 'end', label: 'End', description: 'Stop the workflow here', category: 'Logic', outputs: [] },
   { type: 'wait', label: 'Wait', description: 'Pause for a time, until a date, a condition or an event', category: 'Timing', outputs: ['timedOut', 'data'] },
   { type: 'setFields', label: 'Update record', description: 'Change fields on the record', category: 'Data', outputs: [] },
+  { type: 'createRecord', label: 'Create record', description: 'Add a new record of any kind', category: 'Data', outputs: ['id'] },
   { type: 'applyTransition', label: 'Move lifecycle', description: 'Move a record to another state', category: 'Data', outputs: ['applied'] },
   { type: 'setVariables', label: 'Set variables', description: 'Remember a value for later steps', category: 'Data', outputs: [] },
   { type: 'notify', label: 'Send notification', description: 'Email or message people', category: 'Messages', outputs: ['sent'] },
@@ -136,6 +137,8 @@ export function createStep(type: UiWfStepType, reg?: UiWorkflowRegistry | null):
       return { id, type, until: { type: 'duration', duration: 'P1D' } };
     case 'setFields':
       return { id, type, values: [] };
+    case 'createRecord':
+      return { id, type, entity: '', values: [] };
     case 'setVariables':
       return { id, type, values: [] };
     case 'applyTransition':
@@ -657,6 +660,7 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
 
 function outputLabel(step: UiWfStep, output: string, reg: UiWorkflowRegistry | null): string {
   if (step.type === 'action') return reg?.actions?.find((a) => a.key === step.action)?.outputs.find((o) => o.key === output)?.label ?? output;
+  if (step.type === 'createRecord' && output === 'id') return `New ${entityOf(reg, step.entity)?.label.toLowerCase() ?? 'record'} id`;
   const words: Record<string, string> = {
     outcome: 'Outcome', decidedBy: 'Decided by', comments: 'Comments', comment: 'Comment', data: 'Answers', path: 'Path taken', case: 'Case taken',
     completed: 'Paths finished', count: 'Count', timedOut: 'Timed out', applied: 'Applied', sent: 'Messages sent', status: 'Status code', body: 'Response',
@@ -798,6 +802,10 @@ export function describeStep(step: UiWfStep, ctx: UiWfDescribeContext): string {
       return `for ${reg?.signals?.find((s) => s.key === u.signal)?.label ?? (u.signal || 'an event')}`;
     }
     case 'setFields': return step.values.length ? step.values.map((v) => fieldOf(reg, ctx.def.entity, v.field)?.label ?? v.field).join(', ') : 'Choose fields to change';
+    case 'createRecord': {
+      const e = entityOf(reg, step.entity);
+      return e ? `a new ${e.label.toLowerCase()}${step.values.length ? ` with ${step.values.map((v) => fieldOf(reg, e.key, v.field)?.label ?? v.field).join(', ')}` : ''}` : 'Choose what to create';
+    }
     case 'setVariables': return step.values.length ? step.values.map((v) => ctx.def.variables?.find((x) => x.id === v.variable)?.label ?? '?').join(', ') : 'Choose variables';
     case 'applyTransition': return step.transition ? `${step.transition} in ${ctx.workflowTitle?.(step.lifecycle) ?? step.lifecycle}` : 'Choose a transition';
     case 'notify': return `${reg?.channels?.find((c) => c.key === step.channel)?.label ?? step.channel} to ${describeAssignees(step.to, ctx)}`;

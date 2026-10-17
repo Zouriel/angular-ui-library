@@ -18,6 +18,7 @@ import DragDropVerticalIcon from '@hugeicons/core-free-icons/DragDropVerticalIco
 import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
 import Exchange01Icon from '@hugeicons/core-free-icons/Exchange01Icon';
 import Flag01Icon from '@hugeicons/core-free-icons/Flag01Icon';
+import FileAddIcon from '@hugeicons/core-free-icons/FileAddIcon';
 import Flag02Icon from '@hugeicons/core-free-icons/Flag02Icon';
 import FlashIcon from '@hugeicons/core-free-icons/FlashIcon';
 import GitForkIcon from '@hugeicons/core-free-icons/GitForkIcon';
@@ -71,6 +72,7 @@ export const WF_ICONS = {
   Edit02Icon: Edit02Icon as IconSvgObject,
   Exchange01Icon: Exchange01Icon as IconSvgObject,
   Flag01Icon: Flag01Icon as IconSvgObject,
+  FileAddIcon: FileAddIcon as IconSvgObject,
   Flag02Icon: Flag02Icon as IconSvgObject,
   FlashIcon: FlashIcon as IconSvgObject,
   GitForkIcon: GitForkIcon as IconSvgObject,
@@ -113,6 +115,7 @@ export const WF_STEP_ICONS: Record<string, IconSvgObject> = {
   end: WF_ICONS.Flag02Icon,
   wait: WF_ICONS.HourglassIcon,
   setFields: WF_ICONS.PencilEdit02Icon,
+  createRecord: WF_ICONS.FileAddIcon,
   applyTransition: WF_ICONS.Exchange01Icon,
   setVariables: WF_ICONS.VariableIcon,
   notify: WF_ICONS.Notification03Icon,

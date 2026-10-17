@@ -186,7 +186,53 @@ describe('UiWorkflowPanel', () => {
     const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
     confirm.querySelector('button')!.click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}]]);
+    expect(calls).toEqual([['application', '1', {}, undefined]]);
+  });
+
+  it('lists what the workflow did in the reset: ticked by default, changed-since unticked, messages locked, and sends the chosen ids', async () => {
+    const calls: unknown[] = [];
+    const fixture = TestBed.createComponent(Host);
+    const reset = { label: 'Start over', to: 'Draft', toLabel: 'Draft', confirm: null, form: null };
+    const item = (id: string, kind: string, title: string, undoable: boolean, selected: boolean, warning: string | null = null) =>
+      ({ id, kind, title, detail: null, workflow: 'Application review', step: 'Assign', undoable, selected, warning });
+    fixture.componentInstance.api = {
+      record: async () => record('Review', { reset }),
+      recordHistory: async () => [entry('created', 'Draft')],
+      resetPreview: async () => ({ reset, items: [
+        item('created:document:d9', 'created', 'Delete Document “Checklist”', true, true),
+        item('field:programme:p1:budget', 'field', 'Budget of Programme “Engineering”: back to 50000', true, false, 'Changed again since the workflow set it to 60000; ticking it overwrites that.'),
+        item('message:s3', 'message', 'Message to Ali', false, false, 'Already sent; it can\'t be taken back.'),
+      ] }),
+      resetRecord: async (...args: unknown[]) => { calls.push(args); return record('Draft'); },
+    } as unknown as UiWorkflowApi;
+    fixture.detectChanges();
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    ([...el.querySelectorAll('ui-button')].find((b) => b.textContent?.trim() === 'Start over') as HTMLElement).querySelector('button')!.click();
+    fixture.detectChanges();
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    // ngModel writes the ticks a tick later.
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const rows = [...document.body.querySelectorAll('.undo-list li')] as HTMLElement[];
+    expect(rows.map((r) => r.querySelector('.undo-title')!.textContent!.trim())).toEqual([
+      'Delete Document “Checklist”', 'Budget of Programme “Engineering”: back to 50000', 'Message to Ali',
+    ]);
+    const boxes = rows.map((r) => r.querySelector('input[type=checkbox]') as HTMLInputElement);
+    expect(boxes.map((b) => b.checked)).toEqual([true, false, false]);
+    expect(boxes[2].disabled).toBe(true);
+    expect(rows[1].textContent).toContain('Changed again since');
+    // Keep the new document, put the budget back.
+    boxes[0].click();
+    boxes[1].click();
+    fixture.detectChanges();
+    const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
+    confirm.querySelector('button')!.click();
+    await new Promise((res) => setTimeout(res));
+    expect(calls).toEqual([['application', '1', {}, ['field:programme:p1:budget']]]);
   });
 });
 

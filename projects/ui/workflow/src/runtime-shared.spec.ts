@@ -33,5 +33,13 @@ describe('wfDescribeHistory: reset', () => {
     const label = (k: unknown) => ({ UnderReview: 'Under review', Draft: 'Draft' } as Record<string, string>)[String(k)] ?? String(k);
     expect(wfDescribeHistory(h, label)).toBe('Start over: Under review → Draft (“Wrong programme”)');
   });
+
+  it('says how many of the workflow\'s changes it took back', () => {
+    const h = (undone: string[]) => ({ category: 'lifecycle', action: 'reset', before: '{"state":"Review"}', after: '{"state":"Draft"}',
+      data: JSON.stringify({ label: 'Start over', input: {}, undone }) }) as never;
+    expect(wfDescribeHistory(h(['Delete Document “Checklist”']), String)).toBe('Start over: Review → Draft, took back 1 thing the workflow did');
+    expect(wfDescribeHistory(h(['a', 'b']), String)).toBe('Start over: Review → Draft, took back 2 things the workflow did');
+    expect(wfDescribeHistory(h([]), String)).toBe('Start over: Review → Draft');
+  });
 });
 

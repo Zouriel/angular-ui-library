@@ -162,6 +162,32 @@ export interface UiWfRecord {
   reset?: { label: string; to: string; toLabel: string; confirm: string | null; form: UiFormDefinition | null } | null;
 }
 
+/** One thing a workflow did that a reset can list (spec §6 reset). */
+export interface UiWfResetItem {
+  /** Send back in `resetRecord`'s `undo` to take it back. */
+  id: string;
+  /** `field` (a field it changed), `created` (a record it created), `action`, `message` or `webhook`. */
+  kind: 'field' | 'created' | 'action' | 'message' | 'webhook' | string;
+  /** What taking it back does, in words. */
+  title: string;
+  detail: string | null;
+  /** The workflow and step that did it. */
+  workflow: string;
+  step: string;
+  /** False for messages, webhooks and actions the app cannot undo. */
+  undoable: boolean;
+  /** Ticked by default (not when changed again since, or when it cannot be undone). */
+  selected: boolean;
+  /** Why it is unticked or cannot be undone. */
+  warning: string | null;
+}
+
+/** What resetting a record would do: the reset as offered, and what the workflow did that it can take back. */
+export interface UiWfResetPreview {
+  reset: NonNullable<UiWfRecord['reset']>;
+  items: UiWfResetItem[];
+}
+
 export interface UiWfAuditEntry {
   seq: number;
   id: string;
@@ -348,8 +374,16 @@ export interface UiWorkflowApi {
   recordHistory(entity: string, id: string, take?: number): Promise<UiWfAuditEntry[]>;
   applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>): Promise<UiWfRecord>;
   forceState(entity: string, id: string, state: string, reason: string, skipSteps?: boolean): Promise<UiWfRecord>;
-  /** Starts the record's workflow over (the lifecycle's reset), with the reset form's answers. */
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>): Promise<UiWfRecord>;
+  /**
+   * What starting the record over would take back: every change its workflows made since it last
+   * started over. Optional: without it the reset dialog only confirms.
+   */
+  resetPreview?(entity: string, id: string): Promise<UiWfResetPreview>;
+  /**
+   * Starts the record's workflow over (the lifecycle's reset), with the reset form's answers and the
+   * ids of the `resetPreview` items to take back.
+   */
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[]): Promise<UiWfRecord>;
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>): Promise<UiWfInstance>;
 
   audit(q: UiWfAuditQuery): Promise<UiWfAuditEntry[]>;
@@ -497,8 +531,11 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   forceState(entity: string, id: string, state: string, reason: string, skipSteps = false) {
     return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/force-state`, { state, reason, skipSteps });
   }
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>) {
-    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`, { input: input ?? {} });
+  resetPreview(entity: string, id: string) {
+    return this.call<UiWfResetPreview>('GET', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`);
+  }
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[]) {
+    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`, { input: input ?? {}, ...(undo?.length ? { undo } : {}) });
   }
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>) {
     const path = entity && id ? `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/manual/${encodeURIComponent(workflow)}` : `/manual/${encodeURIComponent(workflow)}`;

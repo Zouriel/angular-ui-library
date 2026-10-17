@@ -187,6 +187,13 @@ export interface UiWfSetFieldsStep extends UiWfStepBase {
   values: { field: string; value: UiWfOperand }[];
 }
 
+/** Creates a record of any registry entity; outputs its `id` (spec §7). A reset can delete it again. */
+export interface UiWfCreateRecordStep extends UiWfStepBase {
+  type: 'createRecord';
+  entity: string;
+  values: { field: string; value: UiWfOperand }[];
+}
+
 export interface UiWfSetVariablesStep extends UiWfStepBase {
   type: 'setVariables';
   values: { variable: string; value: UiWfOperand }[];
@@ -249,7 +256,7 @@ export interface UiWfEndStep extends UiWfStepBase {
 
 export type UiWfStep =
   | UiWfBranchStep | UiWfSwitchStep | UiWfParallelStep | UiWfForEachStep | UiWfApprovalStep | UiWfTaskStep | UiWfWaitStep
-  | UiWfSetFieldsStep | UiWfSetVariablesStep | UiWfApplyTransitionStep | UiWfNotifyStep | UiWfWebhookStep | UiWfActionStep
+  | UiWfSetFieldsStep | UiWfCreateRecordStep | UiWfSetVariablesStep | UiWfApplyTransitionStep | UiWfNotifyStep | UiWfWebhookStep | UiWfActionStep
   | UiWfSubWorkflowStep | UiWfGoToStep | UiWfEndStep;
 
 export type UiWfStepType = UiWfStep['type'];
@@ -292,6 +299,11 @@ export interface UiWfTransition {
 export interface UiWfLifecycle {
   field: string;
   mode?: 'enforce' | 'observe';
+  /**
+   * Which records it is for, read from the record's own fields (spec §6 applies to). Absent: every
+   * record no other lifecycle on the field claims.
+   */
+  appliesWhen?: UiWfCondition;
   states: UiWfState[];
   transitions: UiWfTransition[];
   /** Positions on the diagram, by state id. States without one are placed automatically. */

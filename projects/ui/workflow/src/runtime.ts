@@ -4,7 +4,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiIconButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
 import { UiCombobox, type UiComboboxOption } from '@zouriel/ui/combobox';
-import { UiInput, UiSelect, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
+import { UiCheckbox, UiInput, UiSelect, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
 import { UiFormRenderer } from '@zouriel/ui/form-builder';
 import {
   injectWorkflowClock,
@@ -13,6 +13,7 @@ import {
   type UiWfAuditVerification,
   type UiWfInstance,
   type UiWfRecord,
+  type UiWfResetItem,
   type UiWfTask,
   type UiWfTransitionOption,
   type UiWorkflowApi,
@@ -219,7 +220,7 @@ export class WfDecideDialog {
  */
 @Component({
   selector: 'ui-wf-record-actions',
-  imports: [UiButton, UiModal, UiFormRenderer, WfDecideDialog],
+  imports: [FormsModule, UiButton, UiCheckbox, UiModal, UiFormRenderer, WfDecideDialog],
   // Nothing this person can do here: take no room (the dialogs only open from these buttons).
   host: { '[class.idle]': 'idle()' },
   template: `
@@ -256,12 +257,38 @@ export class WfDecideDialog {
     @if (nothingToDo()) { <p class="wf-hint">{{ emptyText() }}</p> }
     @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
 
-    <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" size="md">
+    <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" [size]="resetItems().length ? 'lg' : 'md'">
       @if (pending(); as p) {
         <div class="confirm">
           @if (p.confirm) { <p>{{ p.confirm }}</p> }
           @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" (valueChange)="input.set($event)" /> }
           @else if (!p.confirm) { <p>Move this record to “{{ p.toLabel }}”?</p> }
+          @if (resetting()) {
+            @if (resetLoading()) { <p class="wf-hint">Looking up what the workflow did…</p> }
+            @else if (resetItems().length) {
+              <section class="undo" aria-label="Take back what the workflow did">
+                <div class="undo-head">
+                  <h3>Also take back</h3>
+                  @if (undoableCount() > 1) {
+                    <ui-button size="sm" variant="ghost" (click)="chooseAll(chosen().size < undoableCount())">{{ chosen().size < undoableCount() ? 'Select all' : 'Select none' }}</ui-button>
+                  }
+                </div>
+                <p class="wf-hint">What the workflow did since the record last started over. Untick anything that should stay; the workflow carries on either way.</p>
+                <ul class="undo-list">
+                  @for (it of resetItems(); track it.id) {
+                    <li [class.off]="!it.undoable">
+                      <ui-checkbox [ngModel]="chosen().has(it.id)" (ngModelChange)="choose(it.id, $event)" [disabled]="!it.undoable || busy()">
+                        <span class="undo-title">{{ it.title }}</span>
+                      </ui-checkbox>
+                      <span class="undo-meta"><span class="wf-chip">{{ kindLabel(it.kind) }}</span>{{ it.workflow }} · {{ it.step }}@if (it.detail) { · {{ it.detail }} }</span>
+                      @if (it.warning) { <span class="undo-warn" [attr.data-tone]="it.undoable ? 'warning' : null">{{ it.warning }}</span> }
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+            @if (resetListError()) { <p class="wf-hint">{{ resetListError() }}</p> }
+          }
           @if (pendingError()) { <p class="wf-error" role="alert">{{ pendingError() }}</p> }
         </div>
       }
@@ -293,6 +320,15 @@ export class WfDecideDialog {
     .task .wf-chip { grid-row: 1 / 3; grid-column: 2; }
     .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
     .confirm p { margin: 0; }
+    .undo { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
+    .undo-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
+    .undo-head h3 { margin: 0; }
+    .undo-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    .undo-list li { display: flex; flex-direction: column; gap: 4px; padding: var(--ui-space-2) var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
+    .undo-title { font-size: 13.5px; font-weight: 550; }
+    .undo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-left: 26px; font-size: 12px; color: var(--ui-color-text-muted); }
+    .undo-warn { padding-left: 26px; font-size: 12px; line-height: 1.4; color: var(--ui-color-text-muted); }
+    .undo-warn[data-tone="warning"] { color: var(--ui-color-warning); }
     .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
   `],
 })
@@ -317,7 +353,13 @@ export class WfRecordActions extends WfWithApi {
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
   /** The open dialog is the reset's (not a move's or a manual start's). */
-  private pendingReset = false;
+  protected readonly resetting = signal(false);
+  /** What the workflow did that the reset can take back (spec §6 reset list), and which are ticked. */
+  protected readonly resetItems = signal<UiWfResetItem[]>([]);
+  protected readonly chosen = signal<ReadonlySet<string>>(new Set());
+  protected readonly resetLoading = signal(false);
+  protected readonly resetListError = signal('');
+  protected readonly undoableCount = computed(() => this.resetItems().filter((i) => i.undoable).length);
   /** Small buttons with a mouse; the regular size on touch screens, where 26px looks cramped. */
   protected readonly buttonSize: 'sm' | 'md' = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'md' : 'sm';
   protected readonly nothingToDo = computed(() => {
@@ -328,7 +370,7 @@ export class WfRecordActions extends WfWithApi {
 
   protected start(t: UiWfTransitionOption): void {
     if (this.busy()) return;
-    this.pendingReset = false;
+    this.resetting.set(false);
     this.pendingManual.set(null);
     this.pendingError.set('');
     this.input.set({});
@@ -341,16 +383,52 @@ export class WfRecordActions extends WfWithApi {
     const rs = this.record().reset;
     if (this.busy() || !rs) return;
     this.pendingManual.set(null);
-    this.pendingReset = true;
+    this.resetting.set(true);
     this.pendingError.set('');
     this.input.set({});
     // Always confirmed: a reset stops work in progress.
     this.pending.set({ key: '', label: rs.label, to: rs.to, toLabel: rs.toLabel, tone: 'danger', confirm: rs.confirm ?? `Start over from “${rs.toLabel}”? Open tasks and runs stop.`, form: rs.form });
+    void this.loadResetItems();
+  }
+
+  /** Reads what the workflow did, ticking what the engine suggests (everything that can be undone and wasn't changed since). */
+  private async loadResetItems(): Promise<void> {
+    const api = this.client();
+    this.resetItems.set([]);
+    this.chosen.set(new Set());
+    this.resetListError.set('');
+    if (!api?.resetPreview) return;
+    this.resetLoading.set(true);
+    try {
+      const preview = await api.resetPreview(this.entity(), this.entityId());
+      // The dialog may have been closed or replaced while the list was on its way.
+      if (!this.resetting()) return;
+      this.resetItems.set(preview.items);
+      this.chosen.set(new Set(preview.items.filter((i) => i.undoable && i.selected).map((i) => i.id)));
+    } catch {
+      this.resetListError.set("What the workflow did couldn't be listed, so the reset will leave it as it is.");
+    } finally {
+      this.resetLoading.set(false);
+    }
+  }
+
+  protected choose(id: string, on: boolean): void {
+    const next = new Set(this.chosen());
+    if (on) next.add(id); else next.delete(id);
+    this.chosen.set(next);
+  }
+
+  protected chooseAll(on: boolean): void {
+    this.chosen.set(new Set(on ? this.resetItems().filter((i) => i.undoable).map((i) => i.id) : []));
+  }
+
+  protected kindLabel(kind: string): string {
+    return ({ field: 'Field', created: 'New record', action: 'Action', message: 'Message', webhook: 'Webhook' } as Record<string, string>)[kind] ?? wfHumanize(kind);
   }
 
   protected startManual(m: UiWfRecord['manual'][number]): void {
     if (this.busy()) return;
-    this.pendingReset = false;
+    this.resetting.set(false);
     this.pendingManual.set(m.key);
     this.pendingError.set('');
     this.input.set({});
@@ -364,7 +442,7 @@ export class WfRecordActions extends WfWithApi {
     if (!p || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (p.form && !this.form()?.submit()) return;
-    if (this.pendingReset) void this.reset();
+    if (this.resetting()) void this.reset();
     else if (this.pendingManual()) void this.runManual(p.key);
     else void this.apply(p.key);
   }
@@ -391,13 +469,16 @@ export class WfRecordActions extends WfWithApi {
     if (!api) return;
     this.busy.set(true);
     try {
-      const r = await api.resetRecord(this.entity(), this.entityId(), this.input());
+      const undo = this.resetItems().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
+      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined);
       this.error.set('');
       this.pending.set(null);
-      this.pendingReset = false;
+      this.resetting.set(false);
       this.changed.emit(r);
     } catch (e) {
       this.pendingError.set(wfErrorText(e, 'The workflow could not be reset.'));
+      // Someone else changed what the workflow did meanwhile: show the list as it is now.
+      if ((e as { code?: string })?.code === 'resetChanged') void this.loadResetItems();
     } finally {
       this.busy.set(false);
     }

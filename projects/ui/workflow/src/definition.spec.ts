@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  cloneStep, createStep, createWorkflow, formFields, describeDuration, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
+  cloneStep, createStep, createWorkflow, formFields, describeDuration, describeStep, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
   insertStep, isInsideStep, listSteps, mapLists, moveStep, removeState, removeStep, stepReferences, stepSlots, tokensAt,
   transitionAllows, upstreamSteps, wfId, wfKey, withSlot,
 } from './definition';
@@ -277,3 +277,18 @@ describe('reset', () => {
   });
 });
 
+
+describe('create record step', () => {
+  it('starts empty, says what it creates, and later steps can read the new record\'s id', () => {
+    const c = { ...createStep('createRecord'), id: 'mk' } as Extract<UiWfStep, { type: 'createRecord' }>;
+    expect(c).toEqual({ id: 'mk', type: 'createRecord', entity: '', values: [] });
+    const def = createWorkflow('automation', 'Sample', 'application');
+    expect(describeStep(c, { def, registry })).toBe('Choose what to create');
+    const doc = { ...c, entity: 'document', values: [{ field: 'name', value: { const: 'Checklist' } }] };
+    expect(describeStep(doc, { def, registry })).toBe('a new document with Name');
+    const d = { ...def, steps: [doc, step('after')] };
+    const t = tokensAt({ def: d, registry, at: { stepId: 'after' } }).find((x) => x.path === 'steps.mk.id');
+    expect(t?.label).toBe('New document id');
+    expect(tokensAt({ def: d, registry, at: { stepId: 'mk' } }).some((x) => x.path === 'steps.mk.id')).toBe(false);
+  });
+});

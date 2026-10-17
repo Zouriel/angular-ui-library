@@ -274,6 +274,13 @@ export class WfDurationInput {
     .x { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 0; padding: 0; border-radius: 3px; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; }
     .x:hover { color: var(--ui-color-danger); background: color-mix(in srgb, var(--ui-color-danger) 12%, transparent); }
     .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Touch: a 44px target around the small cross; the gaps grow so neighbouring targets never overlap
+       (22px chip + 22px row gap, 18px cross + 13px each side within a 14px column gap). */
+    @media (pointer: coarse) {
+      .chips { gap: 22px 14px; padding: 11px 0; }
+      .x { position: relative; }
+      .x::after { content: ''; position: absolute; left: 50%; top: 50%; width: var(--ui-size-touch); height: var(--ui-size-touch); transform: translate(-50%, -50%); }
+    }
     .search { display: flex; flex-direction: column; gap: 4px; }
     .results { margin: 0; padding: 2px; list-style: none; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); max-height: 180px; overflow: auto; }
     .results button { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }

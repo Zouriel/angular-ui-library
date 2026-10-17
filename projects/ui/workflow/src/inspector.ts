@@ -5,7 +5,7 @@ import { UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOp
 import { describeTrigger, fieldOf, indexSteps, stepName, wfId, wfKey } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
-import type { UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
+import type { UiWfConditionGroup, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
 import { WfStepEditor } from './step-editors';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
@@ -221,7 +221,7 @@ export class WfTriggerEditor {
 /** The workflow's own settings: name, record type, variables, who looks after it. */
 @Component({
   selector: 'ui-wf-workflow-editor',
-  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiTextarea, UiSwitch, WfAssigneesEditor, WfValueInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiTextarea, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfValueInput],
   template: `
     <div class="wf-stack">
       <label class="lw"><span class="wf-label">Name</span>
@@ -245,6 +245,12 @@ export class WfTriggerEditor {
             <option value="enforce" [selected]="def().lifecycle?.mode !== 'observe'">Refuse it (only transitions may change it)</option>
             <option value="observe" [selected]="def().lifecycle?.mode === 'observe'">Accept it and record it</option>
           </select></label>
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">Applies to</h4>
+          <ui-wf-condition [value]="def().lifecycle?.appliesWhen" [tokens]="ownFieldTokens()" [emptyText]="'Every ' + (store.entity()?.label ?? 'record').toLowerCase() + '.'"
+            (valueChange)="setAppliesWhen($event)" />
+          <p class="wf-hint">Only records that meet these get this lifecycle, e.g. applications whose type is Passport. Pick fields that are set when the record is created: a record keeps its lifecycle if they change later. Another lifecycle on the same field can cover the rest.</p>
+        </section>
       } @else {
         <label class="lw"><span class="wf-label">If it starts again for the same record while running</span>
           <select class="wf-select" (change)="patch({ settings: { ...def().settings, concurrency: $any($event.target).value } })">
@@ -311,6 +317,11 @@ export class WfWorkflowEditor {
   protected readonly def = this.store.def;
   protected readonly published = computed(() => !!this.store.published());
   protected readonly lifecycleFields = computed(() => (this.store.entity()?.fields ?? []).filter((f) => f.lifecycle && f.type === 'enum'));
+  /** "Applies to" reads only the record's own fields, never the one the lifecycle controls (spec §6). */
+  protected readonly ownFieldTokens = computed(() => {
+    const own = this.def().lifecycle?.field;
+    return this.store.tokens({ listId: 'root', index: 0 }).filter((t) => /^entity\.[^.]+$/.test(t.path) && t.path !== 'entity.id' && t.path !== `entity.${own}`);
+  });
   protected readonly varTypes = [
     { value: 'text', label: 'Text' }, { value: 'number', label: 'Number' }, { value: 'boolean', label: 'Yes/no' },
     { value: 'date', label: 'Date' }, { value: 'user', label: 'Person' }, { value: 'json', label: 'Anything' },
@@ -336,6 +347,11 @@ export class WfWorkflowEditor {
     } else {
       this.patch({ lifecycle: { ...lc, field } });
     }
+  }
+
+  protected setAppliesWhen(when: UiWfConditionGroup): void {
+    const lc = this.def().lifecycle;
+    if (lc) this.patch({ lifecycle: { ...lc, appliesWhen: when.conditions.length ? when : undefined } }, 'appliesWhen');
   }
 
   protected setMode(mode: 'enforce' | 'observe'): void {

@@ -130,7 +130,9 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
     case 'lifecycle.reset': {
       const input = data['input'] && typeof data['input'] === 'object' ? (data['input'] as Record<string, unknown>) : {};
       const why = text(input['reason'] ?? Object.values(input).find((v) => typeof v === 'string'));
-      return `${text(data['label']) || 'Reset'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}${why ? ` (“${why}”)` : ''}`;
+      const undone = Array.isArray(data['undone']) ? data['undone'].length : 0;
+      const took = undone ? `, took back ${undone} thing${undone === 1 ? '' : 's'} the workflow did` : '';
+      return `${text(data['label']) || 'Reset'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}${why ? ` (“${why}”)` : ''}${took}`;
     }
     case 'lifecycle.forced': return `Moved by an admin to ${stateLabel(after['state'])}${data['reason'] ? `: ${text(data['reason'])}` : ''}`;
     case 'lifecycle.writeRefused': return 'A direct change to the state was refused';

@@ -25,6 +25,7 @@ import type {
   UiWfNotifyStep,
   UiWfOnError,
   UiWfParallelStep,
+  UiWfCreateRecordStep,
   UiWfSetFieldsStep,
   UiWfSetVariablesStep,
   UiWfStep,
@@ -257,6 +258,32 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             @else { <p class="wf-hint">The app hasn’t allowed workflows to change any field of this record.</p> }
           </div>
         }
+        @case ('createRecord') {
+          <div class="wf-stack">
+            <label class="lw"><span class="wf-label">Kind of record</span>
+              <select class="wf-select" (change)="patch({ entity: $any($event.target).value, values: [] })">
+                <option value="" disabled [selected]="!createRecord().entity">Choose…</option>
+                @for (e of store.registry()?.entities ?? []; track e.key) { <option [value]="e.key" [selected]="e.key === createRecord().entity">{{ e.label }}</option> }
+              </select></label>
+            @if (createRecord().entity) {
+              @for (v of createRecord().values; track $index; let i = $index) {
+                <div class="assign">
+                  <select class="wf-select" (change)="setFieldAt(i, $any($event.target).value)" [attr.aria-label]="'Field ' + (i + 1)">
+                    <option value="" disabled [selected]="!v.field">Field…</option>
+                    @for (f of settable(); track f.key) { <option [value]="f.key" [selected]="f.key === v.field">{{ f.label }}</option> }
+                  </select>
+                  <ui-wf-operand [value]="v.value" [field]="targetField(v.field)" [tokens]="tokens()" [label]="targetField(v.field)?.label ?? 'Value'" (valueChange)="setValueAt(i, $event)" />
+                  <button type="button" class="wf-icon-btn danger" (click)="removeValueAt(i)" aria-label="Remove">
+                    <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
+                  </button>
+                </div>
+              }
+              @if (settable().length) { <button type="button" class="wf-link" (click)="addValue()">Set a field</button> }
+              @else { <p class="wf-hint">The app hasn’t allowed workflows to set any field of this kind of record.</p> }
+              <p class="wf-hint">Later steps can read the new record’s id. Resetting the workflow offers to delete it again.</p>
+            }
+          </div>
+        }
         @case ('setVariables') {
           <div class="wf-stack">
             @for (v of setVariables().values; track $index; let i = $index) {
@@ -480,7 +507,9 @@ export class WfStepEditor {
   protected readonly parallel = computed(() => this.step() as UiWfParallelStep);
   protected readonly forEach = computed(() => this.step() as UiWfForEachStep);
   protected readonly wait = computed(() => this.step() as UiWfWaitStep);
+  /** Update record and Create record share the field rows; both have `values`. */
   protected readonly setFields = computed(() => this.step() as UiWfSetFieldsStep);
+  protected readonly createRecord = computed(() => this.step() as UiWfCreateRecordStep);
   protected readonly setVariables = computed(() => this.step() as UiWfSetVariablesStep);
   protected readonly applyTransition = computed(() => this.step() as UiWfApplyTransitionStep);
   protected readonly notify = computed(() => this.step() as UiWfNotifyStep);
@@ -496,6 +525,7 @@ export class WfStepEditor {
   protected readonly collections = computed(() => collectionsOf(this.store.registry(), this.store.def().entity));
   protected readonly relations = computed(() => (this.store.entity()?.fields ?? []).filter((f) => f.type === 'relation' && f.entity));
   protected readonly targetEntity = computed(() => {
+    if (this.step().type === 'createRecord') return this.createRecord().entity || undefined;
     const t = this.setFields().target;
     if (!t || t === 'self') return this.store.def().entity;
     return fieldOf(this.store.registry(), this.store.def().entity, t.split('.')[1])?.entity;
