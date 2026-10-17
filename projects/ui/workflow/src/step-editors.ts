@@ -88,7 +88,7 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             <div><span class="wf-label">Buttons (what they can choose)</span>
               @for (o of task().outcomes; track o.id; let i = $index) {
                 <div class="outcome">
-                  <ui-input size="sm" [ngModel]="o.label" (ngModelChange)="setOutcome(i, $event)" [attr.aria-label]="'Button ' + (i + 1)" />
+                  <ui-input size="sm" [ngModel]="o.label" (ngModelChange)="setOutcome(i, $event)" [ariaLabel]="'Button ' + (i + 1)" />
                   <select class="wf-select tone" (change)="setOutcomeTone(i, $any($event.target).value)" aria-label="Colour">
                     @for (t of tones; track t) { <option [value]="t" [selected]="(o.tone ?? 'neutral') === t">{{ t }}</option> }
                   </select>
@@ -106,7 +106,7 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             @for (p of branch().paths; track p.id; let i = $index) {
               <div class="path">
                 <div class="wf-row">
-                  <ui-input class="grow" size="sm" [ngModel]="p.label" (ngModelChange)="setPathLabel(i, $event)" [attr.aria-label]="'Path ' + (i + 1) + ' name'" />
+                  <ui-input class="grow" size="sm" [ngModel]="p.label" (ngModelChange)="setPathLabel(i, $event)" [ariaLabel]="'Path ' + (i + 1) + ' name'" />
                   <button type="button" class="wf-icon-btn danger" [disabled]="branch().paths.length < 2" (click)="removePath(i)" aria-label="Remove path">
                     <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
                   </button>
@@ -128,7 +128,7 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
             @for (c of switchStep().cases; track c.id; let i = $index) {
               <div class="path">
                 <div class="wf-row">
-                  <ui-input class="grow" size="sm" [ngModel]="c.label" (ngModelChange)="setCase(i, { label: $event })" [attr.aria-label]="'Case ' + (i + 1) + ' name'" />
+                  <ui-input class="grow" size="sm" [ngModel]="c.label" (ngModelChange)="setCase(i, { label: $event })" [ariaLabel]="'Case ' + (i + 1) + ' name'" />
                   <button type="button" class="wf-icon-btn danger" [disabled]="switchStep().cases.length < 2" (click)="removeCase(i)" aria-label="Remove case">
                     <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
                   </button>
@@ -154,7 +154,7 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
           <div class="wf-stack">
             @for (p of parallel().paths; track p.id; let i = $index) {
               <div class="wf-row">
-                <ui-input class="grow" size="sm" [ngModel]="p.label" (ngModelChange)="setParallelLabel(i, $event)" [attr.aria-label]="'Path ' + (i + 1) + ' name'" />
+                <ui-input class="grow" size="sm" [ngModel]="p.label" (ngModelChange)="setParallelLabel(i, $event)" [ariaLabel]="'Path ' + (i + 1) + ' name'" />
                 <button type="button" class="wf-icon-btn danger" [disabled]="parallel().paths.length < 3" (click)="removeParallel(i)" aria-label="Remove path">
                   <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
                 </button>

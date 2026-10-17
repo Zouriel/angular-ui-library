@@ -1,4 +1,4 @@
-import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, HostAttributeToken, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
@@ -8,6 +8,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
  */
 @Component({
   selector: 'ui-input',
+  // The label belongs on the inner field, not on this wrapper.
+  host: { '[attr.aria-label]': 'null' },
   template: `
     <input
       class="ui-input"
@@ -18,6 +20,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [attr.inputmode]="inputmode()"
       [attr.autocomplete]="autocomplete()"
       [attr.name]="name()"
+      [attr.aria-label]="ariaLabel() ?? staticLabel"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
@@ -47,6 +50,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 })
 export class UiInput implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
+  /** The field's name for screen readers, when no visible label points at it. */
+  ariaLabel = input<string | undefined>(undefined);
+  /** A plain `aria-label="…"` on the element also names the inner field. */
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
   type = input<'text' | 'email' | 'url' | 'tel' | 'password' | 'search'>('text');
   placeholder = input('');
   inputmode = input<string>();

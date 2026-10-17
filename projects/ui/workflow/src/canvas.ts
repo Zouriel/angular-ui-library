@@ -48,7 +48,8 @@ export class WfBuilderUi {
     </button>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: block; }
+    /* Long titles never widen the canvas: cards take their column's width and truncate. */
+    :host { display: block; contain: inline-size; }
     .card { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; cursor: pointer; font: inherit; color: var(--ui-color-text);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast); }
@@ -109,7 +110,8 @@ export class WfTriggerCard {
     </div>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: block; }
+    /* Long titles never widen the canvas: cards take their column's width and truncate. */
+    :host { display: block; contain: inline-size; }
     .card { position: relative; display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 0; min-height: 46px; box-sizing: border-box;
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast), opacity var(--ui-motion-fast); }
@@ -273,16 +275,17 @@ export class WfAddSlot {
     .list { display: flex; flex-direction: column; min-width: 0; border-radius: var(--ui-radius); }
     .list.over { background: color-mix(in srgb, var(--ui-color-primary) 5%, transparent); }
     .item { display: flex; flex-direction: column; min-width: 0; }
+    /* Columns never shrink below a readable width: the canvas as a whole scrolls sideways instead. */
     .fork { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(230px, 1fr); gap: var(--ui-space-3); margin-top: 0;
-      padding: 0 0 var(--ui-space-1); overflow-x: auto; }
+      padding: 0 0 var(--ui-space-1); }
     .fork::before { content: ''; position: absolute; left: 50%; top: 0; height: 10px; width: 2px; transform: translateX(-1px); background: var(--ui-color-border); }
-    .fork.stacked { grid-auto-flow: row; grid-auto-columns: auto; overflow: visible; }
+    .fork.stacked { grid-auto-flow: row; grid-auto-columns: auto; }
     .lane { display: flex; flex-direction: column; min-width: 0; margin-top: 10px; padding: 6px 6px 2px; border-radius: var(--ui-radius);
       border: 1px dashed var(--ui-color-border); background: color-mix(in srgb, var(--ui-color-surface) 55%, transparent); }
     .lane-head { display: flex; align-items: center; gap: 6px; align-self: center; max-width: 100%; height: 22px; padding: 0 8px; border: 0; border-radius: 11px;
       font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
     .lane-head:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .lane-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lane-label { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lane-count { color: var(--ui-color-text-muted); font-weight: 500; }
     .lane[data-tone="success"] .lane-head { color: var(--ui-color-success); background: color-mix(in srgb, var(--ui-color-success) 13%, transparent); }
     .lane[data-tone="danger"] .lane-head { color: var(--ui-color-danger); background: color-mix(in srgb, var(--ui-color-danger) 12%, transparent); }
@@ -419,7 +422,8 @@ export class WfStepPicker {
     :host { display: block; min-height: 0; position: relative; }
     .scroll { position: absolute; inset: 0; overflow: auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12);
       background-image: radial-gradient(color-mix(in srgb, var(--ui-color-text) 9%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
-    .flow { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; }
+    /* 760px for a plain list; wider when branches need room, then the whole canvas scrolls. */
+    .flow { width: max-content; min-width: min(760px, 100%); max-width: none; margin: 0 auto; display: flex; flex-direction: column; }
     .end { align-self: center; margin-top: 2px; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; color: var(--ui-color-text-muted);
       background: var(--ui-color-surface-hover); }
   `],

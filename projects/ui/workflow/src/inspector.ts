@@ -268,7 +268,7 @@ export class WfTriggerEditor {
         <h4 class="wf-section-title">Variables</h4>
         @for (v of def().variables ?? []; track v.id; let i = $index) {
           <div class="var">
-            <ui-input size="sm" [ngModel]="v.label" (ngModelChange)="setVariable(i, { label: $event })" [attr.aria-label]="'Variable ' + (i + 1) + ' name'" />
+            <ui-input size="sm" [ngModel]="v.label" (ngModelChange)="setVariable(i, { label: $event })" [ariaLabel]="'Variable ' + (i + 1) + ' name'" />
             <select class="wf-select" (change)="setVariable(i, { type: $any($event.target).value, default: undefined })" aria-label="Type">
               @for (t of varTypes; track t.value) { <option [value]="t.value" [selected]="t.value === v.type">{{ t.label }}</option> }
             </select>
@@ -336,7 +336,9 @@ export class WfWorkflowEditor {
     const vars = (this.def().variables ?? []).map((v, j) => {
       if (j !== i) return v;
       const n = { ...v, ...p };
-      if (p.label !== undefined) n.key = wfKey(p.label, (this.def().variables ?? []).filter((_, k) => k !== i).map((x) => x.key));
+      // The key follows the name only while nothing reads the variable yet; renaming then never breaks a step.
+      const used = JSON.stringify(this.def()).includes(`vars.${v.key}`);
+      if (p.label !== undefined && !used) n.key = wfKey(p.label, (this.def().variables ?? []).filter((_, k) => k !== i).map((x) => x.key));
       if (n.default === undefined || n.default === null || n.default === '') delete n.default;
       return n;
     });

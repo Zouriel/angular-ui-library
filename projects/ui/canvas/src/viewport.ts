@@ -1,8 +1,8 @@
 import { Component, DestroyRef, ElementRef, afterNextRender, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import FullScreenIcon from '@hugeicons/core-free-icons/FullScreenIcon';
-import ZoomInAreaIcon from '@hugeicons/core-free-icons/ZoomInAreaIcon';
-import ZoomOutAreaIcon from '@hugeicons/core-free-icons/ZoomOutAreaIcon';
+import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
+import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
 
 export interface UiViewportView {
   /** Screen pixels the world is shifted by. */
@@ -52,7 +52,7 @@ export interface UiMinimapItem {
     @if (controls()) {
       <div class="controls" data-viewport-no-pan>
         <button type="button" (click)="zoomBy(1 / 1.2)" aria-label="Zoom out" title="Zoom out (−)"><hugeicons-icon aria-hidden="true" [icon]="icons.out" [size]="15" [strokeWidth]="1.8" /></button>
-        <span class="pct" aria-live="polite">{{ pct() }}%</span>
+        <span class="pct">{{ pct() }}%</span>
         <button type="button" (click)="zoomBy(1.2)" aria-label="Zoom in" title="Zoom in (+)"><hugeicons-icon aria-hidden="true" [icon]="icons.in" [size]="15" [strokeWidth]="1.8" /></button>
         <button type="button" (click)="fit()" aria-label="Fit to view" title="Fit to view (0)"><hugeicons-icon aria-hidden="true" [icon]="icons.fit" [size]="15" [strokeWidth]="1.8" /></button>
       </div>
@@ -107,7 +107,7 @@ export class UiCanvasViewport {
   /** A click on empty space (not after a pan). */
   readonly backgroundClick = output<void>();
 
-  protected readonly icons: Record<'in' | 'out' | 'fit', IconSvgObject> = { in: ZoomInAreaIcon as IconSvgObject, out: ZoomOutAreaIcon as IconSvgObject, fit: FullScreenIcon as IconSvgObject };
+  protected readonly icons: Record<'in' | 'out' | 'fit', IconSvgObject> = { in: PlusSignIcon as IconSvgObject, out: MinusSignIcon as IconSvgObject, fit: FullScreenIcon as IconSvgObject };
   protected readonly transform = computed(() => { const v = this.view(); return `translate(${v.x}px, ${v.y}px) scale(${v.zoom})`; });
   protected readonly pct = computed(() => Math.round(this.view().zoom * 100));
   private readonly size = signal({ w: 0, h: 0 });
@@ -124,17 +124,26 @@ export class UiCanvasViewport {
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private pan: { x: number; y: number; vx: number; vy: number; moved: boolean } | null = null;
   private pinch: { dist: number; zoom: number; wx: number; wy: number } | null = null;
-  /** True until the person pans or zooms: until then the view keeps fitting the content as sizes settle. */
+  /**
+   * True until the person pans or zooms: until then the view keeps fitting the content as the canvas
+   * resizes (a panel opening beside it) or the content changes. Clicking or dragging things on the
+   * canvas doesn't count; a refit that comes up mid-drag waits for the pointer to lift.
+   */
   private auto = true;
+  private held = false;
+  /** Window listeners of gestures in progress, removed when they end or the canvas goes away. */
+  private readonly gestures = new Set<() => void>();
+  private fitWhenReleased = false;
 
   constructor() {
     const destroy = inject(DestroyRef);
+    destroy.onDestroy(() => { for (const end of [...this.gestures]) end(); });
     afterNextRender(() => {
       const el = this.host.nativeElement;
       const measure = () => {
         const r = el.getBoundingClientRect();
         this.size.set({ w: r.width, h: r.height });
-        if (this.auto) this.fit();
+        this.autoFit();
       };
       measure();
       const ro = new ResizeObserver(measure);
@@ -145,8 +154,14 @@ export class UiCanvasViewport {
     effect(() => {
       this.contentWidth();
       this.contentHeight();
-      if (untracked(() => this.auto)) untracked(() => this.fit());
+      untracked(() => this.autoFit());
     });
+  }
+
+  private autoFit(): void {
+    if (!this.auto) return;
+    if (this.held) this.fitWhenReleased = true;
+    else this.fit();
   }
 
   private setView(v: UiViewportView): void {
@@ -157,6 +172,9 @@ export class UiCanvasViewport {
     this.view.set(v);
     this.auto = false;
   }
+
+  /** The smallest zoom fitting uses; below it text is unreadable, so a large diagram starts at its left. */
+  readonly fitMinZoom = input(0.6);
 
   private clamp(z: number): number {
     return Math.min(this.maxZoom(), Math.max(this.minZoom(), z));
@@ -169,13 +187,18 @@ export class UiCanvasViewport {
     return { x: (clientX - r.left - v.x) / v.zoom, y: (clientY - r.top - v.y) / v.zoom };
   }
 
-  /** Shows all the content, centred. Never zooms in past 100%. */
+  /**
+   * Shows all the content, centred, never zooming in past 100% or out past `fitMinZoom`. Content too
+   * big for that is shown from its top-left corner (the minimap shows the rest).
+   */
   fit(): void {
     const { w, h } = this.size();
     if (!w || !h) return;
     const p = this.padding();
-    const zoom = this.clamp(Math.min(1, (w - p * 2) / Math.max(1, this.contentWidth()), (h - p * 2) / Math.max(1, this.contentHeight())));
-    this.setView({ zoom, x: (w - this.contentWidth() * zoom) / 2, y: (h - this.contentHeight() * zoom) / 2 });
+    const cw = Math.max(1, this.contentWidth()), ch = Math.max(1, this.contentHeight());
+    const zoom = this.clamp(Math.max(Math.min(this.fitMinZoom(), 1), Math.min(1, (w - p * 2) / cw, (h - p * 2) / ch)));
+    const place = (room: number, size: number) => (size * zoom <= room - p * 2 ? (room - size * zoom) / 2 : p);
+    this.setView({ zoom, x: place(w, cw), y: place(h, ch) });
     this.auto = true;
   }
 
@@ -210,8 +233,13 @@ export class UiCanvasViewport {
   }
 
   protected down(e: PointerEvent): void {
-    // Touching the canvas (even to drag a node) ends auto-fitting, so the view never jumps mid-gesture.
-    this.auto = false;
+    // While a pointer is down (dragging a node, say), refits wait so nothing jumps mid-gesture.
+    this.held = true;
+    const release = this.track(['pointerup', 'pointercancel'], () => {
+      release();
+      this.held = false;
+      if (this.fitWhenReleased) { this.fitWhenReleased = false; this.autoFit(); }
+    });
     const target = e.target as HTMLElement;
     if (target.closest('[data-viewport-no-pan]')) return;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -252,16 +280,15 @@ export class UiCanvasViewport {
         const clicked = this.pan && !this.pan.moved && ev.type === 'pointerup';
         this.pan = null;
         this.host.nativeElement.classList.remove('panning');
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
-        window.removeEventListener('pointercancel', up);
+        stopMove();
+        stopUp();
         if (clicked) this.backgroundClick.emit();
       }
     };
+    let stopMove = () => undefined as void, stopUp = () => undefined as void;
     if (this.pointers.size === 1) {
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
-      window.addEventListener('pointercancel', up);
+      stopMove = this.track(['pointermove'], move);
+      stopUp = this.track(['pointerup', 'pointercancel'], up);
     }
   }
 
@@ -305,9 +332,18 @@ export class UiCanvasViewport {
       this.centerOn(px / m.s, py / m.s);
     };
     go(e.clientX, e.clientY);
-    const move = (ev: PointerEvent) => go(ev.clientX, ev.clientY);
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+    const stopMove = this.track(['pointermove'], (ev) => go(ev.clientX, ev.clientY));
+    const stopUp = this.track(['pointerup', 'pointercancel'], () => { stopMove(); stopUp(); });
+  }
+
+  /** Listens on the window for a gesture; returns the function that stops listening. */
+  private track(types: ('pointermove' | 'pointerup' | 'pointercancel')[], fn: (e: PointerEvent) => void): () => void {
+    for (const t of types) window.addEventListener(t, fn);
+    const stop = () => {
+      for (const t of types) window.removeEventListener(t, fn);
+      this.gestures.delete(stop);
+    };
+    this.gestures.add(stop);
+    return stop;
   }
 }

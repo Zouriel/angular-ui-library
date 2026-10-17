@@ -103,7 +103,7 @@ interface PendingDelete {
             </aside>
           }
         }
-        @case ('versions') { <ui-wf-versions class="center" [saved]="savedOnce()" /> }
+        @case ('versions') { <ui-wf-versions class="center" [saved]="savedOnce()" (synced)="synced($event)" /> }
         @case ('test') { <ui-wf-test class="center" /> }
       }
     </div>
@@ -405,6 +405,13 @@ export class UiWorkflowBuilder {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Publishing or rolling back left the engine's draft equal to `def`. */
+  protected synced(def: UiWorkflowDefinition): void {
+    this.savedOnce.set(true);
+    this.lastSaved.set(JSON.stringify(def));
+    this.saved.emit(def);
   }
 
   protected addFromPalette(type: UiWfStepType): void {

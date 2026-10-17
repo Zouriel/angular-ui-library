@@ -134,20 +134,31 @@ const UNITS: { value: Unit; label: string }[] = [
   { value: 'M', label: 'minutes' }, { value: 'H', label: 'hours' }, { value: 'D', label: 'days' }, { value: 'W', label: 'weeks' }, { value: 'Mo', label: 'months' },
 ];
 
-/** Reads a one-unit ISO duration (`P3D`, `PT4H`, `-P1D`), or null when it has several parts. */
+/**
+ * Reads an ISO duration as one number and unit (`P3D` → 3 days). Durations written with several
+ * parts elsewhere become their total in the largest unit that keeps them exact (`P1DT12H` → 36
+ * hours); null when that's impossible (months mixed with days) or it isn't a duration.
+ */
 export function parseSimpleDuration(iso: string | undefined | null): { n: number; unit: Unit; negative: boolean } | null {
-  const m = /^(-)?P(?:(\d+)M|(\d+)W|(\d+)D|T(\d+)H|T(\d+)M)$/.exec(iso ?? '');
-  if (!m) return null;
+  const m = /^(-)?P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(iso ?? '');
+  if (!m || iso === 'P' || iso === '-P' || /T$/.test(iso ?? '')) return null;
   const negative = !!m[1];
-  if (m[2]) return { n: +m[2], unit: 'Mo', negative };
-  if (m[3]) return { n: +m[3], unit: 'W', negative };
-  if (m[4]) return { n: +m[4], unit: 'D', negative };
-  if (m[5]) return { n: +m[5], unit: 'H', negative };
-  return { n: +m[6]!, unit: 'M', negative };
+  const [y, mo, w, d, h, mi, sec] = m.slice(2).map((x) => +(x ?? 0));
+  const months = y * 12 + mo;
+  const minutes = ((w * 7 + d) * 24 + h) * 60 + mi + Math.round(sec / 60);
+  if (months && minutes) return null;
+  if (months) return { n: months, unit: 'Mo', negative };
+  if (w && !d && !h && !mi && !sec) return { n: w, unit: 'W', negative };
+  if (minutes % 1440 === 0) return { n: minutes / 1440, unit: 'D', negative };
+  if (minutes % 60 === 0) return { n: minutes / 60, unit: 'H', negative };
+  return { n: minutes, unit: 'M', negative };
 }
 
+/** The most of each unit a duration may hold (the engines refuse more than 50 years). */
+const UNIT_MAX: Record<Unit, number> = { Mo: 600, W: 2600, D: 18250, H: 438000, M: 26280000 };
+
 export function formatSimpleDuration(n: number, unit: Unit, negative = false): string {
-  const v = Math.max(0, Math.round(n));
+  const v = Math.min(UNIT_MAX[unit], Math.max(0, Math.round(n)));
   const body = unit === 'Mo' ? `P${v}M` : unit === 'W' ? `P${v}W` : unit === 'D' ? `P${v}D` : unit === 'H' ? `PT${v}H` : `PT${v}M`;
   return (negative ? '-' : '') + body;
 }
@@ -157,7 +168,7 @@ export function formatSimpleDuration(n: number, unit: Unit, negative = false): s
   selector: 'ui-wf-duration',
   imports: [FormsModule, UiNumberInput],
   template: `
-    <ui-number-input [ngModel]="parts().n" (ngModelChange)="set($event ?? 0, parts().unit, parts().negative)" [min]="0" [step]="1" [ariaLabel]="label() + ' amount'" size="sm" />
+    <ui-number-input [ngModel]="parts().n" (ngModelChange)="set($event ?? 0, parts().unit, parts().negative)" [min]="0" [max]="unitMax[parts().unit]" [step]="1" [ariaLabel]="label() + ' amount'" size="sm" />
     <select class="wf-select unit" [attr.aria-label]="label() + ' unit'" (change)="set(parts().n, $any($event.target).value, parts().negative)">
       @for (u of units; track u.value) { <option [value]="u.value" [selected]="u.value === parts().unit">{{ u.label }}</option> }
     </select>
@@ -181,6 +192,7 @@ export class WfDurationInput {
   readonly signed = input(false);
   readonly valueChange = output<string>();
   protected readonly units = UNITS;
+  protected readonly unitMax = UNIT_MAX;
   protected readonly parts = computed(() => parseSimpleDuration(this.value()) ?? { n: 1, unit: 'D' as Unit, negative: false });
 
   protected set(n: number, unit: Unit, negative: boolean): void {
@@ -377,7 +389,7 @@ export class WfAssigneesEditor {
       }
       @case ('date') { <input class="wf-select native" type="date" [value]="value() ?? ''" (change)="emit($any($event.target).value)" [attr.aria-label]="label()" /> }
       @case ('dateTime') { <input class="wf-select native" type="datetime-local" [value]="dtLocal()" (change)="emitDt($any($event.target).value)" [attr.aria-label]="label()" /> }
-      @default { <ui-input size="sm" [ngModel]="value() ?? ''" (ngModelChange)="emit($event)" [attr.aria-label]="label()" [placeholder]="placeholder()" /> }
+      @default { <ui-input size="sm" [ngModel]="value() ?? ''" (ngModelChange)="emit($event)" [ariaLabel]="label()" [placeholder]="placeholder()" /> }
     }
   `,
   styles: [WF_SHARED_STYLES, `:host { display: block; min-width: 0; } .native { background-image: none; padding-right: var(--ui-space-2); }`],
@@ -398,9 +410,13 @@ export class WfValueInput {
     if (t === 'dateTime') return 'dateTime';
     return 'text';
   });
+  /** The stored instant (UTC, ISO) as the local date and time the picker shows. */
   protected readonly dtLocal = computed(() => {
     const v = this.value();
-    return typeof v === 'string' && v ? v.slice(0, 16) : '';
+    const d = typeof v === 'string' && v ? new Date(v) : null;
+    if (!d || isNaN(+d)) return '';
+    const two = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}`;
   });
 
   protected emit(v: unknown): void {
@@ -718,8 +734,4 @@ export class WfFormField {
   }
 }
 
-/** Shows a stored value with its option label, for summaries. */
-export function displayValue(field: UiWfFieldDescriptor | undefined, value: unknown): string {
-  if (Array.isArray(value)) return value.map((v) => optionLabel(field, v)).join(', ');
-  return optionLabel(field, value);
-}
+

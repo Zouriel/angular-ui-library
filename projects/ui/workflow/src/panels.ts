@@ -1,13 +1,14 @@
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
+import { UiModal } from '@zouriel/ui/dialog';
 import { UiInput, UiTextarea } from '@zouriel/ui/form';
 import { UiWfApiError, type UiWfDefinitionDetail, type UiWfSimulationEvent, type UiWfSimulationResult } from './api';
 import { fieldOf, indexSteps, stepName } from './definition';
 import { WfDurationInput, WfValueInput } from './editors';
 import { WF_ICONS } from './icons';
-import type { UiWfTaskStep } from './schema';
+import type { UiWfTaskStep, UiWorkflowDefinition } from './schema';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
@@ -20,7 +21,7 @@ function when(iso: string | null | undefined): string {
 /** Versions: what changed since publishing, publish with a note, earlier versions, roll back. */
 @Component({
   selector: 'ui-wf-versions',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiTextarea],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiModal, UiTextarea],
   template: `
     <div class="wrap">
       @if (!store.api()) {
@@ -51,8 +52,8 @@ function when(iso: string | null | undefined): string {
             <div class="ver">
               <span class="num">v{{ v.version }}</span>
               <span class="info"><span class="note">{{ v.note || 'No note' }}</span>
-                <span class="meta">{{ when(v.publishedAt) }}{{ v.publishedBy ? ' · ' + v.publishedBy : '' }} · {{ v.instances }} run{{ v.instances === 1 ? '' : 's' }}</span></span>
-              @if (v.version !== detail()?.summary?.version) { <button type="button" class="wf-link" (click)="rollback(v.version)" [disabled]="busy()">Make current</button> }
+                <span class="meta">{{ when(v.publishedAt) }}{{ v.publishedBy ? ' · ' + (names()[v.publishedBy] ?? v.publishedBy) : '' }} · {{ v.instances }} run{{ v.instances === 1 ? '' : 's' }}</span></span>
+              @if (v.version !== detail()?.summary?.version) { <button type="button" class="wf-link" (click)="askRollback.set(v.version)" [disabled]="busy()">Make current</button> }
               @else { <span class="wf-chip" data-tone="success">Current</span> }
             </div>
           } @empty {
@@ -73,9 +74,19 @@ function when(iso: string | null | undefined): string {
         </section>
       }
     </div>
+
+    <ui-modal [open]="askRollback() !== null" (openChange)="!$event && askRollback.set(null)" [title]="'Make version ' + askRollback() + ' current?'" size="sm">
+      <p class="confirm">This publishes version {{ askRollback() }} again as a new version, and the draft becomes a copy of it. Edits not yet saved are replaced.</p>
+      <div modal-footer class="foot">
+        <ui-button variant="ghost" (click)="askRollback.set(null)">Cancel</ui-button>
+        <ui-button (click)="rollback(askRollback()!)" [disabled]="busy()">Make current</ui-button>
+      </div>
+    </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: block; overflow: auto; }
+    .confirm { margin: 0; font-size: 14px; line-height: 1.5; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     .wrap { max-width: 720px; margin: 0 auto; padding: var(--ui-space-4) var(--ui-space-3); display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .card { display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     h3 { margin: 0; font-size: 13px; font-weight: 650; }
@@ -91,6 +102,11 @@ function when(iso: string | null | undefined): string {
 export class WfVersions {
   protected readonly store = inject(WfBuilderStore);
   readonly saved = input(false);
+  /** The engine's draft now equals this definition (after publishing or rolling back). */
+  readonly synced = output<UiWorkflowDefinition>();
+  protected readonly askRollback = signal<number | null>(null);
+  /** Publishers' names by user id. */
+  protected readonly names = signal<Record<string, string>>({});
   protected readonly detail = signal<UiWfDefinitionDetail | null>(null);
   protected readonly diff = signal<string[]>([]);
   protected readonly note = signal('');
@@ -113,9 +129,18 @@ export class WfVersions {
       const d = await api.definition(this.store.def().id);
       this.detail.set(d);
       this.diff.set(d.summary.version > 0 ? await api.diff(d.summary.id) : []);
+      void this.loadNames(d.versions.map((v) => v.publishedBy).filter((x): x is string => !!x));
     } catch {
       this.detail.set(null);
     }
+  }
+
+  private async loadNames(ids: string[]): Promise<void> {
+    const api = this.store.api();
+    const missing = [...new Set(ids)].filter((id) => !(id in this.names()));
+    if (!api || !missing.length) return;
+    const found = await Promise.all(missing.map((id) => api.user(id).catch(() => null)));
+    this.names.update((n) => ({ ...n, ...Object.fromEntries(missing.map((id, i) => [id, found[i]?.name ?? id])) }));
   }
 
   private async run(f: () => Promise<unknown>): Promise<void> {
@@ -134,16 +159,27 @@ export class WfVersions {
   protected publish(): void {
     void this.run(async () => {
       const api = this.store.api()!;
-      await api.saveDraft(this.store.def());
-      const s = await api.publish(this.store.def().id, this.note() || undefined);
+      const def = this.store.def();
+      await api.saveDraft(def);
+      const s = await api.publish(def.id, this.note() || undefined);
       this.note.set('');
       const d = await api.definition(s.id);
       if (d.published) this.store.published.set(d.published);
+      this.synced.emit(def);
     });
   }
 
   protected rollback(version: number): void {
-    void this.run(() => this.store.api()!.rollback(this.store.def().id, version));
+    this.askRollback.set(null);
+    void this.run(async () => {
+      const api = this.store.api()!;
+      await api.rollback(this.store.def().id, version);
+      // The engine's draft is now the old version: show that, not the edits from before.
+      const d = await api.definition(this.store.def().id);
+      if (d.published) this.store.published.set(d.published);
+      this.store.commit(d.draft);
+      this.synced.emit(d.draft);
+    });
   }
 
   protected archive(): void {

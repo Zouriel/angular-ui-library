@@ -1,4 +1,4 @@
-import { Component, ElementRef, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, HostAttributeToken, ElementRef, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG } from '@zouriel/ui';
 
@@ -10,6 +10,8 @@ import { UI_CONFIG } from '@zouriel/ui';
  */
 @Component({
   selector: 'ui-textarea',
+  // The label belongs on the inner field, not on this wrapper.
+  host: { '[attr.aria-label]': 'null' },
   template: `
     <textarea
       #field
@@ -20,6 +22,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       [attr.rows]="rows()"
       [attr.autocomplete]="autocomplete()"
       [attr.name]="name()"
+      [attr.aria-label]="ariaLabel() ?? staticLabel"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
@@ -48,6 +51,10 @@ import { UI_CONFIG } from '@zouriel/ui';
 })
 export class UiTextarea implements ControlValueAccessor {
   private config = inject(UI_CONFIG);
+  /** The field's name for screen readers, when no visible label points at it. */
+  ariaLabel = input<string | undefined>(undefined);
+  /** A plain `aria-label="…"` on the element also names the inner field. */
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
   placeholder = input('');
   rows = input(4);
   autocomplete = input<string>();

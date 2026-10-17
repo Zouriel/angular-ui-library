@@ -10,6 +10,9 @@ import type { UiWfState, UiWfTransition } from './schema';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
+/** Space around the cards inside the diagram. */
+const FRAME_MARGIN = 48;
+
 interface DrawnEdge {
   id: string;
   transition: UiWfTransition;
@@ -39,9 +42,9 @@ interface DrawnEdge {
     </div>
 
     @if (view() === 'diagram') {
-      <ui-canvas-viewport class="vp" [contentWidth]="layout().width + 120" [contentHeight]="layout().height + 160" [minimap]="true" [minimapItems]="minimap()"
+      <ui-canvas-viewport class="vp" [contentWidth]="frame().width" [contentHeight]="frame().height" [minimap]="true" [minimapItems]="minimap()"
         label="Lifecycle diagram" (backgroundClick)="background()">
-        <svg class="edges" [attr.width]="layout().width + 120" [attr.height]="layout().height + 160" aria-hidden="true">
+        <svg class="edges" [attr.width]="frame().width" [attr.height]="frame().height" aria-hidden="true">
           <defs>
             <marker id="wf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head" /></marker>
             <marker id="wf-arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head on" /></marker>
@@ -198,6 +201,18 @@ export class WfLifecycleCanvas {
     const lc = this.lifecycle();
     return lc ? autoLayout(lc) : { positions: {}, edges: [], width: WF_NODE_W, height: WF_NODE_H };
   });
+  /**
+   * The drawing area: every card plus a margin, with loops drawn under the cards. Cards dragged left
+   * of or above the origin widen it, so nothing is ever cut off. Drags don't change it until they drop,
+   * so the card under the pointer never jumps.
+   */
+  protected readonly frame = computed(() => {
+    const l = this.layout();
+    const ps = Object.values(l.positions);
+    const minX = Math.min(0, ...ps.map((p) => p.x));
+    const minY = Math.min(0, ...ps.map((p) => p.y));
+    return { ox: FRAME_MARGIN - minX, oy: FRAME_MARGIN - minY, width: l.width - minX + FRAME_MARGIN * 2, height: l.height - minY + FRAME_MARGIN * 2 + 56 };
+  });
   protected readonly hasManual = computed(() => !!this.lifecycle()?.layout && Object.keys(this.lifecycle()!.layout!).length > 0);
   protected readonly anyState = computed(() => (this.lifecycle()?.transitions ?? []).filter((t) => t.from === '*'));
   protected readonly edges = computed<DrawnEdge[]>(() => {
@@ -217,7 +232,15 @@ export class WfLifecycleCanvas {
   protected readonly minimap = computed<UiMinimapItem[]>(() =>
     this.states().map((s) => ({ ...this.pos(s.id), w: WF_NODE_W, h: WF_NODE_H, active: this.isSelected(s.id) })));
 
+  /** Where a card is drawn (in the drawing area). */
   protected pos(id: string): UiWfPoint {
+    const p = this.place(id);
+    const f = this.frame();
+    return { x: p.x + f.ox, y: p.y + f.oy };
+  }
+
+  /** Where a card is in the lifecycle's own coordinates (what `layout` stores), mid-drag included. */
+  private place(id: string): UiWfPoint {
     const d = this.dragPos();
     if (d?.id === id) return { x: d.x, y: d.y };
     return this.layout().positions[id] ?? { x: 0, y: 0 };
@@ -278,7 +301,7 @@ export class WfLifecycleCanvas {
     const at: [number, number] = [Math.round(l.width + 40), Math.round(Math.max(0, l.height / 2 - WF_NODE_H / 2))];
     this.store.addState('New state', at);
     this.ui.inspectRequest.update((n) => n + 1);
-    queueMicrotask(() => v?.reveal(at[0], at[1], WF_NODE_W, WF_NODE_H));
+    queueMicrotask(() => v?.reveal(at[0] + this.frame().ox, at[1] + this.frame().oy, WF_NODE_W, WF_NODE_H));
   }
 
   protected tidy(): void {
@@ -315,7 +338,7 @@ export class WfLifecycleCanvas {
     const vp = this.viewport();
     if (!vp) return;
     const start = vp.toWorld(e.clientX, e.clientY);
-    const origin = this.pos(s.id);
+    const origin = this.place(s.id);
     const el = e.currentTarget as HTMLElement;
     let moved = false;
     const move = (ev: PointerEvent) => {
@@ -378,14 +401,14 @@ export class WfLifecycleCanvas {
 
   /** Keyboard: Enter selects, arrows move the card (one undo step per key press). */
   protected stateKey(e: KeyboardEvent, s: UiWfState): void {
-    const p = this.pos(s.id);
+    const p = this.place(s.id);
     const step = e.shiftKey ? 40 : 8;
     const moves: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.clickState(s); return; }
     const m = moves[e.key];
     if (!m) return;
     e.preventDefault();
-    this.store.placeState(s.id, Math.max(0, p.x + m[0]), Math.max(0, p.y + m[1]));
+    this.store.placeState(s.id, p.x + m[0], p.y + m[1]);
   }
 }
 
