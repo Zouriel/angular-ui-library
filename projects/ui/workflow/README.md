@@ -36,7 +36,7 @@ import {
   visas, and one with no condition for everything else.
   A lifecycle can also let chosen people **reset** a record: its open tasks and runs stop, it goes
   back to the starting state (or another you pick), and the reset's own steps run, which can change
-  the record, related records and each item of a list. Set it up under "Starting over" in the
+  the record, related records and each item of a list (Update record inside a For each, on its current item). Set it up under "Starting over" in the
   lifecycle settings; the workflow panel then shows the button to those allowed.
   "Offer it" limits it to some states: from a state you pick onwards (that state and every state
   after it, final states included), with a checklist to adjust.
@@ -108,8 +108,11 @@ needed by some components:
 | `schema` | `UiWorkflowSchema \| null` | Registry and step outputs, when there is no API. |
 | `settings` | `UiWorkflowSettings \| null` | Global settings (webhook connections), when there is no API. |
 | `persist` | `boolean` | Show Save and Publish and save drafts through the API. |
+| `readOnly` | `boolean \| null` | Look without changing anything. `null` (the default) asks the API (`me().can.edit`); `true`/`false` decides here. Someone only looking can't edit, delete, drag, save (Ctrl+S is left to the browser) or publish. |
 | `(problemsChange)` | `UiWfProblem[]` | The engine's problems after each check. |
 | `(saved)` | `UiWorkflowDefinition` | After a successful save. |
+| `(dirtyChange)` | `boolean` | With `persist`: whether there are edits not yet saved, so the host can guard leaving (the builder also warns on closing the tab). |
+| `[wfActions]` | content | Your own buttons in the builder's header, after Save and Publish: `<ui-button wfActions>Close</ui-button>`. |
 
 Automations show a trigger card and a list of steps: press **+** between steps, or drag one in from
 the palette; branches, outcomes and parallel paths appear as columns. Drag a step by its grip to
@@ -149,10 +152,16 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   state), `horizontal`, `compact` (a badge, a strip of states, the actions and one history, for a side
   column or details card; `title=""` hides its heading), `side-drawer` or `bottom-drawer` (a rail of
   dots on the screen's edge). A record type with no lifecycle still shows its manual workflows, open
-  tasks and history. Under **Running** it lists the record's workflows still going, each opening its
+  tasks and history. Under **Running** (or **Stopped**, when all of them stopped) it lists the record's workflows still going, each opening its
   steps (done, waiting, failed, skipped, the paths not taken greyed out). One that stopped opens by
   itself; people the engine lets intervene (`me().can.intervene`) can try it again, skip the step
-  (giving the results it would have produced, e.g. a payment reference) or cancel it with remarks.
+  (giving the results it would have produced, each in its type, the required ones required) or
+  cancel it with remarks. While a run is still going the panel looks again every 15 seconds (not
+  while the page is hidden). After a reset, what happened before it is grouped under "Earlier,
+  before starting over". `(changed)` fires whenever the panel sees the record's workflow change: a
+  move made in it, or any reload that finds a new state, status or run status (after a decision, a
+  manual start, a retry, skip or cancel). Call `reload()` on it after your page changed the record
+  itself.
 - **Tasks drawer**: where people work through their approvals and tasks. A button with the number
   of open tasks (red when any is overdue) opens them in a drawer: due first and overdue marked, open
   or finished, each opening its decision with its form. `scope="all"` lists everyone's tasks, for
@@ -165,9 +174,24 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   version with only those changes (`updatePermissions`); if someone else published since the page
   loaded, it asks you to reload instead of overwriting their change. People without the right to
   publish see who may do what, read-only.
-- **Audit**: filter, export as CSV or JSON, and check the hash chain.
+- **Audit**: filter by kind and record, page back through older entries, export as CSV, and check
+  the hash chain. Limited to one run (`instanceId`) it offers no export, since the engine's export
+  can't be narrowed to one run; export the record's log instead.
 - **Global settings**: working hours and holidays, defaults, notification channels, webhook
   connections, audit retention and masking, and pausing workflows per record type.
+
+| `<ui-workflow-panel>` | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `entity` / `entityId` | `string` | required | The record. Changing them shows the new record (the old one is cleared at once). |
+| `layout` | `UiWorkflowPanelLayout` | `'vertical'` | `vertical`, `horizontal`, `compact`, `side-drawer` or `bottom-drawer`. |
+| `side` | `'right' \| 'left'` | `'right'` | Which edge the side drawer opens from. |
+| `title` | `string` | `'Workflow'` | The heading and drawer title; `''` hides the heading in `compact`. |
+| `showHistory` | `boolean` | `true` | Show what happened. The panel reads the latest 500 entries. |
+| `emptyText` | `string` | `'Nothing for you to do here right now.'` | Said in the current state when this person has nothing to do; `''` hides it. |
+| `open` | `model<boolean>` | `false` | Whether the drawer is open (drawer layouts). |
+| `api` | `UiWorkflowApi \| null` | provided | The engine API. |
+| `(changed)` | `UiWfRecord` | | The record's workflow changed (see above). |
+| `reload()` | method | | Reads the record and its history again. |
 
 | `<ui-workflow-tasks-drawer>` | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -182,6 +206,13 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 | `api` | `UiWorkflowApi \| null` | provided | The engine API. |
 | `(decided)` | `UiWfTask` | | After a task was decided in the drawer. |
 
+| `<ui-workflow-audit>` | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `entity` / `entityId` | `string \| null` | `null` | Only one record's entries (the record filter box hides). |
+| `instanceId` | `string \| null` | `null` | Only one run's entries (no export: see above). |
+| `pageSize` | `number` | `50` | Entries per page; **Older entries** loads the next. |
+| `api` | `UiWorkflowApi \| null` | provided | The engine API. |
+
 | `<ui-workflow-permissions>` | Type | Notes |
 | --- | --- | --- |
 | `api` | `UiWorkflowApi \| null` | The engine API. Needs `updatePermissions` to save; `me` is optional. |
@@ -192,7 +223,9 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 The helpers the builder uses are exported for apps that generate or inspect workflows:
 `createWorkflow`, `createStep`, `insertStep`, `moveStep`, `removeStep`, `indexSteps`,
 `listSteps`, `tokensAt` (the values a step can read), `describeTrigger` / `describeStep`
-(plain-English summaries) and `autoLayout` (the lifecycle diagram's layout).
+(plain-English summaries), `autoLayout` (the lifecycle diagram's layout), `wfStatesFrom` (the
+states "from a state onwards", as the reset's "Offer it" picks them) and `wfDescribeHistory` (a
+record history entry as people read it, e.g. "Submit: Draft → Submitted").
 
 The layout is deterministic and the Flutter library (`zouriel_ui`) mirrors it; both run the same
 cases from `src/fixtures/layout.json`.
