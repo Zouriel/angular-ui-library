@@ -1,4 +1,4 @@
-import { Component, Directive, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
+import { Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
@@ -6,8 +6,7 @@ import { UiModal } from '@zouriel/ui/dialog';
 import { UiInput, UiTextarea } from '@zouriel/ui/form';
 import { UiFormRenderer } from '@zouriel/ui/form-builder';
 import {
-  UiWfApiError,
-  injectWorkflowApi,
+  injectWorkflowClock,
   type UiWfAuditEntry,
   type UiWfAuditQuery,
   type UiWfAuditVerification,
@@ -18,43 +17,10 @@ import {
   type UiWorkflowApi,
 } from './api';
 import { indexSteps, stepName } from './definition';
+import { WfWithApi, wfAgo, wfDateTime, wfDescribeHistory, wfErrorText, wfStatePassed } from './runtime-shared';
 import { WF_ICONS, WF_STEP_ICONS } from './icons';
 import type { UiWorkflowDefinition } from './schema';
 import { WF_SHARED_STYLES } from './styles';
-
-function ago(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(+d)) return iso;
-  const s = Math.round((Date.now() - d.getTime()) / 1000);
-  const abs = Math.abs(s);
-  const fmt = (n: number, u: string) => `${n} ${u}${n === 1 ? '' : 's'}`;
-  const t = abs < 60 ? 'just now' : abs < 3600 ? fmt(Math.round(abs / 60), 'minute') : abs < 86400 ? fmt(Math.round(abs / 3600), 'hour') : fmt(Math.round(abs / 86400), 'day');
-  if (t === 'just now') return t;
-  return s >= 0 ? `${t} ago` : `in ${t}`;
-}
-
-function dateTime(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  return isNaN(+d) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-function errorText(e: unknown, fallback: string): string {
-  if (e instanceof UiWfApiError) {
-    const details = Array.isArray(e.details) ? (e.details as { message?: string }[]).map((d) => d.message).filter(Boolean) : [];
-    return details.length ? `${e.message} ${details.join(' ')}` : e.message;
-  }
-  return fallback;
-}
-
-/** Common base: the API from the input or `provideUiWorkflow`. */
-@Directive()
-abstract class WithApi {
-  readonly api = input<UiWorkflowApi | null>(null);
-  private readonly provided = injectWorkflowApi();
-  protected readonly client = computed(() => this.api() ?? this.provided);
-}
 
 // ── State badge ───────────────────────────────────────────────────────────
 
@@ -144,7 +110,8 @@ export class WfDecideDialog {
   protected readonly answers = signal<Record<string, unknown>>({});
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly when = (iso: string) => `${dateTime(iso)} (${ago(iso)})`;
+  private readonly clock = injectWorkflowClock();
+  protected readonly when = (iso: string) => `${wfDateTime(iso)} (${wfAgo(iso, this.clock())})`;
 
   constructor() {
     effect(() => {
@@ -169,7 +136,7 @@ export class WfDecideDialog {
       const res = await api.decide(t.id, outcome, this.comment() || undefined, this.answers());
       this.decided.emit(res);
     } catch (e) {
-      this.error.set(errorText(e, 'The decision could not be saved.'));
+      this.error.set(wfErrorText(e, 'The decision could not be saved.'));
     } finally {
       this.busy.set(false);
     }
@@ -183,7 +150,7 @@ export class WfDecideDialog {
     try {
       this.decided.emit(await api.delegate(t.id, this.delegateTo()));
     } catch (e) {
-      this.error.set(errorText(e, 'Could not hand it over.'));
+      this.error.set(wfErrorText(e, 'Could not hand it over.'));
     } finally {
       this.busy.set(false);
     }
@@ -303,7 +270,7 @@ export class WfDecideDialog {
     .foot { display: flex; justify-content: space-between; width: 100%; }
   `],
 })
-export class UiWorkflowRecordPanel extends WithApi {
+export class UiWorkflowRecordPanel extends WfWithApi {
   readonly entity = input.required<string>();
   readonly entityId = input.required<string>();
   readonly showHistory = input(true);
@@ -319,7 +286,6 @@ export class UiWorkflowRecordPanel extends WithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
-  protected readonly ago = ago;
 
   constructor() {
     super();
@@ -342,15 +308,11 @@ export class UiWorkflowRecordPanel extends WithApi {
       this.error.set('');
       if (this.showHistory()) this.history.set(await api.recordHistory(entity, id, 50).catch(() => []));
     } catch (e) {
-      this.error.set(errorText(e, 'Could not load the record’s workflow.'));
+      this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
     }
   }
 
-  protected passed(r: UiWfRecord, key: string): boolean {
-    const i = r.states.findIndex((s) => s.key === key);
-    const here = r.states.findIndex((s) => s.key === r.state);
-    return i >= 0 && here >= 0 && i < here;
-  }
+  protected readonly passed = wfStatePassed;
 
   protected start(t: UiWfTransitionOption): void {
     this.pendingManual.set(null);
@@ -388,7 +350,7 @@ export class UiWorkflowRecordPanel extends WithApi {
       this.changed.emit(r);
       if (this.showHistory()) this.history.set(await api.recordHistory(this.entity(), this.entityId(), 50).catch(() => []));
     } catch (e) {
-      const msg = errorText(e, 'That did not work.');
+      const msg = wfErrorText(e, 'That did not work.');
       if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
     } finally {
       this.busy.set(false);
@@ -404,7 +366,7 @@ export class UiWorkflowRecordPanel extends WithApi {
       this.pending.set(null);
       await this.reload();
     } catch (e) {
-      const msg = errorText(e, 'That did not work.');
+      const msg = wfErrorText(e, 'That did not work.');
       if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
     } finally {
       this.busy.set(false);
@@ -417,20 +379,7 @@ export class UiWorkflowRecordPanel extends WithApi {
   }
 
   protected describeHistory(h: UiWfAuditEntry): string {
-    const data = h.data ? (JSON.parse(h.data) as Record<string, unknown>) : {};
-    const before = h.before ? (JSON.parse(h.before) as Record<string, unknown>) : {};
-    const after = h.after ? (JSON.parse(h.after) as Record<string, unknown>) : {};
-    const label = (k: unknown) => this.record()?.states.find((s) => s.key === k)?.label ?? String(k ?? '');
-    switch (`${h.category}.${h.action}`) {
-      case 'lifecycle.created': return `Started in ${label(after['state'])}`;
-      case 'lifecycle.transitioned': return `${data['label'] ?? data['transition'] ?? 'Moved'}: ${label(before['state'])} → ${label(after['state'])}`;
-      case 'lifecycle.autoTransitioned': return `Moved automatically: ${label(before['state'])} → ${label(after['state'])}`;
-      case 'lifecycle.forced': return `Moved by an admin to ${label(after['state'])}: ${data['reason'] ?? ''}`;
-      case 'lifecycle.writeRefused': return 'A direct change to the state was refused';
-      case 'task.decided': return `Decided: ${data['outcome']}${data['comment'] ? ` (“${data['comment']}”)` : ''}`;
-      case 'task.created': return `Task created: ${data['title'] ?? ''}`;
-      default: return `${h.category} ${h.action}`;
-    }
+    return wfDescribeHistory(h, (k) => this.record()?.states.find((s) => s.key === k)?.label ?? String(k ?? ''));
   }
 }
 
@@ -493,7 +442,7 @@ export class UiWorkflowRecordPanel extends WithApi {
     .empty { padding: var(--ui-space-6) 0; text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
   `],
 })
-export class UiWorkflowTasks extends WithApi {
+export class UiWorkflowTasks extends WfWithApi {
   /** `mine` (the signed-in person's) or `all` (needs admin rights). */
   readonly scope = input<'mine' | 'all'>('mine');
   readonly pageSize = input(25);
@@ -505,7 +454,6 @@ export class UiWorkflowTasks extends WithApi {
   protected readonly total = signal(0);
   protected readonly error = signal('');
   protected readonly openTask = signal<UiWfTask | null>(null);
-  protected readonly ago = ago;
   private take = 25;
 
   constructor() {
@@ -528,7 +476,7 @@ export class UiWorkflowTasks extends WithApi {
       this.total.set(page.total);
       this.error.set('');
     } catch (e) {
-      this.error.set(errorText(e, 'Could not load tasks.'));
+      this.error.set(wfErrorText(e, 'Could not load tasks.'));
     }
   }
 
@@ -642,7 +590,7 @@ export class UiWorkflowTasks extends WithApi {
     .tasks ul { margin: 0; padding-left: var(--ui-space-4); }
   `],
 })
-export class UiWorkflowRun extends WithApi {
+export class UiWorkflowRun extends WfWithApi {
   readonly instanceId = input.required<string>();
   /** Show retry, skip and cancel (needs the intervention permission on the server). */
   readonly canIntervene = input(false);
@@ -651,7 +599,6 @@ export class UiWorkflowRun extends WithApi {
   private readonly definition = signal<UiWorkflowDefinition | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly ago = ago;
 
   /** The paths stopped by a failure: one per token waiting on an incident, named after its step. */
   protected readonly incidents = computed(() => {
@@ -707,7 +654,7 @@ export class UiWorkflowRun extends WithApi {
       this.definition.set(def);
       this.error.set('');
     } catch (e) {
-      this.error.set(errorText(e, 'Could not load the run.'));
+      this.error.set(wfErrorText(e, 'Could not load the run.'));
     }
   }
 
@@ -729,7 +676,7 @@ export class UiWorkflowRun extends WithApi {
       this.run.set(next);
       this.changed.emit(next);
     } catch (e) {
-      this.error.set(errorText(e, 'That did not work.'));
+      this.error.set(wfErrorText(e, 'That did not work.'));
     } finally {
       this.busy.set(false);
     }
@@ -824,7 +771,7 @@ const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trig
     @media (max-width: 560px) { .row { grid-template-columns: 48px 1fr; } .who, .at { grid-column: 2; } .more { padding-left: 10px; } }
   `],
 })
-export class UiWorkflowAudit extends WithApi {
+export class UiWorkflowAudit extends WfWithApi {
   /** Show only one record's entries. */
   readonly entity = input<string | null>(null);
   readonly entityId = input<string | null>(null);
@@ -841,7 +788,7 @@ export class UiWorkflowAudit extends WithApi {
   protected readonly verification = signal<UiWfAuditVerification | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly when = dateTime;
+  protected override readonly when = wfDateTime;
 
   constructor() {
     super();
@@ -871,7 +818,7 @@ export class UiWorkflowAudit extends WithApi {
       this.hasMore.set(page.length === this.pageSize());
       this.error.set('');
     } catch (e) {
-      this.error.set(errorText(e, 'Could not load the audit log.'));
+      this.error.set(wfErrorText(e, 'Could not load the audit log.'));
     }
   }
 
@@ -894,7 +841,7 @@ export class UiWorkflowAudit extends WithApi {
     try {
       this.verification.set(await api.verifyAudit());
     } catch (e) {
-      this.error.set(errorText(e, 'Could not check the chain.'));
+      this.error.set(wfErrorText(e, 'Could not check the chain.'));
     } finally {
       this.busy.set(false);
     }
@@ -913,7 +860,7 @@ export class UiWorkflowAudit extends WithApi {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      this.error.set(errorText(e, 'The export failed.'));
+      this.error.set(wfErrorText(e, 'The export failed.'));
     } finally {
       this.busy.set(false);
     }
