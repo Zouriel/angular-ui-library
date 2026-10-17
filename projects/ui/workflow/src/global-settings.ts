@@ -6,6 +6,7 @@ import { UiCombobox } from '@zouriel/ui/combobox';
 import { UiDatePicker } from '@zouriel/ui/datepicker';
 import { UiCheckbox, UiInput, UiNumberInput, UiSwitch, UiTimePicker } from '@zouriel/ui/form';
 import { UiWfApiError, injectWorkflowApi, type UiWfTriggerOverview, type UiWorkflowApi } from './api';
+import { wfKey } from './definition';
 import { WfDurationInput } from './editors';
 import { WF_ICONS } from './icons';
 import type { UiWorkflowRegistry, UiWorkflowSettings } from './schema';
@@ -126,6 +127,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
                 @if (c.auth === 'secret') {
                   <ui-input size="sm" [ngModel]="c.secretName ?? ''" (ngModelChange)="patchConnection(i, { secretName: $event })" placeholder="Secret name (set on the server)" aria-label="Secret name" />
                 }
+                <span class="key">Key <code>{{ c.key }}</code>@if (isSaved(c.key)) { <span class="wf-hint">· webhook steps use it, so it stays when the name changes</span> }</span>
                 <button type="button" class="wf-link danger" (click)="removeConnection(i)">Remove</button>
               </div>
             }
@@ -215,6 +217,8 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .card { display: flex; flex-direction: column; gap: 6px; padding: var(--ui-space-2) var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .conn { display: grid; grid-template-columns: 1fr 1.6fr; gap: 6px; }
     .conn .wf-link { justify-self: start; }
+    .conn .key { grid-column: 1 / -1; font-size: 12px; color: var(--ui-color-text-secondary); overflow-wrap: anywhere; }
+    .conn .key code { font-family: var(--ui-font-mono); }
     .danger { color: var(--ui-color-danger); }
     .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .grow { flex: 1; }
@@ -393,17 +397,38 @@ export class UiWorkflowGlobalSettings {
     this.patch({ webhooks: { ...(this.s().webhooks ?? {}), allowedOrigins: (this.s().webhooks?.allowedOrigins ?? []).filter((x) => x !== o) } });
   }
 
-  protected addConnection(): void {
-    const list = this.s().webhooks?.connections ?? [];
-    const key = `connection${list.length + 1}`;
-    this.patch({ webhooks: { ...(this.s().webhooks ?? {}), connections: [...list, { key, label: `Connection ${list.length + 1}`, baseUrl: 'https://', auth: 'none' }] } });
+  /** Keys of the connections in the last saved settings: webhook steps may refer to them. */
+  private readonly savedKeys = computed(() =>
+    new Set(((JSON.parse(this.saved()) as Settings).webhooks?.connections ?? []).map((c) => c.key)));
+
+  /** Whether a connection is saved already (its key is then fixed, as steps may use it). */
+  protected isSaved(key: string): boolean {
+    return this.savedKeys().has(key);
   }
 
+  protected addConnection(): void {
+    const list = this.s().webhooks?.connections ?? [];
+    const labels = new Set(list.map((c) => c.label));
+    let n = list.length + 1;
+    while (labels.has(`Connection ${n}`)) n++;
+    const label = `Connection ${n}`;
+    // Unique among the keys on the page and the saved ones (a removed connection's key may still be in use).
+    const key = wfKey(label, [...list.map((c) => c.key), ...this.savedKeys()]);
+    this.patch({ webhooks: { ...(this.s().webhooks ?? {}), connections: [...list, { key, label, baseUrl: 'https://', auth: 'none' }] } });
+  }
+
+  /**
+   * Changes a connection. Renaming a new (unsaved) connection names its key after it, unique on the
+   * page; a saved connection keeps its key, so the webhook steps that use it keep working.
+   */
   protected patchConnection(i: number, p: Record<string, unknown>): void {
-    const list = (this.s().webhooks?.connections ?? []).map((c, j) => {
+    const all = this.s().webhooks?.connections ?? [];
+    const list = all.map((c, j) => {
       if (j !== i) return c;
       const n = { ...c, ...p } as typeof c;
-      if (p['label'] !== undefined) n.key = String(p['label']).replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').map((w, k) => (k ? w[0]?.toUpperCase() + w.slice(1) : w.toLowerCase())).join('') || c.key;
+      if (p['label'] !== undefined && !this.isSaved(c.key)) {
+        n.key = wfKey(String(p['label']), [...all.filter((_, k) => k !== i).map((x) => x.key), ...this.savedKeys()]);
+      }
       return n;
     });
     this.patch({ webhooks: { ...(this.s().webhooks ?? {}), connections: list } });
