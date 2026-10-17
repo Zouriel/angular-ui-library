@@ -67,7 +67,7 @@ export function wfTaskResult(t: Pick<UiWfTask, 'status' | 'outcome' | 'outcomes'
   return wfOutcomeLabel(t.outcome, t.outcomes);
 }
 
-/** A run's status as people read it; the run view, the runs list and the workflow panel all use it. */
+/** A run's status as people read it; the run view, the workflow panel and the tasks drawer all use it. */
 export function wfRunStatusLabel(s: string | null | undefined): string {
   if (!s) return '';
   return ({ queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' } as Record<string, string>)[s] ?? wfHumanize(s);
@@ -214,6 +214,15 @@ export function wfStatePassed(r: UiWfRecord, key: string): boolean {
   const i = r.states.findIndex((s) => s.key === key);
   const here = r.states.findIndex((s) => s.key === r.state);
   return i >= 0 && here >= 0 && i < here;
+}
+
+/** The most characters remarks may have; the engine refuses longer ones (spec §6 remarks). */
+export const WF_REMARKS_MAX = 2000;
+
+/** The remarks counter ("1,850 / 2,000"), shown only near the limit so it doesn't add noise before. */
+export function wfRemarksCounter(text: string | null | undefined): string {
+  const n = (text ?? '').length;
+  return n >= WF_REMARKS_MAX * 0.9 ? `${n.toLocaleString('en')} / ${WF_REMARKS_MAX.toLocaleString('en')}` : '';
 }
 
 /** Common base: the API from the input or `provideUiWorkflow`, and the clock times count from. */

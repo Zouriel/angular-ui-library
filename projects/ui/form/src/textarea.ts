@@ -22,6 +22,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       [attr.rows]="rows()"
       [attr.autocomplete]="autocomplete()"
       [attr.name]="name()"
+      [attr.maxlength]="maxlength() ?? null"
       [attr.aria-label]="ariaLabel() ?? staticLabel"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
@@ -59,6 +60,8 @@ export class UiTextarea implements ControlValueAccessor {
   rows = input(4);
   autocomplete = input<string>();
   name = input<string>();
+  /** The most characters it takes (the browser stops typing and pasting beyond it). */
+  maxlength = input<number | null>(null);
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
   /** Grow with the text instead of scrolling, and no resize handle. */

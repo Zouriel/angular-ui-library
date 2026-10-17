@@ -1,11 +1,11 @@
-import { Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiIconButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
 import { UiCombobox, type UiComboboxOption } from '@zouriel/ui/combobox';
 import { UiCheckbox, UiInput, UiSelect, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
-import { UiFormRenderer } from '@zouriel/ui/form-builder';
+import { UiFormRenderer, type UiFormSubmission } from '@zouriel/ui/form-builder';
 import {
   injectWorkflowClock,
   type UiWfAuditEntry,
@@ -21,6 +21,7 @@ import {
 import { indexSteps, stepName } from './definition';
 import {
   WF_AUDIT_CATEGORIES,
+  WF_REMARKS_MAX,
   WfWithApi,
   wfAgo,
   wfAuditActionLabel,
@@ -35,15 +36,32 @@ import {
   wfRunStatusLabel,
   wfRunStatusTone,
   wfReadableError,
+  wfRemarksCounter,
   wfRemarksLabel,
   wfStatePassed,
   wfActorLabel,
   wfStepTimedOut,
   wfTaskResult,
 } from './runtime-shared';
+import { WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS } from './icons';
-import type { UiWfRemarks, UiWorkflowDefinition } from './schema';
+import type { UiWfFieldType, UiWfParamDescriptor, UiWfRemarks, UiWorkflowDefinition } from './schema';
 import { WF_SHARED_STYLES } from './styles';
+
+/** Said when remarks are longer than the engine takes. */
+const WF_REMARKS_TOO_LONG = `Remarks can be at most ${WF_REMARKS_MAX.toLocaleString('en')} characters.`;
+
+/**
+ * The answers of a filled form, read from its submission (which, unlike `valueChange`, also holds
+ * answers nobody touched: defaults and prefilled values). Null with a message when they can't be sent:
+ * picked files need an upload address on the form, as the engine takes JSON only.
+ */
+export function wfFormAnswers(s: UiFormSubmission): { data: Record<string, unknown> } | { error: string } {
+  if (Object.values(s.files).some((f) => f.length)) {
+    return { error: 'The files picked in this form can’t be sent: the form needs an upload address for them.' };
+  }
+  return { data: s.data };
+}
 
 // ── State badge ───────────────────────────────────────────────────────────
 
@@ -87,10 +105,11 @@ export class UiWorkflowStateBadge {
             <ul class="decisions">@for (d of t.decisions; track d.userId) { <li><strong>{{ d.name ?? d.userId }}</strong> chose “{{ outcomeLabel(t, d.outcome) }}”{{ d.comment ? ': “' + d.comment + '”' : '' }}</li> }</ul>
           }
           @if (t.form) {
-            <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" (valueChange)="answers.set($event)" />
+            <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" />
           }
           <label class="lw"><span class="wf-label">{{ remarksLabel(t) }}</span>
-            <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event); commentMissing.set(false)" [rows]="2" [autosize]="true" [invalid]="commentMissing()" /></label>
+            <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event); commentMissing.set(false)" [rows]="2" [autosize]="true" [invalid]="commentMissing()" [maxlength]="remarksMax" /></label>
+          @if (counter(comment()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
           @if (t.allowDelegation) {
             <details class="delegate" (toggle)="$any($event.target).open && searchPeople('')"><summary>Hand it to someone else</summary>
               <div class="wf-row"><ui-combobox class="people" size="sm" placeholder="Search for a person" label="Hand it to" [options]="people()"
@@ -123,6 +142,7 @@ export class UiWorkflowStateBadge {
     .lw { display: block; }
     .delegate summary { font-size: 12.5px; color: var(--ui-color-primary); cursor: pointer; margin-bottom: 6px; }
     .people { flex: 1; min-width: 0; }
+    .count { align-self: flex-end; margin: 0; }
     .foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--ui-space-2); flex-wrap: wrap; }
   `],
 })
@@ -136,12 +156,13 @@ export class WfDecideDialog {
   /** Set when a decision that needs remarks was made without them. */
   protected readonly commentMissing = signal(false);
   protected readonly remarksLabel = wfRemarksLabel;
+  protected readonly remarksMax = WF_REMARKS_MAX;
+  protected readonly counter = wfRemarksCounter;
   protected readonly delegateTo = signal('');
   /** People to hand the task to, from the API's directory search. */
   protected readonly people = signal<UiComboboxOption[]>([]);
   private peopleSeq = 0;
   private peopleTimer: ReturnType<typeof setTimeout> | undefined;
-  protected readonly answers = signal<Record<string, unknown>>({});
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   private readonly clock = injectWorkflowClock();
@@ -150,8 +171,9 @@ export class WfDecideDialog {
   constructor() {
     effect(() => {
       this.task();
-      untracked(() => { this.comment.set(''); this.commentMissing.set(false); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); this.people.set([]); });
+      untracked(() => { this.comment.set(''); this.commentMissing.set(false); this.error.set(''); this.delegateTo.set(''); this.people.set([]); });
     });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.peopleTimer));
   }
 
   protected outcomeLabel(t: UiWfTask, key: string): string {
@@ -190,16 +212,28 @@ export class WfDecideDialog {
     // A second click while the first is on its way would send the decision twice.
     if (!t || !api || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
-    if (t.form && !this.form()?.submit()) return;
+    let data: Record<string, unknown> = {};
+    if (t.form) {
+      const s = this.form()?.submit();
+      if (!s) return;
+      const a = wfFormAnswers(s);
+      if ('error' in a) { this.error.set(a.error); return; }
+      data = a.data;
+    }
     if (wfCommentRequired(t, outcome) && !this.comment().trim()) {
       this.commentMissing.set(true);
       this.error.set(`Add remarks to explain “${wfOutcomeLabel(outcome, t.outcomes)}”.`);
       return;
     }
+    if (this.comment().trim().length > WF_REMARKS_MAX) {
+      this.commentMissing.set(true);
+      this.error.set(WF_REMARKS_TOO_LONG);
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await api.decide(t.id, outcome, this.comment() || undefined, this.answers());
+      const res = await api.decide(t.id, outcome, this.comment().trim() || undefined, data);
       this.decided.emit(res);
     } catch (e) {
       this.error.set(wfErrorText(e, 'The decision could not be saved.'));
@@ -224,7 +258,7 @@ export class WfDecideDialog {
   }
 }
 
-// ── Record panel ──────────────────────────────────────────────────────────
+// ── Record actions (inside the workflow panel) ─────────────────────────────
 
 /** A move, reset or manual start waiting for its confirmation, with whether remarks are asked. */
 type WfPendingAction = UiWfTransitionOption & { remarks: UiWfRemarks };
@@ -282,11 +316,12 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
       @if (pending(); as p) {
         <div class="confirm">
           @if (p.confirm) { <p>{{ p.confirm }}</p> }
-          @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" (valueChange)="input.set($event)" /> }
+          @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" /> }
           @else if (!p.confirm) { <p>Move this record to “{{ p.toLabel }}”?</p> }
           @if (p.remarks !== 'none') {
             <label class="lw"><span class="wf-label">Remarks{{ p.remarks === 'required' ? ' (required)' : ' (optional)' }}</span>
-              <ui-textarea [ngModel]="remark()" (ngModelChange)="remark.set($event)" [rows]="2" [autosize]="true" [invalid]="remarkMissing()" /></label>
+              <ui-textarea [ngModel]="remark()" (ngModelChange)="remark.set($event)" [rows]="2" [autosize]="true" [invalid]="remarkMissing()" [maxlength]="remarksMax" /></label>
+            @if (counter(remark()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
           }
           @if (resetting()) {
             @if (resetLoading()) { <p class="wf-hint">Looking up what the workflow did…</p> }
@@ -362,6 +397,7 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     .undo-warn[data-tone="warning"] { color: var(--ui-color-warning); }
     .undo-list li.off .undo-title { color: var(--ui-color-text-muted); }
     .lw { display: block; min-width: 0; }
+    .count { align-self: flex-end; margin: 0; }
     .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
   `],
 })
@@ -383,7 +419,8 @@ export class WfRecordActions extends WfWithApi {
   protected readonly pending = signal<WfPendingAction | null>(null);
   protected readonly pendingManual = signal<string | null>(null);
   protected readonly pendingError = signal('');
-  protected readonly input = signal<Record<string, unknown>>({});
+  protected readonly remarksMax = WF_REMARKS_MAX;
+  protected readonly counter = wfRemarksCounter;
   /** The person's remarks on the move or reset (spec §6 remarks). */
   protected readonly remark = signal('');
   /** Set when a required remark was left empty on confirm. */
@@ -410,14 +447,22 @@ export class WfRecordActions extends WfWithApi {
     return !r.transitions.length && !r.manual.length && !r.reset && !(this.showTasks() && r.tasks.length) && !this.pending() && !this.openTask();
   });
   protected readonly idle = computed(() => this.nothingToDo() && !this.emptyText() && !this.error());
+  /**
+   * The record shown is the one named by `entity`/`entityId`. While the host is switching records the
+   * old record may still be bound: nothing is sent then, so an old move's key never reaches a new id.
+   */
+  private readonly current = computed(() => {
+    const r = this.record();
+    return r.entity === this.entity() && r.id === this.entityId();
+  });
 
   constructor() {
     super();
-    // A dialog belongs to the record it was opened for: switching records closes it.
+    // A dialog (and an error) belongs to the record it was opened for: switching records clears them.
     effect(() => {
       this.entity();
       this.entityId();
-      untracked(() => this.closeDialog(true));
+      untracked(() => { this.closeDialog(true); this.error.set(''); this.openTask.set(null); });
     });
   }
 
@@ -436,21 +481,20 @@ export class WfRecordActions extends WfWithApi {
     this.resetListError.set('');
     this.remark.set('');
     this.remarkMissing.set(false);
-    this.input.set({});
   }
 
   protected start(t: UiWfTransitionOption): void {
-    if (this.busy()) return;
+    if (this.busy() || !this.current()) return;
     this.closeDialog();
     const p: WfPendingAction = { ...t, remarks: wfRemarksFor(t) };
-    if (!t.form && !t.confirm && p.remarks === 'none') { void this.apply(t.key); return; }
+    if (!t.form && !t.confirm && p.remarks === 'none') { void this.apply(t.key, {}); return; }
     this.pending.set(p);
   }
 
   /** Starting over: asks its confirmation or form first when it has one. */
   protected startReset(): void {
     const rs = this.record().reset;
-    if (this.busy() || !rs) return;
+    if (this.busy() || !rs || !this.current()) return;
     this.closeDialog();
     this.resetting.set(true);
     // Always confirmed: a reset stops work in progress.
@@ -506,36 +550,49 @@ export class WfRecordActions extends WfWithApi {
   }
 
   protected startManual(m: UiWfRecord['manual'][number]): void {
-    if (this.busy()) return;
+    if (this.busy() || !this.current()) return;
     this.closeDialog();
     this.pendingManual.set(m.key);
-    if (!m.form) { void this.runManual(m.key); return; }
+    if (!m.form) { void this.runManual(m.key, {}); return; }
     this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form, remarks: 'none' });
   }
 
   protected confirm(): void {
     const p = this.pending();
     // A double click on the confirm button must not apply the move twice.
-    if (!p || this.busy() || this.resetLoading()) return;
+    if (!p || this.busy() || this.resetLoading() || !this.current()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
-    if (p.form && !this.form()?.submit()) return;
+    // Its submission holds every answer, untouched defaults and prefilled values too.
+    let input: Record<string, unknown> = {};
+    if (p.form) {
+      const s = this.form()?.submit();
+      if (!s) return;
+      const a = wfFormAnswers(s);
+      if ('error' in a) { this.pendingError.set(a.error); return; }
+      input = a.data;
+    }
     if (p.remarks === 'required' && !this.remark().trim()) {
       this.remarkMissing.set(true);
       this.pendingError.set('Add remarks to explain this.');
       return;
     }
-    if (this.resetting()) void this.reset();
-    else if (this.pendingManual()) void this.runManual(p.key);
-    else void this.apply(p.key);
+    if (p.remarks !== 'none' && this.remark().trim().length > WF_REMARKS_MAX) {
+      this.remarkMissing.set(true);
+      this.pendingError.set(WF_REMARKS_TOO_LONG);
+      return;
+    }
+    if (this.resetting()) void this.reset(input);
+    else if (this.pendingManual()) void this.runManual(p.key, input);
+    else void this.apply(p.key, input);
   }
 
-  private async apply(key: string): Promise<void> {
+  private async apply(key: string, input: Record<string, unknown>): Promise<void> {
     const api = this.client();
     if (!api) return;
     this.busy.set(true);
     try {
       const remark = this.pending()?.remarks !== 'none' ? this.remark().trim() || undefined : undefined;
-      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input(), remark);
+      const r = await api.applyTransition(this.entity(), this.entityId(), key, input, remark);
       this.error.set('');
       this.closeDialog(true);
       this.changed.emit(r);
@@ -547,13 +604,13 @@ export class WfRecordActions extends WfWithApi {
     }
   }
 
-  private async reset(): Promise<void> {
+  private async reset(input: Record<string, unknown>): Promise<void> {
     const api = this.client();
     if (!api) return;
     this.busy.set(true);
     try {
       const undo = this.resetItems().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
-      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined, this.remark().trim() || undefined, this.resetToken);
+      const r = await api.resetRecord(this.entity(), this.entityId(), input, undo.length ? undo : undefined, this.remark().trim() || undefined, this.resetToken);
       this.error.set('');
       this.closeDialog(true);
       this.changed.emit(r);
@@ -567,12 +624,12 @@ export class WfRecordActions extends WfWithApi {
     }
   }
 
-  private async runManual(key: string): Promise<void> {
+  private async runManual(key: string, input: Record<string, unknown>): Promise<void> {
     const api = this.client();
     if (!api) return;
     this.busy.set(true);
     try {
-      await api.startManual(key, this.entity(), this.entityId(), this.input());
+      await api.startManual(key, this.entity(), this.entityId(), input);
       this.error.set('');
       this.closeDialog(true);
       this.reload.emit();
@@ -621,7 +678,7 @@ export class WfRecordActions extends WfWithApi {
           </button>
         </li>
       } @empty {
-        <li class="empty">{{ status() === 'open' ? 'Nothing is waiting for you.' : 'No finished tasks yet.' }}</li>
+        <li class="empty">{{ emptyText() }}</li>
       }
     </ul>
     @if (total() > tasks().length) { <div><ui-button size="sm" variant="outline" (click)="more()">Show more</ui-button></div> }
@@ -659,6 +716,13 @@ export class WfTaskInbox extends WfWithApi {
   protected readonly total = signal(0);
   protected readonly error = signal('');
   protected readonly openTask = signal<UiWfTask | null>(null);
+  /** The list has been read at least once (until then it says it is loading, not that it is empty). */
+  protected readonly loaded = signal(false);
+  protected readonly emptyText = computed(() => {
+    if (!this.loaded()) return this.error() ? '' : 'Loading…';
+    if (this.status() === 'done') return this.scope() === 'all' ? 'No finished tasks yet.' : 'You haven’t finished any tasks yet.';
+    return this.scope() === 'all' ? 'No open tasks.' : 'Nothing is waiting for you.';
+  });
   private take = 25;
 
   constructor() {
@@ -668,7 +732,7 @@ export class WfTaskInbox extends WfWithApi {
       this.status();
       this.scope();
       this.take = this.pageSize();
-      untracked(() => void this.reload());
+      untracked(() => { this.loaded.set(false); this.tasks.set([]); this.total.set(0); void this.reload(); });
     });
   }
 
@@ -681,6 +745,7 @@ export class WfTaskInbox extends WfWithApi {
       if (n !== this.seq) return;
       this.tasks.set(page.items);
       this.total.set(page.total);
+      this.loaded.set(true);
       this.error.set('');
     } catch (e) {
       if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load tasks.'));
@@ -711,7 +776,7 @@ export class WfTaskInbox extends WfWithApi {
  */
 @Component({
   selector: 'ui-wf-run-view',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, UiModal, UiTextarea],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiModal, UiTextarea, WfValueInput],
   template: `
     @if (run(); as r) {
       @if (showHead()) {
@@ -778,10 +843,14 @@ export class WfTaskInbox extends WfWithApi {
         <div class="dlg">
           <p>The run carries on as if this step had finished.@if (sk.outputs.length) { Give what it would have produced, for the steps after it. }</p>
           @for (o of sk.outputs; track o.key) {
-            <label class="lw"><span class="wf-label">{{ o.label }}</span>
-              <ui-input size="sm" [ngModel]="skipValues()[o.key] ?? ''" (ngModelChange)="setSkipValue(o.key, $event)" /></label>
+            <div class="lw"><span class="wf-label">{{ o.label }}{{ o.required ? ' (required)' : '' }}</span>
+              <ui-wf-value-input [field]="o.options?.length ? { key: o.key, label: o.label, type: 'enum', options: o.options } : undefined" [type]="o.type"
+                [value]="skipValues()[o.key] ?? null" [label]="o.label" (valueChange)="setSkipValue(o.key, $event)" /></div>
           }
+          @if (skipError()) { <p class="wf-error" role="alert">{{ skipError() }}</p> }
         </div>
+      }
+      @if (skipping()) {
         <div modal-footer class="foot">
           <ui-button variant="ghost" (click)="skipping.set(null)" [disabled]="busy()">Back</ui-button>
           <ui-button (click)="confirmSkip()" [disabled]="busy()">Skip the step</ui-button>
@@ -795,8 +864,11 @@ export class WfTaskInbox extends WfWithApi {
         <div class="dlg">
           <p>The run stops here and its open tasks are cancelled. What it already did stays done.</p>
           <label class="lw"><span class="wf-label">Remarks (optional)</span>
-            <ui-textarea [ngModel]="cancelRemarks()" (ngModelChange)="cancelRemarks.set($event)" [rows]="2" [autosize]="true" /></label>
+            <ui-textarea [ngModel]="cancelRemarks()" (ngModelChange)="cancelRemarks.set($event)" [rows]="2" [autosize]="true" [maxlength]="remarksMax" /></label>
+          @if (counter(cancelRemarks()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
         </div>
+      }
+      @if (cancelling()) {
         <div modal-footer class="foot">
           <ui-button variant="ghost" (click)="cancelling.set(false)" [disabled]="busy()">Back</ui-button>
           <ui-button variant="destructive" (click)="confirmCancel()" [disabled]="busy()">Cancel the run</ui-button>
@@ -834,6 +906,7 @@ export class WfTaskInbox extends WfWithApi {
     .dlg { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
     .dlg p { margin: 0; }
     .lw { display: block; min-width: 0; }
+    .count { align-self: flex-end; margin: 0; }
     .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
     ui-modal { position: absolute; }
   `],
@@ -928,32 +1001,47 @@ export class WfRunView extends WfWithApi {
   protected readonly readable = wfReadableError;
 
   /** The step being skipped, with the results it would have produced (for the steps after it). */
-  protected readonly skipping = signal<{ target?: string; name: string; outputs: { key: string; label: string }[] } | null>(null);
-  protected readonly skipValues = signal<Record<string, string>>({});
+  protected readonly skipping = signal<{ target?: string; name: string; outputs: UiWfParamDescriptor[] } | null>(null);
+  protected readonly skipValues = signal<Record<string, unknown>>({});
+  protected readonly skipError = signal('');
   protected readonly cancelling = signal(false);
   protected readonly cancelRemarks = signal('');
+  protected readonly remarksMax = WF_REMARKS_MAX;
+  protected readonly counter = wfRemarksCounter;
 
   protected async askSkip(target: string | undefined, stepId: string | null | undefined): Promise<void> {
     const def = this.definition();
     const step = def && stepId ? indexSteps(def).get(stepId)?.step : undefined;
-    let outputs: { key: string; label: string }[] = [];
+    let outputs: UiWfParamDescriptor[] = [];
     if (step?.type === 'action') {
-      // An app action's results are declared in the registry, with labels people know.
+      // An app action's results are declared in the registry, with labels, types and which are required.
       const schema = await this.client()?.schema().catch(() => null);
-      outputs = schema?.registry.actions?.find((a) => a.key === step.action)?.outputs.map((o) => ({ key: o.key, label: o.label })) ?? [];
+      outputs = schema?.registry.actions?.find((a) => a.key === step.action)?.outputs ?? [];
     }
     this.skipValues.set({});
+    this.skipError.set('');
     this.skipping.set({ target, name: step ? stepName(step) : 'the step', outputs });
   }
 
-  protected setSkipValue(key: string, value: string): void {
+  protected setSkipValue(key: string, value: unknown): void {
     this.skipValues.update((v) => ({ ...v, [key]: value }));
+    this.skipError.set('');
   }
 
   protected confirmSkip(): void {
     const sk = this.skipping();
-    if (!sk) return;
-    const given = Object.fromEntries(Object.entries(this.skipValues()).filter(([, v]) => v.trim() !== '').map(([k, v]) => [k, v.trim()]));
+    if (!sk || this.busy()) return;
+    const given: Record<string, unknown> = {};
+    const missing: string[] = [];
+    for (const o of sk.outputs) {
+      const v = wfSkipValue(o.type, this.skipValues()[o.key]);
+      if (v === undefined) { if (o.required) missing.push(o.label); continue; }
+      given[o.key] = v;
+    }
+    if (missing.length) {
+      this.skipError.set(`Give ${missing.join(', ')}: the steps after it need ${missing.length === 1 ? 'it' : 'them'}.`);
+      return;
+    }
     void this.act('skip', sk.target, Object.keys(given).length ? given : undefined).then((ok) => ok && this.skipping.set(null));
   }
 
@@ -963,6 +1051,7 @@ export class WfRunView extends WfWithApi {
   }
 
   protected confirmCancel(): void {
+    if (this.cancelRemarks().trim().length > WF_REMARKS_MAX) { this.error.set(WF_REMARKS_TOO_LONG); return; }
     void this.act('cancel', undefined, undefined, this.cancelRemarks().trim() || undefined).then((ok) => ok && this.cancelling.set(false));
   }
 
@@ -985,6 +1074,23 @@ export class WfRunView extends WfWithApi {
       this.busy.set(false);
     }
   }
+}
+
+/**
+ * A skipped step's result as its registry type wants it (a number as a number, yes/no as a boolean),
+ * or undefined when nothing usable was given.
+ */
+export function wfSkipValue(type: UiWfFieldType | undefined, raw: unknown): unknown {
+  if (raw === null || raw === undefined) return undefined;
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    if (!t) return undefined;
+    if (type === 'number' || type === 'currency') { const n = Number(t); return Number.isFinite(n) ? n : undefined; }
+    if (type === 'boolean') return t === 'true' ? true : t === 'false' ? false : undefined;
+    return t;
+  }
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined;
+  return raw;
 }
 
 // ── Audit log ─────────────────────────────────────────────────────────────
@@ -1015,8 +1121,12 @@ function auditRows(text: string | null): AuditRow[] {
       }
       <span class="grow"></span>
       <ui-button size="sm" variant="ghost" (click)="verify()" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.SecurityCheckIcon" [size]="14" [strokeWidth]="1.8" />Check integrity</ui-button>
-      <ui-button size="sm" variant="ghost" (click)="exportAs('csv')" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.Download04Icon" [size]="14" [strokeWidth]="1.8" />CSV</ui-button>
+      <!-- The engine's export can't be narrowed to one run: showing it here would export more than is listed. -->
+      @if (!instanceId()) {
+        <ui-button size="sm" variant="ghost" (click)="exportAs('csv')" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.Download04Icon" [size]="14" [strokeWidth]="1.8" />CSV</ui-button>
+      }
     </div>
+    @if (instanceId()) { <p class="wf-hint note">Only one run’s entries are shown. To export, open the audit log of the whole record: an export can’t be limited to one run.</p> }
     @if (verification(); as v) {
       <p [class]="v.valid ? 'ok' : 'wf-error'" role="status">
         {{ v.valid ? 'The chain is intact: ' + v.checked + ' entries checked.' : 'The chain is broken at entry ' + v.brokenAtSeq + ': ' + v.problem }}
@@ -1055,7 +1165,7 @@ function auditRows(text: string | null): AuditRow[] {
           }
         </li>
       } @empty {
-        <li class="empty">No entries.</li>
+        <li class="empty">{{ loaded() ? 'No entries.' : error() ? 'Nothing to show.' : 'Loading…' }}</li>
       }
     </ol>
     @if (hasMore()) { <div><ui-button size="sm" variant="outline" (click)="older()">Older entries</ui-button></div> }
@@ -1068,6 +1178,7 @@ function auditRows(text: string | null): AuditRow[] {
     .filters ui-button hugeicons-icon { margin-right: 4px; }
     .grow { flex: 1; }
     .ok { margin: 0; color: var(--ui-color-success); font-size: 12.5px; }
+    .note { margin: 0; }
     .log { margin: 0; padding: 0; list-style: none; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
     .log > li + li { border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .row { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 0.6fr) auto; gap: 8px; align-items: center; width: 100%; padding: 6px 10px; border: 0;
@@ -1116,6 +1227,8 @@ export class UiWorkflowAudit extends WfWithApi {
   protected readonly verification = signal<UiWfAuditVerification | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
+  /** The first page has arrived (until then the list says it is loading, not that it is empty). */
+  protected readonly loaded = signal(false);
   protected override readonly when = (iso: string | null | undefined) => wfDateTime(iso);
 
   /** Workflow titles by key, so entries by a workflow name it rather than its key. */
@@ -1131,6 +1244,7 @@ export class UiWorkflowAudit extends WfWithApi {
       const api = this.client();
       if (api) untracked(() => void api.definitions().then((d) => this.titles.set(new Map(d.map((x) => [x.key, x.title])))).catch(() => undefined));
     });
+    inject(DestroyRef).onDestroy(() => clearTimeout(this.recordTimer));
   }
 
   protected actor(e: UiWfAuditEntry): string {
@@ -1157,6 +1271,7 @@ export class UiWorkflowAudit extends WfWithApi {
       if (n !== this.seq) return;
       this.entries.set(older ? [...this.entries(), ...page] : page);
       this.hasMore.set(page.length === this.pageSize());
+      this.loaded.set(true);
       this.error.set('');
     } catch (e) {
       if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the audit log.'));
@@ -1218,10 +1333,12 @@ export class UiWorkflowAudit extends WfWithApi {
 
   protected async exportAs(format: 'csv' | 'json'): Promise<void> {
     const api = this.client();
-    if (!api || this.busy()) return;
+    // A run's log can't be exported on its own (the export has no run filter).
+    if (!api || this.busy() || this.instanceId()) return;
     this.busy.set(true);
     try {
-      const blob = await api.exportAudit({ ...this.query(), format });
+      const { instanceId: _run, take: _take, ...q } = this.query();
+      const blob = await api.exportAudit({ ...q, format });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

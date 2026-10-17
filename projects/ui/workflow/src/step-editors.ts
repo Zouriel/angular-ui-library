@@ -12,7 +12,7 @@ import {
   wfKey,
   type UiWfToken,
 } from './definition';
-import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect, WfValueInput } from './editors';
+import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect } from './editors';
 import { WF_ICONS } from './icons';
 import type {
   UiWfActionStep,
@@ -39,7 +39,7 @@ import type {
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
-const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, UiTextarea, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect, WfValueInput];
+const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, UiTextarea, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect];
 
 /**
  * Settings for one step. Each step type gets its own section; common settings (name, note,
