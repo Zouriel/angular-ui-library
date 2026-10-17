@@ -28,10 +28,29 @@ const sources = files
 const stylesheets = files.filter((f) => f.endsWith('.css')).map((f) => ({ file: relative(root, f), text: readFileSync(f, 'utf8') }));
 const everything = [...sources, ...stylesheets];
 
-/** The CSS inside a component's `styles` (string or array of strings). */
+/**
+ * The CSS of a file: every template string in a component's `styles` (a string or an array, which
+ * may hold `[attr]` selectors, so it is scanned string by string rather than up to the first `]`),
+ * plus shared style constants (`export const X_STYLES = \`…\``) that components include.
+ */
 function componentCss(text: string): string {
   const out: string[] = [];
-  for (const m of text.matchAll(/styles:\s*(\[[\s\S]*?\]|`[\s\S]*?`)\s*[,}]/g)) out.push(m[1]);
+  for (const m of text.matchAll(/styles:\s*([[`])/g)) {
+    let i = m.index! + m[0].length - 1;
+    if (text[i] === '`') {
+      const end = text.indexOf('`', i + 1);
+      out.push(text.slice(i + 1, end));
+      continue;
+    }
+    // An array: collect its template strings until the bracket that closes it.
+    for (i++; i < text.length && text[i] !== ']'; i++) {
+      if (text[i] !== '`') continue;
+      const end = text.indexOf('`', i + 1);
+      out.push(text.slice(i + 1, end));
+      i = end;
+    }
+  }
+  for (const m of text.matchAll(/const\s+\w*STYLES\w*\s*=\s*`([\s\S]*?)`/g)) out.push(m[1]);
   return out.join('\n');
 }
 const css = sources.map((s) => ({ file: s.file, text: componentCss(s.text) })).filter((s) => s.text);

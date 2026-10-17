@@ -1,0 +1,889 @@
+import { Component, Directive, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UiButton } from '@zouriel/ui/button';
+import { UiModal } from '@zouriel/ui/dialog';
+import { UiInput, UiTextarea } from '@zouriel/ui/form';
+import { UiFormRenderer } from '@zouriel/ui/form-builder';
+import {
+  UiWfApiError,
+  injectWorkflowApi,
+  type UiWfAuditEntry,
+  type UiWfAuditQuery,
+  type UiWfAuditVerification,
+  type UiWfInstance,
+  type UiWfRecord,
+  type UiWfTask,
+  type UiWfTransitionOption,
+  type UiWorkflowApi,
+} from './api';
+import { indexSteps, stepName } from './definition';
+import { WF_ICONS, WF_STEP_ICONS } from './icons';
+import type { UiWorkflowDefinition } from './schema';
+import { WF_SHARED_STYLES } from './styles';
+
+function ago(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(+d)) return iso;
+  const s = Math.round((Date.now() - d.getTime()) / 1000);
+  const abs = Math.abs(s);
+  const fmt = (n: number, u: string) => `${n} ${u}${n === 1 ? '' : 's'}`;
+  const t = abs < 60 ? 'just now' : abs < 3600 ? fmt(Math.round(abs / 60), 'minute') : abs < 86400 ? fmt(Math.round(abs / 3600), 'hour') : fmt(Math.round(abs / 86400), 'day');
+  if (t === 'just now') return t;
+  return s >= 0 ? `${t} ago` : `in ${t}`;
+}
+
+function dateTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(+d) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function errorText(e: unknown, fallback: string): string {
+  if (e instanceof UiWfApiError) {
+    const details = Array.isArray(e.details) ? (e.details as { message?: string }[]).map((d) => d.message).filter(Boolean) : [];
+    return details.length ? `${e.message} ${details.join(' ')}` : e.message;
+  }
+  return fallback;
+}
+
+/** Common base: the API from the input or `provideUiWorkflow`. */
+@Directive()
+abstract class WithApi {
+  readonly api = input<UiWorkflowApi | null>(null);
+  private readonly provided = injectWorkflowApi();
+  protected readonly client = computed(() => this.api() ?? this.provided);
+}
+
+// ── State badge ───────────────────────────────────────────────────────────
+
+/** `ui-workflow-state-badge` — a record's lifecycle state as a small coloured chip. */
+@Component({
+  selector: 'ui-workflow-state-badge',
+  template: `<span class="badge" [attr.data-tone]="tone() ?? 'neutral'"><span class="dot"></span>{{ label() }}</span>`,
+  styles: `
+    :host { display: inline-flex; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 12px; font-weight: 600; white-space: nowrap;
+      color: var(--wf-c); background: color-mix(in srgb, var(--wf-c) 13%, transparent); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .badge[data-tone="neutral"] { --wf-c: var(--ui-color-text-secondary); }
+    .badge[data-tone="info"], .badge[data-tone="primary"] { --wf-c: var(--ui-color-primary); }
+    .badge[data-tone="success"] { --wf-c: var(--ui-color-success); }
+    .badge[data-tone="warning"] { --wf-c: var(--ui-color-warning); }
+    .badge[data-tone="danger"] { --wf-c: var(--ui-color-danger); }
+  `,
+})
+export class UiWorkflowStateBadge {
+  readonly label = input.required<string>();
+  readonly tone = input<string | null | undefined>('neutral');
+}
+
+// ── Task decision (shared by the inbox and the record panel) ──────────────
+
+/** The decide dialog: instructions, the task's form, a comment, and its buttons. */
+@Component({
+  selector: 'ui-wf-decide',
+  imports: [FormsModule, UiButton, UiModal, UiTextarea, UiFormRenderer, UiInput],
+  template: `
+    <ui-modal [open]="!!task()" (openChange)="!$event && closed.emit()" [title]="task()?.title ?? ''" size="md">
+      @if (task(); as t) {
+        <div class="body">
+          @if (t.entityTitle) { <p class="rec">{{ t.entityTitle }}</p> }
+          @if (t.instructions) { <p class="instructions">{{ t.instructions }}</p> }
+          <p class="meta">Due {{ when(t.dueAt) }}@if (t.overdue) { · <strong class="late">overdue</strong> }</p>
+          @if (t.decisions.length) {
+            <ul class="decisions">@for (d of t.decisions; track d.userId) { <li><strong>{{ d.name ?? d.userId }}</strong> chose {{ outcomeLabel(t, d.outcome) }}{{ d.comment ? ': “' + d.comment + '”' : '' }}</li> }</ul>
+          }
+          @if (t.form) {
+            <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" (valueChange)="answers.set($event)" />
+          }
+          <label class="lw"><span class="wf-label">Comment{{ t.requireComment === 'always' ? ' (required)' : t.requireComment === 'reject' ? ' (required to reject)' : '' }}</span>
+            <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event)" [rows]="2" [autosize]="true" /></label>
+          @if (t.allowDelegation) {
+            <details class="delegate"><summary>Hand it to someone else</summary>
+              <div class="wf-row"><ui-input size="sm" placeholder="Their user id" [ngModel]="delegateTo()" (ngModelChange)="delegateTo.set($event)" aria-label="User id" />
+                <ui-button size="sm" variant="outline" (click)="delegate()" [disabled]="busy() || !delegateTo()">Hand over</ui-button></div>
+            </details>
+          }
+          @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
+        </div>
+      }
+      @if (task(); as t) {
+        <div modal-footer class="foot">
+          <ui-button variant="ghost" (click)="closed.emit()">Close</ui-button>
+          <div class="wf-row">
+            @for (o of t.outcomes; track o.key) {
+              <ui-button [variant]="o.tone === 'danger' ? 'destructive' : o.tone === 'success' || o.tone === 'primary' ? 'primary' : 'outline'" (click)="decide(o.key)" [disabled]="busy() || !t.canDecide">{{ o.label }}</ui-button>
+            }
+          </div>
+        </div>
+      }
+    </ui-modal>
+  `,
+  styles: [WF_SHARED_STYLES, `
+    .body { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .rec { margin: 0; font-weight: 600; }
+    .instructions { margin: 0; line-height: 1.5; white-space: pre-wrap; }
+    .meta { margin: 0; font-size: 12.5px; color: var(--ui-color-text-muted); }
+    .late { color: var(--ui-color-danger); }
+    .decisions { margin: 0; padding-left: var(--ui-space-4); font-size: 13px; }
+    .lw { display: block; }
+    .delegate summary { font-size: 12.5px; color: var(--ui-color-primary); cursor: pointer; margin-bottom: 6px; }
+    .foot { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--ui-space-2); flex-wrap: wrap; }
+  `],
+})
+export class WfDecideDialog {
+  readonly task = input<UiWfTask | null>(null);
+  readonly api = input<UiWorkflowApi | null>(null);
+  readonly closed = output<void>();
+  readonly decided = output<UiWfTask>();
+  protected readonly comment = signal('');
+  protected readonly delegateTo = signal('');
+  protected readonly answers = signal<Record<string, unknown>>({});
+  protected readonly busy = signal(false);
+  protected readonly error = signal('');
+  protected readonly when = (iso: string) => `${dateTime(iso)} (${ago(iso)})`;
+
+  constructor() {
+    effect(() => {
+      this.task();
+      untracked(() => { this.comment.set(''); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); });
+    });
+  }
+
+  protected outcomeLabel(t: UiWfTask, key: string): string {
+    return t.outcomes.find((o) => o.key === key)?.label.toLowerCase() ?? key;
+  }
+
+  protected async decide(outcome: string): Promise<void> {
+    const t = this.task();
+    const api = this.api();
+    if (!t || !api) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const res = await api.decide(t.id, outcome, this.comment() || undefined, this.answers());
+      this.decided.emit(res);
+    } catch (e) {
+      this.error.set(errorText(e, 'The decision could not be saved.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async delegate(): Promise<void> {
+    const t = this.task();
+    const api = this.api();
+    if (!t || !api) return;
+    this.busy.set(true);
+    try {
+      this.decided.emit(await api.delegate(t.id, this.delegateTo()));
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not hand it over.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
+
+// ── Record panel ──────────────────────────────────────────────────────────
+
+/**
+ * `ui-workflow-record-panel` — drop onto a record's page: its lifecycle state, the moves the
+ * signed-in person may make (with their forms), open tasks, buttons for manual workflows, and the
+ * history of what happened.
+ */
+@Component({
+  selector: 'ui-workflow-record-panel',
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiModal, UiFormRenderer, UiWorkflowStateBadge, WfDecideDialog],
+  template: `
+    @if (record(); as r) {
+      <div class="state">
+        @if (r.state) {
+          <ui-workflow-state-badge [label]="r.stateLabel ?? r.state" [tone]="r.stateTone" />
+          <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
+          @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
+        } @else {
+          <span class="wf-hint">No lifecycle for this record type.</span>
+        }
+      </div>
+      @if (r.states.length > 1) {
+        <ol class="track" aria-label="Lifecycle">
+          @for (s of r.states; track s.key) {
+            <li [class.here]="s.key === r.state" [class.done]="passed(r, s.key)" [attr.data-tone]="s.tone ?? 'neutral'"><span>{{ s.label }}</span></li>
+          }
+        </ol>
+      }
+      @if (r.transitions.length || r.manual.length) {
+        <div class="actions">
+          @for (t of r.transitions; track t.key) {
+            <ui-button size="sm" [variant]="t.tone === 'danger' ? 'destructive' : t.tone === 'success' || t.tone === 'primary' ? 'primary' : 'outline'" (click)="start(t)" [disabled]="busy()">{{ t.label }}</ui-button>
+          }
+          @for (m of r.manual; track m.key) {
+            <ui-button size="sm" variant="ghost" (click)="startManual(m)" [disabled]="busy()">{{ m.label }}</ui-button>
+          }
+        </div>
+      }
+      @if (r.tasks.length) {
+        <section>
+          <h3>Waiting for</h3>
+          <ul class="tasks">
+            @for (t of r.tasks; track t.id) {
+              <li><button type="button" class="task" (click)="openTask.set(t)" [disabled]="!t.canDecide">
+                <span class="tt">{{ t.title }}</span><span class="who">{{ t.assigneeNames.join(', ') }} · due {{ ago(t.dueAt) }}</span>
+                @if (t.canDecide) { <span class="wf-chip" data-tone="primary">Your turn</span> }
+              </button></li>
+            }
+          </ul>
+        </section>
+      }
+      @if (showHistory()) {
+        <section>
+          <h3>History</h3>
+          <ol class="history">
+            @for (h of history(); track h.seq) {
+              <li><span class="hw">{{ describeHistory(h) }}</span><span class="hm">{{ h.actorName ?? h.actorType }} · {{ ago(h.at) }}</span></li>
+            } @empty { <li class="wf-hint">Nothing yet.</li> }
+          </ol>
+        </section>
+      }
+      @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
+    } @else if (error()) {
+      <p class="wf-error" role="alert">{{ error() }}</p>
+    } @else {
+      <p class="wf-hint">Loading…</p>
+    }
+
+    <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" size="md">
+      @if (pending(); as p) {
+        <div class="confirm">
+          @if (p.confirm) { <p>{{ p.confirm }}</p> }
+          @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" (valueChange)="input.set($event)" /> }
+          @else if (!p.confirm) { <p>Move this record to “{{ p.toLabel }}”?</p> }
+          @if (pendingError()) { <p class="wf-error" role="alert">{{ pendingError() }}</p> }
+        </div>
+      }
+      @if (pending(); as p) {
+        <div modal-footer class="foot">
+          <ui-button variant="ghost" (click)="pending.set(null)">Cancel</ui-button>
+          <ui-button [variant]="p.tone === 'danger' ? 'destructive' : 'primary'" (click)="confirm()" [disabled]="busy()">{{ p.label }}</ui-button>
+        </div>
+      }
+    </ui-modal>
+    <ui-wf-decide [task]="openTask()" [api]="client()" (closed)="openTask.set(null)" (decided)="afterDecide()" />
+  `,
+  styles: [WF_SHARED_STYLES, `
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
+    .state { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
+    .since { font-size: 12px; color: var(--ui-color-text-muted); }
+    .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
+    .track li.done { color: var(--ui-color-text-secondary); }
+    .track li.here { color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); font-weight: 600; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    h3 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
+    .tasks, .history { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .task { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
+    .task:disabled { cursor: default; }
+    .task:not(:disabled):hover { border-color: var(--ui-color-primary); }
+    .task:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .tt { font-weight: 600; }
+    .who { grid-column: 1; font-size: 12px; color: var(--ui-color-text-muted); }
+    .task .wf-chip { grid-row: 1 / 3; grid-column: 2; }
+    .history li { display: flex; flex-direction: column; padding: 4px 0 4px 12px; border-left: 2px solid var(--ui-color-border); }
+    .hw { font-size: 13px; }
+    .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .confirm p { margin: 0; }
+    .foot { display: flex; justify-content: space-between; width: 100%; }
+  `],
+})
+export class UiWorkflowRecordPanel extends WithApi {
+  readonly entity = input.required<string>();
+  readonly entityId = input.required<string>();
+  readonly showHistory = input(true);
+  /** Fired after the record changed through the panel (so the page can reload its own data). */
+  readonly changed = output<UiWfRecord>();
+  protected readonly record = signal<UiWfRecord | null>(null);
+  protected readonly history = signal<UiWfAuditEntry[]>([]);
+  protected readonly busy = signal(false);
+  protected readonly error = signal('');
+  protected readonly pending = signal<UiWfTransitionOption | null>(null);
+  protected readonly pendingManual = signal<string | null>(null);
+  protected readonly pendingError = signal('');
+  protected readonly input = signal<Record<string, unknown>>({});
+  protected readonly openTask = signal<UiWfTask | null>(null);
+  protected readonly ago = ago;
+
+  constructor() {
+    super();
+    effect(() => {
+      const api = this.client();
+      const e = this.entity(), id = this.entityId();
+      if (api) untracked(() => void this.load(api, e, id));
+    });
+  }
+
+  /** Reloads the panel (e.g. after the page changed the record itself). */
+  async reload(): Promise<void> {
+    const api = this.client();
+    if (api) await this.load(api, this.entity(), this.entityId());
+  }
+
+  private async load(api: UiWorkflowApi, entity: string, id: string): Promise<void> {
+    try {
+      this.record.set(await api.record(entity, id));
+      this.error.set('');
+      if (this.showHistory()) this.history.set(await api.recordHistory(entity, id, 50).catch(() => []));
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not load the record’s workflow.'));
+    }
+  }
+
+  protected passed(r: UiWfRecord, key: string): boolean {
+    const i = r.states.findIndex((s) => s.key === key);
+    const here = r.states.findIndex((s) => s.key === r.state);
+    return i >= 0 && here >= 0 && i < here;
+  }
+
+  protected start(t: UiWfTransitionOption): void {
+    this.pendingManual.set(null);
+    this.pendingError.set('');
+    this.input.set({});
+    if (!t.form && !t.confirm) { void this.apply(t.key); return; }
+    this.pending.set(t);
+  }
+
+  protected startManual(m: UiWfRecord['manual'][number]): void {
+    this.pendingManual.set(m.key);
+    this.pendingError.set('');
+    this.input.set({});
+    if (!m.form) { void this.runManual(m.key); return; }
+    this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form });
+  }
+
+  protected confirm(): void {
+    const p = this.pending();
+    if (!p) return;
+    if (this.pendingManual()) void this.runManual(p.key);
+    else void this.apply(p.key);
+  }
+
+  private async apply(key: string): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input());
+      this.record.set(r);
+      this.pending.set(null);
+      this.changed.emit(r);
+      if (this.showHistory()) this.history.set(await api.recordHistory(this.entity(), this.entityId(), 50).catch(() => []));
+    } catch (e) {
+      const msg = errorText(e, 'That did not work.');
+      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private async runManual(key: string): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      await api.startManual(key, this.entity(), this.entityId(), this.input());
+      this.pending.set(null);
+      await this.reload();
+    } catch (e) {
+      const msg = errorText(e, 'That did not work.');
+      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected afterDecide(): void {
+    this.openTask.set(null);
+    void this.reload();
+  }
+
+  protected describeHistory(h: UiWfAuditEntry): string {
+    const data = h.data ? (JSON.parse(h.data) as Record<string, unknown>) : {};
+    const before = h.before ? (JSON.parse(h.before) as Record<string, unknown>) : {};
+    const after = h.after ? (JSON.parse(h.after) as Record<string, unknown>) : {};
+    const label = (k: unknown) => this.record()?.states.find((s) => s.key === k)?.label ?? String(k ?? '');
+    switch (`${h.category}.${h.action}`) {
+      case 'lifecycle.created': return `Started in ${label(after['state'])}`;
+      case 'lifecycle.transitioned': return `${data['label'] ?? data['transition'] ?? 'Moved'}: ${label(before['state'])} → ${label(after['state'])}`;
+      case 'lifecycle.autoTransitioned': return `Moved automatically: ${label(before['state'])} → ${label(after['state'])}`;
+      case 'lifecycle.forced': return `Moved by an admin to ${label(after['state'])}: ${data['reason'] ?? ''}`;
+      case 'lifecycle.writeRefused': return 'A direct change to the state was refused';
+      case 'task.decided': return `Decided: ${data['outcome']}${data['comment'] ? ` (“${data['comment']}”)` : ''}`;
+      case 'task.created': return `Task created: ${data['title'] ?? ''}`;
+      default: return `${h.category} ${h.action}`;
+    }
+  }
+}
+
+// ── Task inbox ────────────────────────────────────────────────────────────
+
+/** `ui-workflow-tasks` — the signed-in person's approvals and tasks: due first, overdue marked. */
+@Component({
+  selector: 'ui-workflow-tasks',
+  imports: [HugeiconsIconComponent, UiButton, WfDecideDialog],
+  template: `
+    <div class="head">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" [attr.aria-selected]="status() === 'open'" [class.on]="status() === 'open'" (click)="status.set('open')">Open</button>
+        <button type="button" role="tab" [attr.aria-selected]="status() === 'done'" [class.on]="status() === 'done'" (click)="status.set('done')">Done</button>
+      </div>
+      <button type="button" class="wf-icon-btn" (click)="reload()" aria-label="Refresh"><hugeicons-icon aria-hidden="true" [icon]="icons.RefreshIcon" [size]="15" [strokeWidth]="1.8" /></button>
+    </div>
+    @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
+    <ul class="list" role="list">
+      @for (t of tasks(); track t.id) {
+        <li>
+          <button type="button" class="row" (click)="openTask.set(t)" [class.late]="t.overdue">
+            <span class="ico"><hugeicons-icon aria-hidden="true" [icon]="t.kind === 'approval' ? icons.CheckmarkCircle02Icon : icons.InboxIcon" [size]="15" [strokeWidth]="1.8" /></span>
+            <span class="main">
+              <span class="title">{{ t.title }}</span>
+              <span class="sub">{{ t.entityTitle ?? t.definitionKey }}</span>
+            </span>
+            <span class="due">
+              @if (t.status === 'open') { <span [class.overdue]="t.overdue">{{ t.overdue ? 'Overdue' : 'Due' }} {{ ago(t.dueAt) }}</span> }
+              @else { <span class="wf-chip" [attr.data-tone]="t.outcome === 'rejected' ? 'danger' : t.status === 'timedOut' ? 'warning' : 'success'">{{ outcomeLabel(t) }}</span> }
+            </span>
+          </button>
+        </li>
+      } @empty {
+        <li class="empty">{{ status() === 'open' ? 'Nothing is waiting for you.' : 'No finished tasks yet.' }}</li>
+      }
+    </ul>
+    @if (total() > tasks().length) { <ui-button size="sm" variant="ghost" (click)="more()">Show more</ui-button> }
+    <ui-wf-decide [task]="openTask()" [api]="client()" (closed)="openTask.set(null)" (decided)="afterDecide($event)" />
+  `,
+  styles: [WF_SHARED_STYLES, `
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    .head { display: flex; align-items: center; justify-content: space-between; }
+    .tabs { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--ui-radius); background: var(--ui-color-surface-hover); }
+    .tabs button { height: 24px; padding: 0 12px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 12.5px; font-weight: 550; cursor: pointer; }
+    .tabs button.on { background: var(--ui-color-surface); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }
+    .tabs button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
+    .row:hover { border-color: var(--ui-color-primary); }
+    .row:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .row.late { border-left: 3px solid var(--ui-color-danger); }
+    .ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; flex: none; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .title { font-size: 13.5px; font-weight: 600; }
+    .sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .due { font-size: 12px; color: var(--ui-color-text-secondary); white-space: nowrap; }
+    .overdue { color: var(--ui-color-danger); font-weight: 600; }
+    .empty { padding: var(--ui-space-6) 0; text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
+  `],
+})
+export class UiWorkflowTasks extends WithApi {
+  /** `mine` (the signed-in person's) or `all` (needs admin rights). */
+  readonly scope = input<'mine' | 'all'>('mine');
+  readonly pageSize = input(25);
+  /** Fired after a decision, so the host can refresh related views. */
+  readonly decided = output<UiWfTask>();
+  protected readonly icons = WF_ICONS;
+  protected readonly status = signal<'open' | 'done'>('open');
+  protected readonly tasks = signal<UiWfTask[]>([]);
+  protected readonly total = signal(0);
+  protected readonly error = signal('');
+  protected readonly openTask = signal<UiWfTask | null>(null);
+  protected readonly ago = ago;
+  private take = 25;
+
+  constructor() {
+    super();
+    effect(() => {
+      this.client();
+      this.status();
+      this.scope();
+      this.take = this.pageSize();
+      untracked(() => void this.reload());
+    });
+  }
+
+  async reload(): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    try {
+      const page = await api.tasks({ scope: this.scope(), status: this.status() === 'open' ? ['open'] : ['completed', 'timedOut', 'cancelled'], take: this.take });
+      this.tasks.set(page.items);
+      this.total.set(page.total);
+      this.error.set('');
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not load tasks.'));
+    }
+  }
+
+  protected more(): void {
+    this.take += this.pageSize();
+    void this.reload();
+  }
+
+  protected outcomeLabel(t: UiWfTask): string {
+    if (t.status === 'timedOut') return 'Out of time';
+    if (t.status === 'cancelled') return 'Cancelled';
+    return t.outcomes.find((o) => o.key === t.outcome)?.label ?? t.outcome ?? 'Done';
+  }
+
+  protected afterDecide(t: UiWfTask): void {
+    this.openTask.set(null);
+    this.decided.emit(t);
+    void this.reload();
+  }
+}
+
+// ── Run view ──────────────────────────────────────────────────────────────
+
+/**
+ * `ui-workflow-run` — one run drawn over its workflow: each step with what happened (done,
+ * waiting, failed, skipped), the paths not taken greyed out, and an admin's retry/skip/cancel.
+ */
+@Component({
+  selector: 'ui-workflow-run',
+  imports: [HugeiconsIconComponent, UiButton],
+  template: `
+    @if (run(); as r) {
+      <header class="head">
+        <div class="t"><strong>{{ r.title }}</strong> <span class="v">v{{ r.version }}</span>
+          <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span></div>
+        <span class="m">{{ r.entityTitle ?? r.entityId ?? '' }} · started {{ ago(r.startedAt) }}{{ r.initiatorName ? ' by ' + r.initiatorName : '' }}</span>
+      </header>
+      @if (r.status === 'incident') {
+        <div class="incident" role="alert">
+          <p><strong>Stopped:</strong> {{ r.error }}</p>
+          @if (canIntervene()) {
+            <div class="wf-row">
+              <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
+              <ui-button size="sm" variant="outline" (click)="act('skip')" [disabled]="busy()">Skip the step</ui-button>
+              <ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
+            </div>
+          }
+        </div>
+      } @else if (canIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
+        <div class="wf-row"><ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+      }
+      @if (error()) { <p class="wf-error">{{ error() }}</p> }
+      <ol class="steps">
+        @for (s of rows(); track s.id) {
+          <li [attr.data-status]="s.status" [style.padding-left.px]="8 + s.depth * 16">
+            <span class="ico"><hugeicons-icon aria-hidden="true" [icon]="s.icon" [size]="13" [strokeWidth]="1.9" /></span>
+            <span class="name">{{ s.name }}</span>
+            <span class="st">{{ s.statusText }}</span>
+            @if (s.detail) { <span class="detail">{{ s.detail }}</span> }
+          </li>
+        }
+      </ol>
+      @if (r.tasks?.length) {
+        <section class="tasks"><h4>Tasks</h4>
+          <ul>@for (t of r.tasks!; track t.id) { <li>{{ t.title }} — {{ t.status === 'open' ? 'waiting for ' + t.assigneeNames.join(', ') : (t.outcome ?? t.status) }}</li> }</ul>
+        </section>
+      }
+    } @else if (error()) {
+      <p class="wf-error">{{ error() }}</p>
+    } @else {
+      <p class="wf-hint">Loading…</p>
+    }
+  `,
+  styles: [WF_SHARED_STYLES, `
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
+    .head { display: flex; flex-direction: column; gap: 2px; }
+    .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+    .v { font-family: var(--ui-font-mono); font-size: 11.5px; color: var(--ui-color-text-muted); }
+    .m { font-size: 12px; color: var(--ui-color-text-muted); }
+    .incident { padding: 8px 10px; border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
+    .incident p { margin: 0 0 6px; }
+    .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+    .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 5px 8px; border-left: 2px solid var(--ui-color-border); }
+    .steps li[data-status="notRun"] { opacity: 0.45; }
+    .ico { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: var(--wf-s); background: color-mix(in srgb, var(--wf-s) 14%, transparent); }
+    .steps li { --wf-s: var(--ui-color-text-muted); }
+    .steps li[data-status="completed"] { --wf-s: var(--ui-color-success); border-left-color: var(--ui-color-success); }
+    .steps li[data-status="waiting"], .steps li[data-status="running"] { --wf-s: var(--ui-color-primary); border-left-color: var(--ui-color-primary); }
+    .steps li[data-status="failed"] { --wf-s: var(--ui-color-danger); border-left-color: var(--ui-color-danger); }
+    .steps li[data-status="skipped"], .steps li[data-status="cancelled"] { --wf-s: var(--ui-color-warning); }
+    .name { font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .st { font-size: 11.5px; color: var(--ui-color-text-secondary); white-space: nowrap; }
+    .detail { grid-column: 2 / 4; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
+    .tasks h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
+    .tasks ul { margin: 0; padding-left: var(--ui-space-4); }
+  `],
+})
+export class UiWorkflowRun extends WithApi {
+  readonly instanceId = input.required<string>();
+  /** Show retry, skip and cancel (needs the intervention permission on the server). */
+  readonly canIntervene = input(false);
+  readonly changed = output<UiWfInstance>();
+  protected readonly run = signal<UiWfInstance | null>(null);
+  private readonly definition = signal<UiWorkflowDefinition | null>(null);
+  protected readonly busy = signal(false);
+  protected readonly error = signal('');
+  protected readonly ago = ago;
+
+  protected readonly rows = computed(() => {
+    const r = this.run();
+    const def = this.definition();
+    if (!r || !def) return [];
+    const byNode = new Map<string, NonNullable<UiWfInstance['steps']>>();
+    for (const s of r.steps ?? []) byNode.set(s.nodeId, [...(byNode.get(s.nodeId) ?? []), s]);
+    const rootList = r.kind === 'run' && r.reason ? r.reason : 'root';
+    const out: { id: string; name: string; depth: number; status: string; statusText: string; detail: string; icon: typeof WF_ICONS.Tick02Icon }[] = [];
+    for (const loc of indexSteps(def).values()) {
+      if (loc.path[0] !== rootList) continue;
+      const runs = byNode.get(loc.step.id) ?? [];
+      const last = runs[runs.length - 1];
+      const status = last?.status ?? 'notRun';
+      out.push({
+        id: loc.step.id, name: stepName(loc.step), depth: loc.path.length - 1, status,
+        statusText: { completed: 'Done', waiting: 'Waiting', running: 'Running', failed: 'Failed', skipped: 'Skipped', cancelled: 'Cancelled', notRun: '' }[status] ?? status,
+        detail: last?.error ?? (runs.length > 1 ? `${runs.length} attempts` : ''),
+        icon: status === 'completed' ? WF_ICONS.Tick02Icon : status === 'failed' ? WF_ICONS.Cancel01Icon : WF_STEP_ICONS[loc.step.type] ?? WF_ICONS.FlashIcon,
+      });
+    }
+    return out;
+  });
+
+  constructor() {
+    super();
+    effect(() => {
+      const api = this.client();
+      const id = this.instanceId();
+      if (api) untracked(() => void this.load(api, id));
+    });
+  }
+
+  async reload(): Promise<void> {
+    const api = this.client();
+    if (api) await this.load(api, this.instanceId());
+  }
+
+  private async load(api: UiWorkflowApi, id: string): Promise<void> {
+    try {
+      const [run, def] = await Promise.all([api.instance(id), api.instanceDefinition(id)]);
+      this.run.set(run);
+      this.definition.set(def);
+      this.error.set('');
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not load the run.'));
+    }
+  }
+
+  protected statusLabel(s: string): string {
+    return { queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' }[s] ?? s;
+  }
+
+  protected statusTone(s: string): string {
+    return s === 'completed' ? 'success' : s === 'incident' || s === 'failed' ? 'danger' : s === 'cancelled' || s === 'outOfSync' ? 'warning' : 'info';
+  }
+
+  protected async act(kind: 'retry' | 'skip' | 'cancel'): Promise<void> {
+    const api = this.client();
+    const r = this.run();
+    if (!api || !r) return;
+    this.busy.set(true);
+    try {
+      const next = kind === 'retry' ? await api.retry(r.id) : kind === 'skip' ? await api.skip(r.id) : await api.cancel(r.id, 'Cancelled from the run view');
+      this.run.set(next);
+      this.changed.emit(next);
+    } catch (e) {
+      this.error.set(errorText(e, 'That did not work.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
+
+// ── Audit log ─────────────────────────────────────────────────────────────
+
+const CATEGORIES = ['definition', 'instance', 'step', 'lifecycle', 'task', 'trigger', 'settings', 'audit'];
+
+/**
+ * `ui-workflow-audit` — the tamper-evident audit log: filter by record, run, kind or person, see
+ * before/after values, export, and check the hash chain.
+ */
+@Component({
+  selector: 'ui-workflow-audit',
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput],
+  template: `
+    <div class="filters">
+      <select class="wf-select" aria-label="Kind" (change)="category.set($any($event.target).value)">
+        <option value="">Everything</option>
+        @for (c of categories; track c) { <option [value]="c" [selected]="c === category()">{{ c }}</option> }
+      </select>
+      @if (!entityId()) {
+        <ui-input size="sm" placeholder="Record id" [ngModel]="recordFilter()" (ngModelChange)="recordFilter.set($event)" aria-label="Record id" />
+      }
+      <span class="grow"></span>
+      <ui-button size="sm" variant="ghost" (click)="verify()" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.SecurityCheckIcon" [size]="14" [strokeWidth]="1.8" />Check integrity</ui-button>
+      <ui-button size="sm" variant="ghost" (click)="exportAs('csv')" [disabled]="busy()"><hugeicons-icon aria-hidden="true" [icon]="icons.Download04Icon" [size]="14" [strokeWidth]="1.8" />CSV</ui-button>
+    </div>
+    @if (verification(); as v) {
+      <p [class]="v.valid ? 'ok' : 'wf-error'" role="status">
+        {{ v.valid ? 'The chain is intact: ' + v.checked + ' entries checked.' : 'The chain is broken at entry ' + v.brokenAtSeq + ': ' + v.problem }}
+      </p>
+    }
+    @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
+    <ol class="log">
+      @for (e of entries(); track e.seq) {
+        <li>
+          <button type="button" class="row" (click)="toggle(e.seq)" [attr.aria-expanded]="open().has(e.seq)">
+            <span class="seq">#{{ e.seq }}</span>
+            <span class="what"><span class="cat" [attr.data-cat]="e.category">{{ e.category }}</span> {{ e.action }}</span>
+            <span class="who">{{ e.actorName ?? e.actorId ?? e.actorType }}</span>
+            <span class="at" [attr.title]="e.at">{{ when(e.at) }}</span>
+          </button>
+          @if (open().has(e.seq)) {
+            <div class="more">
+              <dl>
+                <dt>Subject</dt><dd>{{ e.subjectType }} {{ e.subjectId }}{{ e.entity ? ' (' + e.entity + ' ' + e.entityId + ')' : '' }}</dd>
+                @if (e.before) { <dt>Before</dt><dd><code>{{ e.before }}</code></dd> }
+                @if (e.after) { <dt>After</dt><dd><code>{{ e.after }}</code></dd> }
+                @if (e.data) { <dt>Details</dt><dd><code>{{ e.data }}</code></dd> }
+                <dt>Hash</dt><dd><code class="hash">{{ e.hash }}</code></dd>
+              </dl>
+            </div>
+          }
+        </li>
+      } @empty {
+        <li class="empty">No entries.</li>
+      }
+    </ol>
+    @if (hasMore()) { <ui-button size="sm" variant="ghost" (click)="older()">Older entries</ui-button> }
+  `,
+  styles: [WF_SHARED_STYLES, `
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .filters .wf-select { width: auto; height: var(--ui-size-sm); }
+    .filters ui-input { width: 140px; }
+    .filters ui-button hugeicons-icon { margin-right: 4px; }
+    .grow { flex: 1; }
+    .ok { margin: 0; color: var(--ui-color-success); font-size: 12.5px; }
+    .log { margin: 0; padding: 0; list-style: none; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
+    .log > li + li { border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
+    .row { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 0.6fr) auto; gap: 8px; align-items: center; width: 100%; padding: 6px 10px; border: 0;
+      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
+    .row:hover { background: var(--ui-color-surface-hover); }
+    .row:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
+    .seq { font-family: var(--ui-font-mono); font-size: 11.5px; color: var(--ui-color-text-muted); }
+    .cat { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ui-color-text-secondary); }
+    .cat[data-cat="lifecycle"] { color: var(--ui-color-primary); }
+    .cat[data-cat="task"] { color: var(--ui-color-success); }
+    .cat[data-cat="settings"], .cat[data-cat="definition"] { color: var(--ui-color-warning); }
+    .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-color-text-secondary); }
+    .at { font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; }
+    .more { padding: 6px 10px 10px 66px; background: var(--ui-color-bg); }
+    dl { display: grid; grid-template-columns: 70px 1fr; gap: 4px 10px; margin: 0; font-size: 12px; }
+    dt { color: var(--ui-color-text-muted); }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    code { font-family: var(--ui-font-mono); font-size: 11.5px; }
+    .hash { color: var(--ui-color-text-muted); }
+    .empty { padding: var(--ui-space-6); text-align: center; color: var(--ui-color-text-muted); }
+    @media (max-width: 560px) { .row { grid-template-columns: 48px 1fr; } .who, .at { grid-column: 2; } .more { padding-left: 10px; } }
+  `],
+})
+export class UiWorkflowAudit extends WithApi {
+  /** Show only one record's entries. */
+  readonly entity = input<string | null>(null);
+  readonly entityId = input<string | null>(null);
+  /** Show only one run's entries. */
+  readonly instanceId = input<string | null>(null);
+  readonly pageSize = input(50);
+  protected readonly icons = WF_ICONS;
+  protected readonly categories = CATEGORIES;
+  protected readonly category = signal('');
+  protected readonly recordFilter = signal('');
+  protected readonly entries = signal<UiWfAuditEntry[]>([]);
+  protected readonly hasMore = signal(false);
+  protected readonly open = signal<ReadonlySet<number>>(new Set());
+  protected readonly verification = signal<UiWfAuditVerification | null>(null);
+  protected readonly busy = signal(false);
+  protected readonly error = signal('');
+  protected readonly when = dateTime;
+
+  constructor() {
+    super();
+    effect(() => {
+      this.client(); this.category(); this.recordFilter(); this.entity(); this.entityId(); this.instanceId();
+      untracked(() => void this.load(false));
+    });
+  }
+
+  private query(): UiWfAuditQuery {
+    return {
+      category: this.category() || undefined,
+      entity: this.entity() ?? undefined,
+      entityId: this.entityId() ?? (this.recordFilter() || undefined),
+      instanceId: this.instanceId() ?? undefined,
+      take: this.pageSize(),
+    };
+  }
+
+  async load(older: boolean): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    try {
+      const before = older ? this.entries()[this.entries().length - 1]?.seq : undefined;
+      const page = await api.audit({ ...this.query(), before });
+      this.entries.set(older ? [...this.entries(), ...page] : page);
+      this.hasMore.set(page.length === this.pageSize());
+      this.error.set('');
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not load the audit log.'));
+    }
+  }
+
+  protected older(): void {
+    void this.load(true);
+  }
+
+  protected toggle(seq: number): void {
+    this.open.update((s) => {
+      const n = new Set(s);
+      if (n.has(seq)) n.delete(seq); else n.add(seq);
+      return n;
+    });
+  }
+
+  protected async verify(): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      this.verification.set(await api.verifyAudit());
+    } catch (e) {
+      this.error.set(errorText(e, 'Could not check the chain.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async exportAs(format: 'csv' | 'json'): Promise<void> {
+    const api = this.client();
+    if (!api) return;
+    this.busy.set(true);
+    try {
+      const blob = await api.exportAudit({ ...this.query(), format });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `workflow-audit.${format}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      this.error.set(errorText(e, 'The export failed.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
