@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cloneStep, createStep, createWorkflow, formFields, describeDuration, describeStep, describeTrigger, duplicateStep, ensureList, goToTargets, indexSteps,
   insertStep, isInsideStep, listSteps, mapLists, moveStep, removeState, removeStep, stepReferences, stepSlots, tokensAt,
-  transitionAllows, upstreamSteps, wfId, wfKey, withSlot,
+  transitionAllows, upstreamSteps, wfId, wfKey, wfStatesFrom, withSlot,
 } from './definition';
 import type { UiWfStep, UiWorkflowDefinition, UiWorkflowRegistry } from './schema';
 
@@ -290,5 +290,44 @@ describe('create record step', () => {
     const t = tokensAt({ def: d, registry, at: { stepId: 'after' } }).find((x) => x.path === 'steps.mk.id');
     expect(t?.label).toBe('New document id');
     expect(tokensAt({ def: d, registry, at: { stepId: 'mk' } }).some((x) => x.path === 'steps.mk.id')).toBe(false);
+  });
+});
+
+describe('wfStatesFrom', () => {
+  // draft → submitted → review → approved | rejected; review → draft (send back); withdraw from any state.
+  const life = (): UiWorkflowDefinition => {
+    const d = createWorkflow('lifecycle', 'Life', 'application');
+    return {
+      ...d,
+      lifecycle: {
+        field: 'status',
+        states: [
+          { id: 'draft', key: 'draft', label: 'Draft', category: 'initial' }, { id: 'sub', key: 'sub', label: 'Submitted', category: 'active' },
+          { id: 'rev', key: 'rev', label: 'Review', category: 'active' }, { id: 'ok', key: 'ok', label: 'Approved', category: 'terminal' },
+          { id: 'no', key: 'no', label: 'Rejected', category: 'terminal' }, { id: 'wd', key: 'wd', label: 'Withdrawn', category: 'terminal' },
+        ],
+        transitions: [
+          { id: 't1', key: 'submit', label: 'Submit', from: ['draft'], to: 'sub' },
+          { id: 't2', key: 'start', label: 'Start', from: ['sub'], to: 'rev' },
+          { id: 't3', key: 'ok', label: 'Approve', from: ['rev'], to: 'ok' },
+          { id: 't4', key: 'no', label: 'Reject', from: ['rev'], to: 'no' },
+          { id: 't5', key: 'back', label: 'Send back', from: ['rev'], to: 'draft' },
+          { id: 't6', key: 'wd', label: 'Withdraw', from: '*', to: 'wd' },
+        ],
+      },
+    } as UiWorkflowDefinition;
+  };
+
+  it('is the state and everything after it, final states included, without looping back to the start', () => {
+    expect(wfStatesFrom(life(), 'sub')).toEqual(['sub', 'rev', 'ok', 'no', 'wd']);
+    expect(wfStatesFrom(life(), 'rev')).toEqual(['rev', 'ok', 'no', 'wd']);
+    expect(wfStatesFrom(life(), 'ok')).toEqual(['ok']);
+  });
+
+  it('stops at the reset\'s own target when it goes back somewhere else', () => {
+    const d = life();
+    d.lifecycle!.reset = { to: 'sub' };
+    expect(wfStatesFrom(d, 'draft')).toEqual(['draft', 'wd']);
+    expect(wfStatesFrom(d, 'unknown')).toEqual([]);
   });
 });

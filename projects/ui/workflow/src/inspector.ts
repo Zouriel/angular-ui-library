@@ -1,8 +1,8 @@
 import { Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
-import { describeTrigger, fieldOf, indexSteps, stepName, wfId, wfKey } from './definition';
+import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
+import { describeTrigger, fieldOf, indexSteps, stepName, wfId, wfKey, wfStatesFrom } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
 import type { UiWfConditionGroup, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
@@ -247,9 +247,9 @@ export class WfTriggerEditor {
           </select></label>
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Applies to</h4>
-          <ui-wf-condition [value]="def().lifecycle?.appliesWhen" [tokens]="ownFieldTokens()" [emptyText]="'Every ' + (store.entity()?.label ?? 'record').toLowerCase() + '.'"
+          <ui-wf-condition [value]="def().lifecycle?.appliesWhen" [tokens]="ownFieldTokens()" [emptyText]="'Every ' + (store.entity()?.label ?? 'record').toLowerCase() + ' that no other lifecycle on this field covers.'"
             (valueChange)="setAppliesWhen($event)" />
-          <p class="wf-hint">Only records that meet these get this lifecycle, e.g. applications whose type is Passport. Pick fields that are set when the record is created: a record keeps its lifecycle if they change later. Another lifecycle on the same field can cover the rest.</p>
+          <p class="wf-hint">Only records that meet these get this lifecycle, e.g. only those whose type is Passport. Pick fields that are set when the record is created: a record keeps its lifecycle if they change later. Another lifecycle on the same field can cover the rest.</p>
         </section>
       } @else {
         <label class="lw"><span class="wf-label">If it starts again for the same record while running</span>
@@ -508,6 +508,14 @@ export class WfStateEditor {
             <select class="wf-select" (change)="patch({ tone: $any($event.target).value === 'neutral' ? undefined : $any($event.target).value })">
               @for (x of tones; track x) { <option [value]="x" [selected]="(t.tone ?? 'neutral') === x">{{ x }}</option> }
             </select></label>
+          <label class="lw"><span class="wf-label">Remarks</span>
+            <select class="wf-select" (change)="patch({ comment: $any($event.target).value || undefined })">
+              <option value="" [selected]="!t.comment">Default ({{ t.tone === 'danger' ? 'optional, as it is red' : 'not asked' }})</option>
+              <option value="none" [selected]="t.comment === 'none'">Not asked</option>
+              <option value="optional" [selected]="t.comment === 'optional'">Optional</option>
+              <option value="required" [selected]="t.comment === 'required'">Required</option>
+            </select></label>
+          <p class="wf-hint">People explain the move in a few words; it shows in the history and steps can use it (“Remarks”). Moves that happen by themselves never ask.</p>
         </section>
 
         <section class="wf-section wf-stack">
@@ -575,7 +583,7 @@ export class WfTransitionEditor {
 /** The lifecycle's reset: who may start a record over, back to which state, what it asks, and what else stops. */
 @Component({
   selector: 'ui-wf-reset-editor',
-  imports: [FormsModule, UiInput, UiSelect, UiSwitch, WfAssigneesEditor, WfFormField],
+  imports: [FormsModule, UiCheckbox, UiInput, UiSelect, UiSwitch, WfAssigneesEditor, WfFormField],
   template: `
     @if (reset(); as r) {
       <div class="wf-stack">
@@ -584,6 +592,21 @@ export class WfTransitionEditor {
           <ui-input size="sm" [ngModel]="r.label ?? ''" (ngModelChange)="store.updateReset({ label: $event || undefined }, 'label')" placeholder="Reset workflow" /></label>
         <label class="lw"><span class="wf-label">Back to</span>
           <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="store.updateReset({ to: $event || undefined })" /></label>
+
+        <section class="wf-section wf-stack">
+          <h4 class="wf-section-title">Offer it</h4>
+          <ui-select size="sm" label="Offer it" [options]="offerOptions" [ngModel]="r.states ? 'some' : ''" (ngModelChange)="setOffer($event)" />
+          @if (r.states) {
+            <label class="lw"><span class="wf-label">From</span>
+              <ui-select size="sm" label="From" [options]="fromOptions()" [ngModel]="fromState()" placeholder="Choose a state…" (ngModelChange)="offerFrom($event)" /></label>
+            <div class="states" role="group" aria-label="States it is offered in">
+              @for (s of allStates(); track s.id) {
+                <ui-checkbox [ngModel]="r.states.includes(s.id)" (ngModelChange)="toggleState(s.id, $event)">{{ s.label }}</ui-checkbox>
+              }
+            </div>
+            @if (!r.states.length) { <p class="wf-hint">Tick at least one state, or nobody can start a record over.</p> }
+          }
+        </section>
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Who can reset</h4>
@@ -597,6 +620,8 @@ export class WfTransitionEditor {
             (valueChange)="store.updateReset({ input: $event ? { form: $event } : undefined })" />
           <label class="lw"><span class="wf-label">Confirmation message</span>
             <ui-input size="sm" [ngModel]="r.confirm ?? ''" (ngModelChange)="store.updateReset({ confirm: $event || undefined }, 'confirm')" placeholder="e.g. Start this application over?" /></label>
+          <label class="lw"><span class="wf-label">Remarks</span>
+            <ui-select size="sm" label="Remarks" [options]="remarkOptions" [ngModel]="r.comment ?? ''" (ngModelChange)="store.updateReset({ comment: $event || undefined })" /></label>
         </section>
 
         <section class="wf-section wf-stack">
@@ -612,6 +637,7 @@ export class WfTransitionEditor {
   styles: [WF_SHARED_STYLES, `
     .lw { display: block; min-width: 0; }
     .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .states { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-4); }
   `],
 })
 export class WfResetEditor {
@@ -625,6 +651,37 @@ export class WfResetEditor {
       ...states.filter((s) => s.id !== start?.id).map((s) => ({ value: s.id, label: s.label })),
     ];
   });
+  protected readonly remarkOptions: UiSelectOption[] = [
+    { value: '', label: 'Optional (default)' }, { value: 'required', label: 'Required' }, { value: 'none', label: 'Not asked' },
+  ];
+  protected readonly offerOptions: UiSelectOption[] = [{ value: '', label: 'In every state' }, { value: 'some', label: 'From a state onwards' }];
+  protected readonly allStates = computed(() => this.store.def().lifecycle?.states ?? []);
+  protected readonly fromOptions = computed<UiSelectOption[]>(() => this.allStates().map((s) => ({ value: s.id, label: s.label })));
+  /** The state whose "onwards" set is exactly what is ticked, if any (so the picker shows it). */
+  protected readonly fromState = computed(() => {
+    const ticked = this.reset()?.states;
+    if (!ticked?.length) return '';
+    const set = [...ticked].sort().join(',');
+    return this.allStates().find((s) => wfStatesFrom(this.store.def(), s.id).sort().join(',') === set)?.id ?? '';
+  });
+
+  protected setOffer(mode: string): void {
+    if (mode !== 'some') { this.store.updateReset({ states: undefined }); return; }
+    // Start from the first state after the start, the usual choice.
+    const lc = this.store.def().lifecycle;
+    const first = lc?.transitions.find((t) => t.from !== '*' && t.from.some((f) => lc.states.find((s) => s.id === f)?.category === 'initial'))?.to ?? lc?.states[0]?.id;
+    this.store.updateReset({ states: first ? wfStatesFrom(this.store.def(), first) : [] });
+  }
+
+  protected offerFrom(stateId: string): void {
+    if (stateId) this.store.updateReset({ states: wfStatesFrom(this.store.def(), stateId) });
+  }
+
+  protected toggleState(id: string, on: boolean): void {
+    const cur = (this.reset()?.states ?? []).filter((x) => x !== id);
+    const order = this.allStates().map((s) => s.id);
+    this.store.updateReset({ states: (on ? [...cur, id] : cur).sort((a, b) => order.indexOf(a) - order.indexOf(b)) });
+  }
 }
 
 /** The right-hand panel: settings for whatever is selected, with a short header and problems. */

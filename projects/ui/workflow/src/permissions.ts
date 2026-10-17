@@ -1,7 +1,7 @@
 import { Component, computed, effect, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '@zouriel/ui/button';
-import { UiInput } from '@zouriel/ui/form';
+import { UiInput, UiSearchInput } from '@zouriel/ui/form';
 import type { UiWfDefinitionSummary, UiWfPermissionChange, UiWorkflowApi } from './api';
 import { describeAssignees, indexSteps, stepInfo, stepName, tokensAt, type UiWfToken } from './definition';
 import { WfAssigneesEditor } from './editors';
@@ -27,8 +27,9 @@ export function permissionRows(def: UiWorkflowDefinition): UiWfPermissionRow[] {
   if (lc) {
     const state = (id: string) => lc.states.find((s) => s.id === id)?.label ?? id;
     for (const t of lc.transitions) {
-      // Automatic moves happen on their own: nobody is asked.
-      if (t.auto) continue;
+      // Hidden moves are never offered to anyone. Automatic ones are still offered to the people in
+      // their `who` (who may make them early, by hand), so they stay.
+      if (t.hidden) continue;
       const from = t.from === '*' ? 'Any state' : t.from.map(state).join(', ');
       rows.push({ node: t.id, kind: 'transition', label: t.label, detail: `${from} → ${state(t.to)}`, who: t.who ?? [] });
     }
@@ -46,6 +47,34 @@ export function permissionRows(def: UiWorkflowDefinition): UiWfPermissionRow[] {
     rows.push({ node: s.id, kind: 'step', label: stepName(s), detail: stepInfo(s.type).label, who: s.assignees ?? [] });
   }
   return rows;
+}
+
+/** What an empty `who` means for each kind of row (the builder's wording). */
+export function emptyWhoText(kind: UiWfPermissionRow['kind'], editing = false): string {
+  switch (kind) {
+    case 'trigger': return 'Anyone who can see the record.';
+    case 'transition': return 'Nobody by hand: only automatically, or from other workflows.';
+    case 'reset': return 'Nobody.';
+    // The engine refuses an approval or task nobody can decide.
+    case 'step': return editing ? 'Nobody yet: add the people who decide. A step without people can\u2019t be saved.' : 'Nobody yet.';
+  }
+}
+
+/** Whether two "who" lists name the same people, in any order. */
+export function sameWho(a: readonly UiWfAssignee[], b: readonly UiWfAssignee[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (x: readonly UiWfAssignee[]) => x.map(canonical).sort();
+  const ka = key(a), kb = key(b);
+  return ka.every((k, i) => k === kb[i]);
+}
+
+function canonical(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return `{${Object.keys(o).filter((k) => o[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'null';
 }
 
 interface WorkflowPermissions {
@@ -67,16 +96,18 @@ interface WorkflowPermissions {
  */
 @Component({
   selector: 'ui-workflow-permissions',
-  imports: [FormsModule, UiButton, UiInput, WfAssigneesEditor],
+  imports: [FormsModule, UiButton, UiInput, UiSearchInput, WfAssigneesEditor],
   template: `
     <div class="head">
-      <ui-input class="search" size="sm" type="search" placeholder="Find a workflow or step" [ngModel]="query()" (ngModelChange)="query.set($event)" ariaLabel="Find a workflow or step" />
+      <ui-search-input class="search" size="sm" placeholder="Find a workflow or step" label="Find a workflow or step" [ngModel]="query()" (ngModelChange)="query.set($event)" />
       @if (!canEdit()) { <span class="wf-hint">You can see who may do what; changing it needs the right to publish workflows.</span> }
     </div>
     @if (loading()) {
       <p class="wf-hint">Loading…</p>
     } @else if (loadError()) {
       <p class="wf-error" role="alert">{{ loadError() }}</p>
+    } @else if (!client()) {
+      <p class="wf-hint">No workflow API is connected: pass <code>[api]</code> or add <code>provideUiWorkflow({{ '{' }} baseUrl {{ '}' }})</code> to the app.</p>
     } @else {
       @for (w of shown(); track w.summary.id) {
         <section class="wf" [attr.aria-labelledby]="'perm-' + w.summary.id">
@@ -94,9 +125,9 @@ interface WorkflowPermissions {
                 <div class="who">
                   @if (canEdit()) {
                     <ui-wf-assignees [value]="whoOf(w, r)" [registry]="registry()" [tokens]="w.tokens" [api]="client()"
-                      [label]="r.label" emptyText="Nobody yet." (valueChange)="edit(w, r, $any($event))" />
+                      [label]="r.label" [emptyText]="emptyText(r.kind, true)" (valueChange)="edit(w, r, $any($event))" />
                   } @else {
-                    <span class="read">{{ describe(w, r) }}</span>
+                    <span class="read" [class.empty]="!r.who.length">{{ describe(w, r) }}</span>
                   }
                 </div>
               </li>
@@ -108,9 +139,16 @@ interface WorkflowPermissions {
                 <ui-input class="note" size="sm" placeholder="Why (kept with the version)" [ngModel]="notes()[w.summary.id] ?? ''"
                   (ngModelChange)="setNote(w, $event)" ariaLabel="Why these changes" />
                 <ui-button size="sm" variant="ghost" (click)="discard(w)" [disabled]="busy() === w.summary.id">Undo</ui-button>
-                <ui-button size="sm" (click)="save(w)" [disabled]="!!busy()">Save {{ n }} change{{ n === 1 ? '' : 's' }}</ui-button>
+                <ui-button size="sm" (click)="save(w)" [disabled]="!!busy() || !!blocked(w) || !!conflicts()[w.summary.id]">Save {{ n }} change{{ n === 1 ? '' : 's' }}</ui-button>
               } @else if (savedText()[w.summary.id]; as t) {
                 <span class="wf-hint" role="status">{{ t }}</span>
+              }
+              @if (blocked(w); as b) { <p class="wf-error blocked" role="alert">{{ b }}</p> }
+              @if (conflicts()[w.summary.id]) {
+                <div class="wf-error conflict" role="alert">
+                  <span>Someone changed these permissions since you opened the page. Reload to see their version, then make your changes again.</span>
+                  <ui-button size="sm" variant="outline" (click)="reloadOne(w)" [disabled]="busy() === w.summary.id">Reload</ui-button>
+                </div>
               }
               @if (errors()[w.summary.id]; as e) { <p class="wf-error" role="alert">{{ e }}</p> }
             </footer>
@@ -138,11 +176,13 @@ interface WorkflowPermissions {
     .label { font-size: 13.5px; font-weight: 600; }
     .detail { font-size: 12px; color: var(--ui-color-text-muted); }
     .read { font-size: 13px; color: var(--ui-color-text-secondary); }
+    .read.empty { color: var(--ui-color-text-muted); }
     .wf-foot { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; padding: var(--ui-space-3) var(--ui-space-4);
       border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .wf-foot:empty { display: none; }
     .note { flex: 1; min-width: 180px; }
     .wf-foot .wf-error { flex-basis: 100%; }
+    .conflict { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; }
     @container (max-width: 560px) { .row { grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-2); } }
   `],
 })
@@ -164,12 +204,22 @@ export class UiWorkflowPermissions extends WfWithApi {
   /** The workflow being saved (one at a time). */
   protected readonly busy = signal<string | null>(null);
 
+  /** Conflicting saves: the published version changed since the page loaded it. */
+  protected readonly conflicts = signal<Record<string, boolean>>({});
+  /** People's names by user id, for the read-only rows (the editors look their own up). */
+  private readonly userNames = signal<Record<string, string>>({});
+  private readonly askedUsers = new Set<string>();
+  protected readonly emptyText = emptyWhoText;
+
   protected readonly shown = computed(() => {
     const q = this.query().trim().toLowerCase();
     const all = this.workflows().filter((w) => w.rows.length);
     if (!q) return all;
+    const edits = this.edits();
+    // Rows with unsaved edits always stay, so "Save N changes" never counts rows nobody can see.
     return all
-      .map((w) => (w.summary.title.toLowerCase().includes(q) ? w : { ...w, rows: w.rows.filter((r) => `${r.label} ${r.detail}`.toLowerCase().includes(q)) }))
+      .map((w) => (w.summary.title.toLowerCase().includes(q) ? w
+        : { ...w, rows: w.rows.filter((r) => r.node in (edits[w.summary.id] ?? {}) || `${r.label} ${r.detail}`.toLowerCase().includes(q)) }))
       .filter((w) => w.rows.length);
   });
 
@@ -203,11 +253,34 @@ export class UiWorkflowPermissions extends WfWithApi {
         list.push({ summary: published[i], def: d.published, rows: permissionRows(d.published), tokens: tokensAt({ def: d.published, registry: this.registry() }) });
       });
       this.workflows.set(list.sort((a, b) => a.summary.title.localeCompare(b.summary.title)));
+      this.conflicts.set({});
+      if (!this.canEdit()) this.lookUpNames(api, list.flatMap((w) => w.rows));
     } catch (e) {
       this.loadError.set(wfErrorText(e, 'Could not load the workflows.'));
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Finds the names of people named directly (once per id; failures keep showing the id). */
+  private lookUpNames(api: UiWorkflowApi, rows: readonly UiWfPermissionRow[]): void {
+    for (const r of rows) {
+      for (const a of r.who) {
+        if (!('user' in a) || this.askedUsers.has(a.user)) continue;
+        const id = a.user;
+        this.askedUsers.add(id);
+        api.user(id).then((u) => u && this.userNames.update((n) => ({ ...n, [id]: u.name }))).catch(() => this.askedUsers.delete(id));
+      }
+    }
+  }
+
+  /** Why this workflow's changes can't be saved yet (an approval or task left with nobody), or ''. */
+  protected blocked(w: WorkflowPermissions): string {
+    const pending = this.edits()[w.summary.id] ?? {};
+    const empty = w.rows.filter((r) => r.kind === 'step' && pending[r.node]?.length === 0);
+    if (!empty.length) return '';
+    const names = empty.map((r) => `“${r.label}”`).join(', ');
+    return `Add someone to ${names}: an approval or task needs at least one person to decide it.`;
   }
 
   protected whoOf(w: WorkflowPermissions, r: UiWfPermissionRow): UiWfAssignee[] {
@@ -223,7 +296,9 @@ export class UiWorkflowPermissions extends WfWithApi {
   }
 
   protected describe(w: WorkflowPermissions, r: UiWfPermissionRow): string {
-    const text = describeAssignees(r.who, { registry: this.registry(), def: w.def, tokens: w.tokens });
+    if (!r.who.length) return emptyWhoText(r.kind);
+    const names = this.userNames();
+    const text = describeAssignees(r.who, { registry: this.registry(), def: w.def, tokens: w.tokens, userName: (id) => names[id] });
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
@@ -232,7 +307,7 @@ export class UiWorkflowPermissions extends WfWithApi {
     this.edits.update((all) => {
       const mine = { ...(all[id] ?? {}) };
       // Back to what is published: not a change any more.
-      if (JSON.stringify(who) === JSON.stringify(r.who)) delete mine[r.node];
+      if (sameWho(who, r.who)) delete mine[r.node];
       else mine[r.node] = who;
       return { ...all, [id]: mine };
     });
@@ -247,7 +322,34 @@ export class UiWorkflowPermissions extends WfWithApi {
   protected discard(w: WorkflowPermissions): void {
     const id = w.summary.id;
     this.edits.update((all) => ({ ...all, [id]: {} }));
+    this.notes.update((n) => ({ ...n, [id]: '' }));
     this.errors.update((e) => ({ ...e, [id]: '' }));
+  }
+
+  /** After a conflict: loads this workflow's published version again and drops the edits made on the old one. */
+  protected async reloadOne(w: WorkflowPermissions): Promise<void> {
+    const api = this.client();
+    const id = w.summary.id;
+    if (!api || this.busy()) return;
+    this.busy.set(id);
+    try {
+      const d = await api.definition(id);
+      this.replace(id, d.summary, d.published ?? w.def);
+      this.edits.update((all) => ({ ...all, [id]: {} }));
+      this.conflicts.update((c) => ({ ...c, [id]: false }));
+      this.errors.update((e) => ({ ...e, [id]: '' }));
+      this.savedText.update((t) => ({ ...t, [id]: `Reloaded: version ${d.summary.version} is in use.` }));
+    } catch (e) {
+      this.errors.update((x) => ({ ...x, [id]: wfErrorText(e, 'Could not reload this workflow.') }));
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  private replace(id: string, summary: UiWfDefinitionSummary, def: UiWorkflowDefinition, rows = permissionRows(def)): void {
+    this.workflows.update((list) => list.map((x) => (x.summary.id === id ? { summary, def, rows, tokens: tokensAt({ def, registry: this.registry() }) } : x)));
+    const api = this.client();
+    if (api && !this.canEdit()) this.lookUpNames(api, rows);
   }
 
   /** Publishes one workflow's changes as a new version. */
@@ -255,21 +357,37 @@ export class UiWorkflowPermissions extends WfWithApi {
     const api = this.client();
     const id = w.summary.id;
     const pending = this.edits()[id] ?? {};
-    if (!api || this.busy() || !Object.keys(pending).length) return;
+    if (!api || this.busy() || !Object.keys(pending).length || this.blocked(w) || this.conflicts()[id]) return;
     const changes: UiWfPermissionChange[] = Object.entries(pending).map(([node, who]) => ({ node, who }));
     this.busy.set(id);
     this.errors.update((e) => ({ ...e, [id]: '' }));
+    let summary: UiWfDefinitionSummary;
     try {
-      const summary = await api.updatePermissions(id, changes, this.notes()[id]?.trim() || undefined);
-      const d = await api.definition(id);
-      const def = d.published ?? w.def;
-      this.workflows.update((list) => list.map((x) => (x.summary.id === id ? { summary, def, rows: permissionRows(def), tokens: tokensAt({ def, registry: this.registry() }) } : x)));
-      this.edits.update((all) => ({ ...all, [id]: {} }));
-      this.notes.update((n) => ({ ...n, [id]: '' }));
-      this.savedText.update((t) => ({ ...t, [id]: `Saved: version ${summary.version} is now in use.` }));
-      this.saved.emit(summary);
+      // Someone else may have published since this page loaded: saving would quietly undo their change.
+      const now = await api.definition(id);
+      if (now.summary.version !== w.summary.version || !now.published) {
+        this.conflicts.update((c) => ({ ...c, [id]: true }));
+        this.busy.set(null);
+        return;
+      }
+      summary = await api.updatePermissions(id, changes, this.notes()[id]?.trim() || undefined);
     } catch (e) {
       this.errors.update((x) => ({ ...x, [id]: wfErrorText(e, 'Saving failed.') }));
+      this.busy.set(null);
+      return;
+    }
+    // Published: from here on nothing may offer to save these changes again.
+    this.edits.update((all) => ({ ...all, [id]: {} }));
+    this.notes.update((n) => ({ ...n, [id]: '' }));
+    this.saved.emit(summary);
+    try {
+      const d = await api.definition(id);
+      this.replace(id, summary, d.published ?? w.def);
+      this.savedText.update((t) => ({ ...t, [id]: `Saved: version ${summary.version} is now in use.` }));
+    } catch {
+      // Show what was saved from the edits themselves; the definition catches up on the next load.
+      this.replace(id, summary, w.def, w.rows.map((r) => (r.node in pending ? { ...r, who: pending[r.node] } : r)));
+      this.savedText.update((t) => ({ ...t, [id]: `Saved: version ${summary.version} is now in use. The page couldn\u2019t load it again; reload to see the latest.` }));
     } finally {
       this.busy.set(null);
     }

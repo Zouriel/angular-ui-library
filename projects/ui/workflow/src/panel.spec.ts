@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
+import { UiWfApiError, type UiWfAuditEntry, type UiWfRecord, type UiWorkflowApi } from './api';
 import { UiWorkflowPanel, wfPanelPath, type UiWorkflowPanelLayout } from './panel';
 
 const states = [
@@ -90,6 +90,15 @@ function pointer(type: string, pointerType: 'mouse' | 'touch'): Event {
   const e = new Event(type);
   Object.defineProperty(e, 'pointerType', { value: pointerType });
   return e;
+}
+
+// jsdom has no ResizeObserver; the remarks box sizes itself with one.
+globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+
+/** Lets a test hold an API call open and finish it later. */
+function deferred<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
+  let resolve!: (v: T) => void;
+  return { promise: new Promise<T>((r) => (resolve = r)), resolve };
 }
 
 describe('UiWorkflowPanel', () => {
@@ -186,7 +195,7 @@ describe('UiWorkflowPanel', () => {
     const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
     confirm.querySelector('button')!.click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}, undefined]]);
+    expect(calls).toEqual([['application', '1', {}, undefined, undefined]]);
   });
 
   it('lists what the workflow did in the reset: ticked by default, changed-since unticked, messages locked, and sends the chosen ids', async () => {
@@ -232,7 +241,132 @@ describe('UiWorkflowPanel', () => {
     const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
     confirm.querySelector('button')!.click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}, ['field:programme:p1:budget']]]);
+    expect(calls).toEqual([['application', '1', {}, ['field:programme:p1:budget'], undefined]]);
+  });
+
+  async function open(fixture: ReturnType<typeof TestBed.createComponent<Host>>, label: string): Promise<HTMLElement> {
+    fixture.detectChanges();
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    ([...el.querySelectorAll('ui-button')].find((b) => b.textContent?.trim() === label) as HTMLElement).querySelector('button')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return el;
+  }
+  const dialogButton = (el: HTMLElement, label: string) =>
+    ([...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === label && !el.contains(b)) as HTMLElement).querySelector('button')!;
+  const remarks = () => document.body.querySelector('ui-modal textarea, .ui-layer textarea') as HTMLTextAreaElement | null;
+
+  it('a red move asks for optional remarks and sends them; a required one refuses to go without', async () => {
+    const calls: unknown[] = [];
+    const fixture = TestBed.createComponent(Host);
+    const reject = { key: 'reject', label: 'Reject', to: 'Draft', toLabel: 'Draft', tone: 'danger', confirm: null, form: null };
+    let comment: string | undefined = undefined;
+    fixture.componentInstance.api = {
+      record: async () => record('Review', { transitions: [{ ...reject, comment } as never] }),
+      recordHistory: async () => [entry('created', 'Draft')],
+      applyTransition: async (...args: unknown[]) => { calls.push(args); return record('Draft'); },
+    } as unknown as UiWorkflowApi;
+    let el = await open(fixture, 'Reject');
+    expect(document.body.textContent).toContain('Remarks (optional)');
+    const box = remarks()!;
+    box.value = '  Missing transcript ';
+    box.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    dialogButton(el, 'Reject').click();
+    await new Promise((res) => setTimeout(res));
+    expect(calls).toEqual([['application', '1', 'reject', {}, 'Missing transcript']]);
+
+    // Required: nothing is sent until there are remarks.
+    calls.length = 0;
+    comment = 'required' as never;
+    const again = TestBed.createComponent(Host);
+    again.componentInstance.api = fixture.componentInstance.api;
+    el = await open(again, 'Reject');
+    expect(document.body.textContent).toContain('Remarks (required)');
+    dialogButton(el, 'Reject').click();
+    await new Promise((res) => setTimeout(res));
+    again.detectChanges();
+    expect(calls).toEqual([]);
+    expect(document.body.textContent).toContain('Add remarks to explain this.');
+  });
+
+  it('a move that is not red, has no form and no setting goes straight through', async () => {
+    const calls: unknown[] = [];
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.api = {
+      record: async () => record('Draft', { transitions: [{ key: 'submit', label: 'Submit', to: 'Review', toLabel: 'Review', tone: 'primary', confirm: null, form: null }] }),
+      recordHistory: async () => [entry('created', 'Draft')],
+      applyTransition: async (...args: unknown[]) => { calls.push(args); return record('Review'); },
+    } as unknown as UiWorkflowApi;
+    await open(fixture, 'Submit');
+    await new Promise((res) => setTimeout(res));
+    expect(calls).toEqual([['application', '1', 'submit', {}, undefined]]);
+  });
+
+  it('the reset can\'t be confirmed while its list is loading, and sends remarks with it', async () => {
+    const calls: unknown[] = [];
+    const preview = deferred<unknown>();
+    const fixture = TestBed.createComponent(Host);
+    const reset = { label: 'Start over', to: 'Draft', toLabel: 'Draft', confirm: null, form: null };
+    fixture.componentInstance.api = {
+      record: async () => record('Review', { reset }),
+      recordHistory: async () => [entry('created', 'Draft')],
+      resetPreview: () => preview.promise,
+      resetRecord: async (...args: unknown[]) => { calls.push(args); return record('Draft'); },
+    } as unknown as UiWorkflowApi;
+    const el = await open(fixture, 'Start over');
+    expect(document.body.textContent).toContain('Looking up what the workflow did');
+    expect(dialogButton(el, 'Start over').disabled).toBe(true);
+    preview.resolve({ reset, items: [{ id: 'created:document:d9', kind: 'created', title: 'Delete Document “Checklist”', detail: null, workflow: 'W', step: 'S', undoable: true, selected: true, warning: null }] });
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(dialogButton(el, 'Start over').disabled).toBe(false);
+    const box = remarks()!;
+    box.value = 'Wrong programme';
+    box.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    dialogButton(el, 'Start over').click();
+    await new Promise((res) => setTimeout(res));
+    expect(calls).toEqual([['application', '1', {}, ['created:document:d9'], 'Wrong programme']]);
+  });
+
+  it('after a stale list the reset reads it again and keeps what the person unticked', async () => {
+    let reads = 0;
+    const calls: unknown[] = [];
+    const fixture = TestBed.createComponent(Host);
+    const reset = { label: 'Start over', to: 'Draft', toLabel: 'Draft', confirm: null, form: null };
+    const item = (id: string, title: string) => ({ id, kind: 'field', title, detail: null, workflow: 'W', step: 'S', undoable: true, selected: true, warning: null });
+    fixture.componentInstance.api = {
+      record: async () => record('Review', { reset }),
+      recordHistory: async () => [entry('created', 'Draft')],
+      resetPreview: async () => ({ reset, items: ++reads === 1 ? [item('a', 'Keep me'), item('b', 'Take back')] : [item('a', 'Keep me'), item('b', 'Take back'), item('c', 'New one')] }),
+      resetRecord: async (...args: unknown[]) => {
+        calls.push(args);
+        if (calls.length === 1) throw new UiWfApiError(409, 'resetChanged', 'What the workflow did has changed.');
+        return record('Draft');
+      },
+    } as unknown as UiWorkflowApi;
+    const el = await open(fixture, 'Start over');
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const rows = () => [...document.body.querySelectorAll('.undo-list li')] as HTMLElement[];
+    (rows()[0].querySelector('input[type=checkbox]') as HTMLInputElement).click();
+    fixture.detectChanges();
+    dialogButton(el, 'Start over').click();
+    await new Promise((res) => setTimeout(res));
+    await new Promise((res) => setTimeout(res));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(rows().map((r) => (r.querySelector('input[type=checkbox]') as HTMLInputElement).checked)).toEqual([false, true, true]);
+    expect(document.body.textContent).toContain('What the workflow did has changed.');
+    dialogButton(el, 'Start over').click();
+    await new Promise((res) => setTimeout(res));
+    expect(calls.at(-1)).toEqual(['application', '1', {}, ['b', 'c'], undefined]);
   });
 });
-

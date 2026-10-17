@@ -1,6 +1,6 @@
 import { InjectionToken, inject, type Provider } from '@angular/core';
 import type { UiFormDefinition } from '@zouriel/ui/form-builder';
-import type { UiWfAssignee, UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
+import type { UiWfAssignee, UiWfRemarks, UiWorkflowDefinition, UiWorkflowSchema, UiWorkflowSettings } from './schema';
 
 // Shapes returned by the workflow REST API (spec api/openapi.yaml). Engines in every language
 // return these; the components below only talk to an engine through `UiWorkflowApi`.
@@ -140,6 +140,8 @@ export interface UiWfTransitionOption {
   tone: string | null;
   confirm: string | null;
   form: UiFormDefinition | null;
+  /** Whether the person is asked for remarks (resolved: red moves default to optional). Older engines omit it. */
+  comment?: UiWfRemarks;
 }
 
 export interface UiWfRecord {
@@ -159,7 +161,7 @@ export interface UiWfRecord {
   manual: { key: string; label: string; form: UiFormDefinition | null }[];
   states: { key: string; label: string; category: string; tone: string | null }[];
   /** Starting the workflow over, when this person may and it would change something (else null). */
-  reset?: { label: string; to: string; toLabel: string; confirm: string | null; form: UiFormDefinition | null } | null;
+  reset?: { label: string; to: string; toLabel: string; confirm: string | null; form: UiFormDefinition | null; comment?: UiWfRemarks } | null;
 }
 
 /** One thing a workflow did that a reset can list (spec §6 reset). */
@@ -326,8 +328,8 @@ export class UiWfApiError extends Error {
  */
 export interface UiWorkflowApi {
   schema(): Promise<UiWorkflowSchema>;
-  /** The signed-in person and what they may do. */
-  me(): Promise<UiWfMe>;
+  /** Who is signed in and what they may do. Optional: without it the builder and permissions page offer editing and the server decides. */
+  me?(): Promise<UiWfMe>;
   settings(): Promise<{ settings: UiWorkflowSettings; revision: number }>;
   saveSettings(settings: UiWorkflowSettings, revision: number): Promise<{ revision: number }>;
   triggers(): Promise<UiWfTriggerOverview[]>;
@@ -372,7 +374,8 @@ export interface UiWorkflowApi {
 
   record(entity: string, id: string): Promise<UiWfRecord>;
   recordHistory(entity: string, id: string, take?: number): Promise<UiWfAuditEntry[]>;
-  applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>): Promise<UiWfRecord>;
+  /** Makes a move, with its form's answers and the person's remarks. */
+  applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>, comment?: string): Promise<UiWfRecord>;
   forceState(entity: string, id: string, state: string, reason: string, skipSteps?: boolean): Promise<UiWfRecord>;
   /**
    * What starting the record over would take back: every change its workflows made since it last
@@ -380,10 +383,10 @@ export interface UiWorkflowApi {
    */
   resetPreview?(entity: string, id: string): Promise<UiWfResetPreview>;
   /**
-   * Starts the record's workflow over (the lifecycle's reset), with the reset form's answers and the
-   * ids of the `resetPreview` items to take back.
+   * Starts the record's workflow over (the lifecycle's reset), with the reset form's answers, the
+   * ids of the `resetPreview` items to take back and the person's remarks.
    */
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[]): Promise<UiWfRecord>;
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string): Promise<UiWfRecord>;
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>): Promise<UiWfInstance>;
 
   audit(q: UiWfAuditQuery): Promise<UiWfAuditEntry[]>;
@@ -525,8 +528,9 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
 
   record(entity: string, id: string) { return this.call<UiWfRecord>('GET', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}`); }
   recordHistory(entity: string, id: string, take = 200) { return this.call<UiWfAuditEntry[]>('GET', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/history${qs({ take })}`); }
-  applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>) {
-    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/transitions/${encodeURIComponent(key)}`, { input: input ?? null });
+  applyTransition(entity: string, id: string, key: string, input?: Record<string, unknown>, comment?: string) {
+    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/transitions/${encodeURIComponent(key)}`,
+      { input: input ?? null, ...(comment?.trim() ? { comment: comment.trim() } : {}) });
   }
   forceState(entity: string, id: string, state: string, reason: string, skipSteps = false) {
     return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/force-state`, { state, reason, skipSteps });
@@ -534,8 +538,9 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   resetPreview(entity: string, id: string) {
     return this.call<UiWfResetPreview>('GET', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`);
   }
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[]) {
-    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`, { input: input ?? {}, ...(undo?.length ? { undo } : {}) });
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string) {
+    return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`,
+      { input: input ?? {}, ...(undo?.length ? { undo } : {}), ...(comment?.trim() ? { comment: comment.trim() } : {}) });
   }
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>) {
     const path = entity && id ? `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/manual/${encodeURIComponent(workflow)}` : `/manual/${encodeURIComponent(workflow)}`;

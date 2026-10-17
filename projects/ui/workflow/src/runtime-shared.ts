@@ -124,12 +124,16 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
   const text = (v: unknown) => (v === null || v === undefined ? '' : String(v));
   switch (`${h.category}.${h.action}`) {
     case 'lifecycle.created': return `Started in ${stateLabel(after['state'])}`;
-    case 'lifecycle.transitioned': return `${text(data['label'] ?? data['transition']) || 'Moved'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}`;
+    case 'lifecycle.transitioned': {
+      const remark = text(data['comment']);
+      return `${text(data['label'] ?? data['transition']) || 'Moved'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}${remark ? ` (“${remark}”)` : ''}`;
+    }
     case 'lifecycle.autoTransitioned': return `Moved automatically: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}`;
     case 'lifecycle.autoSkipped': return 'An automatic move was skipped';
     case 'lifecycle.reset': {
       const input = data['input'] && typeof data['input'] === 'object' ? (data['input'] as Record<string, unknown>) : {};
-      const why = text(input['reason'] ?? Object.values(input).find((v) => typeof v === 'string'));
+      // The person's remarks, else the reset form's reason.
+      const why = text(data['comment']) || text(input['reason'] ?? Object.values(input).find((v) => typeof v === 'string'));
       const undone = Array.isArray(data['undone']) ? data['undone'].length : 0;
       const took = undone ? `, took back ${undone} thing${undone === 1 ? '' : 's'} the workflow did` : '';
       return `${text(data['label']) || 'Reset'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}${why ? ` (“${why}”)` : ''}${took}`;
@@ -167,6 +171,26 @@ export function wfActorLabel(e: Pick<UiWfAuditEntry, 'actorType' | 'actorId' | '
   if (e.actorName) return e.actorName;
   if (e.actorType === 'system') return 'System';
   return e.actorId ?? wfHumanize(e.actorType);
+}
+
+/**
+ * Whether deciding [outcome] needs remarks (spec §7): always, or for a negative outcome when the step
+ * asks for them on rejecting (an approval's "rejected", a task's red outcomes).
+ */
+export function wfCommentRequired(t: Pick<UiWfTask, 'requireComment' | 'kind' | 'outcomes'>, outcome: string): boolean {
+  if (t.requireComment === 'always') return true;
+  if (t.requireComment !== 'reject') return false;
+  return outcome === 'rejected' || t.outcomes.some((o) => o.key === outcome && o.tone === 'danger');
+}
+
+/** How the remarks box is labelled: what it is required for, else optional. */
+export function wfRemarksLabel(t: Pick<UiWfTask, 'requireComment' | 'kind' | 'outcomes'>): string {
+  if (t.requireComment === 'always') return 'Remarks (required)';
+  if (t.requireComment === 'reject') {
+    const negative = t.outcomes.filter((o) => wfCommentRequired(t, o.key)).map((o) => o.label);
+    if (negative.length) return `Remarks (required to ${negative.length === 1 && negative[0] ? negative[0].toLowerCase() : 'choose ' + negative.join(' or ')})`;
+  }
+  return 'Remarks (optional)';
 }
 
 /** Whether a finished step ended by running out of time (an approval or task, or a wait, that timed out). */

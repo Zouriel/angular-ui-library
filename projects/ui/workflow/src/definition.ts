@@ -613,6 +613,7 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
         { path: 'trigger.from', label: 'State before', group: 'What started it', type: 'text' },
         { path: 'trigger.to', label: 'State after', group: 'What started it', type: 'text' },
         { path: 'trigger.transition', label: 'Transition', group: 'What started it', type: 'text' },
+        { path: 'trigger.comment', label: 'Remarks', group: 'What started it', type: 'text' },
       );
     }
     if (trig.type === 'signal') {
@@ -624,6 +625,7 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
       { path: 'trigger.from', label: 'State before', group: 'The move', type: 'text' },
       { path: 'trigger.to', label: 'State after', group: 'The move', type: 'text' },
       { path: 'trigger.transition', label: 'Transition', group: 'The move', type: 'text' },
+      { path: 'trigger.comment', label: 'Remarks', group: 'The move', type: 'text' },
     );
   }
   tokens.push({ path: 'trigger.actor', label: 'Person who started it', group: 'What started it', type: 'user' }, { path: 'trigger.at', label: 'When it started', group: 'What started it', type: 'dateTime' });
@@ -651,7 +653,7 @@ export function tokensAt(ctx: UiWfTokenContext): UiWfToken[] {
     const outs = s.type === 'action'
       ? [...(reg?.actions?.find((a) => a.key === s.action)?.outputs.map((o) => o.key) ?? [])]
       : ctx.outputs?.[s.type] ?? stepInfo(s.type).outputs;
-    for (const o of outs) tokens.push({ path: `steps.${s.id}.${o}`, label: outputLabel(s, o, reg), group: stepName(s), type: o === 'decidedBy' ? 'user' : 'any' });
+    for (const o of outs) tokens.push({ path: `steps.${s.id}.${o}`, label: outputLabel(s, o, reg), group: stepName(s), type: o === 'decidedBy' ? 'user' : s.type === 'createRecord' && o === 'id' ? 'text' : 'any' });
   }
   for (const v of def.variables ?? []) tokens.push({ path: `vars.${v.key}`, label: v.label, group: 'Variables', type: v.type === 'json' ? 'json' : v.type });
   tokens.push({ path: 'today', label: 'Today', group: 'Time', type: 'date' }, { path: 'now', label: 'Now', group: 'Time', type: 'dateTime' });
@@ -826,6 +828,28 @@ export function transitionAllows(def: UiWorkflowDefinition, t: UiWfTransition, s
     return !!s && s.category !== 'terminal' && s.id !== t.to;
   }
   return t.from.includes(stateId);
+}
+
+/**
+ * The states "from [stateId] onwards": that state and every state its moves lead to, without passing
+ * through the reset's target (the starting state unless the reset says otherwise), so final states
+ * are included and send-back loops to the start are not. In diagram order.
+ */
+export function wfStatesFrom(def: UiWorkflowDefinition, stateId: string): string[] {
+  const lc = def.lifecycle;
+  if (!lc || !lc.states.some((s) => s.id === stateId)) return [];
+  const target = lc.reset?.to ?? lc.states.find((s) => s.category === 'initial')?.id;
+  const seen = new Set([stateId]);
+  const queue = [stateId];
+  while (queue.length) {
+    const at = queue.shift()!;
+    for (const t of lc.transitions) {
+      if (!transitionAllows(def, t, at) || seen.has(t.to) || t.to === target) continue;
+      seen.add(t.to);
+      queue.push(t.to);
+    }
+  }
+  return lc.states.filter((s) => seen.has(s.id)).map((s) => s.id);
 }
 
 export function updateLifecycle(def: UiWorkflowDefinition, f: (lc: NonNullable<UiWorkflowDefinition['lifecycle']>) => NonNullable<UiWorkflowDefinition['lifecycle']>): UiWorkflowDefinition {

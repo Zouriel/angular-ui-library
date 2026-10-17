@@ -10,10 +10,13 @@ same spec and REST API).
 import {
   UiWorkflowBuilder,        // <ui-workflow-builder>: where admins design workflows
   UiWorkflowRecordPanel,    // <ui-workflow-record-panel>: a record's state, moves, tasks and history
+  UiWorkflowPanel,          // <ui-workflow-panel>: a record's workflow as a stepper, inline or in a drawer
   UiWorkflowTasks,          // <ui-workflow-tasks>: the signed-in person's approvals and tasks
+  UiWorkflowTasksDrawer,    // <ui-workflow-tasks-drawer>: a "My tasks" button with a count, opening the inbox
   UiWorkflowRun,            // <ui-workflow-run>: one run over its workflow, with retry/skip/cancel
   UiWorkflowAudit,          // <ui-workflow-audit>: the tamper-evident log, filter, export, verify
   UiWorkflowGlobalSettings, // <ui-workflow-global-settings>: working hours, channels, webhooks, retention
+  UiWorkflowPermissions,    // <ui-workflow-permissions>: who may do what in every published workflow
   UiWorkflowStateBadge,     // <ui-workflow-state-badge>: a state as a coloured chip
   provideUiWorkflow,        // connects the components to the engine's REST API
 } from '@zouriel/ui/workflow';
@@ -38,11 +41,18 @@ import {
   back to the starting state (or another you pick), and the reset's own steps run, which can change
   the record, related records and each item of a list. Set it up under "Starting over" in the
   lifecycle settings; the record panel and the workflow panel then show the button to those allowed.
+  "Offer it" limits it to some states: from a state you pick onwards (that state and every state
+  after it, final states included), with a checklist to adjust.
   The reset dialog lists what the workflow did since the record last started over (fields it
-  changed on this or other records, records it created, actions, messages and webhooks), all ticked.
-  People can untick anything that should stay; the ticked items are taken back with the reset (new
-  records deleted, fields put back, app actions undone when the app supports it). Items someone
-  changed again since start unticked, and sent messages can't be taken back.
+  changed on this or other records, records it created, actions, messages and webhooks).
+  Everything that can be undone is ticked, except items someone changed again since, which start
+  unticked; sent messages and webhooks can't be taken back. People can untick anything that should
+  stay; the ticked items are taken back with the reset (new records deleted, fields put back, app
+  actions undone when the app supports it).
+- **Remarks** on negative actions: rejecting an approval, a task's red buttons, red moves (e.g.
+  Reject, Withdraw) and Start over all offer a remarks box. Each step, move and the reset has a
+  Remarks setting to make them optional or required (moves can also not ask). Remarks show in the
+  history, go into the audit log, and steps can use them as "Remarks" (`trigger.comment`).
 
 Every start, step, decision and move is written to a hash-chained audit log.
 
@@ -77,6 +87,15 @@ provideUiWorkflow({ api: myOwnImplementationOfUiWorkflowApi })
 ```
 
 Every component also takes an `[api]` input, which wins over the provided one.
+
+A custom `UiWorkflowApi` implements the same calls as the REST client. A few are optional or only
+needed by some components:
+
+- `resetPreview` (optional): lists what a reset would take back. Without it the reset dialog only
+  asks for confirmation.
+- `updatePermissions`: needed by `<ui-workflow-permissions>` to save.
+- `me` (optional): who is signed in and what they may do. Without it the permissions page offers
+  editing to everyone and the server decides, showing its answer if it refuses.
 
 ## The builder
 
@@ -114,23 +133,58 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 <!-- on a record's page -->
 <ui-workflow-record-panel entity="application" [entityId]="app.id" (changed)="reloadApp()" />
 
+<!-- the same, as a stepper beside the record, or in a drawer on the screen's edge -->
+<ui-workflow-panel entity="application" [entityId]="app.id" layout="side-drawer" (changed)="reloadApp()" />
+
 <!-- an inbox -->
 <ui-workflow-tasks scope="mine" (decided)="refresh()" />
+
+<!-- in the app header: "My tasks" with a count, opening the inbox in a drawer -->
+<ui-workflow-tasks-drawer (decided)="refresh()" />
 
 <!-- admin views -->
 <ui-workflow-run [instanceId]="runId" [canIntervene]="isAdmin" />
 <ui-workflow-audit entity="application" [entityId]="app.id" />
 <ui-workflow-global-settings />
+<ui-workflow-permissions (saved)="reload()" />
 ```
 
 - **Record panel**: the record's state, the moves this person may make (with confirmation or
   form), open tasks they can decide, buttons for manual workflows, and the history.
+- **Workflow panel**: the record's states as a stepper (where it has been, where it is), what
+  happened in each, and in the current state the moves, tasks and manual workflows. `layout` is
+  `vertical`, `horizontal`, `side-drawer` or `bottom-drawer`; the drawers collapse to a rail of dots.
 - **Tasks**: approvals and tasks, due first and overdue marked; deciding opens the task's form.
+- **Tasks drawer**: a button with the number of open tasks (red when any is overdue) that opens the
+  inbox in a drawer. The count refreshes every `refreshSeconds` while the page is visible, and when
+  the drawer opens or closes.
+- **Permissions**: one settings page listing, for every published workflow, who may make each move,
+  start a record over, press a start button and decide each approval or task. Saving publishes a new
+  version with only those changes (`updatePermissions`); if someone else published since the page
+  loaded, it asks you to reload instead of overwriting their change. People without the right to
+  publish see who may do what, read-only.
 - **Run**: the steps of one run with their status; admins can retry or skip a stopped step (each
   stopped path on its own when several stopped) or cancel the run.
 - **Audit**: filter, export as CSV or JSON, and check the hash chain.
 - **Global settings**: working hours and holidays, defaults, notification channels, webhook
   connections, audit retention and masking, and pausing workflows per record type.
+
+| `<ui-workflow-tasks-drawer>` | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `open` | `model<boolean>` | `false` | Whether the drawer is open. Two-way, to open it from code. |
+| `label` | `string` | `'My tasks'` | The button and drawer title. |
+| `side` | `'left' \| 'right'` | `'right'` | Where the drawer opens. |
+| `size` / `variant` | `UiSize` / `'outline' \| 'ghost' \| 'primary'` | `'sm'` / `'outline'` | How the button looks. |
+| `showButton` | `boolean` | `true` | Show the built-in button (off to open it from your own control). |
+| `refreshSeconds` | `number` | `60` | How often the count refreshes while the page is visible (0: only on open, close and decisions). |
+| `pageSize` | `number` | `25` | Tasks per page in the inbox. |
+| `api` | `UiWorkflowApi \| null` | provided | The engine API. |
+| `(decided)` | `UiWfTask` | | After a task was decided in the drawer. |
+
+| `<ui-workflow-permissions>` | Type | Notes |
+| --- | --- | --- |
+| `api` | `UiWorkflowApi \| null` | The engine API. Needs `updatePermissions` to save; `me` is optional. |
+| `(saved)` | `UiWfDefinitionSummary` | After a workflow's permissions were saved (the new version). |
 
 ## Working with definitions in code
 

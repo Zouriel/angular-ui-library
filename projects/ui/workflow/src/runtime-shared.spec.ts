@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wfActorLabel, wfDescribeHistory, wfStepTimedOut } from './runtime-shared';
+import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfRemarksLabel, wfStepTimedOut } from './runtime-shared';
 
 describe('wfActorLabel', () => {
   const titles = (k: string) => ({ financeSignOff: 'Pay approved scholarships' } as Record<string, string>)[k];
@@ -43,3 +43,33 @@ describe('wfDescribeHistory: reset', () => {
   });
 });
 
+
+describe('remarks', () => {
+  const approval = { kind: 'approval' as const, requireComment: 'reject' as const, outcomes: [{ key: 'approved', label: 'Approve' }, { key: 'rejected', label: 'Reject' }] };
+  const task = { kind: 'task' as const, requireComment: 'reject' as const, outcomes: [{ key: 'done', label: 'Done', tone: 'success' }, { key: 'decline', label: 'Decline', tone: 'danger' }, { key: 'cancel', label: 'Cancel', tone: 'danger' }] };
+
+  it('are required for an approval\'s reject and a task\'s red outcomes when asked for on rejecting', () => {
+    expect(wfCommentRequired(approval, 'rejected')).toBe(true);
+    expect(wfCommentRequired(approval, 'approved')).toBe(false);
+    expect(wfCommentRequired(task, 'decline')).toBe(true);
+    expect(wfCommentRequired(task, 'done')).toBe(false);
+    expect(wfCommentRequired({ ...task, requireComment: 'always' }, 'done')).toBe(true);
+    expect(wfCommentRequired({ ...task, requireComment: 'never' }, 'decline')).toBe(false);
+    expect(wfCommentRequired({ ...task, requireComment: null }, 'decline')).toBe(false);
+  });
+
+  it('label says what they are required for', () => {
+    expect(wfRemarksLabel(approval)).toBe('Remarks (required to reject)');
+    expect(wfRemarksLabel(task)).toBe('Remarks (required to choose Decline or Cancel)');
+    expect(wfRemarksLabel({ ...task, outcomes: task.outcomes.slice(0, 2) })).toBe('Remarks (required to decline)');
+    expect(wfRemarksLabel({ ...task, requireComment: 'always' })).toBe('Remarks (required)');
+    expect(wfRemarksLabel({ ...task, requireComment: 'never' })).toBe('Remarks (optional)');
+  });
+
+  it('show in the history of a move and of a reset', () => {
+    const h = (action: string, data: unknown) => ({ category: 'lifecycle', action, before: '{"state":"Review"}', after: '{"state":"Draft"}', data: JSON.stringify(data) }) as never;
+    expect(wfDescribeHistory(h('transitioned', { label: 'Reject', comment: 'Missing transcript' }), String)).toBe('Reject: Review → Draft (“Missing transcript”)');
+    expect(wfDescribeHistory(h('transitioned', { label: 'Reject' }), String)).toBe('Reject: Review → Draft');
+    expect(wfDescribeHistory(h('reset', { label: 'Start over', input: { reason: 'Form reason' }, comment: 'Wrong programme' }), String)).toBe('Start over: Review → Draft (“Wrong programme”)');
+  });
+});

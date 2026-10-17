@@ -162,7 +162,8 @@ providers: [
     { name: 'side', type: "'left' | 'right'", default: "'right'", desc: 'Where the drawer opens.' },
     { name: 'size / variant', type: 'UiSize / button variant', default: "'sm' / 'outline'", desc: 'How the button looks.' },
     { name: 'showButton', type: 'boolean', default: 'true', desc: 'Show the built-in button (off to open it from your own control).' },
-    { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes (0: only on open, close and decisions).' },
+    { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes while the page is visible (0: only on open, close and decisions).' },
+    { name: 'pageSize', type: 'number', default: '25', desc: 'Tasks per page in the inbox.' },
     { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API.' },
     { name: '(decided)', type: 'UiWfTask', desc: 'After a task was decided in the drawer.' },
   ];
@@ -175,7 +176,7 @@ providers: [
 // { "changes": [{ "node": "<transition or step id | reset | trigger>", "who": [{ "role": "finance" }] }], "note": "…" }`;
 
   protected readonly permissionsApi: ApiRow[] = [
-    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API (needs updatePermissions and me).' },
+    { name: 'api', type: 'UiWorkflowApi | null', default: 'provided', desc: 'The engine API. Needs updatePermissions to save; me is optional (without it, editing is offered and the server decides).' },
     { name: '(saved)', type: 'UiWfDefinitionSummary', desc: 'After a workflow’s permissions were saved (the new version).' },
   ];
 

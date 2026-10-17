@@ -26,6 +26,7 @@ import {
   wfAuditActionLabel,
   wfAuditCategoryLabel,
   wfAuditJson,
+  wfCommentRequired,
   wfDateTime,
   wfDescribeHistory,
   wfErrorText,
@@ -33,13 +34,14 @@ import {
   wfOutcomeLabel,
   wfRunStatusLabel,
   wfRunStatusTone,
+  wfRemarksLabel,
   wfStatePassed,
   wfActorLabel,
   wfStepTimedOut,
   wfTaskResult,
 } from './runtime-shared';
 import { WF_ICONS, WF_STEP_ICONS } from './icons';
-import type { UiWorkflowDefinition } from './schema';
+import type { UiWfRemarks, UiWorkflowDefinition } from './schema';
 import { WF_SHARED_STYLES } from './styles';
 
 // ── State badge ───────────────────────────────────────────────────────────
@@ -84,8 +86,8 @@ export class UiWorkflowStateBadge {
           @if (t.form) {
             <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" (valueChange)="answers.set($event)" />
           }
-          <label class="lw"><span class="wf-label">Comment{{ t.requireComment === 'always' ? ' (required)' : t.requireComment === 'reject' ? ' (required to reject)' : '' }}</span>
-            <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event)" [rows]="2" [autosize]="true" /></label>
+          <label class="lw"><span class="wf-label">{{ remarksLabel(t) }}</span>
+            <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event); commentMissing.set(false)" [rows]="2" [autosize]="true" [invalid]="commentMissing()" /></label>
           @if (t.allowDelegation) {
             <details class="delegate" (toggle)="$any($event.target).open && searchPeople('')"><summary>Hand it to someone else</summary>
               <div class="wf-row"><ui-combobox class="people" size="sm" placeholder="Search for a person" label="Hand it to" [options]="people()"
@@ -128,6 +130,9 @@ export class WfDecideDialog {
   readonly decided = output<UiWfTask>();
   private readonly form = viewChild(UiFormRenderer);
   protected readonly comment = signal('');
+  /** Set when a decision that needs remarks was made without them. */
+  protected readonly commentMissing = signal(false);
+  protected readonly remarksLabel = wfRemarksLabel;
   protected readonly delegateTo = signal('');
   /** People to hand the task to, from the API's directory search. */
   protected readonly people = signal<UiComboboxOption[]>([]);
@@ -142,7 +147,7 @@ export class WfDecideDialog {
   constructor() {
     effect(() => {
       this.task();
-      untracked(() => { this.comment.set(''); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); this.people.set([]); });
+      untracked(() => { this.comment.set(''); this.commentMissing.set(false); this.error.set(''); this.answers.set({}); this.delegateTo.set(''); this.people.set([]); });
     });
   }
 
@@ -183,6 +188,11 @@ export class WfDecideDialog {
     if (!t || !api || this.busy()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (t.form && !this.form()?.submit()) return;
+    if (wfCommentRequired(t, outcome) && !this.comment().trim()) {
+      this.commentMissing.set(true);
+      this.error.set(`Add remarks to explain “${wfOutcomeLabel(outcome, t.outcomes)}”.`);
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
@@ -213,6 +223,14 @@ export class WfDecideDialog {
 
 // ── Record panel ──────────────────────────────────────────────────────────
 
+/** A move, reset or manual start waiting for its confirmation, with whether remarks are asked. */
+type WfPendingAction = UiWfTransitionOption & { remarks: UiWfRemarks };
+
+/** Whether a move asks for remarks: its setting, else optional for red moves (older engines send none). */
+export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>): UiWfRemarks {
+  return t.comment ?? (t.tone === 'danger' ? 'optional' : 'none');
+}
+
 /**
  * The moves a person may make on a record now, its manual workflows and open tasks, with the
  * dialogs that go with them (confirmation, transition form, decision). Shared by the record panel
@@ -220,7 +238,7 @@ export class WfDecideDialog {
  */
 @Component({
   selector: 'ui-wf-record-actions',
-  imports: [FormsModule, UiButton, UiCheckbox, UiModal, UiFormRenderer, WfDecideDialog],
+  imports: [FormsModule, UiButton, UiCheckbox, UiModal, UiFormRenderer, UiTextarea, WfDecideDialog],
   // Nothing this person can do here: take no room (the dialogs only open from these buttons).
   host: { '[class.idle]': 'idle()' },
   template: `
@@ -257,14 +275,19 @@ export class WfDecideDialog {
     @if (nothingToDo()) { <p class="wf-hint">{{ emptyText() }}</p> }
     @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
 
-    <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" [size]="resetItems().length ? 'lg' : 'md'">
+    <ui-modal [open]="!!pending()" (openChange)="!$event && closeDialog()" [title]="pending()?.label ?? ''" [size]="resetting() ? 'lg' : 'md'">
       @if (pending(); as p) {
         <div class="confirm">
           @if (p.confirm) { <p>{{ p.confirm }}</p> }
           @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" (valueChange)="input.set($event)" /> }
           @else if (!p.confirm) { <p>Move this record to “{{ p.toLabel }}”?</p> }
+          @if (p.remarks !== 'none') {
+            <label class="lw"><span class="wf-label">Remarks{{ p.remarks === 'required' ? ' (required)' : ' (optional)' }}</span>
+              <ui-textarea [ngModel]="remark()" (ngModelChange)="remark.set($event)" [rows]="2" [autosize]="true" [invalid]="remarkMissing()" /></label>
+          }
           @if (resetting()) {
             @if (resetLoading()) { <p class="wf-hint">Looking up what the workflow did…</p> }
+            @else if (resetLoaded() && !resetItems().length) { <p class="wf-hint">Nothing the workflow did needs taking back.</p> }
             @else if (resetItems().length) {
               <section class="undo" aria-label="Take back what the workflow did">
                 <div class="undo-head">
@@ -279,6 +302,8 @@ export class WfDecideDialog {
                     <li [class.off]="!it.undoable">
                       <ui-checkbox [ngModel]="chosen().has(it.id)" (ngModelChange)="choose(it.id, $event)" [disabled]="!it.undoable || busy()">
                         <span class="undo-title">{{ it.title }}</span>
+                        <!-- Read with the box, so screen readers hear why it is unticked or locked. -->
+                        @if (it.warning) { <span class="wf-sr">. {{ it.warning }}</span> }
                       </ui-checkbox>
                       <span class="undo-meta"><span class="wf-chip">{{ kindLabel(it.kind) }}</span>{{ it.workflow }} · {{ it.step }}@if (it.detail) { · {{ it.detail }} }</span>
                       @if (it.warning) { <span class="undo-warn" [attr.data-tone]="it.undoable ? 'warning' : null">{{ it.warning }}</span> }
@@ -294,8 +319,9 @@ export class WfDecideDialog {
       }
       @if (pending(); as p) {
         <div modal-footer class="foot">
-          <ui-button variant="ghost" (click)="pending.set(null)">Cancel</ui-button>
-          <ui-button [variant]="p.tone === 'danger' ? 'destructive' : 'primary'" (click)="confirm()" [disabled]="busy()">{{ p.label }}</ui-button>
+          <ui-button variant="ghost" (click)="closeDialog()" [disabled]="busy()">Cancel</ui-button>
+          <!-- Not before the reset's list arrives: confirming then would take back nothing. -->
+          <ui-button [variant]="p.tone === 'danger' ? 'destructive' : 'primary'" (click)="confirm()" [disabled]="busy() || resetLoading()">{{ p.label }}</ui-button>
         </div>
       }
     </ui-modal>
@@ -329,6 +355,8 @@ export class WfDecideDialog {
     .undo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-left: 26px; font-size: 12px; color: var(--ui-color-text-muted); }
     .undo-warn { padding-left: 26px; font-size: 12px; line-height: 1.4; color: var(--ui-color-text-muted); }
     .undo-warn[data-tone="warning"] { color: var(--ui-color-warning); }
+    .undo-list li.off .undo-title { color: var(--ui-color-text-muted); }
+    .lw { display: block; min-width: 0; }
     .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
   `],
 })
@@ -347,10 +375,14 @@ export class WfRecordActions extends WfWithApi {
   private readonly form = viewChild(UiFormRenderer);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
-  protected readonly pending = signal<UiWfTransitionOption | null>(null);
+  protected readonly pending = signal<WfPendingAction | null>(null);
   protected readonly pendingManual = signal<string | null>(null);
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
+  /** The person's remarks on the move or reset (spec §6 remarks). */
+  protected readonly remark = signal('');
+  /** Set when a required remark was left empty on confirm. */
+  protected readonly remarkMissing = signal(false);
   protected readonly openTask = signal<UiWfTask | null>(null);
   /** The open dialog is the reset's (not a move's or a manual start's). */
   protected readonly resetting = signal(false);
@@ -358,7 +390,11 @@ export class WfRecordActions extends WfWithApi {
   protected readonly resetItems = signal<UiWfResetItem[]>([]);
   protected readonly chosen = signal<ReadonlySet<string>>(new Set());
   protected readonly resetLoading = signal(false);
+  /** The list has been read (it may be empty). */
+  protected readonly resetLoaded = signal(false);
   protected readonly resetListError = signal('');
+  /** Bumped per list request and when the dialog closes, so a late answer is dropped. */
+  private resetSeq = 0;
   protected readonly undoableCount = computed(() => this.resetItems().filter((i) => i.undoable).length);
   /** Small buttons with a mouse; the regular size on touch screens, where 26px looks cramped. */
   protected readonly buttonSize: 'sm' | 'md' = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'md' : 'sm';
@@ -368,47 +404,81 @@ export class WfRecordActions extends WfWithApi {
   });
   protected readonly idle = computed(() => this.nothingToDo() && !this.emptyText() && !this.error());
 
-  protected start(t: UiWfTransitionOption): void {
-    if (this.busy()) return;
-    this.resetting.set(false);
+  constructor() {
+    super();
+    // A dialog belongs to the record it was opened for: switching records closes it.
+    effect(() => {
+      this.entity();
+      this.entityId();
+      untracked(() => this.closeDialog(true));
+    });
+  }
+
+  /** Closes the confirmation and forgets everything it held (the reset's list included). */
+  protected closeDialog(force = false): void {
+    if (this.busy() && !force) return;
+    this.resetSeq++;
+    this.pending.set(null);
     this.pendingManual.set(null);
     this.pendingError.set('');
+    this.resetting.set(false);
+    this.resetItems.set([]);
+    this.chosen.set(new Set());
+    this.resetLoading.set(false);
+    this.resetLoaded.set(false);
+    this.resetListError.set('');
+    this.remark.set('');
+    this.remarkMissing.set(false);
     this.input.set({});
-    if (!t.form && !t.confirm) { void this.apply(t.key); return; }
-    this.pending.set(t);
+  }
+
+  protected start(t: UiWfTransitionOption): void {
+    if (this.busy()) return;
+    this.closeDialog();
+    const p: WfPendingAction = { ...t, remarks: wfRemarksFor(t) };
+    if (!t.form && !t.confirm && p.remarks === 'none') { void this.apply(t.key); return; }
+    this.pending.set(p);
   }
 
   /** Starting over: asks its confirmation or form first when it has one. */
   protected startReset(): void {
     const rs = this.record().reset;
     if (this.busy() || !rs) return;
-    this.pendingManual.set(null);
+    this.closeDialog();
     this.resetting.set(true);
-    this.pendingError.set('');
-    this.input.set({});
     // Always confirmed: a reset stops work in progress.
-    this.pending.set({ key: '', label: rs.label, to: rs.to, toLabel: rs.toLabel, tone: 'danger', confirm: rs.confirm ?? `Start over from “${rs.toLabel}”? Open tasks and runs stop.`, form: rs.form });
+    this.pending.set({
+      key: '', label: rs.label, to: rs.to, toLabel: rs.toLabel, tone: 'danger', confirm: rs.confirm ?? `Start over from “${rs.toLabel}”? Open tasks and runs stop.`, form: rs.form,
+      remarks: rs.comment ?? 'optional',
+    });
     void this.loadResetItems();
   }
 
-  /** Reads what the workflow did, ticking what the engine suggests (everything that can be undone and wasn't changed since). */
-  private async loadResetItems(): Promise<void> {
+  /**
+   * Reads what the workflow did, ticking what the engine suggests (everything that can be undone and
+   * wasn't changed since). With [keepChoices], items still listed keep the person's ticks.
+   */
+  private async loadResetItems(keepChoices = false): Promise<void> {
     const api = this.client();
+    const seq = ++this.resetSeq;
+    const before = { items: new Set(this.resetItems().map((i) => i.id)), chosen: this.chosen() };
     this.resetItems.set([]);
     this.chosen.set(new Set());
     this.resetListError.set('');
+    this.resetLoaded.set(false);
     if (!api?.resetPreview) return;
     this.resetLoading.set(true);
     try {
       const preview = await api.resetPreview(this.entity(), this.entityId());
-      // The dialog may have been closed or replaced while the list was on its way.
-      if (!this.resetting()) return;
+      // The dialog may have been closed, or the list asked for again, while this one was on its way.
+      if (seq !== this.resetSeq) return;
       this.resetItems.set(preview.items);
-      this.chosen.set(new Set(preview.items.filter((i) => i.undoable && i.selected).map((i) => i.id)));
+      this.chosen.set(new Set(preview.items.filter((i) => i.undoable && (keepChoices && before.items.has(i.id) ? before.chosen.has(i.id) : i.selected)).map((i) => i.id)));
+      this.resetLoaded.set(true);
     } catch {
-      this.resetListError.set("What the workflow did couldn't be listed, so the reset will leave it as it is.");
+      if (seq === this.resetSeq) this.resetListError.set("What the workflow did couldn't be listed, so the reset will leave it as it is.");
     } finally {
-      this.resetLoading.set(false);
+      if (seq === this.resetSeq) this.resetLoading.set(false);
     }
   }
 
@@ -428,20 +498,23 @@ export class WfRecordActions extends WfWithApi {
 
   protected startManual(m: UiWfRecord['manual'][number]): void {
     if (this.busy()) return;
-    this.resetting.set(false);
+    this.closeDialog();
     this.pendingManual.set(m.key);
-    this.pendingError.set('');
-    this.input.set({});
     if (!m.form) { void this.runManual(m.key); return; }
-    this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form });
+    this.pending.set({ key: m.key, label: m.label, to: '', toLabel: '', tone: 'primary', confirm: null, form: m.form, remarks: 'none' });
   }
 
   protected confirm(): void {
     const p = this.pending();
     // A double click on the confirm button must not apply the move twice.
-    if (!p || this.busy()) return;
+    if (!p || this.busy() || this.resetLoading()) return;
     // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
     if (p.form && !this.form()?.submit()) return;
+    if (p.remarks === 'required' && !this.remark().trim()) {
+      this.remarkMissing.set(true);
+      this.pendingError.set('Add remarks to explain this.');
+      return;
+    }
     if (this.resetting()) void this.reset();
     else if (this.pendingManual()) void this.runManual(p.key);
     else void this.apply(p.key);
@@ -452,9 +525,10 @@ export class WfRecordActions extends WfWithApi {
     if (!api) return;
     this.busy.set(true);
     try {
-      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input());
+      const remark = this.pending()?.remarks !== 'none' ? this.remark().trim() || undefined : undefined;
+      const r = await api.applyTransition(this.entity(), this.entityId(), key, this.input(), remark);
       this.error.set('');
-      this.pending.set(null);
+      this.closeDialog(true);
       this.changed.emit(r);
     } catch (e) {
       const msg = wfErrorText(e, 'That did not work.');
@@ -470,15 +544,15 @@ export class WfRecordActions extends WfWithApi {
     this.busy.set(true);
     try {
       const undo = this.resetItems().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
-      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined);
+      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined, this.remark().trim() || undefined);
       this.error.set('');
-      this.pending.set(null);
-      this.resetting.set(false);
+      this.closeDialog(true);
       this.changed.emit(r);
     } catch (e) {
-      this.pendingError.set(wfErrorText(e, 'The workflow could not be reset.'));
-      // Someone else changed what the workflow did meanwhile: show the list as it is now.
-      if ((e as { code?: string })?.code === 'resetChanged') void this.loadResetItems();
+      const msg = wfErrorText(e, 'The workflow could not be reset.');
+      if (this.pending()) this.pendingError.set(msg); else this.error.set(msg);
+      // Someone else changed what the workflow did meanwhile: show the list as it is now, keeping the person's ticks.
+      if (this.pending() && (e as { code?: string })?.code === 'resetChanged') void this.loadResetItems(true);
     } finally {
       this.busy.set(false);
     }
@@ -491,7 +565,7 @@ export class WfRecordActions extends WfWithApi {
     try {
       await api.startManual(key, this.entity(), this.entityId(), this.input());
       this.error.set('');
-      this.pending.set(null);
+      this.closeDialog(true);
       this.reload.emit();
     } catch (e) {
       const msg = wfErrorText(e, 'That did not work.');

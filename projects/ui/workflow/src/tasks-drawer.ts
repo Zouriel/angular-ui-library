@@ -8,6 +8,10 @@ import type { UiWfTask } from './api';
 import { WF_ICONS } from './icons';
 import { UiWorkflowTasks } from './runtime';
 import { WfWithApi } from './runtime-shared';
+import { WF_SHARED_STYLES } from './styles';
+
+/** How many open tasks one count asks for; overdue ones beyond this aren't seen. */
+const COUNT_TAKE = 100;
 
 /**
  * `ui-workflow-tasks-drawer` — a "My tasks" button with the number of open tasks (red when any is
@@ -31,7 +35,7 @@ import { WfWithApi } from './runtime-shared';
           <ui-badge class="count" [tone]="overdue() ? 'danger' : 'primary'" aria-hidden="true">{{ count() > 99 ? '99+' : count() }}</ui-badge>
         }
         <!-- The badge is for eyes; this is what a screen reader says. -->
-        <span class="sr-only">{{ countText() }}</span>
+        <span class="wf-sr">{{ countText() }}</span>
       </ui-button>
     }
     <ui-drawer [(open)]="open" [side]="side()" [title]="label()">
@@ -40,13 +44,11 @@ import { WfWithApi } from './runtime-shared';
       }
     </ui-drawer>
   `,
-  styles: `
+  // UiButton spaces the icon, label and badge itself (its own gap): no extra margins here.
+  styles: [WF_SHARED_STYLES, `
     :host { display: inline-flex; }
-    .trigger hugeicons-icon { margin-right: var(--ui-space-1); }
-    .count { margin-left: var(--ui-space-2); }
     .inbox { display: block; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  `,
+  `],
 })
 export class UiWorkflowTasksDrawer extends WfWithApi {
   /** Whether the drawer is open. Two-way, so it can be opened from code (a link, a shortcut). */
@@ -68,10 +70,16 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
   /** Open tasks for the signed-in person, and how many of them are overdue. */
   protected readonly count = signal(0);
   protected readonly overdue = signal(0);
+  /** Whether more tasks are open than one count looks at, so the overdue number is "at least". */
+  protected readonly capped = signal(false);
+  /** The overdue number as shown: "100+" when only the first page was looked at. */
+  protected readonly overdueText = computed(() => `${this.overdue()}${this.capped() ? '+' : ''}`);
   protected readonly countText = computed(() => {
     const n = this.count(), late = this.overdue();
-    return n ? `, ${n} open${late ? `, ${late} overdue` : ''}` : ', none open';
+    return n ? `, ${n} open${late ? `, ${this.overdueText()} overdue` : ''}` : ', none open';
   });
+  /** Whether the page is visible: polling pauses while it is hidden (a background tab). */
+  private readonly visible = signal(typeof document === 'undefined' || document.visibilityState !== 'hidden');
   private seq = 0;
 
   constructor() {
@@ -84,12 +92,25 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
     });
     const destroy = inject(DestroyRef);
     let timer: ReturnType<typeof setInterval> | null = null;
+    const stop = () => { if (timer) clearInterval(timer); timer = null; };
     effect(() => {
       const s = this.refreshSeconds();
-      if (timer) clearInterval(timer);
-      timer = s > 0 ? setInterval(() => void this.refresh(), s * 1000) : null;
+      const visible = this.visible();
+      stop();
+      if (s > 0 && visible) timer = setInterval(() => void this.refresh(), s * 1000);
     });
-    destroy.onDestroy(() => { if (timer) clearInterval(timer); });
+    if (typeof document !== 'undefined') {
+      const onVisibility = () => {
+        const visible = document.visibilityState !== 'hidden';
+        if (visible === this.visible()) return;
+        this.visible.set(visible);
+        // Back in view: the count may be stale, so refresh now rather than at the next tick.
+        if (visible) void this.refresh();
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      destroy.onDestroy(() => document.removeEventListener('visibilitychange', onVisibility));
+    }
+    destroy.onDestroy(stop);
   }
 
   /** Reloads the count (also called after a decision). */
@@ -98,10 +119,11 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
     if (!api) return;
     const seq = ++this.seq;
     try {
-      const page = await api.tasks({ scope: 'mine', status: ['open'], take: 100 });
+      const page = await api.tasks({ scope: 'mine', status: ['open'], take: COUNT_TAKE });
       if (seq !== this.seq) return;
       this.count.set(page.total);
       this.overdue.set(page.items.filter((t) => t.overdue).length);
+      this.capped.set(page.total > page.items.length);
     } catch {
       // Not signed in or offline: keep the last count rather than flashing zero.
     }

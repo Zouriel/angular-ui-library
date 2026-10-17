@@ -73,12 +73,13 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
               }
             </div>
             <p class="wf-hint">Anyone: the first approval wins. Everyone: one rejection rejects it.</p>
-            <label class="lw"><span class="wf-label">Comment required</span>
+            <label class="lw"><span class="wf-label">Remarks</span>
               <select class="wf-select" (change)="patch({ requireComment: $any($event.target).value })">
-                <option value="never" [selected]="!approval().requireComment || approval().requireComment === 'never'">Never</option>
-                <option value="reject" [selected]="approval().requireComment === 'reject'">When rejecting</option>
-                <option value="always" [selected]="approval().requireComment === 'always'">Always</option>
+                <option value="never" [selected]="!approval().requireComment || approval().requireComment === 'never'">Optional</option>
+                <option value="reject" [selected]="approval().requireComment === 'reject'">Required to reject</option>
+                <option value="always" [selected]="approval().requireComment === 'always'">Always required</option>
               </select></label>
+            <p class="wf-hint">People can always add remarks; they show in the history and later steps can read them.</p>
           </div>
         }
         @case ('task') {
@@ -100,6 +101,15 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
               }
               @if (task().outcomes.length < 8) { <button type="button" class="wf-link" (click)="addOutcome()">Add a button</button> }
             </div>
+            <label class="lw"><span class="wf-label">Remarks</span>
+              <select class="wf-select" (change)="patch({ requireComment: $any($event.target).value })">
+                <option value="never" [selected]="!task().requireComment || task().requireComment === 'never'">Optional</option>
+                <option value="reject" [selected]="task().requireComment === 'reject'">Required for red buttons</option>
+                <option value="always" [selected]="task().requireComment === 'always'">Always required</option>
+              </select></label>
+            @if (task().requireComment === 'reject' && !hasRedOutcome()) {
+              <p class="wf-hint">No button is red yet: colour the negative ones “danger” so they ask for remarks.</p>
+            }
           </div>
         }
         @case ('branch') {
@@ -278,7 +288,8 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
                   </button>
                 </div>
               }
-              @if (settable().length) { <button type="button" class="wf-link" (click)="addValue()">Set a field</button> }
+              @if (unknownKind()) { <p class="wf-hint">The app no longer offers this kind of record; choose another.</p> }
+              @else if (settable().length) { <button type="button" class="wf-link" (click)="addValue()">Set a field</button> }
               @else { <p class="wf-hint">The app hasn’t allowed workflows to set any field of this kind of record.</p> }
               <p class="wf-hint">Later steps can read the new record’s id. Resetting the workflow offers to delete it again.</p>
             }
@@ -510,6 +521,7 @@ export class WfStepEditor {
   /** Update record and Create record share the field rows; both have `values`. */
   protected readonly setFields = computed(() => this.step() as UiWfSetFieldsStep);
   protected readonly createRecord = computed(() => this.step() as UiWfCreateRecordStep);
+  protected readonly hasRedOutcome = computed(() => this.step().type === 'task' && this.task().outcomes.some((o) => o.tone === 'danger'));
   protected readonly setVariables = computed(() => this.step() as UiWfSetVariablesStep);
   protected readonly applyTransition = computed(() => this.step() as UiWfApplyTransitionStep);
   protected readonly notify = computed(() => this.step() as UiWfNotifyStep);
@@ -530,7 +542,19 @@ export class WfStepEditor {
     if (!t || t === 'self') return this.store.def().entity;
     return fieldOf(this.store.registry(), this.store.def().entity, t.split('.')[1])?.entity;
   });
-  protected readonly settable = computed(() => (entityOf(this.store.registry(), this.targetEntity())?.fields ?? []).filter((f) => f.settable));
+  protected readonly settable = computed(() => {
+    const fields = (entityOf(this.store.registry(), this.targetEntity())?.fields ?? []).filter((f) => f.settable);
+    if (this.step().type !== 'createRecord') return fields;
+    // A new record's lifecycle-controlled field starts in its first state, so it isn't offered.
+    return fields.filter((f) => !(f.lifecycle && this.lifecycleOn(this.targetEntity())));
+  });
+  /** Whether this workflow or a published lifecycle controls a field of [entity]. */
+  private lifecycleOn(entity: string | undefined): boolean {
+    const def = this.store.def();
+    return !!entity && ((def.kind === 'lifecycle' && def.entity === entity) || this.store.others().some((o) => o.kind === 'lifecycle' && o.entity === entity && o.version > 0));
+  }
+  /** The chosen kind of record is not in the registry any more. */
+  protected readonly unknownKind = computed(() => this.step().type === 'createRecord' && !!this.createRecord().entity && !entityOf(this.store.registry(), this.createRecord().entity));
   protected readonly dateRef = computed(() => { const u = this.wait().until; return u.type === 'date' && 'ref' in u.date ? u.date.ref : null; });
   protected readonly connections = computed(() => this.store.settingsConnections());
   protected readonly actionDef = computed(() => this.store.registry()?.actions?.find((a) => a.key === this.action().action));

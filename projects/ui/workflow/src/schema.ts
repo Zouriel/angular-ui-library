@@ -151,6 +151,7 @@ interface UiWfHumanBase extends UiWfStepBase {
 export interface UiWfApprovalStep extends UiWfHumanBase {
   type: 'approval';
   rule: { type: 'any' | 'all' | 'count' | 'percent'; value?: number };
+  /** When a remark is required: never (it is always offered), when rejecting, or always. */
   requireComment?: 'never' | 'reject' | 'always';
   outcomes: { approved: UiWfStep[]; rejected: UiWfStep[]; timedOut: UiWfStep[] };
 }
@@ -165,7 +166,8 @@ export interface UiWfTaskOutcome {
 
 export interface UiWfTaskStep extends UiWfHumanBase {
   type: 'task';
-  requireComment?: 'never' | 'always';
+  /** When a remark is required: never (it is always offered), for red (`danger`) outcomes, or always. */
+  requireComment?: 'never' | 'reject' | 'always';
   outcomes: UiWfTaskOutcome[];
   onTimeout: UiWfStepList;
 }
@@ -294,7 +296,15 @@ export interface UiWfTransition {
   confirm?: string;
   tone?: Exclude<UiWfTone, 'info'>;
   hidden?: boolean;
+  /**
+   * Remarks people give when they make this move (spec §6): not asked, optional or required.
+   * Absent: optional for red (`danger`) moves, not asked otherwise. Automatic moves never need one.
+   */
+  comment?: UiWfRemarks;
 }
+
+/** Whether people are asked for remarks: `none` (not asked), `optional` or `required`. */
+export type UiWfRemarks = 'none' | 'optional' | 'required';
 
 export interface UiWfLifecycle {
   field: string;
@@ -329,6 +339,10 @@ export interface UiWfLifecycleReset {
   confirm?: string;
   /** A form (e.g. a reason); the steps read the answers as `input.*`. */
   input?: { form: UiFormDefinition };
+  /** Remarks people give when they reset (default optional); steps read them as `trigger.comment`. */
+  comment?: UiWfRemarks;
+  /** The state ids it is offered in; absent = every state (it is never offered when it would change nothing). */
+  states?: string[];
   /** Also run the current state's "on leaving" and the target's "on entering" steps (default no). */
   runExitEnter?: boolean;
   /** Also stop automations running about the record (default yes). */
