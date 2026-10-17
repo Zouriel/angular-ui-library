@@ -307,8 +307,10 @@ export interface UiWorkflowApi {
   instance(id: string): Promise<UiWfInstance>;
   instanceDefinition(id: string): Promise<UiWorkflowDefinition>;
   cancel(id: string, reason?: string): Promise<UiWfInstance>;
-  retry(id: string): Promise<UiWfInstance>;
-  skip(id: string, outputs?: Record<string, unknown>): Promise<UiWfInstance>;
+  /** Retries a stopped step. `target` picks the incident (a token id or failed step id) when several paths stopped. */
+  retry(id: string, target?: string): Promise<UiWfInstance>;
+  /** Skips a stopped step, optionally giving its outputs. `target` as for `retry`. */
+  skip(id: string, outputs?: Record<string, unknown>, target?: string): Promise<UiWfInstance>;
   migrate(id: string, version: number, stateMap?: Record<string, string>): Promise<UiWfInstance>;
 
   tasks(q: { scope?: 'mine' | 'all'; status?: string[]; entity?: string; entityId?: string; skip?: number; take?: number }): Promise<UiWfPage<UiWfTask>>;
@@ -426,8 +428,8 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   instance(id: string) { return this.call<UiWfInstance>('GET', `/instances/${encodeURIComponent(id)}`); }
   instanceDefinition(id: string) { return this.call<UiWorkflowDefinition>('GET', `/instances/${encodeURIComponent(id)}/definition`); }
   cancel(id: string, reason?: string) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/cancel`, { reason: reason ?? null }); }
-  retry(id: string) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/retry`); }
-  skip(id: string, outputs?: Record<string, unknown>) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/skip`, { outputs: outputs ?? null }); }
+  retry(id: string, target?: string) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/retry`, { target: target ?? null }); }
+  skip(id: string, outputs?: Record<string, unknown>, target?: string) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/skip`, { outputs: outputs ?? null, target: target ?? null }); }
   migrate(id: string, version: number, stateMap?: Record<string, string>) { return this.call<UiWfInstance>('POST', `/instances/${encodeURIComponent(id)}/migrate`, { version, stateMap: stateMap ?? null }); }
 
   tasks(q: { scope?: 'mine' | 'all'; status?: string[]; entity?: string; entityId?: string; skip?: number; take?: number }) {

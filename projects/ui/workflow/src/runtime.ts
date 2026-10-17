@@ -564,11 +564,24 @@ export class UiWorkflowTasks extends WithApi {
         <div class="incident" role="alert">
           <p><strong>Stopped:</strong> {{ r.error }}</p>
           @if (canIntervene()) {
-            <div class="wf-row">
-              <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
-              <ui-button size="sm" variant="outline" (click)="act('skip')" [disabled]="busy()">Skip the step</ui-button>
-              <ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
-            </div>
+            @if (incidents().length > 1) {
+              <!-- Several paths stopped: each can be retried or skipped on its own. -->
+              <ul class="stops">
+                @for (i of incidents(); track i.token) {
+                  <li><span>{{ i.name }}</span>
+                    <ui-button size="sm" (click)="act('retry', i.token)" [disabled]="busy()">Try again</ui-button>
+                    <ui-button size="sm" variant="outline" (click)="act('skip', i.token)" [disabled]="busy()">Skip</ui-button>
+                  </li>
+                }
+              </ul>
+              <div class="wf-row"><ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+            } @else {
+              <div class="wf-row">
+                <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
+                <ui-button size="sm" variant="outline" (click)="act('skip')" [disabled]="busy()">Skip the step</ui-button>
+                <ui-button size="sm" variant="ghost" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
+              </div>
+            }
           }
         </div>
       } @else if (canIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
@@ -604,6 +617,9 @@ export class UiWorkflowTasks extends WithApi {
     .m { font-size: 12px; color: var(--ui-color-text-muted); }
     .incident { padding: 8px 10px; border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
     .incident p { margin: 0 0 6px; }
+    .stops { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .stops li { display: flex; align-items: center; gap: var(--ui-space-2); }
+    .stops span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
     .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 5px 8px; border-left: 2px solid var(--ui-color-border); }
     .steps li[data-status="notRun"] { opacity: 0.45; }
@@ -630,6 +646,16 @@ export class UiWorkflowRun extends WithApi {
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly ago = ago;
+
+  /** The paths stopped by a failure: one per token waiting on an incident, named after its step. */
+  protected readonly incidents = computed(() => {
+    const r = this.run();
+    const steps = this.definition() ? indexSteps(this.definition()!) : null;
+    return (r?.tokens ?? []).filter((t) => t.waiting === 'incident').map((t) => {
+      const step = t.stepId ? steps?.get(t.stepId)?.step : undefined;
+      return { token: t.id, name: step ? stepName(step) : t.stepId ?? t.id };
+    });
+  });
 
   protected readonly rows = computed(() => {
     const r = this.run();
@@ -687,13 +713,13 @@ export class UiWorkflowRun extends WithApi {
     return s === 'completed' ? 'success' : s === 'incident' || s === 'failed' ? 'danger' : s === 'cancelled' || s === 'outOfSync' ? 'warning' : 'info';
   }
 
-  protected async act(kind: 'retry' | 'skip' | 'cancel'): Promise<void> {
+  protected async act(kind: 'retry' | 'skip' | 'cancel', target?: string): Promise<void> {
     const api = this.client();
     const r = this.run();
     if (!api || !r) return;
     this.busy.set(true);
     try {
-      const next = kind === 'retry' ? await api.retry(r.id) : kind === 'skip' ? await api.skip(r.id) : await api.cancel(r.id, 'Cancelled from the run view');
+      const next = kind === 'retry' ? await api.retry(r.id, target) : kind === 'skip' ? await api.skip(r.id, undefined, target) : await api.cancel(r.id, 'Cancelled from the run view');
       this.run.set(next);
       this.changed.emit(next);
     } catch (e) {
