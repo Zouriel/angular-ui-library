@@ -100,7 +100,7 @@ const AUDIT_ACTIONS: Record<string, string> = {
   'step.started': 'Step started', 'step.completed': 'Step done', 'step.failed': 'Step failed', 'step.retryScheduled': 'Retry scheduled',
   'step.skipped': 'Step skipped', 'step.branchTaken': 'Path chosen', 'step.waiting': 'Step waiting',
   'lifecycle.created': 'Lifecycle started', 'lifecycle.transitioned': 'Record moved', 'lifecycle.autoTransitioned': 'Moved automatically',
-  'lifecycle.autoSkipped': 'Automatic move skipped', 'lifecycle.slaBreached': 'Stayed too long in a state', 'lifecycle.forced': 'Moved by an admin',
+  'lifecycle.autoSkipped': 'Automatic move skipped', 'lifecycle.slaBreached': 'Stayed too long in a state', 'lifecycle.forced': 'Moved by an admin', 'lifecycle.reset': 'Workflow started over',
   'lifecycle.writeRefused': 'Direct state change refused', 'lifecycle.writeObserved': 'Direct state change seen', 'lifecycle.outOfSync': 'State out of sync',
   'task.created': 'Task created', 'task.assigned': 'Task assigned', 'task.reminded': 'Reminder sent', 'task.escalated': 'Task escalated',
   'task.delegated': 'Task handed to someone else', 'task.reassigned': 'Task reassigned', 'task.decided': 'Decided', 'task.cancelled': 'Task cancelled',
@@ -127,6 +127,11 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
     case 'lifecycle.transitioned': return `${text(data['label'] ?? data['transition']) || 'Moved'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}`;
     case 'lifecycle.autoTransitioned': return `Moved automatically: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}`;
     case 'lifecycle.autoSkipped': return 'An automatic move was skipped';
+    case 'lifecycle.reset': {
+      const input = data['input'] && typeof data['input'] === 'object' ? (data['input'] as Record<string, unknown>) : {};
+      const why = text(input['reason'] ?? Object.values(input).find((v) => typeof v === 'string'));
+      return `${text(data['label']) || 'Reset'}: ${stateLabel(before['state'])} → ${stateLabel(after['state'])}${why ? ` (“${why}”)` : ''}`;
+    }
     case 'lifecycle.forced': return `Moved by an admin to ${stateLabel(after['state'])}${data['reason'] ? `: ${text(data['reason'])}` : ''}`;
     case 'lifecycle.writeRefused': return 'A direct change to the state was refused';
     case 'lifecycle.slaBreached': return `Stayed too long in ${stateLabel(data['state'] ?? before['state'] ?? after['state'])}`;

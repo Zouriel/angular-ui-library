@@ -566,7 +566,8 @@ export class WfTransitionEditor {
         <p class="wf-hint">Starting over stops the record's open tasks and runs, moves it back, then runs the steps under the diagram (“On reset”), which can change this record, related records and each item of a list.</p>
         <label class="lw"><span class="wf-label">Button label</span>
           <ui-input size="sm" [ngModel]="r.label ?? ''" (ngModelChange)="store.updateReset({ label: $event || undefined }, 'label')" placeholder="Reset workflow" /></label>
-        <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="store.updateReset({ to: $event || undefined })" />
+        <label class="lw"><span class="wf-label">Back to</span>
+          <ui-select size="sm" label="Back to" [options]="stateOptions()" [ngModel]="r.to ?? ''" (ngModelChange)="store.updateReset({ to: $event || undefined })" /></label>
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Who can reset</h4>

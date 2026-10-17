@@ -30,6 +30,10 @@ import {
   may make each move, checks that must hold, a form to fill in, a confirmation, automatic moves on
   a timer, and steps to run on each move, on entering or leaving a state, or when a record stays
   too long. In enforce mode the engine refuses any other write to the field.
+  A lifecycle can also let chosen people **reset** a record: its open tasks and runs stop, it goes
+  back to the starting state (or another you pick), and the reset's own steps run, which can change
+  the record, related records and each item of a list. Set it up under "Starting over" in the
+  lifecycle settings; the record panel and the workflow panel then show the button to those allowed.
 
 Every start, step, decision and move is written to a hash-chained audit log.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wfActorLabel, wfStepTimedOut } from './runtime-shared';
+import { wfActorLabel, wfDescribeHistory, wfStepTimedOut } from './runtime-shared';
 
 describe('wfActorLabel', () => {
   const titles = (k: string) => ({ financeSignOff: 'Pay approved scholarships' } as Record<string, string>)[k];
@@ -26,3 +26,12 @@ describe('wfStepTimedOut', () => {
     expect(wfStepTimedOut(null)).toBe(false);
   });
 });
+
+describe('wfDescribeHistory: reset', () => {
+  it('reads as the reset\'s label, the move and the reason', () => {
+    const h = { category: 'lifecycle', action: 'reset', before: '{"state":"UnderReview"}', after: '{"state":"Draft"}', data: '{"label":"Start over","input":{"reason":"Wrong programme"}}' } as never;
+    const label = (k: unknown) => ({ UnderReview: 'Under review', Draft: 'Draft' } as Record<string, string>)[String(k)] ?? String(k);
+    expect(wfDescribeHistory(h, label)).toBe('Start over: Under review → Draft (“Wrong programme”)');
+  });
+});
+
