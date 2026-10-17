@@ -27,6 +27,7 @@
     .fields { display: grid; grid-template-columns: 100px 1fr; gap: 8px 12px; align-items: center; margin: 0; font-size: 13px; }
     .fields dt { color: var(--ui-color-text-muted); }
     .fields dd { margin: 0; }
+    .fields dd ui-number-input { display: block; max-width: 180px; }
     .docs { margin: 0; padding: 0; list-style: none; }
     .panel { padding: 12px; background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }

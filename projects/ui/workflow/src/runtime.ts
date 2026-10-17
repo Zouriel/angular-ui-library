@@ -1,4 +1,4 @@
-import { Component, Directive, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { Component, Directive, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
@@ -138,6 +138,7 @@ export class WfDecideDialog {
   readonly api = input<UiWorkflowApi | null>(null);
   readonly closed = output<void>();
   readonly decided = output<UiWfTask>();
+  private readonly form = viewChild(UiFormRenderer);
   protected readonly comment = signal('');
   protected readonly delegateTo = signal('');
   protected readonly answers = signal<Record<string, unknown>>({});
@@ -160,6 +161,8 @@ export class WfDecideDialog {
     const t = this.task();
     const api = this.api();
     if (!t || !api) return;
+    // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
+    if (t.form && !this.form()?.submit()) return;
     this.busy.set(true);
     this.error.set('');
     try {
@@ -306,6 +309,7 @@ export class UiWorkflowRecordPanel extends WithApi {
   readonly showHistory = input(true);
   /** Fired after the record changed through the panel (so the page can reload its own data). */
   readonly changed = output<UiWfRecord>();
+  private readonly form = viewChild(UiFormRenderer);
   protected readonly record = signal<UiWfRecord | null>(null);
   protected readonly history = signal<UiWfAuditEntry[]>([]);
   protected readonly busy = signal(false);
@@ -367,6 +371,8 @@ export class UiWorkflowRecordPanel extends WithApi {
   protected confirm(): void {
     const p = this.pending();
     if (!p) return;
+    // The form checks itself first and shows what's wrong next to each answer; the engine checks again.
+    if (p.form && !this.form()?.submit()) return;
     if (this.pendingManual()) void this.runManual(p.key);
     else void this.apply(p.key);
   }
