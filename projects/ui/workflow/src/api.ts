@@ -168,7 +168,7 @@ export interface UiWfRecord {
 export interface UiWfResetItem {
   /** Send back in `resetRecord`'s `undo` to take it back. */
   id: string;
-  /** `field` (a field it changed), `created` (a record it created), `action`, `message` or `webhook`. */
+  /** `field` (a field it changed), `created` (a record it created), `action`, `message`, `webhook` or `move` (another record moved). */
   kind: 'field' | 'created' | 'action' | 'message' | 'webhook' | string;
   /** What taking it back does, in words. */
   title: string;
@@ -188,6 +188,18 @@ export interface UiWfResetItem {
 export interface UiWfResetPreview {
   reset: NonNullable<UiWfRecord['reset']>;
   items: UiWfResetItem[];
+  /** Send back with the reset: if the list changed since, the reset fails with `resetChanged`. Older engines omit it. */
+  token?: string;
+}
+
+/** What `updatePermissions` returns: the published version, and what the change did. */
+export interface UiWfPermissionsSummary extends UiWfDefinitionSummary {
+  /** False when nothing changed (no new version was published). */
+  changed?: boolean;
+  /** Steps or moves the draft no longer has, so the draft kept them as they were. */
+  draftSkipped?: string[];
+  /** Records moved onto the new version, so the new permissions apply to them too. */
+  recordsMoved?: number;
 }
 
 export interface UiWfAuditEntry {
@@ -350,7 +362,7 @@ export interface UiWorkflowApi {
    * current one plus only these changes (and applies them to the draft, if any). `node` is a transition
    * or step id, `'reset'` or `'trigger'`.
    */
-  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string): Promise<UiWfDefinitionSummary>;
+  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string): Promise<UiWfPermissionsSummary>;
   version(id: string, version: number): Promise<UiWorkflowDefinition>;
   diff(id: string): Promise<string[]>;
   validate(def: UiWorkflowDefinition): Promise<UiWfProblem[]>;
@@ -384,9 +396,9 @@ export interface UiWorkflowApi {
   resetPreview?(entity: string, id: string): Promise<UiWfResetPreview>;
   /**
    * Starts the record's workflow over (the lifecycle's reset), with the reset form's answers, the
-   * ids of the `resetPreview` items to take back and the person's remarks.
+   * ids of the `resetPreview` items to take back, the person's remarks and the list's `token`.
    */
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string): Promise<UiWfRecord>;
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string, token?: string): Promise<UiWfRecord>;
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>): Promise<UiWfInstance>;
 
   audit(q: UiWfAuditQuery): Promise<UiWfAuditEntry[]>;
@@ -502,7 +514,7 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   archive(id: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/archive`); }
   restore(id: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/restore`); }
   rollback(id: string, version: number) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/rollback`, { version }); }
-  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string) { return this.call<UiWfDefinitionSummary>('POST', `/definitions/${encodeURIComponent(id)}/permissions`, { changes, note: note ?? null }); }
+  updatePermissions(id: string, changes: UiWfPermissionChange[], note?: string) { return this.call<UiWfPermissionsSummary>('POST', `/definitions/${encodeURIComponent(id)}/permissions`, { changes, note: note ?? null }); }
   version(id: string, version: number) { return this.call<UiWorkflowDefinition>('GET', `/definitions/${encodeURIComponent(id)}/versions/${version}`); }
   diff(id: string) { return this.call<string[]>('GET', `/definitions/${encodeURIComponent(id)}/diff`); }
   validate(def: UiWorkflowDefinition) { return this.call<UiWfProblem[]>('POST', '/validate', def); }
@@ -538,9 +550,9 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   resetPreview(entity: string, id: string) {
     return this.call<UiWfResetPreview>('GET', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`);
   }
-  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string) {
+  resetRecord(entity: string, id: string, input?: Record<string, unknown>, undo?: string[], comment?: string, token?: string) {
     return this.call<UiWfRecord>('POST', `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/reset`,
-      { input: input ?? {}, ...(undo?.length ? { undo } : {}), ...(comment?.trim() ? { comment: comment.trim() } : {}) });
+      { input: input ?? {}, ...(undo?.length ? { undo } : {}), ...(comment?.trim() ? { comment: comment.trim() } : {}), ...(token ? { token } : {}) });
   }
   startManual(workflow: string, entity: string | null, id: string | null, input?: Record<string, unknown>) {
     const path = entity && id ? `/records/${encodeURIComponent(entity)}/${encodeURIComponent(id)}/manual/${encodeURIComponent(workflow)}` : `/manual/${encodeURIComponent(workflow)}`;

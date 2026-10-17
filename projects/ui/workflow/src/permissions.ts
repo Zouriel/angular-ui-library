@@ -2,7 +2,7 @@ import { Component, computed, effect, output, signal, untracked } from '@angular
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '@zouriel/ui/button';
 import { UiInput, UiSearchInput } from '@zouriel/ui/form';
-import type { UiWfDefinitionSummary, UiWfPermissionChange, UiWorkflowApi } from './api';
+import type { UiWfDefinitionSummary, UiWfPermissionChange, UiWfPermissionsSummary, UiWorkflowApi } from './api';
 import { describeAssignees, indexSteps, stepInfo, stepName, tokensAt, type UiWfToken } from './definition';
 import { WfAssigneesEditor } from './editors';
 import { WfWithApi, wfErrorText } from './runtime-shared';
@@ -361,7 +361,7 @@ export class UiWorkflowPermissions extends WfWithApi {
     const changes: UiWfPermissionChange[] = Object.entries(pending).map(([node, who]) => ({ node, who }));
     this.busy.set(id);
     this.errors.update((e) => ({ ...e, [id]: '' }));
-    let summary: UiWfDefinitionSummary;
+    let summary: UiWfPermissionsSummary;
     try {
       // Someone else may have published since this page loaded: saving would quietly undo their change.
       const now = await api.definition(id);
@@ -383,13 +383,23 @@ export class UiWorkflowPermissions extends WfWithApi {
     try {
       const d = await api.definition(id);
       this.replace(id, summary, d.published ?? w.def);
-      this.savedText.update((t) => ({ ...t, [id]: `Saved: version ${summary.version} is now in use.` }));
+      this.savedText.update((t) => ({ ...t, [id]: this.savedMessage(summary, w.rows) }));
     } catch {
       // Show what was saved from the edits themselves; the definition catches up on the next load.
       this.replace(id, summary, w.def, w.rows.map((r) => (r.node in pending ? { ...r, who: pending[r.node] } : r)));
-      this.savedText.update((t) => ({ ...t, [id]: `Saved: version ${summary.version} is now in use. The page couldn\u2019t load it again; reload to see the latest.` }));
+      this.savedText.update((t) => ({ ...t, [id]: `${this.savedMessage(summary, w.rows)} The page couldn\u2019t load it again; reload to see the latest.` }));
     } finally {
       this.busy.set(null);
     }
+  }
+
+  /** What a save did, in words: the version in use, records that now follow it, and draft steps it couldn't change. */
+  private savedMessage(summary: UiWfPermissionsSummary, rows: readonly UiWfPermissionRow[]): string {
+    if (summary.changed === false) return `Nothing changed: version ${summary.version} stays in use.`;
+    const moved = summary.recordsMoved ?? 0;
+    const parts = [`Saved: version ${summary.version} is now in use${moved ? `, and ${moved} existing record${moved === 1 ? '' : 's'} follow${moved === 1 ? 's' : ''} it` : ''}.`];
+    const skipped = (summary.draftSkipped ?? []).map((n) => { const r = rows.find((x) => x.node === n); return `“${r?.label ?? n}”`; });
+    if (skipped.length) parts.push(`Your draft no longer has ${skipped.join(', ')}, so the draft kept ${skipped.length === 1 ? 'it' : 'them'} as before.`);
+    return parts.join(' ');
   }
 }

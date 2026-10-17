@@ -69,6 +69,8 @@ interface FakeOptions {
   users?: Record<string, string>;
   /** Overrides the lifecycle fixture. */
   lifecycleDef?: UiWorkflowDefinition;
+  /** Extra fields of the engine's answer to a permissions change. */
+  saved?: { changed?: boolean; draftSkipped?: string[]; recordsMoved?: number };
 }
 
 function fakeApi(canPublish: boolean, o: FakeOptions = {}) {
@@ -91,8 +93,8 @@ function fakeApi(canPublish: boolean, o: FakeOptions = {}) {
     updatePermissions: async (id: string, changes: UiWfPermissionChange[], note?: string) => {
       calls.push({ id, changes, note });
       await new Promise((r) => setTimeout(r, 5));
-      version.value++;
-      return summary(lc, version.value);
+      if (o.saved?.changed !== false) version.value++;
+      return { ...summary(lc, version.value), ...o.saved };
     },
   } as unknown as UiWorkflowApi;
   return { api, calls, definitionCalls: () => definitionCalls, userCalls };
@@ -299,5 +301,26 @@ describe('UiWorkflowPermissions', () => {
   it('uses the library search field', async () => {
     const { el } = await render(true);
     expect(el.querySelector('ui-search-input input[type="search"]')?.getAttribute('aria-label')).toBe('Find a workflow or step');
+  });
+
+  it('says how many existing records follow the new version, and which moves the draft no longer has', async () => {
+    const { f, el, cmp } = await render(true, { saved: { recordsMoved: 3, draftSkipped: ['t1'] } });
+    const w = wf(cmp, 'wf_l');
+    cmp['edit'](w, w.rows[0], [{ role: 'head' }]);
+    f.detectChanges();
+    button(el, 'Save 1 change')!.click();
+    await settle(f);
+    expect(el.textContent).toContain('Saved: version 2 is now in use, and 3 existing records follow it.');
+    expect(el.textContent).toContain('Your draft no longer has “Submit”, so the draft kept it as before.');
+  });
+
+  it('says so when the engine found nothing to change', async () => {
+    const { f, el, cmp } = await render(true, { saved: { changed: false } });
+    const w = wf(cmp, 'wf_l');
+    cmp['edit'](w, w.rows[0], [{ role: 'head' }]);
+    f.detectChanges();
+    button(el, 'Save 1 change')!.click();
+    await settle(f);
+    expect(el.textContent).toContain('Nothing changed: version 1 stays in use.');
   });
 });

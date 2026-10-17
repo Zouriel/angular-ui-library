@@ -395,6 +395,8 @@ export class WfRecordActions extends WfWithApi {
   /** The list has been read (it may be empty). */
   protected readonly resetLoaded = signal(false);
   protected readonly resetListError = signal('');
+  /** The list's token, sent back so a reset fails if the list changed since it was read. */
+  private resetToken: string | undefined;
   /** Bumped per list request and when the dialog closes, so a late answer is dropped. */
   private resetSeq = 0;
   protected readonly undoableCount = computed(() => this.resetItems().filter((i) => i.undoable).length);
@@ -466,6 +468,7 @@ export class WfRecordActions extends WfWithApi {
     const before = { items: new Set(this.resetItems().map((i) => i.id)), chosen: this.chosen() };
     this.resetItems.set([]);
     this.chosen.set(new Set());
+    this.resetToken = undefined;
     this.resetListError.set('');
     this.resetLoaded.set(false);
     if (!api?.resetPreview) return;
@@ -475,6 +478,7 @@ export class WfRecordActions extends WfWithApi {
       // The dialog may have been closed, or the list asked for again, while this one was on its way.
       if (seq !== this.resetSeq) return;
       this.resetItems.set(preview.items);
+      this.resetToken = preview.token;
       this.chosen.set(new Set(preview.items.filter((i) => i.undoable && (keepChoices && before.items.has(i.id) ? before.chosen.has(i.id) : i.selected)).map((i) => i.id)));
       this.resetLoaded.set(true);
     } catch {
@@ -495,7 +499,7 @@ export class WfRecordActions extends WfWithApi {
   }
 
   protected kindLabel(kind: string): string {
-    return ({ field: 'Field', created: 'New record', action: 'Action', message: 'Message', webhook: 'Webhook' } as Record<string, string>)[kind] ?? wfHumanize(kind);
+    return ({ field: 'Field', created: 'New record', action: 'Action', message: 'Message', webhook: 'Webhook', move: 'Move' } as Record<string, string>)[kind] ?? wfHumanize(kind);
   }
 
   protected startManual(m: UiWfRecord['manual'][number]): void {
@@ -546,7 +550,7 @@ export class WfRecordActions extends WfWithApi {
     this.busy.set(true);
     try {
       const undo = this.resetItems().filter((i) => this.chosen().has(i.id)).map((i) => i.id);
-      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined, this.remark().trim() || undefined);
+      const r = await api.resetRecord(this.entity(), this.entityId(), this.input(), undo.length ? undo : undefined, this.remark().trim() || undefined, this.resetToken);
       this.error.set('');
       this.closeDialog(true);
       this.changed.emit(r);

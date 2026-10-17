@@ -195,7 +195,7 @@ describe('UiWorkflowPanel', () => {
     const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
     confirm.querySelector('button')!.click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}, undefined, undefined]]);
+    expect(calls).toEqual([['application', '1', {}, undefined, undefined, undefined]]);
   });
 
   it('lists what the workflow did in the reset: ticked by default, changed-since unticked, messages locked, and sends the chosen ids', async () => {
@@ -241,7 +241,7 @@ describe('UiWorkflowPanel', () => {
     const confirm = [...document.body.querySelectorAll('ui-modal ui-button, .ui-layer ui-button')].find((b) => b.textContent?.trim() === 'Start over' && !el.contains(b)) as HTMLElement;
     confirm.querySelector('button')!.click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}, ['field:programme:p1:budget'], undefined]]);
+    expect(calls).toEqual([['application', '1', {}, ['field:programme:p1:budget'], undefined, undefined]]);
   });
 
   async function open(fixture: ReturnType<typeof TestBed.createComponent<Host>>, label: string): Promise<HTMLElement> {
@@ -319,7 +319,7 @@ describe('UiWorkflowPanel', () => {
     const el = await open(fixture, 'Start over');
     expect(document.body.textContent).toContain('Looking up what the workflow did');
     expect(dialogButton(el, 'Start over').disabled).toBe(true);
-    preview.resolve({ reset, items: [{ id: 'created:document:d9', kind: 'created', title: 'Delete Document “Checklist”', detail: null, workflow: 'W', step: 'S', undoable: true, selected: true, warning: null }] });
+    preview.resolve({ reset, token: 'tk1', items: [{ id: 'created:document:d9', kind: 'created', title: 'Delete Document “Checklist”', detail: null, workflow: 'W', step: 'S', undoable: true, selected: true, warning: null }] });
     await new Promise((res) => setTimeout(res));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -330,7 +330,8 @@ describe('UiWorkflowPanel', () => {
     fixture.detectChanges();
     dialogButton(el, 'Start over').click();
     await new Promise((res) => setTimeout(res));
-    expect(calls).toEqual([['application', '1', {}, ['created:document:d9'], 'Wrong programme']]);
+    // The list's token goes back with it, so a list that changed since fails instead of overwriting.
+    expect(calls).toEqual([['application', '1', {}, ['created:document:d9'], 'Wrong programme', 'tk1']]);
   });
 
   it('after a stale list the reset reads it again and keeps what the person unticked', async () => {
@@ -367,6 +368,6 @@ describe('UiWorkflowPanel', () => {
     expect(document.body.textContent).toContain('What the workflow did has changed.');
     dialogButton(el, 'Start over').click();
     await new Promise((res) => setTimeout(res));
-    expect(calls.at(-1)).toEqual(['application', '1', {}, ['b', 'c'], undefined]);
+    expect(calls.at(-1)).toEqual(['application', '1', {}, ['b', 'c'], undefined, undefined]);
   });
 });
