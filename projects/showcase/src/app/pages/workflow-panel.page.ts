@@ -45,7 +45,7 @@ import { WorkflowPlayground, type DemoApplication } from './workflow-playground'
   styles: `
     .controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--ui-space-3); margin-bottom: var(--ui-space-3); }
     .pick { min-width: 200px; }
-    .frame { padding: var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
+    .frame { padding: var(--ui-space-4); margin-bottom: var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .frame[data-layout="vertical"] { max-width: 420px; }
     .hint p { margin: 0; font-size: 13.5px; color: var(--ui-color-text-secondary); max-width: 70ch; }
     .offline { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; margin: 0; }

@@ -227,10 +227,10 @@ export class WfDecideDialog {
     @if (r.transitions.length || r.manual.length) {
       <div class="actions">
         @for (t of r.transitions; track t.key) {
-          <ui-button size="sm" [variant]="t.tone === 'danger' ? 'destructive' : t.tone === 'success' || t.tone === 'primary' ? 'primary' : 'outline'" (click)="start(t)" [disabled]="busy()">{{ t.label }}</ui-button>
+          <ui-button [size]="buttonSize" [variant]="t.tone === 'danger' ? 'destructive' : t.tone === 'success' || t.tone === 'primary' ? 'primary' : 'outline'" (click)="start(t)" [disabled]="busy()">{{ t.label }}</ui-button>
         }
         @for (m of r.manual; track m.key) {
-          <ui-button size="sm" variant="outline" (click)="startManual(m)" [disabled]="busy()">{{ m.label }}</ui-button>
+          <ui-button [size]="buttonSize" variant="outline" (click)="startManual(m)" [disabled]="busy()">{{ m.label }}</ui-button>
         }
       </div>
     }
@@ -307,6 +307,8 @@ export class WfRecordActions extends WfWithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
+  /** Small buttons with a mouse; the regular size on touch screens, where 26px looks cramped. */
+  protected readonly buttonSize: 'sm' | 'md' = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'md' : 'sm';
   protected readonly nothingToDo = computed(() => {
     const r = this.record();
     return !r.transitions.length && !r.manual.length && !(this.showTasks() && r.tasks.length) && !this.pending() && !this.openTask();
