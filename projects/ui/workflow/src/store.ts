@@ -57,6 +57,8 @@ export class WfBuilderStore {
   /** Bumped on every commit, so hosts can tell their own echo from a new definition. */
   readonly version = signal(0);
   readonly canUndo = signal(false);
+  /** Looking only: every edit is ignored (the person may not change workflows). */
+  readonly readOnly = signal(false);
   readonly canRedo = signal(false);
 
   private past: UiWorkflowDefinition[] = [];
@@ -135,7 +137,7 @@ export class WfBuilderStore {
   /** Applies a change. Changes with the same `mergeKey` in quick succession undo as one. */
   commit(next: UiWorkflowDefinition, mergeKey?: string): void {
     const cur = this.def();
-    if (next === cur) return;
+    if (next === cur || this.readOnly()) return;
     const now = Date.now();
     const merge = mergeKey && this.lastMerge?.key === mergeKey && now - this.lastMerge.at < MERGE_MS;
     if (!merge) {

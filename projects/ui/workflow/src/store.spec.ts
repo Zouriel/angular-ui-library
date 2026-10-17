@@ -98,6 +98,16 @@ describe('WfBuilderStore', () => {
     expect(s.canUndo()).toBe(false);
   });
 
+  it('ignores every edit while read-only', () => {
+    const s = fresh();
+    s.readOnly.set(true);
+    const before = s.def();
+    s.addStep('notify', 'root', 0);
+    s.patch({ title: 'Changed' });
+    expect(s.def()).toBe(before);
+    expect(s.canUndo()).toBe(false);
+  });
+
   it('a move that changes nothing is not an edit', () => {
     const s = fresh();
     const a = s.addStep('notify', 'root', 0);

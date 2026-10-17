@@ -58,7 +58,9 @@ interface PendingDelete {
         <button type="button" class="wf-icon-btn" [disabled]="!store.canRedo()" (click)="store.redo()" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
           <hugeicons-icon aria-hidden="true" [icon]="icons.Redo02Icon" [size]="16" [strokeWidth]="1.8" />
         </button>
-        @if (store.errorCount()) {
+        @if (store.readOnly()) {
+          <!-- Checking needs the right to edit; someone only looking gets no status. -->
+        } @else if (store.errorCount()) {
           <button type="button" class="issues" (click)="showProblems.set(true)" [attr.aria-label]="problemsLabel()" [title]="problemsLabel()">
             <hugeicons-icon aria-hidden="true" [icon]="icons.Alert02Icon" [size]="13" [strokeWidth]="1.9" />{{ store.errorCount() }}
           </button>
@@ -69,7 +71,9 @@ interface PendingDelete {
             <hugeicons-icon aria-hidden="true" [icon]="icons.Tick02Icon" [size]="13" [strokeWidth]="2" /><span class="ok-word">Ready</span>
           </button>
         }
-        @if (persist() && store.api()) {
+        @if (store.readOnly()) {
+          <span class="view-only" title="You can look at this workflow but not change it.">View only</span>
+        } @else if (persist() && store.api()) {
           <span class="save-state" aria-live="polite">{{ saveState() }}</span>
           <ui-button size="sm" variant="outline" (click)="save()" [disabled]="saving() || !dirty()">Save</ui-button>
           <ui-button size="sm" (click)="view.set('versions')">Publish…</ui-button>
@@ -80,7 +84,8 @@ interface PendingDelete {
 
     @if (saveError()) { <div class="banner" role="alert">{{ saveError() }} <button type="button" class="wf-link" (click)="saveError.set('')">Dismiss</button></div> }
 
-    <div class="main">
+    <!-- Disabled as a whole when looking only: every control inside stops taking input. -->
+    <fieldset class="main" [disabled]="store.readOnly()" [class.read-only]="store.readOnly()">
       @switch (view()) {
         @case ('build') {
           @if (ui.layout() === 'wide') {
@@ -106,7 +111,7 @@ interface PendingDelete {
         @case ('versions') { <ui-wf-versions class="center" [saved]="savedOnce()" (synced)="synced($event)" /> }
         @case ('test') { <ui-wf-test class="center" /> }
       }
-    </div>
+    </fieldset>
 
     @if (ui.layout() === 'narrow' && view() === 'build') {
       <ui-bottom-sheet [snaps]="[0, 0.62, 0.94]" [snap]="sheetSnap()" (snapChange)="sheetSnap.set($event)" [title]="sheetTitle()">
@@ -179,7 +184,9 @@ interface PendingDelete {
     .unchecked { color: var(--ui-color-warning); }
     .save-state { font-size: 12px; color: var(--ui-color-text-muted); margin: 0 4px; white-space: nowrap; }
     .banner { flex: none; padding: 6px var(--ui-space-3); font-size: 13px; background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
-    .main { flex: 1; min-height: 0; display: flex; }
+    .main { flex: 1; min-height: 0; display: flex; min-width: 0; margin: 0; padding: 0; border: 0; }
+    .main.read-only { --wf-read-only: 1; }
+    .view-only { margin: 0 4px; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
     .center { flex: 1; min-width: 0; min-height: 0; }
     .split { display: flex; flex-direction: column; }
     .split .diagram { flex: 1.25; min-height: 240px; }
@@ -234,6 +241,12 @@ export class UiWorkflowBuilder {
   readonly settings = input<UiWorkflowSettings | null>(null);
   /** Save drafts and publish through the API from the builder's own header. */
   readonly persist = input(false);
+  /**
+   * Look without changing anything. Null (the default) asks the API (`/me`) whether this person may
+   * edit workflows; true or false decides it here.
+   */
+  readonly readOnly = input<boolean | null>(null);
+  private readonly mayEdit = signal(true);
   /** The engine's problems after each check (empty when none or offline). */
   readonly problemsChange = output<UiWfProblem[]>();
   /** Fired after a successful save through the API. */
@@ -262,7 +275,8 @@ export class UiWorkflowBuilder {
   protected readonly saveState = computed(() => (this.saving() ? 'Saving…' : this.dirty() ? 'Unsaved changes' : this.savedOnce() ? 'Saved' : ''));
   protected readonly viewOptions = computed(() => [
     { value: 'build', label: 'Build' },
-    ...(this.store.api() ? [{ value: 'versions', label: 'Versions' }, { value: 'test', label: 'Test' }] : []),
+    // Publishing and test runs need the right to edit.
+    ...(this.store.api() && !this.store.readOnly() ? [{ value: 'versions', label: 'Versions' }, { value: 'test', label: 'Test' }] : []),
   ]);
   protected readonly sheetTitle = computed(() => {
     const s = this.store.selection();
@@ -291,6 +305,13 @@ export class UiWorkflowBuilder {
       });
     });
     effect(() => this.store.published.set(this.published()));
+    effect(() => {
+      const ro = this.readOnly() ?? !this.mayEdit();
+      untracked(() => {
+        this.store.readOnly.set(ro);
+        if (ro && this.view() !== 'build') this.view.set('build');
+      });
+    });
     effect(() => {
       const api = this.api() ?? this.providedApi;
       untracked(() => {
@@ -363,11 +384,13 @@ export class UiWorkflowBuilder {
     }
     // Settings are optional for builders (only admins can read them).
     api.settings().then((s) => this.store.settings.set(s.settings)).catch(() => undefined);
+    // Whether this person may edit; an API without /me (or an error) leaves editing on, and the server still decides.
+    api.me?.().then((me) => this.mayEdit.set(me.can.edit)).catch(() => undefined);
   }
 
   private scheduleValidation(def: UiWorkflowDefinition, api: UiWorkflowApi | null): void {
     if (this.validateTimer) clearTimeout(this.validateTimer);
-    if (!api) return;
+    if (!api || this.store.readOnly()) return;
     this.store.validating.set(true);
     const seq = ++this.validateSeq;
     this.validateTimer = setTimeout(async () => {
