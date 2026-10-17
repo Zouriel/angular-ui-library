@@ -194,6 +194,14 @@ export function wfRemarksLabel(t: Pick<UiWfTask, 'requireComment' | 'kind' | 'ou
   return 'Remarks (optional)';
 }
 
+/**
+ * A run's error as people read it: without the engine's exception-type prefix ("InvalidOperationException:
+ * Bank API: 503" reads "Bank API: 503"). The step's own detail keeps the full text for whoever debugs it.
+ */
+export function wfReadableError(error: string | null | undefined): string {
+  return (error ?? '').replace(/^[A-Z]\w*Exception:\s*/, '');
+}
+
 /** Whether a finished step ended by running out of time (an approval or task, or a wait, that timed out). */
 export function wfStepTimedOut(output: unknown): boolean {
   if (!output || typeof output !== 'object') return false;

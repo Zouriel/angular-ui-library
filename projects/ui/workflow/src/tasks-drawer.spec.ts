@@ -135,4 +135,47 @@ describe('UiWorkflowTasksDrawer', () => {
     expect(clear).toHaveBeenCalledWith(timer);
     expect(off).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
   });
+
+  describe('stopped workflows', () => {
+    const stuck = { id: 's1', title: 'Pay approved scholarships', entityTitle: 'Bursary – Ali', status: 'incident', error: 'Bank API: 503', kind: 'automation' };
+    async function renderAs(intervene: boolean) {
+      const f = TestBed.createComponent(UiWorkflowTasksDrawer);
+      const asked: unknown[] = [];
+      f.componentRef.setInput('api', {
+        tasks: async () => ({ items: [task('a')], total: 1 }),
+        me: async () => ({ can: { intervene } }),
+        instances: async (q: unknown) => { asked.push(q); return { items: [stuck], total: 1 }; },
+        instance: async () => ({ ...stuck, steps: [], tokens: [], startedAt: new Date().toISOString() }),
+        instanceDefinition: async () => ({ specVersion: 1, id: 'd', key: 'k', kind: 'automation', title: 'W', steps: [] }),
+      } as unknown as UiWorkflowApi);
+      f.componentRef.setInput('refreshSeconds', 0);
+      document.body.appendChild(f.nativeElement);
+      f.detectChanges();
+      for (let i = 0; i < 5; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      return { f, el: f.nativeElement as HTMLElement, asked };
+    }
+
+    it('for people who may intervene: counted in the badge (red) and listed above the tasks, each opening its run', async () => {
+      const { f, el, asked } = await renderAs(true);
+      expect(asked).toEqual([{ status: ['incident'], take: 100 }]);
+      expect(el.querySelector('ui-badge')?.textContent?.trim()).toBe('2');
+      // Red: a stopped workflow needs attention even when no task is overdue.
+      expect(el.querySelector('ui-badge .ui-badge')?.getAttribute('data-tone')).toBe('danger');
+      expect(el.querySelector('.wf-sr')?.textContent).toContain('1 stopped workflow');
+      f.componentInstance.open.set(true);
+      for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      expect(document.body.textContent).toContain('Stopped workflows');
+      (document.querySelector('.stop') as HTMLButtonElement).click();
+      for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); await f.whenStable(); f.detectChanges(); }
+      expect(document.querySelector('ui-wf-run-view')).not.toBeNull();
+      expect(document.querySelector('ui-wf-task-inbox')).toBeNull();
+    });
+
+    it('not for people who may not: nothing asked, nothing counted', async () => {
+      const { el, asked } = await renderAs(false);
+      expect(asked).toEqual([]);
+      expect(el.querySelector('ui-badge')?.textContent?.trim()).toBe('1');
+      expect(el.querySelector('ui-badge .ui-badge')?.getAttribute('data-tone')).toBe('primary');
+    });
+  });
 });

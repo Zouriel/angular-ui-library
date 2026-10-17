@@ -1,7 +1,7 @@
 # `@zouriel/ui/workflow`
 
 A builder where admins design workflows without code, and the components that run
-them in your app: a workflow panel for each record, a tasks drawer, a run view, an audit log and a
+them in your app: a workflow panel for each record, a tasks drawer, an audit log and a
 settings screen. Workflows are JSON in the Zouriel Workflows format, run by an
 engine on your server (the .NET engine first; Laravel and Go engines follow the
 same spec and REST API).
@@ -11,7 +11,6 @@ import {
   UiWorkflowBuilder,        // <ui-workflow-builder>: where admins design workflows
   UiWorkflowPanel,          // <ui-workflow-panel>: a record's state, moves, tasks and history: stepper, compact or drawer
   UiWorkflowTasksDrawer,    // <ui-workflow-tasks-drawer>: a "My tasks" button with a count, where people decide their tasks
-  UiWorkflowRun,            // <ui-workflow-run>: one run over its workflow, with retry/skip/cancel
   UiWorkflowAudit,          // <ui-workflow-audit>: the tamper-evident log, filter, export, verify
   UiWorkflowGlobalSettings, // <ui-workflow-global-settings>: working hours, channels, webhooks, retention
   UiWorkflowPermissions,    // <ui-workflow-permissions>: who may do what in every published workflow
@@ -139,7 +138,6 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 <ui-workflow-tasks-drawer scope="all" label="All tasks" />
 
 <!-- admin views -->
-<ui-workflow-run [instanceId]="runId" [canIntervene]="isAdmin" />
 <ui-workflow-audit entity="application" [entityId]="app.id" />
 <ui-workflow-global-settings />
 <ui-workflow-permissions (saved)="reload()" />
@@ -151,19 +149,22 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
   state), `horizontal`, `compact` (a badge, a strip of states, the actions and one history, for a side
   column or details card; `title=""` hides its heading), `side-drawer` or `bottom-drawer` (a rail of
   dots on the screen's edge). A record type with no lifecycle still shows its manual workflows, open
-  tasks and history.
+  tasks and history. Under **Running** it lists the record's workflows still going, each opening its
+  steps (done, waiting, failed, skipped, the paths not taken greyed out). One that stopped opens by
+  itself; people the engine lets intervene (`me().can.intervene`) can try it again, skip the step
+  (giving the results it would have produced, e.g. a payment reference) or cancel it with remarks.
 - **Tasks drawer**: where people work through their approvals and tasks. A button with the number
   of open tasks (red when any is overdue) opens them in a drawer: due first and overdue marked, open
   or finished, each opening its decision with its form. `scope="all"` lists everyone's tasks, for
-  admins. The count refreshes every `refreshSeconds` while the page is visible, and when the drawer
-  opens or closes.
+  admins. People who may intervene also see **stopped workflows** there: counted in the badge (which
+  turns red) and listed above the tasks, each opening its steps with try again, skip and cancel. The
+  count refreshes every `refreshSeconds` while the page is visible, and when the drawer opens or
+  closes.
 - **Permissions**: one settings page listing, for every published workflow, who may make each move,
   start a record over, press a start button and decide each approval or task. Saving publishes a new
   version with only those changes (`updatePermissions`); if someone else published since the page
   loaded, it asks you to reload instead of overwriting their change. People without the right to
   publish see who may do what, read-only.
-- **Run**: the steps of one run with their status; admins can retry or skip a stopped step (each
-  stopped path on its own when several stopped) or cancel the run.
 - **Audit**: filter, export as CSV or JSON, and check the hash chain.
 - **Global settings**: working hours and holidays, defaults, notification channels, webhook
   connections, audit retention and masking, and pausing workflows per record type.

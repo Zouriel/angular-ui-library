@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfRemarksLabel, wfStepTimedOut } from './runtime-shared';
+import { wfActorLabel, wfCommentRequired, wfDescribeHistory, wfReadableError, wfRemarksLabel, wfStepTimedOut } from './runtime-shared';
 
 describe('wfActorLabel', () => {
   const titles = (k: string) => ({ financeSignOff: 'Pay approved scholarships' } as Record<string, string>)[k];
@@ -75,5 +75,14 @@ describe('remarks', () => {
     expect(wfDescribeHistory(h('transitioned', { label: 'Reject', comment: 'Missing transcript' }), String)).toBe('Reject: Review → Draft (“Missing transcript”)');
     expect(wfDescribeHistory(h('transitioned', { label: 'Reject' }), String)).toBe('Reject: Review → Draft');
     expect(wfDescribeHistory(h('reset', { label: 'Start over', input: { reason: 'Form reason' }, comment: 'Wrong programme' }), String)).toBe('Start over: Review → Draft (“Wrong programme”)');
+  });
+});
+
+describe('wfReadableError', () => {
+  it('drops the engine\'s exception type, keeps everything else', () => {
+    expect(wfReadableError('InvalidOperationException: Bank API: 503 Service Unavailable')).toBe('Bank API: 503 Service Unavailable');
+    expect(wfReadableError('Bank API: 503')).toBe('Bank API: 503');
+    expect(wfReadableError('The approver left: no one to ask')).toBe('The approver left: no one to ask');
+    expect(wfReadableError(null)).toBe('');
   });
 });

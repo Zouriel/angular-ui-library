@@ -17,10 +17,10 @@
     .editor-bar { display: flex; align-items: center; gap: 12px; }
     .builder { flex: 1; min-height: 0; }
     .apps { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
-    .apps-ul, .run-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-    .apps-ul button, .run-list button { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+    .apps-ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .apps-ul button { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
-    .apps-ul button.on, .run-list button.on { border-color: var(--ui-color-primary); box-shadow: 0 0 0 1px var(--ui-color-primary); }
+    .apps-ul button.on { border-color: var(--ui-color-primary); box-shadow: 0 0 0 1px var(--ui-color-primary); }
     .t { font-weight: 600; font-size: 13px; }
     .m { font-size: 12px; color: var(--ui-color-text-muted); }
     .new { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
@@ -30,8 +30,6 @@
     .fields dd ui-number-input { display: block; max-width: 180px; }
     .docs { margin: 0; padding: 0; list-style: none; }
     .panel { padding: 12px; background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
-    .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-    .runs { grid-template-columns: 320px minmax(0, 1fr); }
     .msgs { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .msgs li { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); font-size: 13px; }
     .ch { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ui-color-text-muted); }
@@ -40,7 +38,7 @@
     /* Below 1500px the workflow panel moves under the details; below 1000px everything stacks. */
     @media (max-width: 1500px) { .apps { grid-template-columns: 250px minmax(0, 1fr); } .panel { grid-column: 2; } }
     @media (max-width: 1000px) {
-      .apps, .two, .runs { grid-template-columns: minmax(0, 1fr); }
+      .apps { grid-template-columns: minmax(0, 1fr); }
       .panel { grid-column: auto; }
     }
     @media (max-width: 760px) {

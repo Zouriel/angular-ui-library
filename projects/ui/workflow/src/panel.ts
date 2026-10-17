@@ -1,10 +1,12 @@
 import { Component, DestroyRef, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiDrawer } from '@zouriel/ui/dialog';
 import { UiStepBody, UiStepper, type UiStep } from '@zouriel/ui/navigation';
 import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
-import { WfRecordActions, UiWorkflowStateBadge } from './runtime';
-import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfStatePassed } from './runtime-shared';
+import { WF_ICONS } from './icons';
+import { WfRecordActions, WfRunView, UiWorkflowStateBadge } from './runtime';
+import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfReadableError, wfRunStatusLabel, wfRunStatusTone, wfStatePassed } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
 
 /**
@@ -70,9 +72,31 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
  */
 @Component({
   selector: 'ui-workflow-panel',
-  imports: [NgTemplateOutlet, UiDrawer, UiStepper, UiStepBody, UiWorkflowStateBadge, WfRecordActions],
+  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiDrawer, UiStepper, UiStepBody, UiWorkflowStateBadge, WfRecordActions, WfRunView],
   host: { '[attr.data-layout]': 'layout()' },
   template: `
+    <!-- The record's workflows still running or stopped, each opening its steps (and, for people who may, try again, skip or cancel). -->
+    <ng-template #runsTpl>
+      @if (activeRuns().length) {
+        <section class="runs" aria-label="Workflows running">
+          <h3>Running</h3>
+          @for (run of activeRuns(); track run.id) {
+            <div class="run" [attr.data-status]="run.status">
+              <button type="button" class="run-row" (click)="toggleRun(run.id)" [attr.aria-expanded]="openRuns().has(run.id)">
+                <span class="wf-chip" [attr.data-tone]="runTone(run.status)">{{ runLabel(run.status) }}</span>
+                <span class="rt">{{ run.title }}</span>
+                <span class="rs">{{ run.status === 'incident' ? (readable(run.error) || 'Stopped') : 'since ' + ago(run.startedAt) }}</span>
+                <hugeicons-icon class="chev" aria-hidden="true" [icon]="icons.ArrowDown01Icon" [size]="14" [strokeWidth]="1.8" />
+              </button>
+              @if (openRuns().has(run.id)) {
+                <ui-wf-run-view class="run-view" [instanceId]="run.id" [api]="client()" [showHead]="false" (changed)="reload()" />
+              }
+            </div>
+          }
+        </section>
+      }
+    </ng-template>
+
     <ng-template #body let-mode>
       @if (record(); as r) {
         @if (!r.state || mode === 'compact') {
@@ -94,6 +118,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
             </ol>
           }
           <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="r.state ? emptyText() : ''" />
+          <ng-container *ngTemplateOutlet="runsTpl" />
           @if (showHistory()) {
             <section>
               <h3>History</h3>
@@ -123,6 +148,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
                 }
                 @if (state === 'active') {
                   <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
+                  <ng-container *ngTemplateOutlet="runsTpl" />
                 } @else if (state === 'todo' && !st.entries.length) {
                   <span class="wf-hint">Not reached yet</span>
                 }
@@ -131,6 +157,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
           } @else {
             <ui-stepper class="steps" tone="success" [label]="title()" [steps]="stepLabels()" [active]="path().active" />
             <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
+            <ng-container *ngTemplateOutlet="runsTpl" />
             @if (showHistory() && history().length) {
               <section>
                 <h3>History</h3>
@@ -200,6 +227,20 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
     .hw { font-size: 13px; }
     .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
     .in-drawer { display: flex; flex-direction: column; }
+    .runs { display: flex; flex-direction: column; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
+    .runs h3 { margin: 0; }
+    .run { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); overflow: hidden; }
+    .run[data-status="incident"] { border-color: color-mix(in srgb, var(--ui-color-danger) 45%, var(--ui-color-border)); }
+    .run-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; gap: 2px var(--ui-space-2); width: 100%;
+      padding: var(--ui-space-2) var(--ui-space-3); border: 0; background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
+    .run-row:hover { background: var(--ui-color-surface-hover); }
+    .run-row:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
+    .rt { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rs { grid-column: 1 / 3; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
+    .run[data-status="incident"] .rs { color: var(--ui-color-danger); }
+    .chev { grid-row: 1 / 3; grid-column: 3; transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .run-row[aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .run-view { display: flex; padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
 
     /* The rail: the record's states as dots on the screen's edge. Hover (desktop) or tap opens the drawer. */
     .rail { position: fixed; z-index: var(--ui-z-docked); display: flex; align-items: center; justify-content: center; margin: 0; cursor: pointer;
@@ -251,6 +292,23 @@ export class UiWorkflowPanel extends WfWithApi {
   protected readonly newestFirst = computed(() => [...this.history()].sort((a, b) => b.seq - a.seq));
   protected readonly recent = computed(() => this.newestFirst().slice(0, 8));
   protected readonly passed = wfStatePassed;
+  protected readonly icons = WF_ICONS;
+  protected readonly runLabel = wfRunStatusLabel;
+  protected readonly runTone = wfRunStatusTone;
+  protected readonly readable = wfReadableError;
+  /** The record's workflows still running or stopped, stopped ones first. */
+  protected readonly activeRuns = computed(() =>
+    (this.record()?.instances ?? []).filter((i) => ['queued', 'running', 'waiting', 'incident'].includes(i.status))
+      .sort((a, b) => Number(b.status === 'incident') - Number(a.status === 'incident')));
+  /** Runs shown open: a stopped run opens by itself the first time it is seen, so what to do is in view. */
+  protected readonly openRuns = signal<ReadonlySet<string>>(new Set());
+  private readonly seenStopped = new Set<string>();
+
+  protected toggleRun(id: string): void {
+    const next = new Set(this.openRuns());
+    if (next.has(id)) next.delete(id); else next.add(id);
+    this.openRuns.set(next);
+  }
   protected readonly railLabel = computed(() => {
     const { steps, active } = this.path();
     const now = steps[active]?.label;
@@ -283,6 +341,11 @@ export class UiWorkflowPanel extends WfWithApi {
       this.record.set(record);
       this.history.set(history);
       this.error.set('');
+      const stopped = record.instances.filter((i) => i.status === 'incident' && !this.seenStopped.has(i.id)).map((i) => i.id);
+      if (stopped.length) {
+        stopped.forEach((id) => this.seenStopped.add(id));
+        this.openRuns.set(new Set([...this.openRuns(), ...stopped]));
+      }
     } catch (e) {
       if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
     }

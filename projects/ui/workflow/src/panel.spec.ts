@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import { UiWfApiError, type UiWfAuditEntry, type UiWfRecord, type UiWorkflowApi } from './api';
+import { createWorkflow } from './definition';
 import { UiWorkflowPanel, wfPanelPath, type UiWorkflowPanelLayout } from './panel';
 
 const states = [
@@ -417,5 +418,37 @@ describe('UiWorkflowPanel', () => {
     dialogButton(el, 'Start over').click();
     await new Promise((res) => setTimeout(res));
     expect(calls.at(-1)).toEqual(['application', '1', {}, ['b', 'c'], undefined, undefined]);
+  });
+
+  it('lists the record\'s workflows still running: a stopped one opens with its steps, a waiting one opens when clicked', async () => {
+    const run = (id: string, title: string, status: string, error: string | null = null) => ({
+      id, definitionId: 'd', definitionKey: 'k', title, version: 1, kind: 'automation', parentId: null, reason: null, entity: 'application', entityId: '1',
+      entityTitle: 'A', status, state: null, stateLabel: null, error, errorStepId: null, initiatorId: null, initiatorName: null,
+      startedAt: new Date().toISOString(), updatedAt: '', endedAt: null, trigger: null, steps: [], tokens: [], outputs: null, variables: null, tasks: null,
+    });
+    const instances = [run('w1', 'Tell the panel', 'waiting'), run('s1', 'Pay approved scholarships', 'incident', 'Bank API: 503'), run('d1', 'Old run', 'completed')];
+    const loaded: string[] = [];
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.layout.set('compact');
+    fixture.componentInstance.api = {
+      ...fakeApi(record('Submitted', { instances: instances as never }), []),
+      instance: async (id: string) => { loaded.push(id); return instances.find((i) => i.id === id); },
+      instanceDefinition: async () => ({ ...createWorkflow('automation', 'W', 'application'), steps: [] }),
+      me: async () => ({ can: { intervene: true } }),
+    } as unknown as UiWorkflowApi;
+    fixture.detectChanges();
+    for (let i = 0; i < 4; i++) { await new Promise((r) => setTimeout(r)); fixture.detectChanges(); await fixture.whenStable(); }
+    const el = fixture.nativeElement as HTMLElement;
+    const rows = [...el.querySelectorAll('.run')] as HTMLElement[];
+    // Stopped first, finished runs not listed.
+    expect(rows.map((r) => r.querySelector('.rt')?.textContent?.trim())).toEqual(['Pay approved scholarships', 'Tell the panel']);
+    expect(rows[0].querySelector('.rs')?.textContent).toContain('Bank API: 503');
+    expect(rows[0].querySelector('ui-wf-run-view')).not.toBeNull();
+    expect(rows[1].querySelector('ui-wf-run-view')).toBeNull();
+    expect([...rows[0].querySelectorAll('ui-button')].map((b) => b.textContent?.trim())).toContain('Try again');
+    (rows[1].querySelector('.run-row') as HTMLButtonElement).click();
+    for (let i = 0; i < 3; i++) { await new Promise((r) => setTimeout(r)); fixture.detectChanges(); await fixture.whenStable(); }
+    expect(rows[1].querySelector('ui-wf-run-view')).not.toBeNull();
+    expect(loaded).toEqual(['s1', 'w1']);
   });
 });

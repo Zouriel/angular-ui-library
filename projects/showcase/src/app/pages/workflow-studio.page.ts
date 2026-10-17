@@ -10,20 +10,18 @@ import {
   UiWorkflowPermissions,
   UiWorkflowTasksDrawer,
   UiWorkflowPanel,
-  UiWorkflowRun,
   UiWorkflowStateBadge,
   createWorkflow,
   UI_WORKFLOW_API,
   UI_WORKFLOW_CLOCK,
   type UiWfDefinitionSummary,
-  type UiWfInstance,
   type UiWorkflowDefinition,
 } from '@zouriel/ui/workflow';
 import { WorkflowPlayground, readStored, writeStored, type DemoApplication, type DemoMessage } from './workflow-playground';
 
 const TAB_KEY = 'zouriel-workflow-studio-tab';
 
-type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'permissions' | 'settings';
+type Tab = 'workflows' | 'applications' | 'tasks' | 'audit' | 'permissions' | 'settings';
 
 /**
  * The workflow playground: a small scholarship office running on the real .NET engine (a private
@@ -32,7 +30,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'runs' | 'audit' | 'permissi
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowRun, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
+  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
   providers: [
     { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
     // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
@@ -176,22 +174,6 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                   </div>
                 </div>
               }
-              @case ('runs') {
-                <div class="two runs">
-                  <div>
-                    <h2>Runs</h2>
-                    <ul class="run-list">
-                      @for (i of instances(); track i.id) {
-                        <li><button type="button" [class.on]="selectedRun() === i.id" (click)="selectedRun.set(i.id)">
-                          <span class="t">{{ i.title }}</span>
-                          <span class="m">{{ i.entityTitle ?? i.entityId }} · {{ runStatus(i) }}{{ i.state ? ' · ' + (i.stateLabel ?? i.state) : '' }} · {{ started(i.startedAt) }}</span>
-                        </button></li>
-                      } @empty { <li class="hint">Nothing has run yet. Submit an application to start some.</li> }
-                    </ul>
-                  </div>
-                  <div>@if (selectedRun(); as id) { <ui-workflow-run [instanceId]="id" [canIntervene]="true" (changed)="refresh()" /> }</div>
-                </div>
-              }
               @case ('audit') { <h2>Audit log</h2><ui-workflow-audit /> }
               @case ('permissions') {
                 <h2>Who may do what</h2>
@@ -228,7 +210,7 @@ export class WorkflowStudioPage {
   private readonly panel = viewChild<UiWorkflowPanel>('panel');
   protected readonly tabs: { value: Tab; label: string }[] = [
     { value: 'workflows', label: 'Workflows' }, { value: 'applications', label: 'Applications' }, { value: 'tasks', label: 'Messages' },
-    { value: 'runs', label: 'Runs' }, { value: 'audit', label: 'Audit log' }, { value: 'permissions', label: 'Permissions' }, { value: 'settings', label: 'Settings' },
+    { value: 'audit', label: 'Audit log' }, { value: 'permissions', label: 'Permissions' }, { value: 'settings', label: 'Settings' },
   ];
   protected readonly tab = signal<Tab>(this.storedTab());
   protected readonly busy = signal(false);
@@ -256,8 +238,6 @@ export class WorkflowStudioPage {
   protected readonly newTitle = signal('');
   protected readonly newAmount = signal(1000);
   protected readonly messages = signal<DemoMessage[]>([]);
-  protected readonly instances = signal<UiWfInstance[]>([]);
-  protected readonly selectedRun = signal<string | null>(null);
   protected readonly now = signal('');
 
   constructor() {
@@ -271,7 +251,7 @@ export class WorkflowStudioPage {
 
   private storedTab(): Tab {
     const t = readStored(TAB_KEY);
-    return t && ['workflows', 'applications', 'tasks', 'runs', 'audit', 'permissions', 'settings'].includes(t) ? (t as Tab) : 'applications';
+    return t && ['workflows', 'applications', 'tasks', 'audit', 'permissions', 'settings'].includes(t) ? (t as Tab) : 'applications';
   }
 
   protected setTab(t: Tab): void {
@@ -319,7 +299,6 @@ export class WorkflowStudioPage {
           break;
         }
         case 'tasks': this.messages.set(await this.pg.get<DemoMessage[]>(`/demo/inbox?user=${encodeURIComponent(this.pg.user())}`)); break;
-        case 'runs': this.instances.set((await this.pg.api.instances({ kind: ['automation', 'run', 'record'], take: 100 })).items); break;
       }
     } catch {
       // The views show their own errors; the bar just keeps its last values.
@@ -424,23 +403,12 @@ export class WorkflowStudioPage {
       this.published.set(null);
       this.dirty.set(false);
       this.selectedApp.set(null);
-      this.selectedRun.set(null);
       this.creating.set(false);
       this.workflows.set([]);
       this.apps.set([]);
-      this.instances.set([]);
       this.messages.set([]);
       this.pg.changed();
     });
-  }
-
-  protected runStatus(i: UiWfInstance): string {
-    return ({ queued: 'Queued', running: 'Running', waiting: 'Waiting', incident: 'Stopped', completed: 'Finished', failed: 'Failed', cancelled: 'Cancelled', active: 'Active', outOfSync: 'Out of sync' } as Record<string, string>)[i.status] ?? i.status;
-  }
-
-  protected started(iso: string): string {
-    const d = new Date(iso);
-    return isNaN(+d) ? '' : d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
 
   protected statusLabel(s: string): string {

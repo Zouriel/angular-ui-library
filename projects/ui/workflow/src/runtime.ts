@@ -34,6 +34,7 @@ import {
   wfOutcomeLabel,
   wfRunStatusLabel,
   wfRunStatusTone,
+  wfReadableError,
   wfRemarksLabel,
   wfStatePassed,
   wfActorLabel,
@@ -703,22 +704,26 @@ export class WfTaskInbox extends WfWithApi {
 // ── Run view ──────────────────────────────────────────────────────────────
 
 /**
- * `ui-workflow-run` — one run drawn over its workflow: each step with what happened (done,
- * waiting, failed, skipped), the paths not taken greyed out, and an admin's retry/skip/cancel.
+ * One run drawn over its workflow: each step with what happened (done, waiting, failed, skipped),
+ * the paths not taken greyed out, and, for people who may intervene, try again, skip (giving the
+ * step's results) and cancel (with remarks). Internal: the workflow panel and the tasks drawer show
+ * it where the run matters.
  */
 @Component({
-  selector: 'ui-workflow-run',
-  imports: [HugeiconsIconComponent, UiButton],
+  selector: 'ui-wf-run-view',
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, UiModal, UiTextarea],
   template: `
     @if (run(); as r) {
+      @if (showHead()) {
       <header class="head">
         <div class="t"><strong>{{ r.title }}</strong> <span class="v">v{{ r.version }}</span>
           <span class="wf-chip" [attr.data-tone]="statusTone(r.status)">{{ statusLabel(r.status) }}</span>{{ r.stateLabel ? ' · ' + r.stateLabel : '' }}</div>
         <span class="m">{{ r.entityTitle ?? r.entityId ?? '' }} · started {{ ago(r.startedAt) }}{{ r.initiatorName ? ' by ' + r.initiatorName : '' }}</span>
       </header>
+      }
       @if (r.status === 'incident') {
         <div class="incident" role="alert">
-          <p><strong>Stopped:</strong> {{ r.error }}</p>
+          <p><strong>Stopped:</strong> {{ readable(r.error) }}</p>
           @if (mayIntervene()) {
             @if (incidents().length > 1) {
               <!-- Several paths stopped: each can be retried or skipped on its own. -->
@@ -726,22 +731,24 @@ export class WfTaskInbox extends WfWithApi {
                 @for (i of incidents(); track i.token) {
                   <li><span>{{ i.name }}</span>
                     <ui-button size="sm" (click)="act('retry', i.token)" [disabled]="busy()">Try again</ui-button>
-                    <ui-button size="sm" variant="outline" (click)="act('skip', i.token)" [disabled]="busy()">Skip</ui-button>
+                    <ui-button size="sm" variant="outline" (click)="askSkip(i.token, i.stepId)" [disabled]="busy()">Skip</ui-button>
                   </li>
                 }
               </ul>
-              <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+              <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button></div>
             } @else {
               <div class="wf-row">
                 <ui-button size="sm" (click)="act('retry')" [disabled]="busy()">Try again</ui-button>
-                <ui-button size="sm" variant="outline" (click)="act('skip')" [disabled]="busy()">Skip the step</ui-button>
-                <ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button>
+                <ui-button size="sm" variant="outline" (click)="askSkip(undefined, r.errorStepId)" [disabled]="busy()">Skip the step</ui-button>
+                <ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button>
               </div>
             }
+          } @else {
+            <p class="wf-hint">Someone who looks after workflows can try it again or skip it.</p>
           }
         </div>
       } @else if (mayIntervene() && (r.status === 'waiting' || r.status === 'running' || r.status === 'queued')) {
-        <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="act('cancel')" [disabled]="busy()">Cancel the run</ui-button></div>
+        <div class="wf-row"><ui-button size="sm" variant="destructive" (click)="askCancel()" [disabled]="busy()">Cancel the run</ui-button></div>
       }
       @if (error()) { <p class="wf-error">{{ error() }}</p> }
       <ol class="steps">
@@ -764,6 +771,38 @@ export class WfTaskInbox extends WfWithApi {
     } @else {
       <p class="wf-hint">Loading…</p>
     }
+
+    <!-- Skipping: the run carries on as if the step had finished, with the results given here. -->
+    <ui-modal [open]="!!skipping()" (openChange)="!$event && skipping.set(null)" [title]="'Skip “' + (skipping()?.name ?? '') + '”'" size="md">
+      @if (skipping(); as sk) {
+        <div class="dlg">
+          <p>The run carries on as if this step had finished.@if (sk.outputs.length) { Give what it would have produced, for the steps after it. }</p>
+          @for (o of sk.outputs; track o.key) {
+            <label class="lw"><span class="wf-label">{{ o.label }}</span>
+              <ui-input size="sm" [ngModel]="skipValues()[o.key] ?? ''" (ngModelChange)="setSkipValue(o.key, $event)" /></label>
+          }
+        </div>
+        <div modal-footer class="foot">
+          <ui-button variant="ghost" (click)="skipping.set(null)" [disabled]="busy()">Back</ui-button>
+          <ui-button (click)="confirmSkip()" [disabled]="busy()">Skip the step</ui-button>
+        </div>
+      }
+    </ui-modal>
+
+    <!-- Cancelling is a negative action: confirmed, with optional remarks that go into the audit. -->
+    <ui-modal [open]="cancelling()" (openChange)="!$event && cancelling.set(false)" title="Cancel the run" size="md">
+      @if (cancelling()) {
+        <div class="dlg">
+          <p>The run stops here and its open tasks are cancelled. What it already did stays done.</p>
+          <label class="lw"><span class="wf-label">Remarks (optional)</span>
+            <ui-textarea [ngModel]="cancelRemarks()" (ngModelChange)="cancelRemarks.set($event)" [rows]="2" [autosize]="true" /></label>
+        </div>
+        <div modal-footer class="foot">
+          <ui-button variant="ghost" (click)="cancelling.set(false)" [disabled]="busy()">Back</ui-button>
+          <ui-button variant="destructive" (click)="confirmCancel()" [disabled]="busy()">Cancel the run</ui-button>
+        </div>
+      }
+    </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
@@ -792,10 +831,17 @@ export class WfTaskInbox extends WfWithApi {
     .detail { grid-column: 2 / 4; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     .tasks h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     .tasks ul { margin: 0; padding-left: var(--ui-space-4); }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .dlg p { margin: 0; }
+    .lw { display: block; min-width: 0; }
+    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
+    ui-modal { position: absolute; }
   `],
 })
-export class UiWorkflowRun extends WfWithApi {
+export class WfRunView extends WfWithApi {
   readonly instanceId = input.required<string>();
+  /** Show the run's title, version and status (off where the host already names the run). */
+  readonly showHead = input(true);
   /**
    * Show retry, skip and cancel. Left unset, the view asks the engine (`me().can.intervene`), so only
    * people the server lets intervene see them; the server checks again either way.
@@ -817,7 +863,7 @@ export class UiWorkflowRun extends WfWithApi {
     const steps = this.definition() ? indexSteps(this.definition()!) : null;
     return (r?.tokens ?? []).filter((t) => t.waiting === 'incident').map((t) => {
       const step = t.stepId ? steps?.get(t.stepId)?.step : undefined;
-      return { token: t.id, name: step ? stepName(step) : t.stepId ?? t.id };
+      return { token: t.id, stepId: t.stepId, name: step ? stepName(step) : t.stepId ?? t.id };
     });
   });
 
@@ -879,20 +925,62 @@ export class UiWorkflowRun extends WfWithApi {
 
   protected readonly statusLabel = wfRunStatusLabel;
   protected readonly statusTone = wfRunStatusTone;
+  protected readonly readable = wfReadableError;
 
-  protected async act(kind: 'retry' | 'skip' | 'cancel', target?: string): Promise<void> {
+  /** The step being skipped, with the results it would have produced (for the steps after it). */
+  protected readonly skipping = signal<{ target?: string; name: string; outputs: { key: string; label: string }[] } | null>(null);
+  protected readonly skipValues = signal<Record<string, string>>({});
+  protected readonly cancelling = signal(false);
+  protected readonly cancelRemarks = signal('');
+
+  protected async askSkip(target: string | undefined, stepId: string | null | undefined): Promise<void> {
+    const def = this.definition();
+    const step = def && stepId ? indexSteps(def).get(stepId)?.step : undefined;
+    let outputs: { key: string; label: string }[] = [];
+    if (step?.type === 'action') {
+      // An app action's results are declared in the registry, with labels people know.
+      const schema = await this.client()?.schema().catch(() => null);
+      outputs = schema?.registry.actions?.find((a) => a.key === step.action)?.outputs.map((o) => ({ key: o.key, label: o.label })) ?? [];
+    }
+    this.skipValues.set({});
+    this.skipping.set({ target, name: step ? stepName(step) : 'the step', outputs });
+  }
+
+  protected setSkipValue(key: string, value: string): void {
+    this.skipValues.update((v) => ({ ...v, [key]: value }));
+  }
+
+  protected confirmSkip(): void {
+    const sk = this.skipping();
+    if (!sk) return;
+    const given = Object.fromEntries(Object.entries(this.skipValues()).filter(([, v]) => v.trim() !== '').map(([k, v]) => [k, v.trim()]));
+    void this.act('skip', sk.target, Object.keys(given).length ? given : undefined).then((ok) => ok && this.skipping.set(null));
+  }
+
+  protected askCancel(): void {
+    this.cancelRemarks.set('');
+    this.cancelling.set(true);
+  }
+
+  protected confirmCancel(): void {
+    void this.act('cancel', undefined, undefined, this.cancelRemarks().trim() || undefined).then((ok) => ok && this.cancelling.set(false));
+  }
+
+  protected async act(kind: 'retry' | 'skip' | 'cancel', target?: string, outputs?: Record<string, unknown>, reason?: string): Promise<boolean> {
     const api = this.client();
     const r = this.run();
-    if (!api || !r || this.busy()) return;
+    if (!api || !r || this.busy()) return false;
     this.busy.set(true);
     this.error.set('');
     try {
-      const next = kind === 'retry' ? await api.retry(r.id, target) : kind === 'skip' ? await api.skip(r.id, undefined, target) : await api.cancel(r.id, 'Cancelled from the run view');
+      const next = kind === 'retry' ? await api.retry(r.id, target) : kind === 'skip' ? await api.skip(r.id, outputs, target) : await api.cancel(r.id, reason);
       this.seq++;
       this.run.set(next);
       this.changed.emit(next);
+      return true;
     } catch (e) {
       this.error.set(wfErrorText(e, 'That did not work.'));
+      return false;
     } finally {
       this.busy.set(false);
     }
