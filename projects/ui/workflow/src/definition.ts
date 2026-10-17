@@ -423,8 +423,19 @@ export function cloneStep(step: UiWfStep): UiWfStep {
     return x;
   };
   const copy = fresh(step) as UiWfStep;
-  if (copy.title) copy.title = `${copy.title} (copy)`;
-  return copy;
+  // Steps inside the copy that read each other (tokens, go-back targets) now point at the copies.
+  const ids = new Map<string, string>();
+  const pair = (a: UiWfStep, b: UiWfStep) => {
+    ids.set(a.id, b.id);
+    const sa = stepSlots(a), sb = stepSlots(b);
+    sa.forEach((sl, i) => sl.steps.forEach((x, j) => pair(x, sb[i].steps[j])));
+  };
+  pair(step, copy);
+  let json = JSON.stringify(copy);
+  for (const [from, to] of ids) json = json.split(`steps.${from}.`).join(`steps.${to}.`).split(`"target":"${from}"`).join(`"target":"${to}"`);
+  const out = JSON.parse(json) as UiWfStep;
+  out.title = `${stepName(step)} (copy)`;
+  return out;
 }
 
 export function duplicateStep(def: UiWorkflowDefinition, id: string): { def: UiWorkflowDefinition; id: string | null } {
@@ -703,13 +714,14 @@ export function describeTrigger(t: UiWfTrigger | undefined, ctx: UiWfDescribeCon
   if (!t) return 'Choose what starts this workflow';
   const e = entityOf(ctx.registry, ctx.def.entity);
   const rec = e?.label.toLowerCase() ?? 'record';
+  const aRec = `${/^[aeiou]/.test(rec) ? 'an' : 'a'} ${rec}`;
   const f = fieldOf(ctx.registry, ctx.def.entity, t.field);
   const vals = (v: unknown[] | undefined) => (v ?? []).map((x) => optionLabel(f, x)).join(' or ');
   switch (t.type) {
-    case 'created': return `When a ${rec} is created`;
-    case 'deleted': return `When a ${rec} is deleted`;
+    case 'created': return `When ${aRec} is created`;
+    case 'deleted': return `When ${aRec} is deleted`;
     case 'fieldChanged':
-      if (!t.field) return `When a ${rec} changes`;
+      if (!t.field) return `When ${aRec} changes`;
       return `When ${f?.label ?? t.field} ${t.from?.length ? `changes from ${vals(t.from)} ` : 'changes '}${t.to?.length ? `to ${vals(t.to)}` : ''}`.trim();
     case 'stateEntered': return `When ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'} enters ${(t.states ?? []).join(' or ') || '…'}`;
     case 'transitionApplied': return `After ${(t.transitions ?? []).join(' or ') || '…'} in ${ctx.workflowTitle?.(t.lifecycle ?? '') ?? t.lifecycle ?? 'a lifecycle'}`;

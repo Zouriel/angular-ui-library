@@ -486,7 +486,7 @@ function asGroup(c: UiWfCondition | undefined): UiWfConditionGroup {
   selector: 'ui-wf-rule',
   imports: [FormsModule, HugeiconsIconComponent, UiNumberInput, WfTokenSelect, WfValueInput],
   template: `
-    <ui-wf-token-select class="ref" [tokens]="tokens()" [value]="rule().ref" label="Value to check" placeholder="Choose what to check…" (valueChange)="setRef($event)" />
+    <ui-wf-token-select class="ref" [tokens]="tokens()" [value]="rule().ref" label="Value to check" placeholder="Choose a value…" (valueChange)="setRef($event)" />
     <select class="wf-select op" aria-label="How to compare" [disabled]="!rule().ref" (change)="setOp($any($event.target).value)">
       @for (o of ops(); track o.op) { <option [value]="o.op" [selected]="o.op === rule().op">{{ o.label }}</option> }
     </select>

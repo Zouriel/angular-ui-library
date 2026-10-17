@@ -150,6 +150,20 @@ describe('step lists', () => {
     expect(inner).toHaveLength(2);
   });
 
+  it('a duplicate gets its own name, and its inner steps read each other, not the original', () => {
+    let d = sample();
+    d = insertStep(d, 'b/path:p', 1, { ...step('reader'), subject: ['Path: ', { ref: 'steps.c.sent' }] } as UiWfStep);
+    d = insertStep(d, 'b/path:p', 2, { ...step('back', 'goTo'), target: 'c' } as UiWfStep);
+    const { def, id } = duplicateStep(d, 'b');
+    const copy = indexSteps(def).get(id!)!.step;
+    const [c2, reader2, back2] = stepSlots(copy)[0].steps;
+    expect(copy.title).toBe('Branch (copy)');
+    expect(JSON.stringify(reader2)).toContain(`steps.${c2.id}.sent`);
+    expect((back2 as Extract<UiWfStep, { type: 'goTo' }>).target).toBe(c2.id);
+    // Outside references to the original stay as they were.
+    expect(JSON.stringify(indexSteps(def).get('reader')!.step)).toContain('steps.c.sent');
+  });
+
   it('cloneStep keeps embedded form ids', () => {
     const s = { ...step('t', 'task'), form: { schemaVersion: 1, id: 'form1', elements: [] } } as unknown as UiWfStep;
     expect((cloneStep(s) as unknown as { form: { id: string } }).form.id).toBe('form1');
@@ -206,8 +220,8 @@ describe('summaries', () => {
     const def = createWorkflow('automation', 'x', 'application');
     const ctx = { registry, def };
     expect(describeTrigger({ type: 'fieldChanged', field: 'status', to: ['Submitted'] }, ctx)).toBe('When Status changes to Submitted');
-    expect(describeTrigger({ type: 'fieldChanged' }, ctx)).toBe('When a application changes');
-    expect(describeTrigger({ type: 'created' }, ctx)).toBe('When a application is created');
+    expect(describeTrigger({ type: 'fieldChanged' }, ctx)).toBe('When an application changes');
+    expect(describeTrigger({ type: 'created' }, ctx)).toBe('When an application is created');
     expect(describeTrigger({ type: 'manual', label: 'Escalate' }, ctx)).toBe('When someone presses “Escalate”');
   });
 });

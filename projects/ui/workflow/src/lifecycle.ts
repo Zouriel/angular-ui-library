@@ -10,6 +10,8 @@ import type { UiWfState, UiWfTransition } from './schema';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
+let diagramSeq = 0;
+
 /** Space around the cards inside the diagram. */
 const FRAME_MARGIN = 48;
 
@@ -46,11 +48,11 @@ interface DrawnEdge {
         label="Lifecycle diagram" (backgroundClick)="background()">
         <svg class="edges" [attr.width]="frame().width" [attr.height]="frame().height" aria-hidden="true">
           <defs>
-            <marker id="wf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head" /></marker>
-            <marker id="wf-arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head on" /></marker>
+            <marker [attr.id]="arrowId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head" /></marker>
+            <marker [attr.id]="arrowId + '-on'" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="head on" /></marker>
           </defs>
           @for (e of edges(); track e.id) {
-            <path class="edge" [class.on]="e.selected" [class.auto]="e.auto" [attr.d]="e.d" [attr.marker-end]="e.selected ? 'url(#wf-arrow-on)' : 'url(#wf-arrow)'" />
+            <path class="edge" [class.on]="e.selected" [class.auto]="e.auto" [attr.d]="e.d" [attr.marker-end]="'url(#' + arrowId + (e.selected ? '-on' : '') + ')'" />
           }
           @if (rubber(); as r) { <path class="edge rubber" [attr.d]="'M ' + r.x1 + ' ' + r.y1 + ' L ' + r.x2 + ' ' + r.y2" /> }
         </svg>
@@ -316,6 +318,8 @@ export class WfLifecycleCanvas {
   }
 
   private suppressClick = false;
+  /** Marker ids unique to this diagram, so two builders on one page don't share arrowheads. */
+  protected readonly arrowId = `wf-arrow-${++diagramSeq}`;
   /** Removes the window listeners of the drag in progress (also when the diagram goes away mid-drag). */
   private unlisten: () => void = () => undefined;
 

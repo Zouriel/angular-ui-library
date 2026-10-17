@@ -217,7 +217,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .retention { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
     .watch { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .watch li.conflict { color: var(--ui-color-warning); }
-    .sum { color: var(--ui-color-text-muted); font-size: 12.5px; }
+    .sum { margin-left: 6px; color: var(--ui-color-text-muted); font-size: 12.5px; }
     .fields { width: 100%; margin-top: 6px; border-collapse: collapse; font-size: 12.5px; }
     .fields th, .fields td { padding: 4px 6px; text-align: left; border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .fields th { color: var(--ui-color-text-muted); font-weight: 550; }
