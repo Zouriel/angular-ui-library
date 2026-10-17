@@ -86,11 +86,13 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         summary="Progress through ordered steps. Display only, with no clicks or outputs: steps before active show as done, and the active step gets aria-current=&quot;step&quot;. Horizontal by default (below 560px only the active step keeps its label); orientation=&quot;vertical&quot; stacks the steps and shows a uiStepBody template under each one (details, history, actions). variant=&quot;dots&quot; draws a compact strip of dots: finished and current steps in the tone (the current one ringed), steps not reached in the text colour, labels kept for screen readers. tone=&quot;success&quot; colours finished steps green."
         [shapes]="'interface UiStep { label: string; description?: string; }'">
         <doc-demo code="<ui-stepper [steps]=&quot;steps&quot; [active]=&quot;step&quot; />">
+          <div class="demo-stack">
           <ui-stepper [steps]="steps" [active]="step()" />
           <ui-stepper [steps]="steps" [active]="step()" orientation="vertical" tone="success" label="Checkout">
             <ng-template uiStepBody let-state="state"><span class="step-note">{{ state === 'done' ? 'Done' : state === 'active' ? 'In progress' : 'Not started' }}</span></ng-template>
           </ui-stepper>
           <ui-stepper [steps]="steps" [active]="step()" variant="dots" tone="success" label="Checkout progress" />
+          </div>
           <div class="row">
             <ui-button size="sm" variant="outline" (click)="step.set(Math.max(0, step()-1))">Back</ui-button>
             <ui-button size="sm" (click)="step.set(Math.min(3, step()+1))">Next</ui-button>
@@ -130,6 +132,7 @@ section[id] { scroll-margin-top: 80px; }">
   `,
   styles: `
     .step-note { font-size: 12.5px; color: var(--ui-color-text-muted); }
+    .demo-stack { display: flex; flex-direction: column; gap: var(--ui-space-6); margin-bottom: var(--ui-space-4); }
     .row { display: flex; gap: var(--ui-space-3); }
     .boxed { max-width: 260px; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
   `,
