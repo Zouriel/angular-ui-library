@@ -91,7 +91,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
                   </ol>
                 }
                 @if (state === 'active') {
-                  <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" />
+                  <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
                 } @else if (state === 'todo' && !st.entries.length) {
                   <span class="wf-hint">Not reached yet</span>
                 }
@@ -99,7 +99,7 @@ export function wfPanelPath(r: UiWfRecord, history: readonly UiWfAuditEntry[]): 
             </ui-stepper>
           } @else {
             <ui-stepper class="steps" tone="success" [label]="title()" [steps]="stepLabels()" [active]="path().active" />
-            <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" />
+            <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
             @if (showHistory() && history().length) {
               <section>
                 <h3>History</h3>
@@ -180,6 +180,8 @@ export class UiWorkflowPanel extends WfWithApi {
   /** The panel's heading (and the drawer's title). */
   readonly title = input('Workflow');
   readonly showHistory = input(true);
+  /** Said in the current state when this person has nothing to do there; empty hides it. */
+  readonly emptyText = input('Nothing for you to do here right now.');
   /** Whether the drawer is open (drawer layouts). Two-way. */
   readonly open = model(false);
   /** Fired after the record moved through the panel, so the page can reload its own data. */

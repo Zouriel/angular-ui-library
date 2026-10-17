@@ -245,6 +245,7 @@ export class WfDecideDialog {
         </ul>
       </section>
     }
+    @if (nothingToDo()) { <p class="wf-hint">{{ emptyText() }}</p> }
     @if (error()) { <p class="wf-error" role="alert">{{ error() }}</p> }
 
     <ui-modal [open]="!!pending()" (openChange)="!$event && pending.set(null)" [title]="pending()?.label ?? ''" size="md">
@@ -290,6 +291,8 @@ export class WfRecordActions extends WfWithApi {
   readonly entityId = input.required<string>();
   /** List the record's open tasks (the record panel does; the workflow panel shows them per state too). */
   readonly showTasks = input(true);
+  /** Said when this person has nothing to do here (no moves, manual workflows or tasks); empty says nothing. */
+  readonly emptyText = input('');
   /** A move was applied: the record as it is now. */
   readonly changed = output<UiWfRecord>();
   /** Something changed that needs a fresh read (a decision, a manual start). */
@@ -302,10 +305,11 @@ export class WfRecordActions extends WfWithApi {
   protected readonly pendingError = signal('');
   protected readonly input = signal<Record<string, unknown>>({});
   protected readonly openTask = signal<UiWfTask | null>(null);
-  protected readonly idle = computed(() => {
+  protected readonly nothingToDo = computed(() => {
     const r = this.record();
-    return !r.transitions.length && !r.manual.length && !(this.showTasks() && r.tasks.length) && !this.error() && !this.pending() && !this.openTask();
+    return !r.transitions.length && !r.manual.length && !(this.showTasks() && r.tasks.length) && !this.pending() && !this.openTask();
   });
+  protected readonly idle = computed(() => this.nothingToDo() && !this.emptyText() && !this.error());
 
   protected start(t: UiWfTransitionOption): void {
     if (this.busy()) return;

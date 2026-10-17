@@ -114,6 +114,22 @@ describe('UiWorkflowPanel', () => {
     expect(steps[3].textContent).toContain('Not reached yet');
   });
 
+  it('the current state offers this person\'s moves; with none it says so', async () => {
+    const { el } = await render('vertical');
+    expect(el.textContent).toContain('Nothing for you to do here right now.');
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.api = fakeApi(
+      record('Submitted', { transitions: [{ key: 'start', label: 'Start review', to: 'Review', toLabel: 'Under review', tone: 'primary', confirm: null, form: null }] }),
+      [entry('created', 'Draft'), entry('transitioned', 'Submitted', 'Draft')],
+    );
+    fixture.detectChanges();
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    const active = (fixture.nativeElement as HTMLElement).querySelector('li.step.active')!;
+    expect(active.querySelector('ui-button')?.textContent?.trim()).toBe('Start review');
+    expect(active.textContent).not.toContain('Nothing for you to do');
+  });
+
   it('side drawer: a rail of dots; a mouse hover opens it, a finger does not', async () => {
     const { fixture, el } = await render('side-drawer');
     const rail = el.querySelector<HTMLButtonElement>('.rail')!;

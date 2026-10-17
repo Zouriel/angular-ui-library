@@ -16,7 +16,7 @@ import { WorkflowPlayground, type DemoApplication } from './workflow-playground'
       lead="Attach a record's workflow to the record's own page: its states as a stepper (green for states it has been through, dark for those it hasn't reached), what happened in each, and in the current state the moves this person may make, their forms and confirmations, open tasks and manual workflows. Choose how it sits on the page in code: a vertical or horizontal panel, or a drawer that waits on the screen's edge as a rail of dots.">
 
       <doc-section name="Try it" selector="ui-workflow-panel" [api]="panelApi"
-        summary="An application in the playground, on the real engine. Pick a layout, an application and who you are. With a drawer layout, look for the dots on the right edge or the bottom of the screen: hover them with a mouse to peek (move away and it closes), or tap or click them to open the drawer.">
+        summary="An application in the playground, on the real engine. Pick a layout, an application and who you are: each person sees only the moves they may make (the applicant submits their own application, reviewers decide once it's under review, the head of office can withdraw). With a drawer layout, look for the dots on the right edge or the bottom of the screen: hover them with a mouse to peek (move away and it closes), or tap or click them to open the drawer.">
         @if (pg.online() === false) {
           <p class="offline">The playground server isn't reachable, so this demo can't load. <ui-button size="sm" variant="outline" routerLink="/workflow-studio">Open the studio for setup steps</ui-button></p>
         } @else {
@@ -66,6 +66,12 @@ export class WorkflowPanelPage {
   ];
   protected readonly api = computed(() => this.pg.apiAs(this.user()));
   protected readonly appOptions = computed<UiSelectOption[]>(() => this.apps().map((a) => ({ value: String(a.id), label: `${a.title} (${a.status ?? 'new'})` })));
+  /** Applicants act on their own applications: picking one picks one of theirs, if they have one. */
+  private readonly ownApp = effect(() => {
+    const user = this.user();
+    const mine = this.apps().find((a) => a.applicant === user);
+    if (mine) untracked(() => this.appId.set(String(mine.id)));
+  });
   protected readonly userOptions = computed<UiSelectOption[]>(() => this.pg.users().map((u) => ({ value: u.id, label: `${u.name} · ${u.title}` })));
 
   constructor() {
@@ -77,7 +83,7 @@ export class WorkflowPanelPage {
   protected async loadApps(): Promise<void> {
     const apps = await this.pg.get<DemoApplication[]>('/demo/applications').catch(() => [] as DemoApplication[]);
     this.apps.set(apps);
-    if (!this.appId() && apps.length) this.appId.set(String(apps[0].id));
+    if (!this.appId() && apps.length) this.appId.set(String((apps.find((a) => a.applicant === this.user()) ?? apps[0]).id));
   }
 
   protected readonly code = `<!-- in the page -->
