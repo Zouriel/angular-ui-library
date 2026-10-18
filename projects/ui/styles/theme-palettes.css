@@ -46,7 +46,9 @@
 [data-theme="lightTeal"],
 [data-theme="lightPurple"],
 [data-theme="lightPurpleGold"] {
-  --ui-glass-bg: rgba(0, 0, 0, 0.04);
+  /* Glass on a light canvas is a near-opaque tint of the theme's background: anything thinner
+     goes muddy grey over a dimmed page (a drawer over its backdrop) and the text loses contrast.
+     Each light palette sets its own --ui-glass-bg below. */
   --ui-glass-border: rgba(0, 0, 0, 0.10);
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08);
   --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -56,6 +58,7 @@
 /* ── Light Orange ───────────────────────────────────────────────────── */
 [data-theme="lightOrange"] {
   --ui-color-bg: #fffaf4;
+  --ui-glass-bg: rgba(255, 250, 244, 0.9);
   --ui-color-surface: #fff2e4;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #2a1a0c;
@@ -76,6 +79,7 @@
 /* ── Light Pink ─────────────────────────────────────────────────────── */
 [data-theme="lightPink"] {
   --ui-color-bg: #fff7fb;
+  --ui-glass-bg: rgba(255, 247, 251, 0.9);
   --ui-color-surface: #ffedf5;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #2a1420;
@@ -96,6 +100,7 @@
 /* ── Light Teal ─────────────────────────────────────────────────────── */
 [data-theme="lightTeal"] {
   --ui-color-bg: #f4fbfa;
+  --ui-glass-bg: rgba(244, 251, 250, 0.9);
   --ui-color-surface: #e6f6f3;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #0f2a26;
@@ -116,6 +121,7 @@
 /* ── Light Purple ───────────────────────────────────────────────────── */
 [data-theme="lightPurple"] {
   --ui-color-bg: #faf8ff;
+  --ui-glass-bg: rgba(250, 248, 255, 0.9);
   --ui-color-surface: #f0ebfd;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #241a3a;
@@ -231,6 +237,7 @@
 /* ── Light Purple Gold (regal: royal-purple primary, gold accents) ──── */
 [data-theme="lightPurpleGold"] {
   --ui-color-bg: #fbf9ff;
+  --ui-glass-bg: rgba(251, 249, 255, 0.9);
   --ui-color-surface: #f3edfc;
   --ui-color-surface-raised: #ffffff;
   --ui-color-text: #241636;

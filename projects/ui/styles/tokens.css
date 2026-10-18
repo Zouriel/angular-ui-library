@@ -364,7 +364,7 @@
   --ui-gradient-highlight: linear-gradient(180deg, rgba(212, 238, 248, 0.9) 0%, rgba(212, 238, 248, 0) 100%);
   --ui-glow-amber: 0 8px 24px rgba(27, 61, 89, 0.18);
 
-  --ui-glass-bg: rgba(255, 255, 255, 0.62);
+  --ui-glass-bg: rgba(255, 255, 255, 0.9);
   --ui-glass-border: rgba(27, 61, 89, 0.12);
   --ui-shadow-1: 0 1px 2px rgba(21, 32, 38, 0.07);
   --ui-shadow-2: 0 8px 24px rgba(27, 61, 89, 0.1);

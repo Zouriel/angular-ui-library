@@ -190,4 +190,44 @@ describe('theme palettes', () => {
     }
     expect(fails).toEqual([]);
   });
+
+  /*
+   * Glass panels (drawers, menus, popovers, windows) show the page through them. A drawer's page is
+   * also dimmed by the overlay, so thin glass on a light theme turns muddy grey and its text, though
+   * technically there, is hard to read. Check text on glass over the page and over the dimmed page.
+   */
+  it('keeps text readable on glass in every light theme, over the page and over a dimmed page', () => {
+    const blocks: Record<string, Record<string, string>> = {};
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8'));
+      for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+        const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+        for (const sel of m[1].split(',').map((s) => s.trim())) blocks[sel] = { ...blocks[sel], ...decls };
+      }
+    }
+    const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold'];
+    const fails: string[] = [];
+    for (const name of light) {
+      const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
+      const get = (k: string, depth = 0): Rgba | null => {
+        const v = vars[k] ?? '';
+        const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+        return ref && depth < 5 ? get(ref[1], depth + 1) : parseColor(v);
+      };
+      const [bg, glass, overlay] = [get('--ui-color-bg'), get('--ui-glass-bg'), get('--ui-color-overlay')];
+      if (!bg || !glass || !overlay) {
+        fails.push(`${name}: bg, glass or overlay colour is missing or unreadable`);
+        continue;
+      }
+      for (const [where, ground] of [['page', bg], ['dimmed page', over(overlay, bg)]] as const) {
+        const panel = over(glass, ground);
+        for (const [fg, need] of [['--ui-color-text', 7], ['--ui-color-text-muted', 4.5]] as const) {
+          const r = contrast(get(fg)!, panel);
+          if (r < need) fails.push(`${name}: ${fg} on glass over the ${where} is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
 });
