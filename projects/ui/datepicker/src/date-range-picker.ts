@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
-import { formatIsoDate, monthYear, WEEKDAYS } from './date-names';
+import { formatIsoDate, isoMonth, monthYear, WEEKDAYS } from './date-names';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
@@ -91,7 +91,8 @@ export class UiDateRangePicker implements ControlValueAccessor {
   writeValue(v: UiDateRange | null): void {
     this.range.set(v ?? { start: null, end: null });
     // Show the month the range starts in, as ui-calendar does for its value.
-    if (v?.start) { const [y, m] = v.start.split('-').map(Number); this.view.set([y, m - 1]); }
+    const month = isoMonth(v?.start);
+    if (month) this.view.set(month);
   }
   registerOnChange(fn: (v: UiDateRange) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }

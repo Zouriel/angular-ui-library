@@ -26,3 +26,13 @@ export function formatIsoDate(isoDate: string, short = false): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   return (short ? shortDate : longDate).format(new Date(y, m - 1, d));
 }
+
+/**
+ * The [year, monthIndex] of an ISO `YYYY-MM-DD` day, or null for anything else. An empty string or a
+ * malformed value counts as no date, so a form that starts its field at '' gets today's month rather
+ * than a calendar of year 0.
+ */
+export function isoMonth(isoDate: string | null | undefined): [number, number] | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate ?? '');
+  return m ? [Number(m[1]), Number(m[2]) - 1] : null;
+}

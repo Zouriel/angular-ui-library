@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
-import { formatIsoDate, monthYear, WEEKDAYS } from './date-names';
+import { formatIsoDate, isoMonth, monthYear, WEEKDAYS } from './date-names';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
@@ -83,7 +83,7 @@ export class UiCalendar implements ControlValueAccessor {
 
   private onChange: (v: string | null) => void = () => {};
   protected onTouched: () => void = () => {};
-  writeValue(v: string | null): void { this.value.set(v ?? null); if (v) { const [y, m] = v.split('-').map(Number); this.view.set([y, m - 1]); } }
+  writeValue(v: string | null): void { const month = isoMonth(v); this.value.set(month ? v : null); if (month) this.view.set(month); }
   registerOnChange(fn: (v: string | null) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }

@@ -7,7 +7,7 @@ import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
-import { formatIsoDate, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
+import { formatIsoDate, isoMonth, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
 
 interface DayCell { day: number; iso: string; label: string; today: boolean; disabled: boolean; }
 
@@ -55,7 +55,7 @@ function iso(y: number, m: number, d: number): string {
       [cdkConnectedOverlayOpen]="open()"
       [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
       (overlayOutsideClick)="onOutsideClick($event)"
-      (attach)="focusDay(value() ?? todayIso())">
+      (attach)="focusDay(value() || todayIso())">
       <div class="cal-panel" role="dialog" aria-label="Choose a date" cdkTrapFocus (keydown.escape)="close()">
         <div class="cal-head">
           <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
@@ -276,11 +276,10 @@ export class UiDatePicker implements ControlValueAccessor {
   }
 
   writeValue(v: string | null): void {
-    this.value.set(v ?? null);
-    if (v) {
-      const [y, m] = v.split('-').map(Number);
-      this.view.set([y, m - 1]);
-    }
+    // '' or a malformed value is no date: the field stays empty and the calendar opens on today.
+    const month = isoMonth(v);
+    this.value.set(month ? v : null);
+    if (month) this.view.set(month);
   }
   private onChange: (v: string | null) => void = () => {};
   protected onTouched: () => void = () => {};
@@ -294,8 +293,8 @@ export class UiDatePicker implements ControlValueAccessor {
     if (next) {
       this.mode.set('days');
       // Reopening shows the chosen month again, not wherever the last visit was left.
-      const v = this.value();
-      if (v) { const [y, m] = v.split('-').map(Number); this.view.set([y, m - 1]); }
+      const month = isoMonth(this.value());
+      if (month) this.view.set(month);
     }
     this.open.set(next);
   }
@@ -326,8 +325,10 @@ export class UiDatePicker implements ControlValueAccessor {
 
   /** Shows the day's month and focuses it once rendered. */
   protected focusDay(isoDate: string): void {
-    const [y, m] = isoDate.split('-').map(Number);
-    if (this.view()[0] !== y || this.view()[1] !== m - 1) this.view.set([y, m - 1]);
+    const month = isoMonth(isoDate);
+    if (!month) return;
+    const [y, m] = month;
+    if (this.view()[0] !== y || this.view()[1] !== m) this.view.set(month);
     this.focusIso.set(isoDate);
     afterNextRender(() => {
       const cell = document.querySelector<HTMLButtonElement>(`.cal-panel .cell[data-iso="${isoDate}"]`);

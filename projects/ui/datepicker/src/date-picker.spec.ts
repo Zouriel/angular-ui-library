@@ -136,3 +136,29 @@ describe('inline calendars', () => {
     expect(pressed.length).toBe(8);
   });
 });
+
+@Component({
+  imports: [ReactiveFormsModule, UiDatePicker],
+  template: `<ui-date-picker [formControl]="date" />`,
+})
+class EmptyHost {
+  // Apps often start a date field at '' rather than null.
+  date = new FormControl<string | null>('');
+}
+
+describe('UiDatePicker with an empty value', () => {
+  it("treats '' as no date and opens on today's month, days and all", async () => {
+    const f = TestBed.createComponent(EmptyHost);
+    f.detectChanges();
+    await f.whenStable();
+    const field = f.nativeElement.querySelector('ui-date-picker input') as HTMLInputElement;
+    expect(field.value).toBe('');
+
+    key(field, 'Enter');
+    await f.whenStable();
+    const t = new Date();
+    const today = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    expect(document.querySelectorAll('.cal-panel .cell[data-iso]').length).toBeGreaterThan(27);
+    expect((document.activeElement as HTMLElement).getAttribute('data-iso')).toBe(today);
+  });
+});
