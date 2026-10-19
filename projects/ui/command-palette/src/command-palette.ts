@@ -76,7 +76,7 @@ let paletteSeq = 0;
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3); overflow: hidden; font-family: var(--ui-font-default);
       color: var(--ui-color-text); line-height: 1.35; }
     .cp.no-radius { border-radius: 0; }
-    .cp.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .cp.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .cp-input { display: block; width: 100%; box-sizing: border-box; height: 46px; padding: 0 var(--ui-space-4); border: none;
       border-bottom: 1px solid var(--ui-color-border); background: transparent; color: var(--ui-color-text);
       font: inherit; font-size: var(--ui-font-size-md); outline: none;
