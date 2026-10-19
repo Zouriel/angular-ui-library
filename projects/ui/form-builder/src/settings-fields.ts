@@ -16,22 +16,24 @@ import type { UiFbSettings } from './schema';
     @let s = settings();
         <section class="group-sec">
           <h3>Questions</h3>
-          <div class="fb-grid2">
-            <label class="fld"><span class="fb-label">Question text</span>
-              <select class="fb-native-select" (change)="set({ labelPlacement: $any($event.target).value })">
-                <option value="top" [selected]="(s.labelPlacement ?? 'top') === 'top'">Above the box</option>
-                <option value="inside" [selected]="s.labelPlacement === 'inside'">Inside the box</option>
-                <option value="left" [selected]="s.labelPlacement === 'left'">To the left</option>
-              </select>
-            </label>
-            <label class="fld"><span class="fb-label">Error messages</span>
-              <select class="fb-native-select" (change)="set({ errorPlacement: $any($event.target).value })">
-                <option value="below" [selected]="(s.errorPlacement ?? 'below') === 'below'">Below the box</option>
-                <option value="inside" [selected]="s.errorPlacement === 'inside'">Inside the box</option>
-              </select>
-            </label>
+          <div class="fld">
+            <div class="fb-grid2">
+              <label class="fld"><span class="fb-label">Question text</span>
+                <select class="fb-native-select" (change)="set({ labelPlacement: $any($event.target).value })">
+                  <option value="top" [selected]="(s.labelPlacement ?? 'top') === 'top'">Above the box</option>
+                  <option value="inside" [selected]="s.labelPlacement === 'inside'">Inside the box</option>
+                  <option value="left" [selected]="s.labelPlacement === 'left'">To the left</option>
+                </select>
+              </label>
+              <label class="fld"><span class="fb-label">Error messages</span>
+                <select class="fb-native-select" (change)="set({ errorPlacement: $any($event.target).value })">
+                  <option value="below" [selected]="(s.errorPlacement ?? 'below') === 'below'">Below the box</option>
+                  <option value="inside" [selected]="s.errorPlacement === 'inside'">Inside the box</option>
+                </select>
+              </label>
+            </div>
+            <p class="fb-hint">Each question can override these. “Inside the box” applies to text boxes only.</p>
           </div>
-          <p class="fb-hint">Each question can override these. “Inside the box” applies to text boxes only.</p>
           <label class="fld"><span class="fb-label">Mark questions</span>
             <select class="fb-native-select" (change)="set({ requiredMarker: $any($event.target).value })">
               <option value="asterisk" [selected]="(s.requiredMarker ?? 'asterisk') === 'asterisk'">Required ones with *</option>
@@ -48,7 +50,7 @@ import type { UiFbSettings } from './schema';
               <option value="submit" [selected]="s.validateOn === 'submit'">Only when they continue or submit</option>
             </select>
           </label>
-          <ui-switch [ngModel]="s.errorSummary !== false" (ngModelChange)="set({ errorSummary: $event ? undefined : false })">List all problems at the top</ui-switch>
+          <ui-switch size="sm" [ngModel]="s.errorSummary !== false" (ngModelChange)="set({ errorSummary: $event ? undefined : false })">List all problems at the top</ui-switch>
           <label class="fld"><span class="fb-label">Answers to hidden questions</span>
             <select class="fb-native-select" (change)="set({ clearHidden: $any($event.target).value })">
               <option value="onSubmit" [selected]="(s.clearHidden ?? 'onSubmit') === 'onSubmit'">Leave them out when saving</option>
@@ -59,11 +61,11 @@ import type { UiFbSettings } from './schema';
         </section>
         <section class="group-sec">
           <h3>Buttons and steps</h3>
-          <ui-switch [ngModel]="s.showProgress !== false" (ngModelChange)="set({ showProgress: $event ? undefined : false })">Show progress on multi-page forms</ui-switch>
+          <ui-switch size="sm" [ngModel]="s.showProgress !== false" (ngModelChange)="set({ showProgress: $event ? undefined : false })">Show progress on multi-page forms</ui-switch>
           <div class="fb-grid2">
-            <label class="fld"><span class="fb-label">Submit button</span><ui-input [ngModel]="s.submitLabel ?? ''" (ngModelChange)="set({ submitLabel: $event || undefined }, 'sl')" placeholder="Submit" /></label>
-            <label class="fld"><span class="fb-label">Next button</span><ui-input [ngModel]="s.nextLabel ?? ''" (ngModelChange)="set({ nextLabel: $event || undefined }, 'nl')" placeholder="Continue" /></label>
-            <label class="fld"><span class="fb-label">Back button</span><ui-input [ngModel]="s.backLabel ?? ''" (ngModelChange)="set({ backLabel: $event || undefined }, 'bl')" placeholder="Back" /></label>
+            <label class="fld"><span class="fb-label">Submit button</span><ui-input size="sm" [ngModel]="s.submitLabel ?? ''" (ngModelChange)="set({ submitLabel: $event || undefined }, 'sl')" placeholder="Submit" /></label>
+            <label class="fld"><span class="fb-label">Next button</span><ui-input size="sm" [ngModel]="s.nextLabel ?? ''" (ngModelChange)="set({ nextLabel: $event || undefined }, 'nl')" placeholder="Continue" /></label>
+            <label class="fld"><span class="fb-label">Back button</span><ui-input size="sm" [ngModel]="s.backLabel ?? ''" (ngModelChange)="set({ backLabel: $event || undefined }, 'bl')" placeholder="Back" /></label>
           </div>
         </section>
   `,

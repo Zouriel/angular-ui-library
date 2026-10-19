@@ -81,8 +81,9 @@ interface PaletteItem {
       color: var(--ui-color-text-secondary); background: var(--ui-color-surface-subtle, var(--ui-color-surface-hover)); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .txt { display: flex; flex-direction: column; min-width: 0; }
     .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .desc { font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .compact .item { min-height: 44px; }
+    /* Up to two lines: a description cut after a few words says nothing. */
+    .desc { font-size: 12px; line-height: 1.35; color: var(--ui-color-text-muted); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .compact .item { min-height: 44px; padding-block: var(--ui-space-1); }
     .tip, .none { margin: var(--ui-space-2) 6px 0; font-size: 12px; color: var(--ui-color-text-muted); }
     @media (pointer: coarse) { .item { min-height: 44px; } }
   `],

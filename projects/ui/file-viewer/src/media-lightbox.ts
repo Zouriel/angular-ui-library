@@ -493,7 +493,8 @@ function fmt(seconds: number): string {
 
     /* Room above and below for the current thumb's lift and ring and for the focus outline: the
        sideways scroller clips vertically too. */
-    .strip { display: flex; gap: var(--ui-space-2, 8px); overflow-x: auto; scrollbar-width: none;
+    /* Centred under the photo while the set fits; 'safe' keeps the first tiles reachable once it scrolls. */
+    .strip { display: flex; justify-content: safe center; gap: var(--ui-space-2, 8px); overflow-x: auto; scrollbar-width: none;
       padding: var(--ui-space-2, 8px) var(--ui-space-1, 4px); margin: calc(-1 * var(--ui-space-2, 8px)) 0; }
     .strip::-webkit-scrollbar { display: none; }
     .strip__item { position: relative; flex: 0 0 auto; width: 54px; height: 54px; padding: 0; border: 0;

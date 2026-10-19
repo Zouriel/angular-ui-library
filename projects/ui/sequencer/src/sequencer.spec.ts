@@ -95,7 +95,7 @@ describe('UiSequencer, bars only', () => {
 
   it('holding a bar lifts it; then it follows the finger along the timeline', () => {
     // A 1000px-wide ruler: one pixel is one unit, and snapping reaches 6 units rather than the whole timeline.
-    q('.ruler')!.getBoundingClientRect = () => ({ left: 0, right: 1000, width: 1000, top: 0, bottom: 30, height: 30, x: 0, y: 0, toJSON: () => ({}) });
+    q('.ruler .track')!.getBoundingClientRect = () => ({ left: 0, right: 1000, width: 1000, top: 0, bottom: 30, height: 30, x: 0, y: 0, toJSON: () => ({}) });
     bar('a').dispatchEvent(touch('touchstart', [{ x: 10, y: 10 }]));
     vi.advanceTimersByTime(500);
     fixture.detectChanges();
@@ -295,5 +295,28 @@ describe('UiSequencer target sizes', () => {
     const bar = getComputedStyle(fixture.nativeElement.querySelector('.bar') as HTMLElement);
     expect(bar.top).toBe('0px');
     expect(bar.bottom).toBe('0px');
+  });
+});
+
+@Component({
+  imports: [UiSequencer],
+  template: `<ui-sequencer [rows]="[]" [length]="1000" [markers]="markers" [end]="520" [endDraggable]="true" />`,
+})
+class RulerHost {
+  readonly markers = [{ at: 0, label: 'Screen 1' }, { at: 50, label: 'Screen 2' }, { at: 500, label: 'Gallery' }];
+}
+
+describe('UiSequencer, ruler labels', () => {
+  it('shows a number where a name does not fit, and gives way to the End grip', async () => {
+    await TestBed.configureTestingModule({ imports: [RulerHost] }).compileComponents();
+    const fixture = TestBed.createComponent(RulerHost);
+    fixture.detectChanges();
+    const seq = fixture.debugElement.children[0].componentInstance as UiSequencer;
+    // jsdom has no layout: a 1000px ruler makes one unit one pixel.
+    (seq as unknown as { rulerWidth: { set(v: number): void } }).rulerWidth.set(1000);
+    fixture.detectChanges();
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.marker')).map((m) => (m as HTMLElement).querySelector('.mlabel')?.textContent?.trim() ?? null);
+    // 50px holds "1" but not "Screen 1"; the End at 520 sits on "Gallery" (from 504).
+    expect(labels).toEqual(['1', 'Screen 2', null]);
   });
 });

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -36,21 +36,23 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     (transform)=&quot;live($event)&quot; (transformEnd)=&quot;commit($event)&quot; />
   <ui-snap-guides [guides]=&quot;guides()&quot; />
 </div>">
-          <div class="stage">
+          <!-- A 640 × 320 stage, scaled down to fit narrow screens (the handles keep their size). -->
+          @let k = stageScale();
+          <div class="stage" #stage [style.height.px]="320 * k">
             @for (o of others; track $index) {
-              <div class="thing" [style.left.px]="o.x" [style.top.px]="o.y" [style.width.px]="o.w" [style.height.px]="o.h"></div>
+              <div class="thing" [style.left.px]="o.x * k" [style.top.px]="o.y * k" [style.width.px]="o.w * k" [style.height.px]="o.h * k"></div>
             }
-            <div class="thing mine" [style.left.px]="box().x" [style.top.px]="box().y" [style.width.px]="box().w" [style.height.px]="box().h"
+            <div class="thing mine" [style.left.px]="box().x * k" [style.top.px]="box().y * k" [style.width.px]="box().w * k" [style.height.px]="box().h * k"
               [style.transform]="'rotate(' + box().rotate + 'deg)'">Drag me</div>
-            <ui-transform-box [box]="box()" [showSize]="true" label="Card"
+            <ui-transform-box [box]="box()" [scale]="k" [showSize]="true" label="Card"
               (transform)="onTransform($event)" (transformEnd)="onTransformEnd($event)" />
-            <ui-snap-guides [guides]="guides()" />
+            <ui-snap-guides [guides]="guides()" [scale]="k" />
           </div>
         </doc-demo>
       </doc-section>
 
       <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs" [shapes]="pathShapes"
-        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or wheel zooms. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
+        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or Ctrl/⌘ + wheel zooms; a plain wheel scrolls the page. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
         <doc-demo code="<ui-path-editor #editor [items]=&quot;items()&quot; [width]=&quot;400&quot; [height]=&quot;260&quot; [mode]=&quot;mode()&quot; [brush]=&quot;brush()&quot;
   [(selectedId)]=&quot;selectedId&quot; (itemsChange)=&quot;commit($event)&quot; (stroke)=&quot;addStroke($event)&quot; />
 <ui-button (click)=&quot;editor.fit()&quot;>Fit</ui-button>">
@@ -60,11 +62,16 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
               <ui-segmented size="sm" label="Brush" [options]="brushes" [value]="brushKind()" (valueChange)="brushKind.set($any($event))" />
             }
             <span class="grow"></span>
-            <ui-button size="sm" variant="outline" (click)="addShape('rect')">Rectangle</ui-button>
-            <ui-button size="sm" variant="outline" (click)="addShape('ellipse')">Ellipse</ui-button>
-            <ui-button size="sm" variant="outline" (click)="addShape('star')">Star</ui-button>
-            <ui-button size="sm" variant="ghost" [disabled]="!pathHistory().length" (click)="undoPath()">Undo</ui-button>
-            <ui-button size="sm" variant="ghost" (click)="pathEditor.fit()">Fit</ui-button>
+            <!-- Groups wrap as a whole on narrow screens, so the shapes stay together on their own row. -->
+            <div class="pe-group">
+              <ui-button size="sm" variant="outline" (click)="addShape('rect')">Rectangle</ui-button>
+              <ui-button size="sm" variant="outline" (click)="addShape('ellipse')">Ellipse</ui-button>
+              <ui-button size="sm" variant="outline" (click)="addShape('star')">Star</ui-button>
+            </div>
+            <div class="pe-group">
+              <ui-button size="sm" variant="outline" [disabled]="!pathHistory().length" (click)="undoPath()">Undo</ui-button>
+              <ui-button size="sm" variant="outline" (click)="pathEditor.fit()">Fit</ui-button>
+            </div>
           </div>
           <div class="pe-stage">
             <ui-path-editor #pathEditor label="Shape editor demo" [items]="pathItems()" [width]="400" [height]="260" [mode]="peMode()"
@@ -204,6 +211,7 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
   styles: `
     .pe-bar { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; margin-bottom: var(--ui-space-2); }
     .pe-bar .grow { flex: 1; }
+    .pe-group { display: flex; gap: var(--ui-space-2); }
     .pe-stage { height: 340px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface-subtle); }
     .pe-stage ui-path-editor { display: block; width: 100%; height: 100%; }
     .shapes { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
@@ -213,14 +221,14 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
     .shapes figcaption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrub-demo { display: grid; gap: 8px; max-width: 420px; }
     .scrub-demo .mono { font: var(--ui-font-size-sm) var(--ui-font-mono); color: var(--ui-color-text-muted); }
-    .stage { position: relative; height: 320px; border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle);
+    .stage { position: relative; border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle);
       background-image: radial-gradient(var(--ui-color-border) 1px, transparent 1px); background-size: 20px 20px; overflow: hidden; }
     .thing { position: absolute; border-radius: var(--ui-radius-sm); background: var(--ui-color-surface-raised); border: 1px dashed var(--ui-color-border-strong); }
     .thing.mine { display: grid; place-items: center; background: var(--ui-gradient-frost); border: 0; font-weight: 600; color: var(--ui-color-text); }
     .seq { height: 220px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
     .note { margin: 8px 0 0; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .row { display: flex; gap: var(--ui-space-2); flex-wrap: wrap; margin-top: var(--ui-space-2); }
-    .row ui-number-input { width: 120px; }
+    .row ui-number-input { flex: 1 1 96px; max-width: 140px; min-width: 0; }
     .stack { display: grid; gap: var(--ui-space-3); max-width: 420px; }
     .json { margin: var(--ui-space-2) 0 0; padding: var(--ui-space-2); background: var(--ui-color-surface-subtle); border-radius: var(--ui-radius-sm); font: 11px/1.4 var(--ui-font-mono); white-space: pre-wrap; }
     .device-box { height: 420px; }
@@ -247,6 +255,17 @@ export class DesignToolsPage {
   protected readonly others = [{ x: 40, y: 40, w: 120, h: 90 }, { x: 420, y: 180, w: 160, h: 100 }];
   protected readonly box = signal<UiBox>({ x: 220, y: 90, w: 160, h: 110, rotate: 0 });
   protected readonly guides = signal<readonly UiGuide[]>([]);
+  /** Layout px per stage unit: 1 when the 640px stage fits, less on a phone. */
+  protected readonly stageScale = signal(1);
+  private readonly stageEl = viewChild<ElementRef<HTMLElement>>('stage');
+  private readonly fitStage = afterNextRender(() => {
+    const el = this.stageEl()?.nativeElement;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => this.stageScale.set(Math.min(1, e.contentRect.width / 640)));
+    ro.observe(el);
+    this.destroyRef.onDestroy(() => ro.disconnect());
+  });
+  private readonly destroyRef = inject(DestroyRef);
   private dragOrigin: UiBox | null = null;
 
   protected onTransform(next: UiBox): void {

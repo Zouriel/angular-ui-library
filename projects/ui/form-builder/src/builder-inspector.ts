@@ -112,16 +112,16 @@ const AUTOCOMPLETE = [
         <div class="fb-stack">
           @if (f.archived) { <p class="fb-warn">This question is archived: new answers can’t be given, old ones are kept. <button type="button" class="fb-link" (click)="store.setArchived(f.id, false)">Restore it</button></p> }
           <label class="fld"><span class="fb-label">{{ f.type === 'hidden' ? 'Name' : 'Question' }}</span>
-            <ui-input [ngModel]="f.label" (ngModelChange)="setLabel(f, $event)" placeholder="What do you want to ask?" />
+            <ui-input size="sm" [ngModel]="f.label" (ngModelChange)="setLabel(f, $event)" placeholder="What do you want to ask?" />
           </label>
           @if (f.type !== 'hidden') {
             <label class="fld"><span class="fb-label">Help text</span>
-              <ui-textarea [ngModel]="f.help ?? ''" (ngModelChange)="store.updateField(f.id, { help: $event || undefined }, 'help:' + f.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional. Shown under the box." />
+              <ui-textarea size="sm" [ngModel]="f.help ?? ''" (ngModelChange)="store.updateField(f.id, { help: $event || undefined }, 'help:' + f.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional. Shown under the box." />
             </label>
           }
           @if (info.placeholder) {
             <label class="fld"><span class="fb-label">Placeholder</span>
-              <ui-input [ngModel]="f.placeholder ?? ''" (ngModelChange)="store.updateField(f.id, { placeholder: $event || undefined }, 'ph:' + f.id)" placeholder="Example text shown in the empty box" />
+              <ui-input size="sm" [ngModel]="f.placeholder ?? ''" (ngModelChange)="store.updateField(f.id, { placeholder: $event || undefined }, 'ph:' + f.id)" placeholder="Example text shown in the empty box" />
             </label>
           }
           <label class="fld"><span class="fb-label">Type</span>
@@ -141,17 +141,17 @@ const AUTOCOMPLETE = [
             @case ('slider') { <ng-container *ngTemplateOutlet="numberProps; context: { $implicit: f }" /> }
             @case ('textarea') {
               <div class="fb-grid2">
-                <label class="fld"><span class="fb-label">Starts with lines</span><ui-number-input [ngModel]="f.props?.rows ?? 3" (ngModelChange)="prop(f, 'rows', $event)" [min]="1" [max]="20" ariaLabel="Lines" /></label>
-                <label class="fld"><span class="fb-label">Grows up to</span><ui-number-input [ngModel]="f.props?.maxRows ?? 8" (ngModelChange)="prop(f, 'maxRows', $event)" [min]="1" [max]="40" ariaLabel="Most lines" /></label>
+                <label class="fld"><span class="fb-label">Starts with lines</span><ui-number-input size="sm" [ngModel]="f.props?.rows ?? 3" (ngModelChange)="prop(f, 'rows', $event)" [min]="1" [max]="20" ariaLabel="Lines" /></label>
+                <label class="fld"><span class="fb-label">Grows up to</span><ui-number-input size="sm" [ngModel]="f.props?.maxRows ?? 8" (ngModelChange)="prop(f, 'maxRows', $event)" [min]="1" [max]="40" ariaLabel="Most lines" /></label>
               </div>
             }
             @case ('rating') {
-              <label class="fld"><span class="fb-label">Number of stars</span><ui-number-input [ngModel]="f.props?.maxRating ?? 5" (ngModelChange)="prop(f, 'maxRating', $event)" [min]="2" [max]="10" ariaLabel="Stars" /></label>
+              <label class="fld"><span class="fb-label">Number of stars</span><ui-number-input size="sm" [ngModel]="f.props?.maxRating ?? 5" (ngModelChange)="prop(f, 'maxRating', $event)" [min]="2" [max]="10" ariaLabel="Stars" /></label>
             }
             @case ('file') {
-              <ui-switch [ngModel]="!!f.props?.multiple" (ngModelChange)="prop(f, 'multiple', $event || undefined)">Allow several files</ui-switch>
+              <ui-switch size="sm" [ngModel]="!!f.props?.multiple" (ngModelChange)="prop(f, 'multiple', $event || undefined)">Allow several files</ui-switch>
               <label class="fld"><span class="fb-label">Accepted files</span>
-                <ui-input [ngModel]="f.props?.accept ?? ''" (ngModelChange)="prop(f, 'accept', $event || undefined)" placeholder=".pdf, .docx, image/*" />
+                <ui-input size="sm" [ngModel]="f.props?.accept ?? ''" (ngModelChange)="prop(f, 'accept', $event || undefined)" placeholder=".pdf, .docx, image/*" />
                 <span class="fb-hint">Leave empty to accept any file. Add a “File types” check to enforce it.</span>
               </label>
             }
@@ -160,7 +160,7 @@ const AUTOCOMPLETE = [
             @case ('radio') { <ng-container *ngTemplateOutlet="orientProp; context: { $implicit: f }" /> }
             @case ('checkboxes') {
               <ng-container *ngTemplateOutlet="orientProp; context: { $implicit: f }" />
-              <ui-switch [ngModel]="!!f.props?.selectAll" (ngModelChange)="prop(f, 'selectAll', $event || undefined)">Offer “Select all”</ui-switch>
+              <ui-switch size="sm" [ngModel]="!!f.props?.selectAll" (ngModelChange)="prop(f, 'selectAll', $event || undefined)">Offer “Select all”</ui-switch>
             }
             @case ('calculated') {
               <div class="fld"><ui-fb-calc [field]="f" /></div>
@@ -172,14 +172,14 @@ const AUTOCOMPLETE = [
                 </select>
               </label>
               @if (f.props?.format === 'currency') {
-                <label class="fld"><span class="fb-label">Currency code</span><ui-input [ngModel]="f.props?.currency ?? 'USD'" (ngModelChange)="prop(f, 'currency', ($event || '').toUpperCase())" placeholder="USD" /></label>
+                <label class="fld"><span class="fb-label">Currency code</span><ui-input size="sm" [ngModel]="f.props?.currency ?? 'USD'" (ngModelChange)="prop(f, 'currency', ($event || '').toUpperCase())" placeholder="USD" /></label>
               } @else if (f.props?.format !== 'text') {
                 <div class="fb-grid2">
-                  <label class="fld"><span class="fb-label">Before it</span><ui-input [ngModel]="f.props?.prefix ?? ''" (ngModelChange)="prop(f, 'prefix', $event || undefined)" placeholder="e.g. #" /></label>
-                  <label class="fld"><span class="fb-label">After it</span><ui-input [ngModel]="f.props?.suffix ?? ''" (ngModelChange)="prop(f, 'suffix', $event || undefined)" placeholder="e.g. years" /></label>
+                  <label class="fld"><span class="fb-label">Before it</span><ui-input size="sm" [ngModel]="f.props?.prefix ?? ''" (ngModelChange)="prop(f, 'prefix', $event || undefined)" placeholder="e.g. #" /></label>
+                  <label class="fld"><span class="fb-label">After it</span><ui-input size="sm" [ngModel]="f.props?.suffix ?? ''" (ngModelChange)="prop(f, 'suffix', $event || undefined)" placeholder="e.g. years" /></label>
                 </div>
               }
-              <ui-switch [ngModel]="!!f.props?.excludeFromData" (ngModelChange)="prop(f, 'excludeFromData', $event || undefined)">Show it, but don’t save it</ui-switch>
+              <ui-switch size="sm" [ngModel]="!!f.props?.excludeFromData" (ngModelChange)="prop(f, 'excludeFromData', $event || undefined)">Show it, but don’t save it</ui-switch>
             }
           }
 
@@ -200,26 +200,28 @@ const AUTOCOMPLETE = [
                 <ui-segmented size="sm" label="Width" [options]="widths" [value]="f.layout?.width ?? 'full'" (valueChange)="layout(f, 'width', $event === 'full' ? undefined : $event)" />
               </div>
               @if (f.type !== 'calculated') {
-                <div class="fb-grid2">
-                  <label class="fld"><span class="fb-label">Question text</span>
-                    <select class="fb-native-select" (change)="layout(f, 'labelPlacement', $any($event.target).value || undefined)">
-                      <option value="" [selected]="!f.layout?.labelPlacement">Form default</option>
-                      <option value="top" [selected]="f.layout?.labelPlacement === 'top'">Above the box</option>
-                      <option value="inside" [selected]="f.layout?.labelPlacement === 'inside'" [disabled]="!info.textLike">Inside the box</option>
-                      <option value="left" [selected]="f.layout?.labelPlacement === 'left'">To the left</option>
-                      <option value="hidden" [selected]="f.layout?.labelPlacement === 'hidden'">Hidden</option>
-                    </select>
-                  </label>
-                  <label class="fld"><span class="fb-label">Error message</span>
-                    <select class="fb-native-select" (change)="layout(f, 'errorPlacement', $any($event.target).value || undefined)">
-                      <option value="" [selected]="!f.layout?.errorPlacement">Form default</option>
-                      <option value="below" [selected]="f.layout?.errorPlacement === 'below'">Below the box</option>
-                      <option value="inside" [selected]="f.layout?.errorPlacement === 'inside'" [disabled]="!info.textLike">Inside the box</option>
-                    </select>
-                  </label>
+                <div class="fld">
+                  <div class="fb-grid2">
+                    <label class="fld"><span class="fb-label">Question text</span>
+                      <select class="fb-native-select" (change)="layout(f, 'labelPlacement', $any($event.target).value || undefined)">
+                        <option value="" [selected]="!f.layout?.labelPlacement">Form default</option>
+                        <option value="top" [selected]="f.layout?.labelPlacement === 'top'">Above the box</option>
+                        <option value="inside" [selected]="f.layout?.labelPlacement === 'inside'" [disabled]="!info.textLike">Inside the box</option>
+                        <option value="left" [selected]="f.layout?.labelPlacement === 'left'">To the left</option>
+                        <option value="hidden" [selected]="f.layout?.labelPlacement === 'hidden'">Hidden</option>
+                      </select>
+                    </label>
+                    <label class="fld"><span class="fb-label">Error message</span>
+                      <select class="fb-native-select" (change)="layout(f, 'errorPlacement', $any($event.target).value || undefined)">
+                        <option value="" [selected]="!f.layout?.errorPlacement">Form default</option>
+                        <option value="below" [selected]="f.layout?.errorPlacement === 'below'">Below the box</option>
+                        <option value="inside" [selected]="f.layout?.errorPlacement === 'inside'" [disabled]="!info.textLike">Inside the box</option>
+                      </select>
+                    </label>
+                  </div>
+                  @if (!info.textLike) { <p class="fb-hint">“Inside the box” works for text, number and email boxes; this field shows them above and below.</p> }
+                  @if (f.layout?.labelPlacement === 'hidden') { <p class="fb-hint">Screen readers still read the question. Use it when the heading above already says it.</p> }
                 </div>
-                @if (!info.textLike) { <p class="fb-hint">“Inside the box” works for text, number and email boxes; this field shows them above and below.</p> }
-                @if (f.layout?.labelPlacement === 'hidden') { <p class="fb-hint">Screen readers still read the question. Use it when the heading above already says it.</p> }
               }
             </section>
           }
@@ -248,28 +250,33 @@ const AUTOCOMPLETE = [
     </ng-template>
 
     <ng-template #numberProps let-f>
+      <!-- The hint explains Lowest and Highest, so it sits under their row, not under the last box. -->
+      <div class="fld">
+        <div class="fb-grid2">
+          <label class="fld"><span class="fb-label">Lowest</span><ui-number-input size="sm" [ngModel]="f.props?.min ?? null" (ngModelChange)="prop(f, 'min', $event ?? undefined)" ariaLabel="Lowest" placeholder="Any" /></label>
+          <label class="fld"><span class="fb-label">Highest</span><ui-number-input size="sm" [ngModel]="f.props?.max ?? null" (ngModelChange)="prop(f, 'max', $event ?? undefined)" ariaLabel="Highest" placeholder="Any" /></label>
+        </div>
+        @if (f.type !== 'slider') { <p class="fb-hint">Lowest and highest guide the arrows. Add a check to enforce them.</p> }
+      </div>
       <div class="fb-grid2">
-        <label class="fld"><span class="fb-label">Lowest</span><ui-number-input [ngModel]="f.props?.min ?? null" (ngModelChange)="prop(f, 'min', $event ?? undefined)" ariaLabel="Lowest" placeholder="Any" /></label>
-        <label class="fld"><span class="fb-label">Highest</span><ui-number-input [ngModel]="f.props?.max ?? null" (ngModelChange)="prop(f, 'max', $event ?? undefined)" ariaLabel="Highest" placeholder="Any" /></label>
         @if (f.type !== 'currency') {
-          <label class="fld"><span class="fb-label">Steps of</span><ui-number-input [ngModel]="f.props?.step ?? 1" (ngModelChange)="prop(f, 'step', $event ?? undefined)" [min]="0" ariaLabel="Step" /></label>
+          <label class="fld"><span class="fb-label">Steps of</span><ui-number-input size="sm" [ngModel]="f.props?.step ?? 1" (ngModelChange)="prop(f, 'step', $event ?? undefined)" [min]="0" ariaLabel="Step" /></label>
         }
         @if (f.type === 'currency') {
-          <label class="fld"><span class="fb-label">Currency</span><ui-input [ngModel]="f.props?.currency ?? 'USD'" (ngModelChange)="prop(f, 'currency', ($event || '').toUpperCase())" placeholder="USD" /></label>
+          <label class="fld"><span class="fb-label">Currency</span><ui-input size="sm" [ngModel]="f.props?.currency ?? 'USD'" (ngModelChange)="prop(f, 'currency', ($event || '').toUpperCase())" placeholder="USD" /></label>
         }
         @if (f.type !== 'slider') {
-          <label class="fld"><span class="fb-label">Decimals</span><ui-number-input [ngModel]="f.props?.decimals ?? null" (ngModelChange)="prop(f, 'decimals', $event ?? undefined)" [min]="0" [max]="6" ariaLabel="Decimals" placeholder="Any" /></label>
+          <label class="fld"><span class="fb-label">Decimals</span><ui-number-input size="sm" [ngModel]="f.props?.decimals ?? null" (ngModelChange)="prop(f, 'decimals', $event ?? undefined)" [min]="0" [max]="6" ariaLabel="Decimals" placeholder="Any" /></label>
         }
         @if (f.type === 'number') {
-          <label class="fld"><span class="fb-label">Unit</span><ui-input [ngModel]="f.props?.suffix ?? ''" (ngModelChange)="prop(f, 'suffix', $event || undefined)" placeholder="e.g. kg" /></label>
+          <label class="fld"><span class="fb-label">Unit</span><ui-input size="sm" [ngModel]="f.props?.suffix ?? ''" (ngModelChange)="prop(f, 'suffix', $event || undefined)" placeholder="e.g. kg" /></label>
         }
       </div>
-      @if (f.type !== 'slider') { <p class="fb-hint">Lowest and highest guide the arrows. Add a check to enforce them.</p> }
     </ng-template>
 
     <ng-template #captionProp let-f>
       <label class="fld"><span class="fb-label">Text next to it</span>
-        <ui-input [ngModel]="f.props?.caption ?? ''" (ngModelChange)="prop(f, 'caption', $event || undefined)" placeholder="I agree" />
+        <ui-input size="sm" [ngModel]="f.props?.caption ?? ''" (ngModelChange)="prop(f, 'caption', $event || undefined)" placeholder="I agree" />
       </label>
     </ng-template>
 
@@ -344,10 +351,10 @@ const AUTOCOMPLETE = [
         <div class="fb-stack">
           @if (g.archived) { <p class="fb-warn">This section is archived. <button type="button" class="fb-link" (click)="store.setArchived(g.id, false)">Restore it</button></p> }
           <label class="fld"><span class="fb-label">Title</span>
-            <ui-input [ngModel]="g.title ?? ''" (ngModelChange)="store.setGroupTitle(g.id, $event)" placeholder="e.g. Contact details" />
+            <ui-input size="sm" [ngModel]="g.title ?? ''" (ngModelChange)="store.setGroupTitle(g.id, $event)" placeholder="e.g. Contact details" />
           </label>
           <label class="fld"><span class="fb-label">Description</span>
-            <ui-textarea [ngModel]="g.description ?? ''" (ngModelChange)="store.updateGroup(g.id, { description: $event || undefined }, 'desc:' + g.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-textarea size="sm" [ngModel]="g.description ?? ''" (ngModelChange)="store.updateGroup(g.id, { description: $event || undefined }, 'desc:' + g.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
           </label>
           <div class="fld"><span class="fb-label">Columns inside</span>
             <ui-segmented size="sm" label="Columns" [options]="columns" [value]="'' + (g.columns ?? 1)" (valueChange)="store.updateGroup(g.id, { columns: $event === '1' ? undefined : $any(+$event!) })" />
@@ -357,21 +364,21 @@ const AUTOCOMPLETE = [
           </div>
           <section class="group-sec">
             <h3>Repeating</h3>
-            <ui-switch [ngModel]="!!g.repeat" (ngModelChange)="setRepeat(g, $event)" [disabled]="!!nestedRepeat(g)">People can add this section more than once</ui-switch>
+            <ui-switch size="sm" [ngModel]="!!g.repeat" (ngModelChange)="setRepeat(g, $event)" [disabled]="!!nestedRepeat(g)">People can add this section more than once</ui-switch>
             @if (nestedRepeat(g)) { <p class="fb-hint">A section inside a repeating section can’t repeat itself.</p> }
             @if (g.repeat) {
               <div class="fb-grid2">
-                <label class="fld"><span class="fb-label">At least</span><ui-number-input [ngModel]="g.repeat.min ?? 0" (ngModelChange)="repeat(g, { min: $event ?? 0 })" [min]="0" ariaLabel="At least" /></label>
-                <label class="fld"><span class="fb-label">At most</span><ui-number-input [ngModel]="g.repeat.max ?? null" (ngModelChange)="repeat(g, { max: $event ?? undefined })" [min]="1" ariaLabel="At most" placeholder="No limit" /></label>
+                <label class="fld"><span class="fb-label">At least</span><ui-number-input size="sm" [ngModel]="g.repeat.min ?? 0" (ngModelChange)="repeat(g, { min: $event ?? 0 })" [min]="0" ariaLabel="At least" /></label>
+                <label class="fld"><span class="fb-label">At most</span><ui-number-input size="sm" [ngModel]="g.repeat.max ?? null" (ngModelChange)="repeat(g, { max: $event ?? undefined })" [min]="1" ariaLabel="At most" placeholder="No limit" /></label>
               </div>
-              <label class="fld"><span class="fb-label">Add button</span><ui-input [ngModel]="g.repeat.addLabel ?? ''" (ngModelChange)="repeat(g, { addLabel: $event || undefined })" placeholder="Add another" /></label>
-              <label class="fld"><span class="fb-label">Each entry is called</span><ui-input [ngModel]="g.repeat.itemLabel ?? ''" (ngModelChange)="repeat(g, { itemLabel: $event || undefined })" placeholder="Entry {n}" />
+              <label class="fld"><span class="fb-label">Add button</span><ui-input size="sm" [ngModel]="g.repeat.addLabel ?? ''" (ngModelChange)="repeat(g, { addLabel: $event || undefined })" placeholder="Add another" /></label>
+              <label class="fld"><span class="fb-label">Each entry is called</span><ui-input size="sm" [ngModel]="g.repeat.itemLabel ?? ''" (ngModelChange)="repeat(g, { itemLabel: $event || undefined })" placeholder="Entry {n}" />
                 <span class="fb-hint">{{ '{n}' }} becomes the entry’s number.</span></label>
             }
           </section>
           <section class="group-sec">
             <h3>Saved data</h3>
-            <ui-switch [ngModel]="!!g.key" (ngModelChange)="setGroupKey(g, $event)" [disabled]="!!g.repeat">Keep its answers together</ui-switch>
+            <ui-switch size="sm" [ngModel]="!!g.key" (ngModelChange)="setGroupKey(g, $event)" [disabled]="!!g.repeat">Keep its answers together</ui-switch>
             <p class="fb-hint">{{ g.repeat ? 'Entries are saved as a list under this name.' : 'Saves this section’s answers inside one object, e.g. address.street.' }}</p>
             @if (g.key) {
               <input class="key" [value]="keyDraft()" (input)="keyDraft.set($any($event.target).value)" (blur)="commitKey(g)" (keydown.enter)="commitKey(g)" [class.bad]="keyError()" [attr.aria-invalid]="keyError() ? true : null" spellcheck="false" autocomplete="off" aria-label="Saved as" />
@@ -392,9 +399,9 @@ const AUTOCOMPLETE = [
             <ui-segmented size="sm" label="Kind" [options]="staticKinds" [value]="s.type" (valueChange)="store.updateStatic(s.id, { type: $any($event) })" />
           </div>
           @if (s.type === 'heading') {
-            <label class="fld"><span class="fb-label">Heading</span><ui-input [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" /></label>
+            <label class="fld"><span class="fb-label">Heading</span><ui-input size="sm" [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" /></label>
           } @else if (s.type === 'paragraph') {
-            <label class="fld"><span class="fb-label">Text</span><ui-textarea [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" [rows]="4" [autosize]="true" [maxRows]="14" /></label>
+            <label class="fld"><span class="fb-label">Text</span><ui-textarea size="sm" [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" [rows]="4" [autosize]="true" [maxRows]="14" /></label>
             <div class="fld"><span class="fb-label">Width</span>
               <ui-segmented size="sm" label="Width" [options]="widths" [value]="s.layout?.width ?? 'full'" (valueChange)="store.updateStatic(s.id, { layout: $event === 'full' ? undefined : { width: $any($event) } })" />
             </div>
@@ -411,10 +418,10 @@ const AUTOCOMPLETE = [
       @if (tab() === 'settings') {
         <div class="fb-stack">
           <label class="fld"><span class="fb-label">Page title</span>
-            <ui-input [ngModel]="p.title ?? ''" (ngModelChange)="store.updatePage(p.id, { title: $event || undefined }, 'ptitle:' + p.id)" [placeholder]="'Page ' + (i + 1)" />
+            <ui-input size="sm" [ngModel]="p.title ?? ''" (ngModelChange)="store.updatePage(p.id, { title: $event || undefined }, 'ptitle:' + p.id)" [placeholder]="'Page ' + (i + 1)" />
           </label>
           <label class="fld"><span class="fb-label">Description</span>
-            <ui-textarea [ngModel]="p.description ?? ''" (ngModelChange)="store.updatePage(p.id, { description: $event || undefined }, 'pdesc:' + p.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-textarea size="sm" [ngModel]="p.description ?? ''" (ngModelChange)="store.updatePage(p.id, { description: $event || undefined }, 'pdesc:' + p.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
           </label>
           <div class="actions">
             <ui-button size="sm" variant="outline" [disabled]="i === 0" (click)="store.movePage(p.id, -1)"><hugeicons-icon aria-hidden="true" [icon]="leftIcon" [size]="14" [strokeWidth]="1.8" />Earlier</ui-button>
@@ -464,44 +471,46 @@ const AUTOCOMPLETE = [
       @let s = def.settings ?? {};
       <div class="fb-stack">
         <label class="fld"><span class="fb-label">Form title</span>
-          <ui-input [ngModel]="def.title" (ngModelChange)="store.updateForm({ title: $event }, 'ftitle')" />
+          <ui-input size="sm" [ngModel]="def.title" (ngModelChange)="store.updateForm({ title: $event }, 'ftitle')" />
         </label>
         <label class="fld"><span class="fb-label">Description</span>
-          <ui-textarea [ngModel]="def.description ?? ''" (ngModelChange)="store.updateForm({ description: $event || undefined }, 'fdesc')" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Shown at the top of the form" />
+          <ui-textarea size="sm" [ngModel]="def.description ?? ''" (ngModelChange)="store.updateForm({ description: $event || undefined }, 'fdesc')" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Shown at the top of the form" />
         </label>
         <ui-fb-settings-fields [settings]="s" (patch)="store.updateSettings($event.patch, $event.mergeKey)" />
       </div>
     </ng-template>
   `,
   styles: [FB_SHARED_STYLES, `
-    :host { display: flex; flex-direction: column; min-height: 0; background: var(--ui-color-surface); }
-    .head { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-3) var(--ui-space-3) var(--ui-space-2); flex: none; }
+    /* --fb-inspector-pad: the side padding, smaller where the host already pads (the phone sheet). */
+    :host { --fb-pad: var(--fb-inspector-pad, var(--ui-space-3)); display: flex; flex-direction: column; min-height: 0; background: var(--ui-color-surface); }
+    .head { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-3) var(--fb-pad) var(--ui-space-2); flex: none; }
     .head-ico { display: inline-grid; place-items: center; width: 28px; height: 28px; flex: none; border-radius: var(--ui-radius);
       background: var(--ui-color-surface-hover); color: var(--ui-color-text-secondary); }
     .head-txt { display: flex; flex-direction: column; min-width: 0; }
     .head-kind { font-size: 11px; font-weight: 600; color: var(--ui-color-text-muted); }
     .head-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tabs { display: flex; gap: 2px; padding: 0 var(--ui-space-3); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); flex: none; }
+    .tabs { display: flex; gap: 2px; padding: 0 var(--fb-pad); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); flex: none; }
     .tab { position: relative; display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 var(--ui-space-2); border: 0; background: transparent;
       color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+    /* The first tab's label lines up with the header and the fields below. */
+    .tab:first-child { margin-left: calc(var(--ui-space-2) * -1); }
     .tab:hover { color: var(--ui-color-text); }
     .tab.on { color: var(--ui-color-text); font-weight: 550; }
     .tab.on::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; border-radius: 1px; background: var(--ui-color-primary); }
     .tab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .count { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill); font-size: 11px; font-weight: 600;
       background: color-mix(in srgb, var(--ui-color-primary) 16%, transparent); color: var(--ui-color-primary); box-sizing: border-box; }
-    .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3) var(--ui-space-3) var(--ui-space-8); overscroll-behavior: contain; }
+    .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3) var(--fb-pad) var(--ui-space-8); overscroll-behavior: contain; }
     .fld { display: flex; flex-direction: column; min-width: 0; }
     .group-sec { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .group-sec.first { border-top: 0; padding-top: 0; }
     .group-sec h3 { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
-    .key { height: 30px; padding: 0 var(--ui-space-2); box-sizing: border-box; border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
+    .key { height: var(--ui-size-sm); padding: 0 var(--ui-space-2); box-sizing: border-box; border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text); font-family: var(--ui-font-mono); font-size: 12px; }
     .key:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 28%, transparent); }
     .key.bad { border-color: var(--ui-color-danger); }
     .fb-hint.bad { color: var(--ui-color-danger); }
     .actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .actions ui-button hugeicons-icon { margin: 0 4px 0 -2px; }
     .setv { display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-2); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
     .grow { flex: 1; margin: 0; }
     .sentence { margin: 0; padding: 6px var(--ui-space-2); border-radius: var(--ui-radius-xs); background: color-mix(in srgb, var(--ui-color-primary) 8%, transparent);
@@ -513,7 +522,6 @@ const AUTOCOMPLETE = [
     .ref:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .fb-link { display: inline-flex; align-items: center; gap: 3px; align-self: flex-start; }
     .clear { margin-top: 4px; }
-    ui-switch { font-size: 13px; }
   `],
 })
 export class FbInspector {

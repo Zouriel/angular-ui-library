@@ -25,7 +25,7 @@ function fmt(s: number): string {
     </div>
   `,
   styles: `
-    :host { display: block; }
+    :host { display: block; container-type: inline-size; }
     .ap { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-1) var(--ui-space-2);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); line-height: 1.35; }
@@ -44,6 +44,11 @@ function fmt(s: number): string {
       font-variant-numeric: tabular-nums; }
     .seek { flex: 1; min-width: var(--ui-space-12); accent-color: var(--ui-color-primary); }
     .seek:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
+    /* Narrow: the title gets its own line above the controls, so neither it nor the seek bar is squeezed. */
+    @container (max-width: 420px) {
+      .ap { flex-wrap: wrap; row-gap: var(--ui-space-1); padding-block: var(--ui-space-2); }
+      .title { order: -1; flex-basis: 100%; max-width: none; padding-inline: var(--ui-space-1); }
+    }
   `,
 })
 export class UiAudioPlayer {

@@ -63,9 +63,11 @@ interface PendingDelete {
   },
   template: `
     <header class="top">
-      <button type="button" class="title" (click)="openForm()" title="Form settings">
-        <span>{{ store.def().title || 'Untitled form' }}</span>
-      </button>
+      @if (showTitle()) {
+        <button type="button" class="title" (click)="openForm()" title="Form settings">
+          <span>{{ store.def().title || 'Untitled form' }}</span>
+        </button>
+      }
       <ui-segmented class="views" size="sm" label="View" [options]="views" [value]="view()" (valueChange)="setView($any($event))" />
       <div class="top-tools">
         <button type="button" class="fb-icon-btn" [disabled]="!store.canUndo()" (click)="store.undo()" aria-label="Undo" title="Undo (Ctrl+Z)">
@@ -90,7 +92,7 @@ interface PendingDelete {
           }
         }
         @if (layout() === 'medium' && view() === 'build') {
-          <ui-button size="sm" variant="outline" (click)="openAdd(null)"><hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="14" [strokeWidth]="1.8" />Add</ui-button>
+          <ui-button class="add" size="sm" variant="outline" (click)="openAdd(null)"><hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="14" [strokeWidth]="1.8" />Add</ui-button>
         }
         <ng-content select="[fbActions]" />
       </div>
@@ -197,7 +199,7 @@ interface PendingDelete {
     .views { margin: 0 auto; }
     /* Wraps instead of overflowing, so the host's own buttons (Publish…) never leave the screen. */
     .top-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px; min-width: 0; max-width: 100%; margin-left: auto; }
-    .top-tools ui-button hugeicons-icon { margin-right: 4px; }
+    .top-tools .add { margin-left: var(--ui-space-2); }
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 4px; border: 0; border-radius: 12px; cursor: pointer;
       background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); color: var(--ui-color-danger); font: inherit; font-size: 12px; font-weight: 600; }
     .issues:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -210,12 +212,14 @@ interface PendingDelete {
     .main { flex: 1; min-height: 0; display: flex; }
     .center { flex: 1; min-width: 0; }
     .pane { flex: none; min-height: 0; display: flex; flex-direction: column; background: var(--ui-color-surface); }
-    .pane.left { width: 232px; padding: var(--ui-space-3) var(--ui-space-2) 0; border-right: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
+    .pane.left { width: 232px; padding: var(--ui-space-3) var(--ui-space-2); border-right: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .pane.left ui-fb-palette { flex: 1; }
     .pane.right { width: 340px; border-left: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .pane.right ui-fb-inspector { flex: 1; }
     :host([data-layout="medium"]) .pane.right { width: 316px; }
-    .sheet-inspector { height: 100%; }
+    /* The sheet pads its body already: the inspector's content lines up with that edge, and keeps
+       4px of its own (taken back by the margin) so focus rings aren't clipped by its scroller. */
+    .sheet-inspector { height: 100%; --fb-inspector-pad: var(--ui-space-1); margin-inline: calc(var(--ui-space-1) * -1); }
     .fab { position: absolute; right: var(--ui-space-4); bottom: var(--ui-space-4); z-index: 3; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 var(--ui-space-4);
       border: 0; border-radius: 22px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: inherit; font-size: 14px; font-weight: 600;
       box-shadow: var(--ui-shadow-2); cursor: pointer; }
@@ -265,6 +269,8 @@ export class UiFormBuilder {
   readonly optionSources = input<readonly UiFbOptionSourceDef[]>([]);
   /** App-wide settings from `ui-form-global-settings`: their lists become data sources here. */
   readonly globalSettings = input<UiFormGlobalSettings | null>(null);
+  /** Show the form's title in the top bar. Turn off when the host's own header already names the form. */
+  readonly showTitle = input(true);
 
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly undoIcon = FB_ICONS.Undo02Icon;
@@ -339,6 +345,8 @@ export class UiFormBuilder {
   clearHistory(): void { this.store.clearHistory(); }
 
   protected setView(v: View): void {
+    // The undo toast belongs to the view it was raised in; elsewhere it would cover that view's own buttons.
+    if (v !== this.view()) this.dismissToast();
     this.view.set(v);
     this.sheetSnap.set(0);
   }
@@ -421,6 +429,12 @@ export class UiFormBuilder {
 
   protected undoToast(): void {
     this.store.undo();
+    this.dismissToast();
+  }
+
+  private dismissToast(): void {
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = null;
     this.toast.set(null);
   }
 

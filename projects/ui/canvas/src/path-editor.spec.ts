@@ -73,6 +73,13 @@ describe('UiPathEditor', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('leaves a plain wheel to scroll the page, and zooms with Ctrl/⌘ + wheel (or a trackpad pinch)', () => {
+    const wheel = (init: WheelEventInit) => { const e = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100, ...init }); svg().dispatchEvent(e); return e; };
+    expect(wheel({}).defaultPrevented).toBe(false);
+    expect(wheel({ ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(wheel({ metaKey: true }).defaultPrevented).toBe(true);
+  });
+
   describe('pen', () => {
     it('taps place corners; tapping the first point closes the shape into a new item', () => {
       tap(10, 10);

@@ -34,7 +34,7 @@ const EXT: Record<string, FileType> = {
       @switch (type()) {
         @case ('image') { <ui-image-viewer [src]="src()" [alt]="name() || ''" /> }
         @case ('video') { <ui-video-player [src]="src()" /> }
-        @case ('audio') { <ui-audio-player [src]="src()" [title]="name()" /> }
+        @case ('audio') { <div class="audio"><ui-audio-player [src]="src()" [title]="name()" /></div> }
         @case ('text')  { <ui-text-viewer [src]="src()" /> }
         @case ('code')  { <ui-code-viewer [src]="src()" [language]="ext()" /> }
         @case ('pdf') {
@@ -58,6 +58,9 @@ const EXT: Record<string, FileType> = {
   styles: `
     :host { display: block; height: 100%; }
     .fv { height: 100%; min-height: 200px; }
+    /* A player is one bar: centred in the viewer, not stuck to its top above empty space. */
+    .audio { display: grid; place-items: center; height: 100%; padding: var(--ui-space-6); box-sizing: border-box; }
+    .audio ui-audio-player { width: min(100%, 560px); }
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-2);
       height: 100%; padding: var(--ui-space-6); text-align: center; font-family: var(--ui-font-default); color: var(--ui-color-text-muted); }
     .big { font-size: 40px; }

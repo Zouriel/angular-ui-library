@@ -6,6 +6,7 @@ import {
   UiFileExplorer,
   UiMediaLightbox,
   UiAudioPlayer,
+  UiVideoPlayer,
   UiTextViewer,
   UiCodeViewer,
   type UiFileNode,
@@ -78,7 +79,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
 
 @Component({
   selector: 'page-file-viewer',
-  imports: [UiText, UiButton, UiFileViewer, UiImageViewer, UiFileExplorer, UiMediaLightbox, UiAudioPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiButton, UiFileViewer, UiImageViewer, UiFileExplorer, UiMediaLightbox, UiAudioPlayer, UiVideoPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Flagship" title="File viewer"
       lead="A viewer for any file: a dispatcher works out the file's type and hands it to the matching renderer. Each renderer can also be used on its own, inline or inside a ui-window. The PDF viewer is a separate entry point that loads pdfjs-dist only when it is used.">
@@ -143,7 +144,10 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
         summary="A native video element with themed controls: play/pause, a seek slider, the time, volume, speed (0.5× to 2×) and fullscreen. Project track elements for captions or subtitles. ui-file-viewer uses it for video files.">
         <doc-demo code="<ui-video-player src=&quot;/clips/tour.mp4&quot; poster=&quot;/clips/tour.jpg&quot;>
   <track kind=&quot;captions&quot; src=&quot;/clips/tour.en.vtt&quot; srclang=&quot;en&quot; label=&quot;English&quot; default />
-</ui-video-player>"></doc-demo>
+</ui-video-player>">
+          <!-- A four-second test pattern served with the showcase (relative, so it works under the docs' base path). -->
+          <div class="wide video"><ui-video-player src="clips/sample.webm" poster="clips/sample.jpg" /></div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Text and code viewers" selector="ui-text-viewer · ui-code-viewer" [api]="textApi"
@@ -159,7 +163,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
 
       <doc-section name="PDF viewer" selector="ui-pdf-viewer" [api]="pdfApi"
         summary="Its own entry point, @zouriel/ui/pdf-viewer, so apps that never show a PDF never bundle it. It imports pdfjs-dist dynamically on first use; install pdfjs-dist yourself (it is an optional peer dependency). It shows one page at a time with previous/next page buttons and zoom from 40% to 400%, drawn sharp on high-density screens. The pdfjs worker loads from cdnjs by default, matching the installed pdfjs-dist version; set workerSrc to serve it yourself (for example, copy node_modules/pdfjs-dist/build/pdf.worker.min.mjs into your public assets). If the file can't be loaded, it shows the error in place of the page.">
-        <doc-demo code="import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
+        <doc-demo lang="ts + html" code="import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 
 <ui-pdf-viewer src=&quot;/docs/handbook.pdf&quot; workerSrc=&quot;/pdf.worker.min.mjs&quot; />">
           <div class="vh pdf"><ui-pdf-viewer [src]="pdf" /></div>
@@ -182,6 +186,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
     .vh.tall { height: 300px; }
     .vh.pdf { height: 420px; }
     .wide { width: 100%; }
+    .video { max-width: 560px; }
     @media (max-width: 720px) { .cols2 { grid-template-columns: 1fr; } }
   `,
 })
