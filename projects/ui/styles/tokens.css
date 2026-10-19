@@ -202,6 +202,8 @@
   --ui-slider-thumb-border: var(--ui-control-border);
   --ui-skeleton-base: var(--ui-color-surface);
   --ui-skeleton-highlight: var(--ui-color-surface-raised);
+  /* The 'neutral' progress tone: a grey, so it never reads as the brand colour. */
+  --ui-progress-neutral: var(--ui-color-text-muted);
   --ui-scroll-progress-track: color-mix(in srgb, var(--ui-color-text) 6%, transparent);
   /* Media chrome sits over photographs, so it stays dark-scrim/light-glyph in every theme. */
   --ui-media-bg: #000000;
@@ -211,6 +213,20 @@
   --ui-pdf-page-bg: #ffffff; /* rendered PDF pages are paper */
   --ui-cursor-color: #ffffff;
   --ui-section-label-bracket: color-mix(in srgb, var(--ui-color-danger) 80%, transparent);
+
+  /* Glass on floating panels (menus, popovers, context menus, the command palette, dialogs and
+     sheets). They open over arbitrary content, often text, so they can't lean on the blur to stay
+     readable: it isn't drawn everywhere (no GPU, some WebViews), and where it is, crisp text right
+     under the panel still bleeds through a 6% tint. Mostly the raised surface, a little see-through. */
+  --ui-glass-panel-bg: color-mix(in srgb, var(--ui-color-surface-raised) 90%, transparent);
+}
+
+/* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
+   ground. Its thin glass tint was tuned for its own background, so over the page's it reads as that
+   page (a near-white "dark" card with light text). Inside an island that doesn't paint its own
+   background (no .ui-surface), glass uses the panel recipe. */
+[data-theme] [data-theme]:not(.ui-surface) {
+  --ui-glass-bg: var(--ui-glass-panel-bg);
 }
 
 /* ── Winter Dark (default `dark`, alias `winterDark`) ──────────────────────
@@ -275,6 +291,8 @@
   /* One step above the raised surface, so a skeleton inside a card is still visible at rest. */
   --ui-skeleton-base: var(--ui-winter-night-800);
   --ui-skeleton-highlight: var(--ui-winter-night-700);
+  /* Winter's muted text is blue, which reads as the primary fill; a true grey, 3.8:1 on the track. */
+  --ui-progress-neutral: #9ba1a6;
   --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
   --ui-media-bg: var(--ui-winter-night-1000);
   --ui-media-scrim: #000000;
@@ -347,8 +365,10 @@
   --ui-switch-thumb: var(--ui-winter-white);
   --ui-switch-thumb-checked: var(--ui-winter-white);
   --ui-slider-thumb: var(--ui-winter-white);
-  --ui-skeleton-base: var(--ui-winter-blue-75);
-  --ui-skeleton-highlight: var(--ui-winter-blue-25);
+  /* 1.2:1 on the page and on cards, like the dark theme; blue-75 on blue-25 all but vanished. */
+  --ui-skeleton-base: var(--ui-winter-slate-200);
+  --ui-skeleton-highlight: var(--ui-winter-blue-75);
+  --ui-progress-neutral: #686e73; /* a true grey, 4:1 on the track */
   --ui-scroll-progress-track: rgba(27, 61, 89, 0.06);
   --ui-media-bg: var(--ui-winter-pine-950);
   --ui-media-scrim: #0b1216;

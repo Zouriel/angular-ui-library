@@ -25,7 +25,7 @@ import type { UiMenuItem } from './menu';
       transform-origin: top left;
       animation: ui-scale-in var(--ui-motion-fast) var(--ui-ease-standard); }
     .cm.no-radius { border-radius: 0; }
-    .cm.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .cm.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .mi { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3);
       background: none; border: none; border-radius: var(--ui-radius-xs); text-align: left;
       cursor: pointer; color: inherit; font: inherit;

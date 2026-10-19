@@ -1,4 +1,6 @@
-import { Component, Injectable, computed, inject, input, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, ElementRef, Injectable, PLATFORM_ID, computed, inject, input, signal, viewChild } from '@angular/core';
+import { UiSnackbarService } from './snackbar';
 
 export type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -96,12 +98,14 @@ export class UiToastService {
 
 /**
  * `ui-toast-host` — fixed renderer for queued toasts, in a corner or centred on the top or bottom
- * edge. Toasts slide in from the edge they sit against and slide back out that way.
+ * edge. Toasts slide in from the edge they sit against and slide back out that way. A bottom stack
+ * moves up above a snackbar (`ui-snackbar-host`) that would otherwise cover it, as on a phone.
  */
 @Component({
   selector: 'ui-toast-host',
   template: `
-    <div class="host" [attr.data-position]="position()" aria-live="polite" aria-atomic="false">
+    <div #box class="host" [attr.data-position]="position()" [class.lifted]="lift() > 0" [style.--ui-toast-lift.px]="lift()"
+         aria-live="polite" aria-atomic="false">
       @for (t of toasts.toasts(); track t.id) {
         <div
           class="toast"
@@ -147,6 +151,9 @@ export class UiToastService {
     .host[data-position$="center"] { left: 50%; transform: translateX(-50%); }
     .host[data-position="top-center"]    { top: 0; }
     .host[data-position="bottom-center"] { bottom: 0; }
+    /* Above a snackbar in the same spot: the stack's lowest toast sits a gap above the bar. */
+    .host[data-position^="bottom"] { transition: bottom var(--ui-motion-base) var(--ui-ease-standard); }
+    .host[data-position^="bottom"].lifted { bottom: calc(var(--ui-toast-lift, 0px) - var(--ui-space-2) - env(safe-area-inset-bottom)); }
     .toast {
       pointer-events: auto;
       display: flex; align-items: flex-start; gap: var(--ui-space-2);
@@ -196,6 +203,29 @@ export class UiToastService {
 export class UiToastHost {
   protected readonly toasts = inject(UiToastService);
   position = input<UiToastPosition>('bottom-right');
+
+  private readonly snacks = inject(UiSnackbarService);
+  private readonly box = viewChild<ElementRef<HTMLElement>>('box');
+  private readonly viewportWidth = signal(0);
+
+  constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    const resize = () => this.viewportWidth.set(window.innerWidth);
+    resize();
+    window.addEventListener('resize', resize);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('resize', resize));
+  }
+
+  /** How far up a bottom stack moves to clear a snackbar it overlaps (px from the screen bottom), else 0. */
+  protected readonly lift = computed(() => {
+    const bar = this.snacks.area();
+    this.viewportWidth();
+    const box = this.box()?.nativeElement;
+    if (!bar || !box || !this.position().startsWith('bottom')) return 0;
+    // The stack's horizontal extent depends only on its position and the viewport width.
+    const r = box.getBoundingClientRect();
+    return bar.left < r.right && bar.right > r.left ? bar.fromBottom : 0;
+  });
 
   /** Shared animation classes (styles/animations.css) that move toward and away from the toast's own edge. */
   protected readonly motion = computed(() => {

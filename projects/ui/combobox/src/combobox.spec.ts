@@ -122,6 +122,24 @@ describe('UiCombobox / UiMultiSelect', () => {
     expect(combo.disabled).toBe(true);
     expect(multi.disabled).toBe(true);
   });
+
+  it('draws a chevron on the multi-select, like the combobox', async () => {
+    const { f } = await setup();
+    expect(f.nativeElement.querySelector('ui-multi-select .end .chevron')).not.toBeNull();
+  });
+
+  it('drops the chip remove buttons of a disabled multi-select, as it drops Clear all', async () => {
+    const { f } = await setup();
+    f.componentInstance.options.set([{ label: 'Canada', value: 'ca' }, { label: 'Japan', value: 'jp' }]);
+    f.componentInstance.many.setValue(['ca', 'jp']);
+    await f.whenStable();
+    expect(f.nativeElement.querySelectorAll('ui-multi-select .chip .x').length).toBe(2);
+    f.componentInstance.many.disable();
+    await f.whenStable();
+    expect(f.nativeElement.querySelectorAll('ui-multi-select .chip').length).toBe(2);
+    expect(f.nativeElement.querySelectorAll('ui-multi-select .chip .x').length).toBe(0);
+    expect(f.nativeElement.querySelector('ui-multi-select .clear')).toBeNull();
+  });
 });
 
 @Component({

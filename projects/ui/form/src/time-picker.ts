@@ -33,7 +33,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-time[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
     /* The theme's color-scheme already picks a light or dark indicator; just quiet it. */
     .ui-time::-webkit-calendar-picker-indicator { opacity: .6; cursor: pointer; transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); }
-    .ui-time::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    .ui-time:not(:disabled)::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+    /* Chrome hides the clock icon of a disabled field (visibility: hidden); keep it (dimmed with the field) so a disabled
+       time picker still reads as one, like the date picker's calendar icon. */
+    .ui-time:disabled::-webkit-calendar-picker-indicator { display: block; visibility: visible; cursor: not-allowed; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiTimePicker), multi: true }],
 })

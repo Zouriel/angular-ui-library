@@ -62,7 +62,7 @@ export class UiTooltip implements OnDestroy {
     const pos = this.positionFor(this.position());
     this.ref = this.overlay.create({
       positionStrategy: this.overlay.position()
-        .flexibleConnectedTo(this.el)
+        .flexibleConnectedTo(this.anchor())
         // The opposite side as a fallback, so a tooltip near a screen edge flips rather than being
         // pushed back over the element it describes.
         .withPositions([pos, this.positionFor(OPPOSITE[this.position()])])
@@ -85,6 +85,17 @@ export class UiTooltip implements OnDestroy {
 
   ngOnDestroy(): void {
     this.hide();
+  }
+
+  /**
+   * The box the tooltip points at. On a component host that only wraps the control it draws
+   * (`<ui-button uiTooltip>`), that's the drawn control: a parent's flex or grid layout can stretch
+   * the host far wider than the button, and centring on the host put the tooltip hundreds of px away.
+   */
+  private anchor(): HTMLElement {
+    let el = this.el.nativeElement;
+    while (el.tagName.includes('-') && el.childElementCount === 1) el = el.firstElementChild as HTMLElement;
+    return el;
   }
 
   private positionFor(p: UiTooltipPosition) {

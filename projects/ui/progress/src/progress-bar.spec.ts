@@ -23,7 +23,7 @@ describe('UiProgressBar', () => {
     for (const tone of ['neutral', 'success', 'warning', 'danger'] as UiStatus[]) {
       expect(css, tone).toMatch(new RegExp(`\\[data-tone="?${tone}"?\\][^{]*\\.fill[^{]*\\{[^}]*background`));
     }
-    expect(css).toMatch(/\[data-tone="?neutral"?\][^{]*\.fill[^{]*\{[^}]*var\(--ui-color-text-muted\)/);
+    expect(css).toMatch(/\[data-tone="?neutral"?\][^{]*\.fill[^{]*\{[^}]*var\(--ui-progress-neutral\)/);
   });
 
   it('reflects tone and value on the progressbar', () => {

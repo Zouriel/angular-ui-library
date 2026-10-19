@@ -69,7 +69,7 @@ export interface UiMenuItem {
       animation: ui-scale-in var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .ui-menu.no-radius { border-radius: 0; }
-    .ui-menu.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-menu.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .item {
       display: flex; align-items: center; gap: var(--ui-space-2);
       padding: var(--ui-space-2) var(--ui-space-3);

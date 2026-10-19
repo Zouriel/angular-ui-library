@@ -80,13 +80,17 @@ export interface UiSelectOption {
        every platform that has the feature. Styled with the same tokens as the rest of the field. */
     @supports (appearance: base-select) {
       .ui-select.font-preview, .ui-select.font-preview::picker(select) { appearance: base-select; }
+      /* A base-select lays its button out as a block, with the value at the top; centre it like the native field. */
+      .ui-select.font-preview { display: flex; align-items: center; }
       .ui-select.font-preview::picker-icon { display: none; }
       .ui-select.font-preview::picker(select) {
         background: var(--ui-color-surface-raised); color: var(--ui-color-text);
         border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
         box-shadow: var(--ui-shadow-2); padding: var(--ui-space-1); max-height: 320px;
+        margin-block: var(--ui-space-1); /* the 4px gap the combobox and date picker leave below the field */
       }
-      .ui-select.font-preview option { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); font-size: var(--ui-font-size-md); }
+      /* 4px panel + 8px option padding: option text starts under the field's value text. */
+      .ui-select.font-preview option { padding: var(--ui-space-2); border-radius: var(--ui-radius-xs); font-size: var(--ui-font-size-md); }
       .ui-select.font-preview option:hover, .ui-select.font-preview option:focus-visible { background: var(--ui-color-elevated-hover); outline: none; }
       .ui-select.font-preview option:checked { background: var(--ui-color-selected); }
       .ui-select.font-preview option::checkmark { display: none; }
