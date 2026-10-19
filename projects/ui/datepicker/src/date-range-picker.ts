@@ -34,8 +34,8 @@ export type UiDateRange = { start: string | null; end: string | null };
   `,
   styles: `
     :host { display: inline-block; }
-    /* Same box as ui-date-picker's popup: seven 32px days with 2px gaps, 12px padding. */
-    .cal { padding: var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); width: calc(7 * 32px + 6 * 2px + 2 * var(--ui-space-3) + 2px); box-sizing: border-box; font-family: var(--ui-font-default); line-height: 1.35; }
+    /* Same box as ui-date-picker's popup: seven 32px days, 12px padding. */
+    .cal { padding: var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); width: calc(7 * 32px + 2 * var(--ui-space-3) + 2px); box-sizing: border-box; font-family: var(--ui-font-default); line-height: 1.35; }
     /* Disabled: everything dims together, the heading and weekdays too, not just the days. */
     .cal.disabled :is(.month, .weekdays, .foot) { opacity: .5; }
     .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ui-space-2); }
@@ -46,7 +46,8 @@ export type UiDateRange = { start: string | null; end: string | null };
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .nav:disabled { opacity: .5; cursor: not-allowed; }
-    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px; }
+    /* 32px days, columns touching (a range band runs unbroken), 2px between weeks: as in Flutter. */
+    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px 0; }
     .weekdays span { text-align: center; font-size: 11px; color: var(--ui-color-text-muted); padding: 2px 0; }
     .cell { aspect-ratio: 1; border: none; background: transparent; color: var(--ui-color-text); border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
@@ -55,14 +56,10 @@ export type UiDateRange = { start: string | null; end: string | null };
     .cell:not(.empty):active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .cell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .cell:disabled:not(.empty) { opacity: .5; cursor: not-allowed; }
-    /* The band bridges the 2px gaps with 1px side shadows from each cell, so it reads as one strip. */
     .cell.inrange { background: var(--ui-color-selected); border-radius: 0; }
-    .cell.inrange:not(:focus-visible) { box-shadow: -1px 0 0 var(--ui-color-selected), 1px 0 0 var(--ui-color-selected); }
     .cell.start, .cell.end { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
     .grid.ranged .cell.start:not(.end) { border-radius: var(--ui-radius-xs) 0 0 var(--ui-radius-xs); }
     .grid.ranged .cell.end:not(.start) { border-radius: 0 var(--ui-radius-xs) var(--ui-radius-xs) 0; }
-    .grid.ranged .cell.start:not(.end):not(:focus-visible) { box-shadow: 1px 0 0 var(--ui-color-selected); }
-    .grid.ranged .cell.end:not(.start):not(:focus-visible) { box-shadow: -1px 0 0 var(--ui-color-selected); }
     .foot { margin-top: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDateRangePicker), multi: true }],

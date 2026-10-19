@@ -83,17 +83,21 @@ let paletteSeq = 0;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
     /* The field is the dialog's only control; its underline carries the focus cue. */
     .cp-input:focus-visible { border-bottom-color: var(--ui-color-border-focus); }
-    .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; overscroll-behavior: contain; }
-    .cp-item { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-sm); }
+    /* Rows share one set of columns (icon, label, group, shortcut) through subgrid, so a group
+       lines up down the list whether or not its row has a shortcut. An unused column is 0 wide:
+       the gaps are margins on the cells, not column gaps. */
+    .cp-list { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 320px; overflow: auto; overscroll-behavior: contain;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-content: start; }
+    .cp-item { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-sm); }
     .cp-item.active { background: var(--ui-color-elevated-hover); }
-    .ci { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); }
-    .cl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cg { flex: none; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .ci { grid-column: 1; width: 16px; margin-right: var(--ui-space-2); display: inline-flex; align-items: center; justify-content: center; color: var(--ui-color-text-muted); }
+    .cl { grid-column: 2; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cg { grid-column: 3; margin-left: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     /* Matches ui-kbd. */
-    .ck { flex: none; display: inline-flex; align-items: center; min-width: 1.4em; height: 1.5em; padding: 0 0.4em; box-sizing: border-box;
+    .ck { grid-column: 4; justify-self: end; margin-left: var(--ui-space-2); display: inline-flex; align-items: center; min-width: 1.4em; height: 1.5em; padding: 0 0.4em; box-sizing: border-box;
       font-family: var(--ui-font-mono); font-size: 11px; line-height: 1; color: var(--ui-color-text-muted);
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-bottom-width: 2px; border-radius: var(--ui-radius-xs); }
-    .cp-empty { padding: var(--ui-space-4); text-align: center; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .cp-empty { grid-column: 1 / -1; padding: var(--ui-space-4); text-align: center; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })
 export class UiCommandPalette {

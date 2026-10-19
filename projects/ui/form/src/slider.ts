@@ -15,7 +15,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         [attr.aria-label]="label()"
         (input)="handleInput($event)"
         (blur)="onTouched()" />
-      @if (showValue()) { <span class="val">{{ value() }}</span> }
+      @if (showValue()) { <span class="val" [style.min-width.ch]="valueWidth()">{{ value() }}</span> }
     </div>
   `,
   styles: `
@@ -29,7 +29,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--ui-slider-thumb); border: 1px solid var(--ui-slider-thumb-border); cursor: pointer; }
     input[type=range]:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-slider:has(input:disabled) .val { opacity: .5; }
-    .val { min-width: 2.5ch; text-align: right; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
+    /* min-width (in ch of the mono font) comes from valueWidth(). */
+    .val { text-align: right; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSlider), multi: true }],
 })
@@ -44,6 +45,16 @@ export class UiSlider implements ControlValueAccessor {
   protected readonly disabled = signal(false);
   private onChange: (v: number) => void = () => {};
   protected onTouched: () => void = () => {};
+
+  /**
+   * The value slot fits the longest value this slider can show, and at least 4 characters, so the
+   * slot doesn't change size while dragging and sliders stacked in a form end their tracks together.
+   */
+  protected readonly valueWidth = computed(() => {
+    const decimals = (String(this.step()).split('.')[1] ?? '').length;
+    const longest = Math.max(...[this.min(), this.max(), this.min() + this.step()].map((v) => v.toFixed(decimals).length));
+    return Math.max(4, longest);
+  });
 
   protected readonly fillPct = computed(() => {
     const range = this.max() - this.min();

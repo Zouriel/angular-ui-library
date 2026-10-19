@@ -223,8 +223,9 @@
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
    ground. Its thin glass tint was tuned for its own background, so over the page's it reads as that
-   page (a near-white "dark" card with light text). Inside an island, glass uses the panel recipe. */
-[data-theme] [data-theme] {
+   page (a near-white "dark" card with light text). Inside an island that doesn't paint its own
+   background (no .ui-surface), glass uses the panel recipe. */
+[data-theme] [data-theme]:not(.ui-surface) {
   --ui-glass-bg: var(--ui-glass-panel-bg);
 }
 

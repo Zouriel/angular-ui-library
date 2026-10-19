@@ -34,6 +34,6 @@ describe('glass on floating panels', () => {
   });
 
   it('glass inside a theme island uses the panel recipe, since the ground behind is another theme', () => {
-    expect(read('styles/tokens.css')).toMatch(/\[data-theme\] \[data-theme\] \{ --ui-glass-bg: var\(--ui-glass-panel-bg\); \}/);
+    expect(read('styles/tokens.css')).toMatch(/\[data-theme\] \[data-theme\]:not\(\.ui-surface\) \{ --ui-glass-bg: var\(--ui-glass-panel-bg\); \}/);
   });
 });

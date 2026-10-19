@@ -30,8 +30,8 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
   `,
   styles: `
     :host { display: inline-block; }
-    /* Same box as ui-date-picker's popup: seven 32px days with 2px gaps, 12px padding. */
-    .cal { padding: var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); width: calc(7 * 32px + 6 * 2px + 2 * var(--ui-space-3) + 2px); box-sizing: border-box; font-family: var(--ui-font-default); line-height: 1.35; }
+    /* Same box as ui-date-picker's popup: seven 32px days, 12px padding. */
+    .cal { padding: var(--ui-space-3); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); width: calc(7 * 32px + 2 * var(--ui-space-3) + 2px); box-sizing: border-box; font-family: var(--ui-font-default); line-height: 1.35; }
     /* Disabled: everything dims together, the heading and weekdays too, not just the days. */
     .cal.disabled :is(.month, .weekdays, .foot) { opacity: .5; }
     .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ui-space-2); }
@@ -42,7 +42,8 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .nav:disabled { opacity: .5; cursor: not-allowed; }
-    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px; }
+    /* 32px days, columns touching (a range band runs unbroken), 2px between weeks: as in Flutter. */
+    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px 0; }
     .weekdays span { text-align: center; font-size: 11px; color: var(--ui-color-text-muted); padding: 2px 0; }
     .cell { aspect-ratio: 1; border: none; background: transparent; color: var(--ui-color-text); border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
