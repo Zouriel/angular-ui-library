@@ -4,10 +4,14 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--ui-color-bg);
   color: var(--ui-color-text);
   font-family: var(--ui-font-default);
   scroll-behavior: smooth;
+}
+/* The page colour lives on html only: a body background would paint over layers fixed behind the
+   page (the maldives theme's waves along the window's bottom edge). */
+html {
+  background: var(--ui-color-bg);
 }
 
 /* darkOrange theme: hide the native cursor so ui-cursor can take over. */

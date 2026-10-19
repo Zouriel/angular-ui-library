@@ -9,3 +9,5 @@ export * from './split-text';
 export * from './intro-loader';
 export * from './glyph-field';
 export * from './magnetic';
+export * from './sea';
+export * from './sea-shapes';

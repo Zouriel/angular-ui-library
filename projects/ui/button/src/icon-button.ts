@@ -59,6 +59,8 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn[data-variant="primary"]:active:not(:disabled) { background: var(--ui-color-primary-active); }
     .ui-icon-btn[data-variant="secondary"] { background: var(--ui-color-secondary); color: var(--ui-color-secondary-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="secondary"]:hover:not(:disabled) { background: var(--ui-color-secondary-hover); }
+    .ui-icon-btn[data-variant="accent"] { background: var(--ui-color-accent); color: var(--ui-color-accent-contrast); border-color: transparent; }
+    .ui-icon-btn[data-variant="accent"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-accent) 88%, var(--ui-color-accent-contrast)); }
     .ui-icon-btn[data-variant="outline"] { background: transparent; }
     .ui-icon-btn[data-variant="ghost"], .ui-icon-btn[data-variant="link"] { background: transparent; border-color: transparent; }
     .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-color-primary-contrast); border-color: transparent; }

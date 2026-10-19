@@ -2,7 +2,7 @@
 
 A token-driven, signal-first component library for **Angular 22**. It is:
 - standalone, zoneless and tree-shakeable, with 34 secondary entry points;
-- themeable, with 13 themes that all pass WCAG AA;
+- themeable, with 14 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
 Docs with live examples: <https://zouriel.com/uilib/> · Source: <https://github.com/Zouriel/angular-ui-library>
@@ -27,6 +27,7 @@ Load the styles once (global stylesheet or `angular.json` styles):
 @import '@zouriel/ui/styles/animations.css';        /* enter/leave animations used by overlays */
 @import '@zouriel/ui/styles/theme-palettes.css';    /* optional: the ten colour palettes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: cinematic Dark Orange (loads Google Fonts) */
+@import '@zouriel/ui/styles/theme-maldives.css';    /* optional: light Maldives sea skin (loads Poppins) */
 @import '@zouriel/ui/styles/fx.css';                /* optional: FX utility classes */
 @import '@zouriel/ui/styles/theme-animations.css';  /* optional: palette motion on the FX classes */
 @import '@zouriel/ui/styles/color-aliases.css';     /* optional: --color-* aliases for app code */
@@ -58,7 +59,8 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 `UiThemeService.set(name)` sets `data-theme` on the document:
 - `dark` / `light` (Winter, the default; also `winterDark` / `winterLight`), in `tokens.css`;
 - `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed`, in `theme-palettes.css`;
-- `darkOrange`, in `theme-dark-orange.css`.
+- `darkOrange`, in `theme-dark-orange.css`;
+- `maldives`, in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`).
 
 `ui-theme-provider` scopes a theme to part of the page. A custom theme sets the core `--ui-color-*`
 tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
@@ -87,7 +89,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `window` | floating windows, window manager, draggable, resizable |
 | `file-viewer`, `pdf-viewer` | image/video/audio/text/code viewers, lightbox, explorer, lazy PDF |
 | `form-builder` | form builder, form renderer, global form settings, option sources ([guide](form-builder/README.md)) |
-| `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label |
+| `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide) |
 | `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer |
 | `theme` | `UiThemeService`, `ui-theme-provider` |
 

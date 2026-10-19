@@ -16,10 +16,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 ## Highlights
 
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
-  set of token overrides. Ships **13 themes**:
+  set of token overrides. Ships **14 themes**:
   - **Winter**: Dark and Light, the defaults;
   - **colour palettes** (10): Light Orange; Light and Dark Pink, Teal and Purple; Gold Black, Gold Red and Light Purple Gold;
-  - **Dark Orange**: a cinematic theme with web fonts and FX.
+  - **Dark Orange**: a cinematic theme with web fonts and FX;
+  - **Maldives**: a calm, light sea theme (Poppins) with its own sea backdrops.
 
   All text and status colours meet WCAG AA in every theme. Switch at runtime with
   `UiThemeService.set('goldBlack')`.
@@ -74,6 +75,8 @@ Load the global styles once (e.g. in `angular.json` styles or your global styles
 @import '@zouriel/ui/styles/theme-palettes.css';
 /* optional: the cinematic Dark Orange skin (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';
+/* optional: the light Maldives sea skin (loads Poppins) */
+@import '@zouriel/ui/styles/theme-maldives.css';
 /* optional: FX utility classes (.ui-glow, .ui-gradient-text, .ui-underline)
    and the palettes' signature motion on them */
 @import '@zouriel/ui/styles/fx.css';
@@ -126,7 +129,7 @@ Themes are token overrides keyed on `data-theme`. `UiThemeService` writes it for
 
 ```ts
 theme = inject(UiThemeService);
-this.theme.set('goldBlack');   // any of the 13, or your own
+this.theme.set('goldBlack');   // any of the 14, or your own
 this.theme.toggle();           // dark <-> light
 ```
 
@@ -135,11 +138,13 @@ this.theme.toggle();           // dark <-> light
 | Winter (default) | `dark` (`winterDark`), `light` (`winterLight`) | `tokens.css` |
 | Palettes | `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed` | `theme-palettes.css` |
 | Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
+| Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins | `theme-maldives.css` |
 
 `toggle()` moves from `dark` to `light` and from any other theme to `dark`; `winterDark` and
 `winterLight` swap with each other.
 The darkOrange film grain and custom cursor are components (`ui-grain`, `ui-cursor` from
-`@zouriel/ui/fx`) that the app mounts itself.
+`@zouriel/ui/fx`) that the app mounts itself; so are the maldives sea backdrops (`ui-wave-footer`,
+`ui-ocean-hero`, `ui-coral-decor`, `ui-palm-decor`, `ui-sunrise`, `ui-sea-surface`, `[uiTide]`).
 
 A custom theme is a `[data-theme="yours"]` block that sets the core `--ui-color-*` tokens;
 every other token is derived. See `projects/ui/styles/COLOR-SYSTEM.md`. `ui-theme-provider`

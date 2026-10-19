@@ -29,12 +29,13 @@ const SLOT = 'Projected content is the label (text, or an icon followed by text)
 
       <doc-section name="Button" selector="ui-button" [api]="buttonApi"
         shapes="// exported from @zouriel/ui/button; the variant input of every button here takes it
-type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand';"
-        summary="Seven variants, three sizes, loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). The link variant is sized to its text but never smaller than 24x24. On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
+type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';"
+        summary="Eight variants, three sizes, loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Accent fills with the theme's --ui-color-accent (the coral call to action in maldives; secondary in themes without an accent of their own). Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). The link variant is sized to its text but never smaller than 24x24. On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
         <doc-demo code="<ui-button variant=&quot;primary&quot;>Primary</ui-button>
 <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Outline</ui-button>
 <ui-button variant=&quot;destructive&quot;>Delete</ui-button>
 <ui-button variant=&quot;brand&quot;>Get started</ui-button>
+<ui-button variant=&quot;accent&quot;>Get guidance</ui-button>
 <ui-button type=&quot;submit&quot; [loading]=&quot;true&quot;>Saving</ui-button>
 <ui-button [block]=&quot;true&quot;>Full width</ui-button>">
           <div class="row items-center">
@@ -43,6 +44,7 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
             <ui-button variant="outline">Outline</ui-button>
             <ui-button variant="destructive">Delete</ui-button>
             <ui-button variant="brand">Get started</ui-button>
+            <ui-button variant="accent">Get guidance</ui-button>
           </div>
           <!-- The borderless variants get their own row: wrapped to the start of a line they read as stray text. -->
           <div class="row items-center">
@@ -236,7 +238,7 @@ export class ButtonsPage {
     { name: '(content)', type: 'slot', default: '—', desc: SLOT },
   ];
   protected readonly splitApi: ApiRow[] = [
-    { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style. link and brand have no style of their own here and draw as a plain surface button.' },
+    { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style. link, brand and accent have no style of their own here and draw as a plain surface button.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable both buttons.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
@@ -248,7 +250,7 @@ export class ButtonsPage {
   ];
   protected readonly ddApi: ApiRow[] = [
     { name: 'items', type: 'UiDropdownItem[]', default: '[]', desc: 'Menu items (see Data shapes).' },
-    { name: 'variant', type: VARIANT, default: "'secondary'", desc: 'Trigger style. link and brand have no style of their own here and draw as a plain surface button.' },
+    { name: 'variant', type: VARIANT, default: "'secondary'", desc: 'Trigger style. link, brand and accent have no style of their own here and draw as a plain surface button.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Trigger height.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the trigger.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },

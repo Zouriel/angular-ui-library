@@ -1,0 +1,97 @@
+/*
+ * UI Library — "maldives" theme (Find Doctor brand: calm, light, sea-like).
+ *
+ * The light counterpart of darkOrange: its own stylesheet, its own brand tokens, a web font, and
+ * its own fx layer (the sea backdrops in @zouriel/ui/fx: ui-wave-footer, ui-ocean-hero,
+ * ui-coral-decor, ui-palm-decor, ui-sunrise, ui-sea-surface, [uiTide]). White cards on a Mist
+ * canvas, Ocean Deep ink and primary, Lagoon secondary, a Coral accent for the one CTA that should
+ * pull the eye, Sand for warmth.
+ *
+ * Opt-in (it pulls Poppins). Include AFTER tokens.css, then switch with
+ * UiThemeService.set('maldives') or <html data-theme="maldives">.
+ *
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/theme-maldives.css';
+ *
+ * Contrast: the raw brand colours (--ui-color-lagoon, --ui-color-coral) are too light for text on
+ * Mist or white, so the text-bearing roles use deepened steps of them (secondary, text-muted,
+ * danger, rating). Coral buttons carry Ocean Deep text: white on #ff7f7f is only 2.4:1.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+[data-theme="maldives"] {
+  color-scheme: light;
+
+  /* Brand colours, raw. For the fx layers and accent fills, not for text on the canvas. */
+  --ui-color-ocean-deep: #0b2d3a;
+  --ui-color-lagoon: #4a90a4;
+  --ui-color-coral: #ff7f7f;
+  --ui-color-sand: #f6e7d7;
+  --ui-color-mist: #f3f8fb;
+
+  /* Canvas: white cards sit on Mist */
+  --ui-color-bg: #f3f8fb;
+  --ui-glass-bg: rgba(243, 248, 251, 0.9);
+  --ui-color-surface: #ffffff;
+  --ui-color-surface-raised: #ffffff;
+  --ui-color-surface-subtle: #eaf3f7;
+  --ui-color-surface-hover: #eaf3f7;
+  --ui-color-elevated-hover: #eaf3f7;
+  --ui-color-text: #0b2d3a;
+  --ui-color-text-muted: #365f6e; /* Lagoon, deepened: 6.5:1 on Mist, 7:1 on white (thin Poppins captions need the margin) */
+  --ui-color-border: #e1ecf2; /* Mist darkened ~6% */
+  --ui-color-border-strong: #8fb0bd;
+
+  /* Roles */
+  --ui-color-primary: #0b2d3a;
+  --ui-color-primary-hover: #15455a;
+  --ui-color-primary-contrast: #ffffff;
+  --ui-color-secondary: #38788b; /* Lagoon, deepened so white text clears 4.5:1 */
+  --ui-color-secondary-contrast: #ffffff;
+  --ui-color-success: #1e7a5a;
+  --ui-color-warning: #8a5a00;
+  --ui-color-warning-contrast: #ffffff;
+  --ui-color-danger: #c0403f; /* Coral, darkened to 4.9:1 on Mist */
+  --ui-color-accent: #ff7f7f;
+  --ui-color-accent-contrast: #0b2d3a;
+  --ui-color-accent-subtle: rgba(255, 127, 127, 0.16);
+  --ui-color-accent-strong: #c0403f;
+  --ui-color-selected: rgba(74, 144, 164, 0.14);
+  --ui-color-track: #e1ecf2;
+  --ui-color-overlay: rgba(11, 45, 58, 0.42);
+
+  /* Filled stars: Coral, deepened just enough to clear 3:1 on white. */
+  --ui-rating-fill: #e26363;
+  --ui-cursor-color: #0b2d3a;
+  --ui-scroll-progress-track: rgba(11, 45, 58, 0.06);
+
+  /* Sunrise → lagoon → deep */
+  --ui-gradient-brand: linear-gradient(90deg, #f6e7d7 0%, #ff7f7f 35%, #4a90a4 70%, #0b2d3a 100%);
+  /* Sky to sea: the lower half is deep enough for white text (4.5:1 from 60% down). */
+  --ui-gradient-hero: linear-gradient(180deg, #f6e7d7 0%, #ffb3a8 20%, #4a90a4 48%, #0b2d3a 86%);
+  --ui-gradient-highlight: linear-gradient(
+    180deg,
+    rgba(74, 144, 164, 0.14) 0%,
+    rgba(74, 144, 164, 0) 100%
+  );
+  --ui-glow-amber: 0 0 24px rgba(255, 127, 127, 0.25);
+
+  /* Light-surface recipe: soft, Ocean Deep tinted */
+  --ui-glass-border: rgba(11, 45, 58, 0.1);
+  --ui-shadow-1: 0 1px 2px rgba(11, 45, 58, 0.06);
+  --ui-shadow-2: 0 4px 16px rgba(11, 45, 58, 0.08);
+  --ui-shadow-3: 0 12px 40px rgba(11, 45, 58, 0.14);
+
+  /* Generous, friendly corners from the existing scale */
+  --ui-radius: var(--ui-radius-sm);
+
+  /* Typography: Poppins throughout (400 body, 600 headings). */
+  --ui-font-default: "Poppins", system-ui, -apple-system, sans-serif;
+  --ui-font-display: "Poppins", system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="maldives"] ::selection {
+  background: rgba(74, 144, 164, 0.28);
+  color: #0b2d3a;
+}

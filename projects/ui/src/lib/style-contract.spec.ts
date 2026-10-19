@@ -140,7 +140,7 @@ export function contrast(fg: Rgba, bg: Rgba): number {
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
   const out: { name: string; vars: Record<string, string> }[] = [];
-  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css']) {
+  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
     for (const m of text.matchAll(/\[data-theme="(\w+)"\]\s*\{([^}]*)\}/g)) {
       const vars = Object.fromEntries([...m[2].matchAll(/(--ui-color-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -155,7 +155,7 @@ describe('theme palettes', () => {
 
   it('finds every named skin', () => {
     expect(list.map((t) => t.name).sort()).toEqual(
-      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal'].sort(),
+      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives'].sort(),
     );
   });
 
@@ -187,6 +187,7 @@ describe('theme palettes', () => {
       pair('primary-contrast', 'primary');
       pair('secondary-contrast', 'secondary', vars['--ui-color-primary-contrast']); // secondary buttons
       pair('warning-contrast', 'warning', '#1a1d23'); // tokens.css default
+      if (vars['--ui-color-accent']) pair('accent-contrast', 'accent', vars['--ui-color-primary-contrast']); // accent buttons
     }
     expect(fails).toEqual([]);
   });
@@ -198,7 +199,7 @@ describe('theme palettes', () => {
    */
   it('keeps text readable on glass in every light theme, over the page and over a dimmed page', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -206,7 +207,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };

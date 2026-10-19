@@ -111,6 +111,8 @@
      default; body/caption sizes stay at 0 (tightening small text hurts legibility). */
   --ui-tracking-tight: -0.02em;
   --ui-tracking-tighter: -0.03em;
+  /* Positive tracking for small upper-case taglines and eyebrows (a theme's brand line). */
+  --ui-tracking-wide: 0.08em;
 
   /* Radius — --ui-radius is the single value most components toggle on/off (unchanged,
      do not edit call sites). The scale below is for components that deliberately vary
@@ -202,6 +204,7 @@
   --ui-slider-thumb-border: var(--ui-control-border);
   --ui-skeleton-base: var(--ui-color-surface);
   --ui-skeleton-highlight: var(--ui-color-surface-raised);
+  --ui-rating-fill: var(--ui-color-warning); /* filled stars in ui-rating */
   /* The 'neutral' progress tone: a grey, so it never reads as the brand colour. */
   --ui-progress-neutral: var(--ui-color-text-muted);
   --ui-scroll-progress-track: color-mix(in srgb, var(--ui-color-text) 6%, transparent);

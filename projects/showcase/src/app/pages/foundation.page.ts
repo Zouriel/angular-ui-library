@@ -22,7 +22,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         <doc-demo lang="css" code="/* styles.css (or angular.json &quot;styles&quot;) */
 @import '@zouriel/ui/styles/tokens.css';
 @import '@zouriel/ui/styles/theme-palettes.css';     /* the accent palettes */
-@import '@zouriel/ui/styles/theme-dark-orange.css';  /* darkOrange; loads web fonts */"></doc-demo>
+@import '@zouriel/ui/styles/theme-dark-orange.css';  /* darkOrange; loads web fonts */
+@import '@zouriel/ui/styles/theme-maldives.css';     /* maldives; loads Poppins */"></doc-demo>
         <doc-demo lang="css" code="Colour roles (per theme)
 --ui-color-bg / surface / surface-raised / surface-subtle / surface-hover / elevated-hover
 --ui-color-text / text-secondary / text-muted / text-disabled / text-inverse
@@ -37,7 +38,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 Component tokens (default to a role)
 --ui-control-border   --ui-switch-track / track-checked / thumb / thumb-checked
 --ui-slider-thumb / slider-thumb-border   --ui-skeleton-base / skeleton-highlight
---ui-media-bg / media-scrim / media-on-scrim / media-danger   --ui-pdf-page-bg   --ui-scroll-progress-track"></doc-demo>
+--ui-media-bg / media-scrim / media-on-scrim / media-danger   --ui-pdf-page-bg   --ui-scroll-progress-track
+--ui-rating-fill"></doc-demo>
         <doc-demo lang="css" code="Fixed scales (same in every theme; darkOrange swaps the fonts)
 --ui-size-sm 26px   --ui-size-md 30px   --ui-size-lg 38px   --ui-size-touch 44px
 --ui-space-1 4px   -2 8px   -3 12px   -4 16px   -6 24px   -8 32px   -12 48px   -20 80px
@@ -72,7 +74,7 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Themes" selector="data-theme"
-        summary="Thirteen built-in themes. dark and light are the Winter colour system in tokens.css, also reachable as winterDark and winterLight. The ten accent palettes live in theme-palettes.css and change colours only. darkOrange lives in theme-dark-orange.css and also changes the fonts. Each tile below is a ui-theme-provider island; Use sets it for the whole page.">
+        summary="Fourteen built-in themes. dark and light are the Winter colour system in tokens.css, also reachable as winterDark and winterLight. The ten accent palettes live in theme-palettes.css and change colours only. darkOrange lives in theme-dark-orange.css and also changes the fonts; maldives, the light sea theme, lives in theme-maldives.css, sets Poppins and has its own sea backdrops (see Motion & FX). Each tile below is a ui-theme-provider island; Use sets it for the whole page.">
         <div class="themes">
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
@@ -142,12 +144,13 @@ export class FoundationPage {
     { name: 'lightPurple', file: 'theme-palettes.css' },
     { name: 'darkPurple', file: 'theme-palettes.css' },
     { name: 'lightPurpleGold', file: 'theme-palettes.css' },
+    { name: 'maldives', file: 'theme-maldives.css' },
   ];
   protected readonly THEME_TYPE = `type UiTheme =
   | 'dark' | 'light' | 'winterDark' | 'winterLight' | 'darkOrange'
   | 'lightOrange' | 'lightPink' | 'darkPink' | 'goldBlack' | 'goldRed'
   | 'lightTeal' | 'darkTeal' | 'lightPurple' | 'darkPurple' | 'lightPurpleGold'
-  | (string & {});`;
+  | 'maldives' | (string & {});`;
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Default rounded corners for components with a radius input.' },

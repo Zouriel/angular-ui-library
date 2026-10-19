@@ -15,6 +15,9 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  * - `darkOrange` is the cinematic ink/ember skin (grain, FX cursor, web fonts,
  *   glow) and requires `@zouriel/ui/styles/theme-dark-orange.css`. It was formerly
  *   named `dramatic`.
+ * - `maldives` is the calm, light sea skin (Find Doctor brand: Ocean Deep, Lagoon, Coral, Sand,
+ *   Mist; Poppins) with its own sea backdrops in `@zouriel/ui/fx`, and requires
+ *   `@zouriel/ui/styles/theme-maldives.css`.
  *
  * Consumers may register their own theme names too — any string is accepted by
  * {@link UiThemeService.set}.
@@ -35,6 +38,7 @@ export type UiTheme =
   | 'lightPurple'
   | 'darkPurple'
   | 'lightPurpleGold'
+  | 'maldives'
   | (string & {});
 
 /**

@@ -22,6 +22,7 @@ export const routes: Routes = [
   { path: 'form-studio', loadComponent: () => import('./pages/form-studio.page').then((m) => m.FormStudioPage), title: 'Form studio (playground) · @zouriel/ui' },
   { path: 'file-viewer', loadComponent: () => import('./pages/file-viewer.page').then((m) => m.FileViewerPage), title: 'File viewer · @zouriel/ui' },
   { path: 'fx', loadComponent: () => import('./pages/fx.page').then((m) => m.FxPage), title: 'Motion & FX · @zouriel/ui' },
+  { path: 'find-doctor', loadComponent: () => import('./pages/find-doctor.page').then((m) => m.FindDoctorPage), title: 'Find Doctor (Maldives) · @zouriel/ui' },
   { path: 'behaviors', loadComponent: () => import('./pages/behaviors.page').then((m) => m.BehaviorsPage), title: 'Behavior directives · @zouriel/ui' },
   { path: '**', redirectTo: '' },
 ];
@@ -71,5 +72,9 @@ export const NAV = [
       { label: 'Motion & FX', value: 'fx' },
       { label: 'Behavior directives', value: 'behaviors' },
     ],
+  },
+  {
+    label: 'Examples',
+    items: [{ label: 'Find Doctor (Maldives)', value: 'find-doctor' }],
   },
 ];

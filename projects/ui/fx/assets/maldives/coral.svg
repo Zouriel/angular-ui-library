@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160">
+  <path data-tone="sand" fill="#F6E7D7" d="M0 160L0 126C40 110 92 108 142 122C172 130 190 142 200 160Z"/>
+  <path data-tone="coral" fill="none" stroke="#FF7F7F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" d="M58 128C57 106 51 90 40 72M55 104C65 92 71 80 73 62M47 86C37 80 30 70 28 56M71 82C81 76 87 67 89 54M40 72C36 62 37 52 42 44M73 62C71 52 74 44 80 38"/>
+  <path data-tone="coral" fill="none" stroke="#FF7F7F" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" d="M122 124C124 110 129 100 138 90M127 108C118 101 112 93 110 83M134 96C142 92 148 84 150 74"/>
+</svg>

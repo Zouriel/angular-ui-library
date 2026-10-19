@@ -12,7 +12,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   imports: [RouterLink, UiText, UiCard, UiBadge, UiButton, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Introduction" title="UI Library"
-      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 34 secondary entry points, and themeable, with 13 themes whose text and status colours pass WCAG AA.">
+      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 34 secondary entry points, and themeable, with 14 themes whose text and status colours pass WCAG AA.">
 
       <doc-section name="Install" anchor="install"
         summary="The package is on GitHub Packages: point the @zouriel scope there, then install it with its peers. Peers: @angular/core, @angular/common, @angular/forms and @angular/cdk ^22, @hugeicons/angular ^1.0.11 and @hugeicons/core-free-icons ^4.3.0. pdfjs-dist ^4.10.38 is optional and only needed to show PDFs.">
@@ -88,10 +88,11 @@ protected readonly anim = UI_ANIM;
       </doc-section>
 
       <doc-section name="Theming" anchor="theming"
-        summary="Components only read CSS custom-property tokens, so a theme is a set of token overrides keyed on data-theme. UiThemeService (from @zouriel/ui/theme) sets data-theme on <html>; ui-theme-provider scopes a theme to part of the page. Use the picker in the top bar to preview all 13. A custom theme is a [data-theme] block that sets the core --ui-color-* tokens; the rest are derived from them.">
+        summary="Components only read CSS custom-property tokens, so a theme is a set of token overrides keyed on data-theme. UiThemeService (from @zouriel/ui/theme) sets data-theme on <html>; ui-theme-provider scopes a theme to part of the page. Use the picker in the top bar to preview all 14. A custom theme is a [data-theme] block that sets the core --ui-color-* tokens; the rest are derived from them.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
 this.theme.set('goldBlack');  // needs theme-palettes.css
 this.theme.set('darkOrange'); // needs theme-dark-orange.css
+this.theme.set('maldives');   // needs theme-maldives.css
 this.theme.toggle();          // dark -> light; any other theme -> dark
 this.theme.theme();           // the current theme (a signal)"></doc-demo>
         <div class="themes">
@@ -176,6 +177,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Winter (default)', file: 'tokens.css', themes: ['dark', 'light', 'winterDark', 'winterLight'] },
     { title: 'Colour palettes', file: 'theme-palettes.css', themes: ['lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed'] },
     { title: 'Cinematic', file: 'theme-dark-orange.css', themes: ['darkOrange'] },
+    { title: 'Sea', file: 'theme-maldives.css', themes: ['maldives'] },
   ];
 
   protected readonly groups = [

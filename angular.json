@@ -66,6 +66,7 @@
               "projects/ui/styles/theme-palettes.css",
               "projects/ui/styles/theme-animations.css",
               "projects/ui/styles/theme-dark-orange.css",
+              "projects/ui/styles/theme-maldives.css",
               "projects/ui/styles/fx.css",
               "projects/showcase/src/styles.css"
             ]
@@ -79,8 +80,10 @@
                   // platform, plus ui-button (top bar) and ui-side-nav (sidebar). A library entry point
                   // is one module, so those two bring the rest of their entry points and the CDK overlay
                   // and @angular/forms code it uses. Raise this only for a reason like that one.
+                  // 0.31.0: +10 kB for the maldives theme, whose stylesheet the showcase loads globally
+                  // like every theme (~7 kB of CSS); main.js was already at the old 560 kB line.
                   "type": "initial",
-                  "maximumWarning": "560kB",
+                  "maximumWarning": "570kB",
                   "maximumError": "1MB"
                 },
                 {

@@ -1,19 +1,24 @@
 import { Component, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import AiBrain01Icon from '@hugeicons/core-free-icons/AiBrain01Icon';
 import { UiButton } from '@zouriel/ui/button';
+import { UiThemeProvider } from '@zouriel/ui/theme';
 import {
   UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
+  UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide, type UiDecorCorner,
 } from '@zouriel/ui/fx';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-fx',
   imports: [
-    UiButton, UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
+    HugeiconsIconComponent, UiButton, UiThemeProvider, UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField,
+    UiIntroLoader, UiMagnetic, UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide,
     DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Motion" title="Motion & FX"
-      lead="The cinematic layer from @zouriel/ui/fx: scroll reveals, marquee, drift row, split text, glyph-field background, custom cursor, grain, scroll progress, intro loader and the magnetic hover. Most shine in the Dark Orange theme (switch in the top bar). Each one's reduced-motion behaviour is given in its section: continuous motion stops, and one-shot entrances are softened rather than removed.">
+      lead="The cinematic layer from @zouriel/ui/fx: scroll reveals, marquee, drift row, split text, glyph-field background, custom cursor, grain, scroll progress, intro loader and the magnetic hover, plus the sea backdrops of the Maldives theme. Most shine in the Dark Orange theme (switch in the top bar); the sea backdrops are shown inside Maldives islands whatever the page theme. Each one's reduced-motion behaviour is given in its section: continuous motion stops, and one-shot entrances are softened rather than removed.">
 
       <doc-section name="Reveal" selector="[uiReveal]" [api]="revealApi" [shapes]="'type UiRevealMode = &quot;up&quot; | &quot;down&quot; | &quot;left&quot; | &quot;right&quot; | &quot;blur&quot; | &quot;scale&quot;;'"
         summary="Directive. Hides the host (opacity 0, offset) and fades it in when it scrolls into view (IntersectionObserver). The mode is the directive value; blur also un-blurs. With revealOnce off it hides again on leaving. Self-contained: inline transitions, no global CSS. Under prefers-reduced-motion it still fades in, but only from a 6px lift, with no slide, scale or blur. Inputs are read once, on init.">
@@ -94,6 +99,94 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
           </div>
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Wave footer" selector="ui-wave-footer" [api]="waveApi" [shapes]="'type UiWaveLayers = 2 | 3;'"
+        summary="Two or three stacked wave bands pinned to the bottom of the nearest positioned container, in the theme's Lagoon (secondary in themes without one). Each band drifts sideways on its own slow loop, alternating direction (the tide: 30, 38 and 46 seconds). Decorative: hidden from screen readers and never takes the pointer. The drift stops under prefers-reduced-motion and with provideUiConfig({ animations: false }).">
+        <doc-demo code="<div style=&quot;position: relative&quot;>
+  …
+  <ui-wave-footer [layers]=&quot;3&quot; [height]=&quot;120&quot; [opacity]=&quot;0.5&quot; />
+</div>">
+          <ui-theme-provider theme="maldives" class="ui-surface sea-box">
+            <ui-wave-footer [layers]="3" [height]="110" [opacity]="0.6" />
+          </ui-theme-provider>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Ocean hero" selector="ui-ocean-hero" [api]="heroApi"
+        summary="A full-bleed sea backdrop: the theme's --ui-gradient-hero (in Maldives a sand and coral sky over the lagoon into deep teal), an optional photo under it as a wash, and a slow diagonal light sweep every 8 seconds. Project the hero's content; it sits above the sky. The photo and sweep are decorative. The sweep stops under reduced motion or with animations off. With fill it covers its positioned parent instead of flowing.">
+        <doc-demo code="<ui-ocean-hero src=&quot;beach.jpg&quot; [shimmer]=&quot;true&quot;>
+  <h1>Find a doctor</h1>
+</ui-ocean-hero>">
+          <ui-theme-provider theme="maldives">
+            <ui-ocean-hero class="hero-demo">
+              <div class="hero-inner"><span class="hero-title">Find Doctor</span><span class="hero-tag">Care, close to home</span></div>
+            </ui-ocean-hero>
+          </ui-theme-provider>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Coral and palm decor" selector="ui-coral-decor · ui-palm-decor" [api]="decorApi" [shapes]="'type UiDecorCorner = &quot;bl&quot; | &quot;br&quot; | &quot;tl&quot; | &quot;tr&quot;;'"
+        summary="Corner silhouettes for a positioned container: branching coral on a sand mound (Coral and Sand), and two leaning palms (Ocean Deep and Lagoon). corner picks the corner and mirrors the shape to face inward. They float 4px up and down on a 5 second loop, which stops under reduced motion or with animations off. Decorative: hidden from screen readers, never take the pointer. The shapes come from the shared SVG sources in projects/ui/fx/assets/maldives.">
+        <doc-demo code="<ui-coral-decor corner=&quot;bl&quot; [scale]=&quot;1&quot; [opacity]=&quot;0.9&quot; />
+<ui-palm-decor corner=&quot;br&quot; [scale]=&quot;0.8&quot; />">
+          <div class="row">
+            @for (c of corners; track c) {
+              <ui-theme-provider theme="maldives" class="ui-surface decor-box">
+                <ui-coral-decor [corner]="c" [scale]="0.6" />
+                <ui-palm-decor [corner]="c === 'bl' ? 'br' : c === 'br' ? 'bl' : c === 'tl' ? 'tr' : 'tl'" [scale]="0.55" />
+                <span class="decor-label">{{ c }}</span>
+              </ui-theme-provider>
+            }
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Sunrise" selector="ui-sunrise" [api]="sunApi"
+        summary="A Coral sun with a soft Sand glow behind a logo slot, for a splash or empty state. On mount it fades in and rises 12px over twice --ui-motion-slow, then idles with a slow glow pulse. Under reduced motion it only fades in and the pulse stops; with animations off it simply shows. Project the logo; the sun and glow are hidden from screen readers.">
+        <doc-demo code="<ui-sunrise [size]=&quot;120&quot;><img src=&quot;logo.svg&quot; alt=&quot;Find Doctor&quot; /></ui-sunrise>">
+          <ui-theme-provider theme="maldives" class="ui-surface sun-box">
+            <div class="sun-inner">
+              @if (sunKey()) { <ui-sunrise [size]="96"><span class="sun-logo">FD</span></ui-sunrise> }
+              <ui-button variant="outline" size="sm" (click)="replaySun()">Replay</ui-button>
+            </div>
+          </ui-theme-provider>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Sea surface" selector="ui-sea-surface" [api]="surfaceApi"
+        summary="The whole look in one element. It scopes a theme to the region (maldives by default, null keeps the page's), paints that theme's background, text colour and font like ui-theme-provider with class ui-surface, and lays the wave footer and any corner decor behind the projected content.">
+        <doc-demo code="<ui-sea-surface coral=&quot;bl&quot; palm=&quot;br&quot; [waveLayers]=&quot;3&quot;>
+  <h2>Book a visit</h2>
+</ui-sea-surface>">
+          <ui-sea-surface class="surface-demo" coral="bl" palm="br" [decorScale]="0.6" [waveHeight]="90">
+            <div class="surface-inner">
+              <span class="surface-title">Book a visit</span>
+              <span class="surface-copy">Waves along the bottom, coral and palms in the corners, Maldives tokens inside.</span>
+              <ui-button variant="accent">Get guidance</ui-button>
+            </div>
+          </ui-sea-surface>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Tide" selector="[uiTide]" [api]="tideApi"
+        summary="Directive. A staggered entrance for lists and cards: each item fades in and slides up 8px, starting tideDelay + index × tideStep ms after it renders. It reuses the shared ui-slide-up-enter class from animations.css (load it globally), so reduced motion turns it into a plain fade and animations off skips it. The .ui-pulse class from fx.css is the matching slow glow pulse for a working or AI-thinking mark.">
+        <doc-demo code="@for (d of doctors; track d.id; let i = $index) {
+  <ui-card [uiTide]=&quot;i&quot; [tideStep]=&quot;60&quot;>…</ui-card>
+}
+<hugeicons-icon class=&quot;ui-pulse&quot; [icon]=&quot;aiIcon&quot; />">
+          <ui-theme-provider theme="maldives" class="ui-surface tide-box">
+            <div class="tide-inner">
+              @if (tideKey()) {
+                @for (d of tideItems; track d; let i = $index) { <div class="tide-card" [uiTide]="i" [tideStep]="80">{{ d }}</div> }
+              }
+              <div class="row items-center">
+                <hugeicons-icon class="ui-pulse ai" aria-hidden="true" [icon]="aiIcon" [size]="24" [strokeWidth]="1.8" />
+                <ui-button variant="outline" size="sm" (click)="replayTide()">Replay</ui-button>
+              </div>
+            </div>
+          </ui-theme-provider>
+        </doc-demo>
+      </doc-section>
     </doc-page>
 
     @if (intro()) { <ui-intro-loader [(open)]="intro"><div class="intro">ui</div></ui-intro-loader> }
@@ -106,6 +199,25 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
     .items-center { align-items: center; }
     .intro { font-size: 3rem; font-weight: 800; font-family: var(--ui-font-display); color: var(--ui-color-text); }
+    .sea-box { position: relative; display: block; height: 160px; border-radius: var(--ui-radius-lg); overflow: hidden; }
+    .hero-demo { height: 220px; border-radius: var(--ui-radius-lg); }
+    .hero-inner { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; gap: var(--ui-space-1); padding: var(--ui-space-6); box-sizing: border-box; }
+    .hero-title { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.75rem; color: var(--ui-color-primary-contrast); }
+    .hero-tag { font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); letter-spacing: var(--ui-tracking-wide); text-transform: uppercase; color: var(--ui-color-primary-contrast); }
+    .decor-box { position: relative; display: block; width: 168px; height: 140px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); overflow: hidden; }
+    .decor-label { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .sun-box { border-radius: var(--ui-radius-lg); }
+    .sun-inner { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-4); }
+    .sun-logo { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.6rem; }
+    .surface-demo { border-radius: var(--ui-radius-lg); min-height: 260px; }
+    .surface-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--ui-space-3); padding: var(--ui-space-8) var(--ui-space-6) var(--ui-space-20); }
+    .surface-title { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.4rem; }
+    .surface-copy { max-width: 36ch; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .tide-box { border-radius: var(--ui-radius-lg); }
+    .tide-inner { display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-4); }
+    .tide-card { padding: var(--ui-space-3) var(--ui-space-4); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);
+      border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); color: var(--ui-color-text); }
+    .ai { color: var(--ui-color-secondary); }
     .dcard { flex: 0 0 auto; width: 190px; height: 120px; display: grid; place-items: center;
       font-family: var(--ui-font-display); font-weight: 700; font-size: 1.15rem; color: var(--ui-color-text);
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
@@ -114,6 +226,14 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
 export class FxPage {
   protected readonly intro = signal(false);
   protected replay(): void { this.intro.set(false); queueMicrotask(() => this.intro.set(true)); }
+  protected readonly aiIcon = AiBrain01Icon;
+  protected readonly corners: UiDecorCorner[] = ['bl', 'br', 'tl', 'tr'];
+  protected readonly tideItems = ['Dr. Aisha Rasheed · Cardiology', 'Dr. Ibrahim Naseem · Paediatrics', 'Dr. Mariyam Shifa · Dermatology'];
+  /** Re-mounting is the replay: the entrances run when the element renders. */
+  protected readonly sunKey = signal(true);
+  protected readonly tideKey = signal(true);
+  protected replaySun(): void { this.sunKey.set(false); setTimeout(() => this.sunKey.set(true)); }
+  protected replayTide(): void { this.tideKey.set(false); setTimeout(() => this.tideKey.set(true)); }
   protected readonly marquee = ['Design tokens', 'Signals', 'Zoneless', 'CDK', 'A11y', 'Tree-shakeable', 'Themeable'];
   protected readonly drift = ['Editorial', 'Weddings', 'Birthdays', 'Galas', 'Launches', 'Ceremonies', 'Dinners', 'Reunions'];
 
@@ -170,6 +290,42 @@ export class FxPage {
     { name: '--ui-scroll-progress-track', type: 'CSS color', default: 'theme', desc: 'Track behind the progress bar.' },
   ];
   protected readonly introOut: ApiRow[] = [{ name: 'done', type: 'void', default: '—', desc: 'Emitted once the wipe has finished, about 650ms after it starts.' }];
+  protected readonly waveApi: ApiRow[] = [
+    { name: 'layers', type: 'UiWaveLayers', default: '3', desc: 'Bands, back to front; 2 drops the middle one.' },
+    { name: 'height', type: 'number', default: '120', desc: 'Height of the tallest band (px).' },
+    { name: 'opacity', type: 'number', default: '0.5', desc: 'Opacity of the whole footer.' },
+  ];
+  protected readonly heroApi: ApiRow[] = [
+    { name: 'src', type: 'string | null', default: 'null', desc: 'Optional photo under the gradient, which becomes a wash over it. Decorative (empty alt).' },
+    { name: 'shimmer', type: 'boolean', default: 'true', desc: 'The slow diagonal light sweep.' },
+    { name: 'fill', type: 'boolean', default: 'false', desc: 'Cover the nearest positioned parent (absolute, inset 0) instead of flowing.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'The hero content, drawn above the sky.' },
+  ];
+  protected readonly decorApi: ApiRow[] = [
+    { name: 'corner', type: 'UiDecorCorner', default: "'bl'", desc: 'Corner of the positioned parent; the shape is mirrored to face inward.' },
+    { name: 'scale', type: 'number', default: '1', desc: 'Size multiplier: coral is 160 × 128px at 1, palms 160 × 176px.' },
+    { name: 'opacity', type: 'number', default: '0.9', desc: 'Opacity of the silhouette.' },
+  ];
+  protected readonly sunApi: ApiRow[] = [
+    { name: 'size', type: 'number', default: '120', desc: 'Diameter of the sun (px); the host is 1.6 times that, for the glow.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'The logo, centred on the sun.' },
+  ];
+  protected readonly surfaceApi: ApiRow[] = [
+    { name: 'theme', type: 'string | null', default: "'maldives'", desc: 'Theme scoped to the region; null keeps the page theme.' },
+    { name: 'waves', type: 'boolean', default: 'true', desc: 'Show the wave footer.' },
+    { name: 'waveLayers', type: 'UiWaveLayers', default: '3', desc: 'Wave bands.' },
+    { name: 'waveHeight', type: 'number', default: '120', desc: 'Wave footer height (px).' },
+    { name: 'waveOpacity', type: 'number', default: '0.5', desc: 'Wave footer opacity.' },
+    { name: 'coral', type: 'UiDecorCorner | null', default: 'null', desc: 'Corner for the coral, or none.' },
+    { name: 'palm', type: 'UiDecorCorner | null', default: 'null', desc: 'Corner for the palms, or none.' },
+    { name: 'decorScale', type: 'number', default: '1', desc: 'Scale of both decor silhouettes.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'The region content, above the backdrop.' },
+  ];
+  protected readonly tideApi: ApiRow[] = [
+    { name: 'uiTide', type: 'number', default: '0', desc: 'The item’s index in its list.' },
+    { name: 'tideDelay', type: 'number', default: '0', desc: 'Delay before the first item (ms).' },
+    { name: 'tideStep', type: 'number', default: '60', desc: 'Extra delay per index (ms).' },
+  ];
   protected readonly magApi: ApiRow[] = [
     { name: 'magneticStrength', type: 'number', default: '0.35', desc: 'Share of the pointer’s offset from the centre that the host follows (0–1).' },
     { name: 'magneticRadius', type: 'number', default: '0', desc: 'Extra px around the host that already pull it. Read once, on init.' },

@@ -36,7 +36,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .star { display: grid; place-items: center; box-sizing: border-box; width: 24px; height: 24px; border: none; background: none; cursor: pointer; padding: 0; font: inherit;
       color: var(--ui-color-text-muted); transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
     .star svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
-    .star.filled { color: var(--ui-color-warning); }
+    .star.filled { color: var(--ui-rating-fill); }
     .star.filled svg path { fill: currentColor; }
     .star:disabled { cursor: not-allowed; opacity: .5; }
     .star:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }

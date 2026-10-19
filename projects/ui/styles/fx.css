@@ -40,6 +40,17 @@
   transform-origin: left;
 }
 
+/* Slow glow pulse for a "working" / "AI thinking" mark (an icon, a dot). Transform + opacity only. */
+@keyframes ui-fx-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.06); }
+}
+.ui-pulse {
+  animation: ui-fx-pulse 2.4s var(--ui-ease-standard) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ui-underline::after { transition: none; }
+  .ui-pulse { animation: none; }
 }
+.ui-no-anim .ui-pulse { animation: none; }

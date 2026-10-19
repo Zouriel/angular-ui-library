@@ -18,7 +18,7 @@ import { UiSelect } from '@zouriel/ui/form';
 // (A library entry point the shell imports eagerly lands in the initial chunk with everything any page
 // uses from it, so the shell keeps its eager imports to what the first paint needs.)
 import { UiDrawer, UiToastHost, UiSnackbarHost } from '@zouriel/ui/dialog';
-import { UiScrollProgress, UiCursor, UiGrain } from '@zouriel/ui/fx';
+import { UiScrollProgress, UiCursor, UiGrain, UiWaveFooter } from '@zouriel/ui/fx';
 import { UiCommandPalette } from '@zouriel/ui/command-palette';
 import type { UiCommand } from '@zouriel/ui/command-palette';
 import { UiKbd } from '@zouriel/ui/link';
@@ -28,7 +28,7 @@ import { NAV } from './app.routes';
   selector: 'app-root',
   imports: [
     HugeiconsIconComponent, FormsModule, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiSelect, UiDrawer,
-    UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
+    UiScrollProgress, UiCursor, UiGrain, UiWaveFooter, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
@@ -89,6 +89,7 @@ import { NAV } from './app.routes';
     @defer (on idle) {
       <ui-scroll-progress />
       @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
+      @if (seaTheme()) { <ui-wave-footer class="page-waves" [layers]="3" [height]="96" [opacity]="0.35" /> }
       <ui-toast-host position="bottom-right" />
       <ui-snackbar-host />
     }
@@ -102,6 +103,8 @@ import { NAV } from './app.routes';
       font-size: var(--ui-font-size-sm); font-weight: 600; text-decoration: none; transform: translateY(-200%); }
     .skip:focus-visible { transform: none; outline: none; box-shadow: var(--ui-focus-ring); }
     .content:focus { outline: none; }
+    /* Fixed along the window's bottom edge, behind the page (the canvas background still shows under it). */
+    .page-waves { position: fixed; z-index: -1; }
     .hint { margin-left: var(--ui-space-1); }
     .shell { display: flex; min-height: 100vh; }
     .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none; box-sizing: border-box;
@@ -175,6 +178,8 @@ export class App {
   protected readonly shortcut = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '') ? '⌘ K' : 'Ctrl K';
   /** Themes that ship the cinematic FX layer (grain + custom cursor). */
   protected readonly fxTheme = computed(() => this.theme.theme() === 'darkOrange');
+  /** The maldives theme's fx layer: the tide along the bottom of the window. */
+  protected readonly seaTheme = computed(() => this.theme.theme() === 'maldives');
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
   protected readonly THEMES = [
@@ -191,6 +196,7 @@ export class App {
     { value: 'lightPurple', label: 'Light Purple' },
     { value: 'darkPurple', label: 'Dark Purple' },
     { value: 'lightPurpleGold', label: 'Light Purple Gold' },
+    { value: 'maldives', label: 'Maldives' },
   ];
 
   /**

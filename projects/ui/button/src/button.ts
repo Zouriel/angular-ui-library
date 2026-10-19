@@ -1,7 +1,7 @@
 import { Component, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
-export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand';
+export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
 
 /**
  * `ui-button` — the action primitive. Wires `glass`/`radius` to the global
@@ -66,6 +66,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-variant="primary"]:active:not(:disabled) { background: var(--ui-color-primary-active); }
     .ui-btn[data-variant="secondary"] { background: var(--ui-color-secondary); color: var(--ui-color-secondary-contrast); border-color: transparent; }
     .ui-btn[data-variant="secondary"]:hover:not(:disabled) { background: var(--ui-color-secondary-hover); }
+    /* The theme's accent (maldives: the coral CTA). Falls back to secondary in themes without one. */
+    .ui-btn[data-variant="accent"] { background: var(--ui-color-accent); color: var(--ui-color-accent-contrast); border-color: transparent; }
+    .ui-btn[data-variant="accent"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-accent) 88%, var(--ui-color-accent-contrast)); }
     .ui-btn[data-variant="outline"] { background: transparent; }
     .ui-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
     .ui-btn[data-variant="destructive"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
