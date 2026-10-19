@@ -24,6 +24,7 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
       border: 1px solid var(--ui-color-border);
     }
     .ui-chip.no-radius { border-radius: var(--ui-radius); }
+    .ui-chip:not([data-tone="neutral"]) { --ui-color-icon: currentColor; }
     .ui-chip[data-tone="primary"] { background: color-mix(in srgb, var(--ui-color-primary) 22%, transparent); border-color: var(--ui-color-primary); }
     .ui-chip[data-tone="success"] { background: color-mix(in srgb, var(--ui-color-success) 22%, transparent); border-color: var(--ui-color-success); }
     .ui-chip[data-tone="warning"] { background: color-mix(in srgb, var(--ui-color-warning) 22%, transparent); border-color: var(--ui-color-warning); }

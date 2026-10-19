@@ -115,6 +115,7 @@ export class UiTab {
     /* Press feedback on the contents only, so the selected underline doesn't shrink with it. */
     .tab:active:not(:disabled) > * { transform: scale(var(--ui-scale-press)); }
     .tab > * { transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .tab[aria-selected="true"] { --ui-color-icon: currentColor; }
     .tab[aria-selected="true"] { color: var(--ui-color-text); border-bottom-color: var(--ui-color-primary); }
     /* The strip scrolls, which clips an outset ring top and bottom; the ring sits inside instead. */
     .tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); border-radius: var(--ui-radius-xs); }

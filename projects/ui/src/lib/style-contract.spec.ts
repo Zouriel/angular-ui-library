@@ -84,6 +84,12 @@ describe('style contract', () => {
     expect(bad).toEqual([]);
   });
 
+  it('never lets a textarea be resized by hand', () => {
+    // A drag handle on a text box is a box that was the wrong size; ui-textarea has autosize instead.
+    const bad = everything.filter(({ text }) => /resize\s*:\s*(vertical|both|horizontal|block|inline)\b/.test(withoutComments(text))).map((s) => s.file);
+    expect(bad).toEqual([]);
+  });
+
   it('never transitions `all`', () => {
     const bad = everything.filter(({ text }) => /transition(-property)?\s*:\s*all\b/.test(withoutComments(text))).map((s) => s.file);
     expect(bad).toEqual([]);
@@ -188,6 +194,51 @@ describe('theme palettes', () => {
       pair('secondary-contrast', 'secondary', vars['--ui-color-primary-contrast']); // secondary buttons
       pair('warning-contrast', 'warning', '#1a1d23'); // tokens.css default
       if (vars['--ui-color-accent']) pair('accent-contrast', 'accent', vars['--ui-color-primary-contrast']); // accent buttons
+    }
+    expect(fails).toEqual([]);
+  });
+
+  /*
+   * The skeleton once defaulted to surface → surface-raised, which vanished on a card wherever the two
+   * are close (the dark palettes) or equal (maldives). Check the resolved colours in every theme.
+   */
+  it('keeps the skeleton visible on a card and its shimmer visible in every theme', () => {
+    const fails: string[] = [];
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8'));
+      for (const m of text.matchAll(/\[data-theme="(\w+)"\]\s*\{([^}]*)\}/g)) {
+        const v = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+        if (!v['--ui-color-bg']) continue;
+        const raised = parseColor(v['--ui-color-surface-raised']);
+        // tokens.css default: the raised surface mixed with 10% (base) and 4% (highlight) of the text.
+        const text = parseColor(v['--ui-color-text']);
+        const mix = (k: number): Rgba | null => (raised && text ? (raised.map((c, i) => (i < 3 ? c * (1 - k) + over(text, raised)[i] * k : 1)) as Rgba) : null);
+        const base = v['--ui-skeleton-base'] ? parseColor(v['--ui-skeleton-base']) : mix(0.1);
+        const high = v['--ui-skeleton-highlight'] ? parseColor(v['--ui-skeleton-highlight']) : mix(0.04);
+        if (!raised || !base || !high) {
+          fails.push(`${m[1]}: skeleton colours unreadable`);
+          continue;
+        }
+        if (contrast(base, raised) < 1.1) fails.push(`${m[1]}: skeleton on a card is ${contrast(base, raised).toFixed(2)}:1`);
+        if (contrast(base, high) < 1.05) fails.push(`${m[1]}: skeleton shimmer is ${contrast(base, high).toFixed(2)}:1`);
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('gives a theme icon colour 3:1 on the page and surfaces', () => {
+    const fails: string[] = [];
+    for (const { name, vars } of list) {
+      const icon = parseColor(vars['--ui-color-icon'] ?? '');
+      if (!vars['--ui-color-icon']) continue;
+      if (!icon) {
+        fails.push(`${name}: --ui-color-icon unreadable`);
+        continue;
+      }
+      for (const g of ['bg', 'surface', 'surface-raised']) {
+        const r = contrast(icon, parseColor(vars[`--ui-color-${g}`])!);
+        if (r < 3) fails.push(`${name}: icon on ${g} is ${r.toFixed(2)}:1`);
+      }
     }
     expect(fails).toEqual([]);
   });

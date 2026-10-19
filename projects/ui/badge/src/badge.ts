@@ -17,6 +17,7 @@ import type { UiStatus } from '@zouriel/ui';
       border: 1px solid var(--ui-color-border);
     }
     .ui-badge.dot { width: 8px; height: 8px; padding: 0; }
+    .ui-badge { --ui-color-icon: currentColor; }
     .ui-badge[data-tone="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: var(--ui-color-success-contrast); border-color: transparent; }
     .ui-badge[data-tone="warning"] { background: var(--ui-color-warning); color: var(--ui-color-warning-contrast); border-color: transparent; }

@@ -55,7 +55,8 @@ export interface UiBottomNavItem {
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
       transition: color var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
-    .item.active { color: var(--ui-color-primary); }
+    /* The current page's icon follows its colour; the others take --ui-color-icon. */
+    .item.active { color: var(--ui-color-primary); --ui-color-icon: currentColor; }
     /* The bar clips its overflow, so the ring sits inside the item. */
     .item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     /* Flex so a drawn icon sits on the text baseline the same way a glyph did. */

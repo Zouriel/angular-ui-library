@@ -75,7 +75,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Textarea" selector="ui-textarea" [api]="textareaApi"
-        summary="Multi-line text field. Value type: string. With autosize it grows with the text from rows up to maxRows lines, and has no resize handle.">
+        summary="Multi-line text field. Value type: string. It has no resize handle; with autosize it grows with the text from rows up to maxRows lines.">
         <doc-demo code="<ui-textarea formControlName=&quot;bio&quot; [rows]=&quot;3&quot; [autosize]=&quot;true&quot; [maxRows]=&quot;8&quot; />">
           <ui-textarea formControlName="bio" [rows]="2" placeholder="About you…" />
         </doc-demo>
@@ -400,7 +400,7 @@ export class FormsPage {
   protected readonly textareaApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "''", desc: 'Placeholder text.' },
     { name: 'rows', type: 'number', default: '4', desc: 'Visible rows (the starting height with autosize).' },
-    { name: 'autosize', type: 'boolean', default: 'false', desc: 'Grow with the text; no resize handle.' },
+    { name: 'autosize', type: 'boolean', default: 'false', desc: 'Grow with the text from rows up to maxRows lines.' },
     { name: 'maxRows', type: 'number', default: '8', desc: 'With autosize: most lines before it scrolls.' },
     { name: 'autocomplete', type: 'string', default: '—', desc: 'Native autocomplete.' },
     { name: 'name', type: 'string', default: '—', desc: 'Native name.' },

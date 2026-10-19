@@ -49,6 +49,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
     .title { display: block; margin-bottom: 2px; letter-spacing: var(--ui-tracking-tight); }
     .body { color: var(--ui-color-text-muted); }
+    .ui-alert { --ui-color-icon: currentColor; }
     .ui-alert[data-tone="info"]    { border-left-color: var(--ui-color-info); }
     .ui-alert[data-tone="success"] { border-left-color: var(--ui-color-success); }
     .ui-alert[data-tone="warning"] { border-left-color: var(--ui-color-warning); }

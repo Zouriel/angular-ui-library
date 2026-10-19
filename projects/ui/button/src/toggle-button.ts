@@ -33,6 +33,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-toggle:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     /* On: a solid primary fill, so it can't be mistaken for the off state in any theme (a light tint
        read as plain grey on the dark themes). */
+    .ui-toggle.pressed { --ui-color-icon: currentColor; }
     .ui-toggle.pressed { background: var(--ui-color-primary); border-color: transparent; color: var(--ui-color-primary-contrast); }
     /* Redeclared, not inherited — .ui-toggle:hover:not(:disabled) above has higher specificity
        (one class + two pseudo-classes = (0,3,0)) than the bare .ui-toggle.pressed rule (two

@@ -51,10 +51,15 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Section label" selector="ui-section-label" [api]="labelApi"
-        summary="Editorial mono section marker, e.g. [ 00 · INDEX ]. label is required; the index and its dot are left out when index is empty.">
-        <doc-demo code="<ui-section-label index=&quot;00&quot; label=&quot;Index&quot; />">
-          <ui-section-label index="00" label="Index" />
+      <doc-section name="Section label" selector="ui-section-label" [api]="labelApi" [shapes]="'type UiSectionLabelVariant = &quot;auto&quot; | &quot;bracket&quot; | &quot;eyebrow&quot;;'"
+        summary="A section marker above a heading. eyebrow is a short accent bar and the label in small caps, in the theme's own font, with the index in the primary colour; bracket is the editorial mono marker made for Dark Orange, [ 00 · INDEX ]. auto (the default) picks bracket on Dark Orange and eyebrow everywhere else. The accent colour is --ui-section-label-bracket: the theme's primary by default, its warm accent in Winter, blood red in Dark Orange, coral in Maldives. label is required; the index is left out when empty.">
+        <doc-demo code="<ui-section-label index=&quot;00&quot; label=&quot;Index&quot; />
+<ui-section-label variant=&quot;bracket&quot; index=&quot;01&quot; label=&quot;Work&quot; />">
+          <div class="labels">
+            <ui-section-label index="00" label="Index" />
+            <ui-section-label variant="eyebrow" index="01" label="Eyebrow" />
+            <ui-section-label variant="bracket" index="02" label="Bracket" />
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -197,6 +202,7 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
     .big { font-family: var(--ui-font-display); font-weight: 800; font-size: clamp(2rem, 6vw, 3.5rem); letter-spacing: -0.03em; }
     .gf-host { position: relative; height: 180px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-bg); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
+    .labels { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
     .intro { font-size: 3rem; font-weight: 800; font-family: var(--ui-font-display); color: var(--ui-color-text); }
     .sea-box { position: relative; display: block; height: 160px; border-radius: var(--ui-radius-lg); overflow: hidden; }
@@ -264,6 +270,7 @@ export class FxPage {
   protected readonly labelApi: ApiRow[] = [
     { name: 'index', type: 'string', default: "''", desc: 'Leading index (e.g. 00).' },
     { name: 'label', type: 'string (required)', default: '—', desc: 'Section label.' },
+    { name: 'variant', type: 'UiSectionLabelVariant', default: "'auto'", desc: 'bracket on Dark Orange and eyebrow elsewhere, or force one.' },
   ];
   protected readonly splitApi: ApiRow[] = [
     { name: 'stagger', type: 'number', default: '35', desc: 'Per-character delay (ms).' },

@@ -80,6 +80,7 @@ export interface UiMenuItem {
     .item:hover:not(:disabled), .item:focus-visible { background: var(--ui-color-elevated-hover); outline: none; }
     /* Keyboard focus also gets an inset ring so it never reads the same as a mouse hover elsewhere. */
     .item:focus-visible { box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
+    .item.danger { --ui-color-icon: currentColor; }
     .item.danger { color: var(--ui-color-danger); }
     .item.danger:hover:not(:disabled), .item.danger:focus-visible { background: color-mix(in srgb, var(--ui-color-danger) 12%, transparent); }
     .item:disabled { opacity: 0.5; cursor: not-allowed; }

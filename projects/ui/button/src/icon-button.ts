@@ -62,6 +62,8 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn[data-variant="accent"] { background: var(--ui-color-accent); color: var(--ui-color-accent-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="accent"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-accent) 88%, var(--ui-color-accent-contrast)); }
     .ui-icon-btn[data-variant="outline"] { background: transparent; }
+    /* Icons follow the button's colour when it is filled; ghost and outline ones take --ui-color-icon. */
+    .ui-icon-btn:not([data-variant="ghost"]):not([data-variant="outline"]):not([data-variant="link"]) { --ui-color-icon: currentColor; }
     .ui-icon-btn[data-variant="ghost"], .ui-icon-btn[data-variant="link"] { background: transparent; border-color: transparent; }
     .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="brand"]:hover:not(:disabled) { background: var(--ui-gradient-brand, var(--ui-color-primary)); box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-color-primary-contrast) 12%, transparent); }

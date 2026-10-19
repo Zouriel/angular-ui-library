@@ -61,9 +61,16 @@
   --ui-color-track: #e1ecf2;
   --ui-color-overlay: rgba(11, 45, 58, 0.42);
 
+  /* Icons on neutral surfaces take Lagoon (3.4:1 on Mist, 3.6:1 on white); filled and active
+     controls keep their own foreground (see tokens.css). */
+  --ui-color-icon: #4a90a4;
+  /* The default track (the border) is 1.2:1 on white; this clears 3:1 for an off switch. */
+  --ui-switch-track: #6e93a2;
+
   /* Filled stars: Coral, deepened just enough to clear 3:1 on white. */
   --ui-rating-fill: #e26363;
   --ui-cursor-color: #0b2d3a;
+  --ui-section-label-bracket: #ff7f7f; /* the coral eyebrow bar */
   --ui-scroll-progress-track: rgba(11, 45, 58, 0.06);
 
   /* Sunrise → lagoon → deep */

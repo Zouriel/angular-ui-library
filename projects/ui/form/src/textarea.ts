@@ -5,8 +5,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 /**
  * `ui-textarea` — multi-line text field (CVA).
  *
- * `autosize` makes it grow with what is typed, from `rows` lines up to `maxRows`, and takes away the
- * drag handle: a comment box people resize by hand is a box that was the wrong size.
+ * `autosize` makes it grow with what is typed, from `rows` lines up to `maxRows`. There is never a drag
+ * handle: a comment box people resize by hand is a box that was the wrong size (use `autosize`).
  */
 @Component({
   selector: 'ui-textarea',
@@ -34,7 +34,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   styles: `
     :host { display: block; }
     .ui-textarea {
-      width: 100%; box-sizing: border-box; resize: vertical;
+      display: block; width: 100%; box-sizing: border-box; resize: none; /* block: an inline textarea leaves a descender gap under it */
       padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
@@ -47,7 +47,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .ui-textarea[data-size="sm"] { font-size: var(--ui-font-size-sm); padding: var(--ui-space-1) var(--ui-space-3); }
     .ui-textarea[data-size="lg"] { font-size: var(--ui-font-size-lg); }
     .ui-textarea.no-radius { border-radius: 0; }
-    .ui-textarea.autosize { resize: none; overflow-y: hidden; }
+    .ui-textarea.autosize { overflow-y: hidden; }
     .ui-textarea[aria-invalid="true"] { border-color: var(--ui-color-danger); }
     .ui-textarea[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
   `,
@@ -69,7 +69,7 @@ export class UiTextarea implements ControlValueAccessor {
   /** Text size, matching ui-input's sizes; `sm` for dense panels. */
   size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
-  /** Grow with the text instead of scrolling, and no resize handle. */
+  /** Grow with the text instead of scrolling. */
   autosize = input(false);
   /** With `autosize`: the most lines it grows to before scrolling. */
   maxRows = input(8);

@@ -78,6 +78,7 @@ export class UiStepBody {
     .ui-stepper::-webkit-scrollbar { display: none; }
     .step { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1 1 auto; min-width: fit-content; }
     .step:last-child { flex: 0 1 auto; }
+    .marker { --ui-color-icon: currentColor; }
     .marker {
       display: inline-flex; align-items: center; justify-content: center; flex: none;
       width: 24px; height: 24px; border-radius: 50%;

@@ -36,6 +36,7 @@ import { Component, computed, input, model } from '@angular/core';
       transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .pg:hover:not(:disabled):not(.active) { background: var(--ui-color-surface-hover); }
+    .pg.active { --ui-color-icon: currentColor; }
     .pg.active { background: var(--ui-color-selected); color: var(--ui-color-text); border-color: var(--ui-color-border-focus); font-weight: 600; }
     .pg:disabled { opacity: .5; cursor: not-allowed; }
     @media (pointer: coarse) { .pg { min-width: var(--ui-size-touch); height: var(--ui-size-touch); } }

@@ -43,6 +43,7 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
     .ddb[data-variant="secondary"]:hover:not(:disabled) { background: var(--ui-color-secondary-hover); }
     .ddb[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
     .ddb[data-variant="destructive"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
+    .ddb[data-variant="primary"], .ddb[data-variant="secondary"], .ddb[data-variant="destructive"], .mi.danger { --ui-color-icon: currentColor; }
     .ddb[data-variant="outline"] { background: transparent; }
     .ddb[data-variant="ghost"] { background: transparent; border-color: transparent; }
     .ddb[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }

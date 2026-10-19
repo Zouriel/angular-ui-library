@@ -54,6 +54,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     /* Loading is disabled too, but keeps its full colour: the spinner says "busy", the dimming "off". */
     .ui-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
     .ui-btn.no-radius { border-radius: 0; }
+    /* Icons follow the label on filled and link buttons; on ghost and outline ones they take the
+       theme's icon colour (--ui-color-icon, set by themes like maldives). */
+    .ui-btn:not([data-variant="ghost"]):not([data-variant="outline"]) { --ui-color-icon: currentColor; }
     .ui-btn.glass {
       background: var(--ui-glass-bg);
       backdrop-filter: blur(var(--ui-glass-blur));

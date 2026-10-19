@@ -40,6 +40,8 @@
   --ui-gradient-brand: linear-gradient(90deg, #d23045 0%, #f59e0b 60%, #fb7185 100%);
 
   --ui-focus-ring: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-ember);
+  /* Blood-red brackets on the editorial section label (ui-section-label's bracket variant). */
+  --ui-section-label-bracket: color-mix(in srgb, var(--ui-color-danger) 80%, transparent);
 
   /* Larger, more editorial radius */
   --ui-radius: 12px;

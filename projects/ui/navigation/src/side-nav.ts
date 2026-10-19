@@ -91,6 +91,7 @@ export interface UiSideNavGroup {
       box-sizing: border-box;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover:not(:disabled):not([aria-disabled='true']) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .item.active { --ui-color-icon: currentColor; }
     .item.active { background: var(--ui-color-selected); color: var(--ui-color-text); font-weight: 600; }
     .item.active:hover:not(:disabled):not([aria-disabled='true']) {
       /* Redeclared, not inherited — .item:hover:not(:disabled) above has higher specificity

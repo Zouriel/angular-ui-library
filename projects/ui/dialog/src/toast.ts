@@ -163,6 +163,7 @@ export class UiToastService {
       border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
     }
+    .toast { --ui-color-icon: currentColor; }
     .toast[data-tone="info"]    { border-left-color: var(--ui-color-info); }
     .toast[data-tone="success"] { border-left-color: var(--ui-color-success); }
     .toast[data-tone="warning"] { border-left-color: var(--ui-color-warning); }

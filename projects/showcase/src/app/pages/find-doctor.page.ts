@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import AiBrain01Icon from '@hugeicons/core-free-icons/AiBrain01Icon';
@@ -24,6 +24,7 @@ import { UiOceanHero, UiSeaSurface, UiSunrise, UiTide } from '@zouriel/ui/fx';
 import { UiBottomNav, type UiBottomNavItem } from '@zouriel/ui/navigation';
 import { UiTab, UiTabs } from '@zouriel/ui/tabs';
 import { UiText } from '@zouriel/ui/text';
+import { UiThemeService, type UiTheme } from '@zouriel/ui/theme';
 import { DocDemo, DocPage, DocSection } from '../docs/docs-ui';
 
 interface Doctor {
@@ -67,7 +68,7 @@ interface Doctor {
     <doc-page
       eyebrow="Themes"
       title="Find Doctor"
-      lead="The Maldives theme in use: the five Find Doctor app screens rebuilt from existing components inside ui-sea-surface. White cards on Mist, Ocean Deep ink and buttons, a Coral call to action, Poppins, and the sea backdrops from @zouriel/ui/fx. Each screen is its own Maldives island, so it looks the same whatever theme the page is in."
+      lead="The Maldives theme in use: the five Find Doctor app screens rebuilt from existing components inside ui-sea-surface. White cards on Mist, Ocean Deep ink and buttons, a Coral call to action, Poppins, and the sea backdrops from @zouriel/ui/fx. Opening this page switches the app to Maldives (and back when you leave); the screens follow whatever theme is picked while you are here."
     >
       <doc-section
         name="Splash"
@@ -83,7 +84,7 @@ interface Doctor {
 </ui-sea-surface>'
         >
           <div class="phones">
-            <ui-sea-surface class="phone" [waveHeight]="70" [waveOpacity]="0.4">
+            <ui-sea-surface class="phone" [theme]="null" [waveHeight]="70" [waveOpacity]="0.4">
               <div class="splash">
                 <ui-ocean-hero class="splash-hero">
                   <div class="splash-brand">
@@ -129,7 +130,7 @@ interface Doctor {
 <ui-bottom-nav [items]="nav" active="home" />'
         >
           <div class="phones">
-            <ui-sea-surface class="phone" [waves]="false">
+            <ui-sea-surface class="phone" [theme]="null" [waves]="false">
               <div class="screen">
                 <div class="topline">
                   <ui-avatar name="Aminath Zahir" size="md" />
@@ -230,7 +231,7 @@ interface Doctor {
 <ui-button size="lg" [block]="true">Book appointment</ui-button>'
         >
           <div class="phones">
-            <ui-sea-surface class="phone" [waveHeight]="80">
+            <ui-sea-surface class="phone" [theme]="null" [waveHeight]="80">
               <div class="screen">
                 <div class="topline">
                   <ui-icon-button label="Back" variant="ghost"
@@ -321,15 +322,17 @@ interface Doctor {
       <doc-section
         name="AI symptom checker"
         selector="ui-textarea · .ui-pulse"
-        summary="A short conversation: the assistant's mark pulses while it is thinking (.ui-pulse), quick answers are chips, and the reply box is a textarea with a send button. The coral decor sits in the corner; the waves stay low so the input reads clearly."
+        summary="A short conversation: the assistant's mark pulses while it is thinking (.ui-pulse), quick answers are chips, and the reply box is a one-line textarea that grows with the text, with a round send button level with its last line. The coral decor sits in the corner; the waves stay low so the input reads clearly."
       >
         <doc-demo
           code='<hugeicons-icon class="ui-pulse" [icon]="aiIcon" />
-<ui-textarea [rows]="2" placeholder="Describe your symptoms" />'
+<ui-textarea [rows]="1" [autosize]="true" [maxRows]="4" placeholder="Describe your symptoms" />
+<ui-icon-button label="Send" variant="primary" size="lg" [round]="true">…</ui-icon-button>'
         >
           <div class="phones">
             <ui-sea-surface
               class="phone"
+              [theme]="null"
               coral="br"
               [decorScale]="0.5"
               [waveLayers]="2"
@@ -379,12 +382,14 @@ interface Doctor {
                 <div class="reply">
                   <ui-textarea
                     class="grow"
-                    [rows]="2"
+                    [rows]="1"
+                    [autosize]="true"
+                    [maxRows]="4"
                     placeholder="Describe your symptoms"
                     ariaLabel="Describe your symptoms"
                     [(ngModel)]="symptoms"
                   />
-                  <ui-icon-button label="Send" variant="primary"
+                  <ui-icon-button label="Send" variant="primary" size="lg" [round]="true"
                     ><hugeicons-icon
                       aria-hidden="true"
                       [icon]="icons.send"
@@ -411,7 +416,7 @@ interface Doctor {
 @for (d of results; track d.name; let i = $index) { <ui-card [uiTide]="i">…</ui-card> }'
         >
           <div class="phones">
-            <ui-sea-surface class="phone" [waves]="false">
+            <ui-sea-surface class="phone" [theme]="null" [waves]="false">
               <div class="screen">
                 <div class="topline">
                   <ui-search-input class="grow" label="Search doctors" [(ngModel)]="query" />
@@ -707,7 +712,10 @@ interface Doctor {
       gap: var(--ui-space-2);
       color: var(--ui-color-text-muted);
     }
+    /* A chat composer: the box grows with the text and the send button stays level with its last
+       line. The button's size is the textarea's one-line height (padding + 1.5 lines + border). */
     .reply {
+      --ui-size-lg: calc(var(--ui-space-2) * 2 + var(--ui-font-size-md) * 1.5 + 2px);
       display: flex;
       align-items: flex-end;
       gap: var(--ui-space-2);
@@ -721,7 +729,20 @@ interface Doctor {
     }
   `,
 })
-export class FindDoctorPage {
+export class FindDoctorPage implements OnDestroy {
+  /** The page is the Maldives theme in use, so it switches the whole app to it, and back on leaving. */
+  private readonly themes = inject(UiThemeService);
+  private readonly previous: UiTheme = this.themes.theme();
+
+  constructor() {
+    this.themes.set('maldives');
+  }
+
+  ngOnDestroy(): void {
+    // Only undo our own switch: a theme picked while on the page stays.
+    if (this.themes.theme() === 'maldives') this.themes.set(this.previous);
+  }
+
   protected readonly icons = {
     ai: AiBrain01Icon,
     back: ArrowLeft01Icon,

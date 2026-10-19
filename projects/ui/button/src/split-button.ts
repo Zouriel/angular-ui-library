@@ -41,6 +41,7 @@ import type { UiButtonVariant } from './button';
     button[data-variant="secondary"]:hover:not(:disabled) { background: var(--ui-color-secondary-hover); }
     button[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
     button[data-variant="destructive"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
+    button[data-variant="primary"], button[data-variant="secondary"], button[data-variant="destructive"] { --ui-color-icon: currentColor; }
     button[data-variant="outline"] { background: transparent; }
     button[data-variant="ghost"] { background: transparent; border-color: transparent; }
     /* Filled variants have a transparent border, so the two halves need their own divider. */

@@ -33,6 +33,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 --ui-color-accent / accent-subtle / accent-strong / accent-contrast
 --ui-color-success / warning / danger / info  (each + -contrast)   --ui-color-danger-hover
 --ui-color-selected / track / overlay   --ui-focus-ring   --ui-gradient-hero / gradient-highlight
+--ui-color-icon  (optional: icons on neutral surfaces; maldives sets Lagoon)
 --ui-shadow-1 / 2 / 3   --ui-glass-bg / glass-blur / glass-border
 
 Component tokens (default to a role)

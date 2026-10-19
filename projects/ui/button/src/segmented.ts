@@ -43,6 +43,7 @@ export interface UiSegmentedOption {
     .seg[data-size="sm"] .opt::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; bottom: -1px; }
     .seg[data-size="lg"] .opt { height: calc(var(--ui-size-lg) - 6px); padding: 0 var(--ui-space-4); font-size: var(--ui-font-size-md); }
     .opt:hover:not(:disabled):not(.on) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
+    .opt.on { --ui-color-icon: currentColor; }
     .opt.on { background: var(--ui-color-surface-raised); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }
     /* Inset: .seg scrolls horizontally, which would clip an outset ring. */
     .opt:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }

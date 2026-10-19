@@ -10,6 +10,7 @@ import { Component, input } from '@angular/core';
     </button>
   `,
   styles: `
+    :host { --ui-color-icon: currentColor; } /* always filled: the icon follows its contrast colour */
     .ui-fab {
       position: fixed; z-index: var(--ui-z-docked);
       display: inline-flex; align-items: center; justify-content: center;
