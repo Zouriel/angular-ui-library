@@ -163,7 +163,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
 
       <doc-section name="PDF viewer" selector="ui-pdf-viewer" [api]="pdfApi"
         summary="Its own entry point, @zouriel/ui/pdf-viewer, so apps that never show a PDF never bundle it. It imports pdfjs-dist dynamically on first use; install pdfjs-dist yourself (it is an optional peer dependency). It shows one page at a time with previous/next page buttons and zoom from 40% to 400%, drawn sharp on high-density screens. The pdfjs worker loads from cdnjs by default, matching the installed pdfjs-dist version; set workerSrc to serve it yourself (for example, copy node_modules/pdfjs-dist/build/pdf.worker.min.mjs into your public assets). If the file can't be loaded, it shows the error in place of the page.">
-        <doc-demo code="import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
+        <doc-demo lang="ts + html" code="import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 
 <ui-pdf-viewer src=&quot;/docs/handbook.pdf&quot; workerSrc=&quot;/pdf.worker.min.mjs&quot; />">
           <div class="vh pdf"><ui-pdf-viewer [src]="pdf" /></div>

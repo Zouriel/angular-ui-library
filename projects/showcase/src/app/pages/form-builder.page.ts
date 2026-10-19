@@ -126,7 +126,7 @@ const STUDENT_ID: UiFbValidatorDef = {
       <doc-section name="Global settings" selector="ui-form-global-settings" [api]="globalApi"
         summary="For the app’s settings page: admins set up the lists every form can search (address, how it searches and pages, which fields are the value and label) and test them on the spot, plus what new forms start with. Lists registered in code show read-only. It saves plain JSON; pass it to ui-form-builder and ui-form-renderer as globalSettings. Requests go through provideUiFormHttpSources, where the app adds its login and lists the servers it allows, so no keys are stored in settings."
         [shapes]="globalShape">
-        <doc-demo code="<ui-form-global-settings [(settings)]=&quot;settings&quot; [usage]=&quot;{ people: 2 }&quot; />
+        <doc-demo lang="ts + html" code="<ui-form-global-settings [(settings)]=&quot;settings&quot; [usage]=&quot;{ people: 2 }&quot; />
 <ui-form-builder [(definition)]=&quot;form&quot; [globalSettings]=&quot;settings()&quot; />
 
 providers: [provideUiFormHttpSources({
