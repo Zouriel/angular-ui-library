@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "audit:ui": "node projects/showcase/audit/ui-audit.mjs"
+    "audit:ui": "node projects/showcase/audit/ui-audit.mjs",
+    "audit:shots": "node projects/showcase/audit/capture.mjs"
   },
   "private": true,
   "packageManager": "npm@11.14.1",

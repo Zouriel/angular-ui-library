@@ -77,13 +77,15 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
               <div class="tile-head">
-                <ui-text variant="label">{{ t.name }}</ui-text>
-                <ui-text variant="caption">{{ t.file }}</ui-text>
+                <div class="tile-title">
+                  <ui-text variant="label">{{ t.name }}</ui-text>
+                  <ui-text variant="caption">{{ t.file }}</ui-text>
+                </div>
+                <ui-button size="sm" variant="outline" (click)="theme.set(t.name)">Use<span class="sr-only"> {{ t.name }}</span></ui-button>
               </div>
               <div class="dots" aria-hidden="true">
                 @for (c of tileColors; track c) { <span class="dot" [style.background]="'var(--ui-color-' + c + ')'"></span> }
               </div>
-              <ui-button size="sm" variant="outline" (click)="theme.set(t.name)">Use<span class="sr-only"> {{ t.name }}</span></ui-button>
             </ui-theme-provider>
           }
         </div>
@@ -110,9 +112,11 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
     .sw { display: flex; flex-direction: column; gap: var(--ui-space-1); align-items: center; text-align: center; }
     .chip { width: 100%; height: 40px; border-radius: var(--ui-radius-sm); border: 1px solid var(--ui-color-border); }
     .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--ui-space-3); }
-    .tile { display: flex; flex-direction: column; gap: var(--ui-space-2); align-items: flex-start;
+    .tile { display: flex; flex-direction: column; gap: var(--ui-space-3);
       padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
-    .tile-head { display: flex; flex-direction: column; gap: var(--ui-space-1); }
+    .tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3); }
+    .tile-title { display: flex; flex-direction: column; gap: var(--ui-space-1); min-width: 0; }
+    .tile-head ui-button { flex: none; }
     .dots { display: flex; gap: var(--ui-space-1); }
     .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

@@ -8,11 +8,15 @@
  *
  * It measures what jsdom can't: rendered text contrast, font family and size, controls that sit in
  * one row at different heights, page-wide horizontal scroll, text that is cut off, small tap targets
- * and spacing off the token scale. Each finding names the nearest ui-* component so it maps to code.
+ * spacing off the token scale, and crowding: controls too close to their neighbours, button labels
+ * near the button edge, content flush against a card's edge, and overlapping text. Each finding
+ * names the nearest ui-* component so it maps to code.
  *
  * Errors (exit 1): contrast below WCAG AA, a font outside the theme's families, text under 11px,
- * the page scrolling sideways, misaligned controls in a row. Warnings: cut-off text, tap targets
- * under 24px, spacing values off the 2px grid.
+ * the page scrolling sideways, misaligned controls in a row, overlapping text, a control touching
+ * its neighbour or a label touching its button edge. Warnings: cut-off text, tap targets under
+ * 24px, controls closer than 8px to other content (4px to another control), labels within 6px of
+ * the button edge, content within 4px of a card's edge. Info: spacing values off the 2px grid.
  *
  * Browser: uses playwright-core's Chromium. Run `npx playwright-core install chromium` once if it
  * isn't downloaded, or point CHROME_PATH at any Chrome/Chromium.
@@ -153,6 +157,7 @@ function collect() {
     }
 
     // Spacing on the 2px grid (tokens are 4/8/12/16/24…; 1px hairlines and 2px nudges are fine).
+    if (s.display === 'inline') continue; // inline code/kbd use em padding that scales with the text
     const vals = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'rowGap', 'columnGap'].map((k) => s[k]).filter((v) => v && v !== 'normal' && v.endsWith('px'));
     const odd = vals.map(parseFloat).filter((v) => v > 2 && Math.abs(v - Math.round(v / 2) * 2) > 0.01);
     if (odd.length) add('info', 'spacing-scale', el, `odd spacing ${[...new Set(odd)].join('px, ')}px`);
@@ -160,7 +165,9 @@ function collect() {
 
   // Interactive targets.
   for (const el of main.querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=tab], [role=option], [role=menuitem], [role=switch], [role=checkbox], [role=radio]')) {
-    if (!visible(el) || disabled(el) || el.closest('p, li > a:only-child') && el.tagName === 'A') continue;
+    // Links inside running text are exempt from the target size (WCAG 2.5.8 inline exception).
+    const inline = el.tagName === 'A' && (el.closest('p, li > a:only-child') || [...el.parentElement.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()));
+    if (!visible(el) || disabled(el) || inline) continue;
     const r = el.getBoundingClientRect();
     if (el.matches('input[type=checkbox], input[type=radio], input[type=range]')) continue; // label is the target
     if (r.width < 24 || r.height < 24) {
@@ -199,6 +206,161 @@ function collect() {
     for (const hs of tops.values()) {
       const hi = Math.max(...hs), lo = Math.min(...hs);
       if (hs.length > 1 && hi - lo > 1.5 && lo >= 20 && hi <= 48) add('error', 'row-heights', p, `controls in one row are ${[...new Set(hs.map(Math.round))].join('/')}px tall`);
+    }
+  }
+
+  // Spacing around controls. Leaves are what the eye sees as separate things: controls, text runs,
+  // icons and media, and small painted shapes (swatches, dots, badges). Every rect is clipped to its
+  // scrolling or overflow-hidden ancestors, so content scrolled out of view or cut by an ellipsis
+  // doesn't count, and wrapped inline text is measured line by line.
+  const CONTROL = 'button, .ui-btn, a.ui-btn, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, [role=button], [role=switch], [role=combobox]';
+  const isControl = (el) => el.matches(CONTROL);
+  // A box the eye reads as a container: a fill, or a border on every side (a lone rule is a divider).
+  const painted = (s) => (parse(s.backgroundColor)?.[3] ?? 0) > 0.05 || ['Top', 'Right', 'Bottom', 'Left'].every((k) => parseFloat(s[`border${k}Width`]) > 0);
+  const hiddenText = (el) => !!el.closest('.sr-only, [class*="sr-only"], .cdk-visually-hidden') || getComputedStyle(el).clipPath.startsWith('inset(50%');
+  const clipCache = new Map();
+  /** The visible part of the viewport-space box the element is drawn in, after every clipping ancestor. */
+  const clipOf = (el) => {
+    if (clipCache.has(el)) return clipCache.get(el);
+    let c = { left: -1e9, top: -1e9, right: 1e9, bottom: 1e9 };
+    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+      const s = getComputedStyle(n);
+      if (s.position === 'fixed') break;
+      if (s.overflowX !== 'visible' || s.overflowY !== 'visible') {
+        const r = n.getBoundingClientRect();
+        c = { left: Math.max(c.left, r.left), top: Math.max(c.top, r.top), right: Math.min(c.right, r.right), bottom: Math.min(c.bottom, r.bottom) };
+      }
+    }
+    clipCache.set(el, c);
+    return c;
+  };
+  const clip = (r, c) => {
+    const x = { left: Math.max(r.left, c.left), top: Math.max(r.top, c.top), right: Math.min(r.right, c.right), bottom: Math.min(r.bottom, c.bottom) };
+    return x.right - x.left > 0.5 && x.bottom - x.top > 0.5 ? { ...x, width: x.right - x.left, height: x.bottom - x.top } : null;
+  };
+  const union = (rs) => rs.length ? rs.reduce((a, r) => ({ left: Math.min(a.left, r.left), top: Math.min(a.top, r.top), right: Math.max(a.right, r.right), bottom: Math.max(a.bottom, r.bottom) })) : null;
+  /** Line boxes of the glyphs: an element's own text, or all of a control's text. */
+  const textLines = (el, deep = false) => {
+    const range = document.createRange();
+    const out = [];
+    for (const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); w.nextNode(); ) {
+      const n = w.currentNode;
+      if ((!deep && n.parentNode !== el) || !n.textContent.trim() || hiddenText(n.parentElement)) continue;
+      range.selectNodeContents(n);
+      const c = clipOf(n.parentElement);
+      for (const r of range.getClientRects()) { const x = r.width && clip(r, c); if (x) out.push(x); }
+    }
+    return out;
+  };
+  /** What an unboxed control looks like: its label, else its icon, else nothing measurable (a CSS-drawn dot). */
+  const drawnLines = (el) => {
+    const t = textLines(el, true);
+    if (t.length) return t;
+    const icon = el.querySelector('svg, img, hugeicons-icon');
+    const r = icon && clip(icon.getBoundingClientRect(), clipOf(icon));
+    return r ? [r] : [];
+  };
+  const leaves = [];
+  for (const el of all) {
+    if (decorative(el) && !el.matches('[aria-hidden="true"]')) continue;
+    if (el.closest(CONTROL) && !isControl(el)) continue; // a control's insides belong to it
+    const s = getComputedStyle(el);
+    const control = isControl(el);
+    const textLeaf = !control && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && !hiddenText(el);
+    const media = el.matches('img, svg, canvas, video, hugeicons-icon');
+    const box = clip(el.getBoundingClientRect(), clipOf(el.parentElement || el));
+    // An unboxed control (a text or icon button) is seen as what it draws, not its padded hit area.
+    const lines = control ? (painted(s) ? (box ? [box] : []) : drawnLines(el)) : textLeaf ? textLines(el) : box ? [box] : [];
+    if (!lines.length) continue;
+    const shape = !el.children.length && painted(s) && box && box.width <= 64 && box.height <= 64;
+    if (control || textLeaf || media || shape) leaves.push({ el, lines, r: union(lines), control, text: textLeaf });
+  }
+  const related = (a, b) => a.contains(b) || b.contains(a);
+  // Grouped controls are meant to touch: button groups, segmented rows, toolbars, input adornments,
+  // and the timeline/canvas editors whose lanes, bars and handles abut by design.
+  const grouped = (el) => !!el.closest('ui-button-group, ui-segmented, ui-split-button, [role=toolbar], [role=tablist], [role=radiogroup], ui-pagination, table, [role=grid], ui-calendar, .ui-cal, pre, ui-input, ui-select, ui-autocomplete, ui-chip-input, ui-number-input, ui-date-picker, ui-time-picker, ui-sequencer, ui-scrubber, ui-transform-box, ui-path-editor, ui-anchor-picker');
+  /** A label or hint that belongs to this control sits close to it on purpose. */
+  const ownLabel = (ctrl, t) => {
+    if (t.el.closest('label') && (t.el.closest('label').contains(ctrl) || t.el.closest('label').htmlFor === ctrl.id)) return true;
+    const ids = `${ctrl.getAttribute('aria-labelledby') || ''} ${ctrl.getAttribute('aria-describedby') || ''}`.split(/\s+/).filter(Boolean);
+    if (ids.some((id) => document.getElementById(id)?.contains(t.el))) return true;
+    const field = ctrl.closest('ui-form-field, .ui-field, .field');
+    return !!field && field.contains(t.el);
+  };
+  const lineGap = (a, b) => {
+    const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    if (overlapY > 2) return { gap: Math.max(b.left - a.right, a.left - b.right), axis: 'x' };
+    if (overlapX > 2) return { gap: Math.max(b.top - a.bottom, a.top - b.bottom), axis: 'y' };
+    return null;
+  };
+  for (const a of leaves.filter((l) => l.control && !grouped(l.el) && !disabled(l.el))) {
+    const pos = getComputedStyle(a.el).position;
+    if (pos === 'absolute' || pos === 'fixed') continue; // overlay controls (viewer arrows, close buttons) are placed deliberately
+    let worst = null;
+    for (const b of leaves) {
+      if (a === b || related(a.el, b.el)) continue;
+      for (const ar of a.lines) for (const br of b.lines) {
+        const g = lineGap(ar, br);
+        if (!g || g.gap < -1) continue; // not neighbours, or stacked on purpose (badge on a button)
+        // Controls may sit 4px apart (icon toolbars), as may a control and its own label or hint, a
+        // separator glyph, or a caption in the same cell. Other content wants 8px beside, 6px above/below.
+        const tight = b.control || ownLabel(a.el, b) || (b.text && !/[\p{L}\p{N}]/u.test(b.el.textContent)) || b.el.parentElement === a.el.parentElement;
+        const need = tight ? 4 : g.axis === 'x' ? 8 : 6;
+        if (g.gap < need - 0.5 && (!worst || g.gap < worst.gap)) worst = { gap: g.gap, b, need };
+      }
+    }
+    if (worst) add(worst.gap < 2 ? 'error' : 'warn', 'crowded', a.el, `${Math.round(worst.gap)}px from ${describe(worst.b.el)} (wants ${worst.need}px)`);
+  }
+
+  // Buttons with too little room around their label.
+  for (const el of main.querySelectorAll('button, .ui-btn')) {
+    if (!visible(el) || el.matches('[data-variant="link"]') || el.closest('[role=tablist], [role=grid], table, ui-calendar')) continue;
+    // Only a button that looks like a box (fill or border) needs inner room.
+    if (!painted(getComputedStyle(el))) continue;
+    const lines = textLines(el, true);
+    if (!lines.length) continue;
+    const u = union(lines);
+    const r = el.getBoundingClientRect();
+    const pad = Math.min(u.left - r.left, r.right - u.right);
+    if (pad < 6) add(pad < 2 ? 'error' : 'warn', 'button-padding', el, `label is ${Math.round(pad)}px from the button edge`);
+  }
+
+  // Content flush against the edge of a card-like box (border or its own background).
+  const scrolls = (n) => { const s = getComputedStyle(n); return (/(auto|scroll)/.test(s.overflowX) && n.scrollWidth > n.clientWidth + 1) || (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight + 1); };
+  for (const box of all) {
+    const s = getComputedStyle(box);
+    if (!painted(s) || isControl(box) || box.closest(CONTROL) || decorative(box)) continue;
+    const r = box.getBoundingClientRect();
+    if (r.height <= 40 || r.width <= 64 || box === main) continue; // pills, chips, badges, dots
+    if (box.matches('table, thead, tbody, tr, td, th, ui-table, [role=grid], [role=row], [role=gridcell], ul[role=listbox], ui-divider, hr, ui-progress, ui-slider, ui-skeleton, img, video, canvas, iframe') || box.closest('table, [role=grid], ui-sequencer, ui-scrubber, ui-anchor-picker')) continue;
+    const bl = parseFloat(s.borderLeftWidth), bt = parseFloat(s.borderTopWidth), br = parseFloat(s.borderRightWidth), bb = parseFloat(s.borderBottomWidth);
+    const inner = { left: r.left + bl, top: r.top + bt, right: r.right - br, bottom: r.bottom - bb };
+    let worst = null;
+    for (const l of leaves) {
+      if (!box.contains(l.el) || l.el === box) continue;
+      // Leaves that sit inside a nearer painted box, or in a scroller that is cut off, are not this box's edge.
+      let p = l.el.parentElement, skip = false;
+      while (p && p !== box) { if ((painted(getComputedStyle(p)) && p.getBoundingClientRect().height > 40) || scrolls(p)) { skip = true; break; } p = p.parentElement; }
+      if (skip || scrolls(box)) continue;
+      // Full-bleed on purpose: rows, bars, tab items and media that span the box on one axis.
+      if (l.r.right - l.r.left >= inner.right - inner.left - 2 || l.r.bottom - l.r.top >= inner.bottom - inner.top - 2) continue;
+      const d = Math.min(l.r.left - inner.left, l.r.top - inner.top, inner.right - l.r.right, inner.bottom - l.r.bottom);
+      if (d < 4 && d > -1 && (!worst || d < worst.d)) worst = { d, l };
+    }
+    if (worst) add('warn', 'edge-hug', box, `${describe(worst.l.el)} is ${Math.round(worst.d)}px from the box edge`);
+  }
+
+  // Text that overlaps other text, line by line.
+  const texts = leaves.filter((l) => l.text);
+  for (let i = 0; i < texts.length; i++) {
+    for (let j = i + 1; j < texts.length; j++) {
+      const a = texts[i], b = texts[j];
+      if (related(a.el, b.el)) continue;
+      const ux = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), uy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+      if (ux <= 3 || uy <= 3) continue;
+      const hit = a.lines.some((x) => b.lines.some((y) => Math.min(x.right, y.right) - Math.max(x.left, y.left) > 3 && Math.min(x.bottom, y.bottom) - Math.max(x.top, y.top) > 3));
+      if (hit) add('error', 'overlap', a.el, `overlaps ${describe(b.el)}`);
     }
   }
 
