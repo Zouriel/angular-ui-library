@@ -42,6 +42,10 @@ let modalSeq = 0;
           }
           <div class="bd"><ng-content /></div>
           <footer class="ft"><ng-content select="[modal-footer]" /></footer>
+          <!-- Where focus lands on open unless the content marks an element cdkFocusInitial (which comes
+               first in the document, so it wins): the panel itself, rather than the close button, which
+               showed a focus ring on every open that followed a key press. Tab then reaches the controls. -->
+          <span class="focus-start" tabindex="-1" cdkFocusInitial></span>
         </div>
       </div>
       </div>
@@ -59,7 +63,7 @@ let modalSeq = 0;
       padding: var(--ui-space-4); pointer-events: none;
     }
     .panel {
-      pointer-events: auto;
+      position: relative; pointer-events: auto;
       width: 100%; max-width: 480px; max-height: 85dvh; overflow: hidden;
       display: flex; flex-direction: column;
       background: var(--ui-color-surface); color: var(--ui-color-text);
@@ -73,7 +77,8 @@ let modalSeq = 0;
     .panel[data-size="full"] { max-width: none; max-height: none; width: 100vw; height: 100dvh; border-radius: 0; border: none; overflow: hidden; }
     .panel[data-size="full"] .bd { flex: 1; min-height: 0; min-width: 0; padding: 0; gap: 0; overflow: hidden; }
     .panel.no-radius { border-radius: 0; }
-    .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .focus-start { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; outline: none; }
+    .panel.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
     .title { min-width: 0; overflow-wrap: anywhere; text-wrap: balance; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     /* Only the body scrolls, so the header and footer stay put on long content. */
@@ -94,7 +99,7 @@ let modalSeq = 0;
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
-      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1);
+      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1) 0;
       border: none; background: transparent; border-radius: var(--ui-radius-xs);
       color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),

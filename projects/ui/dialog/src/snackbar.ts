@@ -1,4 +1,5 @@
-import { Component, Injectable, inject, input, output, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, ElementRef, Injectable, PLATFORM_ID, effect, inject, input, output, signal, viewChild } from '@angular/core';
 
 export interface UiSnackbarAction {
   label: string;
@@ -13,6 +14,13 @@ export interface UiSnackbarOptions {
   action?: UiSnackbarAction;
   /** Auto-dismiss after ms; 0 keeps it until dismissed. Default 4000, or 10000 with an action. */
   duration?: number;
+}
+
+/** Where the shown bar sits, in viewport px: its left and right edges, and its top as a distance up from the bottom. */
+export interface UiSnackbarArea {
+  left: number;
+  right: number;
+  fromBottom: number;
 }
 
 export interface UiSnack {
@@ -51,8 +59,12 @@ let snackSeq = 0;
     }
     .content { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
     .title { font-weight: 600; }
+    /* A 26px tall target (the toast's action height) on every pointer; the negative margins keep the
+       bar compact and the underlined label where it was. */
     .act {
-      position: relative; flex: none; padding: 0; border: none; background: none; cursor: pointer;
+      position: relative; flex: none; box-sizing: border-box; min-height: var(--ui-size-sm);
+      margin: calc(var(--ui-space-1) * -1) calc(var(--ui-space-1) * -1) calc(var(--ui-space-1) * -1) 0; padding: 0 var(--ui-space-1);
+      border: none; background: none; cursor: pointer;
       color: inherit; font: 600 var(--ui-font-size-sm) var(--ui-font-default);
       text-decoration: underline; text-underline-offset: 2px; border-radius: var(--ui-radius-xs);
     }
@@ -80,6 +92,8 @@ export class UiSnackbar {
 @Injectable({ providedIn: 'root' })
 export class UiSnackbarService {
   readonly current = signal<UiSnack | null>(null);
+  /** Where the shown bar sits on screen (set by `<ui-snackbar-host>`), null while none shows. Toasts read it to stay clear. */
+  readonly area = signal<UiSnackbarArea | null>(null);
 
   private handle: ReturnType<typeof setTimeout> | null = null;
   private remaining = 0;
@@ -145,7 +159,7 @@ export class UiSnackbarService {
   template: `
     <div class="host" [style.--ui-snackbar-offset.px]="offset()">
       @if (snacks.current(); as s) {
-        <ui-snackbar
+        <ui-snackbar #bar
           [message]="s.message" [title]="s.title" [actionLabel]="s.action?.label" (action)="snacks.act()"
           animate.enter="ui-slide-up-enter" animate.leave="ui-slide-up-leave"
           (mouseenter)="snacks.pause()" (mouseleave)="snacks.resume()"
@@ -171,6 +185,36 @@ export class UiSnackbarHost {
   protected readonly snacks = inject(UiSnackbarService);
   /** Extra space below the snackbar in px, e.g. the height of a bottom navigation bar. */
   offset = input(0);
+  private readonly bar = viewChild('bar', { read: ElementRef });
+
+  constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    // Publishes where the bar is, so a toast stack in the same spot (both sit at the bottom on a
+    // phone) can move up out of its way instead of being covered.
+    const measure = () => {
+      const el = this.bar()?.nativeElement as HTMLElement | undefined;
+      if (!el) { this.snacks.area.set(null); return; }
+      // Layout boxes, not the bar's own rect: that one moves with the slide-in transform.
+      const row = el.parentElement!.getBoundingClientRect();
+      const left = row.left + el.offsetLeft;
+      this.snacks.area.set({ left, right: left + el.offsetWidth, fromBottom: Math.round(window.innerHeight - row.top) });
+    };
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    effect((onCleanup) => {
+      this.offset();
+      const el = this.bar()?.nativeElement as HTMLElement | undefined;
+      measure();
+      if (!el) return;
+      ro?.observe(el);
+      onCleanup(() => ro?.unobserve(el));
+    });
+    window.addEventListener('resize', measure);
+    inject(DestroyRef).onDestroy(() => {
+      ro?.disconnect();
+      window.removeEventListener('resize', measure);
+      this.snacks.area.set(null);
+    });
+  }
 
   protected announcement(): string {
     const s = this.snacks.current();

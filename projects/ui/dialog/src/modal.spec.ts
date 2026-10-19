@@ -1,6 +1,7 @@
+import { InteractivityChecker } from '@angular/cdk/a11y';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { UiDrawer } from './drawer';
 import { UiModal } from './modal';
 
@@ -95,5 +96,66 @@ describe('UiModal / UiDrawer layer', () => {
     expect(document.body.style.overflow).toBe('hidden');
     fixture.destroy();
     expect(document.body.style.overflow).toBe('clip');
+  });
+});
+
+/**
+ * Where focus lands when a dialog opens. It used to be the close button, the first tabbable element,
+ * which drew a focus ring on every open that followed a key press; now it's the panel, unless the
+ * content names an element with cdkFocusInitial.
+ */
+@Component({
+  imports: [UiModal, UiDrawer],
+  template: `
+    <ui-modal [(open)]="modal" title="Modal"><p>Body</p><input id="named" [attr.cdkFocusInitial]="named() ? '' : null" /></ui-modal>
+    <ui-drawer [(open)]="drawer" title="Drawer"><p>Body</p></ui-drawer>
+  `,
+})
+class FocusHost {
+  modal = signal(false);
+  drawer = signal(false);
+  named = signal(false);
+}
+
+describe('UiModal / UiDrawer initial focus', () => {
+  // jsdom has no layout, so the CDK would think nothing is visible; treat every element as laid out.
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    TestBed.overrideProvider(InteractivityChecker, {
+      useValue: {
+        isDisabled: (el: HTMLElement) => el.hasAttribute('disabled'),
+        isVisible: () => true,
+        isTabbable: (el: HTMLElement) => el.tabIndex >= 0 && !el.hasAttribute('disabled'),
+        isFocusable: (el: HTMLElement) => el.tabIndex >= -1 && (el.hasAttribute('tabindex') || /^(BUTTON|INPUT|A|SELECT|TEXTAREA)$/.test(el.tagName)),
+      },
+    });
+  });
+  afterEach(() => { document.body.style.overflow = ''; });
+
+  async function openOne(key: 'modal' | 'drawer', named = false) {
+    const f = TestBed.createComponent(FocusHost);
+    document.body.appendChild(f.nativeElement);
+    f.componentInstance.named.set(named);
+    f.componentInstance[key].set(true);
+    f.detectChanges();
+    await f.whenStable();
+    await new Promise((r) => setTimeout(r));
+    return f;
+  }
+
+  for (const key of ['modal', 'drawer'] as const) {
+    it(`${key}: focuses the panel, not the close button`, async () => {
+      const f = await openOne(key);
+      const active = document.activeElement as HTMLElement;
+      expect(active.classList.contains('focus-start')).toBe(true);
+      expect(active.closest('[role="dialog"]')).not.toBeNull();
+      f.destroy();
+    });
+  }
+
+  it('lets content choose with cdkFocusInitial', async () => {
+    const f = await openOne('modal', true);
+    expect(document.activeElement?.id).toBe('named');
+    f.destroy();
   });
 });

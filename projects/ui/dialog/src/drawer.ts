@@ -44,6 +44,10 @@ let drawerSeq = 0;
           </header>
         }
         <div class="bd"><ng-content /></div>
+        <!-- Where focus lands on open unless the content marks an element cdkFocusInitial (which comes
+             first in the document, so it wins): the panel itself, rather than the close button, which
+             showed a focus ring on every open that followed a key press. Tab then reaches the controls. -->
+        <span class="focus-start" tabindex="-1" cdkFocusInitial></span>
       </div>
       </div>
     }
@@ -58,8 +62,9 @@ let drawerSeq = 0;
       border: 1px solid var(--ui-color-border);
       box-shadow: var(--ui-shadow-3); font-family: var(--ui-font-default); line-height: 1.35;
     }
-    .panel.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .panel.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .panel.no-radius { border-radius: 0; }
+    .focus-start { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; outline: none; }
     .panel[data-side="left"]   { top: 0; left: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0; }
     .panel[data-side="right"]  { top: 0; right: 0; bottom: 0; width: min(360px, 90vw); border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg); }
     .panel[data-side="top"]    { top: 0; left: 0; right: 0; height: min(320px, 80dvh); padding-top: env(safe-area-inset-top); box-sizing: border-box; border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg); }
@@ -70,7 +75,7 @@ let drawerSeq = 0;
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
-      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1);
+      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1) 0;
       border: none; background: transparent; border-radius: var(--ui-radius-xs);
       color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),

@@ -114,14 +114,14 @@ interface Drag {
     .handle span { width: 40px; height: 5px; border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); }
     .handle:focus-visible { outline: none; }
     .handle:focus-visible span { box-shadow: var(--ui-focus-ring); }
-    .hd { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-3) var(--ui-space-2) var(--ui-space-4); min-height: 32px; }
+    .hd { display: flex; align-items: center; gap: var(--ui-space-2); padding: 0 var(--ui-space-4) var(--ui-space-2); min-height: 32px; }
     .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     .actions { display: flex; align-items: center; gap: var(--ui-space-1); }
     .actions:empty { display: none; }
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
-      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1);
+      width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1) 0;
       border: none; background: transparent; border-radius: var(--ui-radius-xs);
       color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),
@@ -134,8 +134,10 @@ interface Drag {
     @media (pointer: coarse) { .x::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2); } }
     /* The sheet is always its tallest height, slid down to rest lower; the part below the screen edge
        is padding here, so the end of the content can still be scrolled into view at a lower snap. */
+    /* Same body padding as ui-modal and ui-drawer, so content lines up with the title above it. */
     .bd { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--ui-color-border-subtle);
-      padding-bottom: calc(var(--ui-sheet-hidden, 0px) + env(safe-area-inset-bottom)); box-sizing: border-box; }
+      padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + var(--ui-sheet-hidden, 0px) + env(safe-area-inset-bottom));
+      box-sizing: border-box; }
     @media (prefers-reduced-motion: reduce) { .sheet { transition: visibility 0s; } }
   `,
 })
