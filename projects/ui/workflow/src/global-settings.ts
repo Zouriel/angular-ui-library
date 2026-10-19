@@ -1,6 +1,7 @@
 import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiButton } from '@zouriel/ui/button';
 import { UiCombobox } from '@zouriel/ui/combobox';
 import { UiDatePicker } from '@zouriel/ui/datepicker';
@@ -9,6 +10,7 @@ import { UiWfApiError, injectWorkflowApi, type UiWfTriggerOverview, type UiWorkf
 import { wfKey } from './definition';
 import { WfDurationInput } from './editors';
 import { WF_ICONS } from './icons';
+import { WfSelect, type WfOption } from './select';
 import type { UiWorkflowRegistry, UiWorkflowSettings } from './schema';
 import { WF_SHARED_STYLES } from './styles';
 
@@ -115,7 +117,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
  */
 @Component({
   selector: 'ui-workflow-global-settings',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfDurationInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiAccordion, UiAccordionItem, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfDurationInput, WfSelect],
   template: `
     <!-- The host is the size container, so the layout lives on this wrapper (a container query can't restyle the container itself). -->
     <div class="gs">
@@ -134,10 +136,10 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
               [ngModel]="s().timeZone ?? 'UTC'" (ngModelChange)="$event && patch({ timeZone: $event })" />@for (m of problemsFor('timeZone'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
           <div><span class="wf-label">Working days</span>
             <div class="days">@for (d of days; track d.value) {
-              <ui-checkbox [ngModel]="workDays().includes(d.value)" (ngModelChange)="toggleDay(d.value, $event)">{{ d.label }}</ui-checkbox> }</div>@for (m of problemsFor('days'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
+              <ui-checkbox size="sm" [ngModel]="workDays().includes(d.value)" (ngModelChange)="toggleDay(d.value, $event)">{{ d.label }}</ui-checkbox> }</div>@for (m of problemsFor('days'); track $index) { <p class="wf-error">{{ m }}</p> }</div>
           <div class="wf-grid2">
-            <label class="lw"><span class="wf-label">From</span><ui-time-picker [ngModel]="hours()[0]" (ngModelChange)="setHours(0, $event)" /></label>
-            <label class="lw"><span class="wf-label">To</span><ui-time-picker [ngModel]="hours()[1]" (ngModelChange)="setHours(1, $event)" /></label>
+            <label class="lw"><span class="wf-label">From</span><ui-time-picker size="sm" [ngModel]="hours()[0]" (ngModelChange)="setHours(0, $event)" /></label>
+            <label class="lw"><span class="wf-label">To</span><ui-time-picker size="sm" [ngModel]="hours()[1]" (ngModelChange)="setHours(1, $event)" /></label>
           </div>
           @for (m of problemsFor('hours'); track $index) { <p class="wf-error">{{ m }}</p> }
           <div><span class="wf-label">Holidays</span>
@@ -155,21 +157,17 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
             <label class="lw"><span class="wf-label">At most, for each</span><ui-number-input size="sm" [ngModel]="s().defaults?.forEachMax ?? 500" (ngModelChange)="patchDefaults({ forEachMax: $event ?? 500 })" [min]="1" [max]="500" suffix="items" />@for (m of problemsFor('forEachMax'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
           </div>
           <label class="lw"><span class="wf-label">A workflow starts again for the same record while running</span>
-            <select class="wf-select" (change)="patchDefaults({ concurrency: $any($event.target).value })">
-              <option value="perRecordSerial" [selected]="(s().defaults?.concurrency ?? 'perRecordSerial') === 'perRecordSerial'">Wait for the earlier run</option>
-              <option value="parallel" [selected]="s().defaults?.concurrency === 'parallel'">Run both</option>
-              <option value="skipIfRunning" [selected]="s().defaults?.concurrency === 'skipIfRunning'">Don’t start it again</option>
-            </select>@for (m of problemsFor('concurrency'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
+            <ui-wf-select [options]="concurrencyOptions" [value]="s().defaults?.concurrency ?? 'perRecordSerial'" label="A workflow starts again for the same record while running" (valueChange)="patchDefaults({ concurrency: $any($event) })" />@for (m of problemsFor('concurrency'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
           <label class="lw"><span class="wf-label">Stop chains of workflows starting workflows after</span>
             <ui-number-input size="sm" [ngModel]="s().defaults?.maxChainDepth ?? 5" (ngModelChange)="patchDefaults({ maxChainDepth: $event ?? 5 })" [min]="1" [max]="20" suffix="levels" />@for (m of problemsFor('maxChainDepth'); track $index) { <p class="wf-error">{{ m }}</p> }</label>
-          <label class="wf-row small"><ui-switch [ngModel]="!!s().people?.delegation" (ngModelChange)="patch({ people: { ...s().people, delegation: $event || undefined } })" /> People may hand tasks to someone else</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!s().people?.delegation" (ngModelChange)="patch({ people: { ...s().people, delegation: $event || undefined } })" /> People may hand tasks to someone else</label>
         }
         @case ('channels') {
           <h2>Notification channels</h2>
           <p class="wf-hint">The channels your app sends through. Switch one off to stop workflows using it.</p>
           @for (c of registry()?.channels ?? []; track c.key) {
             <div class="card">
-              <label class="wf-row small"><ui-switch [ngModel]="s().channels?.[c.key]?.enabled !== false" (ngModelChange)="patchChannel(c.key, { enabled: $event ? undefined : false })" /> <strong>{{ c.label }}</strong></label>
+              <label class="wf-row small"><ui-switch size="sm" [ngModel]="s().channels?.[c.key]?.enabled !== false" (ngModelChange)="patchChannel(c.key, { enabled: $event ? undefined : false })" /> <strong>{{ c.label }}</strong></label>
               <label class="lw"><span class="wf-label">Footer added to every message</span>
                 <ui-input size="sm" [ngModel]="s().channels?.[c.key]?.footer ?? ''" (ngModelChange)="patchChannel(c.key, { footer: $event || undefined })" /></label>
             </div>
@@ -182,19 +180,16 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
             <ul class="items">@for (o of s().webhooks?.allowedOrigins ?? []; track o) {
               <li><code>{{ o }}</code><button type="button" class="wf-icon-btn danger" (click)="removeOrigin(o)" [attr.aria-label]="'Remove ' + o"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
             <div class="wf-row"><ui-input size="sm" placeholder="https://hooks.example.com" [ngModel]="newOrigin()" (ngModelChange)="newOrigin.set($event)" (keydown.enter)="addOrigin()" aria-label="Address" />
-              <button type="button" class="wf-link" (click)="addOrigin()">Add</button></div>
+              <ui-button size="sm" variant="outline" (click)="addOrigin()">Add</ui-button></div>
             @if (originError()) { <p class="wf-error">{{ originError() }}</p> }
             @for (m of problemsFor('origins'); track $index) { <p class="wf-error">{{ m }}</p> }
           </div>
-          <div><span class="wf-label">Connections</span>
+          <div class="group"><span class="wf-label">Connections</span>
             @for (c of s().webhooks?.connections ?? []; track $index; let i = $index) {
               <div class="card conn">
                 <ui-input size="sm" [ngModel]="c.label" (ngModelChange)="patchConnection(i, { label: $event })" placeholder="Name" aria-label="Name" />
                 <ui-input size="sm" [ngModel]="c.baseUrl" (ngModelChange)="patchConnection(i, { baseUrl: $event })" placeholder="https://erp.example.com/api" aria-label="Base address" />
-                <select class="wf-select" (change)="patchConnection(i, { auth: $any($event.target).value })" aria-label="Sign-in">
-                  <option value="none" [selected]="(c.auth ?? 'none') === 'none'">No secret</option>
-                  <option value="secret" [selected]="c.auth === 'secret'">Uses a secret</option>
-                </select>
+                <ui-wf-select [options]="authOptions" [value]="c.auth ?? 'none'" label="Sign-in" (valueChange)="patchConnection(i, { auth: $any($event) })" />
                 @if (c.auth === 'secret') {
                   <ui-input size="sm" [ngModel]="c.secretName ?? ''" (ngModelChange)="patchConnection(i, { secretName: $event })" placeholder="Secret name (set on the server)" aria-label="Secret name" />
                 }
@@ -204,7 +199,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
               </div>
             }
             @for (m of problemsFor('connections'); track $index) { <p class="wf-error">{{ m }}</p> }
-            <button type="button" class="wf-link" (click)="addConnection()">Add a connection</button>
+            <button type="button" class="wf-link" (click)="addConnection()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add a connection</button>
           </div>
         }
         @case ('audit') {
@@ -220,10 +215,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           <div><span class="wf-label">Hide these values in the log and run views</span>
             <ul class="items">@for (m of s().audit?.maskedFields ?? []; track m) {
               <li>{{ fieldName(m) }}<button type="button" class="wf-icon-btn danger" (click)="removeMasked(m)" [attr.aria-label]="'Stop hiding ' + fieldName(m)"><hugeicons-icon aria-hidden="true" [icon]="icons.Cancel01Icon" [size]="12" [strokeWidth]="2" /></button></li> }</ul>
-            <select class="wf-select" (change)="addMasked($any($event.target).value); $any($event.target).value = ''" aria-label="Add a field to hide">
-              <option value="">Add a field…</option>
-              @for (f of maskable(); track f.value) { <option [value]="f.value">{{ f.label }}</option> }
-            </select>
+            <ui-wf-select class="mask-add" [options]="maskable()" [reset]="true" placeholder="Add a field…" label="Add a field to hide" (valueChange)="addMasked($event)" />
             @for (m of problemsFor('masked'); track $index) { <p class="wf-error">{{ m }}</p> }
             <p class="wf-hint">Fields the app marks as sensitive are always hidden.</p>
           </div>
@@ -236,7 +228,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
           @for (g of watchGroups(); track g.entity) {
             <div class="card">
               <div class="wf-row"><strong class="grow">{{ g.label }}</strong>
-                <label class="wf-row small"><ui-switch [ngModel]="isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, $event)" [disabled]="busy()" [attr.aria-label]="'Pause workflows for ' + g.label" /> {{ isPaused(g.entity) ? 'Paused' : 'Running' }}</label></div>
+                <label class="wf-row small"><ui-switch size="sm" [ngModel]="!isPaused(g.entity)" (ngModelChange)="setPaused(g.entity, !$event)" [disabled]="busy()" [attr.aria-label]="'Run workflows for ' + g.label" /> {{ isPaused(g.entity) ? 'Paused' : 'Running' }}</label></div>
               <ul class="watch">@for (t of g.triggers; track t.definitionId) {
                 <li [class.conflict]="conflicts().has(t.definitionId)"><span class="wf-chip">{{ t.kind === 'lifecycle' ? 'Lifecycle' : 'Automation' }}</span> {{ t.title }} <span class="sum">— {{ t.summary }}</span></li> }</ul>
               @if (g.conflict) { <p class="wf-warn">Two workflows start on the same change here. Check they don’t work against each other.</p> }
@@ -246,12 +238,15 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
         @case ('registry') {
           <h2>What workflows can use</h2>
           <p class="wf-hint">Set by the app’s developers. Ask them to add a record type, field or action.</p>
-          @for (e of registry()?.entities ?? []; track e.key) {
-            <details class="card"><summary><strong>{{ e.label }}</strong> <span class="sum">{{ e.fields.length }} fields</span></summary>
-              <table class="fields"><thead><tr><th>Field</th><th>Type</th><th>Watch</th><th>Change</th></tr></thead><tbody>
-                @for (f of e.fields; track f.key) { <tr><td>{{ f.label }}@if (f.sensitive) { <span class="wf-chip" data-tone="warning">sensitive</span> }@if (f.lifecycle) { <span class="wf-chip" data-tone="info">lifecycle</span> }</td><td>{{ f.type }}</td><td>{{ f.watchable ? 'Yes' : '' }}</td><td>{{ f.settable ? 'Yes' : '' }}</td></tr> }
-              </tbody></table></details>
-          }
+          <ui-accordion [multiple]="true">
+            @for (e of registry()?.entities ?? []; track e.key) {
+              <ui-accordion-item [title]="e.label + ' · ' + e.fields.length + ' fields'">
+                <table class="fields"><thead><tr><th>Field</th><th>Type</th><th>Watch</th><th>Change</th></tr></thead><tbody>
+                  @for (f of e.fields; track f.key) { <tr><td>{{ f.label }}@if (f.sensitive) { <span class="wf-chip" data-tone="warning">sensitive</span> }@if (f.lifecycle) { <span class="wf-chip" data-tone="info">lifecycle</span> }</td><td>{{ f.type }}</td><td>{{ f.watchable ? 'Yes' : '' }}</td><td>{{ f.settable ? 'Yes' : '' }}</td></tr> }
+                </tbody></table>
+              </ui-accordion-item>
+            }
+          </ui-accordion>
           @if (registry()?.actions?.length) {
             <h3>Actions</h3>
             <ul class="plain">@for (a of registry()!.actions!; track a.key) { <li><strong>{{ a.label }}</strong> <span class="sum">{{ a.description }}</span></li> }</ul>
@@ -288,8 +283,8 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     h2 { margin: 0; font-size: 16px; font-weight: 650; }
     h3 { margin: var(--ui-space-2) 0 0; font-size: 13px; }
     .lw { display: block; min-width: 0; }
-    .zone ui-combobox { display: block; max-width: 360px; }
-    .holiday { max-width: 220px; }
+    /* One form column: every field the full width of the body, at the small control size. */
+    .group { display: flex; flex-direction: column; gap: 6px; }
     .days { display: flex; flex-wrap: wrap; gap: 6px 14px; }
     .items { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
     .items li { display: inline-flex; align-items: center; gap: 2px; padding-left: 8px; border-radius: var(--ui-radius-xs); background: var(--ui-color-surface-hover); font-size: 12.5px; }
@@ -303,18 +298,20 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .grow { flex: 1; }
     .retention { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
     .watch { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    /* One chip width, so the workflow names line up whatever their kind. */
+    .watch .wf-chip { min-width: 76px; justify-content: center; margin-right: var(--ui-space-1); }
     .watch li.conflict { color: var(--ui-color-warning); }
     .sum { margin-left: 6px; color: var(--ui-color-text-muted); font-size: 12.5px; }
-    .fields { width: 100%; margin-top: 6px; border-collapse: collapse; font-size: 12.5px; }
+    .fields { width: 100%; border-collapse: collapse; font-size: 12.5px; color: var(--ui-color-text); }
     .fields th, .fields td { padding: 4px 6px; text-align: left; border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .fields th { color: var(--ui-color-text-muted); font-weight: 550; }
-    details summary { cursor: pointer; }
-    .plain { margin: 0; padding-left: var(--ui-space-4); }
+    .plain { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .foot { display: flex; align-items: center; gap: 8px; padding: 8px var(--ui-space-4); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .foot .wf-error { margin: 0; }
     @container (max-width: 620px) {
       .gs { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; }
-      .nav { grid-row: auto; flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--ui-color-border); }
+      /* On a phone the sections wrap onto a second row rather than scrolling out of sight. */
+      .nav { grid-row: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--ui-color-border); }
       .nav button { flex: none; }
       .conn { grid-template-columns: 1fr; }
     }
@@ -332,6 +329,10 @@ export class UiWorkflowGlobalSettings {
   protected readonly icons = WF_ICONS;
   protected readonly days = DAYS;
   protected readonly auditCategories = AUDIT_CATEGORIES;
+  protected readonly concurrencyOptions: WfOption[] = [
+    { value: 'perRecordSerial', label: 'Wait for the earlier run' }, { value: 'parallel', label: 'Run both' }, { value: 'skipIfRunning', label: 'Don’t start it again' },
+  ];
+  protected readonly authOptions: WfOption[] = [{ value: 'none', label: 'No secret' }, { value: 'secret', label: 'Uses a secret' }];
   protected readonly sections: { value: Section; label: string }[] = [
     { value: 'time', label: 'Time & calendar' }, { value: 'defaults', label: 'Defaults' }, { value: 'channels', label: 'Channels' },
     { value: 'webhooks', label: 'Webhooks' }, { value: 'audit', label: 'Audit log' }, { value: 'watching', label: 'Watching' }, { value: 'registry', label: 'What’s available' },

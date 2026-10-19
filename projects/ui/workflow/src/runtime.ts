@@ -73,10 +73,13 @@ export function wfFormAnswers(s: UiFormSubmission): { data: Record<string, unkno
   template: `<span class="badge" [attr.data-tone]="tone() ?? 'neutral'"><span class="dot"></span>{{ label() }}</span>`,
   styles: `
     :host { display: inline-flex; }
-    .badge { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 12px; font-weight: 600; white-space: nowrap;
+    /* ui-badge's metrics (20px tall, 8px sides, pill, 11px semibold), with a dot in the state's colour. */
+    .badge { display: inline-flex; align-items: center; gap: 6px; box-sizing: border-box; height: 20px; padding: 0 var(--ui-space-2); border-radius: var(--ui-radius-pill);
+      font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap;
       color: var(--wf-c); background: color-mix(in srgb, var(--wf-c) 13%, transparent); }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-    .badge[data-tone="neutral"] { --wf-c: var(--ui-color-text-secondary); }
+    /* Muted, not secondary text: light themes draw secondary text in the primary colour, which made it look like "primary". */
+    .badge[data-tone="neutral"] { --wf-c: var(--ui-color-text-muted); }
     .badge[data-tone="primary"] { --wf-c: var(--ui-color-primary); }
     /* Themes that give info its own colour show it; the rest fall back to primary through the token. */
     .badge[data-tone="info"] { --wf-c: var(--ui-color-info); }
@@ -102,18 +105,20 @@ export class UiWorkflowStateBadge {
       [closeOnBackdrop]="!busy()" [closeOnEscape]="!busy()">
       @if (task(); as t) {
         <div class="body">
-          @if (t.entityTitle) { <p class="rec">{{ t.entityTitle }}</p> }
-          @if (t.instructions) { <p class="instructions">{{ t.instructions }}</p> }
-          <p class="meta">Due {{ when(t.dueAt) }}@if (t.overdue) { · <strong class="late">overdue</strong> }</p>
+          <div class="intro">
+            @if (t.entityTitle) { <p class="rec">{{ t.entityTitle }}</p> }
+            @if (t.instructions) { <p class="instructions">{{ t.instructions }}</p> }
+            <p class="meta">Due {{ when(t.dueAt) }}@if (t.overdue) { · <strong class="late">overdue</strong> }</p>
+          </div>
           @if (t.decisions.length) {
             <ul class="decisions">@for (d of t.decisions; track d.userId) { <li><strong>{{ d.name ?? d.userId }}</strong> chose “{{ outcomeLabel(t, d.outcome) }}”{{ d.comment ? ': “' + d.comment + '”' : '' }}</li> }</ul>
           }
           @if (t.form) {
             <ui-form-renderer [definition]="t.form" [showActions]="false" [showTitle]="false" />
           }
-          <label class="lw"><span class="wf-label">{{ remarksLabel(t) }}</span>
+          <div class="field"><label class="lw"><span class="wf-label">{{ remarksLabel(t) }}</span>
             <ui-textarea [ngModel]="comment()" (ngModelChange)="comment.set($event); commentMissing.set(false)" [rows]="2" [autosize]="true" [invalid]="commentMissing()" [maxlength]="remarksMax" /></label>
-          @if (counter(comment()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
+            @if (counter(comment()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }</div>
           @if (t.allowDelegation) {
             <details class="delegate" (toggle)="$any($event.target).open && searchPeople('')"><summary>Hand it to someone else</summary>
               <div class="wf-row"><ui-combobox class="people" size="sm" placeholder="Search for a person" label="Hand it to" [options]="people()"
@@ -137,7 +142,8 @@ export class UiWorkflowStateBadge {
     </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
-    .body { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .body { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .field, .intro { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .rec { margin: 0; font-weight: 600; }
     .instructions { margin: 0; line-height: 1.5; white-space: pre-wrap; }
     .meta { margin: 0; font-size: 12.5px; color: var(--ui-color-text-muted); }
@@ -341,9 +347,9 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
           @if (p.form) { <ui-form-renderer [definition]="p.form" [showActions]="false" [showTitle]="false" /> }
           @else if (!p.confirm) { <p>Move this record to “{{ p.toLabel }}”?</p> }
           @if (p.remarks !== 'none') {
-            <label class="lw"><span class="wf-label">Remarks{{ p.remarks === 'required' ? ' (required)' : ' (optional)' }}</span>
+            <div class="field"><label class="lw"><span class="wf-label">Remarks{{ p.remarks === 'required' ? ' (required)' : ' (optional)' }}</span>
               <ui-textarea [ngModel]="remark()" (ngModelChange)="remark.set($event)" [rows]="2" [autosize]="true" [invalid]="remarkMissing()" [maxlength]="remarksMax" /></label>
-            @if (counter(remark()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
+              @if (counter(remark()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }</div>
           }
           @if (resetting()) {
             @if (resetLoading()) { <p class="wf-hint">Looking up what the workflow did…</p> }
@@ -406,7 +412,9 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     .tt { font-weight: 600; }
     .who { grid-column: 1; font-size: 12px; color: var(--ui-color-text-muted); }
     .task .wf-chip { grid-row: 1 / 3; grid-column: 2; }
-    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    /* Field groups (a form's questions, the remarks) 16px apart, like the form renderer's own fields. */
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .field { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .confirm p { margin: 0; }
     .undo { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
     .undo-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }
@@ -420,7 +428,7 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     .undo-list li.off .undo-title { color: var(--ui-color-text-muted); }
     .lw { display: block; min-width: 0; }
     .count { align-self: flex-end; margin: 0; }
-    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
   `],
 })
 export class WfRecordActions extends WfWithApi {
@@ -906,9 +914,9 @@ export class WfTaskInbox extends WfWithApi {
       @if (cancelling()) {
         <div class="dlg">
           <p>The run stops here and its open tasks are cancelled. What it already did stays done.</p>
-          <label class="lw"><span class="wf-label">Remarks (optional)</span>
+          <div class="field"><label class="lw"><span class="wf-label">Remarks (optional)</span>
             <ui-textarea [ngModel]="cancelRemarks()" (ngModelChange)="cancelRemarks.set($event)" [rows]="2" [autosize]="true" [maxlength]="remarksMax" /></label>
-          @if (counter(cancelRemarks()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }
+            @if (counter(cancelRemarks()); as c) { <span class="wf-hint count" aria-live="polite">{{ c }}</span> }</div>
         </div>
       }
       @if (cancelling()) {
@@ -930,6 +938,8 @@ export class WfTaskInbox extends WfWithApi {
     .stops { margin: 0 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .stops li { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
     .wf-row { flex-wrap: wrap; }
+    /* Try again, Skip and Cancel share the width: when they wrap, none is left alone half a row away. */
+    .incident .wf-row ui-button { flex: 1 1 auto; }
     .stops span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
     .steps li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; padding: 5px 8px; border-left: 2px solid var(--ui-color-border); }
@@ -945,12 +955,14 @@ export class WfTaskInbox extends WfWithApi {
     .st { font-size: 11.5px; color: var(--ui-color-text-secondary); white-space: nowrap; }
     .detail { grid-column: 2 / 4; font-size: 12px; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     .tasks h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
-    .tasks ul { margin: 0; padding-left: var(--ui-space-4); }
-    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .tasks ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+    .tasks li { padding: 5px 0; border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
     .dlg p { margin: 0; }
+    .field { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .lw { display: block; min-width: 0; }
     .count { align-self: flex-end; margin: 0; }
-    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     ui-modal { position: absolute; }
   `],
 })

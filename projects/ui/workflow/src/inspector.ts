@@ -1,13 +1,14 @@
-import { Component, computed, effect, inject, input, output } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
-import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, type UiSelectOption } from '@zouriel/ui/form';
+import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, UiTimePicker, type UiSelectOption } from '@zouriel/ui/form';
 import { describeTrigger, fieldOf, indexSteps, stepName, updateLifecycle, wfId, wfKey, wfStatesFrom } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
 import type { UiWfConditionGroup, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
-import { WfStepEditor } from './step-editors';
+import { WfSelect, type WfOption } from './select';
+import { WF_TONE_OPTIONS, WfStepEditor } from './step-editors';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
@@ -34,7 +35,7 @@ const CRON_PRESETS: { value: string; label: string }[] = [
 /** The trigger: what starts an automation. */
 @Component({
   selector: 'ui-wf-trigger-editor',
-  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField],
+  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfSelect],
   template: `
     <div class="wf-stack">
       <div role="radiogroup" aria-label="What starts it" class="types">
@@ -49,10 +50,7 @@ const CRON_PRESETS: { value: string; label: string }[] = [
       @switch (trigger().type) {
         @case ('fieldChanged') {
           <label class="lw"><span class="wf-label">Field</span>
-            <select class="wf-select" (change)="patch({ field: $any($event.target).value, from: undefined, to: undefined })">
-              <option value="" disabled [selected]="!trigger().field">Choose a field…</option>
-              @for (f of watchable(); track f.key) { <option [value]="f.key" [selected]="f.key === trigger().field">{{ f.label }}</option> }
-            </select></label>
+            <ui-wf-select [options]="fieldOptions(watchable())" [value]="trigger().field" placeholder="Choose a field…" label="Field" (valueChange)="patch({ field: $event, from: undefined, to: undefined })" /></label>
           @if (!watchable().length && store.entity()) { <p class="wf-hint">The app hasn’t allowed any field of this record to be watched.</p> }
           @if (field(); as f) {
             @if (f.options?.length) {
@@ -66,14 +64,11 @@ const CRON_PRESETS: { value: string; label: string }[] = [
               <p class="wf-hint">Starts on any change to {{ f.label }}. Add conditions below to narrow it.</p>
             }
           }
-          <label class="wf-row small"><ui-switch [ngModel]="!!trigger().retrigger" (ngModelChange)="patch({ retrigger: $event || undefined })" /> Also start when this workflow itself changes it</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!trigger().retrigger" (ngModelChange)="patch({ retrigger: $event || undefined })" /> Also start when this workflow itself changes it</label>
         }
         @case ('stateEntered') {
           <label class="lw"><span class="wf-label">Lifecycle</span>
-            <select class="wf-select" (change)="patch({ lifecycle: $any($event.target).value, states: [] })">
-              <option value="" disabled [selected]="!trigger().lifecycle">Choose…</option>
-              @for (l of lifecycles(); track l.key) { <option [value]="l.key" [selected]="l.key === trigger().lifecycle">{{ l.title }}</option> }
-            </select></label>
+            <ui-wf-select [options]="lifecycleOptions()" [value]="trigger().lifecycle" placeholder="Choose…" label="Lifecycle" (valueChange)="patch({ lifecycle: $event, states: [] })" /></label>
           @if (states().length) {
             <div><span class="wf-label">Reaches</span><div class="multi">@for (s of states(); track s.key) {
               <label class="opt"><input type="checkbox" [checked]="(trigger().states ?? []).includes(s.key)" (change)="toggleList('states', s.key, $any($event.target).checked)" />{{ s.label }}</label> }</div></div>
@@ -81,10 +76,7 @@ const CRON_PRESETS: { value: string; label: string }[] = [
         }
         @case ('transitionApplied') {
           <label class="lw"><span class="wf-label">Lifecycle</span>
-            <select class="wf-select" (change)="patch({ lifecycle: $any($event.target).value, transitions: [] })">
-              <option value="" disabled [selected]="!trigger().lifecycle">Choose…</option>
-              @for (l of lifecycles(); track l.key) { <option [value]="l.key" [selected]="l.key === trigger().lifecycle">{{ l.title }}</option> }
-            </select></label>
+            <ui-wf-select [options]="lifecycleOptions()" [value]="trigger().lifecycle" placeholder="Choose…" label="Lifecycle" (valueChange)="patch({ lifecycle: $event, transitions: [] })" /></label>
           @if (transitions().length) {
             <div><span class="wf-label">After</span><div class="multi">@for (t of transitions(); track t.key) {
               <label class="opt"><input type="checkbox" [checked]="(trigger().transitions ?? []).includes(t.key)" (change)="toggleList('transitions', t.key, $any($event.target).checked)" />{{ t.label }}</label> }</div></div>
@@ -92,25 +84,19 @@ const CRON_PRESETS: { value: string; label: string }[] = [
         }
         @case ('dateReached') {
           <label class="lw"><span class="wf-label">Date field</span>
-            <select class="wf-select" (change)="patch({ field: $any($event.target).value })">
-              <option value="" disabled [selected]="!trigger().field">Choose…</option>
-              @for (f of dateFields(); track f.key) { <option [value]="f.key" [selected]="f.key === trigger().field">{{ f.label }}</option> }
-            </select></label>
+            <ui-wf-select [options]="fieldOptions(dateFields())" [value]="trigger().field" placeholder="Choose…" label="Date field" (valueChange)="patch({ field: $event })" /></label>
           <div><span class="wf-label">When</span><ui-wf-duration [value]="trigger().offset ?? '-P1D'" [signed]="true" label="Offset" (valueChange)="patch({ offset: $event })" /></div>
           <label class="lw"><span class="wf-label">At (time of day)</span>
-            <input class="wf-select native" type="time" [value]="trigger().at ?? '09:00'" (change)="patch({ at: $any($event.target).value })" /></label>
+            <ui-time-picker size="sm" [ngModel]="trigger().at ?? '09:00'" (ngModelChange)="patch({ at: $event })" /></label>
         }
         @case ('schedule') {
           <label class="lw"><span class="wf-label">When</span>
-            <select class="wf-select" (change)="$any($event.target).value !== 'custom' && patch({ cron: $any($event.target).value })">
-              @for (p of cronPresets; track p.value) { <option [value]="p.value" [selected]="p.value === trigger().cron">{{ p.label }}</option> }
-              <option value="custom" [selected]="!isPreset()">Custom…</option>
-            </select></label>
-          @if (!isPreset()) {
+            <ui-wf-select [options]="cronOptions" [value]="isPreset() && !custom() ? trigger().cron : 'custom'" label="When" (valueChange)="pickSchedule($event)" /></label>
+          @if (!isPreset() || custom()) {
             <label class="lw"><span class="wf-label">Schedule (minute hour day month weekday)</span>
               <ui-input size="sm" [ngModel]="trigger().cron ?? ''" (ngModelChange)="patch({ cron: $event }, 'cron')" placeholder="30 8 * * 1-5" /></label>
           }
-          <label class="wf-row small"><ui-switch [ngModel]="!!trigger().forEach" (ngModelChange)="patch({ forEach: $event ? { limit: 100 } : undefined })" [disabled]="!store.entity()" /> Run once for each matching record</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!trigger().forEach" (ngModelChange)="patch({ forEach: $event ? { limit: 100 } : undefined })" [disabled]="!store.entity()" /> Run once for each matching record</label>
           @if (trigger().forEach; as fe) {
             <ui-wf-condition [value]="fe.when" [tokens]="tokens()" emptyText="Every record." (valueChange)="patch({ forEach: { ...fe, when: $event.conditions.length ? $event : undefined } })" />
             <label class="lw"><span class="wf-label">At most</span><ui-number-input size="sm" [ngModel]="fe.limit" (ngModelChange)="patch({ forEach: { ...fe, limit: $event ?? 100 } })" [min]="1" [max]="500" suffix="records" /></label>
@@ -125,10 +111,7 @@ const CRON_PRESETS: { value: string; label: string }[] = [
         }
         @case ('signal') {
           <label class="lw"><span class="wf-label">Event</span>
-            <select class="wf-select" (change)="patch({ signal: $any($event.target).value })">
-              <option value="" disabled [selected]="!trigger().signal">Choose…</option>
-              @for (s of store.registry()?.signals ?? []; track s.key) { <option [value]="s.key" [selected]="s.key === trigger().signal">{{ s.label }}</option> }
-            </select></label>
+            <ui-wf-select [options]="signalOptions()" [value]="trigger().signal" placeholder="Choose…" label="Event" (valueChange)="patch({ signal: $event })" /></label>
         }
       }
 
@@ -158,13 +141,12 @@ const CRON_PRESETS: { value: string; label: string }[] = [
     .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
     .opt input { accent-color: var(--ui-color-primary); margin: 0; }
     .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
-    .native { background-image: none; padding-right: var(--ui-space-2); }
   `],
 })
 export class WfTriggerEditor {
   protected readonly store = inject(WfBuilderStore);
   protected readonly types = TRIGGER_TYPES;
-  protected readonly cronPresets = CRON_PRESETS;
+  protected readonly cronOptions: WfOption[] = [...CRON_PRESETS, { value: 'custom', label: 'Custom…' }];
   protected readonly trigger = computed<UiWfTrigger>(() => this.store.def().trigger ?? { type: 'fieldChanged' });
   protected readonly tokens = computed(() => this.store.tokens({ listId: 'root', index: 0 }));
   protected readonly summary = computed(() => describeTrigger(this.trigger(), this.store.describeContext(this.tokens())));
@@ -172,10 +154,20 @@ export class WfTriggerEditor {
   protected readonly dateFields = computed(() => this.watchable().filter((f) => f.type === 'date' || f.type === 'dateTime'));
   protected readonly field = computed(() => fieldOf(this.store.registry(), this.store.def().entity, this.trigger().field));
   protected readonly lifecycles = computed(() => this.store.others().filter((o) => o.kind === 'lifecycle' && o.version > 0 && (!this.store.def().entity || o.entity === this.store.def().entity)));
+  protected readonly lifecycleOptions = computed<WfOption[]>(() => this.lifecycles().map((l) => ({ value: l.key, label: l.title })));
+  protected readonly signalOptions = computed<WfOption[]>(() => (this.store.registry()?.signals ?? []).map((x) => ({ value: x.key, label: x.label })));
+  protected fieldOptions(fields: readonly { key: string; label: string }[]): WfOption[] { return fields.map((f) => ({ value: f.key, label: f.label })); }
   protected readonly lifecycleDef = computed(() => this.store.lifecycleCache()[this.trigger().lifecycle ?? '']);
   protected readonly states = computed(() => this.lifecycleDef()?.lifecycle?.states ?? []);
   protected readonly transitions = computed(() => this.lifecycleDef()?.lifecycle?.transitions ?? []);
   protected readonly isPreset = computed(() => CRON_PRESETS.some((p) => p.value === this.trigger().cron));
+  /** "Custom…" was chosen: the schedule box shows, starting from the preset it replaces. */
+  protected readonly custom = signal(false);
+
+  protected pickSchedule(v: string): void {
+    this.custom.set(v === 'custom');
+    if (v !== 'custom') this.patch({ cron: v });
+  }
 
   constructor() {
     effect(() => {
@@ -222,30 +214,21 @@ export class WfTriggerEditor {
 /** The workflow's own settings: name, record type, variables, who looks after it. */
 @Component({
   selector: 'ui-wf-workflow-editor',
-  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiTextarea, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfValueInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiInput, UiTextarea, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfSelect, WfValueInput],
   template: `
     <div class="wf-stack">
       <label class="lw"><span class="wf-label">Name</span>
         <ui-input size="sm" [ngModel]="def().title" (ngModelChange)="patch({ title: $event }, 'title')" /></label>
       <label class="lw"><span class="wf-label">Description</span>
-        <ui-textarea [ngModel]="def().description ?? ''" (ngModelChange)="patch({ description: $event || undefined }, 'description')" [rows]="2" [autosize]="true" /></label>
+        <ui-textarea size="sm" [ngModel]="def().description ?? ''" (ngModelChange)="patch({ description: $event || undefined }, 'description')" [rows]="2" [autosize]="true" /></label>
       <label class="lw"><span class="wf-label">Record type</span>
-        <select class="wf-select" [disabled]="published()" (change)="patch({ entity: $any($event.target).value || undefined })">
-          <option value="" [selected]="!def().entity">{{ def().kind === 'lifecycle' ? 'Choose…' : 'None (not about a record)' }}</option>
-          @for (e of store.registry()?.entities ?? []; track e.key) { <option [value]="e.key" [selected]="e.key === def().entity">{{ e.label }}</option> }
-        </select></label>
+        <ui-wf-select [options]="entityOptions()" [value]="def().entity ?? ''" [disabled]="published()" label="Record type" (valueChange)="patch({ entity: $event || undefined })" /></label>
       @if (published()) { <p class="wf-hint">The record type can’t change once the workflow is published.</p> }
       @if (def().kind === 'lifecycle') {
         <label class="lw"><span class="wf-label">Field it controls</span>
-          <select class="wf-select" [disabled]="published()" (change)="setLifecycleField($any($event.target).value)">
-            <option value="" disabled [selected]="!def().lifecycle?.field">Choose…</option>
-            @for (f of lifecycleFields(); track f.key) { <option [value]="f.key" [selected]="f.key === def().lifecycle?.field">{{ f.label }}</option> }
-          </select></label>
+          <ui-wf-select [options]="lifecycleFieldOptions()" [value]="def().lifecycle?.field" placeholder="Choose…" [disabled]="published()" label="Field it controls" (valueChange)="setLifecycleField($event)" /></label>
         <label class="lw"><span class="wf-label">If the app changes the field directly</span>
-          <select class="wf-select" (change)="setMode($any($event.target).value)">
-            <option value="enforce" [selected]="def().lifecycle?.mode !== 'observe'">Refuse it (only transitions may change it)</option>
-            <option value="observe" [selected]="def().lifecycle?.mode === 'observe'">Accept it and record it</option>
-          </select></label>
+          <ui-wf-select [options]="modeOptions" [value]="def().lifecycle?.mode === 'observe' ? 'observe' : 'enforce'" label="If the app changes the field directly" (valueChange)="setMode($any($event))" /></label>
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Applies to</h4>
           <ui-wf-condition [value]="def().lifecycle?.appliesWhen" [tokens]="ownFieldTokens()" [emptyText]="'Every ' + (store.entity()?.label ?? 'record').toLowerCase() + ' that no other lifecycle on this field covers.'"
@@ -254,19 +237,15 @@ export class WfTriggerEditor {
         </section>
       } @else {
         <label class="lw"><span class="wf-label">If it starts again for the same record while running</span>
-          <select class="wf-select" (change)="patch({ settings: { ...def().settings, concurrency: $any($event.target).value } })">
-            <option value="perRecordSerial" [selected]="!def().settings?.concurrency || def().settings?.concurrency === 'perRecordSerial'">Wait for the earlier run</option>
-            <option value="parallel" [selected]="def().settings?.concurrency === 'parallel'">Run both</option>
-            <option value="skipIfRunning" [selected]="def().settings?.concurrency === 'skipIfRunning'">Don’t start it again</option>
-          </select></label>
+          <ui-wf-select [options]="concurrencyOptions" [value]="def().settings?.concurrency || 'perRecordSerial'" label="If it starts again for the same record while running" (valueChange)="patch({ settings: { ...def().settings, concurrency: $any($event) } })" /></label>
       }
-      <label class="wf-row small"><ui-switch [ngModel]="def().settings?.calendar === 'working'" (ngModelChange)="patch({ settings: { ...def().settings, calendar: $event ? 'working' : undefined } })" />
+      <label class="wf-row small"><ui-switch size="sm" [ngModel]="def().settings?.calendar === 'working'" (ngModelChange)="patch({ settings: { ...def().settings, calendar: $event ? 'working' : undefined } })" />
         Count deadlines in working time</label>
 
       @if (def().kind === 'lifecycle') {
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Starting over</h4>
-          <label class="wf-row small"><ui-switch [ngModel]="!!def().lifecycle?.reset" (ngModelChange)="$event ? store.enableReset() : store.removeReset()" />
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!def().lifecycle?.reset" (ngModelChange)="$event ? store.enableReset() : store.removeReset()" />
             Let people reset a record's workflow</label>
           @if (def().lifecycle?.reset) {
             <button type="button" class="wf-link" (click)="store.selection.set({ kind: 'reset' })">Who, where to and what changes on reset ›</button>
@@ -278,7 +257,7 @@ export class WfTriggerEditor {
         <h4 class="wf-section-title">Looked after by</h4>
         <ui-wf-assignees [value]="def().settings?.owners ?? []" [registry]="store.registry()" [api]="store.api()" emptyText="Nobody yet." label="owners"
           (valueChange)="patch({ settings: { ...def().settings, owners: $any($event) } })" />
-        <label class="wf-row small"><ui-switch [ngModel]="!!def().settings?.notifyOwnersOnIncident" (ngModelChange)="patch({ settings: { ...def().settings, notifyOwnersOnIncident: $event || undefined } })" />
+        <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!def().settings?.notifyOwnersOnIncident" (ngModelChange)="patch({ settings: { ...def().settings, notifyOwnersOnIncident: $event || undefined } })" />
           Tell them when a run gets stuck</label>
       </section>
 
@@ -287,9 +266,7 @@ export class WfTriggerEditor {
         @for (v of def().variables ?? []; track v.id; let i = $index) {
           <div class="var">
             <ui-input size="sm" [ngModel]="v.label" (ngModelChange)="setVariable(i, { label: $event })" [ariaLabel]="'Variable ' + (i + 1) + ' name'" />
-            <select class="wf-select" (change)="setVariable(i, { type: $any($event.target).value, default: undefined })" aria-label="Type">
-              @for (t of varTypes; track t.value) { <option [value]="t.value" [selected]="t.value === v.type">{{ t.label }}</option> }
-            </select>
+            <ui-wf-select [options]="varTypes" [value]="v.type" label="Type" (valueChange)="setVariable(i, { type: $any($event), default: undefined })" />
             <button type="button" class="wf-icon-btn danger" (click)="removeVariable(i)" aria-label="Remove variable"><hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" /></button>
             <ui-wf-value-input class="def" [type]="v.type === 'json' ? 'text' : v.type" [value]="v.default" label="Starting value" placeholder="Starting value" (valueChange)="setVariable(i, { default: $event })" />
           </div>
@@ -323,7 +300,16 @@ export class WfWorkflowEditor {
     const own = this.def().lifecycle?.field;
     return this.store.tokens({ listId: 'root', index: 0 }).filter((t) => /^entity\.[^.]+$/.test(t.path) && t.path !== 'entity.id' && t.path !== `entity.${own}`);
   });
-  protected readonly varTypes = [
+  protected readonly entityOptions = computed<WfOption[]>(() => [
+    { value: '', label: this.def().kind === 'lifecycle' ? 'Choose…' : 'None (not about a record)' },
+    ...(this.store.registry()?.entities ?? []).map((e) => ({ value: e.key, label: e.label })),
+  ]);
+  protected readonly lifecycleFieldOptions = computed<WfOption[]>(() => this.lifecycleFields().map((f) => ({ value: f.key, label: f.label })));
+  protected readonly modeOptions: WfOption[] = [{ value: 'enforce', label: 'Refuse it (only transitions may change it)' }, { value: 'observe', label: 'Accept it and record it' }];
+  protected readonly concurrencyOptions: WfOption[] = [
+    { value: 'perRecordSerial', label: 'Wait for the earlier run' }, { value: 'parallel', label: 'Run both' }, { value: 'skipIfRunning', label: 'Don’t start it again' },
+  ];
+  protected readonly varTypes: WfOption[] = [
     { value: 'text', label: 'Text' }, { value: 'number', label: 'Number' }, { value: 'boolean', label: 'Yes/no' },
     { value: 'date', label: 'Date' }, { value: 'user', label: 'Person' }, { value: 'json', label: 'Anything' },
   ];
@@ -388,7 +374,7 @@ export class WfWorkflowEditor {
 /** A lifecycle state: its name and stored value, kind, colour, and what runs on entering or leaving it. */
 @Component({
   selector: 'ui-wf-state-editor',
-  imports: [FormsModule, UiInput, UiTextarea, UiSwitch, WfDurationInput],
+  imports: [FormsModule, UiInput, UiTextarea, UiSwitch, WfDurationInput, WfSelect],
   template: `
     @if (state(); as s) {
       <div class="wf-stack">
@@ -396,38 +382,29 @@ export class WfWorkflowEditor {
           <ui-input size="sm" [ngModel]="s.label" (ngModelChange)="patch({ label: $event }, 'label')" /></label>
         <label class="lw"><span class="wf-label">Stored value</span>
           @if (field()?.options?.length) {
-            <select class="wf-select" (change)="patch({ key: $any($event.target).value })">
-              @for (o of field()!.options!; track o.value) { <option [value]="o.value" [selected]="'' + o.value === s.key">{{ o.label }} ({{ o.value }})</option> }
-              @if (!known()) { <option [value]="s.key" selected>{{ s.key }} (not a value of the field)</option> }
-            </select>
+            <ui-wf-select [options]="keyOptions()" [value]="s.key" [unknownLabel]="notAValue" label="Stored value" (valueChange)="patch({ key: $event })" />
           } @else {
             <ui-input size="sm" [ngModel]="s.key" (ngModelChange)="patch({ key: $event }, 'key')" />
           }</label>
         <div class="wf-grid2">
           <label class="lw"><span class="wf-label">Kind</span>
-            <select class="wf-select" (change)="setCategory($any($event.target).value)">
-              <option value="initial" [selected]="s.category === 'initial'">Starting state</option>
-              <option value="active" [selected]="s.category === 'active'">In progress</option>
-              <option value="terminal" [selected]="s.category === 'terminal'">Final state</option>
-            </select></label>
+            <ui-wf-select [options]="categories" [value]="s.category" label="Kind" (valueChange)="setCategory($any($event))" /></label>
           <label class="lw"><span class="wf-label">Colour</span>
-            <select class="wf-select" (change)="patch({ tone: $any($event.target).value })">
-              @for (t of tones; track t) { <option [value]="t" [selected]="(s.tone ?? 'neutral') === t">{{ t }}</option> }
-            </select></label>
+            <ui-wf-select [options]="tones" [value]="s.tone ?? 'neutral'" label="Colour" (valueChange)="patch({ tone: $any($event) })" /></label>
         </div>
         <label class="lw"><span class="wf-label">Description</span>
-          <ui-textarea [ngModel]="s.description ?? ''" (ngModelChange)="patch({ description: $event || undefined }, 'description')" [rows]="2" [autosize]="true" /></label>
+          <ui-textarea size="sm" [ngModel]="s.description ?? ''" (ngModelChange)="patch({ description: $event || undefined }, 'description')" [rows]="2" [autosize]="true" /></label>
         @if (s.category !== 'terminal') {
           <section class="wf-section wf-stack">
             <h4 class="wf-section-title">Time limit</h4>
-            <label class="wf-row small"><ui-switch [ngModel]="!!s.sla" (ngModelChange)="patch({ sla: $event ? { within: 'P2D', steps: [] } : undefined })" /> Do something if a record stays here too long</label>
+            <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!s.sla" (ngModelChange)="patch({ sla: $event ? { within: 'P2D', steps: [] } : undefined })" /> Do something if a record stays here too long</label>
             @if (s.sla; as sla) {
               <div><span class="wf-label">Longer than</span><ui-wf-duration [value]="sla.within" label="Time limit" (valueChange)="patch({ sla: { ...sla, within: $event } })" /></div>
-              <label class="wf-row small"><ui-switch [ngModel]="sla.calendar === 'working'" (ngModelChange)="patch({ sla: { ...sla, calendar: $event ? 'working' : undefined } })" /> Count working time only</label>
+              <label class="wf-row small"><ui-switch size="sm" [ngModel]="sla.calendar === 'working'" (ngModelChange)="patch({ sla: { ...sla, calendar: $event ? 'working' : undefined } })" /> Count working time only</label>
             }
           </section>
         }
-        <label class="wf-row small"><ui-switch [ngModel]="!!s.keepRunsOnExit" (ngModelChange)="patch({ keepRunsOnExit: $event || undefined })" /> Keep its steps running after the record leaves</label>
+        <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!s.keepRunsOnExit" (ngModelChange)="patch({ keepRunsOnExit: $event || undefined })" /> Keep its steps running after the record leaves</label>
         <p class="wf-hint">Edit what happens on entering, leaving or running late in the steps panel under the diagram.</p>
       </div>
     }
@@ -436,10 +413,14 @@ export class WfWorkflowEditor {
 })
 export class WfStateEditor {
   protected readonly store = inject(WfBuilderStore);
-  protected readonly tones = ['neutral', 'info', 'success', 'warning', 'danger'];
+  protected readonly tones: WfOption[] = [
+    { value: 'neutral', label: 'Plain' }, { value: 'info', label: 'Blue' }, { value: 'success', label: 'Green' }, { value: 'warning', label: 'Amber' }, { value: 'danger', label: 'Red' },
+  ];
+  protected readonly categories: WfOption[] = [{ value: 'initial', label: 'Starting state' }, { value: 'active', label: 'In progress' }, { value: 'terminal', label: 'Final state' }];
+  protected readonly notAValue = (v: string) => `${v} (not a value of the field)`;
   protected readonly state = this.store.selectedState;
   protected readonly field = computed(() => fieldOf(this.store.registry(), this.store.def().entity, this.store.def().lifecycle?.field));
-  protected readonly known = computed(() => !!this.field()?.options?.some((o) => String(o.value) === this.state()?.key));
+  protected readonly keyOptions = computed<WfOption[]>(() => (this.field()?.options ?? []).map((o) => ({ value: '' + o.value, label: `${o.label} (${o.value})` })));
 
   protected patch(p: Partial<UiWfState>, mergeKey?: string): void {
     const s = this.state();
@@ -464,7 +445,7 @@ export class WfStateEditor {
 /** A transition: who may apply it, when it is possible, what it asks for, and when it happens by itself. */
 @Component({
   selector: 'ui-wf-transition-editor',
-  imports: [FormsModule, UiInput, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField],
+  imports: [FormsModule, UiInput, UiSwitch, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfSelect],
   template: `
     @if (transition(); as t) {
       <div class="wf-stack">
@@ -472,15 +453,9 @@ export class WfStateEditor {
           <ui-input size="sm" [ngModel]="t.label" (ngModelChange)="patch({ label: $event }, 'label')" /></label>
         <div class="wf-grid2">
           <label class="lw"><span class="wf-label">From</span>
-            <select class="wf-select" (change)="setFrom($any($event.target).value)">
-              <option value="*" [selected]="t.from === '*'">Any state (not final)</option>
-              @for (s of states(); track s.id) { <option [value]="s.id" [selected]="t.from !== '*' && t.from.length === 1 && t.from[0] === s.id">{{ s.label }}</option> }
-              @if (t.from !== '*' && t.from.length > 1) { <option value="" selected>{{ t.from.length }} states</option> }
-            </select></label>
+            <ui-wf-select [options]="fromOptions()" [value]="fromValue()" label="From" (valueChange)="setFrom($event)" /></label>
           <label class="lw"><span class="wf-label">To</span>
-            <select class="wf-select" (change)="patch({ to: $any($event.target).value })">
-              @for (s of states(); track s.id) { <option [value]="s.id" [selected]="t.to === s.id">{{ s.label }}</option> }
-            </select></label>
+            <ui-wf-select [options]="stateOptions()" [value]="t.to" label="To" (valueChange)="patch({ to: $event })" /></label>
         </div>
         @if (t.from !== '*') {
           <details class="more-from"><summary>Starts from several states</summary>
@@ -493,7 +468,7 @@ export class WfStateEditor {
           <h4 class="wf-section-title">Who can do this</h4>
           <ui-wf-assignees [value]="t.who ?? []" [registry]="store.registry()" [tokens]="tokens()" [api]="store.api()" label="people"
             emptyText="Nobody by hand: only automatically, or from other workflows." (valueChange)="patch({ who: $any($event) })" />
-          <label class="wf-row small"><ui-switch [ngModel]="!!t.hidden" (ngModelChange)="patch({ hidden: $event || undefined })" /> Hide it from the record page</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!t.hidden" (ngModelChange)="patch({ hidden: $event || undefined })" /> Hide it from the record page</label>
         </section>
 
         <section class="wf-section wf-stack">
@@ -507,26 +482,15 @@ export class WfStateEditor {
           <label class="lw"><span class="wf-label">Confirmation message</span>
             <ui-input size="sm" [ngModel]="t.confirm ?? ''" (ngModelChange)="patch({ confirm: $event || undefined }, 'confirm')" placeholder="e.g. Approve this application?" /></label>
           <label class="lw"><span class="wf-label">Button colour</span>
-            <select class="wf-select" (change)="patch({ tone: $any($event.target).value === 'neutral' ? undefined : $any($event.target).value })">
-              @for (x of tones; track x) { <option [value]="x" [selected]="(t.tone ?? 'neutral') === x">{{ x }}</option> }
-            </select></label>
+            <ui-wf-select [options]="tones" [value]="t.tone ?? 'neutral'" label="Button colour" (valueChange)="patch({ tone: $event === 'neutral' ? undefined : $any($event) })" /></label>
           <label class="lw"><span class="wf-label">Remarks</span>
-            <select class="wf-select" (change)="patch({ comment: $any($event.target).value || undefined })">
-              <option value="" [selected]="!t.comment">Default ({{ t.tone === 'danger' ? 'optional, as it is red' : 'not asked' }})</option>
-              <option value="none" [selected]="t.comment === 'none'">Not asked</option>
-              <option value="optional" [selected]="t.comment === 'optional'">Optional</option>
-              <option value="required" [selected]="t.comment === 'required'">Required</option>
-            </select></label>
+            <ui-wf-select [options]="remarkOptions()" [value]="t.comment ?? ''" label="Remarks" (valueChange)="patch({ comment: $any($event) || undefined })" /></label>
           <p class="wf-hint">People explain the move in a few words; it shows in the history and steps can use it (“Remarks”). Moves that happen by themselves never ask.</p>
         </section>
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Happens by itself</h4>
-          <select class="wf-select" (change)="setAuto($any($event.target).value)" aria-label="Automatic">
-            <option value="" [selected]="!t.auto">No, only when applied</option>
-            <option value="after" [selected]="t.auto && 'after' in t.auto">After some time in the state</option>
-            <option value="when" [selected]="t.auto && 'when' in t.auto">When a condition becomes true</option>
-          </select>
+          <ui-wf-select [options]="autoOptions" [value]="!t.auto ? '' : 'after' in t.auto ? 'after' : 'when'" label="Automatic" (valueChange)="setAuto($event)" />
           @if (t.auto && 'after' in t.auto) {
             <ui-wf-duration [value]="$any(t.auto).after" label="After" (valueChange)="patch({ auto: { ...$any(t.auto), after: $event } })" />
           }
@@ -549,9 +513,26 @@ export class WfStateEditor {
 })
 export class WfTransitionEditor {
   protected readonly store = inject(WfBuilderStore);
-  protected readonly tones = ['neutral', 'primary', 'success', 'warning', 'danger'];
+  protected readonly tones = WF_TONE_OPTIONS;
   protected readonly transition = this.store.selectedTransition;
   protected readonly states = computed(() => this.store.def().lifecycle?.states ?? []);
+  protected readonly stateOptions = computed<WfOption[]>(() => this.states().map((s) => ({ value: s.id, label: s.label })));
+  protected readonly fromOptions = computed<WfOption[]>(() => {
+    const from = this.transition()?.from;
+    const several = from && from !== '*' && from.length > 1 ? [{ value: '', label: `${from.length} states`, disabled: true }] : [];
+    return [{ value: '*', label: 'Any state (not final)' }, ...this.stateOptions(), ...several];
+  });
+  protected readonly fromValue = computed(() => {
+    const from = this.transition()?.from;
+    return !from || from === '*' ? '*' : from.length === 1 ? from[0] : '';
+  });
+  protected readonly remarkOptions = computed<WfOption[]>(() => [
+    { value: '', label: `Default (${this.transition()?.tone === 'danger' ? 'optional, as it is red' : 'not asked'})` },
+    { value: 'none', label: 'Not asked' }, { value: 'optional', label: 'Optional' }, { value: 'required', label: 'Required' },
+  ]);
+  protected readonly autoOptions: WfOption[] = [
+    { value: '', label: 'No, only when applied' }, { value: 'after', label: 'After some time in the state' }, { value: 'when', label: 'When a condition becomes true' },
+  ];
   protected readonly tokens = computed(() => {
     const t = this.transition();
     return this.store.tokens(t ? { listId: `transition:${t.id}`, index: 0 } : undefined);
@@ -609,7 +590,7 @@ export class WfTransitionEditor {
               <ui-select size="sm" label="From" [options]="fromOptions()" [ngModel]="fromState()" placeholder="Choose a state…" (ngModelChange)="offerFrom($event)" /></label>
             <div class="states" role="group" aria-label="States it is offered in">
               @for (s of allStates(); track s.id) {
-                <ui-checkbox [ngModel]="r.states.includes(s.id)" (ngModelChange)="toggleState(s.id, $event)">{{ s.label }}</ui-checkbox>
+                <ui-checkbox size="sm" [ngModel]="r.states.includes(s.id)" (ngModelChange)="toggleState(s.id, $event)">{{ s.label }}</ui-checkbox>
               }
             </div>
             @if (!r.states.length) { <p class="wf-hint">Tick at least one state, or nobody can start a record over.</p> }
@@ -635,9 +616,9 @@ export class WfTransitionEditor {
 
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">What else happens</h4>
-          <label class="wf-row small"><ui-switch [ngModel]="r.cancelAutomations !== false" (ngModelChange)="store.updateReset({ cancelAutomations: $event ? undefined : false })" />
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="r.cancelAutomations !== false" (ngModelChange)="store.updateReset({ cancelAutomations: $event ? undefined : false })" />
             Also stop other workflows running about the record</label>
-          <label class="wf-row small"><ui-switch [ngModel]="!!r.runExitEnter" (ngModelChange)="store.updateReset({ runExitEnter: $event || undefined })" />
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!r.runExitEnter" (ngModelChange)="store.updateReset({ runExitEnter: $event || undefined })" />
             Run the state's “on leaving” and the start's “on entering” steps</label>
         </section>
       </div>
@@ -710,6 +691,7 @@ export class WfResetEditor {
 /** The right-hand panel: settings for whatever is selected, with a short header and problems. */
 @Component({
   selector: 'ui-wf-inspector',
+  host: { '[class.in-sheet]': '!showHead()' },
   imports: [HugeiconsIconComponent, UiButton, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
   template: `
     @if (showHead()) {
@@ -767,6 +749,9 @@ export class WfResetEditor {
     .ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }
     .fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+    /* In the phone sheet the sheet's body gives the side padding (as a modal's does), so the settings line up with its title. */
+    :host(.in-sheet) .sheet-bar { padding-left: 0; padding-right: 0; }
+    :host(.in-sheet) .body { padding-left: 0; padding-right: 0; }
     .problems { margin: 0 0 var(--ui-space-3); padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .problems li { padding: 6px 8px; border-radius: var(--ui-radius-xs); font-size: 12.5px; line-height: 1.4;
       background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); color: var(--ui-color-text); border-left: 3px solid var(--ui-color-danger); }

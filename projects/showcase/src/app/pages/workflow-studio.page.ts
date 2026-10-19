@@ -1,8 +1,9 @@
-import { Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiButton } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
-import { UiInput, UiNumberInput } from '@zouriel/ui/form';
+import { UiDatePicker } from '@zouriel/ui/datepicker';
+import { UiCheckbox, UiInput, UiNumberInput, UiSelect, type UiSelectOption } from '@zouriel/ui/form';
 import {
   UiWorkflowAudit,
   UiWorkflowBuilder,
@@ -30,7 +31,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'audit' | 'permissions' | 's
  */
 @Component({
   selector: 'page-workflow-studio',
-  imports: [FormsModule, UiButton, UiModal, UiInput, UiNumberInput, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
+  imports: [FormsModule, UiButton, UiCheckbox, UiDatePicker, UiModal, UiInput, UiNumberInput, UiSelect, UiWorkflowBuilder, UiWorkflowPanel, UiWorkflowAudit, UiWorkflowGlobalSettings, UiWorkflowPermissions, UiWorkflowTasksDrawer, UiWorkflowStateBadge],
   providers: [
     { provide: UI_WORKFLOW_API, useFactory: () => inject(WorkflowPlayground).api },
     // "Due in" and "ago" count from the sandbox clock, which the +1h/+1 day buttons move.
@@ -43,9 +44,7 @@ type Tab = 'workflows' | 'applications' | 'tasks' | 'audit' | 'permissions' | 's
         <span class="sub">A scholarship office on the real engine — your own sandbox</span>
         <span class="grow"></span>
         <label class="who">You are
-          <select #who class="sel" [ngModel]="pg.user()" (ngModelChange)="guard(() => switchUser($event), resetWho)" aria-label="Act as">
-            @for (u of pg.users(); track u.id) { <option [value]="u.id">{{ u.name }} · {{ u.title }}</option> }
-          </select>
+          <ui-select #who class="who-sel" size="sm" label="Act as" [options]="userOptions()" [ngModel]="pg.user()" (ngModelChange)="guard(() => switchUser($event), resetWho)" />
         </label>
         <div class="clock" title="The sandbox clock (your local time). Move it to see waits, reminders and deadlines happen.">
           <span class="now">{{ now() }}</span>
@@ -95,6 +94,9 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                       <ui-button size="sm" (click)="newWorkflow('automation')">New automation</ui-button>
                     }
                   </div>
+                  @if (loadError()) {
+                    <div class="load-error" role="alert"><span>{{ loadError() }}</span><ui-button size="sm" variant="outline" (click)="pg.changed()">Try again</ui-button></div>
+                  }
                   <table class="grid">
                     <thead><tr><th>Name</th><th>Kind</th><th>Record</th><th>Version</th><th>Running</th></tr></thead>
                     <tbody>
@@ -104,7 +106,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                           <td>{{ w.kind === 'lifecycle' ? 'Lifecycle' : 'Automation' }}</td>
                           <td>{{ w.entity ?? '—' }}</td>
                           <td>{{ w.version ? 'v' + w.version : 'draft' }}</td>
-                          <td>{{ w.runningInstances }}</td>
+                          <td data-label="Running">{{ w.runningInstances }}</td>
                         </tr>
                       }
                     </tbody>
@@ -127,6 +129,9 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                         <ui-button size="sm" (click)="createApp()" [disabled]="busy()">Create as {{ pg.currentUser()?.name }}</ui-button>
                       </div>
                     }
+                    @if (loadError()) {
+                      <div class="load-error" role="alert"><span>{{ loadError() }}</span><ui-button size="sm" variant="outline" (click)="pg.changed()">Try again</ui-button></div>
+                    }
                     <ul class="apps-ul">
                       @for (a of apps(); track a.id) {
                         <li><button type="button" [class.on]="selectedApp() === a.id" (click)="selectedApp.set(a.id)">
@@ -138,16 +143,18 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                     </ul>
                   </div>
                   @if (app(); as a) {
+                    <!-- One column for the details and the panel, so the panel sits right under the details whatever the list's length. -->
+                    <div class="app-side">
                     <div class="app-detail">
                       <h2>{{ a.title }}</h2>
                       <dl class="fields">
                         <dt>Applicant</dt><dd>{{ a.applicantName }}</dd>
                         <dt>Amount</dt><dd><ui-number-input size="sm" [ngModel]="a.amount" (ngModelChange)="patchApp(a.id, { amount: $event })" ariaLabel="Amount" [steppers]="false" /></dd>
-                        <dt>Priority</dt><dd><select class="sel" [ngModel]="a.priority" (ngModelChange)="patchApp(a.id, { priority: $event })" aria-label="Priority"><option>Low</option><option>Normal</option><option>High</option></select></dd>
-                        <dt>Reviewer</dt><dd><select class="sel" [ngModel]="a.reviewer ?? ''" (ngModelChange)="patchApp(a.id, { reviewer: $event })" aria-label="Reviewer"><option value="">Nobody</option><option value="rana">Rana Ibrahim</option><option value="omar">Omar Saleem</option></select></dd>
-                        <dt>Deadline</dt><dd><input class="sel" type="date" [ngModel]="a.deadline ?? ''" (ngModelChange)="patchApp(a.id, { deadline: $event })" aria-label="Deadline" /></dd>
+                        <dt>Priority</dt><dd><ui-select size="sm" label="Priority" [options]="priorities" [ngModel]="a.priority" (ngModelChange)="patchApp(a.id, { priority: $event })" /></dd>
+                        <dt>Reviewer</dt><dd><ui-select size="sm" label="Reviewer" [options]="reviewers" [ngModel]="a.reviewer ?? ''" (ngModelChange)="patchApp(a.id, { reviewer: $event })" /></dd>
+                        <dt>Deadline</dt><dd><ui-date-picker size="sm" [ngModel]="a.deadline || null" (ngModelChange)="patchApp(a.id, { deadline: $event ?? '' })" aria-label="Deadline" /></dd>
                         <dt>Paid</dt><dd>{{ a.paid ? 'Yes' : 'No' }} @if (!a.paid && a.status === 'Approved' && canPay()) { <ui-button size="sm" variant="ghost" (click)="pay(a.id)" [disabled]="busy()">Record a payment</ui-button> }</dd>
-                        <dt>Documents</dt><dd><ul class="docs">@for (d of a.documents; track d.id) { <li><label><input type="checkbox" [checked]="d.verified" (change)="verifyDoc(a.id, d.id)" /> {{ d.name }}</label></li> }</ul></dd>
+                        <dt>Documents</dt><dd><ul class="docs">@for (d of a.documents; track d.id) { <li><ui-checkbox size="sm" [ngModel]="d.verified" (ngModelChange)="verifyDoc(a.id, d.id)">{{ d.name }}</ui-checkbox></li> }</ul></dd>
                         @if (a.notes) { <dt>Notes</dt><dd>{{ a.notes }}</dd> }
                       </dl>
                       <p class="hint">Try changing the status directly: <button type="button" class="link" (click)="forceStatus(a.id)">set status to Approved</button> — the lifecycle refuses it.</p>
@@ -158,6 +165,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
                       <h3>Workflow</h3>
                       <ui-workflow-panel #panel layout="compact" title="" entity="application" [entityId]="'' + a.id" (changed)="refresh()" />
                     </aside>
+                    </div>
                   }
                 </div>
               }
@@ -215,7 +223,12 @@ export class WorkflowStudioPage {
   protected readonly tab = signal<Tab>(this.storedTab());
   protected readonly busy = signal(false);
   protected readonly notice = signal('');
-  private readonly who = viewChild<ElementRef<HTMLSelectElement>>('who');
+  private readonly who = viewChild<UiSelect>('who');
+  protected readonly userOptions = computed<UiSelectOption[]>(() => this.pg.users().map((u) => ({ value: u.id, label: `${u.name} · ${u.title}` })));
+  protected readonly priorities: UiSelectOption[] = ['Low', 'Normal', 'High'].map((p) => ({ value: p, label: p }));
+  protected readonly reviewers: UiSelectOption[] = [{ value: '', label: 'Nobody' }, { value: 'rana', label: 'Rana Ibrahim' }, { value: 'omar', label: 'Omar Saleem' }];
+  /** Why the current tab's data didn't load (shown with Try again), or empty. */
+  protected readonly loadError = signal('');
   /** What the current person may do (from /me), for showing only the buttons that will work. */
   private readonly can = signal<{ edit: boolean } | null>(null);
   protected readonly canEdit = computed(() => this.can()?.edit ?? false);
@@ -274,7 +287,7 @@ export class WorkflowStudioPage {
     this.onKeep = null;
   }
 
-  protected readonly resetWho = () => { const el = this.who()?.nativeElement; if (el) el.value = this.pg.user(); };
+  protected readonly resetWho = () => this.who()?.writeValue(this.pg.user());
 
   protected leave(): void {
     const action = this.pendingLeave();
@@ -300,8 +313,10 @@ export class WorkflowStudioPage {
         }
         case 'tasks': this.messages.set(await this.pg.get<DemoMessage[]>(`/demo/inbox?user=${encodeURIComponent(this.pg.user())}`)); break;
       }
+      this.loadError.set('');
     } catch {
-      // The views show their own errors; the bar just keeps its last values.
+      // The library views show their own errors; the studio's lists say so here, with a way to try again.
+      this.loadError.set('This couldn’t be loaded from the playground server.');
     }
   }
 

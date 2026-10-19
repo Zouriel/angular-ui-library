@@ -3,11 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
+import { UiDatePicker } from '@zouriel/ui/datepicker';
 import { UiInput, UiNumberInput, UiTokenInput, type UiTokenRun } from '@zouriel/ui/form';
 import { UiFormBuilder, createDefinition, operatorInfo, operatorsFor, type UiFbOperator, type UiFormDefinition } from '@zouriel/ui/form-builder';
 import type { UiWorkflowApi, UiWfUser } from './api';
 import { describeAssignees, optionLabel, tokenLabel, valueKindOfField, type UiWfToken } from './definition';
 import { WF_ICONS } from './icons';
+import { WfSelect, type WfOption } from './select';
 import type {
   UiWfAssignee,
   UiWfCondition,
@@ -27,16 +29,10 @@ import { WF_SHARED_STYLES } from './styles';
 /** `ui-wf-token-select` — pick a value to read (a field of the record, an earlier step's result…), grouped. */
 @Component({
   selector: 'ui-wf-token-select',
+  imports: [WfSelect],
   template: `
-    <select class="wf-select" [attr.aria-label]="label()" [disabled]="disabled()" (change)="pick($any($event.target).value)">
-      <option value="" [selected]="!value()" [disabled]="!allowEmpty()">{{ placeholder() }}</option>
-      @for (g of groups(); track g.name) {
-        <optgroup [label]="g.name">
-          @for (t of g.tokens; track t.path) { <option [value]="t.path" [selected]="t.path === value()">{{ t.label }}</option> }
-        </optgroup>
-      }
-      @if (value() && !known()) { <option [value]="value()" selected>{{ value() }} (not available here)</option> }
-    </select>
+    <ui-wf-select [options]="options()" [value]="value()" [label]="label()" [placeholder]="allowEmpty() ? undefined : placeholder()"
+      [disabled]="disabled()" [reset]="reset()" (valueChange)="pick($event)" />
   `,
   styles: [WF_SHARED_STYLES, `:host { display: block; min-width: 0; }`],
 })
@@ -49,18 +45,20 @@ export class WfTokenSelect {
   readonly label = input('Value');
   readonly allowEmpty = input(false);
   readonly disabled = input(false);
+  /** A picker ("Insert a value…"): every pick is reported and it shows the placeholder again. */
+  readonly reset = input(false);
   readonly valueChange = output<string>();
 
   protected readonly filtered = computed(() => {
     const types = this.types();
     return this.tokens().filter((t) => !types || t.type === 'any' || types.includes(t.type as UiWfFieldType));
   });
-  protected readonly groups = computed(() => {
-    const m = new Map<string, UiWfToken[]>();
-    for (const t of this.filtered()) m.set(t.group, [...(m.get(t.group) ?? []), t]);
-    return [...m].map(([name, tokens]) => ({ name, tokens }));
+  /** Each value with its group ("Record › Amount"), as one list. */
+  protected readonly options = computed<WfOption[]>(() => {
+    const list = this.filtered();
+    const opts = list.map((t) => ({ value: t.path, label: tokenLabel(list, t.path) }));
+    return this.allowEmpty() ? [{ value: '', label: this.placeholder() }, ...opts] : opts;
   });
-  protected readonly known = computed(() => this.filtered().some((t) => t.path === this.value()));
 
   protected pick(v: string): void {
     this.valueChange.emit(v);
@@ -98,9 +96,9 @@ function fromRuns(runs: UiTokenRun[]): UiWfTemplate {
   selector: 'ui-wf-template',
   imports: [FormsModule, UiTokenInput, WfTokenSelect],
   template: `
-    <ui-token-input [ngModel]="runs()" (ngModelChange)="change($event)" [multiline]="multiline()" [placeholder]="placeholder()"
+    <ui-token-input size="sm" [ngModel]="runs()" (ngModelChange)="change($event)" [multiline]="multiline()" [placeholder]="placeholder()"
       [label]="label()" [tokenLabel]="labelOf" [minHeight]="multiline() ? '84px' : null" />
-    <ui-wf-token-select class="insert" [tokens]="tokens()" [value]="null" placeholder="Insert a value…" label="Insert a value" (valueChange)="insert($event)" />
+    <ui-wf-token-select class="insert" [tokens]="tokens()" [value]="null" [reset]="true" placeholder="Insert a value…" label="Insert a value" (valueChange)="insert($event)" />
   `,
   styles: [WF_SHARED_STYLES, `:host { display: flex; flex-direction: column; gap: 4px; min-width: 0; } .insert { max-width: 260px; }`],
 })
@@ -166,24 +164,18 @@ export function formatSimpleDuration(n: number, unit: Unit, negative = false): s
 /** `ui-wf-duration` — "3 days", "4 hours", stored as an ISO 8601 duration. `signed` adds before/after. */
 @Component({
   selector: 'ui-wf-duration',
-  imports: [FormsModule, UiNumberInput],
+  imports: [FormsModule, UiNumberInput, WfSelect],
   template: `
     <ui-number-input [ngModel]="parts().n" (ngModelChange)="set($event ?? 0, parts().unit, parts().negative)" [min]="0" [max]="unitMax[parts().unit]" [step]="1" [ariaLabel]="label() + ' amount'" size="sm" />
-    <select class="wf-select unit" [attr.aria-label]="label() + ' unit'" (change)="set(parts().n, $any($event.target).value, parts().negative)">
-      @for (u of units; track u.value) { <option [value]="u.value" [selected]="u.value === parts().unit">{{ u.label }}</option> }
-    </select>
+    <ui-wf-select [options]="units" [value]="parts().unit" [label]="label() + ' unit'" (valueChange)="set(parts().n, $any($event), parts().negative)" />
     @if (signed()) {
-      <select class="wf-select dir" [attr.aria-label]="label() + ' direction'" (change)="set(parts().n, parts().unit, $any($event.target).value === 'before')">
-        <option value="before" [selected]="parts().negative">before</option>
-        <option value="after" [selected]="!parts().negative">after</option>
-      </select>
+      <ui-wf-select [options]="directions" [value]="parts().negative ? 'before' : 'after'" [label]="label() + ' direction'" (valueChange)="set(parts().n, parts().unit, $event === 'before')" />
     }
   `,
   styles: [WF_SHARED_STYLES, `
     /* The unit select keeps room for its longest word ("minutes", "months"). */
     :host { display: grid; grid-template-columns: minmax(64px, 96px) minmax(88px, 1fr); gap: 6px; align-items: center; min-width: 0; }
     :host(.signed) { grid-template-columns: minmax(64px, 88px) minmax(88px, 1fr) minmax(76px, 0.9fr); }
-    .wf-select { height: var(--ui-size-sm); }
   `],
   host: { '[class.signed]': 'signed()' },
 })
@@ -193,6 +185,7 @@ export class WfDurationInput {
   readonly signed = input(false);
   readonly valueChange = output<string>();
   protected readonly units = UNITS;
+  protected readonly directions: WfOption[] = [{ value: 'before', label: 'before' }, { value: 'after', label: 'after' }];
   protected readonly unitMax = UNIT_MAX;
   protected readonly parts = computed(() => parseSimpleDuration(this.value()) ?? { n: 1, unit: 'D' as Unit, negative: false });
 
@@ -209,7 +202,7 @@ export class WfDurationInput {
  */
 @Component({
   selector: 'ui-wf-assignees',
-  imports: [FormsModule, HugeiconsIconComponent, UiInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, WfSelect],
   template: `
     @if (value().length) {
       <ul class="chips" role="list">
@@ -224,28 +217,7 @@ export class WfDurationInput {
     } @else if (emptyText()) {
       <p class="wf-hint">{{ emptyText() }}</p>
     }
-    <div class="add">
-      <select class="wf-select" [attr.aria-label]="'Add to ' + label()" (change)="add($any($event.target)); $any($event.target).value = ''">
-        <option value="" selected>Add…</option>
-        @if (registry()?.roles?.length) {
-          <optgroup label="Everyone with a role">@for (r of registry()!.roles!; track r.key) { <option [value]="'role:' + r.key">{{ r.label }}</option> }</optgroup>
-        }
-        @if (registry()?.groups?.length) {
-          <optgroup label="A group">@for (g of registry()!.groups!; track g.key) { <option [value]="'group:' + g.key">{{ g.label }}</option> }</optgroup>
-        }
-        @if (userTokens().length) {
-          <optgroup label="A person on the record">@for (t of userTokens(); track t.path) { <option [value]="'field:' + t.path">{{ t.group }} › {{ t.label }}</option> }</optgroup>
-        }
-        <optgroup label="Other">
-          <option value="initiator">Whoever started it</option>
-          <option value="managerOf:initiator">The manager of whoever started it</option>
-          @if (allowManagerOfAssignees()) { <option value="managerOf:assignees">Their managers</option> }
-          @for (t of userTokens(); track t.path) { <option [value]="'managerOf:' + t.path">Manager of {{ t.label }}</option> }
-          @if (api()) { <option value="person">A specific person…</option> }
-          @if (allowEmail()) { <option value="email">An email address…</option> }
-        </optgroup>
-      </select>
-    </div>
+    <ui-wf-select class="add" [options]="addOptions()" [reset]="true" placeholder="Add…" [label]="'Add to ' + label()" (valueChange)="add($event)" />
     @if (searching()) {
       <div class="search">
         <ui-input size="sm" placeholder="Search people by name" [ngModel]="query()" (ngModelChange)="search($event)" aria-label="Search people" />
@@ -261,9 +233,9 @@ export class WfDurationInput {
       </div>
     }
     @if (emailing()) {
-      <div class="search">
+      <div class="search email">
         <ui-input size="sm" type="email" placeholder="name@example.com" [ngModel]="email()" (ngModelChange)="email.set($event)" (keydown.enter)="addEmail()" aria-label="Email address" />
-        <button type="button" class="wf-link" (click)="addEmail()">Add</button>
+        <ui-button size="sm" variant="outline" (click)="addEmail()">Add</ui-button>
       </div>
     }
   `,
@@ -282,6 +254,8 @@ export class WfDurationInput {
       .x::after { content: ''; position: absolute; left: 50%; top: 50%; width: var(--ui-size-touch); height: var(--ui-size-touch); transform: translate(-50%, -50%); }
     }
     .search { display: flex; flex-direction: column; gap: 4px; }
+    .email { flex-direction: row; align-items: center; gap: 6px; }
+    .email ui-input { flex: 1; min-width: 0; }
     .results { margin: 0; padding: 2px; list-style: none; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); max-height: 180px; overflow: auto; }
     .results button { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
     .results button:hover, .results button:focus-visible { background: var(--ui-color-surface-hover); outline: none; }
@@ -306,6 +280,22 @@ export class WfAssigneesEditor {
   protected readonly results = signal<UiWfUser[]>([]);
   private readonly names = signal<Record<string, string>>({});
   protected readonly userTokens = computed(() => this.tokens().filter((t) => t.type === 'user' && !t.path.startsWith('steps.')));
+  /** Everything that can be added, each with its kind ("A group › Finance"), as one list. */
+  protected readonly addOptions = computed<WfOption[]>(() => {
+    const reg = this.registry();
+    const users = this.userTokens();
+    return [
+      ...(reg?.roles ?? []).map((r) => ({ value: `role:${r.key}`, label: `Everyone with a role › ${r.label}` })),
+      ...(reg?.groups ?? []).map((g) => ({ value: `group:${g.key}`, label: `A group › ${g.label}` })),
+      ...users.map((t) => ({ value: `field:${t.path}`, label: `A person on the record › ${t.group} › ${t.label}` })),
+      { value: 'initiator', label: 'Whoever started it' },
+      { value: 'managerOf:initiator', label: 'The manager of whoever started it' },
+      ...(this.allowManagerOfAssignees() ? [{ value: 'managerOf:assignees', label: 'Their managers' }] : []),
+      ...users.map((t) => ({ value: `managerOf:${t.path}`, label: `Manager of ${t.label}` })),
+      ...(this.api() ? [{ value: 'person', label: 'A specific person…' }] : []),
+      ...(this.allowEmail() ? [{ value: 'email', label: 'An email address…' }] : []),
+    ];
+  });
   private searchSeq = 0;
 
   constructor() {
@@ -325,8 +315,7 @@ export class WfAssigneesEditor {
     return describeAssignees([a], { registry: this.registry(), def: { specVersion: 1, id: '', key: '', kind: 'automation', title: '' }, tokens: this.tokens(), userName: (id) => this.names()[id] });
   }
 
-  protected add(select: HTMLSelectElement): void {
-    const v = select.value;
+  protected add(v: string): void {
     if (!v) return;
     if (v === 'person') { this.searching.set(true); this.emailing.set(false); return; }
     if (v === 'email') { this.emailing.set(true); this.searching.set(false); return; }
@@ -378,30 +367,24 @@ export class WfAssigneesEditor {
 /** A typed input for one constant value of a registry field. */
 @Component({
   selector: 'ui-wf-value-input',
-  imports: [FormsModule, UiInput, UiNumberInput],
+  imports: [FormsModule, UiDatePicker, UiInput, UiNumberInput, WfSelect],
   template: `
     @switch (kind()) {
       @case ('enum') {
-        <select class="wf-select" [attr.aria-label]="label()" (change)="emit($any($event.target).value)">
-          <option value="" [selected]="value() == null || value() === ''">Choose…</option>
-          @for (o of field()?.options ?? []; track o.value) { <option [value]="o.value" [selected]="'' + o.value === '' + value()">{{ o.label }}</option> }
-        </select>
+        <ui-wf-select [options]="enumOptions()" [value]="value() == null ? '' : '' + value()" [label]="label()" (valueChange)="emit($event)" />
       }
       @case ('boolean') {
-        <select class="wf-select" [attr.aria-label]="label()" (change)="emit($any($event.target).value === 'true')">
-          <option value="true" [selected]="value() === true">Yes</option>
-          <option value="false" [selected]="value() !== true">No</option>
-        </select>
+        <ui-wf-select [options]="yesNo" [value]="value() === true ? 'true' : 'false'" [label]="label()" (valueChange)="emit($event === 'true')" />
       }
       @case ('number') {
         <ui-number-input size="sm" [ngModel]="value()" (ngModelChange)="emit($event)" [ariaLabel]="label()" [steppers]="false" />
       }
-      @case ('date') { <input class="wf-select native" type="date" [value]="value() ?? ''" (change)="emit($any($event.target).value)" [attr.aria-label]="label()" /> }
-      @case ('dateTime') { <input class="wf-select native" type="datetime-local" [value]="dtLocal()" (change)="emitDt($any($event.target).value)" [attr.aria-label]="label()" /> }
+      @case ('date') { <ui-date-picker size="sm" [ngModel]="value() ?? null" (ngModelChange)="emit($event)" [attr.aria-label]="label()" /> }
+      @case ('dateTime') { <input class="wf-native" type="datetime-local" [value]="dtLocal()" (change)="emitDt($any($event.target).value)" [attr.aria-label]="label()" /> }
       @default { <ui-input size="sm" [ngModel]="value() ?? ''" (ngModelChange)="emit($event)" [ariaLabel]="label()" [placeholder]="placeholder()" /> }
     }
   `,
-  styles: [WF_SHARED_STYLES, `:host { display: block; min-width: 0; } .native { background-image: none; padding-right: var(--ui-space-2); }`],
+  styles: [WF_SHARED_STYLES, `:host { display: block; min-width: 0; }`],
 })
 export class WfValueInput {
   readonly field = input<UiWfFieldDescriptor | undefined>(undefined);
@@ -410,6 +393,8 @@ export class WfValueInput {
   readonly label = input('Value');
   readonly placeholder = input('');
   readonly valueChange = output<unknown>();
+  protected readonly yesNo: WfOption[] = [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }];
+  protected readonly enumOptions = computed<WfOption[]>(() => [{ value: '', label: 'Choose…' }, ...(this.field()?.options ?? []).map((o) => ({ value: '' + o.value, label: o.label }))]);
   protected readonly kind = computed(() => {
     const t = this.field()?.type ?? this.type();
     if (t === 'enum' && this.field()?.options?.length) return 'enum';
@@ -443,14 +428,9 @@ export class WfValueInput {
  */
 @Component({
   selector: 'ui-wf-operand',
-  imports: [FormsModule, UiNumberInput, WfTokenSelect, WfValueInput],
+  imports: [FormsModule, UiNumberInput, WfSelect, WfTokenSelect, WfValueInput],
   template: `
-    <select class="wf-select mode" [attr.aria-label]="label() + ': source'" (change)="setMode($any($event.target).value)">
-      <option value="const" [selected]="mode() === 'const'">A value</option>
-      <option value="ref" [selected]="mode() === 'ref'">From…</option>
-      @if (isDate()) { <option value="today" [selected]="mode() === 'today'">Days from today</option> }
-      @if (mode() === 'calc') { <option value="calc" selected>A calculation</option> }
-    </select>
+    <ui-wf-select class="mode" [options]="modes()" [value]="mode()" [label]="label() + ': source'" (valueChange)="setMode($event)" />
     @switch (mode()) {
       @case ('ref') { <ui-wf-token-select [tokens]="tokens()" [value]="refValue()" [label]="label()" (valueChange)="valueChange.emit({ ref: $event })" /> }
       @case ('today') { <ui-number-input size="sm" [ngModel]="todayValue()" (ngModelChange)="valueChange.emit({ today: $event ?? 0 })" [ariaLabel]="label() + ': days from today'" /> }
@@ -472,6 +452,11 @@ export class WfOperandEditor {
     return !v ? 'const' : 'ref' in v ? 'ref' : 'today' in v ? 'today' : 'calc' in v ? 'calc' : 'const';
   });
   protected readonly isDate = computed(() => (this.field()?.type ?? this.type()) === 'date');
+  protected readonly modes = computed<WfOption[]>(() => [
+    { value: 'const', label: 'A value' }, { value: 'ref', label: 'From…' },
+    ...(this.isDate() ? [{ value: 'today', label: 'Days from today' }] : []),
+    ...(this.mode() === 'calc' ? [{ value: 'calc', label: 'A calculation' }] : []),
+  ]);
   protected readonly refValue = computed(() => { const v = this.value(); return v && 'ref' in v ? v.ref : null; });
   protected readonly todayValue = computed(() => { const v = this.value(); return v && 'today' in v ? v.today : 0; });
   protected readonly constValue = computed(() => { const v = this.value(); return v && 'const' in v ? v.const : null; });
@@ -493,14 +478,16 @@ function asGroup(c: UiWfCondition | undefined): UiWfConditionGroup {
 /** One rule: "[value] [is any of] [Approved, Rejected]". */
 @Component({
   selector: 'ui-wf-rule',
-  imports: [FormsModule, HugeiconsIconComponent, UiNumberInput, WfTokenSelect, WfValueInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiNumberInput, WfSelect, WfTokenSelect, WfValueInput],
   template: `
     <ui-wf-token-select class="ref" [tokens]="tokens()" [value]="rule().ref" label="Value to check" placeholder="Choose a value…" (valueChange)="setRef($event)" />
-    <select class="wf-select op" aria-label="How to compare" [disabled]="!rule().ref" (change)="setOp($any($event.target).value)">
-      @for (o of ops(); track o.op) { <option [value]="o.op" [selected]="o.op === rule().op">{{ o.label }}</option> }
-    </select>
+    <ui-wf-select class="op" [options]="opOptions()" [value]="rule().op" label="How to compare" [disabled]="!rule().ref" (valueChange)="setOp($any($event))" />
     @if (arity() > 0) {
       <div class="val">
+        <!-- What the value is (a value, another value, today ±) comes before the value it switches. -->
+        @if (!multi() && !countOp()) {
+          <ui-wf-select class="mode" [options]="compareModes()" [value]="compareMode()" label="Compare with" (valueChange)="setCompareMode($event)" />
+        }
         @if (compareMode() === 'ref') {
           <ui-wf-token-select [tokens]="tokens()" [value]="refOf(rule().value)" label="Compare with" (valueChange)="setValue({ ref: $event })" />
         } @else if (compareMode() === 'today') {
@@ -519,13 +506,6 @@ function asGroup(c: UiWfCondition | undefined): UiWfConditionGroup {
           <span class="and">and</span>
           <ui-wf-value-input [type]="token()?.type" [value]="constOf(rule().value2)" label="Second value" (valueChange)="patch({ value2: { const: $event } })" />
         }
-        @if (!multi() && !countOp()) {
-          <select class="wf-select mode" aria-label="Compare with" (change)="setCompareMode($any($event.target).value)">
-            <option value="const" [selected]="compareMode() === 'const'">a value</option>
-            <option value="ref" [selected]="compareMode() === 'ref'">another value</option>
-            @if (isDate()) { <option value="today" [selected]="compareMode() === 'today'">today ±</option> }
-          </select>
-        }
       </div>
     }
     <button type="button" class="wf-icon-btn danger rm" (click)="removed.emit()" aria-label="Remove condition">
@@ -533,11 +513,13 @@ function asGroup(c: UiWfCondition | undefined): UiWfConditionGroup {
     </button>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) auto; gap: 6px; align-items: start; }
-    .val { grid-column: 1 / 3; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
-    .val > ui-wf-value-input, .val > ui-wf-token-select { flex: 1 1 140px; }
-    .mode { width: auto; flex: 0 0 auto; height: var(--ui-size-sm); font-size: 12px; }
-    .rm { grid-row: 1; grid-column: 3; }
+    /* One column at the inspector's width: the value, how to compare, then what to compare with. */
+    :host { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: start; }
+    .op, .val { grid-column: 1; }
+    .val { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+    .val > ui-wf-value-input, .val > ui-wf-token-select, .val > .wf-row { flex: 1 1 80px; min-width: 0; }
+    .val > .mode { flex: 0 0 112px; }
+    .rm { grid-row: 1; grid-column: 2; }
     .and { font-size: 12px; color: var(--ui-color-text-muted); }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; }
     .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
@@ -552,6 +534,10 @@ export class WfRuleEditor {
   protected readonly icons = WF_ICONS;
   protected readonly token = computed(() => this.tokens().find((t) => t.path === this.rule().ref));
   protected readonly ops = computed(() => operatorsFor(valueKindOfField(this.token()?.type === 'any' ? undefined : (this.token()?.type as UiWfFieldType))));
+  protected readonly opOptions = computed<WfOption[]>(() => this.ops().map((o) => ({ value: o.op, label: o.label })));
+  protected readonly compareModes = computed<WfOption[]>(() => [
+    { value: 'const', label: 'a value' }, { value: 'ref', label: 'another value' }, ...(this.isDate() ? [{ value: 'today', label: 'today ±' }] : []),
+  ]);
   protected readonly arity = computed(() => operatorInfo(this.rule().op)?.arity ?? 1);
   protected readonly multi = computed(() => MULTI_OPS.has(this.rule().op));
   protected readonly countOp = computed(() => this.rule().op === 'countGte' || this.rule().op === 'countLte');
@@ -610,15 +596,11 @@ export class WfRuleEditor {
  */
 @Component({
   selector: 'ui-wf-condition',
-  imports: [HugeiconsIconComponent, WfRuleEditor],
+  imports: [HugeiconsIconComponent, WfRuleEditor, WfSelect],
   template: `
     <div class="head">
       @if (group().conditions.length > 1 || nested()) {
-        <select class="wf-select match" aria-label="Combine conditions" (change)="setMatch($any($event.target).value)">
-          <option value="all" [selected]="group().match === 'all'">All of these are true</option>
-          <option value="any" [selected]="group().match === 'any'">Any of these is true</option>
-          <option value="none" [selected]="group().match === 'none'">None of these is true</option>
-        </select>
+        <ui-wf-select class="match" [options]="matches" [value]="group().match" label="Combine conditions" (valueChange)="setMatch($any($event))" />
       } @else if (!group().conditions.length) {
         <span class="wf-hint">{{ emptyText() }}</span>
       }
@@ -635,13 +617,13 @@ export class WfRuleEditor {
     }
     <div class="adds">
       <button type="button" class="wf-link" (click)="addRule()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add condition</button>
-      @if (!nested()) { <button type="button" class="wf-link" (click)="addGroup()">Add a group</button> }
+      @if (!nested()) { <button type="button" class="wf-link" (click)="addGroup()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add a group</button> }
     </div>
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
     .head:empty { display: none; }
-    .match { height: var(--ui-size-sm); width: auto; max-width: 100%; font-size: 12px; font-weight: 550; }
+    .match { max-width: 220px; }
     .sub { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-left: 2px solid color-mix(in srgb, var(--ui-color-primary) 40%, transparent);
       background: color-mix(in srgb, var(--ui-color-primary) 4%, transparent); border-radius: 0 var(--ui-radius-xs) var(--ui-radius-xs) 0; }
     .sub .wf-link { align-self: flex-start; }
@@ -658,6 +640,9 @@ export class WfConditionEditor {
   readonly valueChange = output<UiWfConditionGroup>();
   protected readonly icons = WF_ICONS;
   protected readonly group = computed(() => asGroup(this.value()));
+  protected readonly matches: WfOption[] = [
+    { value: 'all', label: 'All of these are true' }, { value: 'any', label: 'Any of these is true' }, { value: 'none', label: 'None of these is true' },
+  ];
 
   protected isGroup(c: UiWfCondition): c is UiWfConditionGroup {
     return 'conditions' in c;
@@ -709,7 +694,7 @@ export class WfConditionEditor {
     .danger { color: var(--ui-color-danger); }
     .builder { height: min(78vh, 900px); display: flex; flex-direction: column; }
     .builder ui-form-builder { flex: 1; }
-    .foot { display: flex; justify-content: space-between; width: 100%; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
   `],
 })
 export class WfFormField {

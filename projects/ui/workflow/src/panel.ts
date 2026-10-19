@@ -326,9 +326,9 @@ const RUNS_POLL_MS = 15_000;
     .stuck { margin-bottom: var(--ui-space-3); }
     .stuck p { margin: 0 0 var(--ui-space-1); }
     .stuck .wf-row { flex-wrap: wrap; margin-top: var(--ui-space-2); }
-    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
     .dlg p { margin: 0; }
-    .foot { display: flex; justify-content: space-between; gap: var(--ui-space-2); width: 100%; }
+    .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     .run-view { display: flex; padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
 
     /* The rail: the record's states as dots on the screen's edge. Hover (desktop) or tap opens the drawer. */
@@ -342,6 +342,13 @@ const RUNS_POLL_MS = 15_000;
       border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; padding-bottom: calc(var(--ui-space-2) + env(safe-area-inset-bottom)); }
     /* Fingers need a bigger target than the dots. */
     @media (pointer: coarse) { .rail { min-width: var(--ui-size-touch); min-height: var(--ui-size-touch); } }
+    /* Phones: a side rail only peeks into the page's 16px gutter (dots at its inner edge), so it neither covers the
+       content nor catches taps meant for it; the part off screen still counts as its target where it is visible. */
+    @media (max-width: 600px) {
+      .rail[data-edge="right"], .rail[data-edge="left"] { width: var(--ui-size-touch); box-sizing: border-box; padding-left: var(--ui-space-1); padding-right: var(--ui-space-1); }
+      .rail[data-edge="right"] { right: calc(var(--ui-space-4) - var(--ui-size-touch)); justify-content: flex-start; }
+      .rail[data-edge="left"] { left: calc(var(--ui-space-4) - var(--ui-size-touch)); justify-content: flex-end; }
+    }
   `],
 })
 export class UiWorkflowPanel extends WfWithApi {

@@ -163,7 +163,8 @@ export function edgePath(from: UiWfPoint, to: UiWfPoint, back: boolean, lane = 0
   }
   const x1 = from.x + WF_NODE_W / 2 + lane * 12, y1 = from.y + WF_NODE_H;
   const x2 = to.x + WF_NODE_W / 2 + lane * 12, y2 = to.y + WF_NODE_H;
-  const low = Math.max(y1, y2) + 28 + lane * 14;
+  // Lanes a label's height apart, so stacked arrows' labels don't overlap.
+  const low = Math.max(y1, y2) + 28 + lane * 22;
   const dir = x2 > x1 ? 1 : -1;
   return {
     d: `M ${x1} ${y1} V ${low - r} Q ${x1} ${low} ${x1 + dir * r} ${low} H ${x2 - dir * r} Q ${x2} ${low} ${x2} ${low - r} V ${y2}`,

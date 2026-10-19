@@ -728,6 +728,11 @@ export interface UiWfDescribeContext {
   userName?: (id: string) => string | undefined;
 }
 
+/** "due in 3 days", or "no deadline" for a task without one (not "due in no time set"). */
+function dueText(iso: string | undefined): string {
+  return iso ? `due in ${describeDuration(iso)}` : 'no deadline';
+}
+
 export function describeDuration(iso: string | undefined | null): string {
   if (!iso) return 'no time set';
   const m = /^(-)?P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(iso);
@@ -795,9 +800,9 @@ export function describeStep(step: UiWfStep, ctx: UiWfDescribeContext): string {
   switch (step.type) {
     case 'approval': {
       const rule = step.rule.type === 'all' ? 'all of' : step.rule.type === 'count' ? `${step.rule.value ?? '?'} of` : step.rule.type === 'percent' ? `${step.rule.value ?? '?'}% of` : 'any of';
-      return `${rule} ${describeAssignees(step.assignees, ctx)} · due in ${describeDuration(step.due)}`;
+      return `${rule} ${describeAssignees(step.assignees, ctx)} · ${dueText(step.due)}`;
     }
-    case 'task': return `${describeAssignees(step.assignees, ctx)} · due in ${describeDuration(step.due)}`;
+    case 'task': return `${describeAssignees(step.assignees, ctx)} · ${dueText(step.due)}`;
     case 'branch': return `${step.paths.length} path${step.paths.length === 1 ? '' : 's'}${step.otherwise ? ' and otherwise' : ''}`;
     case 'switch': return step.on ? `on ${ctx.tokens ? tokenLabel(ctx.tokens, step.on) : step.on}` : 'Choose what to switch on';
     case 'parallel': return `${step.paths.length} paths · continue when ${step.join.type === 'all' ? 'all finish' : step.join.type === 'any' ? 'the first finishes' : `${step.join.count ?? '?'} finish`}`;

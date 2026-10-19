@@ -14,6 +14,11 @@ let diagramSeq = 0;
 
 /** Space around the cards inside the diagram. */
 const FRAME_MARGIN = 48;
+/** An arrow label's height, and roughly its width (its text at 11px, its padding, the clock of an automatic move). */
+const WF_EDGE_LABEL_H = 20;
+function wfEdgeLabelWidth(text: string, auto: boolean): number {
+  return Math.min(150, Math.round(text.length * 6 + 16 + (auto ? 14 : 0)));
+}
 
 interface DrawnEdge {
   id: string;
@@ -44,7 +49,8 @@ interface DrawnEdge {
     </div>
 
     @if (view() === 'diagram') {
-      <ui-canvas-viewport class="vp" [contentWidth]="frame().width" [contentHeight]="frame().height" [minimap]="true" [minimapItems]="minimap()"
+      <!-- Fitting stops at 80%, where the cards stay readable; a wider diagram scrolls (the minimap shows the rest). -->
+      <ui-canvas-viewport class="vp" [fitMinZoom]="0.8" [contentWidth]="frame().width" [contentHeight]="frame().height" [minimap]="true" [minimapItems]="minimap()"
         label="Lifecycle diagram" (backgroundClick)="background()">
         <svg class="edges" [attr.width]="frame().width" [attr.height]="frame().height" aria-hidden="true">
           <defs>
@@ -148,7 +154,7 @@ interface DrawnEdge {
     .edge-label:hover { border-color: var(--ui-color-primary); color: var(--ui-color-text); }
     .edge-label.on { border-color: var(--ui-color-primary); background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
     .edge-label:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .state { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 6px 12px 6px 14px;
+    .state { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 4px 12px 4px 14px;
       border: 1px solid var(--ui-color-border); border-radius: 10px; background: var(--ui-color-surface); box-shadow: var(--ui-shadow-1); cursor: grab; user-select: none; touch-action: none; z-index: 2;
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast); }
     .state::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--wf-tone); }
@@ -164,10 +170,11 @@ interface DrawnEdge {
     .state.target { border-style: dashed; border-color: var(--ui-color-primary); }
     .state:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .state.dragging { cursor: grabbing; box-shadow: var(--ui-shadow-3); z-index: 3; }
-    .kind { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ui-color-text-muted); min-height: 0; }
+    /* Kind, name and meta fit the card's 56px with room for the name's descenders. */
+    .kind { font-size: 11px; line-height: 1.2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ui-color-text-muted); min-height: 0; }
     .kind:empty { display: none; }
-    .name { font-size: 13px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .meta { font-size: 11px; color: var(--ui-color-text-muted); }
+    .name { font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .meta { font-size: 11px; line-height: 1.2; color: var(--ui-color-text-muted); }
     /* Above the cards (z-index 2), or the card under the handle's centre would take the press. */
     .handle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none; z-index: 3;
       border: 2px solid var(--ui-color-surface); background: var(--ui-color-primary); opacity: 0; transition: opacity var(--ui-motion-fast), transform var(--ui-motion-fast); }
@@ -228,7 +235,9 @@ export class WfLifecycleCanvas {
     const ps = Object.values(l.positions);
     const minX = Math.min(0, ...ps.map((p) => p.x));
     const minY = Math.min(0, ...ps.map((p) => p.y));
-    return { ox: FRAME_MARGIN - minX, oy: FRAME_MARGIN - minY, width: l.width - minX + FRAME_MARGIN * 2, height: l.height - minY + FRAME_MARGIN * 2 + 56 };
+    // Room underneath for the arrows looping back, a lane per arrow that may need one.
+    const below = 56 + 22 * Math.min(3, Math.max(0, l.edges.filter((e) => e.back).length - 1));
+    return { ox: FRAME_MARGIN - minX, oy: FRAME_MARGIN - minY, width: l.width - minX + FRAME_MARGIN * 2, height: l.height - minY + FRAME_MARGIN * 2 + below };
   });
   protected readonly hasManual = computed(() => !!this.lifecycle()?.layout && Object.keys(this.lifecycle()!.layout!).length > 0);
   protected readonly anyState = computed(() => (this.lifecycle()?.transitions ?? []).filter((t) => t.from === '*'));
@@ -237,12 +246,22 @@ export class WfLifecycleCanvas {
     if (!lc) return [];
     const lanes = new Map<string, number>();
     const sel = this.store.selection();
-    return this.layout().edges.map((e) => {
+    // Arrows going forward keep their place; one looping back underneath moves down a lane while its label
+    // would sit on another label (forward ones included), so no two labels overlap.
+    const edges = this.layout().edges.map((e) => {
       const pair = [e.from, e.to].sort().join('|');
       const lane = lanes.get(pair) ?? 0;
       lanes.set(pair, lane + 1);
       const t = lc.transitions.find((x) => e.id.startsWith(`${x.id}:`))!;
-      const { d, label } = edgePath(this.pos(e.from), this.pos(e.to), e.back, lane);
+      return { e, t, lane, path: edgePath(this.pos(e.from), this.pos(e.to), e.back, lane), w: wfEdgeLabelWidth(t.label, !!t.auto) };
+    });
+    const placed = edges.filter((x) => !x.e.back).map((x) => ({ ...x.path.label, w: x.w }));
+    const hits = (at: UiWfPoint, w: number) => placed.some((o) => Math.abs(o.y - at.y) < WF_EDGE_LABEL_H && Math.abs(o.x - at.x) < (o.w + w) / 2 + 4);
+    for (const x of edges.filter((x) => x.e.back)) {
+      while (x.lane < 6 && hits(x.path.label, x.w)) x.path = edgePath(this.pos(x.e.from), this.pos(x.e.to), true, ++x.lane);
+      placed.push({ ...x.path.label, w: x.w });
+    }
+    return edges.map(({ e, t, path: { d, label } }) => {
       return { id: e.id, transition: t, d, label, auto: !!t.auto, selected: sel?.kind === 'transition' && sel.id === t.id };
     }).concat(lifecycleSelfLoops(lc).map((loop) => {
       // Several moves back to the same state stack their loops.
