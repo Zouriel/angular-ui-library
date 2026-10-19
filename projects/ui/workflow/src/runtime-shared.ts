@@ -185,13 +185,15 @@ export function wfDescribeHistory(h: UiWfAuditEntry, stateLabel: (key: unknown) 
 
 /**
  * Who did something, as people read it: a person's name; for a workflow, "Workflow: <title>" (the
- * actor id is the workflow's key, looked up with `workflowTitle`); "System" for the engine itself.
+ * actor id is the workflow's key, looked up with `workflowTitle`), or "A workflow" when nothing names
+ * it; "System" for the engine itself.
  */
 export function wfActorLabel(e: Pick<UiWfAuditEntry, 'actorType' | 'actorId' | 'actorName'>, workflowTitle?: (key: string) => string | undefined): string {
   if (e.actorType === 'workflow') {
     const key = e.actorId ?? '';
     // The title when it is known: the engine may store the key as the actor's name.
-    return `Workflow: ${workflowTitle?.(key) || e.actorName || (key ? wfHumanize(key) : 'unknown')}`;
+    const title = workflowTitle?.(key) || e.actorName || (key ? wfHumanize(key) : '');
+    return title ? `Workflow: ${title}` : 'A workflow';
   }
   if (e.actorName) return e.actorName;
   if (e.actorType === 'system') return 'System';

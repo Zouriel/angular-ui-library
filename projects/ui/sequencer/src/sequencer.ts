@@ -107,9 +107,10 @@ const END_GRIP_PX = 10;
           <div class="track" #ruler>
             @for (m of markers(); track $index; let i = $index) {
               @let fit = labelFit(i);
-              <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan(i))">
-                <!-- Too narrow for the name: its number. Under the End grip: nothing, rather than a name with a bar through it. -->
-                @if (fit !== 'none') { <span class="mlabel" [attr.title]="fit === 'number' ? m.label : null">{{ fit === 'number' ? i + 1 : m.label }}</span> }
+              <span class="marker" [class.end]="pct(m.at) > 88 && !fit.shift" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan(i))">
+                <!-- Too narrow for the name: its number. Under the End grip: moved past it, or (no room there) only its spoken name, rather than a name with a bar through it. -->
+                @if (fit.fit !== 'none') { <span class="mlabel" [style.left.px]="fit.shift ? 4 + fit.shift : null" [attr.title]="fit.fit === 'number' ? m.label : null">{{ fit.fit === 'number' ? i + 1 : m.label }}</span> }
+                @else { <span class="msr">{{ m.label }}</span> }
               </span>
             }
             @if (endDraggable() && end() !== null) {
@@ -224,6 +225,7 @@ const END_GRIP_PX = 10;
     .track { position: absolute; inset: 0 var(--inset); }
     .marker { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--ui-color-border-strong); }
     .marker.end .mlabel { left: auto; right: 4px; }
+    .msr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis;
       white-space: nowrap; color: var(--ui-color-text-muted); font-size: 11px; font-family: var(--ui-font-mono); }
     /* The pointer shape lives on ::before so clip-path doesn't also clip the focus ring on the knob itself. */
@@ -432,24 +434,32 @@ export class UiSequencer implements OnDestroy {
   private readonly rulerWidth = signal(0);
 
   /**
-   * How a marker's name fits its stretch of the ruler: whole, as its number when the stretch is too
-   * narrow for more than a few letters, or not at all when the End grip sits on it. The labels are
-   * monospace, so their width is known from the length of the text.
+   * How a marker's name fits its stretch of the ruler: whole, or as its number when the stretch is too
+   * narrow for more than a few letters, and how far to move it right. When the End grip sits on the
+   * name it moves just past the grip; only when the stretch has no room there either does it show
+   * nothing. The labels are monospace, so their width is known from the length of the text.
    */
-  protected labelFit(index: number): 'label' | 'number' | 'none' {
+  protected labelFit(index: number): { fit: 'label' | 'number' | 'none'; shift: number } {
     const w = this.rulerWidth();
-    if (!w) return 'label';
+    if (!w) return { fit: 'label', shift: 0 };
     const pxPerUnit = w / (this.length() || 1);
     const m = this.markers()[index];
     const room = this.markerSpan(index) * pxPerUnit - 8;
     const need = m.label.length * LABEL_CHAR_PX;
-    const fit = need <= room ? 'label' : String(index + 1).length * LABEL_CHAR_PX <= room ? 'number' : 'none';
+    const num = String(index + 1).length * LABEL_CHAR_PX;
+    const fit = need <= room ? 'label' : num <= room ? 'number' : 'none';
     const end = this.endDraggable() ? this.end() : null;
     if (end !== null && fit !== 'none') {
       const x = (end - m.at) * pxPerUnit;
-      if (x > -END_GRIP_PX && x < 4 + Math.min(room, fit === 'label' ? need : LABEL_CHAR_PX * 2) + END_GRIP_PX) return 'none';
+      if (x > -END_GRIP_PX && x < 4 + Math.min(room, fit === 'label' ? need : LABEL_CHAR_PX * 2) + END_GRIP_PX) {
+        // Past the grip: the text starts a gap after it and must end 4px before the next marker.
+        const shift = Math.max(0, x + END_GRIP_PX - 4);
+        if (shift + need <= room) return { fit: 'label', shift };
+        if (shift + num <= room) return { fit: 'number', shift };
+        return { fit: 'none', shift: 0 };
+      }
     }
-    return fit;
+    return { fit, shift: 0 };
   }
 
   constructor() {

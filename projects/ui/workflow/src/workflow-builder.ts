@@ -114,6 +114,12 @@ interface PendingDelete {
 
     @if (ui.layout() === 'narrow' && view() === 'build') {
       <ui-bottom-sheet [snaps]="[0, 0.62, 0.94]" [snap]="sheetSnap()" (snapChange)="sheetSnap.set($event)" [title]="sheetTitle()">
+        <!-- Delete sits in the sheet's header, by its title, as it does in the panel's. -->
+        @if (sheetCanDelete()) {
+          <button sheet-actions type="button" class="wf-icon-btn danger" (click)="requestDeleteSelected()" [attr.aria-label]="'Delete ' + sheetTitle()">
+            <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="15" [strokeWidth]="1.8" />
+          </button>
+        }
         <ui-wf-inspector class="sheet-inspector" [showHead]="false" (deleteRequest)="requestDeleteSelected()" />
       </ui-bottom-sheet>
     }
@@ -165,13 +171,17 @@ interface PendingDelete {
     :host { display: flex; flex-direction: column; height: 100%; min-height: 520px; position: relative; overflow: hidden;
       background: var(--ui-color-bg); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
-    /* Three columns, the views centred in the middle one, so nothing on either side (the problem count) can shift them. */
-    .top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--ui-space-2) var(--ui-space-3); padding: 6px var(--ui-space-3); flex: none;
+    /*
+     * Three columns, the views centred in the middle one while there is room. When the tools need more
+     * than their half they keep their natural width (the save state is never cut next to empty space),
+     * the views move off centre and the title, never under 80px, ellipsizes.
+     */
+    .top { display: grid; grid-template-columns: minmax(var(--ui-space-20), 1fr) auto minmax(max-content, 1fr); align-items: center; gap: var(--ui-space-2) var(--ui-space-3); padding: 6px var(--ui-space-3); flex: none;
       background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     :host([data-layout="narrow"]) .top { display: flex; flex-wrap: wrap; }
     .title { display: flex; flex-direction: column; justify-self: start; min-width: 0; max-width: 34ch; padding: 2px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs);
       background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
-    .title:hover { background: var(--ui-color-surface-hover); }
+    @media (hover: hover) { .title:hover { background: var(--ui-color-surface-hover); } }
     .title:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .kind { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -184,6 +194,7 @@ interface PendingDelete {
     .ok:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .unchecked { color: var(--ui-color-warning); }
     .save-state { font-size: 12px; color: var(--ui-color-text-muted); margin: 0 4px; white-space: nowrap; }
+    .tools ui-button + ui-button { margin-left: var(--ui-space-1); }
     .banner { flex: none; padding: 6px var(--ui-space-3); font-size: 13px; background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
     .main { flex: 1; min-height: 0; display: flex; min-width: 0; }
     .view-only { margin: 0 4px; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
@@ -279,6 +290,7 @@ export class UiWorkflowBuilder {
     // Publishing and test runs need the right to edit.
     ...(this.store.api() && !this.store.readOnly() ? [{ value: 'versions', label: 'Versions' }, { value: 'test', label: 'Test' }] : []),
   ]);
+  protected readonly sheetCanDelete = computed(() => !this.store.readOnly() && ['step', 'state', 'transition', 'reset'].includes(this.store.selection()?.kind ?? ''));
   protected readonly sheetTitle = computed(() => {
     const s = this.store.selection();
     if (!s || s.kind === 'workflow') return 'Settings';

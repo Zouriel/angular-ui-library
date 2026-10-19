@@ -107,8 +107,8 @@ function fmt(seconds: number): string {
           [style.--lb-drag.px]="drag()"
           [style.--lb-veil]="veil()"
         >
-          <!-- The picture sits under the chrome rather than beside it: at this size every pixel of
-               the screen is the photograph, and the bars are scrims over the top and bottom of it. -->
+          <!-- The picture fits between the chrome rather than under it: a letterboxed photo's edge
+               never runs through the buttons, and the strip never sits half on the picture. -->
           <div
             #stage
             class="stage"
@@ -367,6 +367,7 @@ function fmt(seconds: number): string {
     /* --lb-drag is how far a dismissing drag has come, --lb-veil how much of the dark is left. Both
        are set from the gesture so the whole sheet moves and fades as one thing. */
     .sheet { position: relative; width: 100%; height: 100%; overflow: hidden;
+      display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'top' 'stage' 'bottom';
       background: color-mix(in srgb, var(--ui-media-scrim) calc(92% * var(--lb-veil, 1)), transparent);
       transform: translateY(var(--lb-drag, 0px)) scale(calc(1 - 0.06 * (1 - var(--lb-veil, 1))));
       transform-origin: 50% 40%; }
@@ -377,7 +378,7 @@ function fmt(seconds: number): string {
     @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
     @keyframes lb-rise { from { transform: scale(0.94); } to { transform: none; } }
 
-    .stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    .stage { grid-area: stage; position: relative; min-height: 0; display: flex; align-items: center; justify-content: center;
       touch-action: none; overflow: hidden; }
     .stage--grab { cursor: grab; }
     .stage--grab:active { cursor: grabbing; }
@@ -401,21 +402,15 @@ function fmt(seconds: number): string {
     .play:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 26%, transparent); transform: scale(1.05); }
     .play:active { transform: scale(var(--ui-scale-press, 0.96)); }
 
-    /* Scrims, not bars: the picture runs under them, and they only darken enough to keep white text
-       legible over whatever happens to be behind it. */
-    .bar { position: absolute; left: 0; right: 0; display: flex; z-index: 2;
+    /* Bands above and below the picture, on the sheet's own dark: they hide when idle but keep their room. */
+    .bar { position: relative; display: flex; z-index: 2;
       padding: max(var(--ui-space-3, 12px), env(safe-area-inset-top)) var(--ui-space-4, 16px)
         var(--ui-space-3, 12px);
       transition: opacity var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         transform var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
-    /* Two stops rather than one: a single linear fade is already half transparent where the text
-       and the controls actually sit, which over a bright photograph is where white stops being
-       legible. The dark is held through the band the chrome occupies and only then let go. */
-    .bar--top { top: 0; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3, 12px);
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--ui-media-scrim) 78%, transparent) 0%, color-mix(in srgb, var(--ui-media-scrim) 50%, transparent) 55%, color-mix(in srgb, var(--ui-media-scrim) 0%, transparent) 100%); }
-    .bar--bottom { bottom: 0; flex-direction: column; gap: var(--ui-space-3, 12px);
-      padding-bottom: max(var(--ui-space-3, 12px), env(safe-area-inset-bottom));
-      background: linear-gradient(to top, color-mix(in srgb, var(--ui-media-scrim) 85%, transparent) 0%, color-mix(in srgb, var(--ui-media-scrim) 62%, transparent) 55%, color-mix(in srgb, var(--ui-media-scrim) 0%, transparent) 100%); }
+    .bar--top { grid-area: top; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3, 12px); }
+    .bar--bottom { grid-area: bottom; flex-direction: column; gap: var(--ui-space-3, 12px);
+      padding-bottom: max(var(--ui-space-3, 12px), env(safe-area-inset-bottom)); }
     /* Faded out, and unclickable with it — chrome you cannot see must not be chrome you can press. */
     .sheet--bare .bar { opacity: 0; pointer-events: none; }
     .sheet--bare .bar--top { transform: translateY(-8px); }
@@ -458,7 +453,8 @@ function fmt(seconds: number): string {
     .strip__item:focus-visible, .scrub__input:focus-visible, .vol:focus-visible, .play:focus-visible {
       outline: 2px solid var(--ui-media-on-scrim); outline-offset: 2px; }
 
-    .edge { position: absolute; top: 50%; margin-top: -24px; width: 48px; height: 48px; border-radius: 50%;
+    /* In the stage's grid area, so they centre on the picture, not the screen. */
+    .edge { grid-area: stage; position: absolute; top: 50%; margin-top: -24px; width: 48px; height: 48px; border-radius: 50%;
       z-index: 2; }
     .edge svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;
       stroke-linecap: round; stroke-linejoin: round; }

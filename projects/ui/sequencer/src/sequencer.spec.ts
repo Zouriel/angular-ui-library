@@ -307,7 +307,7 @@ class RulerHost {
 }
 
 describe('UiSequencer, ruler labels', () => {
-  it('shows a number where a name does not fit, and gives way to the End grip', async () => {
+  it('shows a number where a name does not fit, and moves a name past the End grip sitting on it', async () => {
     await TestBed.configureTestingModule({ imports: [RulerHost] }).compileComponents();
     const fixture = TestBed.createComponent(RulerHost);
     fixture.detectChanges();
@@ -316,7 +316,10 @@ describe('UiSequencer, ruler labels', () => {
     (seq as unknown as { rulerWidth: { set(v: number): void } }).rulerWidth.set(1000);
     fixture.detectChanges();
     const labels = Array.from(fixture.nativeElement.querySelectorAll('.marker')).map((m) => (m as HTMLElement).querySelector('.mlabel')?.textContent?.trim() ?? null);
-    // 50px holds "1" but not "Screen 1"; the End at 520 sits on "Gallery" (from 504).
-    expect(labels).toEqual(['1', 'Screen 2', null]);
+    // 50px holds "1" but not "Screen 1"; the End at 520 sits on "Gallery" (from 504), so it moves past the grip.
+    expect(labels).toEqual(['1', 'Screen 2', 'Gallery']);
+    const gallery = fixture.nativeElement.querySelectorAll('.marker')[2].querySelector('.mlabel') as HTMLElement;
+    expect(gallery.style.left).toBe(`${4 + 20 + 10 - 4}px`); // the grip's centre 20px in, its half-width plus a gap
+
   });
 });

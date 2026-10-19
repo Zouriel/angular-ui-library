@@ -23,7 +23,7 @@ import { FB_ICONS } from './builder-icons';
       <ui-segmented size="sm" label="Screen size" [options]="devices" [value]="device()" (valueChange)="device.set($any($event))" />
       <ui-segmented size="sm" label="Try it as" [options]="modes" [value]="mode()" (valueChange)="setMode($any($event))" />
       <ui-button size="sm" variant="ghost" (click)="restart()"><hugeicons-icon aria-hidden="true" [icon]="resetIcon" [size]="14" [strokeWidth]="1.8" />Start again</ui-button>
-      <ui-switch class="data-toggle" [ngModel]="showData()" (ngModelChange)="showData.set($event)">Show saved data</ui-switch>
+      <ui-switch class="data-toggle" size="sm" [ngModel]="showData()" (ngModelChange)="showData.set($event)">Show saved data</ui-switch>
     </div>
     @if (mode() !== 'create') {
       <div class="paste">

@@ -54,7 +54,7 @@ export interface UiMinimapItem {
         <button type="button" (click)="zoomBy(1 / 1.2)" aria-label="Zoom out" title="Zoom out (−)"><hugeicons-icon aria-hidden="true" [icon]="icons.out" [size]="15" [strokeWidth]="1.8" /></button>
         <span class="pct">{{ pct() }}%</span>
         <button type="button" (click)="zoomBy(1.2)" aria-label="Zoom in" title="Zoom in (+)"><hugeicons-icon aria-hidden="true" [icon]="icons.in" [size]="15" [strokeWidth]="1.8" /></button>
-        <button type="button" (click)="fit()" aria-label="Fit to view" title="Fit to view (0)"><hugeicons-icon aria-hidden="true" [icon]="icons.fit" [size]="15" [strokeWidth]="1.8" /></button>
+        <button type="button" (click)="fit(true)" aria-label="Fit to view" title="Fit to view (0)"><hugeicons-icon aria-hidden="true" [icon]="icons.fit" [size]="15" [strokeWidth]="1.8" /></button>
       </div>
     }
     @if (minimap() && minimapItems().length && roomy()) {
@@ -130,6 +130,8 @@ export class UiCanvasViewport {
    * canvas doesn't count; a refit that comes up mid-drag waits for the pointer to lift.
    */
   private auto = true;
+  /** Fitting was asked for by name (the fit button, `0`): it shows everything, below `fitMinZoom` if it must, until the person pans or zooms. */
+  private all = false;
   private held = false;
   /** Window listeners of gestures in progress, removed when they end or the canvas goes away. */
   private readonly gestures = new Set<() => void>();
@@ -161,7 +163,7 @@ export class UiCanvasViewport {
   private autoFit(): void {
     if (!this.auto) return;
     if (this.held) this.fitWhenReleased = true;
-    else this.fit();
+    else this.fit(this.all);
   }
 
   private setView(v: UiViewportView): void {
@@ -171,9 +173,10 @@ export class UiCanvasViewport {
     el.style.setProperty('--ui-vp-y', `${v.y}px`);
     this.view.set(v);
     this.auto = false;
+    this.all = false;
   }
 
-  /** The smallest zoom fitting uses; below it text is unreadable, so a large diagram starts at its left. */
+  /** The smallest zoom fitting uses on its own (first view, refits); below it text is hard to read, so a large diagram starts at its left. The fit button goes further. */
   readonly fitMinZoom = input(0.6);
 
   private clamp(z: number): number {
@@ -189,18 +192,21 @@ export class UiCanvasViewport {
 
   /**
    * Shows all the content, centred, never zooming in past 100% or out past `fitMinZoom`. Content too
-   * big for that is shown from its top-left corner (the minimap shows the rest).
+   * big for that is shown from its top-left corner (the minimap shows the rest). With `all` (the fit
+   * button and `0`) it zooms out as far as `minZoom` to show everything.
    */
-  fit(): void {
+  fit(all = false): void {
     const { w, h } = this.size();
     if (!w || !h) return;
     const p = this.padding();
     const cw = Math.max(1, this.contentWidth()), ch = Math.max(1, this.contentHeight());
-    const zoom = this.clamp(Math.max(Math.min(this.fitMinZoom(), 1), Math.min(1, (w - p * 2) / cw, (h - p * 2) / ch)));
+    const whole = Math.min(1, (w - p * 2) / cw, (h - p * 2) / ch);
+    const zoom = this.clamp(all ? whole : Math.max(Math.min(this.fitMinZoom(), 1), whole));
     // Too big to fit: start at the top-left edge (the content brings its own margin), not a padding in.
     const place = (room: number, size: number) => (size * zoom <= room - p * 2 ? (room - size * zoom) / 2 : 0);
     this.setView({ zoom, x: place(w, cw), y: place(h, ch) });
     this.auto = true;
+    this.all = all;
   }
 
   /** Zooms around a screen point (the centre by default). */
@@ -312,7 +318,7 @@ export class UiCanvasViewport {
     switch (e.key) {
       case '+': case '=': this.zoomBy(1.2); break;
       case '-': case '_': this.zoomBy(1 / 1.2); break;
-      case '0': this.fit(); break;
+      case '0': this.fit(true); break;
       case 'ArrowLeft': this.setView({ ...v, x: v.x + step }); break;
       case 'ArrowRight': this.setView({ ...v, x: v.x - step }); break;
       case 'ArrowUp': this.setView({ ...v, y: v.y + step }); break;

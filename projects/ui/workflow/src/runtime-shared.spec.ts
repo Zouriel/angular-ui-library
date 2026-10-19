@@ -16,6 +16,11 @@ describe('wfActorLabel', () => {
     expect(wfActorLabel({ actorType: 'workflow', actorId: 'scholarshipReview', actorName: null })).toBe('Workflow: Scholarship review');
   });
 
+  it('a workflow nothing names reads "A workflow", never "unknown"', () => {
+    expect(wfActorLabel({ actorType: 'workflow', actorId: '', actorName: null })).toBe('A workflow');
+    expect(wfActorLabel({ actorType: 'workflow', actorId: null, actorName: '' })).toBe('A workflow');
+  });
+
   it('people by name; the engine as System', () => {
     expect(wfActorLabel({ actorType: 'user', actorId: 'hana', actorName: 'Hana Yusuf' })).toBe('Hana Yusuf');
     expect(wfActorLabel({ actorType: 'system', actorId: null, actorName: null })).toBe('System');

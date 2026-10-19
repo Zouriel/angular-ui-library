@@ -1,5 +1,6 @@
 import { Component, ElementRef, Injectable, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { WfDnd, type WfDropTarget } from './dnd';
 import { UI_WF_STEP_TYPES, describeStep, describeTrigger, stepInfo, stepName, stepSlots, type UiWfStepCategory, type UiWfSlot } from './definition';
@@ -50,9 +51,10 @@ export class WfBuilderUi {
   styles: [WF_SHARED_STYLES, `
     /*
      * Long titles never widen the canvas: cards take their column's width and truncate. On a canvas
-     * widened by a branch further down, top-level cards stay readable and centred, menus in reach.
+     * widened by a branch further down, top-level cards stay readable and centred, menus in reach,
+     * and never wider than the visible canvas, so the centred card shows whole.
      */
-    :host { display: block; contain: inline-size; width: 100%; max-width: 560px; margin-inline: auto; }
+    :host { display: block; contain: inline-size; width: 100%; max-width: min(560px, 100cqi); margin-inline: auto; }
     .card { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; text-align: left; cursor: pointer; font: inherit; color: var(--ui-color-text);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
       transition: border-color var(--ui-motion-fast), box-shadow var(--ui-motion-fast); }
@@ -115,9 +117,10 @@ export class WfTriggerCard {
   styles: [WF_SHARED_STYLES, `
     /*
      * Long titles never widen the canvas: cards take their column's width and truncate. On a canvas
-     * widened by a branch further down, top-level cards stay readable and centred, menus in reach.
+     * widened by a branch further down, top-level cards stay readable and centred, menus in reach,
+     * and never wider than the visible canvas, so the centred card shows whole.
      */
-    :host { display: block; contain: inline-size; width: 100%; max-width: 560px; margin-inline: auto; }
+    :host { display: block; contain: inline-size; width: 100%; max-width: min(560px, 100cqi); margin-inline: auto; }
     :host-context(.read-only) .grip, :host-context(.read-only) ui-menu { visibility: hidden; }
     .card { position: relative; display: flex; align-items: center; gap: 2px; padding: 4px 4px 4px 0; min-height: 46px; box-sizing: border-box;
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
@@ -417,9 +420,10 @@ export class WfStepPicker {
 /** The automation canvas: trigger card, then the steps. */
 @Component({
   selector: 'ui-wf-automation-canvas',
-  imports: [WfTriggerCard, WfStepList],
+  imports: [UiScrollFade, WfTriggerCard, WfStepList],
   template: `
-    <div #scroll class="scroll" data-wf-scroll (click)="backgroundClick($event)">
+    <!-- Columns running on past an edge fade out there, so they read as "scrolls on", not "cut off". -->
+    <div #scroll class="scroll" data-wf-scroll uiScrollFade (click)="backgroundClick($event)">
       <div class="flow">
         <ui-wf-trigger-card />
         <ui-wf-steps listId="root" [steps]="store.def().steps ?? []" [lead]="true" />
@@ -429,7 +433,7 @@ export class WfStepPicker {
   `,
   styles: [`
     :host { display: block; min-height: 0; position: relative; }
-    .scroll { position: absolute; inset: 0; overflow: auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12);
+    .scroll { position: absolute; inset: 0; overflow: auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12); container-type: inline-size;
       background-image: radial-gradient(color-mix(in srgb, var(--ui-color-text) 9%, transparent) 1px, transparent 1px); background-size: 18px 18px; }
     /* 760px for a plain list; wider when branches need room, then the whole canvas scrolls. */
     .flow { width: max-content; min-width: min(760px, 100%); max-width: none; margin: 0 auto; display: flex; flex-direction: column; }

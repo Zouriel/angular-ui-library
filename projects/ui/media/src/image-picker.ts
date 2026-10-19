@@ -79,7 +79,7 @@ export interface UiImagePickerItem {
     .reason { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px var(--ui-space-1);
       background: color-mix(in srgb, var(--ui-color-surface-raised) 88%, transparent); color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: 11px; font-weight: 500; line-height: 16px; text-align: center;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
     .tile img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-1); height: 100%;
       color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); line-height: 1.2; text-align: center; overflow: hidden; }

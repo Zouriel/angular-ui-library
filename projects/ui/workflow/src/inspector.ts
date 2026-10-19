@@ -1,7 +1,6 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiButton } from '@zouriel/ui/button';
 import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, UiTimePicker, type UiSelectOption } from '@zouriel/ui/form';
 import { describeTrigger, fieldOf, indexSteps, stepName, updateLifecycle, wfId, wfKey, wfStatesFrom } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
@@ -692,7 +691,7 @@ export class WfResetEditor {
 @Component({
   selector: 'ui-wf-inspector',
   host: { '[class.in-sheet]': '!showHead()' },
-  imports: [HugeiconsIconComponent, UiButton, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
+  imports: [HugeiconsIconComponent, WfStepEditor, WfTriggerEditor, WfWorkflowEditor, WfStateEditor, WfTransitionEditor, WfResetEditor],
   template: `
     @if (showHead()) {
       <header class="head">
@@ -707,17 +706,9 @@ export class WfResetEditor {
           }
         </div>
       </header>
-    } @else if (parentLabel() || canDelete()) {
-      <!-- In the phone sheet the title is the sheet's own; the way back up and Delete still belong here. -->
-      <div class="sheet-bar">
-        @if (parentLabel(); as p) { <button type="button" class="wf-link back" (click)="selectParent()">‹ {{ p }}</button> }
-        <span class="grow"></span>
-        @if (canDelete()) {
-          <ui-button size="sm" variant="outline" (click)="deleteRequest.emit()" [attr.aria-label]="'Delete ' + heading()">
-            <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />Delete
-          </ui-button>
-        }
-      </div>
+    } @else if (parentLabel(); as p) {
+      <!-- In the phone sheet the title (and Delete) are the sheet's own; the way back up still belongs here. -->
+      <div class="sheet-bar"><button type="button" class="wf-link back" (click)="selectParent()">‹ {{ p }}</button></div>
     }
     <div class="body">
       @if (problems().length) {
@@ -744,7 +735,6 @@ export class WfResetEditor {
     .back { align-self: flex-start; }
     .sheet-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); padding: 0 var(--ui-space-3) var(--ui-space-2);
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .sheet-bar .grow { flex: 1; }
     h2 { flex: 1; margin: 0; font-size: 14px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }

@@ -194,7 +194,8 @@ interface PendingDelete {
     .title { min-width: 0; max-width: 32ch; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs); background: transparent;
       color: var(--ui-color-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; }
     .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .title:hover { background: var(--ui-color-surface-hover); }
+    /* Hover only where there is a pointer: a tap on a phone must not leave the pill behind. */
+    @media (hover: hover) { .title:hover { background: var(--ui-color-surface-hover); } }
     .title:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .views { margin: 0 auto; }
     /* Wraps instead of overflowing, so the host's own buttons (Publish…) never leave the screen. */

@@ -271,7 +271,7 @@ describe('Inspector in the phone sheet', () => {
   @Component({ imports: [WfInspector], template: `<ui-wf-inspector [showHead]="false" (deleteRequest)="deleted = deleted + 1" />` })
   class SheetHost { deleted = 0; }
 
-  it('keeps Delete for states, transitions and the reset, and the way back up for their steps', () => {
+  it('leaves Delete to the sheet header (no row of its own) and keeps the way back up for steps', () => {
     const def = life();
     def.lifecycle!.transitions[1] = { ...def.lifecycle!.transitions[1], steps: [{ ...createStep('notify'), id: 'n1' }] };
     const store = storeWith(def);
@@ -279,17 +279,38 @@ describe('Inspector in the phone sheet', () => {
     for (const sel of [{ kind: 'state', id: 'rev' }, { kind: 'transition', id: 't2' }, { kind: 'reset' }] as const) {
       store.selection.set(sel);
       f.detectChanges();
-      const del = [...(f.nativeElement as HTMLElement).querySelectorAll('.sheet-bar ui-button')].find((b) => b.textContent?.trim() === 'Delete') as HTMLElement;
-      expect(del).toBeTruthy();
-      del.querySelector('button')!.click();
+      expect((f.nativeElement as HTMLElement).querySelector('.sheet-bar')).toBeNull();
+      expect((f.nativeElement as HTMLElement).querySelector('[aria-label^="Delete"]')).toBeNull();
     }
-    expect(f.componentInstance.deleted).toBe(3);
     store.selection.set({ kind: 'step', id: 'n1' });
     f.detectChanges();
     const back = (f.nativeElement as HTMLElement).querySelector('.sheet-bar .back') as HTMLButtonElement;
     expect(back.textContent?.trim()).toBe('‹ Start');
     back.click();
     expect(store.selection()).toEqual({ kind: 'transition', id: 't2' });
+  });
+});
+
+describe('Phone builder', () => {
+  it("puts Delete in the settings sheet's header, beside its title", async () => {
+    const f = TestBed.createComponent(UiWorkflowBuilder);
+    f.componentRef.setInput('definition', life());
+    f.componentRef.setInput('schema', schema);
+    document.body.appendChild(f.nativeElement);
+    f.detectChanges();
+    await f.whenStable();
+    f.debugElement.injector.get(WfBuilderUi).layout.set('narrow');
+    const store = f.debugElement.injector.get(WfBuilderStore);
+    store.selection.set({ kind: 'state', id: 'rev' });
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const del = el.querySelector('ui-bottom-sheet [sheet-actions]') as HTMLButtonElement;
+    expect(del?.getAttribute('aria-label')).toBe('Delete Review');
+    expect(el.querySelector('ui-bottom-sheet .actions')?.contains(del)).toBe(true);
+    del.click();
+    f.detectChanges();
+    expect(document.body.textContent).toContain('Delete “Review”?');
+    f.nativeElement.remove();
   });
 });
 
