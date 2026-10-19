@@ -1,5 +1,5 @@
 import {
-  AfterViewInit, Directive, ElementRef, NgZone, OnDestroy, inject, input, output,
+  AfterViewInit, Directive, ElementRef, NgZone, OnDestroy, effect, inject, input, output,
 } from '@angular/core';
 
 export type UiResizeEdge = 'e' | 's' | 'se';
@@ -9,6 +9,7 @@ export interface UiResizeEvent { width: number; height: number; }
  * `uiResizable` — adds edge/corner resize handles (E, S, SE) to the host and
  * resizes it in place. Emits `(resized)` with the new dimensions. The host
  * should establish its own width/height (e.g. a sized box). Reusable behavior.
+ * A small grip (two diagonal strokes) marks the draggable corner.
  */
 @Directive({
   selector: '[uiResizable]',
@@ -24,6 +25,15 @@ export class UiResizable implements AfterViewInit, OnDestroy {
   resized = output<UiResizeEvent>();
 
   private readonly handleEls: HTMLElement[] = [];
+  private gripEl?: SVGSVGElement;
+
+  constructor() {
+    // No grip while resizing is off.
+    effect(() => {
+      const off = this.disabled();
+      if (this.gripEl) this.gripEl.style.display = off ? 'none' : '';
+    });
+  }
   private edge: UiResizeEdge | null = null;
   private start = { x: 0, y: 0, w: 0, h: 0 };
   private readonly move = (e: PointerEvent) => this.onMove(e);
@@ -35,10 +45,35 @@ export class UiResizable implements AfterViewInit, OnDestroy {
       const el = document.createElement('div');
       el.className = `ui-resize-handle ui-resize-${edge}`;
       Object.assign(el.style, this.styleFor(edge));
+      if (edge === 'se') {
+        this.gripEl = this.grip();
+        this.gripEl.style.display = this.disabled() ? 'none' : '';
+        el.appendChild(this.gripEl);
+      }
       el.addEventListener('pointerdown', (e) => this.onDown(e, edge));
       this.host.nativeElement.appendChild(el);
       this.handleEls.push(el);
     }
+  }
+
+  /** Two short diagonal strokes in the corner: "this corner drags". */
+  private grip(): SVGSVGElement {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 10 10');
+    svg.setAttribute('width', '10');
+    svg.setAttribute('height', '10');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('class', 'ui-resize-grip');
+    Object.assign(svg.style, { position: 'absolute', right: '3px', bottom: '3px', pointerEvents: 'none', color: 'var(--ui-color-text-muted)' });
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', 'M10 2L2 10M10 6L6 10');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(path);
+    return svg;
   }
 
   private styleFor(edge: UiResizeEdge): Partial<CSSStyleDeclaration> {

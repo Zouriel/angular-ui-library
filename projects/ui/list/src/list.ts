@@ -49,7 +49,7 @@ export class UiList {
     .ui-list-item {
       display: flex; align-items: center; gap: var(--ui-space-3); width: 100%;
       padding: var(--ui-space-2) var(--ui-space-4); box-sizing: border-box;
-      color: var(--ui-color-text); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35;
+      color: var(--ui-color-text); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       text-align: left; background: transparent;
     }
     .ui-list-item.interactive {
@@ -60,7 +60,10 @@ export class UiList {
     .ui-list-item.interactive:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     /* Full-width row (and clipped by a bordered list), so the ring sits inside. */
     .ui-list-item.interactive:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
-    .ui-list-item.selected { background: var(--ui-color-selected); }
+    /* Selected: the tint plus a 2px primary bar on the leading edge, so it can't be mistaken for a
+       hovered row (the two tints are nearly equal on the dark themes). */
+    .ui-list-item.selected { background: var(--ui-color-selected); box-shadow: inset 2px 0 0 var(--ui-color-primary); }
+    .ui-list-item.selected:focus-visible { box-shadow: inset 2px 0 0 var(--ui-color-primary), inset 0 0 0 2px var(--ui-color-border-focus); }
     /* Redeclared, not inherited — .ui-list-item.interactive:hover:not(:disabled) above has higher
        specificity than the bare .ui-list-item.selected rule (two classes + :hover + :not() vs. two
        classes), so without this the plain hover tint wins and a selected row loses its selected

@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 export interface UiColumn<T = Record<string, unknown>> {
   key: string;
@@ -35,12 +36,16 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
 /**
  * `ui-table` — accessible data table with click-to-sort headers and optional
  * row selection. Pass `columns` + `data`; listen to `(selectionChange)`.
+ * On a narrow screen the table keeps its natural width and scrolls sideways inside its border, with
+ * the cut-off edge faded, instead of squeezing the columns.
  * (Virtual scroll / CDK table integration is a planned extension.)
  */
 @Component({
   selector: 'ui-table',
+  imports: [UiScrollFade],
   template: `
     <div class="wrap" [class.no-radius]="!radius()">
+      <div class="scroll" uiScrollFade>
       <table class="ui-table">
         <thead>
           <tr>
@@ -105,13 +110,16 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
           }
         </tbody>
       </table>
+      </div>
     </div>
   `,
   styles: `
     :host { display: block; }
-    .wrap { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: auto; }
+    .wrap { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
     .wrap.no-radius { border-radius: 0; }
-    .ui-table { width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text); font-variant-numeric: tabular-nums; }
+    .scroll { overflow: auto; }
+    /* Fill the width when the columns fit; otherwise keep their natural width and scroll (faded edge). */
+    .ui-table { width: max-content; min-width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text); font-variant-numeric: tabular-nums; }
     th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: left; }
     th[data-align="right"], td[data-align="right"] { text-align: right; }
     th[data-align="center"], td[data-align="center"] { text-align: center; }

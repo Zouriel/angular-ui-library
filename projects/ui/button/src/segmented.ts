@@ -1,6 +1,7 @@
 import { Component, ElementRef, forwardRef, input, model, signal, viewChildren } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
 import type { UiSize } from '@zouriel/ui';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 export interface UiSegmentedOption {
   value: string;
@@ -13,12 +14,13 @@ export interface UiSegmentedOption {
 /**
  * `ui-segmented` — a row of mutually exclusive options, e.g. alignment or a preview mode. A radio
  * group underneath: arrow keys move the choice, only the chosen option is in the tab order. Use
- * `[(value)]` or ngModel.
+ * `[(value)]` or ngModel. Too wide for its space, it scrolls sideways with the cut-off edge faded.
  */
 @Component({
   selector: 'ui-segmented',
+  imports: [UiScrollFade],
   template: `
-    <div class="seg" role="radiogroup" [attr.aria-label]="label()" [attr.data-size]="size()">
+    <div class="seg" uiScrollFade role="radiogroup" [attr.aria-label]="label()" [attr.data-size]="size()">
       @for (o of options(); track o.value; let i = $index) {
         <button #opt type="button" role="radio" class="opt" [class.on]="o.value === value()"
           [attr.aria-checked]="o.value === value()" [attr.aria-label]="o.glyph ? o.label : null" [attr.title]="o.glyph ? o.label : null"
@@ -34,10 +36,11 @@ export interface UiSegmentedOption {
     .opt { flex: 1 0 auto; min-width: 30px; height: calc(var(--ui-size-md) - 6px); padding: 0 var(--ui-space-3); border: 0; border-radius: calc(var(--ui-radius) - 2px);
       background: transparent; color: var(--ui-color-text-muted); font: 500 var(--ui-font-size-sm) var(--ui-font-default); cursor: pointer; white-space: nowrap;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
-    /* Options stay at least 24px tall (WCAG 2.5.8 target size); the sm track drops to 1px of padding
-       to stay close to the other sm controls. */
+    /* sm: the track is as tall as the other sm controls (26px). Its options paint 22px but their hit
+       area reaches over the 1px track padding, so the target stays 24px tall (WCAG 2.5.8). */
     .seg[data-size="sm"] { padding: 1px; gap: 1px; }
-    .seg[data-size="sm"] .opt { height: 24px; min-width: 24px; padding: 0 var(--ui-space-2); }
+    .seg[data-size="sm"] .opt { position: relative; height: calc(var(--ui-size-sm) - 4px); min-width: 24px; padding: 0 var(--ui-space-2); }
+    .seg[data-size="sm"] .opt::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; bottom: -1px; }
     .seg[data-size="lg"] .opt { height: calc(var(--ui-size-lg) - 6px); padding: 0 var(--ui-space-4); font-size: var(--ui-font-size-md); }
     .opt:hover:not(:disabled):not(.on) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .opt.on { background: var(--ui-color-surface-raised); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1); }

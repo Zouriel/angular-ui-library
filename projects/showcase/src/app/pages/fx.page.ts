@@ -156,7 +156,7 @@ export class FxPage {
     { name: 'chars', type: 'string', default: "'01'", desc: 'Glyph set.' },
     { name: 'cell', type: 'number', default: '16', desc: 'Cell size (px).' },
     { name: 'speed', type: 'number', default: '1', desc: 'Animation speed multiplier.' },
-    { name: 'colors', type: '[string, string, string]', default: "['#5a2832', '#e63946', '#fbbf24']", desc: 'Dim, mid and bright colours as 6-digit hex (#rrggbb); other formats are not parsed.' },
+    { name: 'colors', type: '[string, string, string]', default: 'theme ramp', desc: "Dim, mid and bright colours (any CSS colour). By default the theme's ember, blood and rose, or a ramp from its primary and accent; follows theme switches." },
   ];
   protected readonly introApi: ApiRow[] = [
     { name: 'open', type: 'boolean', default: 'true', desc: 'Two-way (`[(open)]`). Whether the veil is shown; it sets itself false after the wipe.' },

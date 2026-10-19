@@ -1,13 +1,13 @@
 import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiSwipe, UiVirtualList, type UiSize2D } from '@zouriel/ui/behaviors';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, type UiSize2D } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-behaviors',
   imports: [
-    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiSwipe, UiVirtualList,
+    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -54,11 +54,20 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="infiniteScroll" selector="[uiInfiniteScroll]" [api]="infApi" [outputs]="infOut"
-        summary="Put it on the scrolling element itself (it needs a height and overflow: auto). Emits (scrolledToEnd) once when a scroll brings the host within threshold px of the bottom, and again only after it has been scrolled back above that line. It reacts to scroll events, so content shorter than the box never triggers it.">
+        summary="Put it on the scrolling element itself (it needs a height and overflow: auto). Emits (scrolledToEnd) once when a scroll brings the host within threshold px of the bottom, and again only after it has been scrolled back above that line. It also re-arms when new content arrives after a load and checks again, so a scroll that jumps straight to the new end still loads. Content shorter than the box never triggers it on its own.">
         <doc-demo code="<div uiInfiniteScroll [uiInfiniteScrollThreshold]=&quot;120&quot; (scrolledToEnd)=&quot;loadMore()&quot;>…</div>">
           <div class="inf" uiInfiniteScroll (scrolledToEnd)="loadMore()">
             @for (n of items(); track n) { <div class="ln">Item {{ n }}</div> }
             <div class="ln muted">scroll for more… ({{ items().length }})</div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="scrollFade" selector="[uiScrollFade]" [api]="fadeApi"
+        summary="Put it on an element that scrolls sideways: each edge with more content past it fades out, so a cut-off row reads as one that scrolls on. Nothing changes while the content fits. ui-table, ui-segmented and ui-stepper use it.">
+        <doc-demo code="<div uiScrollFade style=&quot;overflow-x: auto&quot;>…</div>">
+          <div class="fade-strip" uiScrollFade>
+            @for (n of fadeItems; track n) { <ui-badge>Tag {{ n }}</ui-badge> }
           </div>
         </doc-demo>
       </doc-section>
@@ -94,6 +103,7 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
     .ripple-btn { align-self: flex-start; justify-self: start; height: var(--ui-size-md); padding: 0 var(--ui-space-4); border: 0; border-radius: var(--ui-radius); cursor: pointer;
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: 600 var(--ui-font-size-sm) var(--ui-font-default); }
     .ripple-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .fade-strip { display: flex; gap: var(--ui-space-2); overflow-x: auto; max-width: 420px; padding: var(--ui-space-1) 0; }
     .inf { height: 160px; overflow: auto; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .ln { padding: 2px var(--ui-space-3); font-size: var(--ui-font-size-sm); }
     .ln.muted { color: var(--ui-color-text-muted); }
@@ -142,6 +152,11 @@ export class BehaviorsPage {
     { name: 'uiIntersectOnce', type: 'boolean', default: 'false', desc: 'Stop observing after the first true.' },
   ];
   protected readonly intersectOut: ApiRow[] = [{ name: 'uiIntersect', type: 'boolean', default: '—', desc: 'Whether the host is now in the viewport.' }];
+  protected readonly fadeItems = Array.from({ length: 16 }, (_, i) => i + 1);
+  protected readonly fadeApi: ApiRow[] = [
+    { name: 'uiScrollFadeSize', type: 'number', default: '24', desc: 'Width of the fade, in px.' },
+    { name: 'update()', type: 'method', default: '—', desc: 'Re-measure after a change no resize reports.' },
+  ];
   protected readonly infApi: ApiRow[] = [
     { name: 'uiInfiniteScrollThreshold', type: 'number', default: '120', desc: 'Trigger distance from bottom (px).' },
     { name: 'uiInfiniteScrollDisabled', type: 'boolean', default: 'false', desc: 'Ignore scrolling, e.g. while a page loads or when there is no more.' },

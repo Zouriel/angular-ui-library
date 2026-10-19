@@ -54,6 +54,7 @@ import { isPlatformBrowser } from '@angular/common';
       background: var(--ui-color-surface);
       border-right: 1px solid var(--ui-color-border);
       min-width: 0; overflow-y: auto; overscroll-behavior: contain;
+      box-sizing: border-box; padding: var(--ui-space-3);
     }
     .main { display: flex; flex-direction: column; min-width: 0; }
     .bar {
@@ -83,7 +84,6 @@ import { isPlatformBrowser } from '@angular/common';
     :host(.ui-compact) .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0;
       width: var(--ui-sb-w, 248px); max-width: 84vw; z-index: 30;
-      padding: var(--ui-space-3);
       transform: translateX(-100%);
       transition: transform var(--ui-motion-base) var(--ui-ease-standard);
     }

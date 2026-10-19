@@ -83,7 +83,7 @@ export interface UiSideNavGroup {
     .ui-side-nav { display: flex; flex-direction: column; gap: var(--ui-space-4); font-family: var(--ui-font-default); line-height: 1.35; }
     .group { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .group-label { font-family: var(--ui-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
-      color: var(--ui-color-text-muted); padding: 0 var(--ui-space-2); margin-bottom: 2px; }
+      color: var(--ui-color-text-muted); padding: 0 var(--ui-space-3); margin-bottom: 2px; }
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
     .item { position: relative; display: flex; align-items: center; gap: var(--ui-space-2); width: 100%;
       padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: var(--ui-radius);

@@ -51,6 +51,8 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-btn:focus-visible:not(:disabled) { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* Loading is disabled too, but keeps its full colour: the spinner says "busy", the dimming "off". */
+    .ui-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
     .ui-btn.no-radius { border-radius: 0; }
     .ui-btn.glass {
       background: var(--ui-glass-bg);
