@@ -121,8 +121,9 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
     /* Fill the width and let long text wrap. In a narrow box (a phone) the columns keep their natural
        width instead and the box scrolls with a faded edge, so names aren't squeezed onto several lines. */
     .wrap { container-type: inline-size; }
-    @container (max-width: 600px) { .ui-table { width: max-content; min-width: 100%; } }
     .ui-table { width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text); font-variant-numeric: tabular-nums; }
+    /* After the rule above, so it wins in a narrow box. */
+    @container (max-width: 600px) { .ui-table { width: max-content; min-width: 100%; } }
     th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: left; }
     th[data-align="right"], td[data-align="right"] { text-align: right; }
     th[data-align="center"], td[data-align="center"] { text-align: center; }
