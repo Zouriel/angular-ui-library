@@ -8,6 +8,7 @@ import { UiWfApiError, type UiWfDefinitionDetail, type UiWfSimulationEvent, type
 import { fieldOf, indexSteps, stepName } from './definition';
 import { WfDurationInput, WfValueInput } from './editors';
 import { WF_ICONS } from './icons';
+import { WfSelect, type WfOption } from './select';
 import type { UiWfTaskStep, UiWorkflowDefinition } from './schema';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
@@ -37,7 +38,7 @@ function when(iso: string | null | undefined): string {
             <p class="wf-hint">None. The draft matches the published version.</p>
           }
           <label class="lw"><span class="wf-label">What changed (kept with the version)</span>
-            <ui-textarea [ngModel]="note()" (ngModelChange)="note.set($event)" [rows]="2" [autosize]="true" placeholder="e.g. Added a finance check for large amounts" /></label>
+            <ui-textarea size="sm" [ngModel]="note()" (ngModelChange)="note.set($event)" [rows]="2" [autosize]="true" placeholder="e.g. Added a finance check for large amounts" /></label>
           @if (error()) { <p class="wf-error">{{ error() }}</p> }
           <div class="wf-row">
             <ui-button size="sm" (click)="publish()" [disabled]="busy() || store.errorCount() > 0">Publish version {{ (detail()?.summary?.version ?? 0) + 1 }}</ui-button>
@@ -200,7 +201,7 @@ export class WfVersions {
  */
 @Component({
   selector: 'ui-wf-test',
-  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, WfDurationInput, WfValueInput],
+  imports: [FormsModule, HugeiconsIconComponent, UiButton, UiInput, WfDurationInput, WfSelect, WfValueInput],
   template: `
     <div class="wrap">
       @if (!store.api()) {
@@ -215,15 +216,9 @@ export class WfVersions {
           @if (store.def().kind === 'lifecycle') {
             <div class="wf-grid2">
               <label class="lw"><span class="wf-label">Record is in</span>
-                <select class="wf-select" (change)="fromState.set($any($event.target).value)">
-                  <option value="">(its current state)</option>
-                  @for (s of states(); track s.id) { <option [value]="s.key" [selected]="s.key === fromState()">{{ s.label }}</option> }
-                </select></label>
+                <ui-wf-select [options]="stateOptions()" [value]="fromState()" label="Record is in" (valueChange)="fromState.set($event)" /></label>
               <label class="lw"><span class="wf-label">Try</span>
-                <select class="wf-select" (change)="transition.set($any($event.target).value)">
-                  <option value="">(no transition)</option>
-                  @for (t of transitions(); track t.id) { <option [value]="t.key" [selected]="t.key === transition()">{{ t.label }}</option> }
-                </select></label>
+                <ui-wf-select [options]="transitionOptions()" [value]="transition()" label="Try" (valueChange)="transition.set($event)" /></label>
             </div>
           } @else if (triggerField(); as f) {
             <div class="wf-grid2">
@@ -237,25 +232,15 @@ export class WfVersions {
           <h3>Then</h3>
           @for (e of events(); track $index; let i = $index) {
             <div class="ev">
-              <select class="wf-select" (change)="setEventType(i, $any($event.target).value)" aria-label="What happens">
-                <option value="decide" [selected]="e.type === 'decide'">Someone decides</option>
-                <option value="advance" [selected]="e.type === 'advance'">Time passes</option>
-                @if (signals().length) { <option value="signal" [selected]="e.type === 'signal'">The app reports</option> }
-              </select>
+              <ui-wf-select [options]="eventTypes()" [value]="e.type" label="What happens" (valueChange)="setEventType(i, $any($event))" />
               @switch (e.type) {
                 @case ('decide') {
-                  <select class="wf-select" (change)="patchEvent(i, { step: $any($event.target).value, outcome: outcomesOf($any($event.target).value)[0]?.key })" aria-label="Task">
-                    @for (h of humanSteps(); track h.id) { <option [value]="h.id" [selected]="h.id === e.step">{{ h.name }}</option> }
-                  </select>
-                  <select class="wf-select" (change)="patchEvent(i, { outcome: $any($event.target).value })" aria-label="Decision">
-                    @for (o of outcomesOf(e.step); track o.key) { <option [value]="o.key" [selected]="o.key === e.outcome">{{ o.label }}</option> }
-                  </select>
+                  <ui-wf-select [options]="humanOptions()" [value]="e.step" label="Task" (valueChange)="patchEvent(i, { step: $event, outcome: outcomesOf($event)[0]?.key })" />
+                  <ui-wf-select [options]="outcomeOptions(e.step)" [value]="e.outcome" label="Decision" (valueChange)="patchEvent(i, { outcome: $event })" />
                 }
                 @case ('advance') { <ui-wf-duration [value]="e.duration ?? 'P1D'" label="Time" (valueChange)="patchEvent(i, { duration: $event })" /> }
                 @case ('signal') {
-                  <select class="wf-select" (change)="patchEvent(i, { signal: $any($event.target).value })" aria-label="Event">
-                    @for (s of signals(); track s.key) { <option [value]="s.key" [selected]="s.key === e.signal">{{ s.label }}</option> }
-                  </select>
+                  <ui-wf-select [options]="signalOptions()" [value]="e.signal" label="Event" (valueChange)="patchEvent(i, { signal: $event })" />
                 }
               }
               <button type="button" class="wf-icon-btn danger" (click)="removeEvent(i)" aria-label="Remove"><hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" /></button>
@@ -334,6 +319,14 @@ export class WfTest {
     const t = this.store.def().trigger;
     return t?.type === 'fieldChanged' ? fieldOf(this.store.registry(), this.store.def().entity, t.field) : undefined;
   });
+  protected readonly stateOptions = computed<WfOption[]>(() => [{ value: '', label: '(its current state)' }, ...this.states().map((s) => ({ value: s.key, label: s.label }))]);
+  protected readonly transitionOptions = computed<WfOption[]>(() => [{ value: '', label: '(no transition)' }, ...this.transitions().map((t) => ({ value: t.key, label: t.label }))]);
+  protected readonly signalOptions = computed<WfOption[]>(() => this.signals().map((s) => ({ value: s.key, label: s.label })));
+  protected readonly eventTypes = computed<WfOption[]>(() => [
+    { value: 'decide', label: 'Someone decides' }, { value: 'advance', label: 'Time passes' }, ...(this.signals().length ? [{ value: 'signal', label: 'The app reports' }] : []),
+  ]);
+  protected readonly humanOptions = computed<WfOption[]>(() => this.humanSteps().map((h) => ({ value: h.id, label: h.name })));
+  protected outcomeOptions(stepId: string | undefined): WfOption[] { return this.outcomesOf(stepId).map((o) => ({ value: o.key, label: o.label })); }
   protected readonly humanSteps = computed(() =>
     [...indexSteps(this.store.def()).values()].filter((l) => l.step.type === 'approval' || l.step.type === 'task').map((l) => ({ id: l.step.id, name: stepName(l.step), step: l.step })));
 

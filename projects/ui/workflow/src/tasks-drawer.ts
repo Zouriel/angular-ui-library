@@ -45,7 +45,8 @@ const COUNT_TAKE = 100;
         @if (openRun(); as run) {
           <!-- One stopped workflow, with try again, skip and cancel (a record's lifecycle: try again and skip). -->
           <div class="detail">
-            <ui-button size="sm" variant="ghost" (click)="openRun.set(null)">‹ Back to the list</ui-button>
+            <!-- A text link, so "Back" lines up with the run's own content edge. -->
+            <button type="button" class="wf-link" (click)="openRun.set(null)">‹ Back to the list</button>
             <ui-wf-run-view [instanceId]="run.id" [api]="client()" (changed)="onRunChanged()" />
           </div>
         } @else {
@@ -73,7 +74,6 @@ const COUNT_TAKE = 100;
     :host { display: inline-flex; }
     .inbox { display: block; }
     .detail { display: flex; flex-direction: column; align-items: stretch; gap: var(--ui-space-3); }
-    .detail > ui-button { align-self: flex-start; }
     .stopped { display: flex; flex-direction: column; gap: var(--ui-space-2); margin-bottom: var(--ui-space-4); }
     .stopped h3 { margin: 0; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-danger); }
     .stopped .wf-hint { margin: 0; }

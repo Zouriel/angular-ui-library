@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
+import { UiCheckbox } from './checkbox';
 import { UiSwitch } from './switch';
 import { UiTextarea } from './textarea';
 import { UiTokenInput } from './token-input';
@@ -17,7 +18,19 @@ globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {
 })
 class Host {}
 
+@Component({
+  imports: [UiCheckbox],
+  template: `<ui-checkbox size="sm">On</ui-checkbox><ui-checkbox>On</ui-checkbox>`,
+})
+class CheckHost {}
+
 describe('control sizes', () => {
+  it('checkbox takes sm for dense panels and defaults to md', () => {
+    const f = TestBed.createComponent(CheckHost);
+    f.detectChanges();
+    expect([...(f.nativeElement as HTMLElement).querySelectorAll('.ui-checkbox')].map((e) => e.getAttribute('data-size'))).toEqual(['sm', 'md']);
+  });
+
   it('switch, textarea and token input take sm for dense panels and default to md', () => {
     const f = TestBed.createComponent(Host);
     f.detectChanges();

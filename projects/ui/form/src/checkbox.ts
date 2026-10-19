@@ -1,11 +1,12 @@
 import { Component, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import type { UiSize } from '@zouriel/ui';
 
-/** `ui-checkbox` — boolean control (CVA) built on a native checkbox for a11y. */
+/** `ui-checkbox` — boolean control (CVA) built on a native checkbox for a11y. `size="sm"` (13px label) for dense panels. */
 @Component({
   selector: 'ui-checkbox',
   template: `
-    <label class="ui-checkbox" [class.disabled]="disabled()">
+    <label class="ui-checkbox" [class.disabled]="disabled()" [attr.data-size]="size()">
       <input
         type="checkbox"
         class="native"
@@ -24,6 +25,9 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     :host { display: inline-flex; }
     .ui-checkbox { display: inline-flex; align-items: flex-start; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text); }
     .ui-checkbox.disabled { opacity: .5; cursor: not-allowed; }
+    .ui-checkbox[data-size="sm"] { font-size: var(--ui-font-size-sm); }
+    [data-size="sm"] .box { width: 16px; height: 16px; }
+    [data-size="sm"] .tick { width: 11px; height: 11px; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .box {
       display: inline-flex; align-items: center; justify-content: center;
@@ -43,6 +47,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 })
 export class UiCheckbox implements ControlValueAccessor {
   invalid = input(false);
+  /** 'sm' (13px label, 16px box) for dense panels; 'lg' is drawn as 'md'. */
+  size = input<UiSize>('md');
 
   protected readonly checked = signal(false);
   protected readonly disabled = signal(false);

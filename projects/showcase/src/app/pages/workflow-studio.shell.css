@@ -8,8 +8,9 @@
     @media (max-width: 1700px) { .sub { display: none; } }
     .grow { flex: 1; }
     .who { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ui-color-text-secondary); }
-    .sel { height: 28px; padding: 0 8px; border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: 13px; }
-    .clock { display: flex; align-items: center; gap: 2px; }
+    .who-sel { width: 220px; }
+    /* The clock buttons' hover fills mustn't touch. */
+    .clock { display: flex; align-items: center; gap: var(--ui-space-1); }
     .now { font-size: 12px; color: var(--ui-color-text-secondary); margin-right: 4px; font-variant-numeric: tabular-nums; }
     .offline { padding: 24px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
     .offline pre { margin: 0; padding: 10px; background: var(--ui-color-surface); border-radius: var(--ui-radius); font-size: 12px; }

@@ -15,6 +15,7 @@ import {
 } from './definition';
 import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect } from './editors';
 import { WF_ICONS } from './icons';
+import { WfSelect, type WfOption } from './select';
 import type {
   UiWfActionStep,
   UiWfApplyTransitionStep,
@@ -41,7 +42,7 @@ import type {
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
 
-const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, UiTextarea, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfTemplateEditor, WfTokenSelect];
+const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberInput, UiSwitch, UiTextarea, WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfOperandEditor, WfSelect, WfTemplateEditor, WfTokenSelect];
 
 /**
  * Settings for one step. Each step type gets its own section; common settings (name, note,
@@ -49,6 +50,12 @@ const EDITOR_IMPORTS = [FormsModule, HugeiconsIconComponent, UiInput, UiNumberIn
  */
 /** HTTP methods a webhook step may use, in the order the picker lists them (spec §13; others are lint `badMethod`). */
 export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
+
+/** Button and state colours as people see them (the values are the theme's tone names). */
+export const WF_TONE_OPTIONS: WfOption[] = [
+  { value: 'neutral', label: 'Plain' }, { value: 'primary', label: 'Main colour' }, { value: 'success', label: 'Green' },
+  { value: 'warning', label: 'Amber' }, { value: 'danger', label: 'Red' },
+];
 
 @Component({
   selector: 'ui-wf-step-editor',
@@ -66,12 +73,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
                 emptyText="Add the people who decide." (valueChange)="patch({ assignees: $any($event) })" /></div>
             <div class="wf-grid2">
               <label class="lw"><span class="wf-label">Decided when</span>
-                <select class="wf-select" (change)="setRule($any($event.target).value)">
-                  <option value="any" [selected]="approval().rule.type === 'any'">Anyone approves</option>
-                  <option value="all" [selected]="approval().rule.type === 'all'">Everyone approves</option>
-                  <option value="count" [selected]="approval().rule.type === 'count'">A number approve</option>
-                  <option value="percent" [selected]="approval().rule.type === 'percent'">A share approve</option>
-                </select></label>
+                <ui-wf-select [options]="opts.rule" [value]="approval().rule.type" label="Decided when" (valueChange)="setRule($any($event))" /></label>
               @if (approval().rule.type === 'count' || approval().rule.type === 'percent') {
                 <label class="lw"><span class="wf-label">{{ approval().rule.type === 'count' ? 'How many' : 'Percent' }}</span>
                   <ui-number-input size="sm" [ngModel]="approval().rule.value ?? 1" (ngModelChange)="patch({ rule: { type: approval().rule.type, value: $event ?? 1 } })" [min]="1" [max]="approval().rule.type === 'percent' ? 100 : undefined" /></label>
@@ -79,11 +81,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
             </div>
             <p class="wf-hint">Anyone: the first approval wins. Everyone: one rejection rejects it.</p>
             <label class="lw"><span class="wf-label">Remarks</span>
-              <select class="wf-select" (change)="patch({ requireComment: $any($event.target).value })">
-                <option value="never" [selected]="!approval().requireComment || approval().requireComment === 'never'">Optional</option>
-                <option value="reject" [selected]="approval().requireComment === 'reject'">Required to reject</option>
-                <option value="always" [selected]="approval().requireComment === 'always'">Always required</option>
-              </select></label>
+              <ui-wf-select [options]="opts.approvalRemarks" [value]="approval().requireComment || 'never'" label="Remarks" (valueChange)="patch({ requireComment: $event })" /></label>
             <p class="wf-hint">People can always add remarks; they show in the history and later steps can read them.</p>
           </div>
         }
@@ -96,9 +94,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
               @for (o of task().outcomes; track o.id; let i = $index) {
                 <div class="outcome">
                   <ui-input size="sm" [ngModel]="o.label" (ngModelChange)="setOutcome(i, $event)" [ariaLabel]="'Button ' + (i + 1)" />
-                  <select class="wf-select tone" (change)="setOutcomeTone(i, $any($event.target).value)" aria-label="Colour">
-                    @for (t of tones; track t) { <option [value]="t" [selected]="(o.tone ?? 'neutral') === t">{{ t }}</option> }
-                  </select>
+                  <ui-wf-select [options]="tones" [value]="o.tone ?? 'neutral'" label="Colour" (valueChange)="setOutcomeTone(i, $event)" />
                   <button type="button" class="wf-icon-btn danger" [disabled]="task().outcomes.length < 2" (click)="removeOutcome(i)" aria-label="Remove button">
                     <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
                   </button>
@@ -107,13 +103,9 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
               @if (task().outcomes.length < 8) { <button type="button" class="wf-link" (click)="addOutcome()">Add a button</button> }
             </div>
             <label class="lw"><span class="wf-label">Remarks</span>
-              <select class="wf-select" (change)="patch({ requireComment: $any($event.target).value })">
-                <option value="never" [selected]="!task().requireComment || task().requireComment === 'never'">Optional</option>
-                <option value="reject" [selected]="task().requireComment === 'reject'">Required for red buttons</option>
-                <option value="always" [selected]="task().requireComment === 'always'">Always required</option>
-              </select></label>
+              <ui-wf-select [options]="opts.taskRemarks" [value]="task().requireComment || 'never'" label="Remarks" (valueChange)="patch({ requireComment: $event })" /></label>
             @if (task().requireComment === 'reject' && !hasRedOutcome()) {
-              <p class="wf-hint">No button is red yet: colour the negative ones “danger” so they ask for remarks.</p>
+              <p class="wf-hint">No button is red yet: colour the negative ones “Red” so they ask for remarks.</p>
             }
           </div>
         }
@@ -130,10 +122,8 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
                 <ui-wf-condition [value]="p.when" [tokens]="tokens()" emptyText="Add a condition for this path." (valueChange)="setPathWhen(i, $event)" />
               </div>
             }
-            <div class="wf-row">
-              <button type="button" class="wf-link" (click)="addPath()">Add a path</button>
-              <label class="wf-row small"><ui-switch [ngModel]="!!branch().otherwise" (ngModelChange)="toggleOtherwise($event)" /> Otherwise path</label>
-            </div>
+            <button type="button" class="wf-link" (click)="addPath()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add a path</button>
+            <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!branch().otherwise" (ngModelChange)="toggleOtherwise($event)" /> “Otherwise” path (when none match)</label>
             <p class="wf-hint">The first path whose conditions hold runs; if none do, “Otherwise”.</p>
           </div>
         }
@@ -160,10 +150,8 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
                 }
               </div>
             }
-            <div class="wf-row">
-              <button type="button" class="wf-link" (click)="addCase()">Add a case</button>
-              <label class="wf-row small"><ui-switch [ngModel]="!!switchStep().otherwise" (ngModelChange)="toggleOtherwise($event)" /> Otherwise path</label>
-            </div>
+            <button type="button" class="wf-link" (click)="addCase()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add a case</button>
+            <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!switchStep().otherwise" (ngModelChange)="toggleOtherwise($event)" /> “Otherwise” path (any other value)</label>
           </div>
         }
         @case ('parallel') {
@@ -176,14 +164,10 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
                 </button>
               </div>
             }
-            @if (parallel().paths.length < 10) { <button type="button" class="wf-link" (click)="addParallel()">Add a path</button> }
+            @if (parallel().paths.length < 10) { <button type="button" class="wf-link" (click)="addParallel()"><hugeicons-icon aria-hidden="true" [icon]="icons.Add01Icon" [size]="12" [strokeWidth]="2" /> Add a path</button> }
             <div class="wf-grid2">
               <label class="lw"><span class="wf-label">Continue when</span>
-                <select class="wf-select" (change)="patch({ join: { type: $any($event.target).value, count: parallel().join.count } })">
-                  <option value="all" [selected]="parallel().join.type === 'all'">All paths finish</option>
-                  <option value="any" [selected]="parallel().join.type === 'any'">The first path finishes</option>
-                  <option value="count" [selected]="parallel().join.type === 'count'">A number of paths finish</option>
-                </select></label>
+                <ui-wf-select [options]="opts.join" [value]="parallel().join.type" label="Continue when" (valueChange)="patch({ join: { type: $event, count: parallel().join.count } })" /></label>
               @if (parallel().join.type === 'count') {
                 <label class="lw"><span class="wf-label">How many</span>
                   <ui-number-input size="sm" [ngModel]="parallel().join.count ?? 1" (ngModelChange)="patch({ join: { type: 'count', count: $event ?? 1 } })" [min]="1" [max]="parallel().paths.length" /></label>
@@ -195,18 +179,12 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('forEach') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">For each of</span>
-              <select class="wf-select" (change)="patch({ collection: $any($event.target).value })">
-                <option value="" [selected]="!forEach().collection" disabled>Choose a list…</option>
-                @for (c of collections(); track c.path) { <option [value]="c.path" [selected]="c.path === forEach().collection">{{ c.label }}</option> }
-              </select></label>
+              <ui-wf-select [options]="collectionOptions()" [value]="forEach().collection" placeholder="Choose a list…" label="For each of" (valueChange)="patch({ collection: $event })" /></label>
             <div><span class="wf-label">Only items where</span>
               <ui-wf-condition [value]="forEach().when" [tokens]="tokens()" emptyText="Every item." (valueChange)="patch({ when: $event.conditions.length ? $event : undefined })" /></div>
             <div class="wf-grid2">
               <label class="lw"><span class="wf-label">One at a time?</span>
-                <select class="wf-select" (change)="patch({ mode: $any($event.target).value })">
-                  <option value="sequential" [selected]="forEach().mode !== 'parallel'">One after another</option>
-                  <option value="parallel" [selected]="forEach().mode === 'parallel'">At the same time</option>
-                </select></label>
+                <ui-wf-select [options]="opts.loopMode" [value]="forEach().mode === 'parallel' ? 'parallel' : 'sequential'" label="One at a time?" (valueChange)="patch({ mode: $event })" /></label>
               <label class="lw"><span class="wf-label">At most</span>
                 <ui-number-input size="sm" [ngModel]="forEach().max" (ngModelChange)="patch({ max: $event ?? 100 })" [min]="1" [max]="500" suffix="items" /></label>
             </div>
@@ -215,16 +193,11 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('wait') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Wait</span>
-              <select class="wf-select" (change)="setWaitType($any($event.target).value)">
-                <option value="duration" [selected]="wait().until.type === 'duration'">For a length of time</option>
-                <option value="date" [selected]="wait().until.type === 'date'">Until a date</option>
-                <option value="condition" [selected]="wait().until.type === 'condition'">Until something is true</option>
-                <option value="signal" [selected]="wait().until.type === 'signal'">Until the app reports an event</option>
-              </select></label>
+              <ui-wf-select [options]="opts.wait" [value]="wait().until.type" label="Wait" (valueChange)="setWaitType($any($event))" /></label>
             @switch (wait().until.type) {
               @case ('duration') {
                 <ui-wf-duration [value]="$any(wait().until).duration" label="How long" (valueChange)="setUntil({ duration: $event })" />
-                <label class="wf-row small"><ui-switch [ngModel]="$any(wait().until).calendar === 'working'" (ngModelChange)="setUntil({ calendar: $event ? 'working' : undefined })" /> Count working time only</label>
+                <label class="wf-row small"><ui-switch size="sm" [ngModel]="$any(wait().until).calendar === 'working'" (ngModelChange)="setUntil({ calendar: $event ? 'working' : undefined })" /> Count working time only</label>
               }
               @case ('date') {
                 <label class="lw"><span class="wf-label">The date</span>
@@ -240,11 +213,8 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
               }
               @case ('signal') {
                 <label class="lw"><span class="wf-label">Event</span>
-                  <select class="wf-select" (change)="setUntil({ signal: $any($event.target).value })">
-                    <option value="" disabled [selected]="!$any(wait().until).signal">Choose…</option>
-                    @for (s of store.registry()?.signals ?? []; track s.key) { <option [value]="s.key" [selected]="s.key === $any(wait().until).signal">{{ s.label }}</option> }
-                  </select></label>
-                <label class="wf-row small"><ui-switch [ngModel]="!!$any(wait().until).timeout" (ngModelChange)="setUntil($event ? { timeout: 'P7D', onTimeout: { id: newId('l'), steps: [] } } : { timeout: undefined, onTimeout: undefined })" /> Give up after a while</label>
+                  <ui-wf-select [options]="signalOptions()" [value]="$any(wait().until).signal" placeholder="Choose…" label="Event" (valueChange)="setUntil({ signal: $event })" /></label>
+                <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!$any(wait().until).timeout" (ngModelChange)="setUntil($event ? { timeout: 'P7D', onTimeout: { id: newId('l'), steps: [] } } : { timeout: undefined, onTimeout: undefined })" /> Give up after a while</label>
                 @if ($any(wait().until).timeout) { <ui-wf-duration [value]="$any(wait().until).timeout" label="Time limit" (valueChange)="setUntil({ timeout: $event })" /> }
               }
             }
@@ -253,22 +223,11 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('setFields') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Record</span>
-              <select class="wf-select" (change)="setTarget($any($event.target).value)">
-                <option value="self" [selected]="!setFields().target || setFields().target === 'self'">This {{ entityLabel() }}</option>
-                @if (loopItem(); as it) {
-                  <option value="item" [selected]="setFields().target === 'item'">Current {{ it.label.toLowerCase() }} (each item of the For each)</option>
-                } @else if (setFields().target === 'item') {
-                  <option value="item" selected>Current item (needs a For each around this step)</option>
-                }
-                @for (r of relations(); track r.key) { <option [value]="'entity.' + r.key" [selected]="setFields().target === 'entity.' + r.key">{{ r.label }}</option> }
-              </select></label>
+              <ui-wf-select [options]="targetOptions()" [value]="setFields().target || 'self'" label="Record" (valueChange)="setTarget($event)" /></label>
             @if (setFields().target === 'item' && !loopItem()) { <p class="wf-warn">This step isn’t inside a For each, so there is no current item to change. Move it into one, or choose another record.</p> }
             @for (v of setFields().values; track $index; let i = $index) {
               <div class="assign">
-                <select class="wf-select" (change)="setFieldAt(i, $any($event.target).value)" [attr.aria-label]="'Field ' + (i + 1)">
-                  <option value="" disabled [selected]="!v.field">Field…</option>
-                  @for (f of settable(); track f.key) { <option [value]="f.key" [selected]="f.key === v.field">{{ f.label }}</option> }
-                </select>
+                <ui-wf-select [options]="settableOptions()" [value]="v.field" placeholder="Field…" [label]="'Field ' + (i + 1)" (valueChange)="setFieldAt(i, $event)" />
                 <ui-wf-operand [value]="v.value" [field]="targetField(v.field)" [tokens]="tokens()" [label]="targetField(v.field)?.label ?? 'Value'" (valueChange)="setValueAt(i, $event)" />
                 <button type="button" class="wf-icon-btn danger" (click)="removeValueAt(i)" aria-label="Remove">
                   <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
@@ -282,17 +241,11 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('createRecord') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Kind of record</span>
-              <select class="wf-select" (change)="patch({ entity: $any($event.target).value, values: [] })">
-                <option value="" disabled [selected]="!createRecord().entity">Choose…</option>
-                @for (e of store.registry()?.entities ?? []; track e.key) { <option [value]="e.key" [selected]="e.key === createRecord().entity">{{ e.label }}</option> }
-              </select></label>
+              <ui-wf-select [options]="entityOptions()" [value]="createRecord().entity" placeholder="Choose…" label="Kind of record" (valueChange)="patch({ entity: $event, values: [] })" /></label>
             @if (createRecord().entity) {
               @for (v of createRecord().values; track $index; let i = $index) {
                 <div class="assign">
-                  <select class="wf-select" (change)="setFieldAt(i, $any($event.target).value)" [attr.aria-label]="'Field ' + (i + 1)">
-                    <option value="" disabled [selected]="!v.field">Field…</option>
-                    @for (f of settable(); track f.key) { <option [value]="f.key" [selected]="f.key === v.field">{{ f.label }}</option> }
-                  </select>
+                  <ui-wf-select [options]="settableOptions()" [value]="v.field" placeholder="Field…" [label]="'Field ' + (i + 1)" (valueChange)="setFieldAt(i, $event)" />
                   <ui-wf-operand [value]="v.value" [field]="targetField(v.field)" [tokens]="tokens()" [label]="targetField(v.field)?.label ?? 'Value'" (valueChange)="setValueAt(i, $event)" />
                   <button type="button" class="wf-icon-btn danger" (click)="removeValueAt(i)" aria-label="Remove">
                     <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
@@ -310,10 +263,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
           <div class="wf-stack">
             @for (v of setVariables().values; track $index; let i = $index) {
               <div class="assign">
-                <select class="wf-select" (change)="setVariableAt(i, $any($event.target).value)" [attr.aria-label]="'Variable ' + (i + 1)">
-                  <option value="" disabled [selected]="!v.variable">Variable…</option>
-                  @for (x of store.def().variables ?? []; track x.id) { <option [value]="x.id" [selected]="x.id === v.variable">{{ x.label }}</option> }
-                </select>
+                <ui-wf-select [options]="variableOptions()" [value]="v.variable" placeholder="Variable…" [label]="'Variable ' + (i + 1)" (valueChange)="setVariableAt(i, $event)" />
                 <ui-wf-operand [value]="v.value" [type]="variableType(v.variable)" [tokens]="tokens()" (valueChange)="setVariableValueAt(i, $event)" />
                 <button type="button" class="wf-icon-btn danger" (click)="removeVariableAt(i)" aria-label="Remove">
                   <hugeicons-icon aria-hidden="true" [icon]="icons.Delete02Icon" [size]="14" [strokeWidth]="1.8" />
@@ -327,10 +277,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('applyTransition') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Lifecycle</span>
-              <select class="wf-select" (change)="patch({ lifecycle: $any($event.target).value, transition: '' })">
-                <option value="" disabled [selected]="!applyTransition().lifecycle">Choose…</option>
-                @for (l of lifecycles(); track l.key) { <option [value]="l.key" [selected]="l.key === applyTransition().lifecycle">{{ l.title }}</option> }
-              </select></label>
+              <ui-wf-select [options]="lifecycleOptions()" [value]="applyTransition().lifecycle" placeholder="Choose…" label="Lifecycle" (valueChange)="patch({ lifecycle: $event, transition: '' })" /></label>
             <label class="lw"><span class="wf-label">Transition (key)</span>
               <ui-input size="sm" [ngModel]="applyTransition().transition" (ngModelChange)="patch({ transition: $event }, 'transition')" placeholder="e.g. approve" /></label>
             <div><span class="wf-label">Remarks (optional)</span>
@@ -338,18 +285,13 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
                 placeholder="e.g. Approved automatically: score above 80" (valueChange)="patch({ comment: templateOrNothing($event) }, 'comment')" /></div>
             <p class="wf-hint">Recorded with the move in the history; workflows it starts read them as “Remarks”.</p>
             <label class="lw"><span class="wf-label">If it isn’t possible</span>
-              <select class="wf-select" (change)="patch({ ifNotAllowed: $any($event.target).value })">
-                <option value="fail" [selected]="applyTransition().ifNotAllowed !== 'skip'">Stop with an error</option>
-                <option value="skip" [selected]="applyTransition().ifNotAllowed === 'skip'">Skip it and carry on</option>
-              </select></label>
+              <ui-wf-select [options]="opts.ifNotAllowed" [value]="applyTransition().ifNotAllowed === 'skip' ? 'skip' : 'fail'" label="If it isn’t possible" (valueChange)="patch({ ifNotAllowed: $event })" /></label>
           </div>
         }
         @case ('notify') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Send by</span>
-              <select class="wf-select" (change)="patch({ channel: $any($event.target).value })">
-                @for (c of store.registry()?.channels ?? []; track c.key) { <option [value]="c.key" [selected]="c.key === notify().channel">{{ c.label }}</option> }
-              </select></label>
+              <ui-wf-select [options]="channelOptions()" [value]="notify().channel" label="Send by" (valueChange)="patch({ channel: $event })" /></label>
             <div><span class="wf-label">To</span>
               <ui-wf-assignees [value]="notify().to" [registry]="store.registry()" [tokens]="tokens()" [api]="store.api()" [allowEmail]="true" label="recipients"
                 emptyText="Add who gets it." (valueChange)="patch({ to: $event })" /></div>
@@ -357,25 +299,19 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
               <ui-wf-template [value]="notify().subject" [tokens]="tokens()" [multiline]="false" label="Subject" (valueChange)="patch({ subject: $event }, 'subject')" /></div>
             <div><span class="wf-label">Message</span>
               <ui-wf-template [value]="notify().body" [tokens]="tokens()" label="Message" placeholder="Write the message. Insert values from the record or earlier steps." (valueChange)="patch({ body: $event }, 'body')" /></div>
-            <label class="wf-row small"><ui-switch [ngModel]="notify().link === 'record'" (ngModelChange)="patch({ link: $event ? 'record' : undefined })" /> Include a link to the record</label>
+            <label class="wf-row small"><ui-switch size="sm" [ngModel]="notify().link === 'record'" (ngModelChange)="patch({ link: $event ? 'record' : undefined })" /> Include a link to the record</label>
           </div>
         }
         @case ('webhook') {
           <div class="wf-stack">
             @if (connections().length) {
               <label class="lw"><span class="wf-label">Connection</span>
-                <select class="wf-select" (change)="setConnection($any($event.target).value)">
-                  <option value="" [selected]="!webhook().connection">A web address</option>
-                  @for (c of connections(); track c.key) { <option [value]="c.key" [selected]="c.key === webhook().connection">{{ c.label }}</option> }
-                </select></label>
+                <ui-wf-select [options]="connectionOptions()" [value]="webhook().connection ?? ''" label="Connection" (valueChange)="setConnection($event)" /></label>
             }
             <div class="wf-grid2 method">
               <label class="lw"><span class="wf-label">Method</span>
-                <select class="wf-select" (change)="patch({ method: $any($event.target).value })">
-                  <!-- A method the engine refuses (lint badMethod), e.g. from imported JSON: shown as it is, never offered. -->
-                  @if (!methods.includes(webhook().method)) { <option [value]="webhook().method" selected disabled>{{ webhook().method || '(none)' }}: not allowed</option> }
-                  @for (m of methods; track m) { <option [value]="m" [selected]="m === webhook().method">{{ m }}</option> }
-                </select></label>
+                <!-- A method the engine refuses (lint badMethod), e.g. from imported JSON: shown as it is, never offered. -->
+                <ui-wf-select [options]="methodOptions" [value]="webhook().method" [unknownLabel]="notAllowed" [placeholder]="webhook().method ? undefined : '(none): not allowed'" label="Method" (valueChange)="patch({ method: $event })" /></label>
               @if (!webhook().connection) {
                 <label class="lw"><span class="wf-label">Address</span>
                   <ui-input size="sm" type="url" [ngModel]="webhook().url ?? ''" (ngModelChange)="patch({ url: $event }, 'url')" placeholder="https://…" /></label>
@@ -384,7 +320,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
             <div><span class="wf-label">Path</span>
               <ui-wf-template [value]="webhook().path" [tokens]="tokens()" [multiline]="false" label="Path" placeholder="/orders/" (valueChange)="patch({ path: $event || undefined }, 'path')" /></div>
             <label class="lw"><span class="wf-label">Body (JSON; use {{ '{' }}"ref": "entity.title"{{ '}' }} for values)</span>
-              <ui-textarea [ngModel]="bodyShown()" (ngModelChange)="setBody($event)" (focusout)="tidyBody()" [rows]="5" [invalid]="bodyInvalid()" /></label>
+              <ui-textarea size="sm" [ngModel]="bodyShown()" (ngModelChange)="setBody($event)" (focusout)="tidyBody()" [rows]="5" [invalid]="bodyInvalid()" /></label>
             @if (bodyInvalid()) { <p class="wf-error">That isn’t valid JSON yet.</p> }
             <p class="wf-hint">Only addresses allowed in the workflow settings can be called.</p>
           </div>
@@ -392,10 +328,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('action') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Action</span>
-              <select class="wf-select" (change)="patch({ action: $any($event.target).value, input: {} })">
-                <option value="" disabled [selected]="!action().action">Choose…</option>
-                @for (a of store.registry()?.actions ?? []; track a.key) { <option [value]="a.key" [selected]="a.key === action().action">{{ a.category ? a.category + ' › ' : '' }}{{ a.label }}</option> }
-              </select></label>
+              <ui-wf-select [options]="actionOptions()" [value]="action().action" placeholder="Choose…" label="Action" (valueChange)="patch({ action: $event, input: {} })" /></label>
             @if (actionDef(); as ad) {
               @if (ad.description) { <p class="wf-hint">{{ ad.description }}</p> }
               @for (p of ad.inputs; track p.key) {
@@ -410,20 +343,14 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('subWorkflow') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Workflow</span>
-              <select class="wf-select" (change)="patch({ workflow: $any($event.target).value })">
-                <option value="" disabled [selected]="!subWorkflow().workflow">Choose…</option>
-                @for (w of automations(); track w.key) { <option [value]="w.key" [selected]="w.key === subWorkflow().workflow">{{ w.title }}</option> }
-              </select></label>
-            <label class="wf-row small"><ui-switch [ngModel]="subWorkflow().wait" (ngModelChange)="patch({ wait: $event })" /> Wait for it to finish (and use its results)</label>
+              <ui-wf-select [options]="automationOptions()" [value]="subWorkflow().workflow" placeholder="Choose…" label="Workflow" (valueChange)="patch({ workflow: $event })" /></label>
+            <label class="wf-row small"><ui-switch size="sm" [ngModel]="subWorkflow().wait" (ngModelChange)="patch({ wait: $event })" /> Wait for it to finish (and use its results)</label>
           </div>
         }
         @case ('goTo') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">Go back to</span>
-              <select class="wf-select" (change)="patch({ target: $any($event.target).value })">
-                <option value="" disabled [selected]="!goTo().target">Choose a step…</option>
-                @for (s of earlierSteps(); track s.id) { <option [value]="s.id" [selected]="s.id === goTo().target">{{ s.name }}</option> }
-              </select></label>
+              <ui-wf-select [options]="earlierStepOptions()" [value]="goTo().target" placeholder="Choose a step…" label="Go back to" (valueChange)="patch({ target: $event })" /></label>
             <label class="lw"><span class="wf-label">At most</span>
               <ui-number-input size="sm" [ngModel]="goTo().maxTimes" (ngModelChange)="patch({ maxTimes: $event ?? 1 })" [min]="1" [max]="50" suffix="times" /></label>
             <p class="wf-hint">After that it carries on to the next step.</p>
@@ -432,10 +359,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         @case ('end') {
           <div class="wf-stack">
             <label class="lw"><span class="wf-label">End as</span>
-              <select class="wf-select" (change)="patch({ result: $any($event.target).value })">
-                <option value="completed" [selected]="end().result === 'completed'">Finished</option>
-                <option value="failed" [selected]="end().result === 'failed'">Failed</option>
-              </select></label>
+              <ui-wf-select [options]="opts.endResult" [value]="end().result" label="End as" (valueChange)="patch({ result: $event })" /></label>
             <div><span class="wf-label">Reason</span>
               <ui-wf-template [value]="end().reason" [tokens]="tokens()" [multiline]="false" label="Reason" (valueChange)="patch({ reason: $event || undefined }, 'reason')" /></div>
           </div>
@@ -446,7 +370,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">Deadline and reminders</h4>
           <div><span class="wf-label">Due within</span><ui-wf-duration [value]="human().due" label="Due" (valueChange)="patch({ due: $event })" /></div>
-          <label class="wf-row small"><ui-switch [ngModel]="human().calendar === 'working'" (ngModelChange)="patch({ calendar: $event ? 'working' : undefined })" /> Count working time only</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="human().calendar === 'working'" (ngModelChange)="patch({ calendar: $event ? 'working' : undefined })" /> Count working time only</label>
           <div><span class="wf-label">Reminders</span>
             @for (r of human().reminders ?? []; track $index; let i = $index) {
               <div class="wf-row"><ui-wf-duration class="grow" [value]="r" label="Reminder" (valueChange)="setReminder(i, $event)" />
@@ -454,14 +378,14 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
             }
             <button type="button" class="wf-link" (click)="addReminder()">Add a reminder</button>
           </div>
-          <label class="wf-row small"><ui-switch [ngModel]="!!human().escalation" (ngModelChange)="toggleEscalation($event)" /> Escalate if nobody decides</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!human().escalation" (ngModelChange)="toggleEscalation($event)" /> Escalate if nobody decides</label>
           @if (human().escalation; as esc) {
             <div><span class="wf-label">After</span><ui-wf-duration [value]="esc.after" label="Escalate after" (valueChange)="patch({ escalation: { ...esc, after: $event } })" /></div>
             <div><span class="wf-label">Also give it to</span>
               <ui-wf-assignees [value]="esc.assignees" [registry]="store.registry()" [tokens]="tokens()" [api]="store.api()" [allowManagerOfAssignees]="true" label="escalation"
                 (valueChange)="patch({ escalation: { ...esc, assignees: $any($event) } })" /></div>
           }
-          <label class="wf-row small"><ui-switch [ngModel]="!!human().allowDelegation" (ngModelChange)="patch({ allowDelegation: $event || undefined })" /> Allow handing it to someone else</label>
+          <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!human().allowDelegation" (ngModelChange)="patch({ allowDelegation: $event || undefined })" /> Allow handing it to someone else</label>
         </section>
         <section class="wf-section wf-stack">
           <h4 class="wf-section-title">What they see</h4>
@@ -483,17 +407,13 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
             }
           </div>
           <label class="lw"><span class="wf-label">Then</span>
-            <select class="wf-select" (change)="setOnError($any($event.target).value)">
-              <option value="stop" [selected]="onErrorMode() === 'stop'">Stop and tell an admin</option>
-              <option value="continue" [selected]="onErrorMode() === 'continue'">Carry on with the next step</option>
-              <option value="steps" [selected]="onErrorMode() === 'steps'">Run other steps</option>
-            </select></label>
+            <ui-wf-select [options]="opts.onError" [value]="onErrorMode()" label="Then" (valueChange)="setOnError($event)" /></label>
         </section>
       }
 
       <section class="wf-section">
         <label class="lw"><span class="wf-label">Note (only builders see it)</span>
-          <ui-textarea [ngModel]="step().note ?? ''" (ngModelChange)="patch({ note: $event || undefined }, 'note')" [rows]="2" [autosize]="true" /></label>
+          <ui-textarea size="sm" [ngModel]="step().note ?? ''" (ngModelChange)="patch({ note: $event || undefined }, 'note')" [rows]="2" [autosize]="true" /></label>
       </section>
     </div>
   `,
@@ -503,8 +423,7 @@ export const WF_WEBHOOK_METHODS: readonly UiWfWebhookStep['method'][] = ['POST',
     .grow { flex: 1; min-width: 0; }
     .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .path { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
-    .outcome { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 6px; margin-bottom: 4px; align-items: center; }
-    .tone { height: var(--ui-size-sm); font-size: 12px; }
+    .outcome { display: grid; grid-template-columns: minmax(0, 1fr) 112px auto; gap: 6px; margin-bottom: 4px; align-items: center; }
     .assign { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto; gap: 6px; align-items: center; }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 10px; }
     .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
@@ -517,9 +436,24 @@ export class WfStepEditor {
   protected readonly store = inject(WfBuilderStore);
   readonly step = input.required<UiWfStep>();
   protected readonly icons = WF_ICONS;
-  protected readonly tones = ['neutral', 'primary', 'success', 'warning', 'danger'];
+  /** Button colours, by what they look like rather than the theme's token names. */
+  protected readonly tones: WfOption[] = WF_TONE_OPTIONS;
+  /** The fixed choices of the pickers above. */
+  protected readonly opts = {
+    rule: [{ value: 'any', label: 'Anyone approves' }, { value: 'all', label: 'Everyone approves' }, { value: 'count', label: 'A number approve' }, { value: 'percent', label: 'A share approve' }],
+    approvalRemarks: [{ value: 'never', label: 'Optional' }, { value: 'reject', label: 'Required to reject' }, { value: 'always', label: 'Always required' }],
+    taskRemarks: [{ value: 'never', label: 'Optional' }, { value: 'reject', label: 'Required for red buttons' }, { value: 'always', label: 'Always required' }],
+    join: [{ value: 'all', label: 'All paths finish' }, { value: 'any', label: 'The first path finishes' }, { value: 'count', label: 'A number of paths finish' }],
+    loopMode: [{ value: 'sequential', label: 'One after another' }, { value: 'parallel', label: 'At the same time' }],
+    wait: [{ value: 'duration', label: 'For a length of time' }, { value: 'date', label: 'Until a date' }, { value: 'condition', label: 'Until something is true' }, { value: 'signal', label: 'Until the app reports an event' }],
+    ifNotAllowed: [{ value: 'fail', label: 'Stop with an error' }, { value: 'skip', label: 'Skip it and carry on' }],
+    endResult: [{ value: 'completed', label: 'Finished' }, { value: 'failed', label: 'Failed' }],
+    onError: [{ value: 'stop', label: 'Stop and tell an admin' }, { value: 'continue', label: 'Carry on with the next step' }, { value: 'steps', label: 'Run other steps' }],
+  } satisfies Record<string, WfOption[]>;
   /** The only methods a webhook may use (spec §13: GET, POST, PUT, PATCH, DELETE in capitals; anything else is `badMethod`). */
   protected readonly methods: readonly string[] = WF_WEBHOOK_METHODS;
+  protected readonly methodOptions: WfOption[] = WF_WEBHOOK_METHODS.map((m) => ({ value: m, label: m }));
+  protected readonly notAllowed = (m: string) => `${m}: not allowed`;
   protected readonly str = String;
   protected readonly newId = wfId;
 
@@ -583,6 +517,25 @@ export class WfStepEditor {
   ]);
   protected readonly automations = computed(() => this.store.others().filter((o) => o.kind === 'automation' && o.key !== this.store.def().key && o.version > 0));
   protected readonly earlierSteps = computed(() => goToTargets(this.store.def(), this.step().id).map((x) => ({ id: x.id, name: stepName(x) })));
+  // The pickers' choices.
+  protected readonly collectionOptions = computed<WfOption[]>(() => this.collections().map((c) => ({ value: c.path, label: c.label })));
+  protected readonly signalOptions = computed<WfOption[]>(() => (this.store.registry()?.signals ?? []).map((x) => ({ value: x.key, label: x.label })));
+  protected readonly channelOptions = computed<WfOption[]>(() => (this.store.registry()?.channels ?? []).map((x) => ({ value: x.key, label: x.label })));
+  protected readonly entityOptions = computed<WfOption[]>(() => (this.store.registry()?.entities ?? []).map((x) => ({ value: x.key, label: x.label })));
+  protected readonly settableOptions = computed<WfOption[]>(() => this.settable().map((f) => ({ value: f.key, label: f.label })));
+  protected readonly variableOptions = computed<WfOption[]>(() => (this.store.def().variables ?? []).map((x) => ({ value: x.id, label: x.label })));
+  protected readonly lifecycleOptions = computed<WfOption[]>(() => this.lifecycles().map((l) => ({ value: l.key, label: l.title })));
+  protected readonly connectionOptions = computed<WfOption[]>(() => [{ value: '', label: 'A web address' }, ...this.connections().map((c) => ({ value: c.key, label: c.label }))]);
+  protected readonly actionOptions = computed<WfOption[]>(() => (this.store.registry()?.actions ?? []).map((a) => ({ value: a.key, label: (a.category ? a.category + ' › ' : '') + a.label })));
+  protected readonly automationOptions = computed<WfOption[]>(() => this.automations().map((w) => ({ value: w.key, label: w.title })));
+  protected readonly earlierStepOptions = computed<WfOption[]>(() => this.earlierSteps().map((x) => ({ value: x.id, label: x.name })));
+  /** Which record "Update record" changes: this one, the For each's current item, or a related one. */
+  protected readonly targetOptions = computed<WfOption[]>(() => {
+    const it = this.loopItem();
+    const item = it ? [{ value: 'item', label: `Current ${it.label.toLowerCase()} (each item of the For each)` }]
+      : this.setFields().target === 'item' ? [{ value: 'item', label: 'Current item (needs a For each around this step)' }] : [];
+    return [{ value: 'self', label: `This ${this.entityLabel()}` }, ...item, ...this.relations().map((r) => ({ value: 'entity.' + r.key, label: r.label }))];
+  });
   protected readonly bodyText = computed(() => (this.webhook().body === undefined ? '' : JSON.stringify(this.webhook().body, null, 2)));
   /**
    * What is typed in the Body box, as typed (not reformatted on every key). It belongs to one step and

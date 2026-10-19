@@ -185,14 +185,14 @@ const ENTITY = 'application';
     .picker { display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-3) var(--ui-space-4); margin-bottom: var(--ui-space-2);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface)); }
     .picker-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--ui-space-3); }
-    .picker-hint { margin: 0; font-size: 13px; color: var(--ui-color-text-secondary); max-width: 72ch; }
+    .picker-hint { margin: 0; font-size: 13px; color: var(--ui-color-text-secondary); max-width: 72ch; text-wrap: pretty; }
     .pick { flex: 1 1 220px; min-width: 0; max-width: 340px; }
     .pick.wide { display: block; max-width: 520px; }
     .err { margin: 0; font-size: 13px; color: var(--ui-color-danger); }
     .frame { min-width: 0; padding: var(--ui-space-4); margin: var(--ui-space-3) 0 var(--ui-space-4); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .frame[data-layout="vertical"], .frame[data-layout="compact"] { max-width: 460px; }
     .frame.scroll { max-height: 560px; overflow: auto; }
-    .hint p { margin: 0; font-size: 13.5px; color: var(--ui-color-text-secondary); max-width: 70ch; }
+    .hint p { margin: 0; font-size: 13.5px; color: var(--ui-color-text-secondary); max-width: 70ch; text-wrap: pretty; }
     .offline { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; margin: 0 0 var(--ui-space-4); }
     .app-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); flex-wrap: wrap; padding: var(--ui-space-2) var(--ui-space-4);
       margin: var(--ui-space-3) 0; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }

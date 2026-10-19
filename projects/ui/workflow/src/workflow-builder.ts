@@ -165,15 +165,17 @@ interface PendingDelete {
     :host { display: flex; flex-direction: column; height: 100%; min-height: 520px; position: relative; overflow: hidden;
       background: var(--ui-color-bg); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
-    .top { display: flex; align-items: center; gap: var(--ui-space-2) var(--ui-space-3); flex-wrap: wrap; padding: 6px var(--ui-space-3); flex: none;
+    /* Three columns, the views centred in the middle one, so nothing on either side (the problem count) can shift them. */
+    .top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--ui-space-2) var(--ui-space-3); padding: 6px var(--ui-space-3); flex: none;
       background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .title { display: flex; flex-direction: column; min-width: 0; max-width: 34ch; padding: 2px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs);
+    :host([data-layout="narrow"]) .top { display: flex; flex-wrap: wrap; }
+    .title { display: flex; flex-direction: column; justify-self: start; min-width: 0; max-width: 34ch; padding: 2px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs);
       background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
     .title:hover { background: var(--ui-color-surface-hover); }
     .title:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .kind { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .views { margin: 0 auto; }
+    :host([data-layout="narrow"]) .views { margin: 0 auto; }
     .tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; margin-left: auto; min-width: 0; }
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 2px; border: 0; border-radius: 12px; cursor: pointer;
       background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); color: var(--ui-color-danger); font: inherit; font-size: 12px; font-weight: 600; }
@@ -207,7 +209,7 @@ interface PendingDelete {
     .where { font-size: 11.5px; color: var(--ui-color-text-muted); }
     .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; line-height: 1.5; }
     .confirm p { margin: 0; }
-    .confirm-actions { display: flex; justify-content: space-between; width: 100%; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     .ghost { position: fixed; left: 0; top: 0; z-index: var(--ui-z-toast, 1200); display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--ui-space-3);
       border: 1px solid var(--ui-color-primary); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface));
       color: var(--ui-color-text); font-size: 13px; font-weight: 550; box-shadow: var(--ui-shadow-3); pointer-events: none; white-space: nowrap; }
