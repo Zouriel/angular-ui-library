@@ -199,6 +199,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'swipe', anchor: 'swipe' },
     { name: 'intersect', anchor: 'intersect' },
     { name: 'infiniteScroll', anchor: 'infinitescroll' },
+    { name: 'scrollFade', anchor: 'scrollfade' },
     { name: 'virtual-list', anchor: 'virtual-list' },
     { name: 'resizeObserver', anchor: 'resizeobserver' },
     { name: 'clickOutside & focusTrap', anchor: 'clickoutside-focustrap' },

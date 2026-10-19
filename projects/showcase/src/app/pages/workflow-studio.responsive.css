@@ -1,0 +1,25 @@
+    /* Below 1500px the workflow panel moves under the details; below 1000px everything stacks. */
+    @media (max-width: 1500px) { .apps { grid-template-columns: 250px minmax(0, 1fr); } .app-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; } }
+    @media (max-width: 1000px) {
+      .apps { grid-template-columns: minmax(0, 1fr); }
+    }
+    /* Phones: each workflow is a small card (name, then kind, record, version and how many run). */
+    @media (max-width: 600px) {
+      .grid thead { display: none; }
+      .grid tr { display: flex; flex-wrap: wrap; gap: 2px var(--ui-space-3); padding: var(--ui-space-2); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
+      .grid th, .grid td { padding: 0; border: 0; font-size: 12px; color: var(--ui-color-text-muted); }
+      .grid td:first-child { flex-basis: 100%; font-size: 13px; color: var(--ui-color-text); }
+      .grid td[data-label]::before { content: attr(data-label) ': '; }
+    }
+    @media (max-width: 760px) {
+      .studio { height: auto; min-height: calc(100dvh - 52px); }
+      .main { flex-direction: column; }
+      /* On a phone the tabs wrap onto a second row rather than scrolling out of sight. */
+      .tabs { width: auto; flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--ui-color-border); }
+      .tabs button { flex: none; }
+      .sub { display: none; }
+      .fields { grid-template-columns: 88px minmax(0, 1fr); }
+      .editor { min-height: calc(100dvh - 160px); }
+    }
+    .apps-ul { margin-top: var(--ui-space-2); }
+    .fields + .hint { margin-top: var(--ui-space-2); }

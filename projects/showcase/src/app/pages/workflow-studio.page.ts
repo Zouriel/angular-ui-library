@@ -211,7 +211,7 @@ dotnet run --urls http://localhost:5190 --Playground:Enabled=true</pre>
       </div>
     </ui-modal>
   `,
-  styleUrls: ['./workflow-studio.shell.css', './workflow-studio.views.css'],
+  styleUrls: ['./workflow-studio.shell.css', './workflow-studio.views.css', './workflow-studio.responsive.css'],
 })
 export class WorkflowStudioPage {
   protected readonly pg = inject(WorkflowPlayground);
