@@ -1,11 +1,12 @@
 import { Component, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import type { UiSize } from '@zouriel/ui';
 
 /** `ui-switch` — on/off toggle (CVA). Uses role="switch" on a native checkbox. */
 @Component({
   selector: 'ui-switch',
   template: `
-    <label class="ui-switch" [class.disabled]="disabled()">
+    <label class="ui-switch" [class.disabled]="disabled()" [attr.data-size]="size()">
       <input
         type="checkbox"
         role="switch"
@@ -22,6 +23,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   styles: `
     :host { display: inline-flex; }
     .ui-switch { display: inline-flex; align-items: center; gap: var(--ui-space-2); cursor: pointer; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35; color: var(--ui-color-text); }
+    .ui-switch[data-size="sm"] { font-size: var(--ui-font-size-sm); }
     .ui-switch.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .track {
@@ -37,12 +39,17 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .native:checked + .track { background: var(--ui-switch-track-checked); }
     .native:checked + .track .thumb { background: var(--ui-switch-thumb-checked); }
     .native:checked + .track .thumb { transform: translateX(16px); }
+    [data-size="sm"] .track { width: 30px; height: 18px; }
+    [data-size="sm"] .thumb { width: 14px; height: 14px; }
+    [data-size="sm"] .native:checked + .track .thumb { transform: translateX(12px); }
     .native:focus-visible + .track { box-shadow: var(--ui-focus-ring); }
     @media (prefers-reduced-motion: reduce) { .thumb { transition-timing-function: var(--ui-ease-standard); } }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSwitch), multi: true }],
 })
 export class UiSwitch implements ControlValueAccessor {
+  /** `sm` for dense panels (inspectors, settings): a smaller track and 13px label. */
+  size = input<UiSize>('md');
   protected readonly checked = signal(false);
   protected readonly disabled = signal(false);
   private onChange: (v: boolean) => void = () => {};

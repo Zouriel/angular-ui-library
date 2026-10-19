@@ -1,6 +1,6 @@
 import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, afterRenderEffect, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /**
  * `ui-textarea` — multi-line text field (CVA).
@@ -18,6 +18,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       class="ui-textarea"
       [class.no-radius]="!radius()"
       [class.autosize]="autosize()"
+      [attr.data-size]="size()"
       [attr.placeholder]="placeholder()"
       [attr.rows]="rows()"
       [attr.autocomplete]="autocomplete()"
@@ -43,6 +44,8 @@ import { UI_CONFIG } from '@zouriel/ui';
     .ui-textarea::placeholder { color: var(--ui-color-text-muted); }
     .ui-textarea:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ui-textarea:disabled { opacity: .5; cursor: not-allowed; }
+    .ui-textarea[data-size="sm"] { font-size: var(--ui-font-size-sm); padding: var(--ui-space-1) var(--ui-space-3); }
+    .ui-textarea[data-size="lg"] { font-size: var(--ui-font-size-lg); }
     .ui-textarea.no-radius { border-radius: 0; }
     .ui-textarea.autosize { resize: none; overflow-y: hidden; }
     .ui-textarea[aria-invalid="true"] { border-color: var(--ui-color-danger); }
@@ -63,6 +66,8 @@ export class UiTextarea implements ControlValueAccessor {
   /** The most characters it takes (the browser stops typing and pasting beyond it). */
   maxlength = input<number | null>(null);
   invalid = input(false);
+  /** Text size, matching ui-input's sizes; `sm` for dense panels. */
+  size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
   /** Grow with the text instead of scrolling, and no resize handle. */
   autosize = input(false);

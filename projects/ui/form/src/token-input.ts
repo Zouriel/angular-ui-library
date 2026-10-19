@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewEncapsulation, forwardRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** One run of a token input's value: literal text, or an atomic token (a variable, a mention…). */
 export interface UiTokenRun {
@@ -22,7 +22,7 @@ export interface UiTokenRun {
 @Component({
   selector: 'ui-token-input',
   template: `
-    <div #editor class="editor" [class.no-radius]="!radius()" [class.single]="!multiline()"
+    <div #editor class="editor" [class.no-radius]="!radius()" [class.single]="!multiline()" [attr.data-size]="size()"
       [attr.contenteditable]="disabled() ? 'false' : 'true'" role="textbox" [attr.aria-multiline]="multiline()"
       [attr.aria-label]="label() || null" [attr.aria-placeholder]="placeholder() || null" spellcheck="true"
       [attr.data-placeholder]="placeholder()" [class.empty]="empty()" [style.min-height]="minHeight()"
@@ -41,6 +41,8 @@ export interface UiTokenRun {
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     /* Single-line: one control height, like ui-input, so it lines up in a row of fields. */
     ui-token-input .editor.single { white-space: nowrap; overflow: hidden; height: var(--ui-size-md); padding-block: 0; line-height: calc(var(--ui-size-md) - 2px); }
+    ui-token-input .editor[data-size="sm"] { font-size: var(--ui-font-size-sm); padding-block: var(--ui-space-1); }
+    ui-token-input .editor.single[data-size="sm"] { height: var(--ui-size-sm); padding-block: 0; line-height: calc(var(--ui-size-sm) - 2px); }
     ui-token-input .editor:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     ui-token-input .editor[contenteditable="false"] { opacity: .5; cursor: not-allowed; }
     ui-token-input .editor.no-radius { border-radius: 0; }
@@ -60,6 +62,8 @@ export class UiTokenInput implements ControlValueAccessor {
   label = input('');
   multiline = input(true);
   minHeight = input<string | null>(null);
+  /** Text size, matching ui-input's sizes; `sm` for dense panels. */
+  size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
   /** The chip text for a token value. */
   tokenLabel = input<(token: string) => string>((t) => t);
