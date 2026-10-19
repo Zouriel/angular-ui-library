@@ -2,6 +2,7 @@ import { Component, computed, effect, input, output, signal, untracked } from '@
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 import { UiButton } from '@zouriel/ui/button';
 import { UiCombobox } from '@zouriel/ui/combobox';
 import { UiDatePicker } from '@zouriel/ui/datepicker';
@@ -117,7 +118,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
  */
 @Component({
   selector: 'ui-workflow-global-settings',
-  imports: [FormsModule, HugeiconsIconComponent, UiAccordion, UiAccordionItem, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiSwitch, UiTimePicker, WfDurationInput, WfSelect],
+  imports: [FormsModule, HugeiconsIconComponent, UiAccordion, UiAccordionItem, UiButton, UiCheckbox, UiCombobox, UiDatePicker, UiInput, UiNumberInput, UiScrollFade, UiSwitch, UiTimePicker, WfDurationInput, WfSelect],
   template: `
     <!-- The host is the size container, so the layout lives on this wrapper (a container query can't restyle the container itself). -->
     <div class="gs">
@@ -126,7 +127,8 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
         <button type="button" [class.on]="section() === s.value" [attr.aria-current]="section() === s.value ? 'page' : null" (click)="section.set(s.value)">{{ s.label }}@if (badSections().has(s.value)) { <span class="bad" role="img" aria-label="needs fixing"></span> }</button>
       }
     </nav>
-    <div class="body">
+    <!-- Content running on under the footer fades out, so it reads as "scrolls on", not "cut off". -->
+    <div class="body" uiScrollFade uiScrollFadeAxis="y">
       @switch (section()) {
         @case ('time') {
           <h2>Time and working hours</h2>

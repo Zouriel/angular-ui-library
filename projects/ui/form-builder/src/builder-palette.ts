@@ -67,7 +67,9 @@ interface PaletteItem {
     .groups { display: flex; flex-direction: column; gap: var(--ui-space-3); overflow: auto; min-height: 0; padding-bottom: var(--ui-space-2); }
     section h3 { margin: 0 0 2px; padding: 0 6px; font-size: 11px; font-weight: 600; color: var(--ui-color-text-muted); }
     ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 1px; }
-    .compact ul { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px var(--ui-space-2); }
+    /* Compact (the "Add a field" dialog and sheet): outlined tiles and caps headings, as the workflow's "Add a step". */
+    .compact ul { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-1); }
+    .compact h3 { padding: 0; margin-bottom: var(--ui-space-1); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
     .item {
       display: flex; align-items: center; gap: var(--ui-space-2); width: 100%; min-height: 30px; padding: 3px 6px;
       border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text);
@@ -83,7 +85,10 @@ interface PaletteItem {
     .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     /* Up to two lines: a description cut after a few words says nothing. */
     .desc { font-size: 12px; line-height: 1.35; color: var(--ui-color-text-muted); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-    .compact .item { min-height: 44px; padding-block: var(--ui-space-1); }
+    .compact .item { min-height: 48px; padding: var(--ui-space-2); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
+    .compact .name { font-weight: 550; }
+    .compact .desc { color: var(--ui-color-text-secondary); line-height: 1.3; }
+    .compact .ico { width: 26px; height: 26px; }
     .tip, .none { margin: var(--ui-space-2) 6px 0; font-size: 12px; color: var(--ui-color-text-muted); }
     @media (pointer: coarse) { .item { min-height: 44px; } }
   `],

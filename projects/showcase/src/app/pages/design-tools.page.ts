@@ -99,11 +99,11 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       <doc-section name="Sequencer" selector="ui-sequencer" [api]="sequencerApi" [outputs]="sequencerOutputs" [shapes]="sequencerShapes"
         summary="A timeline: a bar per layer for when it's active, diamonds for its keyframes, markers along a ruler and a playhead. Bars, edges and diamonds snap to markers, the playhead and other bars (hold Alt to place freely). Rows reorder by their grip. Keyboard: a focused bar moves with left/right (Shift for a larger step) and trims with [ and ]; a focused diamond retimes with left/right, Delete removes it, and the context-menu key opens its menu. It reports every change and mutates nothing.">
         <doc-demo code="<ui-sequencer [rows]=&quot;rows()&quot; [length]=&quot;1000&quot; [markers]=&quot;markers&quot;
-  [compact]=&quot;narrow()&quot; [labelWidth]=&quot;narrow() ? 132 : 200&quot;
+  [compact]=&quot;narrow()&quot; [labelWidth]=&quot;narrow() ? 132 : 240&quot;
   [(playhead)]=&quot;playhead&quot; (rangeChange)=&quot;onRange($event)&quot; (keyframeChange)=&quot;onKey($event)&quot; />">
           <div class="seq">
             <ui-sequencer [rows]="rows()" [length]="1000" [markers]="markers" [(playhead)]="playhead"
-              [compact]="narrow()" [labelWidth]="narrow() ? 132 : 200"
+              [compact]="narrow()" [labelWidth]="narrow() ? 132 : 240"
               (rangeChange)="onRange($event)" (keyframeChange)="onKeyframe($event)" (rowReorder)="onReorder($event)"
               (muteToggle)="toggle($event, 'muted')" (lockToggle)="toggle($event, 'locked')" />
           </div>

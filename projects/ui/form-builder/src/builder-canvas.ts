@@ -41,7 +41,7 @@ export interface FbDeleteRequest {
   template: `
     @let def = store.def();
     @let page = store.page();
-    <div class="tabs" [class.more]="tabsMore()" (scroll)="measureTabs()">
+    <div class="tabs" [class.more]="tabsMore()" [class.less]="tabsLess()" (scroll)="measureTabs()">
       <div class="tablist" role="tablist" aria-label="Pages" (keydown)="tabKeys($event)">
         @for (p of def.pages; track p.id; let i = $index) {
           <button type="button" role="tab" class="tab" [class.on]="i === store.pageIndex()" [class.over]="dropOver() === 'tab:' + p.id"
@@ -267,8 +267,10 @@ export interface FbDeleteRequest {
     .form-title, .form-desc, .page-title, .st-heading, .st-para { overflow-wrap: anywhere; min-width: 0; }
     .tabs { display: flex; align-items: flex-end; gap: 2px; padding: var(--ui-space-2) var(--ui-space-3) 0; overflow-x: auto; flex: none;
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); scrollbar-width: none; }
-    /* More tabs off to the right: fade the edge (not the bottom rule) so a cut-off tab reads as "scroll", not as a typo. */
+    /* More tabs off either side: fade that edge (not the bottom rule) so a cut-off tab reads as "scroll", not as a typo. */
     .tabs.more { mask: linear-gradient(to right, black calc(100% - var(--ui-space-8)), transparent), linear-gradient(black, black) bottom / 100% 1px no-repeat; }
+    .tabs.less { mask: linear-gradient(to right, transparent, black var(--ui-space-8)), linear-gradient(black, black) bottom / 100% 1px no-repeat; }
+    .tabs.more.less { mask: linear-gradient(to right, transparent, black var(--ui-space-8), black calc(100% - var(--ui-space-8)), transparent), linear-gradient(black, black) bottom / 100% 1px no-repeat; }
     .tab { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3); flex: none; max-width: 200px;
       border: 1px solid transparent; border-bottom: 0; border-radius: var(--ui-radius) var(--ui-radius) 0 0; margin-bottom: -1px;
       background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
@@ -401,8 +403,9 @@ export class FbCanvas {
   /** Open the settings of a card or page: its toolbar's settings button, a double-click, a long press, or Enter. */
   readonly open = output<string>();
 
-  /** The page tabs scroll sideways and some are out of view on the right. */
+  /** The page tabs scroll sideways and some are out of view on the right (more) or the left (less). */
   protected readonly tabsMore = signal(false);
+  protected readonly tabsLess = signal(false);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
@@ -419,6 +422,7 @@ export class FbCanvas {
   protected measureTabs(): void {
     const t = this.host.nativeElement.querySelector<HTMLElement>('.tabs');
     this.tabsMore.set(!!t && t.scrollLeft + t.clientWidth < t.scrollWidth - 1);
+    this.tabsLess.set(!!t && t.scrollLeft > 1);
   }
 
   protected readonly fieldIcons = FIELD_ICONS;

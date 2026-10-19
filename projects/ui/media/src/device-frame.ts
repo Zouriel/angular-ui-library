@@ -29,7 +29,9 @@ import { Component, ElementRef, OnDestroy, afterNextRender, computed, inject, in
     .screen { position: relative; overflow: hidden; border-radius: 42px; background: var(--ui-color-bg); isolation: isolate; }
     .device.bare .screen { border-radius: var(--ui-radius); }
     .island { position: absolute; top: calc(var(--bezel) + 11px); left: 50%; width: 110px; height: 32px; translate: -50% 0;
-      border-radius: 20px; background: #000; z-index: 5; pointer-events: none; }
+      border-radius: 20px; background: #000; z-index: 5; pointer-events: none;
+      /* A faint rim, as the bezel has: on a dark screen a black island would vanish. */
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 12%, transparent); }
   `,
 })
 export class UiDeviceFrame implements OnDestroy {

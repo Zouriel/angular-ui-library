@@ -43,4 +43,21 @@ describe('UiScrollFade', () => {
     scrollTo(400);
     expect(more()).toEqual({ start: true, end: false });
   });
+
+  it('with axis y, reads the vertical scroll', () => {
+    TestBed.overrideTemplate(Host, `<div id="strip" uiScrollFade uiScrollFadeAxis="y" style="overflow-y: auto"><span>content</span></div>`);
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const col = fixture.nativeElement.querySelector('#strip') as HTMLElement;
+    let top = 0;
+    Object.defineProperty(col, 'clientHeight', { get: () => 100 });
+    Object.defineProperty(col, 'scrollHeight', { get: () => 400 });
+    Object.defineProperty(col, 'scrollTop', { get: () => top, set: (v: number) => { top = v; } });
+    const fade = fixture.componentInstance.fade();
+    fade.update();
+    expect(fade.more()).toEqual({ start: false, end: true });
+    top = 300;
+    fade.update();
+    expect(fade.more()).toEqual({ start: true, end: false });
+  });
 });
