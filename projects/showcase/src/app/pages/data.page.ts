@@ -38,7 +38,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
       <doc-section name="Table" selector="ui-table" [api]="tableApi" [outputs]="tableOut"
         summary="Generic over the row type. Sortable headers are buttons; each click goes ascending, descending, then back to the original order, and the header carries aria-sort. Sorting reads the raw value (not the formatted text): numbers compare as numbers, text compares case-insensitively with numbers inside it in numeric order, and empty values go last. selectable adds a checkbox per row and a select-all box; selectionChange emits the selected rows by reference, and a row that leaves data stops counting as selected. actions adds a trailing column of real buttons, each of which can be disabled for one row. With no rows, emptyText spans the whole table. On a narrow screen the table scrolls sideways inside its border.">
-        <doc-demo code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;rows&quot; [selectable]=&quot;true&quot; [actions]=&quot;actions&quot;
+        <doc-demo lang="ts + html" code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;rows&quot; [selectable]=&quot;true&quot; [actions]=&quot;actions&quot;
   (selectionChange)=&quot;onSelect($event)&quot; />
 
 cols: UiColumn<Row>[] = [
