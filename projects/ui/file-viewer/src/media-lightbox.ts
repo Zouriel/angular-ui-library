@@ -308,7 +308,8 @@ function fmt(seconds: number): string {
                 />
 
                 <button type="button" class="ic ic--rate" aria-label="Playback speed" (click)="cycleRate()">
-                  {{ rate() }}×
+                  <!-- The widest rate, hidden, holds the width so stepping rates never moves the controls. -->
+                  <span class="rate-w"><span>{{ rate() }}×</span><span aria-hidden="true">0.5×</span></span>
                 </button>
 
                 <button
@@ -443,6 +444,9 @@ function fmt(seconds: number): string {
     .ic { width: 38px; height: 38px; border-radius: 50%; padding: 0; }
     .ic--rate { width: auto; padding: 0 var(--ui-space-3, 12px); border-radius: var(--ui-radius-pill, 9999px);
       font-variant-numeric: tabular-nums; }
+    .rate-w { display: inline-grid; justify-items: center; }
+    .rate-w > span { grid-area: 1 / 1; }
+    .rate-w > span + span { visibility: hidden; }
     .ic svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.9;
       stroke-linecap: round; stroke-linejoin: round; }
     .ic--x svg { stroke-width: 2.1; }

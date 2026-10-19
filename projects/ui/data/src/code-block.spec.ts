@@ -26,6 +26,15 @@ describe('UiCodeBlock copy', () => {
     expect(await press(() => Promise.resolve())).toBe('Copied');
   });
 
+  it('shows an icon beside the label, as the other copy buttons do', () => {
+    const fixture = TestBed.createComponent(UiCodeBlock);
+    fixture.componentRef.setInput('code', 'npm i');
+    fixture.detectChanges();
+    const btn = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.copy')!;
+    expect(btn.querySelector('svg, hugeicons-icon')).not.toBeNull();
+    expect(btn.textContent!.trim()).toBe('Copy');
+  });
+
   it('says Copy failed instead of claiming success when the clipboard refuses', async () => {
     expect(await press(() => Promise.reject(new Error('denied')))).toBe('Copy failed');
   });
