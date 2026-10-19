@@ -590,7 +590,7 @@ export class WfTransitionEditor {
               <ui-select size="sm" label="From" [options]="fromOptions()" [ngModel]="fromState()" placeholder="Choose a state…" (ngModelChange)="offerFrom($event)" /></label>
             <div class="states" role="group" aria-label="States it is offered in">
               @for (s of allStates(); track s.id) {
-                <ui-checkbox [ngModel]="r.states.includes(s.id)" (ngModelChange)="toggleState(s.id, $event)">{{ s.label }}</ui-checkbox>
+                <ui-checkbox size="sm" [ngModel]="r.states.includes(s.id)" (ngModelChange)="toggleState(s.id, $event)">{{ s.label }}</ui-checkbox>
               }
             </div>
             @if (!r.states.length) { <p class="wf-hint">Tick at least one state, or nobody can start a record over.</p> }
