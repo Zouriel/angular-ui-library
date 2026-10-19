@@ -29,15 +29,15 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       <doc-section name="Window manager" selector="UiWindowManager" [api]="mgrApi"
         [shapes]="'type UiDockSide = &quot;left&quot; | &quot;right&quot; | &quot;top&quot; | &quot;bottom&quot; | &quot;maximize&quot; | null;\ninterface UiWindowBounds { x: number; y: number; width: number; height: number; }\ninterface UiWindowHandle { id: string; minimize(): void; restore(): void; dock(side: UiDockSide): void; focus(): void; setBounds(bounds: UiWindowBounds): void; }'"
         summary="Injectable (providedIn root). Every open ui-window registers with it. It hands out z-indexes so the last focused window is in front, tracks count() and focusedId() reactively, and runs bulk operations. tile() fills the viewport with a grid.">
-        <doc-demo code="wm = inject(UiWindowManager);
+        <doc-demo lang="ts" code="wm = inject(UiWindowManager);
 wm.tile();          // grid-arrange all open windows
 wm.minimizeAll();
 wm.restoreAll();
 wm.focus(id); wm.dock(id, 'left');">
           <div class="row">
-            <ui-button variant="ghost" size="sm" (click)="wm.tile()">Tile</ui-button>
-            <ui-button variant="ghost" size="sm" (click)="wm.minimizeAll()">Minimize all</ui-button>
-            <ui-button variant="ghost" size="sm" (click)="wm.restoreAll()">Restore all</ui-button>
+            <ui-button variant="outline" size="sm" [disabled]="!wm.count()" (click)="wm.tile()">Tile</ui-button>
+            <ui-button variant="outline" size="sm" [disabled]="!wm.count()" (click)="wm.minimizeAll()">Minimize all</ui-button>
+            <ui-button variant="outline" size="sm" [disabled]="!wm.count()" (click)="wm.restoreAll()">Restore all</ui-button>
           </div>
         </doc-demo>
       </doc-section>
@@ -91,7 +91,7 @@ export class WindowPage {
   protected readonly rzSize = signal<UiResizeEvent | null>(null);
   protected readonly rzLabel = computed(() => {
     const z = this.rzSize();
-    return z ? `${Math.round(z.width)} × ${Math.round(z.height)}` : 'Drag the right or bottom edge';
+    return z ? `${Math.round(z.width)} × ${Math.round(z.height)}` : 'Drag an edge';
   });
 
   protected readonly winApi: ApiRow[] = [

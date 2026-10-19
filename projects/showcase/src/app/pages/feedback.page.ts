@@ -121,13 +121,14 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   `,
   styles: `
     .stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }
+    .stack > ui-button { align-self: flex-start; }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
     .grow { flex: 1; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; } }
-    .lo-host { position: relative; display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-4);
-      border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); min-height: 90px; }
+    .lo-host { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); padding: var(--ui-space-4);
+      border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
   `,
 })
 export class FeedbackPage {

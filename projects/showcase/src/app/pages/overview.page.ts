@@ -75,7 +75,7 @@ protected readonly anim = UI_ANIM;
   <div [animate.enter]=&quot;anim.scale.enter&quot; [animate.leave]=&quot;anim.scale.leave&quot;>…</div>
 }">
           <div class="anim-row">
-            <ui-button size="sm" (click)="shown.set(!shown())">{{ shown() ? 'Hide' : 'Show' }}</ui-button>
+            <ui-button variant="outline" (click)="shown.set(!shown())">{{ shown() ? 'Hide' : 'Show' }}</ui-button>
             <div class="anim-stage">
               @if (shown()) {
                 <ui-card padding="sm" [animate.enter]="anim.scale.enter" [animate.leave]="anim.scale.leave">

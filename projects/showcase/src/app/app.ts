@@ -5,13 +5,16 @@ import Menu01Icon from '@hugeicons/core-free-icons/Menu01Icon';
 import File01Icon from '@hugeicons/core-free-icons/File01Icon';
 import HashtagIcon from '@hugeicons/core-free-icons/HashtagIcon';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
+import Cancel01Icon from '@hugeicons/core-free-icons/Cancel01Icon';
+import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeService } from '@zouriel/ui/theme';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
-// Used only inside @defer blocks below, so each loads in its own chunk instead of the initial bundle.
+import { UiSelect } from '@zouriel/ui/form';
+// Used only inside @defer blocks below (UiSelect and FormsModule too), so each loads in its own chunk instead of the initial bundle.
 // (A library entry point the shell imports eagerly lands in the initial chunk with everything any page
 // uses from it, so the shell keeps its eager imports to what the first paint needs.)
 import { UiDrawer, UiToastHost, UiSnackbarHost } from '@zouriel/ui/dialog';
@@ -24,7 +27,7 @@ import { NAV } from './app.routes';
 @Component({
   selector: 'app-root',
   imports: [
-    HugeiconsIconComponent, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiDrawer,
+    HugeiconsIconComponent, FormsModule, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiSelect, UiDrawer,
     UiScrollProgress, UiCursor, UiGrain, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
@@ -35,13 +38,19 @@ import { NAV } from './app.routes';
         <a class="brand" routerLink="/">
           <img class="logo" src="favicon.svg" alt="" width="24" height="24" /><ui-text variant="label">UI Library</ui-text>
         </a>
-        <!-- A plain search box: the shell's one form control, so the form entry point stays out of the first load. -->
-        <label class="filter">
+        <!-- A plain search box with its own clear button (the browser's search-cancel glyph ignores the theme). -->
+        <div class="filter">
           <hugeicons-icon class="filter-icon" aria-hidden="true" [icon]="icons.search" [size]="16" [strokeWidth]="1.8" />
-          <input type="search" placeholder="Filter pages" aria-label="Filter pages" (input)="onFilter($event)" />
-        </label>
+          <input type="search" placeholder="Filter pages" aria-label="Filter pages" [value]="query()" (input)="onFilter($event)" (keydown.escape)="query.set('')" />
+          @if (query()) {
+            <button type="button" class="filter-clear" aria-label="Clear filter" (click)="clearFilter($event)">
+              <hugeicons-icon aria-hidden="true" [icon]="icons.clear" [size]="14" [strokeWidth]="1.8" />
+            </button>
+          }
+        </div>
         <div class="nav-scroll">
           <ui-side-nav label="Documentation" [groups]="filtered()" [active]="active()" (navigate)="go($event.value)" />
+          @if (!filtered().length) { <ui-text variant="caption" class="no-match">No pages match “{{ query().trim() }}”.</ui-text> }
         </div>
         <div class="side-foot">
           <ui-text variant="caption">34 entry points · {{ themeLabel() }}</ui-text>
@@ -53,14 +62,13 @@ import { NAV } from './app.routes';
           <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="openNav()"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
           <ui-button variant="ghost" size="sm" (click)="openSearch()" class="cmd" aria-keyshortcuts="Control+K Meta+K">Search docs <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
           <span class="grow"></span>
-          <label class="theme-picker">
-            <span class="sr-only">Theme</span>
-            <select [value]="theme.theme()" (change)="theme.set($any($event.target).value)">
-              @for (t of THEMES; track t.value) {
-                <option [value]="t.value">{{ t.label }}</option>
-              }
-            </select>
-          </label>
+          <!-- The library select, loaded once the page is idle so the form entry point stays out of the first load;
+               until then a box of the same size shows the current theme. -->
+          @defer (on idle) {
+            <ui-select class="theme-picker" size="sm" label="Theme" [options]="THEMES" [ngModel]="theme.theme()" (ngModelChange)="theme.set($event)" />
+          } @placeholder {
+            <span class="theme-picker theme-ph" aria-hidden="true">{{ themeLabel() }}</span>
+          }
         </header>
         <main id="main" tabindex="-1" class="content" [class.full]="fullWidth.has(active() ?? '')"><router-outlet /></main>
       </div>
@@ -96,7 +104,7 @@ import { NAV } from './app.routes';
     .content:focus { outline: none; }
     .hint { margin-left: var(--ui-space-1); }
     .shell { display: flex; min-height: 100vh; }
-    .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none;
+    .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none; box-sizing: border-box;
       display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-4);
       border-right: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .brand { display: flex; align-items: center; gap: var(--ui-space-2); text-decoration: none; color: var(--ui-color-text); }
@@ -108,6 +116,13 @@ import { NAV } from './app.routes';
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .filter input::placeholder { color: var(--ui-color-text-muted); }
+    .filter input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    .filter:has(.filter-clear) input { padding-right: calc(var(--ui-space-1) + 22px + var(--ui-space-1)); }
+    .filter-clear { position: absolute; right: var(--ui-space-1); display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
+      border: none; border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-color-text-muted); cursor: pointer; }
+    .filter-clear:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .filter-clear:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .no-match { display: block; padding: var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); }
     .filter input:focus-visible { outline: none; border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .nav-scroll { flex: 1; overflow: auto; margin: 0 calc(-1 * var(--ui-space-2)); padding: 0 var(--ui-space-2); }
     .side-foot { border-top: 1px solid var(--ui-color-border); padding-top: var(--ui-space-2); }
@@ -116,18 +131,10 @@ import { NAV } from './app.routes';
       height: 52px; padding: 0 var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border);
       background: color-mix(in srgb, var(--ui-color-bg) 80%, transparent); backdrop-filter: blur(8px); }
     .grow { flex: 1; }
-    .theme-picker select {
-      appearance: none; -webkit-appearance: none;
-      height: var(--ui-size-sm); padding: 0 var(--ui-space-4) 0 var(--ui-space-3);
-      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      background: var(--ui-color-surface); color: var(--ui-color-text);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
-      cursor: pointer; transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);
-    }
-    .theme-picker select:hover { border-color: var(--ui-color-primary); }
-    .theme-picker select:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .theme-picker { width: 168px; }
+    .theme-ph { display: flex; align-items: center; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-3);
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); white-space: nowrap; overflow: hidden; }
     .menu-btn { display: none; }
     /* App-like pages (the form studio) use the whole area under the top bar. */
     .content.full { max-width: none; padding: 0; }
@@ -138,8 +145,7 @@ import { NAV } from './app.routes';
       .content { padding: var(--ui-space-4); }
       .content.full { padding: 0; }
       /* Phones: the theme picker shrinks (and the search button drops its shortcut hint) so the bar fits 320px. */
-      .theme-picker { min-width: 0; }
-      .theme-picker select { max-width: 128px; text-overflow: ellipsis; }
+      .theme-picker { width: 136px; min-width: 0; }
       .topbar { gap: var(--ui-space-1); padding: 0 var(--ui-space-3); }
       .hint { display: none; }
     }
@@ -148,7 +154,7 @@ import { NAV } from './app.routes';
 export class App {
   /** Pages that use the whole width beside the sidebar (apps rather than documentation). */
   protected readonly fullWidth = new Set(['form-studio', 'workflow-studio']);
-  protected readonly icons = { menu: Menu01Icon, search: Search01Icon };
+  protected readonly icons = { menu: Menu01Icon, search: Search01Icon, clear: Cancel01Icon };
   protected readonly theme = inject(UiThemeService);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
@@ -249,5 +255,9 @@ export class App {
   }
   protected onFilter(e: Event): void {
     this.query.set((e.target as HTMLInputElement).value);
+  }
+  protected clearFilter(e: Event): void {
+    this.query.set('');
+    ((e.currentTarget as HTMLElement).previousElementSibling as HTMLInputElement | null)?.focus();
   }
 }

@@ -46,7 +46,7 @@ const TOKEN = `interface UiTokenRun {
       lead="Every value control implements ControlValueAccessor, so it works with [(ngModel)], [formControl] and formControlName, including disable() and touched. The file upload is the exception: it emits files instead. Wrap a control in ui-form-field for a label, hint and error. Most fields also take size ('sm' | 'md' | 'lg'), invalid and radius (defaults to UiConfig.radius); each table lists exactly what that control takes.">
 
       <doc-section name="Forms integration" summary="Every control in the form below is bound with formControlName to one FormGroup. The switch is bound with ngModel and calls form.disable() / form.enable(), so you can check that each control greys out and stops responding. The live form value is printed underneath.">
-        <doc-demo code="<ui-switch [ngModel]=&quot;locked()&quot; (ngModelChange)=&quot;lock($event)&quot;>Disable every control</ui-switch>
+        <doc-demo lang="ts + html" code="<ui-switch [ngModel]=&quot;locked()&quot; (ngModelChange)=&quot;lock($event)&quot;>Disable every control</ui-switch>
 
 lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
           <ui-switch [ngModel]="locked()" (ngModelChange)="lock($event)">Disable every control</ui-switch>
@@ -86,6 +86,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
         <doc-demo code="<ui-number-input formControlName=&quot;age&quot; [min]=&quot;0&quot; [max]=&quot;120&quot; [step]=&quot;1&quot; />
 <ui-number-input formControlName=&quot;width&quot; label=&quot;W&quot; suffix=&quot;px&quot; [steppers]=&quot;false&quot; />">
           <ui-number-input formControlName="age" [min]="0" [max]="120" />
+          <ui-number-input formControlName="width" label="W" suffix="px" [steppers]="false" />
         </doc-demo>
       </doc-section>
 
@@ -201,14 +202,14 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       <doc-section name="Color picker" selector="ui-color-picker" [api]="colorApi"
         summary="Native colour well, a hex field and preset swatches. Value type: string (hex). The hex field passes a colour on only once it is a whole #rgb or #rrggbb (the # is optional) and sends it as lower-case #rrggbb; leaving the field restores the current colour.">
         <doc-demo code="<ui-color-picker formControlName=&quot;color&quot; [swatches]=&quot;['#3d5afe','#2faa6e']&quot; />">
-          <ui-color-picker formControlName="color" />
+          <ui-color-picker formControlName="color" [swatches]="swatches" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="File upload" selector="ui-file-upload" [api]="uploadApi" [outputs]="uploadOut"
         summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected).">
         <doc-demo code="<ui-file-upload [multiple]=&quot;true&quot; accept=&quot;image/*&quot; (filesSelected)=&quot;onFiles($event)&quot; />">
-          <ui-file-upload [multiple]="true" />
+          <ui-file-upload [multiple]="true" accept="image/*" />
         </doc-demo>
       </doc-section>
 
@@ -257,7 +258,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
       <doc-section name="Token input" selector="ui-token-input" [api]="tokenApi" [outputs]="tokenOut" [shapes]="TOKEN"
         summary="Rich text where some pieces are atomic tokens (variables, mentions) shown as chips. Value type: UiTokenRun[]. A chip acts like one character: the caret steps over it and one Backspace removes it. Ctrl/⌘+B and Ctrl/⌘+I toggle bold and italic; pasting always inserts plain text. Call insertToken() on the component to drop a chip at the caret (or at the end when the field has no caret). Built on a contenteditable div with role=textbox; give it a label for its accessible name. The design tools page shows it in a template editor.">
-        <doc-demo code="<ui-token-input #msg [(ngModel)]=&quot;runs&quot; [tokenLabel]=&quot;labelFor&quot; label=&quot;Message&quot; placeholder=&quot;Write a message&quot; />
+        <doc-demo lang="ts + html" code="<ui-token-input #msg [(ngModel)]=&quot;runs&quot; [tokenLabel]=&quot;labelFor&quot; label=&quot;Message&quot; placeholder=&quot;Write a message&quot; />
 <ui-button (mousedown)=&quot;$event.preventDefault()&quot; (click)=&quot;msg.insertToken('guest.name')&quot;>Insert guest name</ui-button>
 
 labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date' })[token] ?? token;">
@@ -278,7 +279,7 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
     .json { margin: 0; padding: var(--ui-space-2) var(--ui-space-3); max-height: 160px; overflow: auto; border-radius: var(--ui-radius);
       background: var(--ui-color-surface-subtle); color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono);
-      white-space: pre-wrap; overflow-wrap: anywhere; }
+      white-space: pre; }
     .swatch { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ui-color-surface-raised);
       color: var(--ui-color-text-muted); font-weight: 600; transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .swatch.on { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
@@ -299,7 +300,7 @@ export class FormsPage {
   protected runs: UiTokenRun[] = [{ text: 'Hi ' }, { token: 'guest.name', bold: true }, { text: ', see you on ' }, { token: 'event.date' }, { text: '.' }];
   protected readonly tokenClicked = signal('—');
   protected readonly labelFor = (t: string) => ({ 'event.date': 'Date', 'guest.name': 'Guest name' } as Record<string, string>)[t] ?? t;
-  protected runsJson(runs: UiTokenRun[]): string { return JSON.stringify(runs); }
+  protected runsJson(runs: UiTokenRun[]): string { return JSON.stringify(runs, null, 2); }
   protected readonly locked = signal(false);
   protected lock(off: boolean): void {
     this.locked.set(off);
@@ -334,7 +335,7 @@ export class FormsPage {
     { name: 'tokenClick', type: 'string', default: '—', desc: 'A chip was clicked; its token value.' },
     { name: 'focusChange', type: 'boolean', default: '—', desc: 'The field gained (true) or lost (false) focus.' },
   ];
-  protected readonly formJson = computed(() => JSON.stringify(this.formValue()));
+  protected readonly formJson = computed(() => JSON.stringify(this.formValue(), null, 2));
   protected readonly OPTION = OPTION;
   /** Fonts the docs page has loaded (the Dark Orange theme brings three) plus generic families. */
   protected readonly fonts = [
@@ -354,9 +355,10 @@ export class FormsPage {
     { label: 'Australia', value: 'au' }, { label: 'Canada', value: 'ca' }, { label: 'Germany', value: 'de' },
     { label: 'Japan', value: 'jp' }, { label: 'United States', value: 'us' },
   ];
+  protected readonly swatches = ['#3d5afe', '#2faa6e'];
   protected readonly form = new FormGroup({
     name: new FormControl('Ada Lovelace'), email: new FormControl(''), bio: new FormControl(''),
-    age: new FormControl<number | null>(30), password: new FormControl(''), search: new FormControl(''), time: new FormControl('09:30'),
+    age: new FormControl<number | null>(30), width: new FormControl<number | null>(320), password: new FormControl(''), search: new FormControl(''), time: new FormControl('09:30'),
     role: new FormControl('eng'), country: new FormControl('ca'), skills: new FormControl<string[]>(['ca', 'jp']),
     terms: new FormControl(false), news: new FormControl(true), plan: new FormControl('pro'), tags: new FormControl<string[]>(['code']),
     volume: new FormControl(60), rating: new FormControl(4), otp: new FormControl(''), chips: new FormControl<string[]>(['angular']),

@@ -27,7 +27,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
       <doc-section name="Tooltip" selector="[uiTooltip]" [api]="tooltipApi"
         summary="Directive. Shows on hover and keyboard focus, hides on leave, blur and Escape. Backed by the CDK Overlay: if there is no room on the chosen side it flips to the opposite one, and it is kept 8px inside the viewport. Sets aria-describedby on the host while shown. The text is the directive value; an empty string shows nothing.">
-        <doc-demo code="import { UiTooltip } from '@zouriel/ui/overlay';
+        <doc-demo lang="ts + html" code="import { UiTooltip } from '@zouriel/ui/overlay';
 
 <button uiTooltip=&quot;Saved to cloud&quot; uiTooltipPosition=&quot;top&quot;>Hover</button>">
           <ui-button variant="outline" uiTooltip="Backed by the CDK Overlay">Hover me</ui-button>
@@ -50,7 +50,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
       <doc-section name="Menu" selector="ui-menu" [api]="menuApi" [outputs]="menuOut" [shapes]="MENU_ITEM"
         summary="Dropdown menu (role=&quot;menu&quot;). Project the trigger with [menu-trigger]; pass items; listen to (select). Opening focuses the first enabled item; ArrowUp/Down, Home and End move focus, Enter activates. Choosing an item or pressing Escape closes it and puts focus back on the trigger; Tab closes it and moves on. Flips above, or lines up with the trigger's right edge, to stay on screen.">
-        <doc-demo code="import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+        <doc-demo lang="ts + html" code="import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 
 <ui-menu [items]=&quot;items&quot; (select)=&quot;run($event)&quot;>
   <ui-button menu-trigger>Actions</ui-button>
@@ -70,7 +70,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
       <doc-section name="Modal" selector="ui-modal" [api]="modalApi"
         summary="Centered dialog (role=&quot;dialog&quot;, aria-modal). Opens on its own layer at the end of <body>, so a transformed or clipped ancestor cannot squash it. Moves focus inside and traps it (CDK a11y), gives focus back to what had it when it closes, locks body scroll, and closes on Escape or a backdrop click. Only the body scrolls; the header and footer stay put. size=&quot;full&quot; fills the screen with no padding, for editors opened over a page.">
-        <doc-demo code="import { UiModal } from '@zouriel/ui/dialog';
+        <doc-demo lang="ts + html" code="import { UiModal } from '@zouriel/ui/dialog';
 
 <ui-modal [(open)]=&quot;open&quot; title=&quot;Title&quot; size=&quot;md&quot;>
   Body…
@@ -107,14 +107,14 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
       <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi" [outputs]="sheetOut"
         summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal by default: opening it does not move focus and Tab can leave it. With backdrop it is modal while open: the page dims and a tap on it closes the sheet, the sheet is aria-modal, focus moves in (to the element marked cdkFocusInitial, else the handle) and Tab is trapped inside. Escape closes it while focus is inside; closing either way sends focus back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
-        <doc-demo code="import { UiBottomSheet } from '@zouriel/ui/dialog';
+        <doc-demo lang="ts + html" code="import { UiBottomSheet } from '@zouriel/ui/dialog';
 
 <ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
   …content…
 </ui-bottom-sheet>">
           <div class="row">
-            <ui-button variant="secondary" (click)="sheetSnap.set(1)">Open half</ui-button>
-            <ui-button variant="ghost" (click)="sheetSnap.set(2)">Open full</ui-button>
+            <ui-button variant="outline" (click)="sheetSnap.set(1)">Open half</ui-button>
+            <ui-button variant="outline" (click)="sheetSnap.set(2)">Open full</ui-button>
             <ui-button variant="outline" (click)="sheetModal.set(true); sheetSnap.set(1)">Open with backdrop</ui-button>
             <span class="sheet-state">snap: {{ sheetSnap() }}</span>
           </div>
@@ -132,8 +132,8 @@ this.toast.success('Saved', 'Done');
 this.toast.show({ message: 'Hi', duration: 0 });
 this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: () => undo() } });">
           <div class="row">
-            <ui-button variant="secondary" (click)="toast.success('Changes saved', 'Success')">Success</ui-button>
-            <ui-button variant="ghost" (click)="toast.danger('Could not connect', 'Error')">Error</ui-button>
+            <ui-button variant="outline" (click)="toast.success('Changes saved', 'Success')">Success</ui-button>
+            <ui-button variant="outline" (click)="toast.danger('Could not connect', 'Error')">Error</ui-button>
             <ui-button variant="outline" (click)="toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Undo', run: undoToast } })">With action</ui-button>
           </div>
         </doc-demo>
@@ -141,7 +141,7 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
 
       <doc-section name="Snackbar" selector="UiSnackbarService · ui-snackbar-host · ui-snackbar" [api]="snackApi" [shapes]="SNACK"
         summary="A short note about something the person just did, with at most one action: Deleted with Undo, Grouped, Keyframe added. It is a compact inverted bar centred at the bottom of the screen, the one the form builder uses. Only one shows at a time; a new one replaces it. Render <ui-snackbar-host /> once near the app root (this site does) and call the service: show('Saved'), or show({ message, title?, action?, duration? }). It leaves after 4 s, or 10 s when it has an action so there is time to reach Undo, and holds while the pointer or focus is on it. offset lifts it above a bottom bar. Screen readers hear it through an always-present polite live region. Use toasts instead for messages that should stack or carry a tone, such as errors. Editors that place it themselves (the form builder does) can use the bare ui-snackbar.">
-        <doc-demo lang="ts" code="import { UiSnackbarService, UiSnackbarHost } from '@zouriel/ui/dialog';
+        <doc-demo lang="ts + html" code="import { UiSnackbarService, UiSnackbarHost } from '@zouriel/ui/dialog';
 
 // once, in the root component's template: <ui-snackbar-host [offset]=&quot;bottomBarHeight&quot; />
 snackbar = inject(UiSnackbarService);
@@ -151,9 +151,9 @@ this.snackbar.show({ message: 'Deleted “Title”', action: { label: 'Undo', ru
 // or just the bar, positioned by you:
 <ui-snackbar message=&quot;Deleted “Title”&quot; actionLabel=&quot;Undo&quot; (action)=&quot;undo()&quot; />">
           <div class="row">
-            <ui-button variant="secondary" (click)="snackbar.show('Grouped')">Simple</ui-button>
+            <ui-button variant="outline" (click)="snackbar.show('Grouped')">Simple</ui-button>
             <ui-button variant="outline" (click)="snackbar.show({ message: 'Deleted “Title”', action: { label: 'Undo', run: undoSnack } })">Deleted, with Undo</ui-button>
-            <ui-button variant="ghost" (click)="snackbar.show({ title: 'Stopped at a keyframe', message: 'Move or delete that keyframe to trim further.' })">With a title</ui-button>
+            <ui-button variant="outline" (click)="snackbar.show({ title: 'Stopped at a keyframe', message: 'Move or delete that keyframe to trim further.' })">With a title</ui-button>
           </div>
           <div class="row"><ui-snackbar message="Deleted “Title”" actionLabel="Undo" /></div>
         </doc-demo>

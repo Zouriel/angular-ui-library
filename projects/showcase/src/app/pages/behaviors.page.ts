@@ -19,14 +19,17 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         <doc-demo code="<button [uiCopyToClipboard]=&quot;'npm i ui'&quot; #c=&quot;uiCopy&quot;>
   {{ '{{' }} c.copied() ? 'Copied!' : 'Copy' {{ '}}' }}
 </button>">
-          <ui-button variant="outline" [uiCopyToClipboard]="'npm i ui'" #c="uiCopy">{{ c.copied() ? 'Copied!' : 'Copy "npm i ui"' }}</ui-button>
+          <!-- Both labels share one grid cell, so the button keeps the wider one's width when the text swaps. -->
+          <ui-button variant="outline" [uiCopyToClipboard]="'npm i ui'" #c="uiCopy">
+            <span class="swap"><span [class.off]="c.copied()">Copy "npm i ui"</span><span [class.off]="!c.copied()">Copied!</span></span>
+          </ui-button>
         </doc-demo>
       </doc-section>
 
       <doc-section name="ripple" selector="[uiRipple]" [api]="rippleApi"
         summary="A ripple that spreads from the pointer on press (pointerdown, so mouse, pen and touch; a keyboard press shows none). Skipped under prefers-reduced-motion. Sets position: relative and overflow: hidden on the host, so put it on an element whose corners should clip the ripple.">
-        <doc-demo code="<button uiRipple uiRippleColor=&quot;var(--ui-color-primary-contrast)&quot;>Press</button>">
-          <button type="button" class="ripple-btn" uiRipple uiRippleColor="var(--ui-color-primary-contrast)">Press me</button>
+        <doc-demo code="<ui-button uiRipple uiRippleColor=&quot;var(--ui-color-primary-contrast)&quot;>Press me</ui-button>">
+          <ui-button class="ripple-host" uiRipple uiRippleColor="var(--ui-color-primary-contrast)">Press me</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -91,14 +94,17 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
   styles: `
     .ro { width: 260px; max-width: 100%; height: 72px; min-width: 140px; min-height: 48px; resize: both; overflow: auto; padding: var(--ui-space-2) var(--ui-space-3);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
-    .ripple-btn { align-self: flex-start; justify-self: start; height: var(--ui-size-md); padding: 0 var(--ui-space-4); border: 0; border-radius: var(--ui-radius); cursor: pointer;
-      background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: 600 var(--ui-font-size-sm) var(--ui-font-default); }
-    .ripple-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .ripple-host { border-radius: var(--ui-radius); } /* the ripple clips to the host: round it like the button */
+    .swap { display: grid; }
+    .swap > span { grid-area: 1 / 1; }
+    .swap > .off { visibility: hidden; }
     .inf { height: 160px; overflow: auto; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
-    .ln { padding: 2px var(--ui-space-3); font-size: var(--ui-font-size-sm); }
+    /* Rows match the virtual list below: control height, padded, ruled between. */
+    .ln { display: flex; align-items: center; height: var(--ui-size-md); box-sizing: border-box; padding: 0 var(--ui-space-3); font-size: var(--ui-font-size-md); }
+    .ln + .ln { border-top: 1px solid var(--ui-color-border); }
     .ln.muted { color: var(--ui-color-text-muted); }
     .swipe { display: grid; gap: var(--ui-space-1); place-content: center; text-align: center; height: 140px; border: 1px dashed var(--ui-color-border-strong);
-      border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); user-select: none; cursor: grab; }
+      padding: 0 var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); user-select: none; cursor: grab; }
     .swipe strong { font-size: var(--ui-font-size-lg); }
     .swipe span, .plain { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .plain { margin: 0; max-width: 70ch; }

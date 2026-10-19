@@ -41,10 +41,13 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
             <ui-button variant="primary">Primary</ui-button>
             <ui-button variant="secondary">Secondary</ui-button>
             <ui-button variant="outline">Outline</ui-button>
-            <ui-button variant="ghost">Ghost</ui-button>
             <ui-button variant="destructive">Delete</ui-button>
-            <ui-button variant="link">Link</ui-button>
             <ui-button variant="brand">Get started</ui-button>
+          </div>
+          <!-- The borderless variants get their own row: wrapped to the start of a line they read as stray text. -->
+          <div class="row items-center">
+            <ui-button variant="ghost">Ghost</ui-button>
+            <ui-button variant="link">Link</ui-button>
           </div>
           <div class="row items-center">
             <ui-button size="sm">Small</ui-button>
@@ -75,6 +78,7 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
         <doc-demo code="<ui-button-group label=&quot;Range&quot;>
   <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Day</ui-button>
   <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Week</ui-button>
+  <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Month</ui-button>
 </ui-button-group>">
           <ui-button-group label="Range">
             <ui-button variant="outline" size="sm">Day</ui-button>
@@ -124,7 +128,7 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
         <doc-demo code="<ui-split-button (action)=&quot;save()&quot; (menu)=&quot;openMenu()&quot;>Save</ui-split-button>">
           <div class="row items-center">
             <ui-split-button (action)="msg.set('action')" (menu)="msg.set('menu')">Save</ui-split-button>
-            <ui-split-button variant="outline" size="sm" (action)="msg.set('action (outline)')" (menu)="msg.set('menu (outline)')">Export</ui-split-button>
+            <ui-split-button variant="outline" (action)="msg.set('action (outline)')" (menu)="msg.set('menu (outline)')">Export</ui-split-button>
           </div>
           <ui-text variant="caption">last: {{ msg() }}</ui-text>
         </doc-demo>

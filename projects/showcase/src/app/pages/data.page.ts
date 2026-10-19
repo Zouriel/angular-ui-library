@@ -79,7 +79,7 @@ actions: UiRowAction<Row>[] = [
       <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
         summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique."
         [shapes]="TREENODE">
-        <doc-demo code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
+        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
 
 import Folder01Icon from '@hugeicons/core-free-icons/Folder01Icon';
 nodes: UiTreeNode[] = [

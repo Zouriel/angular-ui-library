@@ -56,8 +56,9 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
       <doc-section name="Scroll area" selector="ui-scroll-area" [api]="saApi"
         summary="A scroll container with thin themed scrollbars and a max height. It scrolls on the chosen axis and clips the other.">
-        <doc-demo code="<ui-scroll-area maxHeight=&quot;120px&quot;> … </ui-scroll-area>">
-          <ui-scroll-area maxHeight="110px">
+        <doc-demo code="<ui-scroll-area maxHeight=&quot;100px&quot;> … </ui-scroll-area>">
+          <!-- 4½ lines tall, so the cut-off line shows there is more to scroll. -->
+          <ui-scroll-area maxHeight="100px">
             @for (n of lines; track n) { <div class="ln">Scrollable line {{ n }}</div> }
           </ui-scroll-area>
         </doc-demo>
@@ -150,7 +151,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 export class LayoutPage {
   protected readonly lines = Array.from({ length: 20 }, (_, i) => i + 1);
   protected readonly shellWidths = [{ value: 'desktop', label: 'Desktop' }, { value: 'phone', label: 'Phone' }];
-  protected readonly shellWidth = signal<'desktop' | 'phone'>('desktop');
+  /** Phones start on the Phone preview: the desktop shell would squeeze the page column to a few words a line. */
+  protected readonly shellWidth = signal<'desktop' | 'phone'>(globalThis.matchMedia?.('(max-width: 600px)').matches ? 'phone' : 'desktop');
   protected readonly shellOpen = signal(false);
   protected readonly shellActive = signal('Dashboard');
   protected readonly shellNav = [{ label: 'Workspace', items: [{ label: 'Dashboard', value: 'Dashboard' }, { label: 'Events', value: 'Events' }, { label: 'Guests', value: 'Guests' }] }];

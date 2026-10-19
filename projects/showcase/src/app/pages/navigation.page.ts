@@ -28,7 +28,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
       <doc-section name="Navbar" selector="ui-navbar" [api]="navbarApi" anchor="nav-navbar"
         summary="Top bar surface (glass-capable) with three slots: [navbar-brand] on the left, the default slot for links in the middle, [navbar-actions] on the right. Below 48rem it wraps onto two rows, brand and actions first and the links underneath, and the links row scrolls sideways if it still does not fit.">
-        <doc-demo code="import { UiNavbar } from '@zouriel/ui/navigation';
+        <doc-demo lang="ts + html" code="import { UiNavbar } from '@zouriel/ui/navigation';
 
 <ui-navbar [sticky]=&quot;true&quot; label=&quot;Main&quot;>
   <span navbar-brand>Acme</span>
@@ -45,7 +45,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
       <doc-section name="Tabs" selector="ui-tabs · ui-tab" [api]="tabsApi" anchor="nav-tabs"
         summary="WAI-ARIA tabs with roving tabindex; ArrowLeft/Right, Home and End move and select (disabled tabs are skipped). selectedIndex is a two-way model. Each ui-tab needs a label and may be disabled or carry a HugeIcons icon; with iconOnly the label stays as the accessible name and tooltip. Inactive panels stay in the DOM but hidden. When the strip scrolls, the selected tab is kept in view.">
-        <doc-demo code="import { UiTabs, UiTab } from '@zouriel/ui/tabs';
+        <doc-demo lang="ts + html" code="import { UiTabs, UiTab } from '@zouriel/ui/tabs';
 
 <ui-tabs [(selectedIndex)]=&quot;idx&quot; label=&quot;Project&quot;>
   <ui-tab label=&quot;One&quot;>…</ui-tab>
@@ -119,7 +119,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       <doc-section name="Anchor nav" selector="ui-anchor-nav" [api]="anchorApi" anchor="nav-anchor"
         summary="Scrollspy for a long page: highlights the section in view (IntersectionObserver) and smooth-scrolls to it on click. items name element ids on the page; they are looked up once just after it renders, so sections added later are not watched. A section counts as in view when its top is between offset px from the top of the window and 35% of the way down. offset does not change where a click scrolls to: give the sections a matching scroll-margin-top. The demo below tracks the sections of this page; scroll and watch it."
         [shapes]="'interface UiAnchorItem { id: string; label: string; }'">
-        <doc-demo code="import { UiAnchorNav, type UiAnchorItem } from '@zouriel/ui/navigation';
+        <doc-demo lang="ts + html" code="import { UiAnchorNav, type UiAnchorItem } from '@zouriel/ui/navigation';
 
 <ui-anchor-nav [items]=&quot;[{ id: 'intro', label: 'Intro' }, { id: 'usage', label: 'Usage' }]&quot; [offset]=&quot;80&quot; />
 

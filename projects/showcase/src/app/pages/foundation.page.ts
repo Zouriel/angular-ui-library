@@ -77,11 +77,9 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
               <div class="tile-head">
-                <div class="tile-title">
-                  <ui-text variant="label">{{ t.name }}</ui-text>
-                  <ui-text variant="caption">{{ t.file }}</ui-text>
-                </div>
+                <ui-text variant="label" class="tile-name">{{ t.name }}</ui-text>
                 <ui-button size="sm" variant="outline" (click)="theme.set(t.name)">Use<span class="sr-only"> {{ t.name }}</span></ui-button>
+                <ui-text variant="caption" class="tile-file">{{ t.file }}</ui-text>
               </div>
               <div class="dots" aria-hidden="true">
                 @for (c of tileColors; track c) { <span class="dot" [style.background]="'var(--ui-color-' + c + ')'"></span> }
@@ -97,10 +95,10 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
 <ui-theme-provider theme=&quot;dark&quot; class=&quot;ui-surface&quot;> … </ui-theme-provider>">
           <div class="islands">
             <ui-theme-provider theme="light">
-              <ui-card><ui-text variant="body">A light-theme card, whatever the page theme.</ui-text></ui-card>
+              <ui-card [glass]="false"><ui-text variant="body">A light-theme card, whatever the page theme.</ui-text></ui-card>
             </ui-theme-provider>
-            <ui-theme-provider theme="dark">
-              <ui-card><ui-text variant="body">A dark-theme card, whatever the page theme.</ui-text></ui-card>
+            <ui-theme-provider theme="dark" class="ui-surface">
+              <ui-card [glass]="false"><ui-text variant="body">A dark-theme card, whatever the page theme.</ui-text></ui-card>
             </ui-theme-provider>
           </div>
         </doc-demo>
@@ -114,20 +112,22 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
     .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--ui-space-3); }
     .tile { display: flex; flex-direction: column; gap: var(--ui-space-3);
       padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
-    .tile-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ui-space-3); }
-    .tile-title { display: flex; flex-direction: column; gap: var(--ui-space-1); min-width: 0; }
-    .tile-head ui-button { flex: none; }
+    /* Name and Use share the first row; the file name gets the tile's full width below, so it never wraps. */
+    .tile-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--ui-space-1) var(--ui-space-3); }
+    .tile-name { min-width: 0; }
+    .tile-file { grid-column: 1 / -1; white-space: nowrap; }
     .dots { display: flex; gap: var(--ui-space-1); }
     .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .islands { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
+    .islands .ui-surface { border-radius: var(--ui-radius-lg); }
     @media (max-width: 640px) { .islands { grid-template-columns: 1fr; } }
   `,
 })
 export class FoundationPage {
   protected readonly theme = inject(UiThemeService);
   protected readonly colors = ['bg', 'surface', 'surface-raised', 'surface-subtle', 'text', 'text-secondary', 'text-muted', 'border', 'border-strong', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger', 'info', 'selected', 'track'];
-  protected readonly tileColors = ['surface', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger'];
+  protected readonly tileColors = ['surface', 'text', 'primary', 'secondary', 'success', 'warning', 'danger'];
   protected readonly themes = [
     { name: 'dark', file: 'tokens.css (default)' },
     { name: 'light', file: 'tokens.css' },
