@@ -257,6 +257,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'validators', type: 'readonly UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks for the “Add a check” list, on top of provideUiFormValidators.' },
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra searchable lists for Options → Data source, on top of provideUiFormOptionSources.' },
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'App-wide settings from ui-form-global-settings; their lists become data sources.' },
+    { name: 'showTitle', type: 'boolean', default: 'true', desc: 'Show the form title in the top bar. Turn off when your own header already names the form.' },
     { name: '[fbActions]', type: 'slot', default: '—', desc: 'Your buttons (Save, Publish) in the builder’s top bar.' },
     { name: 'problems()', type: 'method', default: '—', desc: 'Signal of UiFbProblem[] ({ severity, targetId, message }): missing keys, loops between rules, rules pointing at deleted questions, backward jumps. Check for errors before publishing.' },
     { name: 'changes()', type: 'method', default: '—', desc: 'Signal of UiFbDiff | null: what changed since published (added, archived, renamed keys, type changes, removed options, changed rules, and summary lines).' },

@@ -64,7 +64,7 @@ function comparable(def: UiFormDefinition | null): string {
       <div class="scroll"><div class="library">
         <header class="lib-head">
           <div>
-            <ui-button variant="ghost" size="sm" (click)="open(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />All forms</ui-button>
+            <ui-button class="flush-start" variant="ghost" size="sm" (click)="open(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />All forms</ui-button>
             <h1>Form settings</h1>
             <p class="lead">For every form in the app. In your app this is <code translate="no">ui-form-global-settings</code> on its settings page; the result is plain JSON you store.</p>
           </div>
@@ -90,7 +90,7 @@ function comparable(def: UiFormDefinition | null): string {
             <h2 class="sr-only">Edit form</h2>
             <!-- A one-item loop keyed by the form: opening another form gives a fresh builder (and history). Not 'track x', which Angular warns about when it recreates. -->
             @for (x of [f.id]; track 'form:' + x) {
-              <ui-form-builder #builder class="builder" [globalSettings]="store.settings()"
+              <ui-form-builder #builder class="builder" [showTitle]="false" [globalSettings]="store.settings()"
                 [definition]="f.draft" (definitionChange)="store.setDraft(f.id, $event)"
                 [published]="f.published" [submissionCount]="f.responses.length">
                 <div fbActions class="fb-actions">
@@ -139,7 +139,7 @@ function comparable(def: UiFormDefinition | null): string {
                 <section class="detail" aria-live="polite">
                   @if (answer(); as r) {
                     <div class="detail-head">
-                      <ui-button class="back" variant="ghost" size="sm" (click)="openAnswer(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />Answers</ui-button>
+                      <ui-button class="back flush-start" variant="ghost" size="sm" (click)="openAnswer(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />Answers</ui-button>
                       <div class="detail-title">
                         <strong>{{ headline(f, r) }}</strong>
                         <span class="when">Sent {{ when(r.submittedAt) }}@if (r.updatedAt) { · edited {{ when(r.updatedAt) }} }</span>
@@ -216,8 +216,9 @@ function comparable(def: UiFormDefinition | null): string {
                 <div class="card-foot">
                   <ui-chip [tone]="statusTone(f)">{{ statusText(f) }}</ui-chip>
                   <span class="grow"></span>
-                  <ui-button size="sm" variant="ghost" (click)="duplicate(f.id)" [attr.aria-label]="'Duplicate ' + f.draft.title">Duplicate</ui-button>
-                  <ui-button size="sm" variant="ghost" (click)="toDelete.set(f)" [attr.aria-label]="'Delete ' + f.draft.title">Delete</ui-button>
+                  <!-- The form's name is in hidden text, not aria-label on the host: the real <button> is inside ui-button. -->
+                  <ui-button size="sm" variant="ghost" (click)="duplicate(f.id)">Duplicate<span class="sr-only"> {{ f.draft.title || 'Untitled form' }}</span></ui-button>
+                  <ui-button size="sm" variant="ghost" (click)="toDelete.set(f)">Delete<span class="sr-only"> {{ f.draft.title || 'Untitled form' }}</span></ui-button>
                 </div>
               </li>
             }
@@ -230,7 +231,7 @@ function comparable(def: UiFormDefinition | null): string {
 
         <footer class="lib-foot">
           <span>Saved in this browser’s local storage, so it survives reloads but not a different browser or clearing site data.</span>
-          <ui-button size="sm" variant="ghost" (click)="confirmReset.set(true)">Reset studio</ui-button>
+          <ui-button class="flush-end" size="sm" variant="ghost" (click)="confirmReset.set(true)">Reset studio</ui-button>
         </footer>
       </div></div>
 
@@ -239,7 +240,10 @@ function comparable(def: UiFormDefinition | null): string {
           <ui-form-field label="Form JSON" hint="Paste a form exported from here, or pick a .json file." [error]="importError()">
             <ui-textarea [rows]="10" name="form-json" autocomplete="off" [invalid]="!!importError()" [ngModel]="importText()" (ngModelChange)="importText.set($event); importError.set('')" />
           </ui-form-field>
-          <label class="file">Or choose a file <input type="file" accept="application/json,.json" (change)="pickFile($event)" /></label>
+          <div class="file">
+            <input #fileIn class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true" (change)="pickFile($event)" />
+            <ui-button size="sm" variant="outline" (click)="fileIn.click()">Choose a .json file</ui-button>
+          </div>
         </div>
         <div modal-footer>
           <ui-button variant="ghost" (click)="importOpen.set(false)">Cancel</ui-button>
@@ -259,7 +263,11 @@ function comparable(def: UiFormDefinition | null): string {
   // the library and the answers tab in their own files.
   styleUrls: ['./form-studio.library.css', './form-studio.answers.css'],
   styles: `
-    :host { display: flex; flex-direction: column; height: calc(100dvh - 52px); min-height: 520px; }
+    /* The shell's top bar is 52px plus its 1px border. */
+    :host { display: flex; flex-direction: column; height: calc(100dvh - 53px); min-height: 520px; }
+    /* Ghost buttons at the start or end of a column: their text lines up with the text around them, not their padding. */
+    .flush-start { margin-left: calc(var(--ui-space-3) * -1); }
+    .flush-end { margin-right: calc(var(--ui-space-3) * -1); }
     h1, h2 { margin: 0; text-wrap: balance; }
     .scroll { flex: 1; min-height: 0; overflow: auto; }
     .grow { flex: 1; }

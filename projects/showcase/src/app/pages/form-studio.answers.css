@@ -16,6 +16,11 @@
 .detail-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .detail-title strong { font-size: 16px; overflow-wrap: anywhere; }
 .back { display: none; }
+/* Phones: back on its own row, the name on the next, then Edit and Delete, so the name isn't squeezed between buttons. */
+@media (max-width: 480px) {
+  .detail-title { flex-basis: 100%; order: 1; }
+  .detail-head ui-button:not(.back) { order: 2; }
+}
 
 @media (max-width: 760px) {
   .answers { grid-template-columns: 1fr; }
