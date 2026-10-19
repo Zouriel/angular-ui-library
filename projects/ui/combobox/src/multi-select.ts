@@ -18,9 +18,11 @@ let nextId = 0;
   template: `
     <div class="ms" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.no-radius]="!radius()" [class.invalid]="invalid()"
          [attr.data-size]="size()" (click)="openPanel(); entry.focus()">
+      <span class="vals">
       @for (v of value(); track v) {
-        <span class="chip"><span class="chip-text" [attr.title]="labelOf(v)">{{ labelOf(v) }}</span><button type="button" class="x" tabindex="-1"
-          [attr.aria-label]="'Remove ' + labelOf(v)" [disabled]="disabled()" (click)="toggle(v, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></span>
+        <!-- A disabled control has nothing to remove, so its chips carry no x (as the clear button hides). -->
+        <span class="chip" [class.static]="disabled()"><span class="chip-text" [attr.title]="labelOf(v)">{{ labelOf(v) }}</span>@if (!disabled()) {<button type="button" class="x" tabindex="-1"
+          [attr.aria-label]="'Remove ' + labelOf(v)" (click)="toggle(v, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>}</span>
       }
       <input #entry class="entry" [attr.placeholder]="value().length ? '' : placeholder()"
              role="combobox" aria-autocomplete="list" [attr.aria-label]="label() || null" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
@@ -28,9 +30,14 @@ let nextId = 0;
              [attr.aria-invalid]="invalid() || null"
              [value]="query()" [disabled]="disabled()" (input)="onInput($event)" (focus)="openPanel()"
              (keydown)="onKeydown($event)" (blur)="open.set(false); onTouched()" />
-      @if (clearable() && value().length && !disabled()) {
-        <button type="button" class="clear" tabindex="-1" aria-label="Clear all" (mousedown)="$event.preventDefault()" (click)="clear($event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      }
+      </span>
+      <!-- Clear all and the chevron sit at the end, centred on the whole field however many rows the chips take. -->
+      <span class="end">
+        @if (clearable() && value().length && !disabled()) {
+          <button type="button" class="clear" tabindex="-1" aria-label="Clear all" (mousedown)="$event.preventDefault()" (click)="clear($event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        }
+        <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
     </div>
     <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="origin" [cdkConnectedOverlayOpen]="open()"
                  [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8" [cdkConnectedOverlayWidth]="width()" (overlayOutsideClick)="open.set(false)">
@@ -49,11 +56,15 @@ let nextId = 0;
   `,
   styles: `
     :host { display: block; }
-    .ms { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; box-sizing: border-box; min-height: var(--ui-size-md);
-      padding: 2px var(--ui-space-1); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
+    .ms { display: flex; gap: var(--ui-space-1); align-items: center; box-sizing: border-box; min-height: var(--ui-size-md);
+      padding: 2px var(--ui-space-3) 2px var(--ui-space-1); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); cursor: text; line-height: 1.35;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
-    .ms[data-size="sm"] { min-height: var(--ui-size-sm); padding: 0 var(--ui-space-1); }
+    .ms[data-size="sm"] { min-height: var(--ui-size-sm); padding-block: 0; }
+    .vals { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; }
+    .end { flex: none; display: flex; align-items: center; color: var(--ui-color-text-muted); }
+    .chevron { flex: none; transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    .ms:has([aria-expanded="true"]) .chevron { transform: rotate(180deg); }
     .ms[data-size="lg"] { min-height: var(--ui-size-lg); }
     .ms:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ms.no-radius { border-radius: 0; }
@@ -66,16 +77,16 @@ let nextId = 0;
       border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .ms[data-size="sm"] .chip { height: 22px; }
     .chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    /* 24x24 hit box (WCAG 2.5.8) drawing the same 16px circle: 4px of padding outside the painted
-       background, and negative margins so the chip keeps its compact size. */
-    .x { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; margin: -2px -4px -2px -4px;
+    .chip.static { padding-right: var(--ui-space-2); }
+    /* A 24x22 hit box filling the chip's height (no spill above or below it) around the same 16px
+       circle: padding outside the painted background, and negative margins keep the chip compact. */
+    .x { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 22px; margin: -1px -4px;
       border: none; background: none; background-clip: content-box; color: inherit; cursor: pointer;
-      font: inherit; padding: 4px; border-radius: var(--ui-radius-pill); opacity: .7;
+      font: inherit; padding: 3px 4px; border-radius: var(--ui-radius-pill); opacity: .7;
       transition: opacity var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard); }
-    .x:hover:not(:disabled) { opacity: 1; background-color: color-mix(in srgb, currentColor 14%, transparent); }
-    .x:disabled { cursor: not-allowed; }
+    .x:hover { opacity: 1; background-color: color-mix(in srgb, currentColor 14%, transparent); }
     .x:focus-visible { outline: none; opacity: 1; box-shadow: var(--ui-focus-ring); }
-    .clear { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; margin-left: auto; padding: 0;
+    .clear { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 24px; padding: 0;
       border: none; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .clear:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
@@ -88,11 +99,11 @@ let nextId = 0;
     .panel { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; width: 100%;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
       font-family: var(--ui-font-default); line-height: 1.35; }
-    .opt { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs);
+    /* 4px panel + 8px option padding: the checkbox lines up with the field's text. */
+    .opt { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2); border-radius: var(--ui-radius-xs);
       cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); }
+    /* The ticked box marks a chosen row; the one fill marks the keyboard/pointer row, so two fills never compete. */
     .opt.active { background: var(--ui-color-elevated-hover); }
-    .opt[aria-selected="true"] { background: var(--ui-color-selected); }
-    .opt.active[aria-selected="true"] { background: color-mix(in srgb, var(--ui-color-selected), var(--ui-color-elevated-hover)); }
     .opt-text { min-width: 0; overflow-wrap: anywhere; }
     /* Same drawn box as ui-checkbox, at 16px — ☐/☑ glyphs rendered as emoji or in a fallback font. */
     .box { display: inline-flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; width: 16px; height: 16px;
@@ -100,7 +111,7 @@ let nextId = 0;
     .tick { width: 11px; height: 11px; fill: none; stroke: var(--ui-color-primary-contrast); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; visibility: hidden; }
     .opt[aria-selected="true"] .box { background: var(--ui-color-primary); border-color: var(--ui-color-primary); }
     .opt[aria-selected="true"] .tick { visibility: visible; }
-    .empty { padding: var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .empty { padding: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiMultiSelect), multi: true }],
 })

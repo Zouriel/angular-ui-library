@@ -149,7 +149,9 @@ function iso(y: number, m: number, d: number): string {
       pointer-events: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
     .cal-panel { padding: var(--ui-space-3); line-height: 1.35;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); width: 252px; }
+      box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); box-sizing: border-box;
+      /* Seven 32px days with 2px gaps: the same box as ui-calendar and ui-date-range-picker. */
+      width: calc(7 * 32px + 6 * 2px + 2 * var(--ui-space-3) + 2px); }
     .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--ui-space-2); }
     .heading { display: inline-flex; gap: var(--ui-space-1); }
     .heading-static { font-weight: 600; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
@@ -171,7 +173,7 @@ function iso(y: number, m: number, d: number): string {
     .mcell:active { transform: scale(var(--ui-scale-press)); }
     .mcell:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .mcell.selected { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
-    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+    .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px; }
     .wd { text-align: center; font-size: 11px; color: var(--ui-color-text-muted); padding: 2px 0; }
     .cell { aspect-ratio: 1; border: none; background: transparent; color: var(--ui-color-text);
       border-radius: var(--ui-radius-xs); cursor: pointer; font: inherit; font-size: var(--ui-font-size-sm);

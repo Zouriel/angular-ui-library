@@ -28,6 +28,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       background: var(--ui-slider-thumb); border: 1px solid var(--ui-slider-thumb-border); box-shadow: var(--ui-shadow-1); cursor: pointer; }
     input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--ui-slider-thumb); border: 1px solid var(--ui-slider-thumb-border); cursor: pointer; }
     input[type=range]:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .ui-slider:has(input:disabled) .val { opacity: .5; }
     .val { min-width: 2.5ch; text-align: right; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSlider), multi: true }],

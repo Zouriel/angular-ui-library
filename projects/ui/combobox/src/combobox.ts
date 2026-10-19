@@ -106,11 +106,12 @@ export interface UiComboboxOption {
     .panel { margin: 0; padding: var(--ui-space-1); list-style: none; max-height: 240px; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; width: 100%;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
       box-shadow: var(--ui-shadow-2); font-family: var(--ui-font-default); line-height: 1.35; }
-    .opt { padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); overflow-wrap: anywhere; }
+    /* 4px panel + 8px option padding: option text starts under the field's text. */
+    .opt { padding: var(--ui-space-2); border-radius: var(--ui-radius-xs); cursor: pointer; color: var(--ui-color-text); font-size: var(--ui-font-size-md); overflow-wrap: anywhere; }
     .opt.active { background: var(--ui-color-elevated-hover); }
     .opt[aria-selected="true"] { background: var(--ui-color-selected); font-weight: 600; }
     .opt.active[aria-selected="true"] { background: color-mix(in srgb, var(--ui-color-selected), var(--ui-color-elevated-hover)); }
-    .empty { padding: var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .empty { padding: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCombobox), multi: true }],
 })
