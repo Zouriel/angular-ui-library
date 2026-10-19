@@ -51,6 +51,16 @@ describe('UiTable row actions', () => {
   });
 
   /** The whole reason this is a button and not a formatted string. */
+  it('keeps neighbouring actions space-2 apart', () => {
+    withActions([{ label: 'Edit', run: () => {} }, { label: 'Remove', run: () => {} }]);
+
+    const [edit] = buttons('Edit');
+    const [remove] = buttons('Remove');
+    expect(edit.nextElementSibling).toBe(remove);
+    expect(getComputedStyle(remove).marginLeft).toBe('var(--ui-space-2)');
+    expect(getComputedStyle(edit).marginLeft).toBe('var(--ui-space-1)');
+  });
+
   it('can be unavailable for one row and not another', () => {
     withActions([{ label: 'Resend', run: () => {}, disabled: (row) => !row.email }]);
 

@@ -243,7 +243,7 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
         <doc-demo code="<ui-choice-grid [options]=&quot;presets&quot; [(value)]=&quot;preset&quot; label=&quot;Motion preset&quot;>
   <ng-template #tile let-item let-selected=&quot;selected&quot;><img [src]=&quot;item.value + '.png'&quot; alt=&quot;&quot; /></ng-template>
 </ui-choice-grid>">
-          <ui-choice-grid [options]="choices" [(value)]="choice" label="Motion preset" (picked)="lastPick.set($event.label)">
+          <ui-choice-grid [options]="choices" [(value)]="choice" label="Motion preset" minTile="120px" (picked)="lastPick.set($event.label)">
             <ng-template #tile let-item let-selected="selected"><span class="swatch" [class.on]="selected">{{ item.label[0] }}</span></ng-template>
           </ui-choice-grid>
           <span class="muted">value: {{ choice() }} · picked: {{ lastPick() }}</span>
@@ -287,9 +287,12 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
 })
 export class FormsPage {
   protected readonly choices: UiChoice[] = [
-    { value: 'fade', label: 'Fade', group: 'Basic' }, { value: 'rise', label: 'Rise', group: 'Basic' },
-    { value: 'bounce', label: 'Bounce in', group: 'Bounce', description: 'Playful' }, { value: 'drop', label: 'Drop', group: 'Bounce' },
-    { value: 'flip', label: 'Flip', group: 'Turn', disabled: true },
+    // A full first group and wider tiles (minTile 120px), so the grid fills the demo instead of a corner of it.
+    { value: 'fade', label: 'Fade', group: 'Entrances' }, { value: 'rise', label: 'Rise', group: 'Entrances' },
+    { value: 'zoom', label: 'Zoom', group: 'Entrances' }, { value: 'slide', label: 'Slide', group: 'Entrances' },
+    { value: 'blur', label: 'Blur', group: 'Entrances' }, { value: 'drop', label: 'Drop', group: 'Entrances' },
+    { value: 'pulse', label: 'Pulse', group: 'Loops', description: 'A gentle beat' }, { value: 'float', label: 'Float', group: 'Loops' },
+    { value: 'spin', label: 'Spin', group: 'Loops', disabled: true },
   ];
   protected readonly choice = signal<string | null>('rise');
   protected readonly lastPick = signal('—');

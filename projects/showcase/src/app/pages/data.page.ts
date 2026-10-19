@@ -208,7 +208,9 @@ events: UiTimelineItem[] = [
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
-    @media (max-width: 640px) { .cols2, .cols3 { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
+      /* Phones: the card takes the full row and the two stat tiles share the next one. */
+      .cols3 { grid-template-columns: 1fr 1fr; } .cols3 > ui-card { grid-column: 1 / -1; } }
     /* The demo sits on a surface, so ring the stacked avatars in that colour. */
     .on-surface { --ui-avatar-ring: var(--ui-color-surface); }
     .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--ui-color-primary); text-decoration: underline; cursor: pointer; border-radius: var(--ui-radius-xs); }

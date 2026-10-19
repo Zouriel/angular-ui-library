@@ -151,6 +151,8 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
+    /* Several actions on a row keep space-2 apart, so neighbours read as separate buttons. */
+    .act + .act { margin-left: var(--ui-space-2); }
     .act:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .act:disabled { opacity: .5; cursor: not-allowed; }
     .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

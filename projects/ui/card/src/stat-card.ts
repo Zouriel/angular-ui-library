@@ -21,7 +21,8 @@ import { UI_CONFIG } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .stat { display: flex; flex-direction: column; gap: var(--ui-space-1);
+    /* Fills a stretched host (a grid row) so neighbouring tiles are equal height, like ui-card. */
+    .stat { display: flex; flex-direction: column; gap: var(--ui-space-1); height: 100%; box-sizing: border-box;
       padding: var(--ui-space-3) var(--ui-space-4);
       background: var(--ui-color-surface); border: 1px solid var(--ui-color-border);
       border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-1); font-family: var(--ui-font-default); line-height: 1.35; }
