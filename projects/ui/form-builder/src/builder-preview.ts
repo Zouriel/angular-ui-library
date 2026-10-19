@@ -67,7 +67,6 @@ import { FB_ICONS } from './builder-icons';
     :host { display: flex; flex-direction: column; min-height: 0; background: var(--ui-color-bg); }
     .bar { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-3); padding: var(--ui-space-2) var(--ui-space-3);
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); background: var(--ui-color-surface); flex: none; }
-    .bar ui-button hugeicons-icon { margin-right: 4px; }
     .data-toggle { margin-left: auto; font-size: 13px; }
     .paste { padding: var(--ui-space-2) var(--ui-space-3); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); flex: none; }
     .paste ui-textarea { font-family: var(--ui-font-mono); }

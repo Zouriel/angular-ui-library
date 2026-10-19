@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, ElementRef, computed, inject, output } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { FIELD_ICONS, GROUP_ICON, REPEAT_ICON, STATIC_ICONS, FB_ICONS } from './builder-icons';
@@ -41,7 +41,7 @@ export interface FbDeleteRequest {
   template: `
     @let def = store.def();
     @let page = store.page();
-    <div class="tabs">
+    <div class="tabs" [class.more]="tabsMore()" (scroll)="measureTabs()">
       <div class="tablist" role="tablist" aria-label="Pages" (keydown)="tabKeys($event)">
         @for (p of def.pages; track p.id; let i = $index) {
           <button type="button" role="tab" class="tab" [class.on]="i === store.pageIndex()" [class.over]="dropOver() === 'tab:' + p.id"
@@ -267,6 +267,8 @@ export interface FbDeleteRequest {
     .form-title, .form-desc, .page-title, .st-heading, .st-para { overflow-wrap: anywhere; min-width: 0; }
     .tabs { display: flex; align-items: flex-end; gap: 2px; padding: var(--ui-space-2) var(--ui-space-3) 0; overflow-x: auto; flex: none;
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); scrollbar-width: none; }
+    /* More tabs off to the right: fade the edge (not the bottom rule) so a cut-off tab reads as "scroll", not as a typo. */
+    .tabs.more { mask: linear-gradient(to right, black calc(100% - var(--ui-space-8)), transparent), linear-gradient(black, black) bottom / 100% 1px no-repeat; }
     .tab { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3); flex: none; max-width: 200px;
       border: 1px solid transparent; border-bottom: 0; border-radius: var(--ui-radius) var(--ui-radius) 0 0; margin-bottom: -1px;
       background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
@@ -292,7 +294,9 @@ export interface FbDeleteRequest {
     .list { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--ui-space-2); border-radius: var(--ui-radius); min-height: 8px; transition: background var(--ui-motion-fast); }
     .list.over { background: color-mix(in srgb, var(--ui-color-primary) 6%, transparent); }
     @container fb-paper (max-width: 520px) { .item { grid-column: span 12 !important; } }
-    .item { min-width: 0; position: relative; }
+    /* Cards fill their grid cell, so cards side by side in a row end at the same line. */
+    .item { min-width: 0; position: relative; display: flex; flex-direction: column; }
+    .item > .card { flex: 1 1 auto; }
     .item.dragging { opacity: 0.4; }
     .card { position: relative; display: flex; align-items: flex-start; gap: 4px; padding: var(--ui-space-2) var(--ui-space-2) var(--ui-space-2) 2px;
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface);
@@ -396,6 +400,26 @@ export class FbCanvas {
   readonly picked = output<string | null>();
   /** Open the settings of a card or page: its toolbar's settings button, a double-click, a long press, or Enter. */
   readonly open = output<string>();
+
+  /** The page tabs scroll sideways and some are out of view on the right. */
+  protected readonly tabsMore = signal(false);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    afterNextRender(() => {
+      const tabs = this.host.nativeElement.querySelector('.tabs');
+      if (!tabs || typeof ResizeObserver === 'undefined') return;
+      const ro = new ResizeObserver(() => this.measureTabs());
+      ro.observe(tabs);
+      if (tabs.firstElementChild) ro.observe(tabs.firstElementChild);
+      this.destroyRef.onDestroy(() => ro.disconnect());
+    });
+  }
+
+  protected measureTabs(): void {
+    const t = this.host.nativeElement.querySelector<HTMLElement>('.tabs');
+    this.tabsMore.set(!!t && t.scrollLeft + t.clientWidth < t.scrollWidth - 1);
+  }
 
   protected readonly fieldIcons = FIELD_ICONS;
   protected readonly groupIcon = GROUP_ICON;

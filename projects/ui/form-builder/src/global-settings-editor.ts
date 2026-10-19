@@ -185,14 +185,14 @@ interface TestRun {
                       <option value="number" [selected]="p.kind === 'number'">Number</option>
                       <option value="select" [selected]="p.kind === 'select'">Choice</option>
                     </select>
-                    <ui-switch [ngModel]="!!p.required" (ngModelChange)="patchParam(i, { required: $event || undefined })">Needed before searching</ui-switch>
+                    <ui-switch size="sm" [ngModel]="!!p.required" (ngModelChange)="patchParam(i, { required: $event || undefined })">Needed before searching</ui-switch>
                     <button type="button" class="fb-icon-btn danger" (click)="removeParam(i)" [attr.aria-label]="'Remove setting ' + (p.label || p.key)">
                       <hugeicons-icon aria-hidden="true" [icon]="deleteIcon" [size]="14" [strokeWidth]="1.8" />
                     </button>
                   </div>
                   @if (p.kind === 'select') {
                     <label class="fld"><span class="fb-label">Choices, one per line as value: label</span>
-                      <ui-textarea [rows]="3" [autosize]="true" [maxRows]="8" [ngModel]="choicesText(p)" (ngModelChange)="setChoices(i, $event)" placeholder="health: Health and medicine" /></label>
+                      <ui-textarea size="sm" [rows]="3" [autosize]="true" [maxRows]="8" [ngModel]="choicesText(p)" (ngModelChange)="setChoices(i, $event)" placeholder="health: Health and medicine" /></label>
                   }
                 </div>
               }
@@ -245,16 +245,16 @@ interface TestRun {
     @container gs (min-width: 760px) { .sources.has-open { grid-template-columns: 280px minmax(0, 1fr); } .back { display: none; } }
     @container gs (max-width: 759px) { .sources.has-open .list { display: none; } }
     .list-head { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; justify-content: space-between; margin-bottom: var(--ui-space-2); }
-    .list-head ui-button hugeicons-icon, .ed-head ui-button hugeicons-icon { margin-right: 4px; }
     .empty { margin: var(--ui-space-2) 0; padding: var(--ui-space-4); font-size: 13px; text-align: center; color: var(--ui-color-text-muted);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
-    .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+    /* The app's own lists and the built-in ones are the same kind of thing, so they share one card style. */
+    .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .row { display: flex; align-items: center; gap: var(--ui-space-2); width: 100%; padding: var(--ui-space-2) var(--ui-space-3); box-sizing: border-box;
-      border: 1px solid transparent; border-radius: var(--ui-radius); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+      border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
     .row:hover:not(.static) { background: var(--ui-color-surface-hover); }
     .row.on { background: var(--ui-color-selected); }
     .row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
-    .row.static { cursor: default; border-color: var(--ui-color-border-subtle, var(--ui-color-border)); }
+    .row.static { cursor: default; }
     .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .row-main strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .row-sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

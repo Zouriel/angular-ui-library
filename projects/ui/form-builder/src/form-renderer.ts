@@ -252,14 +252,14 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-icon:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     @media (pointer: coarse) { .ui-fr-icon { width: 40px; height: 40px; } }
     .ui-fr-add { display: flex; align-items: center; gap: var(--ui-space-3); }
-    .ui-fr-add ui-button hugeicons-icon { margin-right: 4px; }
     .ui-fr-undo { margin: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); }
     .ui-fr-link { border: 0; background: none; padding: 0 2px; color: var(--ui-color-primary); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
     .ui-fr-link:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 2px; }
     .ui-fr-count, .ui-fr-empty { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); margin: 0; }
     .ui-fr-summary { padding: var(--ui-space-3); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 55%, transparent); border-left-width: 4px;
       border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 8%, var(--ui-color-surface)); }
-    .ui-fr-summary:focus { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Focused by the form (tabindex -1) so it's read out; its red frame already marks it, a ring would double it. */
+    .ui-fr-summary:focus { outline: none; }
     .ui-fr-summary-title { margin: 0 0 var(--ui-space-1); font-size: var(--ui-font-size-md); font-weight: 600; }
     .ui-fr-summary ul { margin: 0; padding-left: var(--ui-space-4); display: flex; flex-direction: column; gap: 2px; }
     .ui-fr-summary a { color: var(--ui-color-danger); font-size: var(--ui-font-size-sm); text-underline-offset: 2px; }

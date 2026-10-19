@@ -47,14 +47,14 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
       }
       @case ('today') {
         <div class="today">
-          <ui-number-input [ngModel]="todayOffset()" (ngModelChange)="emit({ today: $event ?? 0 })" [step]="1" ariaLabel="Days from today" />
+          <ui-number-input size="sm" [ngModel]="todayOffset()" (ngModelChange)="emit({ today: $event ?? 0 })" [step]="1" ariaLabel="Days from today" />
           <span class="unit">days from today</span>
         </div>
         <p class="fb-hint">0 is today, 7 is a week from now, -7 a week ago.</p>
       }
       @default {
         @if (count()) {
-          <ui-number-input [ngModel]="constNum()" (ngModelChange)="emit({ const: $event })" [min]="0" [step]="1" ariaLabel="How many" />
+          <ui-number-input size="sm" [ngModel]="constNum()" (ngModelChange)="emit({ const: $event })" [min]="0" [step]="1" ariaLabel="How many" />
         } @else if (sourceDef(); as sd) {
           <!-- A sourced question: search the same list; the rule keeps { value, label } so it reads well later. -->
           @for (p of refParams(); track p.key) {
@@ -76,7 +76,7 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
             (valueChange)="emit({ const: $event })" [ariaLabel]="label()" [placeholder]="'Search ' + sd.label.toLowerCase() + '…'" />
         } @else if (options().length && multi()) {
           <label class="lw"><span class="fb-sr">{{ label() }}</span>
-            <ui-multi-select [options]="options()" [ngModel]="constList()" (ngModelChange)="emit({ const: $event })" placeholder="Choose options…" /></label>
+            <ui-multi-select size="sm" [options]="options()" [ngModel]="constList()" (ngModelChange)="emit({ const: $event })" placeholder="Choose options…" /></label>
         } @else if (options().length) {
           <select class="fb-native-select" (change)="emit({ const: $any($event.target).value })" [attr.aria-label]="label()">
             <option value="" disabled [selected]="!constText()">Choose…</option>
@@ -91,10 +91,10 @@ export function tidy(g: UiFbConditionGroup): UiFbCondition {
                 <option value="false" [selected]="constText() === 'false'">Not ticked (no)</option>
               </select>
             }
-            @case ('number') { <ui-number-input [ngModel]="constNum()" (ngModelChange)="emit({ const: $event })" [ariaLabel]="label()" /> }
-            @case ('date') { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-date-picker [ngModel]="constText() || null" (ngModelChange)="emit({ const: $event })" /></label> }
-            @case ('time') { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-time-picker [ngModel]="constText()" (ngModelChange)="emit({ const: $event })" /></label> }
-            @default { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-input [ngModel]="constText()" (ngModelChange)="emit({ const: $event })" placeholder="Value" /></label> }
+            @case ('number') { <ui-number-input size="sm" [ngModel]="constNum()" (ngModelChange)="emit({ const: $event })" [ariaLabel]="label()" /> }
+            @case ('date') { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-date-picker size="sm" [ngModel]="constText() || null" (ngModelChange)="emit({ const: $event })" /></label> }
+            @case ('time') { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-time-picker size="sm" [ngModel]="constText()" (ngModelChange)="emit({ const: $event })" /></label> }
+            @default { <label class="lw"><span class="fb-sr">{{ label() }}</span><ui-input size="sm" [ngModel]="constText()" (ngModelChange)="emit({ const: $event })" placeholder="Value" /></label> }
           }
         }
       }
@@ -229,30 +229,33 @@ export class FbValueInput {
           @let subj = subjectOf(rule.ref);
           <div class="rule" [class.unfinished]="!rule.ref">
             @if (i > 0) { <span class="joiner">{{ g.match === 'any' ? 'or' : g.match === 'none' ? 'nor' : 'and' }}</span> }
+            <!-- The remove button sits beside the whole rule, so every row of it ends at the same edge. -->
             <div class="rule-row">
-              <select class="fb-native-select" (change)="setRef(i, $any($event.target).value)" aria-label="Question">
-                <option value="" disabled [selected]="!rule.ref">Choose a question…</option>
-                @for (o of options(); track o.id) {
-                  <option [value]="o.id" [selected]="o.id === rule.ref">{{ o.label }}{{ o.kind === 'group' || o.kind === 'repeat' ? ' (section)' : o.kind === 'page' ? ' (page)' : '' }}</option>
+              <div class="rule-fields">
+                <select class="fb-native-select" (change)="setRef(i, $any($event.target).value)" aria-label="Question">
+                  <option value="" disabled [selected]="!rule.ref">Choose a question…</option>
+                  @for (o of options(); track o.id) {
+                    <option [value]="o.id" [selected]="o.id === rule.ref">{{ o.label }}{{ o.kind === 'group' || o.kind === 'repeat' ? ' (section)' : o.kind === 'page' ? ' (page)' : '' }}</option>
+                  }
+                  @if (rule.ref && !subj) { <option [value]="rule.ref" selected>Deleted question</option> }
+                </select>
+                @if (subj) {
+                  <select class="fb-native-select" (change)="setOp(i, $any($event.target).value)" aria-label="Comparison">
+                    @for (op of opsFor(subj.kind); track op.op) { <option [value]="op.op" [selected]="op.op === rule.op">{{ op.label.replace(' … ', ' N ').replace('…', 'N') }}</option> }
+                  </select>
+                  @if (arity(rule.op) >= 1) {
+                    <ui-fb-value [subject]="subj" [op]="rule.op" [operand]="rule.value" [forId]="forId()" (operandChange)="setValue(i, 'value', $event)" />
+                  }
+                  @if (arity(rule.op) === 2) {
+                    <span class="joiner">and</span>
+                    <ui-fb-value [subject]="subj" [op]="rule.op" [operand]="rule.value2" [forId]="forId()" (operandChange)="setValue(i, 'value2', $event)" />
+                  }
                 }
-                @if (rule.ref && !subj) { <option [value]="rule.ref" selected>Deleted question</option> }
-              </select>
+              </div>
               <button type="button" class="fb-icon-btn danger" aria-label="Remove this rule" (click)="remove(i)">
                 <hugeicons-icon aria-hidden="true" [icon]="removeIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
             </div>
-            @if (subj) {
-              <select class="fb-native-select" (change)="setOp(i, $any($event.target).value)" aria-label="Comparison">
-                @for (op of opsFor(subj.kind); track op.op) { <option [value]="op.op" [selected]="op.op === rule.op">{{ op.label.replace(' … ', ' N ').replace('…', 'N') }}</option> }
-              </select>
-              @if (arity(rule.op) >= 1) {
-                <ui-fb-value [subject]="subj" [op]="rule.op" [operand]="rule.value" [forId]="forId()" (operandChange)="setValue(i, 'value', $event)" />
-              }
-              @if (arity(rule.op) === 2) {
-                <span class="joiner">and</span>
-                <ui-fb-value [subject]="subj" [op]="rule.op" [operand]="rule.value2" [forId]="forId()" (operandChange)="setValue(i, 'value2', $event)" />
-              }
-            }
           </div>
         }
       }
@@ -273,7 +276,8 @@ export class FbValueInput {
     .match { display: flex; align-items: center; gap: var(--ui-space-2); }
     .match select { width: auto; }
     .rule { display: flex; flex-direction: column; gap: 4px; }
-    .rule-row { display: flex; align-items: center; gap: 4px; }
+    .rule-row { display: flex; align-items: flex-start; gap: 4px; }
+    .rule-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
     .rule.unfinished .rule-row select { border-color: color-mix(in srgb, var(--ui-color-warning) 70%, var(--ui-control-border)); }
     .joiner { font-size: 11px; font-weight: 600; color: var(--ui-color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
     .adds { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }

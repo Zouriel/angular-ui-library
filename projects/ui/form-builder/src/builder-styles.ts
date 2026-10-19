@@ -14,7 +14,9 @@ export const FB_SHARED_STYLES = `
   .lw { display: block; min-width: 0; }
   .fb-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .fb-label { display: block; font-size: 12px; font-weight: 550; color: var(--ui-color-text-secondary); margin-bottom: 4px; }
-  .fb-hint { margin: 2px 0 0; font-size: 12px; line-height: 1.35; color: var(--ui-color-text-muted); }
+  /* A hint sits 4px under the control it explains (wrap the two in .fld); on its own in a stack it takes the stack's gap. */
+  .fb-hint { margin: 0; font-size: 12px; line-height: 1.35; color: var(--ui-color-text-muted); }
+  :is(.fld, label, .param) > .fb-hint { margin-top: var(--ui-space-1); }
   .fb-warn { margin: 0; padding: 6px var(--ui-space-2); font-size: 12px; line-height: 1.4; border-radius: var(--ui-radius-xs);
     color: var(--ui-color-text); background: color-mix(in srgb, var(--ui-color-warning) 14%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-warning) 35%, transparent); }
   .fb-chip { display: inline-flex; align-items: center; gap: var(--ui-space-1); height: 18px; padding: 0 6px; border-radius: var(--ui-radius-xs);
@@ -30,13 +32,12 @@ export const FB_SHARED_STYLES = `
   .fb-link:hover { text-decoration: underline; text-underline-offset: 2px; }
   .fb-link:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 2px; }
   .fb-native-select {
-    width: 100%; height: var(--ui-size-md); padding: 0 26px 0 var(--ui-space-2); box-sizing: border-box; min-width: 0;
+    width: 100%; height: var(--ui-size-sm); padding: 0 26px 0 var(--ui-space-2); box-sizing: border-box; min-width: 0;
     border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background-color: var(--ui-color-surface); color: var(--ui-color-text);
-    font: inherit; font-size: 13px; appearance: none; cursor: pointer;
+    font: inherit; font-size: var(--ui-font-size-sm); appearance: none; cursor: pointer;
     background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%; background-size: 4px 4px; background-repeat: no-repeat;
   }
   .fb-native-select:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 30%, transparent); }
   .fb-native-select:disabled { opacity: 0.55; cursor: not-allowed; }
-  @media (pointer: coarse) { .fb-native-select { height: 40px; font-size: 15px; } }
 `;

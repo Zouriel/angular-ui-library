@@ -44,15 +44,15 @@ import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
           <li class="opt" [class.archived]="o.archived">
             <div class="moves">
               <button type="button" class="fb-icon-btn sm" [disabled]="i === 0" (click)="move(i, -1)" [attr.aria-label]="'Move ' + o.label + ' up'">
-                <hugeicons-icon aria-hidden="true" [icon]="upIcon" [size]="12" [strokeWidth]="2" />
+                <hugeicons-icon aria-hidden="true" [icon]="upIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
               <button type="button" class="fb-icon-btn sm" [disabled]="last" (click)="move(i, 1)" [attr.aria-label]="'Move ' + o.label + ' down'">
-                <hugeicons-icon aria-hidden="true" [icon]="downIcon" [size]="12" [strokeWidth]="2" />
+                <hugeicons-icon aria-hidden="true" [icon]="downIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
             </div>
             <div class="opt-main">
               <label class="lw"><span class="fb-sr">Option {{ i + 1 }}</span>
-                <ui-input [ngModel]="o.label" (ngModelChange)="setLabel(o, $event)" placeholder="Option label" (keydown.enter)="addAfter(i)" /></label>
+                <ui-input size="sm" [ngModel]="o.label" (ngModelChange)="setLabel(o, $event)" placeholder="Option label" (keydown.enter)="addAfter(i)" /></label>
               @if (showValues()) {
                 <div class="val">
                   <span class="val-lbl">Saved as</span>
@@ -74,17 +74,17 @@ import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
       <div class="fb-row wrap">
         <button type="button" class="fb-link" (click)="add()"><hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="13" [strokeWidth]="2" /> Add option</button>
         <button type="button" class="fb-link" (click)="pasting.set(!pasting())" [attr.aria-expanded]="pasting()">Paste a list</button>
-        <span class="small-switch"><ui-switch [ngModel]="showValues()" (ngModelChange)="showValues.set($event)">Show saved values</ui-switch></span>
       </div>
       @if (pasting()) {
         <div class="paste">
-          <label class="lw"><span class="fb-sr">Options, one per line</span><ui-textarea [(ngModel)]="pasted" [rows]="4" placeholder="One option per line" /></label>
+          <label class="lw"><span class="fb-sr">Options, one per line</span><ui-textarea size="sm" [(ngModel)]="pasted" [rows]="4" placeholder="One option per line" /></label>
           <div class="fb-row">
             <ui-button size="sm" (click)="applyPaste()">Add these</ui-button>
             <ui-button size="sm" variant="ghost" (click)="pasting.set(false)">Cancel</ui-button>
           </div>
         </div>
       }
+      <ui-switch size="sm" [ngModel]="showValues()" (ngModelChange)="showValues.set($event)">Show saved values</ui-switch>
     </div>
     }
   `,
@@ -94,9 +94,10 @@ import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
     .opts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
     .opt { display: flex; align-items: flex-start; gap: 4px; }
     .opt.archived .opt-main ui-input { opacity: 0.55; }
-    .moves { display: flex; flex-direction: column; gap: 0; padding-top: 1px; }
-    .fb-icon-btn.sm { width: 20px; height: 15px; }
-    @media (pointer: coarse) { .fb-icon-btn.sm { width: 36px; height: 22px; } }
+    /* Side by side at the input's height, so a row stays one line tall. */
+    .moves { display: flex; gap: 2px; flex: none; }
+    .fb-icon-btn.sm { width: 22px; height: var(--ui-size-sm); }
+    @media (pointer: coarse) { .fb-icon-btn.sm { width: 36px; height: 36px; } }
     .opt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
     .val { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ui-color-text-muted); }
     .val-in { flex: 1; min-width: 0; height: 22px; padding: 0 6px; border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius-xs);
@@ -106,7 +107,6 @@ import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
     .arch { font-size: 11px; color: var(--ui-color-text-muted); }
     .wrap { flex-wrap: wrap; gap: var(--ui-space-3); }
     .fb-link { display: inline-flex; align-items: center; gap: 3px; }
-    .small-switch { margin-left: auto; font-size: 12px; }
     .paste { display: flex; flex-direction: column; gap: var(--ui-space-2); }
   `],
 })
@@ -238,7 +238,7 @@ export class FbOptionsEditor {
     <div class="fb-stack">
       @if (f.type !== 'calculated' && f.type !== 'hidden') {
         <section class="block">
-          <span class="fb-label">Answer needed?</span>
+          <h3 class="sec-title">Answer needed?</h3>
           <ui-segmented size="sm" label="Answer needed" [options]="requiredModes" [value]="requiredMode()" (valueChange)="setRequiredMode($event)" />
           @if (requiredMode() === 'when') {
             <ui-fb-condition [condition]="requiredWhen()" [forId]="f.id" (conditionChange)="store.updateField(f.id, { required: { when: $event } }, 'req:' + f.id)" />
@@ -246,7 +246,7 @@ export class FbOptionsEditor {
           @if (requiredMode() !== 'no') {
             <label class="msg">
               <span class="fb-label">Message when it’s left empty</span>
-              <ui-input [ngModel]="f.requiredMessage ?? ''" (ngModelChange)="store.updateField(f.id, { requiredMessage: $event || undefined }, 'reqmsg:' + f.id)"
+              <ui-input size="sm" [ngModel]="f.requiredMessage ?? ''" (ngModelChange)="store.updateField(f.id, { requiredMessage: $event || undefined }, 'reqmsg:' + f.id)"
                 [placeholder]="defaultRequired()" />
             </label>
           }
@@ -283,7 +283,7 @@ export class FbOptionsEditor {
                   <span class="fb-label" aria-hidden="true">{{ p.label }}</span>
                   @switch (p.kind) {
                     @case ('number') {
-                      <ui-number-input [ngModel]="num(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" [placeholder]="p.placeholder ?? ''" [ariaLabel]="p.label" />
+                      <ui-number-input size="sm" [ngModel]="num(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" [placeholder]="p.placeholder ?? ''" [ariaLabel]="p.label" />
                     }
                     @case ('select') {
                       <select class="fb-native-select" (change)="setParam(rule, p.key, $any($event.target).value)" [attr.aria-label]="p.label">
@@ -304,15 +304,15 @@ export class FbOptionsEditor {
                           <option value="date" [selected]="dateMode(rule, p) === 'date'">A set date</option>
                         </select>
                         @if (dateMode(rule, p) === 'offset') {
-                          <ui-number-input [ngModel]="dateOffset(rule, p)" (ngModelChange)="setParam(rule, p.key, 'today' + (($event ?? 0) >= 0 ? '+' : '') + ($event ?? 0))" ariaLabel="Days from today" />
+                          <ui-number-input size="sm" [ngModel]="dateOffset(rule, p)" (ngModelChange)="setParam(rule, p.key, 'today' + (($event ?? 0) >= 0 ? '+' : '') + ($event ?? 0))" ariaLabel="Days from today" />
                         }
                         @if (dateMode(rule, p) === 'date') {
-                          <label class="lw"><span class="fb-sr">{{ p.label }}: date</span><ui-date-picker [ngModel]="dateFixed(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" /></label>
+                          <label class="lw"><span class="fb-sr">{{ p.label }}: date</span><ui-date-picker size="sm" [ngModel]="dateFixed(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" /></label>
                         }
                       </div>
                     }
                     @default {
-                      <label class="lw"><span class="fb-sr">{{ p.label }}</span><ui-input [ngModel]="param(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" [placeholder]="p.placeholder ?? ''" /></label>
+                      <label class="lw"><span class="fb-sr">{{ p.label }}</span><ui-input size="sm" [ngModel]="param(rule, p)" (ngModelChange)="setParam(rule, p.key, $event)" [placeholder]="p.placeholder ?? ''" /></label>
                     }
                   }
                   @if (p.hint) { <span class="fb-hint">{{ p.hint }}</span> }
@@ -321,11 +321,11 @@ export class FbOptionsEditor {
             }
             <label class="msg">
               <span class="fb-label">Message</span>
-              <ui-input [ngModel]="rule.message ?? ''" (ngModelChange)="patch(rule, { message: $event || undefined }, 'msg')" [placeholder]="preview(rule, d)" />
+              <ui-input size="sm" [ngModel]="rule.message ?? ''" (ngModelChange)="patch(rule, { message: $event || undefined }, 'msg')" [placeholder]="preview(rule, d)" />
             </label>
             <div class="toggles">
-              <ui-switch [ngModel]="!!rule.when" (ngModelChange)="toggleWhen(rule, $event)">Only check sometimes</ui-switch>
-              <ui-switch [ngModel]="rule.severity === 'warning'" (ngModelChange)="patch(rule, { severity: $event ? 'warning' : undefined })">Warn but allow submitting</ui-switch>
+              <ui-switch size="sm" [ngModel]="!!rule.when" (ngModelChange)="toggleWhen(rule, $event)">Only check sometimes</ui-switch>
+              <ui-switch size="sm" [ngModel]="rule.severity === 'warning'" (ngModelChange)="patch(rule, { severity: $event ? 'warning' : undefined })">Warn but allow submitting</ui-switch>
             </div>
             @if (rule.when) {
               <div class="when">
@@ -348,13 +348,15 @@ export class FbOptionsEditor {
   `,
   styles: [FB_SHARED_STYLES, `
     .block { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    /* Same as the Logic tab's section headings. */
+    .sec-title { margin: 0; font-size: 12px; font-weight: 600; color: var(--ui-color-text); }
     .rule, .auto { padding: var(--ui-space-2); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .rule.unknown { border-style: dashed; }
     .rule-head { display: flex; align-items: center; gap: 6px; }
     .rule-name { font-size: 13px; font-weight: 600; }
     .push { margin-left: auto; }
     .param, .msg, .when { display: flex; flex-direction: column; }
-    .toggles { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+    .toggles { display: flex; flex-direction: column; gap: 6px; }
     .date-param { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-2); }
     .add-check { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
@@ -511,29 +513,31 @@ export class FbChecksEditor {
         <select class="fb-native-select" (change)="setOp($any($event.target).value)">
           @for (o of ops; track o.op) { <option [value]="o.op" [selected]="o.op === c.op">{{ o.label }}</option> }
         </select>
+        <span class="fb-hint">{{ info.hint }}</span>
       </label>
-      <p class="fb-hint">{{ info.hint }}</p>
       <span class="fb-label">Using</span>
-      <ul class="args" role="list">
-        @for (a of c.args; track $index; let i = $index) {
-          <li class="arg">
-            <select class="fb-native-select" (change)="setArgSource(i, $any($event.target).value)" [attr.aria-label]="'Input ' + (i + 1)">
-              <option value="__const" [selected]="!isRef(a)">{{ info.text ? 'Fixed text' : 'A fixed number' }}</option>
-              @for (o of choices(); track o.id) { <option [value]="o.id" [selected]="isRef(a) && refOf(a) === o.id">{{ o.label }}</option> }
-            </select>
-            @if (!isRef(a)) {
-              @if (info.text) {
-                <label class="const"><span class="fb-sr">Text</span><ui-input [ngModel]="constOf(a)" (ngModelChange)="setConst(i, $event)" placeholder="Text" /></label>
-              } @else {
-                <ui-number-input class="const" [ngModel]="constNum(a)" (ngModelChange)="setConst(i, $event)" ariaLabel="Number" />
+      @if (c.args.length) {
+        <ul class="args" role="list">
+          @for (a of c.args; track $index; let i = $index) {
+            <li class="arg">
+              <select class="fb-native-select" (change)="setArgSource(i, $any($event.target).value)" [attr.aria-label]="'Input ' + (i + 1)">
+                <option value="__const" [selected]="!isRef(a)">{{ info.text ? 'Fixed text' : 'A fixed number' }}</option>
+                @for (o of choices(); track o.id) { <option [value]="o.id" [selected]="isRef(a) && refOf(a) === o.id">{{ o.label }}</option> }
+              </select>
+              @if (!isRef(a)) {
+                @if (info.text) {
+                  <label class="const"><span class="fb-sr">Text</span><ui-input size="sm" [ngModel]="constOf(a)" (ngModelChange)="setConst(i, $event)" placeholder="Text" /></label>
+                } @else {
+                  <ui-number-input size="sm" class="const" [ngModel]="constNum(a)" (ngModelChange)="setConst(i, $event)" ariaLabel="Number" />
+                }
               }
-            }
-            <button type="button" class="fb-icon-btn danger" (click)="removeArg(i)" aria-label="Remove input">
-              <hugeicons-icon aria-hidden="true" [icon]="removeIcon" [size]="14" [strokeWidth]="1.8" />
-            </button>
-          </li>
-        }
-      </ul>
+              <button type="button" class="fb-icon-btn danger" (click)="removeArg(i)" aria-label="Remove input">
+                <hugeicons-icon aria-hidden="true" [icon]="removeIcon" [size]="14" [strokeWidth]="1.8" />
+              </button>
+            </li>
+          }
+        </ul>
+      }
       @if (!info.arity || c.args.length < info.arity) {
         <button type="button" class="fb-link" (click)="addArg()"><hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="13" [strokeWidth]="2" /> Add an input</button>
       }

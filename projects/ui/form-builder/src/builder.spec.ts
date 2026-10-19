@@ -328,6 +328,33 @@ describe('UiFormBuilder', () => {
     expect(host.def().pages[0].elements.length).toBe(2);
   });
 
+  it('takes the undo toast down when the view changes, so it never covers the buttons of another view', async () => {
+    const { fx, el, card } = await render();
+    const c = card('Second');
+    c.click();
+    fx.detectChanges();
+    c.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+    fx.detectChanges();
+    expect(el.querySelector('.toast')).not.toBeNull();
+    const preview = Array.from(el.querySelectorAll<HTMLButtonElement>('.views button')).find((b) => b.textContent!.includes('Preview'))!;
+    preview.click();
+    fx.detectChanges();
+    expect(el.querySelector('.toast')).toBeNull();
+  });
+
+  it('keeps every inspector control at the small size, and leaves icon spacing to ui-button', async () => {
+    const { fx, el, card } = await render();
+    card('First').click();
+    fx.detectChanges();
+    const insp = el.querySelector('ui-fb-inspector')!;
+    const controls = Array.from(insp.querySelectorAll('ui-input .ui-input, ui-textarea .ui-textarea, ui-number-input .wrap, ui-switch .ui-switch'));
+    expect(controls.length).toBeGreaterThan(3);
+    for (const c of controls) expect(c.getAttribute('data-size')).toBe('sm');
+    // ui-button spaces its icon itself; a margin on top makes the gap 12px instead of 8.
+    const css = [...document.querySelectorAll('style')].map((x) => x.textContent ?? '').join('\n');
+    expect(css).not.toMatch(/ui-button(\[[^\]]*\])?\s+hugeicons-icon(\[[^\]]*\])?\s*\{\s*margin/);
+  });
+
   it('loads a different form the host sets, and starts its history fresh', async () => {
     const { fx, el, host } = await render();
     host.def.set(form([f('z', 'number', { label: 'Only one' })], { title: 'Another' }));
