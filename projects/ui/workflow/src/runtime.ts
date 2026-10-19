@@ -76,8 +76,9 @@ export function wfFormAnswers(s: UiFormSubmission): { data: Record<string, unkno
     /* ui-badge's metrics (20px tall, 8px sides, pill, 11px semibold), with a dot in the state's colour. */
     .badge { display: inline-flex; align-items: center; gap: 6px; box-sizing: border-box; height: 20px; padding: 0 var(--ui-space-2); border-radius: var(--ui-radius-pill);
       font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap;
-      color: var(--wf-c); background: color-mix(in srgb, var(--wf-c) 13%, transparent); }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      /* The label leans toward the text colour so 11px text stays readable on the tint in every theme; the dot keeps the pure state colour. */
+      color: color-mix(in srgb, var(--wf-c) 70%, var(--ui-color-text)); background: color-mix(in srgb, var(--wf-c) 13%, transparent); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--wf-c); }
     /* Muted, not secondary text: light themes draw secondary text in the primary colour, which made it look like "primary". */
     .badge[data-tone="neutral"] { --wf-c: var(--ui-color-text-muted); }
     .badge[data-tone="primary"] { --wf-c: var(--ui-color-primary); }

@@ -284,7 +284,7 @@ function collect() {
     if (t.el.closest('label') && (t.el.closest('label').contains(ctrl) || t.el.closest('label').htmlFor === ctrl.id)) return true;
     const ids = `${ctrl.getAttribute('aria-labelledby') || ''} ${ctrl.getAttribute('aria-describedby') || ''}`.split(/\s+/).filter(Boolean);
     if (ids.some((id) => document.getElementById(id)?.contains(t.el))) return true;
-    const field = ctrl.closest('ui-form-field, .ui-field, .field');
+    const field = ctrl.closest('ui-form-field, .ui-field, .field, .fld, label');
     return !!field && field.contains(t.el);
   };
   const lineGap = (a, b) => {

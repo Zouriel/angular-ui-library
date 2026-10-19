@@ -43,7 +43,7 @@ function fmt(s: number): string {
     /* Fullscreen: the clip takes every pixel the bar leaves, not the 60vh it gets inline. */
     .vp:fullscreen { display: flex; flex-direction: column; border-radius: 0; }
     .vp:fullscreen video { flex: 1; min-height: 0; max-height: none; height: 100%; }
-    .controls { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-1) var(--ui-space-2);
+    .controls { display: flex; align-items: center; gap: var(--ui-space-1); padding: var(--ui-space-2);
       background: var(--ui-color-surface-raised); border-top: 1px solid var(--ui-color-border); }
     .ic { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; flex: none; padding: 0;
       width: var(--ui-size-sm); height: var(--ui-size-sm); border: none; background: transparent; color: var(--ui-color-text); cursor: pointer;
@@ -66,6 +66,7 @@ function fmt(s: number): string {
     @media (pointer: coarse) {
       .controls { gap: var(--ui-space-2); }
       .ic { width: var(--ui-size-touch); height: var(--ui-size-touch); }
+      .rate { height: var(--ui-size-touch); }
     }
     @media (max-width: 480px) { .vol { display: none; } }
     /* The popup list is the platform's, so it needs the colours spelled out here too. */
