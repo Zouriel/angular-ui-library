@@ -33,9 +33,9 @@ import { UI_CONFIG } from '@zouriel/ui';
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .hex:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .hex:disabled { opacity: .5; cursor: not-allowed; }
-    /* Each swatch is a 24x24 button (WCAG 2.5.8 target size) drawing a 20px dot; no gap between
-       buttons, so the dots keep their 4px spacing. */
-    .swatches { display: flex; }
+    /* Each swatch is a 24x24 button (WCAG 2.5.8 target size) drawing a 20px dot, 4px apart, so the
+       dots sit 8px apart and the selected ring (3px out) keeps clear of its neighbour. */
+    .swatches { display: flex; gap: var(--ui-space-1); }
     .sw { display: grid; place-items: center; box-sizing: border-box; width: 24px; height: 24px; border: none; border-radius: 50%;
       background: transparent; cursor: pointer; padding: 0; }
     .dot { box-sizing: border-box; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border);

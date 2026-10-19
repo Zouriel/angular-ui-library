@@ -79,7 +79,8 @@ wm.focus(id); wm.dock(id, 'left');">
     .dbox { position: absolute; left: 12px; top: 12px; display: flex; align-items: center; justify-content: center; width: 90px; height: 50px;
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-radius: var(--ui-radius); cursor: grab; font-size: var(--ui-font-size-sm); user-select: none; }
     .note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
-    .rbox { display: flex; align-items: flex-end; justify-content: flex-end; width: 160px; height: 90px; padding: var(--ui-space-2);
+    /* The label sits top-left, away from the resize grip in the bottom-right corner. */
+    .rbox { display: flex; align-items: flex-start; justify-content: flex-start; width: 160px; height: 90px; padding: var(--ui-space-2);
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })

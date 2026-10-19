@@ -58,7 +58,8 @@ export function hasDefault(value: string | undefined): boolean {
  * member stays whole (`'rect' | 'circle'` never splits inside a member).
  */
 export function unionBreaks(type: string): string {
-  return type.replace(/ \| /g, '\u00a0| ');
+  // Written with or without spaces round the bar ('a'|'b' too), a member never starts a line with it.
+  return type.replace(/\s*\|\s*/g, '\u00a0| ');
 }
 
 /**
@@ -95,7 +96,9 @@ export function unionBreaks(type: string): string {
     .nm { color: var(--ui-color-primary); font-weight: 600; }
     .ty, .def { color: var(--ui-color-text-muted); }
     .def { font-size: var(--ui-font-size-sm); }
-    .def code { color: var(--ui-color-text-secondary); white-space: nowrap; }
+    .def code { color: var(--ui-color-text-secondary); }
+    /* A long selector or literal breaks anywhere rather than running out of the card. */
+    .item code { overflow-wrap: anywhere; }
     .desc { margin: 0; font-size: var(--ui-font-size-sm); line-height: 1.5; color: var(--ui-color-text-secondary); }
     @container (max-width: 600px) {
       .tbl { display: none; }

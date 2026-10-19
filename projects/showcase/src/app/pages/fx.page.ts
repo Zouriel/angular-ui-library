@@ -63,7 +63,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       <doc-section name="Glyph field" selector="ui-glyph-field" [api]="glyphApi"
         summary="Animated glyph field drawn on a canvas, for a background. Use fixed for a page backdrop, or place it inside a positioned parent, which it fills. On light themes it switches from screen to multiply blending so it stays visible. Under prefers-reduced-motion it draws one still frame. chars and colors are read once, on init.">
         <doc-demo code="<ui-glyph-field [fixed]=&quot;true&quot; [opacity]=&quot;0.5&quot; chars=&quot;01&quot; [cell]=&quot;16&quot; [speed]=&quot;1&quot; />">
-          <div class="gf-host"><ui-glyph-field [opacity]="0.6" /></div>
+          <div class="gf-host"><ui-glyph-field [opacity]="0.9" /></div>
         </doc-demo>
       </doc-section>
 

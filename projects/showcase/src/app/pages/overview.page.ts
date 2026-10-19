@@ -194,6 +194,6 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Design tools', route: 'design-tools', entries: '/canvas, /sequencer, /form, /media, /layout', items: ['transform-box', 'snap-guides', 'path-editor', 'sequencer', 'scrubber', 'token-input', 'device-frame', 'resize-handle'] },
     { title: 'Form builder', route: 'form-builder', entries: '/form-builder', items: ['form-builder', 'form-renderer', 'form-global-settings'] },
     { title: 'Motion & FX', route: 'fx', entries: '/fx', items: ['uiReveal', 'cursor', 'marquee', 'drift-row', 'grain', 'glyph-field', 'uiSplitText', 'uiMagnetic', 'intro-loader', 'scroll-progress', 'section-label'] },
-    { title: 'Behavior directives', route: 'behaviors', entries: '/behaviors', items: ['uiSwipe', 'uiIntersect', 'uiInfiniteScroll', 'virtual-list', 'uiCopyToClipboard', 'uiRipple', 'uiResizeObserver'] },
+    { title: 'Behavior directives', route: 'behaviors', entries: '/behaviors', items: ['uiSwipe', 'uiIntersect', 'uiInfiniteScroll', 'uiScrollFade', 'virtual-list', 'uiCopyToClipboard', 'uiRipple', 'uiResizeObserver'] },
   ];
 }

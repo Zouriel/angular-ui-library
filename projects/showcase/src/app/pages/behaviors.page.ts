@@ -107,7 +107,9 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
     .swap { display: grid; }
     .swap > span { grid-area: 1 / 1; }
     .swap > .off { visibility: hidden; }
-    .fade-strip { display: flex; gap: var(--ui-space-2); overflow-x: auto; max-width: 420px; padding: var(--ui-space-1) 0; }
+    /* Framed like the other scrolling demos, so the faded edge reads as more to scroll, not a cut. */
+    .fade-strip { display: flex; gap: var(--ui-space-2); overflow-x: auto; max-width: 420px; padding: var(--ui-space-2) var(--ui-space-3);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .inf { height: 160px; overflow: auto; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     /* Rows match the virtual list below: control height, padded, ruled between. */
     .ln { display: flex; align-items: center; height: var(--ui-size-md); box-sizing: border-box; padding: 0 var(--ui-space-3); font-size: var(--ui-font-size-sm); }
@@ -161,7 +163,7 @@ export class BehaviorsPage {
   protected readonly fadeItems = Array.from({ length: 16 }, (_, i) => i + 1);
   protected readonly fadeApi: ApiRow[] = [
     { name: 'uiScrollFadeSize', type: 'number', default: '24', desc: 'Width of the fade, in px.' },
-    { name: 'update()', type: 'method', default: '—', desc: 'Re-measure after a change no resize reports.' },
+    { name: 'update()', type: 'method', default: '—', desc: 'Measure again after a change that no resize event reports (content swapped in place).' },
   ];
   protected readonly infApi: ApiRow[] = [
     { name: 'uiInfiniteScrollThreshold', type: 'number', default: '120', desc: 'Trigger distance from bottom (px).' },

@@ -213,7 +213,8 @@ onKey(e: KeyboardEvent) {
       box-shadow: var(--ui-shadow-3); }
     .sheet-state { align-self: center; color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
     .sheet-rows { display: grid; }
-    .sheet-row { padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border-subtle); }
+    /* The sheet already pads its body 16px at the sides; rows only add their own vertical room. */
+    .sheet-row { padding: var(--ui-space-2) 0; font-size: var(--ui-font-size-sm); border-bottom: 1px solid var(--ui-color-border-subtle); }
     .ctx { display: inline-flex; align-items: center; padding: 0 var(--ui-space-4); height: var(--ui-size-md);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted);
       font-size: var(--ui-font-size-sm); user-select: none; }

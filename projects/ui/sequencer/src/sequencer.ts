@@ -240,7 +240,7 @@ const END_GRIP_PX = 10;
     .grip { flex: none; display: inline-grid; place-items: center; cursor: grab; color: var(--ui-color-text-muted); padding: 0 2px; }
     .grip:hover { color: var(--ui-color-text); }
     /* One width for every badge (SVG, TEXT, RSVP…), so the names after them start in one column. */
-    .kind { flex: none; box-sizing: border-box; min-width: 4.5em; text-align: center; font-size: 11px; line-height: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-color-text-muted);
+    .kind { flex: none; box-sizing: border-box; min-width: 3.75em; text-align: center; font-size: 11px; line-height: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-color-text-muted);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); padding: 0 var(--ui-space-1); }
     .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .toggle { flex: none; display: grid; place-items: center; width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; border: 0; border-radius: var(--ui-radius-xs);

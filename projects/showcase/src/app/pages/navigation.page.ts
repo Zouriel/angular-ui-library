@@ -83,7 +83,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Stepper" selector="ui-stepper" [api]="stepApi" anchor="nav-stepper"
-        summary="Progress through ordered steps. Display only, with no clicks or outputs: steps before active show as done, and the active step gets aria-current=&quot;step&quot;. Horizontal by default (below 560px only the active step keeps its label); orientation=&quot;vertical&quot; stacks the steps and shows a uiStepBody template under each one (details, history, actions). variant=&quot;dots&quot; draws a compact strip of dots: finished and current steps in the tone (the current one ringed), steps not reached in the text colour, labels kept for screen readers. tone=&quot;success&quot; colours finished steps green."
+        summary="Progress through ordered steps. Display only, with no clicks or outputs: steps before active show as done, and the active step gets aria-current=&quot;step&quot;. Horizontal by default; when the labels don't fit (a phone) it switches to vertical by itself; orientation=&quot;vertical&quot; stacks the steps and shows a uiStepBody template under each one (details, history, actions). variant=&quot;dots&quot; draws a compact strip of dots: finished and current steps in the tone (the current one ringed), steps not reached as hollow outlined dots, labels kept for screen readers. tone=&quot;success&quot; colours finished steps green."
         [shapes]="'interface UiStep { label: string; description?: string; }'">
         <doc-demo code="<ui-stepper [steps]=&quot;steps&quot; [active]=&quot;step&quot; />">
           <div class="demo-stack">

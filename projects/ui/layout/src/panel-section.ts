@@ -28,6 +28,8 @@ let panelSeq = 0;
   `,
   styles: `
     :host { display: block; border-bottom: 1px solid var(--ui-color-border); }
+    /* The last section leaves the edge to its container, so a bordered panel doesn't get a doubled line. */
+    :host(:last-child) { border-bottom: 0; }
     .head { display: flex; align-items: center; gap: var(--ui-space-2); min-height: var(--ui-size-lg); padding: 0 var(--ui-space-2) 0 0; }
     .toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--ui-space-2); height: var(--ui-size-lg); padding: 0 var(--ui-space-3);
       border: 0; background: none; color: var(--ui-color-text); font: 600 12px/1 var(--ui-font-default); letter-spacing: .04em;
