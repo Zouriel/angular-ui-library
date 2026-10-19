@@ -48,9 +48,12 @@ import { UI_CONFIG } from '@zouriel/ui';
       .brand { flex: 1 0 auto; }
       /* nowrap so a two-word link scrolls out of view rather than stacking into a tall column and
          dragging the whole bar down with it. */
-      /* Padding/negative-margin pair: room for focus rings the scroller would otherwise clip, at no extra height. */
+      /* Padding/negative-margin pair: room for focus rings the scroller would otherwise clip, at no extra height.
+         The row also starts a ghost button's padding (space-3) further left, so the first link's
+         label lines up with the brand above it rather than sitting 12px in. */
       .links { order: 1; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; white-space: nowrap;
-        padding: var(--ui-space-1); margin: calc(var(--ui-space-1) * -1); }
+        padding: var(--ui-space-1); margin: calc(var(--ui-space-1) * -1);
+        margin-inline-start: calc((var(--ui-space-1) + var(--ui-space-3)) * -1); }
       .links::-webkit-scrollbar { display: none; }
       .actions { flex: 0 0 auto; }
     }

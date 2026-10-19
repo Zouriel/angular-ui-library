@@ -53,11 +53,11 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
       .ddb { position: relative; }
       .ddb::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
     }
-    .menu { display: flex; flex-direction: column; min-width: 170px; max-width: 320px; padding: var(--ui-space-1); box-sizing: border-box;
+    .menu { display: flex; flex-direction: column; min-width: 180px; max-width: 320px; padding: var(--ui-space-1); box-sizing: border-box;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
       line-height: 1.35; }
     .mi { padding: var(--ui-space-2) var(--ui-space-3); background: none; border: none; border-radius: var(--ui-radius-xs); text-align: left;
-      cursor: pointer; color: var(--ui-color-text); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
+      cursor: pointer; color: var(--ui-color-text); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .mi:hover:not(:disabled) { background: var(--ui-color-elevated-hover); }
     .mi:focus-visible { outline: none; background: var(--ui-color-elevated-hover); box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }

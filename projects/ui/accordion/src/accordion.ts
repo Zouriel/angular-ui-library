@@ -50,7 +50,7 @@ let accSeq = 0;
     .panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--ui-motion-base) var(--ui-ease-standard); }
     .panel.open { grid-template-rows: 1fr; }
     .panel-inner { overflow: hidden; }
-    .pad { padding: 0 var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); font-family: var(--ui-font-default); line-height: 1.45; }
+    .pad { padding: var(--ui-space-1) var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-text-muted); font-family: var(--ui-font-default); line-height: 1.45; }
   `,
 })
 export class UiAccordionItem {

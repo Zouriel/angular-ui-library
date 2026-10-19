@@ -45,7 +45,11 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
       .x::before { content: ''; position: absolute; inset: calc((24px - var(--ui-size-touch)) / 2); }
     }
     .x:hover { background-color: color-mix(in srgb, currentColor 18%, transparent); }
-    .x:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* The ring follows the painted 16px circle, not the 24px hit box (which would cover the label),
+       and is a single 2px band so it stays inside the 4px gap to the label. */
+    .x::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; pointer-events: none; }
+    .x:focus-visible { outline: none; }
+    .x:focus-visible::after { box-shadow: 0 0 0 2px var(--ui-color-border-focus); }
   `,
 })
 export class UiChip {

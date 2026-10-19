@@ -12,7 +12,7 @@ export interface UiImagePickerItem {
   /** A short tag in the corner, such as "Moves". */
   badge?: string;
   disabled?: boolean;
-  /** Why it's disabled, or anything more to say on hover. */
+  /** Why it's disabled (shown on the tile, and read out), or anything more to say on hover. */
   hint?: string;
 }
 
@@ -33,8 +33,8 @@ export interface UiImagePickerItem {
     <div class="grid" role="list" [style.--ui-image-picker-min]="minThumb()">
       @for (item of items(); track item.id) {
         <div role="listitem" class="cell">
-          <button type="button" class="tile" [class.busy]="busyId() === item.id" [disabled]="item.disabled || (busyId() !== null && busyId() !== item.id)"
-            [attr.aria-label]="item.label" [attr.aria-busy]="busyId() === item.id" [attr.title]="item.hint || item.label"
+          <button type="button" class="tile" [class.busy]="busyId() === item.id" [class.has-reason]="item.disabled && item.hint" [disabled]="item.disabled || (busyId() !== null && busyId() !== item.id)"
+            [attr.aria-label]="item.disabled && item.hint ? item.label + ', ' + item.hint : item.label" [attr.aria-busy]="busyId() === item.id" [attr.title]="item.hint || item.label"
             [attr.draggable]="dragType() && !item.disabled ? 'true' : null" (dragstart)="onDragStart($event, item)" (click)="pick.emit(item)">
             @if (!broken().has(item.id)) {
               <img [src]="item.src" alt="" loading="lazy" decoding="async" draggable="false" (error)="markBroken(item.id)" />
@@ -42,6 +42,7 @@ export interface UiImagePickerItem {
               <span class="fallback"><hugeicons-icon [icon]="imageIcon" [size]="22" [strokeWidth]="1.6" aria-hidden="true" /><span>{{ item.label }}</span></span>
             }
             @if (item.badge) { <span class="badge">{{ item.badge }}</span> }
+            @if (item.disabled && item.hint) { <span class="reason" aria-hidden="true">{{ item.hint }}</span> }
             @if (busyId() === item.id) { <span class="veil"><ui-spinner size="sm" [label]="'Adding ' + item.label" /></span> }
           </button>
           @if (captions()) { <span class="caption" aria-hidden="true">{{ item.label }}</span> }
@@ -71,6 +72,14 @@ export interface UiImagePickerItem {
     .tile:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .tile:disabled { cursor: not-allowed; opacity: .5; }
     .tile.busy { opacity: 1; border-color: var(--ui-color-primary); }
+    /* A disabled tile with a reason says why on the tile itself (a title tooltip never shows on
+       touch): the art dims, the reason sits on a strip along the bottom at full strength. */
+    .tile.has-reason { opacity: 1; }
+    .tile.has-reason img, .tile.has-reason .fallback { opacity: .45; }
+    .reason { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px var(--ui-space-1);
+      background: color-mix(in srgb, var(--ui-color-surface-raised) 88%, transparent); color: var(--ui-color-text);
+      font-family: var(--ui-font-default); font-size: 11px; font-weight: 500; line-height: 16px; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tile img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-1); height: 100%;
       color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); line-height: 1.2; text-align: center; overflow: hidden; }

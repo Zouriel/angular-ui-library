@@ -48,6 +48,65 @@ describe('UiWindow', () => {
   });
 });
 
+describe('UiWindow minimize', () => {
+  it('turns Minimize into Restore while minimized, which brings the window back', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const first = () => el.querySelector('.chrome button') as HTMLButtonElement;
+    expect(first().getAttribute('aria-label')).toBe('Minimize');
+    first().click();
+    fixture.detectChanges();
+    expect(el.querySelector('section.ui-window')!.classList).toContain('minimized');
+    expect(first().getAttribute('aria-label')).toBe('Restore');
+    first().click();
+    fixture.detectChanges();
+    expect(el.querySelector('section.ui-window')!.classList).not.toContain('minimized');
+    expect(el.querySelector('.body')).not.toBeNull();
+    expect(first().getAttribute('aria-label')).toBe('Minimize');
+  });
+
+  it('a maximized window restored from minimized is still maximized', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const win = fixture.debugElement.children[0].componentInstance as UiWindow;
+    win.dock('maximize');
+    fixture.detectChanges();
+    const first = () => el.querySelector('.chrome button') as HTMLButtonElement;
+    first().click();
+    fixture.detectChanges();
+    first().click();
+    fixture.detectChanges();
+    const section = el.querySelector('section.ui-window') as HTMLElement;
+    expect(section.style.width).toBe(`${window.innerWidth}px`);
+    expect(el.querySelectorAll('.chrome button')[1].getAttribute('aria-label')).toBe('Restore');
+  });
+});
+
+describe('UiWindowManager.tile', () => {
+  @Component({
+    imports: [UiWindow],
+    template: `<ui-window title="A">a</ui-window><ui-window title="B">b</ui-window>`,
+  })
+  class Two {}
+
+  it('leaves an 8px gutter between windows and around the edges', () => {
+    const fixture = TestBed.createComponent(Two);
+    fixture.detectChanges();
+    TestBed.inject(UiWindowManager).tile();
+    fixture.detectChanges();
+    const [a, b] = [...(fixture.nativeElement as HTMLElement).querySelectorAll('section.ui-window')] as HTMLElement[];
+    const box = (s: HTMLElement) => ({ x: parseFloat(s.style.left), y: parseFloat(s.style.top), w: parseFloat(s.style.width), h: parseFloat(s.style.height) });
+    const ra = box(a), rb = box(b);
+    expect(ra.x).toBe(8);
+    expect(ra.y).toBe(8);
+    expect(rb.x - (ra.x + ra.w)).toBe(8);
+    expect(rb.x + rb.w).toBeLessThanOrEqual(window.innerWidth - 8);
+    expect(ra.y + ra.h).toBeLessThanOrEqual(window.innerHeight - 8);
+  });
+});
+
 describe('UiWindow dragging', () => {
   function drag(el: HTMLElement, fixture: { detectChanges(): void }, from: [number, number], to: [number, number]) {
     const bar = el.querySelector('header.titlebar') as HTMLElement;

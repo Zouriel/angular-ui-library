@@ -2,7 +2,8 @@ import { Directive, ElementRef, NgZone, OnDestroy, OnInit, inject, input, output
 
 /**
  * `uiInfiniteScroll` — emits `(scrolledToEnd)` when the host scrolls within
- * `threshold` px of the bottom. Re-arms once scrolled back up.
+ * `threshold` px of the bottom. Re-arms once scrolled back up, or once the content grows (the
+ * new items arrived), and then checks again, so a scroll that jumps straight to the end still loads.
  */
 @Directive({
   selector: '[uiInfiniteScroll]',
@@ -15,13 +16,37 @@ export class UiInfiniteScroll implements OnInit, OnDestroy {
   scrolledToEnd = output<void>();
 
   private armed = true;
+  private lastHeight = 0;
+  private mutations?: MutationObserver;
   private readonly onScroll = () => this.check();
 
   ngOnInit(): void {
-    this.zone.runOutsideAngular(() => this.host.nativeElement.addEventListener('scroll', this.onScroll, { passive: true }));
+    const el = this.host.nativeElement;
+    this.lastHeight = el.scrollHeight;
+    this.zone.runOutsideAngular(() => {
+      el.addEventListener('scroll', this.onScroll, { passive: true });
+      if (typeof MutationObserver !== 'undefined') {
+        this.mutations = new MutationObserver(() => this.grown());
+        this.mutations.observe(el, { childList: true, subtree: true });
+      }
+    });
   }
   ngOnDestroy(): void {
     this.host.nativeElement.removeEventListener('scroll', this.onScroll);
+    this.mutations?.disconnect();
+  }
+
+  /**
+   * New content arrived. Only after a load (while disarmed): content that was short to begin with
+   * still waits for a scroll, as before.
+   */
+  private grown(): void {
+    const h = this.host.nativeElement.scrollHeight;
+    const grew = h > this.lastHeight;
+    this.lastHeight = h;
+    if (!grew || this.armed) return;
+    this.armed = true;
+    this.check();
   }
 
   private check(): void {

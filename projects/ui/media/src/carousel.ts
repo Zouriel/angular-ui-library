@@ -31,7 +31,7 @@ const INTENT_PX = 8;
     '(touchcancel)': 'onTouchEnd($event)',
   },
   template: `
-    <div class="cz" (pointerenter)="hovered.set(true)" (pointerleave)="hovered.set(false)" (focusin)="focused.set(true)" (focusout)="onFocusOut($event)">
+    <div class="cz" [class.has-dots]="dots() && slides().length > 1" (pointerenter)="hovered.set(true)" (pointerleave)="hovered.set(false)" (focusin)="focused.set(true)" (focusout)="onFocusOut($event)">
       <div
         class="track"
         [class.dragging]="drag() !== null"
@@ -67,9 +67,11 @@ const INTENT_PX = 8;
     .track.dragging { transition: none; }
     .slide { position: relative; flex: 0 0 100%; display: flex; }
     .slide img { width: 100%; height: auto; align-self: stretch; max-height: 360px; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
-    .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
+    .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-6) var(--ui-space-3) var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
       color: var(--ui-media-on-scrim); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    /* Room under the text for the row of dots, so a caption never runs beneath them. */
+    .has-dots .caption { padding-bottom: calc(var(--ui-space-3) + 24px); }
     .arrow { position: absolute; top: 50%; transform: translateY(-50%); width: var(--ui-size-touch); height: var(--ui-size-touch); border-radius: 50%;
       display: inline-flex; align-items: center; justify-content: center;
       border: none; background: color-mix(in srgb, var(--ui-media-scrim) 45%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; font: inherit; padding: 0;

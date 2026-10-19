@@ -10,7 +10,8 @@ import { Component, input } from '@angular/core';
   styles: `
     :host { display: inline-flex; }
     .grp { display: inline-flex; }
-    .grp ::ng-deep ui-avatar:not(:first-child) { margin-left: calc(-1 * var(--ui-avatar-overlap, var(--ui-space-2))); }
+    /* 4px (plus the 2px ring) keeps the previous avatar's second initial readable. */
+    .grp ::ng-deep ui-avatar:not(:first-child) { margin-left: calc(-1 * var(--ui-avatar-overlap, var(--ui-space-1))); }
     /* Ring matches the page by default; set --ui-avatar-ring to the surface colour when stacked on a card. */
     .grp ::ng-deep ui-avatar .ui-avatar { box-shadow: 0 0 0 2px var(--ui-avatar-ring, var(--ui-color-bg)); }
   `,

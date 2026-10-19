@@ -43,7 +43,8 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
       <header class="titlebar" (pointerdown)="startDrag($event)" (dblclick)="toggleMax()">
         <span class="title">{{ title() }}</span>
         <div class="chrome">
-          <button type="button" class="ctl" aria-label="Minimize" (pointerdown)="$event.stopPropagation()" (click)="minimize()"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 8h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          <!-- Minimized, the first control brings the window back (it keeps a maximized size). -->
+          <button type="button" class="ctl" [attr.aria-label]="minimized() ? 'Restore' : 'Minimize'" (pointerdown)="$event.stopPropagation()" (click)="minimized() ? unminimize() : minimize()">@if (minimized()) {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM3.5 6.5h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>} @else {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 8h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>}</button>
           <button type="button" class="ctl" [attr.aria-label]="maximized() ? 'Restore' : 'Maximize'" (pointerdown)="$event.stopPropagation()" (click)="toggleMax()">@if (maximized()) {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 6.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1zM6 3.5h5.5a1 1 0 0 1 1 1V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>} @else {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>}</button>
           <button type="button" class="ctl close" aria-label="Close" (pointerdown)="$event.stopPropagation()" (click)="close()"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
@@ -62,7 +63,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
   styles: `
     :host { display: contents; }
     .ui-window {
-      position: fixed; display: flex; flex-direction: column;
+      position: fixed; display: flex; flex-direction: column; box-sizing: border-box;
       min-width: 220px; min-height: 120px;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg);
@@ -319,6 +320,11 @@ export class UiWindow implements OnInit, OnDestroy {
 
   protected minimize(): void {
     this.minimized.set(true);
+  }
+
+  /** Back from minimized, to the size it had (maximized stays maximized). */
+  protected unminimize(): void {
+    this.minimized.set(false);
   }
 
   protected close(): void {

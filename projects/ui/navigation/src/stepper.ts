@@ -1,5 +1,6 @@
-import { Component, Directive, TemplateRef, contentChild, inject, input } from '@angular/core';
+import { Component, Directive, ElementRef, NgZone, OnDestroy, TemplateRef, afterNextRender, computed, contentChild, effect, inject, input, signal, untracked } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 export interface UiStep {
   label: string;
@@ -32,17 +33,18 @@ export class UiStepBody {
  * `ui-stepper` — progress through ordered steps.
  *
  * - `orientation`: `horizontal` (default) or `vertical`; a vertical stepper shows a `uiStepBody`
- *   template under each step.
+ *   template under each step. A horizontal stepper whose labels don't fit its width (a phone)
+ *   lays itself out vertically instead, so no label is cut or hidden; it goes back once it fits.
  * - `variant`: `default` (numbered markers with labels) or `dots` (small dots only, labels kept
  *   for screen readers and as tooltips): a compact progress strip.
  * - `tone`: the colour of finished and active steps, `primary` (default) or `success`.
  */
 @Component({
   selector: 'ui-stepper',
-  imports: [NgTemplateOutlet],
-  host: { '[attr.data-orientation]': 'orientation()', '[attr.data-variant]': 'variant()', '[attr.data-tone]': 'tone()' },
+  imports: [NgTemplateOutlet, UiScrollFade],
+  host: { '[attr.data-orientation]': 'direction()', '[attr.data-variant]': 'variant()', '[attr.data-tone]': 'tone()' },
   template: `
-    <ol class="ui-stepper" [attr.aria-label]="label() || null">
+    <ol class="ui-stepper" uiScrollFade [attr.aria-label]="label() || null">
       @for (step of steps(); track $index; let i = $index, last = $last) {
         <li class="step" [class.done]="i < active()" [class.active]="i === active()" [attr.aria-current]="i === active() ? 'step' : null"
           [attr.title]="variant() === 'dots' ? step.label : null">
@@ -55,7 +57,7 @@ export class UiStepBody {
             <span class="label">{{ step.label }}</span>
             @if (variant() === 'dots') { <span class="sr-only">, {{ i < active() ? 'done' : i === active() ? 'current' : 'not reached' }}</span> }
             @if (step.description && variant() === 'default') { <span class="desc">{{ step.description }}</span> }
-            @if (body() && orientation() === 'vertical' && variant() === 'default') {
+            @if (body() && direction() === 'vertical' && variant() === 'default') {
               <div class="body">
                 <ng-container *ngTemplateOutlet="body()!.template; context: { $implicit: step, index: i, state: i < active() ? 'done' : i === active() ? 'active' : 'todo' }" />
               </div>
@@ -101,25 +103,28 @@ export class UiStepBody {
     .body { margin-top: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
 
     /* Dots: a compact strip of 10px dots. Finished steps take the tone, the active one too with a
-       ring, steps not reached yet are solid in the text colour (black on light themes). */
+       ring; steps not reached yet are hollow, outlined in the muted text colour. */
+    /* Room for the current dot's 4px ring, which the sideways scroller would otherwise clip. */
+    :host([data-variant="dots"]) .ui-stepper { padding: 4px; margin: -4px; }
     :host([data-variant="dots"]) .step { gap: 0; flex: 0 0 auto; }
-    :host([data-variant="dots"]) .marker { width: 10px; height: 10px; border: 0; background: var(--ui-color-text); }
-    :host([data-variant="dots"]) .step.done .marker, :host([data-variant="dots"]) .step.active .marker { background: var(--ui-step-tone); }
+    :host([data-variant="dots"]) .marker { width: 10px; height: 10px; border: 0; box-sizing: border-box; background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--ui-color-text-muted); }
+    :host([data-variant="dots"]) .step.done .marker, :host([data-variant="dots"]) .step.active .marker { background: var(--ui-step-tone); box-shadow: none; }
     :host([data-variant="dots"]) .step.active .marker { box-shadow: 0 0 0 2px var(--ui-color-surface), 0 0 0 4px var(--ui-step-tone); }
+    /* 6px between a line and a dot; beside the current dot 10px, so its 4px ring keeps the same 6px. */
     :host([data-variant="dots"]) .bar { flex: none; width: 8px; min-width: 8px; margin: 0 6px; }
+    :host([data-variant="dots"]) .step.active .bar { margin-left: 10px; }
+    :host([data-variant="dots"]) .step:has(+ .step.active) .bar { margin-right: 10px; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step { padding-bottom: 20px; align-items: center; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step:last-child { padding-bottom: 0; }
     :host([data-variant="dots"][data-orientation="vertical"]) .bar { left: 4.5px; top: 16px; bottom: 6px; width: 1px; min-width: 0; margin: 0; }
-
-    /* Narrow screens: keep only the active step labelled so all markers fit without clipping. */
-    @media (max-width: 560px) {
-      :host(:not([data-orientation="vertical"])) .step { gap: var(--ui-space-1); }
-      :host(:not([data-orientation="vertical"])[data-variant="default"]) .step:not(.active) .text { display: none; }
-      :host(:not([data-orientation="vertical"])) .bar { min-width: var(--ui-space-2); margin: 0 var(--ui-space-1); }
-    }
+    :host([data-variant="dots"][data-orientation="vertical"]) .step.active .bar,
+    :host([data-variant="dots"][data-orientation="vertical"]) .step:has(+ .step.active) .bar { margin: 0; }
+    :host([data-variant="dots"][data-orientation="vertical"]) .step.active .bar { top: 20px; }
+    :host([data-variant="dots"][data-orientation="vertical"]) .step:has(+ .step.active) .bar { bottom: 10px; }
   `,
 })
-export class UiStepper {
+export class UiStepper implements OnDestroy {
   steps = input<UiStep[]>([]);
   active = input(0);
   orientation = input<'horizontal' | 'vertical'>('horizontal');
@@ -128,4 +133,48 @@ export class UiStepper {
   /** An accessible name for the list of steps. */
   label = input('');
   protected readonly body = contentChild(UiStepBody);
+
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private zone = inject(NgZone);
+  private resize?: ResizeObserver;
+  /** True while a horizontal stepper doesn't fit and is laid out vertically instead. */
+  protected readonly squeezed = signal(false);
+  /** The width the horizontal layout needed when it last didn't fit. */
+  private needed = 0;
+  /** The layout actually used. */
+  protected readonly direction = computed(() =>
+    this.orientation() === 'horizontal' && this.variant() === 'default' && this.squeezed() ? 'vertical' : this.orientation());
+
+  constructor() {
+    // New steps may fit again (or no longer): measure them laid out horizontally.
+    effect(() => {
+      this.steps();
+      untracked(() => { if (this.squeezed()) this.squeezed.set(false); });
+    });
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      this.zone.runOutsideAngular(() => {
+        this.resize = new ResizeObserver(() => this.fit());
+        this.resize.observe(this.host.nativeElement);
+        this.resize.observe(this.host.nativeElement.querySelector('ol')!);
+      });
+      this.fit();
+    });
+  }
+
+  ngOnDestroy(): void { this.resize?.disconnect(); }
+
+  private fit(): void {
+    if (this.orientation() !== 'horizontal' || this.variant() !== 'default') return;
+    const host = this.host.nativeElement;
+    const ol = host.querySelector('ol')!;
+    if (!this.squeezed()) {
+      if (ol.scrollWidth > ol.clientWidth + 1) {
+        this.needed = ol.scrollWidth;
+        this.squeezed.set(true);
+      }
+    } else if (host.clientWidth >= this.needed) {
+      this.squeezed.set(false);
+    }
+  }
 }

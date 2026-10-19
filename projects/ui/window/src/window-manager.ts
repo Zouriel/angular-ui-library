@@ -1,5 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 
+/** Space between tiled windows, and between them and the viewport edges (--ui-space-2). */
+const TILE_GAP = 8;
+/** A window's minimum width (ui-window's min-width): tiling never makes columns narrower. */
+const TILE_MIN_WIDTH = 220;
+
 export type UiDockSide = 'left' | 'right' | 'top' | 'bottom' | 'maximize' | null;
 
 /** A window's imperative surface, registered with the manager for coordination. */
@@ -77,21 +82,25 @@ export class UiWindowManager {
     for (const h of this.registry.values()) h.restore();
   }
 
-  /** Tile all registered windows into a grid covering the viewport. */
+  /**
+   * Tile all registered windows into a grid covering the viewport, 8px apart and 8px in from its
+   * edges. On a narrow screen it uses fewer columns, so no window is squeezed below its minimum width.
+   */
   tile(): void {
     const handles = [...this.registry.values()];
     const n = handles.length;
     if (!n) return;
-    const cols = Math.ceil(Math.sqrt(n));
-    const rows = Math.ceil(n / cols);
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const w = Math.floor(vw / cols);
-    const h = Math.floor(vh / rows);
+    const fit = Math.max(1, Math.floor((vw - TILE_GAP) / (TILE_MIN_WIDTH + TILE_GAP)));
+    const cols = Math.min(Math.ceil(Math.sqrt(n)), fit);
+    const rows = Math.ceil(n / cols);
+    const w = Math.floor((vw - TILE_GAP * (cols + 1)) / cols);
+    const h = Math.floor((vh - TILE_GAP * (rows + 1)) / rows);
     handles.forEach((handle, i) => {
       const cx = i % cols;
       const cy = Math.floor(i / cols);
-      handle.setBounds({ x: cx * w, y: cy * h, width: w, height: h });
+      handle.setBounds({ x: TILE_GAP + cx * (w + TILE_GAP), y: TILE_GAP + cy * (h + TILE_GAP), width: w, height: h });
     });
   }
 }

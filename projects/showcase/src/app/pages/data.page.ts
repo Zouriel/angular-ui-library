@@ -384,7 +384,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'avatar: size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Avatar size.' },
     { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Rounded square instead of a circle.' },
     { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational only; trim the list yourself.' },
-    { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-2)', desc: 'How far grouped avatars overlap.' },
+    { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-1)', desc: 'How far grouped avatars overlap.' },
     { name: '--ui-avatar-ring', type: 'CSS colour', default: 'var(--ui-color-bg)', desc: 'Ring around grouped avatars; set it to the colour behind them.' },
   ];
   protected readonly chipOut: ApiRow[] = [{ name: 'chip: remove', type: 'void', default: '—', desc: 'Remove button pressed.' }];
