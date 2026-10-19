@@ -1,16 +1,25 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
+import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
+import Copy01Icon from '@hugeicons/core-free-icons/Copy01Icon';
+import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 
-/** `ui-code-block` — monospace code panel with language label and copy button. */
+/** `ui-code-block` — monospace code panel with language label and copy button; long lines scroll sideways, the cut edge fading out. */
 @Component({
   selector: 'ui-code-block',
+  imports: [HugeiconsIconComponent, UiScrollFade],
   template: `
     <div class="cb" [class.no-radius]="!radius()">
       <div class="bar">
         <span class="lang">{{ language() }}</span>
-        <button type="button" class="copy" (click)="copy()"><span aria-live="polite">{{ state() === 'copied' ? 'Copied' : state() === 'failed' ? 'Copy failed' : 'Copy' }}</span></button>
+        <button type="button" class="copy" [class.failed]="state() === 'failed'" (click)="copy()">
+          <hugeicons-icon [icon]="state() === 'copied' ? tickIcon : state() === 'failed' ? alertIcon : copyIcon" [size]="14" [strokeWidth]="1.5" aria-hidden="true" />
+          <span aria-live="polite">{{ state() === 'copied' ? 'Copied' : state() === 'failed' ? 'Copy failed' : 'Copy' }}</span>
+        </button>
       </div>
-      <pre class="code"><code>{{ code() }}</code></pre>
+      <pre class="code" uiScrollFade><code>{{ code() }}</code></pre>
     </div>
   `,
   styles: `
@@ -20,10 +29,11 @@ import { DOCUMENT } from '@angular/common';
     .bar { display: flex; align-items: center; justify-content: space-between; padding: 2px var(--ui-space-2) 2px var(--ui-space-3);
       background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); }
     .lang { font-family: var(--ui-font-default); font-size: 12px; color: var(--ui-color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-    .copy { position: relative; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-2); border: none; border-radius: var(--ui-radius-xs);
+    .copy { position: relative; box-sizing: border-box; display: inline-flex; align-items: center; gap: var(--ui-space-1); height: var(--ui-size-sm); padding: 0 var(--ui-space-2); border: none; border-radius: var(--ui-radius-xs);
       background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font: inherit; font-family: var(--ui-font-default); font-size: 12px;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .copy:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+    .copy.failed { color: var(--ui-color-danger); }
     @media (pointer: coarse) { .copy::before { content: ''; position: absolute; inset: calc((var(--ui-size-sm) - var(--ui-size-touch)) / 2) 0; } }
     .copy:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: var(--ui-radius-xs); }
     .code { margin: 0; padding: var(--ui-space-3); overflow: auto; }
@@ -35,6 +45,9 @@ export class UiCodeBlock {
   code = input('');
   language = input('text');
   radius = input(true);
+  protected readonly copyIcon = Copy01Icon;
+  protected readonly tickIcon = Tick02Icon;
+  protected readonly alertIcon = Alert02Icon;
   protected readonly state = signal<'idle' | 'copied' | 'failed'>('idle');
   private resetTimer?: ReturnType<typeof setTimeout>;
 
