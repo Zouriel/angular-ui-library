@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
-  Component, ElementRef, NgZone, OnDestroy, computed, inject, input, model, output, signal, viewChild,
+  Component, ElementRef, NgZone, OnDestroy, afterNextRender, computed, inject, input, model, output, signal, viewChild,
 } from '@angular/core';
 
 export interface UiSequencerKeyframe {
@@ -67,6 +67,10 @@ const TOUCH_SLOP = 8;
 const MIN_ROW_HEIGHT = 25;
 /** How long the name shown after a tap stays up. */
 const TIP_MS = 2600;
+/** Width of one character of a ruler label (11px monospace), with a little to spare. */
+const LABEL_CHAR_PX = 7;
+/** Half the End grip's width plus a gap: how close the grip can come to a label before the label gives way. */
+const END_GRIP_PX = 10;
 
 /**
  * `ui-sequencer` — a timeline editor: one row per layer, a bar for the range each is active, diamonds
@@ -98,19 +102,25 @@ const TIP_MS = 2600;
       <div class="grid" [style.width]="'calc(var(--label-w) + ' + zoom() * 100 + '% - ' + zoom() + ' * var(--label-w))'">
         <!-- Ruler -->
         @if (showLabels()) { <div class="corner"><span class="ctitle">{{ title() }}</span></div> }
-        <div class="ruler" #ruler (pointerdown)="startPlayhead($event)">
-          @for (m of markers(); track $index) {
-            <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan($index))"><span class="mlabel">{{ m.label }}</span></span>
-          }
-          @if (endDraggable() && end() !== null) {
-            <!-- Never closer to the left edge than half its width, so an End at 0 can still be grabbed. -->
-            <span class="end-handle" role="slider" tabindex="0" [style.left]="'max(13px, ' + pct(end()!) + '%)'" [attr.aria-label]="endLabel()"
-              [attr.aria-valuemin]="0" [attr.aria-valuenow]="round(end()!)" [attr.title]="endLabel()"
-              (pointerdown)="startPageEnd($event)" (keydown)="onEndKey($event)"><span aria-hidden="true"></span></span>
-          }
-          <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
-            aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
-            (keydown)="onPlayheadKey($event)"></span>
+        <div class="ruler" (pointerdown)="startPlayhead($event)">
+          <!-- The timeline runs inset from both ends, so keyframes and grips at 0 or the end aren't cut in half. -->
+          <div class="track" #ruler>
+            @for (m of markers(); track $index; let i = $index) {
+              @let fit = labelFit(i);
+              <span class="marker" [class.end]="pct(m.at) > 88" [style.left.%]="pct(m.at)" [style.width.%]="pct(markerSpan(i))">
+                <!-- Too narrow for the name: its number. Under the End grip: nothing, rather than a name with a bar through it. -->
+                @if (fit !== 'none') { <span class="mlabel" [attr.title]="fit === 'number' ? m.label : null">{{ fit === 'number' ? i + 1 : m.label }}</span> }
+              </span>
+            }
+            @if (endDraggable() && end() !== null) {
+              <span class="end-handle" role="slider" tabindex="0" [style.left.%]="pct(end()!)" [attr.aria-label]="endLabel()"
+                [attr.aria-valuemin]="0" [attr.aria-valuenow]="round(end()!)" [attr.title]="endLabel()"
+                (pointerdown)="startPageEnd($event)" (keydown)="onEndKey($event)"><span aria-hidden="true"></span></span>
+            }
+            <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
+              aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
+              (keydown)="onPlayheadKey($event)"></span>
+          </div>
         </div>
 
         <!-- Rows -->
@@ -128,24 +138,26 @@ const TIP_MS = 2600;
           </div>
           }
           <div class="lane" [class.selected]="row.id === selectedRowId()" [class.drop-before]="!showLabels() && dropIndex() === i" (pointerdown)="laneDown($event)">
-            @for (m of markers(); track $index) { <span class="gridline" [style.left.%]="pct(m.at)"></span> }
-            <div class="bar" tabindex="0" role="button" [attr.data-row]="row.id" [attr.title]="showLabels() ? null : row.label"
-              [attr.aria-label]="row.label + ': ' + round(row.start) + ' to ' + round(row.end)"
-              [class.selected]="row.id === selectedRowId()" [class.muted]="row.muted" [class.locked]="row.locked" [class.lifted]="liftedId() === row.id"
-              [style.left.%]="pct(row.start)" [style.width.%]="pct(row.end - row.start)"
-              (pointerdown)="startBar($event, row, 'move')" (keydown)="onBarKey($event, row)" (focus)="selectRow(row.id)">
-              @if (!row.fixed) {
-                <span class="edge start" (pointerdown)="startBar($event, row, 'start')"></span>
-                <span class="edge end" (pointerdown)="startBar($event, row, 'end')"></span>
-              }
-              @for (k of row.keyframes ?? []; track k.id) {
-                <span class="diamond" tabindex="0" role="button"
-                  [class.selected]="k.id === selectedKeyframeId()" [style.left.%]="k.at * 100"
-                  [attr.aria-label]="'Keyframe ' + (k.label ?? '') + ' at ' + round(k.at * 100) + '%'"
-                  [title]="k.label ?? ''"
-                  (pointerdown)="startKeyframe($event, row, k)" (keydown)="onKeyframeKey($event, row, k)"
-                  (contextmenu)="openKeyframeMenu($event, row, k)"></span>
-              }
+            <div class="track">
+              @for (m of markers(); track $index) { <span class="gridline" [style.left.%]="pct(m.at)"></span> }
+              <div class="bar" tabindex="0" role="button" [attr.data-row]="row.id" [attr.title]="showLabels() ? null : row.label"
+                [attr.aria-label]="row.label + ': ' + round(row.start) + ' to ' + round(row.end)"
+                [class.selected]="row.id === selectedRowId()" [class.muted]="row.muted" [class.locked]="row.locked" [class.lifted]="liftedId() === row.id"
+                [style.left.%]="pct(row.start)" [style.width.%]="pct(row.end - row.start)"
+                (pointerdown)="startBar($event, row, 'move')" (keydown)="onBarKey($event, row)" (focus)="selectRow(row.id)">
+                @if (!row.fixed) {
+                  <span class="edge start" (pointerdown)="startBar($event, row, 'start')"></span>
+                  <span class="edge end" (pointerdown)="startBar($event, row, 'end')"></span>
+                }
+                @for (k of row.keyframes ?? []; track k.id) {
+                  <span class="diamond" tabindex="0" role="button"
+                    [class.selected]="k.id === selectedKeyframeId()" [style.left.%]="k.at * 100"
+                    [attr.aria-label]="'Keyframe ' + (k.label ?? '') + ' at ' + round(k.at * 100) + '%'"
+                    [title]="k.label ?? ''"
+                    (pointerdown)="startKeyframe($event, row, k)" (keydown)="onKeyframeKey($event, row, k)"
+                    (contextmenu)="openKeyframeMenu($event, row, k)"></span>
+                }
+              </div>
             </div>
           </div>
         }
@@ -153,17 +165,17 @@ const TIP_MS = 2600;
           <div class="empty">{{ emptyText() }}</div>
         }
         @if (endDraggable() && end() !== null) {
-          <div class="end-line" aria-hidden="true" [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct(end()!) / 100 + ')'"
+          <div class="end-line" aria-hidden="true" [style.left]="'calc(var(--label-w) + var(--inset) + (100% - var(--label-w) - 2 * var(--inset)) * ' + pct(end()!) / 100 + ')'"
             (pointerdown)="startPageEnd($event)"></div>
         }
         @if (end() !== null && end()! < length()) {
-          <div class="beyond" aria-hidden="true" [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct(end()!) / 100 + ')'"></div>
+          <div class="beyond" aria-hidden="true" [style.left]="'calc(var(--label-w) + var(--inset) + (100% - var(--label-w) - 2 * var(--inset)) * ' + pct(end()!) / 100 + ')'"></div>
         }
         @if (tip(); as t) {
           @for (row of rows(); track row.id; let i = $index) {
             @if (row.id === t.id) {
               <div class="tip" role="status" [class.below]="i === 0" [class.from-left]="t.edge === 'left'" [class.from-right]="t.edge === 'right'"
-                [style.left]="t.x !== null ? t.x + 'px' : 'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct((row.start + row.end) / 2) / 100 + ')'"
+                [style.left]="t.x !== null ? t.x + 'px' : 'calc(var(--label-w) + var(--inset) + (100% - var(--label-w) - 2 * var(--inset)) * ' + pct((row.start + row.end) / 2) / 100 + ')'"
                 [style.top.px]="(i === 0 ? i + 2 : i + 1) * rowH()">
                 @if (row.kind) { <span class="kind">{{ row.kind }}</span> }
                 <span class="tip-name">{{ row.label }}</span>
@@ -173,7 +185,7 @@ const TIP_MS = 2600;
           }
         }
         <div class="playhead-line" aria-hidden="true"
-          [style.left]="'calc(var(--label-w) + (100% - var(--label-w)) * ' + pct(playhead()) / 100 + ')'"></div>
+          [style.left]="'calc(var(--label-w) + var(--inset) + (100% - var(--label-w) - 2 * var(--inset)) * ' + pct(playhead()) / 100 + ')'"></div>
         @if (dropIndex() === rows().length) { <div class="drop-end"></div> }
       </div>
     </div>
@@ -199,7 +211,8 @@ const TIP_MS = 2600;
     </ng-template>
   `,
   styles: `
-    :host { display: block; position: relative; min-height: 0; height: 100%; color: var(--ui-color-text);
+    /* --inset: half a keyframe's 24px target, kept clear at each end of the timeline. */
+    :host { --inset: var(--ui-space-3); display: block; position: relative; min-height: 0; height: 100%; color: var(--ui-color-text);
       font: 12px/1.35 var(--ui-font-default); font-variant-numeric: tabular-nums; background: var(--ui-color-surface); user-select: none; }
     .scroller { position: absolute; inset: 0; overflow: auto; }
     .grid { position: relative; display: grid; grid-template-columns: var(--label-w) 1fr; grid-auto-rows: var(--row-h); min-width: 100%; }
@@ -208,6 +221,7 @@ const TIP_MS = 2600;
       border-bottom: 1px solid var(--ui-color-border); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
     .ctitle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ruler { position: sticky; top: 0; z-index: 3; background: var(--ui-color-surface-subtle); border-bottom: 1px solid var(--ui-color-border); cursor: ew-resize; }
+    .track { position: absolute; inset: 0 var(--inset); }
     .marker { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--ui-color-border-strong); }
     .marker.end .mlabel { left: auto; right: 4px; }
     .mlabel { position: absolute; left: 4px; top: 50%; translate: 0 -50%; max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis;
@@ -225,7 +239,8 @@ const TIP_MS = 2600;
     .label.drop-before { box-shadow: inset 0 2px 0 var(--ui-color-primary); }
     .grip { flex: none; display: inline-grid; place-items: center; cursor: grab; color: var(--ui-color-text-muted); padding: 0 2px; }
     .grip:hover { color: var(--ui-color-text); }
-    .kind { flex: none; font-size: 11px; line-height: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-color-text-muted);
+    /* One width for every badge (SVG, TEXT, RSVP…), so the names after them start in one column. */
+    .kind { flex: none; box-sizing: border-box; min-width: 4.5em; text-align: center; font-size: 11px; line-height: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-color-text-muted);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); padding: 0 var(--ui-space-1); }
     .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .toggle { flex: none; display: grid; place-items: center; width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; border: 0; border-radius: var(--ui-radius-xs);
@@ -412,6 +427,40 @@ export class UiSequencer implements OnDestroy {
 
   private readonly onMove = (e: PointerEvent) => this.move(e);
   private readonly onUp = (e: PointerEvent) => this.up(e);
+
+  /** The ruler's width in px, for deciding which marker names fit. */
+  private readonly rulerWidth = signal(0);
+
+  /**
+   * How a marker's name fits its stretch of the ruler: whole, as its number when the stretch is too
+   * narrow for more than a few letters, or not at all when the End grip sits on it. The labels are
+   * monospace, so their width is known from the length of the text.
+   */
+  protected labelFit(index: number): 'label' | 'number' | 'none' {
+    const w = this.rulerWidth();
+    if (!w) return 'label';
+    const pxPerUnit = w / (this.length() || 1);
+    const m = this.markers()[index];
+    const room = this.markerSpan(index) * pxPerUnit - 8;
+    const need = m.label.length * LABEL_CHAR_PX;
+    const fit = need <= room ? 'label' : String(index + 1).length * LABEL_CHAR_PX <= room ? 'number' : 'none';
+    const end = this.endDraggable() ? this.end() : null;
+    if (end !== null && fit !== 'none') {
+      const x = (end - m.at) * pxPerUnit;
+      if (x > -END_GRIP_PX && x < 4 + Math.min(room, fit === 'label' ? need : LABEL_CHAR_PX * 2) + END_GRIP_PX) return 'none';
+    }
+    return fit;
+  }
+
+  constructor() {
+    afterNextRender(() => {
+      const el = this.ruler()?.nativeElement;
+      if (!el || typeof ResizeObserver === 'undefined') return;
+      this.resize = new ResizeObserver(([e]) => this.rulerWidth.set(e.contentRect.width));
+      this.resize.observe(el);
+    });
+  }
+  private resize: ResizeObserver | null = null;
 
   /** Width of a marker's stretch, up to the next marker, in timeline units — so its label can't run into the next. */
   protected markerSpan(index: number): number {
@@ -962,6 +1011,7 @@ export class UiSequencer implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.resize?.disconnect();
     this.detach();
     this.clearPress();
     if (this.tipTimer) clearTimeout(this.tipTimer);

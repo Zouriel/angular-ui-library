@@ -106,7 +106,8 @@ const MAX_ROWS = 6;
     .segment { position: absolute; top: 0; bottom: 0; box-sizing: border-box; border-left: 1px solid var(--ui-color-border-strong);
       background: color-mix(in srgb, var(--ui-color-primary) 10%, var(--ui-color-surface)); overflow: hidden; }
     .segment.alt { background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); }
-    .slabel { position: absolute; left: 6px; right: 4px; top: 50%; translate: 0 -50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 11px var(--ui-font-mono);
+    /* Labels ride the top half and ticks the bottom half, so a keyframe never sits on a section's name. */
+    .slabel { position: absolute; left: 6px; right: 4px; top: 2px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 11px var(--ui-font-mono);
       color: var(--ui-color-text-secondary); }
     .lanes { position: absolute; inset: 0; }
     .lane { position: absolute; box-sizing: border-box; border-radius: 2px; min-height: 1.5px;
@@ -116,7 +117,7 @@ const MAX_ROWS = 6;
     .beyond { position: absolute; top: -6px; bottom: -6px; right: 0; border-left: 1.5px dashed var(--ui-color-border-strong);
       background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ui-color-text) 6%, transparent) 0 5px, transparent 5px 10px); }
     :host(.pressing) .track { opacity: .75; transition: opacity var(--ui-motion-slow) var(--ui-ease-standard); }
-    .tick { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; rotate: 45deg; box-sizing: border-box;
+    .tick { position: absolute; bottom: 3px; width: 9px; height: 9px; margin-left: -4.5px; rotate: 45deg; box-sizing: border-box;
       background: var(--ui-color-surface); border: 1.5px solid var(--ui-color-primary); }
     .tick.active { background: var(--ui-color-primary); }
     .playhead { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ui-color-primary);

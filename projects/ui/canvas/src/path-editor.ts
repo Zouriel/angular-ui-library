@@ -89,7 +89,7 @@ const DOUBLE_TAP_MS = 320;
  *   Hold still at the end of a stroke to snap it to a line, circle, ellipse, rectangle or triangle.
  *   Each finished stroke is reported through `stroke`: the host decides what it becomes.
  *
- * The view zooms with a two-finger pinch or the wheel, and pans by dragging empty space (or with two
+ * The view zooms with a two-finger pinch or Ctrl/⌘ + wheel (a plain wheel scrolls the page), and pans by dragging empty space (or with two
  * fingers). It never mutates `items`: a finished gesture is reported once through `itemsChange`, so
  * the host owns undo. While a gesture runs, a draft is drawn instead.
  */
@@ -848,6 +848,9 @@ export class UiPathEditor {
   }
 
   protected wheel(e: WheelEvent): void {
+    // A plain wheel belongs to the page: zooming on it traps the scroll of anyone passing over the editor.
+    // A trackpad pinch arrives as a wheel with ctrlKey set.
+    if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
     const world = this.toUnits(e.clientX, e.clientY);
     const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015));
