@@ -1,9 +1,18 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
+  Component, DestroyRef, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
-import type { UiStatus } from '@zouriel/ui';
+import { injectUiStrings, type UiStatus } from '@zouriel/ui';
+
+/**
+ * How ui-map loads Leaflet: `import('leaflet')` by default. Provide another loader to test a map
+ * without the network or to control when Leaflet arrives.
+ */
+export const UI_MAP_LEAFLET = new InjectionToken<() => Promise<unknown>>('UI_MAP_LEAFLET', {
+  providedIn: 'root',
+  factory: () => () => import('leaflet'),
+});
 
 /** A point on the map. */
 export interface UiLatLng {
@@ -16,6 +25,8 @@ export interface UiMapMarker extends UiLatLng {
   id: string;
   tone?: UiStatus;
   label?: string;
+  /** The marker's accessible name when the label doesn't say enough, or there is no label. */
+  ariaLabel?: string;
 }
 
 /** Where the map is looking, after the person (or the app) moved it. */
@@ -78,6 +89,10 @@ export class UiMap {
   pinMode = input(false);
   /** The pin's accessible name. */
   pinLabel = input('Chosen location');
+  /** Whether the pin can be dragged; false shows a fixed location with the pin's look. */
+  pinDraggable = input(true);
+  /** The tiles' Referer policy (OSM's tile policy needs a Referer). */
+  tileReferrerPolicy = input<Exclude<ReferrerPolicy, ''>>('strict-origin-when-cross-origin');
   tileUrl = input(UI_MAP_OSM_TILES);
   attribution = input(UI_MAP_OSM_ATTRIBUTION);
   ariaLabel = input('Map');
@@ -89,6 +104,8 @@ export class UiMap {
   protected readonly dark = signal(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly loadLeaflet = inject(UI_MAP_LEAFLET);
+  private readonly strings = injectUiStrings();
   private readonly zone = inject(NgZone);
   private L: typeof Leaflet | null = null;
   private map: Leaflet.Map | null = null;
@@ -97,14 +114,25 @@ export class UiMap {
   private tiles: Leaflet.TileLayer | null = null;
   /** The map's own view, so a center input that only echoes it doesn't move it again. */
   private view: UiMapView | null = null;
+  /** Destroyed, possibly while Leaflet was still loading. */
+  private destroyed = false;
+  /** Undoes what init set up (map, observers); set once the map exists. */
+  private teardown: (() => void) | null = null;
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
     const destroy = inject(DestroyRef);
+    // Registered now, not after Leaflet has loaded: the map can be destroyed while the import is
+    // pending (leaving the page at once), and onDestroy on a destroyed view throws NG0911.
+    destroy.onDestroy(() => {
+      this.destroyed = true;
+      this.teardown?.();
+      this.teardown = null;
+    });
     afterNextRender(() => {
-      if (!browser) return;
+      if (!browser || this.destroyed) return;
       this.watchTheme(destroy);
-      void this.init(destroy);
+      void this.init();
     });
     effect(() => {
       const c = this.center();
@@ -119,11 +147,13 @@ export class UiMap {
       const p = this.pin();
       this.pinMode();
       this.pinLabel();
+      this.pinDraggable();
       untracked(() => this.drawPin(p));
     });
     effect(() => {
       const url = this.tileUrl();
       const attr = this.attribution();
+      this.tileReferrerPolicy();
       untracked(() => this.drawTiles(url, attr));
     });
   }
@@ -136,8 +166,10 @@ export class UiMap {
     return getComputedStyle(this.host.nativeElement).direction === 'rtl';
   }
 
-  private async init(destroy: DestroyRef): Promise<void> {
-    const mod = await import('leaflet');
+  private async init(): Promise<void> {
+    const mod = await this.loadLeaflet();
+    // Gone while Leaflet loaded: build nothing.
+    if (this.destroyed) return;
     const L = ((mod as unknown as { default?: typeof Leaflet }).default ?? mod) as typeof Leaflet;
     if (this.map) return;
     this.L = L;
@@ -156,7 +188,10 @@ export class UiMap {
         inertia: !still,
         keyboard: true,
       });
-      L.control.zoom({ position: rtl ? 'topright' : 'topleft' }).addTo(map);
+      L.control.zoom({ position: rtl ? 'topright' : 'topleft', zoomInTitle: this.strings.zoomIn, zoomOutTitle: this.strings.zoomOut }).addTo(map);
+      // The map surface is the focusable, keyboard-pannable element: it carries the name.
+      el.setAttribute('aria-label', this.ariaLabel());
+      if (this.pinMode()) el.setAttribute('aria-description', this.strings.placePinAtCentre + ' (Enter)');
       L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map);
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
@@ -176,11 +211,14 @@ export class UiMap {
       });
       const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
       ro.observe(el);
-      destroy.onDestroy(() => {
+      this.teardown = () => {
         ro.disconnect();
         map.remove();
         this.map = null;
-      });
+        this.markerLayer = null;
+        this.pinMarker = null;
+        this.tiles = null;
+      };
     });
     this.drawTiles(this.tileUrl(), this.attribution());
     this.drawMarkers(this.markers());
@@ -199,7 +237,7 @@ export class UiMap {
     const { L, map } = this;
     if (!L || !map) return;
     this.tiles?.remove();
-    this.tiles = L.tileLayer(url, { attribution, maxZoom: 19, crossOrigin: true }).addTo(map);
+    this.tiles = L.tileLayer(url, { attribution, maxZoom: 19, crossOrigin: true, referrerPolicy: this.tileReferrerPolicy() }).addTo(map);
   }
 
   private drawMarkers(list: UiMapMarker[]): void {
@@ -209,8 +247,8 @@ export class UiMap {
     for (const m of list) {
       const marker = L.marker([m.lat, m.lng], {
         icon: L.divIcon({ className: 'ui-map-marker', html: uiMapMarkerHtml(m), iconSize: undefined }),
-        title: m.label ?? '',
-        alt: m.label ?? '',
+        title: m.ariaLabel ?? m.label ?? '',
+        alt: m.ariaLabel ?? m.label ?? '',
         keyboard: true,
         riseOnHover: true,
       });
@@ -227,10 +265,17 @@ export class UiMap {
       this.pinMarker = null;
       return;
     }
+    const draggable = this.pinDraggable();
+    // A fixed pin is rebuilt when that changes (Leaflet sets keyboard and interactivity at creation).
+    if (this.pinMarker && (this.pinMarker.options.draggable ?? false) !== draggable) {
+      this.pinMarker.remove();
+      this.pinMarker = null;
+    }
     if (!this.pinMarker) {
       const marker = L.marker([p.lat, p.lng], {
-        draggable: true,
-        keyboard: true,
+        draggable,
+        keyboard: draggable,
+        interactive: draggable,
         title: this.pinLabel(),
         alt: this.pinLabel(),
         zIndexOffset: 1000,
@@ -241,6 +286,12 @@ export class UiMap {
         this.zone.run(() => this.pin.set({ lat: ll.lat, lng: ll.lng }));
       });
       this.pinMarker = marker.addTo(map);
+      if (!draggable) {
+        // A fixed location: still named for screen readers, though it takes no input.
+        const el = marker.getElement();
+        el?.setAttribute('role', 'img');
+        el?.setAttribute('aria-label', this.pinLabel());
+      }
     } else {
       this.pinMarker.setLatLng([p.lat, p.lng]);
     }

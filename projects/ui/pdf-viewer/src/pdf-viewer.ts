@@ -1,7 +1,16 @@
 import { DecimalPipe } from '@angular/common';
 import {
-  Component, ElementRef, effect, input, signal, viewChild,
+  Component, DestroyRef, ElementRef, InjectionToken, effect, inject, input, signal, viewChild,
 } from '@angular/core';
+
+/**
+ * How ui-pdf-viewer loads pdf.js: `import('pdfjs-dist')` by default. Provide another loader to test
+ * a viewer without pdf.js or to control when it arrives.
+ */
+export const UI_PDFJS = new InjectionToken<() => Promise<unknown>>('UI_PDFJS', {
+  providedIn: 'root',
+  factory: () => () => import('pdfjs-dist'),
+});
 
 /**
  * `ui-pdf-viewer` — renders a PDF with page navigation and zoom. `pdfjs-dist`
@@ -74,8 +83,20 @@ export class UiPdfViewer {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private doc: any = null;
+  /** Bumped by every load and by destroy: a load that finds it changed is stale and stops. */
+  private generation = 0;
+  private destroyed = false;
+  private readonly loadPdfjs = inject(UI_PDFJS);
 
   constructor() {
+    // pdf.js loads lazily: the viewer can be destroyed (or src change) while it does. A load that
+    // finishes after that must not touch the view, and its document is released.
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.generation++;
+      this.doc?.destroy?.();
+      this.doc = null;
+    });
     // (Re)load whenever src changes.
     effect(() => {
       const url = this.src();
@@ -90,27 +111,38 @@ export class UiPdfViewer {
   }
 
   private async load(url: string): Promise<void> {
+    const gen = ++this.generation;
+    const current = () => gen === this.generation && !this.destroyed;
     this.loading.set(true);
     this.error.set(null);
     try {
-      const pdfjs = await import('pdfjs-dist');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pdfjs = (await this.loadPdfjs()) as any;
+      if (!current()) return;
       pdfjs.GlobalWorkerOptions.workerSrc =
         this.workerSrc() ?? `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
-      this.doc = await pdfjs.getDocument(url).promise;
-      this.pages.set(this.doc.numPages);
+      const doc = await pdfjs.getDocument(url).promise;
+      if (!current()) {
+        doc.destroy?.();
+        return;
+      }
+      this.doc?.destroy?.();
+      this.doc = doc;
+      this.pages.set(doc.numPages);
       this.page.set(1);
       await this.render(1, this.scale());
     } catch (e) {
-      this.error.set(`Could not load PDF: ${e}`);
+      if (current()) this.error.set(`Could not load PDF: ${e}`);
     } finally {
-      this.loading.set(false);
+      if (current()) this.loading.set(false);
     }
   }
 
   private async render(pageNum: number, scale: number): Promise<void> {
-    if (!this.doc) return;
+    if (!this.doc || this.destroyed) return;
     try {
       const page = await this.doc.getPage(pageNum);
+      if (this.destroyed) return;
       const viewport = page.getViewport({ scale });
       const canvas = this.canvas().nativeElement;
       const ctx = canvas.getContext('2d');
@@ -123,7 +155,7 @@ export class UiPdfViewer {
       canvas.style.height = `${viewport.height}px`;
       await page.render({ canvasContext: ctx, viewport, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined }).promise;
     } catch (e) {
-      this.error.set(`Render failed: ${e}`);
+      if (!this.destroyed) this.error.set(`Render failed: ${e}`);
     }
   }
 

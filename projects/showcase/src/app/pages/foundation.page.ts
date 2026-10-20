@@ -169,6 +169,8 @@ export class FoundationPage {
     { name: 'previousMonth / nextMonth / chooseDate', type: 'string', default: "'Previous month' / 'Next month' / 'Choose a date'", desc: 'Calendar, date range picker, date picker.' },
     { name: 'moreActions', type: 'string', default: "'More actions'", desc: 'Split button menu.' },
     { name: 'uploadLabel / uploadHint', type: 'string', default: "'Click to upload' / 'or drag & drop'", desc: 'File upload.' },
+    { name: 'holdHint / confirmTitle / confirm / cancel', type: 'string', default: "'Press and hold to confirm' / 'Are you sure?' / 'Confirm' / 'Cancel'", desc: 'Hold button and its confirm dialog.' },
+    { name: 'zoomIn / zoomOut / placePinAtCentre', type: 'string', default: "'Zoom in' / 'Zoom out' / 'Place the pin at the centre'", desc: 'Map.' },
   ];
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },

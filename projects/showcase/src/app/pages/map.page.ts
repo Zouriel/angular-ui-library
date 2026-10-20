@@ -11,6 +11,7 @@ const MARKER = `interface UiMapMarker {
   lng: number;
   tone?: UiStatus;   // the dot's colour, default 'primary'
   label?: string;    // a pill beside the dot, and its accessible name
+  ariaLabel?: string; // the accessible name when the label doesn't say enough
 }
 interface UiLatLng { lat: number; lng: number; }
 interface UiMapView extends UiLatLng { zoom: number; }`;
@@ -76,7 +77,9 @@ export class MapPage {
     { name: 'markers', type: 'UiMapMarker[]', default: '[]', desc: 'Dots with labels (see Data shapes).' },
     { name: 'tileUrl', type: 'string', default: 'OSM standard tiles', desc: 'Tile URL template; use OSM tiles within their usage policy.' },
     { name: 'attribution', type: 'string (HTML)', default: '© OpenStreetMap contributors', desc: 'Shown at the inline end.' },
-    { name: 'ariaLabel', type: 'string', default: "'Map'", desc: 'Names the map region.' },
+    { name: 'ariaLabel', type: 'string', default: "'Map'", desc: 'Names the map region and its focusable surface.' },
+    { name: 'tileReferrerPolicy', type: 'ReferrerPolicy', default: "'strict-origin-when-cross-origin'", desc: 'Sent with tile requests (OSM needs a Referer).' },
+    { name: 'UI_MAP_LEAFLET', type: 'InjectionToken<() => Promise<unknown>>', default: "() => import('leaflet')", desc: 'How Leaflet is loaded: provide a fake to test without the network.' },
     { name: '--ui-map-height', type: 'CSS length', default: '320px', desc: 'Its height.' },
   ];
   protected readonly out: ApiRow[] = [
@@ -87,5 +90,6 @@ export class MapPage {
     { name: 'pin', type: 'UiLatLng | null (model)', default: 'null', desc: 'Two-way ([(pin)]): the chosen point, a draggable pin when set.' },
     { name: 'pinMode', type: 'boolean', default: 'false', desc: 'A tap on the map, or Enter on it, moves the pin there.' },
     { name: 'pinLabel', type: 'string', default: "'Chosen location'", desc: "The pin's accessible name." },
+    { name: 'pinDraggable', type: 'boolean', default: 'true', desc: 'false shows a fixed location with the pin\'s look (not draggable, not focusable, still named).' },
   ];
 }

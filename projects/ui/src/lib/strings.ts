@@ -38,6 +38,10 @@ export interface UiStrings {
   confirmTitle: string;
   confirm: string;
   cancel: string;
+  /** Map: the zoom buttons, and placing the pin at the centre (keyboard / screen reader). */
+  zoomIn: string;
+  zoomOut: string;
+  placePinAtCentre: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -58,6 +62,9 @@ export const defaultUiStrings: UiStrings = {
   confirmTitle: 'Are you sure?',
   confirm: 'Confirm',
   cancel: 'Cancel',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  placePinAtCentre: 'Place the pin at the centre',
 };
 
 export const UI_STRINGS = new InjectionToken<UiStrings>('UI_STRINGS', { providedIn: 'root', factory: () => defaultUiStrings });

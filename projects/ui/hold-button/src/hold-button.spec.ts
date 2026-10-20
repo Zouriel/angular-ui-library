@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiHoldButton } from './hold-button';
@@ -106,4 +106,49 @@ describe('ui-hold-button', () => {
     const id = btn.getAttribute('aria-describedby')!;
     expect(document.getElementById(id)!.textContent).toBe('Press and hold to confirm');
   });
+
+  it('disabled mid-press: the press is dropped and nothing confirms', () => {
+    const f = TestBed.createComponent(Toggle);
+    document.body.appendChild(f.nativeElement);
+    f.detectChanges();
+    const btn = (f.nativeElement as HTMLElement).querySelector('ui-hold-button button') as HTMLButtonElement;
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+    vi.advanceTimersByTime(500);
+    f.componentInstance.off.set(true);
+    f.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(1000);
+    expect(f.componentInstance.count).toBe(0);
+  });
+
+  it('disabled from inside (confirmed) while still held: no error, and the release opens nothing', () => {
+    const f = TestBed.createComponent(Toggle);
+    document.body.appendChild(f.nativeElement);
+    f.componentInstance.offOnConfirm = true;
+    f.detectChanges();
+    const btn = (f.nativeElement as HTMLElement).querySelector('ui-hold-button button') as HTMLButtonElement;
+    btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+    vi.advanceTimersByTime(1001);
+    f.detectChanges();
+    expect(f.componentInstance.count).toBe(1);
+    btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
+    btn.click();
+    f.detectChanges();
+    expect(document.querySelector('[role=dialog]')).toBeNull();
+    expect(f.componentInstance.count).toBe(1);
+  });
 });
+
+@Component({
+  imports: [UiHoldButton],
+  template: `<ui-hold-button [hold]="1000" [disabled]="off()" (confirmed)="done()">Arrived</ui-hold-button>`,
+})
+class Toggle {
+  off = signal(false);
+  count = 0;
+  offOnConfirm = false;
+  done(): void {
+    this.count++;
+    if (this.offOnConfirm) this.off.set(true);
+  }
+}

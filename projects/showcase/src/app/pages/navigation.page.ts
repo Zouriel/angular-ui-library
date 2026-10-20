@@ -10,9 +10,10 @@ import CreditCardIcon from '@hugeicons/core-free-icons/CreditCardIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import {
-  UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
-  type UiBreadcrumb, type UiBottomNavItem, type UiSideNavGroup, type UiMenubarMenu, type UiAnchorItem, type UiStep,
+  UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiSideNav, UiAnchorNav,
+  type UiBreadcrumb, type UiBottomNavItem, type UiSideNavGroup, type UiAnchorItem, type UiStep,
 } from '@zouriel/ui/navigation';
+import { UiMenubar, type UiMenubarMenu } from '@zouriel/ui/menubar';
 import { UiTabs, UiTab } from '@zouriel/ui/tabs';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -101,7 +102,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Menubar" selector="ui-menubar" [api]="menubarApi" [outputs]="menubarOut" anchor="nav-menubar"
-        summary="Application-style horizontal menu bar with dropdowns, one open at a time. Opening a menu focuses its first enabled item; once one is open, hovering another top item switches to it. ArrowLeft/Right move between the top items (and switch the open menu); ArrowDown opens one. Inside a menu, ArrowUp/Down, Home and End move between items; choosing an item or Escape closes it and returns focus to its top item, and Tab closes it. Menus flip or shift to stay on screen."
+        summary="Application-style horizontal menu bar with dropdowns, one open at a time. Opening a menu focuses its first enabled item; once one is open, hovering another top item switches to it. ArrowLeft/Right move between the top items (and switch the open menu); ArrowDown opens one. Inside a menu, ArrowUp/Down, Home and End move between items; choosing an item or Escape closes it and returns focus to its top item, and Tab closes it. Menus flip or shift to stay on screen. Import it from @zouriel/ui/menubar (since 0.35.1; inside @zouriel/ui/navigation it put the CDK overlay in every app's first download)."
         [shapes]="'interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }\ninterface UiMenubarItem { label: string; value: string; disabled?: boolean; }'">
         <doc-demo code="<ui-menubar [menus]=&quot;menus&quot; (select)=&quot;run($event)&quot; />">
           <ui-menubar [menus]="menus" />

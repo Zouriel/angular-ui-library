@@ -1,4 +1,4 @@
-import { Component, DestroyRef, HostAttributeToken, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, HostAttributeToken, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { injectUiStrings, type UiButtonSize } from '@zouriel/ui';
 import { UiButton, type UiButtonVariant } from '@zouriel/ui/button';
 import { UiConfirmDialog } from '@zouriel/ui/dialog';
@@ -84,6 +84,17 @@ export class UiHoldButton {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.clearTimer());
+    // Disabled mid-press (the app reacting to a confirm, say): drop the press, confirm nothing.
+    effect(() => {
+      if (!this.disabled()) return;
+      untracked(() => {
+        if (this.pressAt === null && !this.timer) return;
+        this.pressAt = null;
+        this.pressed = false;
+        this.tapped = false;
+        this.cancel();
+      });
+    });
   }
 
   protected down(e: PointerEvent): void {
@@ -160,6 +171,7 @@ export class UiHoldButton {
 
   private complete(): void {
     this.timer = null;
+    if (this.disabled()) return;
     this.done = true;
     if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
     this.fire();

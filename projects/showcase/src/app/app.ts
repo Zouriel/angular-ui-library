@@ -53,7 +53,7 @@ import { NAV } from './app.routes';
           @if (!filtered().length) { <ui-text variant="caption" class="no-match">No pages match “{{ query().trim() }}”.</ui-text> }
         </div>
         <div class="side-foot">
-          <ui-text variant="caption">37 entry points · {{ themeLabel() }}</ui-text>
+          <ui-text variant="caption">39 entry points · {{ themeLabel() }}</ui-text>
         </div>
       </aside>
 

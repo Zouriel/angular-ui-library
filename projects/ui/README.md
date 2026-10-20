@@ -1,7 +1,7 @@
 # @zouriel/ui
 
 A token-driven, signal-first component library for **Angular 22**. It is:
-- standalone, zoneless and tree-shakeable, with 37 secondary entry points;
+- standalone, zoneless and tree-shakeable, with 39 secondary entry points;
 - themeable, with 15 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
@@ -72,6 +72,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | --- | --- |
 | `button` | button, icon button, button group, segmented, toggle, split, FAB |
 | `dropdown-button` | dropdown button (its own entry since 0.33.1: it needs the CDK overlay) |
+| `menubar` | menubar (its own entry since 0.35.1: it needs the CDK overlay) |
+| `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap map with markers and a pin (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
@@ -108,7 +110,8 @@ The library's own words (names of icon-only buttons, default labels) are English
 `dismiss` (toast, alert, hint), `clear` (combobox), `clearAll` (multi-select), `clearSearch` (search
 input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
-`uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs). Flutter has the same
+`uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
+`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` (map). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.
 
 Still English only (0.34.0), to move to `UiStrings` next:

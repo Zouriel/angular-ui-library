@@ -18,9 +18,10 @@ import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard } from '@zouriel/ui/card';
 import {
-  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble,
+  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
   type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
 } from '@zouriel/ui/data';
+import { UiChatBubble } from '@zouriel/ui/chat-bubble';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 interface Row extends Record<string, unknown> { name: string; role: string; score: number | null; email: string | null; }
@@ -182,7 +183,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Chat bubble" anchor="chat-bubble" selector="ui-chat-bubble" [api]="bubbleApi"
-        summary="One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves; text wraps at 80% of it.">
+        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves; text wraps at 80% of it.">
         <doc-demo code="<ui-chat-bubble meta=&quot;09:40&quot;>Hello, I'm on my way to you.</ui-chat-bubble>
 <ui-chat-bubble [mine]=&quot;true&quot; meta=&quot;09:41 · Read&quot;>Thank you! The gate code is 2468.</ui-chat-bubble>">
           <div class="chat">
