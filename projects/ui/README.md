@@ -81,7 +81,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `datepicker` | date picker, date range picker, calendar |
 | `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |
 | `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts |
-| `navigation` | navbar, side nav, bottom nav, menubar, breadcrumbs, pagination, stepper, anchor nav |
+| `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
@@ -132,4 +132,3 @@ Still English only (0.34.0), to move to `UiStrings` next:
 | table | Actions, Select all rows, Select row N |
 | window | Close |
 | form builder, workflow | their editors' interface text (many strings; separate work) |
-
