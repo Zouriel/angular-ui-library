@@ -6,7 +6,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
 import { formatIsoDate, isoMonth, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
 
 interface DayCell { day: number; iso: string; label: string; today: boolean; disabled: boolean; }
@@ -56,7 +56,7 @@ function iso(y: number, m: number, d: number): string {
       [cdkConnectedOverlayPositions]="positions" [cdkConnectedOverlayPush]="true" [cdkConnectedOverlayViewportMargin]="8"
       (overlayOutsideClick)="onOutsideClick($event)"
       (attach)="focusDay(value() || todayIso())">
-      <div class="cal-panel" role="dialog" aria-label="Choose a date" cdkTrapFocus (keydown.escape)="close()">
+      <div class="cal-panel" role="dialog" [attr.aria-label]="strings.chooseDate" cdkTrapFocus (keydown.escape)="close()">
         <div class="cal-head">
           <button type="button" class="nav" [attr.aria-label]="prevLabel()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
           @if (mode() === 'days') {
@@ -191,6 +191,7 @@ function iso(y: number, m: number, d: number): string {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDatePicker), multi: true }],
 })
 export class UiDatePicker implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   /** Drawn, not 📅 — an emoji renders in the vendor's own colours whatever the theme says. */
   protected readonly calendarIcon = Calendar01Icon;
   protected readonly prevIcon = ArrowLeft01Icon;

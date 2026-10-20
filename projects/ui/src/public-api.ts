@@ -9,3 +9,4 @@ export * from './lib/types';
 export * from './lib/config';
 export * from './lib/animations';
 export * from './lib/fonts';
+export * from './lib/strings';

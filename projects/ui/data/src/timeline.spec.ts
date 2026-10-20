@@ -20,3 +20,19 @@ describe('UiTimeline icons', () => {
     expect(marks[2].querySelector('.badge')?.textContent?.trim()).toBe('3');
   });
 });
+
+describe('UiTimeline states', () => {
+  it('marks the current step for screen readers and the upcoming ones as such; no state stays as before', () => {
+    const fixture = TestBed.createComponent(UiTimeline);
+    fixture.componentRef.setInput('items', [
+      { title: 'Requested', state: 'done' },
+      { title: 'Nurse on the way', state: 'current' },
+      { title: 'Visit', state: 'upcoming' },
+      { title: 'Plain' },
+    ]);
+    fixture.detectChanges();
+    const events = [...(fixture.nativeElement as HTMLElement).querySelectorAll('li.event')];
+    expect(events.map((e) => e.getAttribute('aria-current'))).toEqual([null, 'step', null, null]);
+    expect(events.map((e) => e.getAttribute('data-state'))).toEqual(['done', 'current', 'upcoming', null]);
+  });
+});

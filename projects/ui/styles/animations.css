@@ -73,6 +73,33 @@
 .ui-slide-right-leave, .ui-sheet-leave, .ui-backdrop-leave, .ui-window-close-leave { pointer-events: none; }
 .ui-window-dock { animation: ui-window-dock var(--ui-motion-base) var(--ui-ease-decelerate) both; }
 
+/* ---- Slide transitions (uiSlideTransition / uiSlideRouteTransition) ----------------------------
+   The sliding region is named ui-slide for the transition and <html data-ui-slide> says how it
+   moves, already resolved to a physical side (start/end follow the text direction in the script).
+   in-*: the new view slides in from that side over the old one, which gives way a little.
+   out-*: going back, the old view leaves to that side and reveals the new one, which settles in.
+   fade: reduced motion, the browser's cross-fade. */
+@keyframes ui-vt-from-left  { from { transform: translateX(-100%); } }
+@keyframes ui-vt-from-right { from { transform: translateX(100%); } }
+@keyframes ui-vt-to-left    { to   { transform: translateX(-100%); } }
+@keyframes ui-vt-to-right   { to   { transform: translateX(100%); } }
+@keyframes ui-vt-give-left  { to   { transform: translateX(-30%); opacity: 0.4; } }
+@keyframes ui-vt-give-right { to   { transform: translateX(30%); opacity: 0.4; } }
+@keyframes ui-vt-settle-left  { from { transform: translateX(-30%); opacity: 0.4; } }
+@keyframes ui-vt-settle-right { from { transform: translateX(30%); opacity: 0.4; } }
+
+::view-transition-group(ui-slide) { overflow: clip; animation-duration: var(--ui-motion-slow); }
+html[data-ui-slide]::view-transition-old(ui-slide),
+html[data-ui-slide]::view-transition-new(ui-slide) { animation-duration: var(--ui-motion-slow); }
+html[data-ui-slide="in-left"]::view-transition-new(ui-slide)  { animation: ui-vt-from-left var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+html[data-ui-slide="in-left"]::view-transition-old(ui-slide)  { animation: ui-vt-give-right var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+html[data-ui-slide="in-right"]::view-transition-new(ui-slide) { animation: ui-vt-from-right var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+html[data-ui-slide="in-right"]::view-transition-old(ui-slide) { animation: ui-vt-give-left var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+html[data-ui-slide="out-left"]::view-transition-old(ui-slide)  { animation: ui-vt-to-left var(--ui-motion-slow) var(--ui-ease-accelerate) both; z-index: 1; }
+html[data-ui-slide="out-left"]::view-transition-new(ui-slide)  { animation: ui-vt-settle-right var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+html[data-ui-slide="out-right"]::view-transition-old(ui-slide) { animation: ui-vt-to-right var(--ui-motion-slow) var(--ui-ease-accelerate) both; z-index: 1; }
+html[data-ui-slide="out-right"]::view-transition-new(ui-slide) { animation: ui-vt-settle-left var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
+
 /* Master off-switch driven by UiConfig.animations === false */
 .ui-no-anim,
 .ui-no-anim * {

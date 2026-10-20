@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
 
 export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -25,7 +25,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
         <div class="body"><ng-content /></div>
       </div>
       @if (dismissible()) {
-        <button class="x" type="button" aria-label="Dismiss" (click)="dismiss.emit()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="x" type="button" [attr.aria-label]="strings.dismiss" (click)="dismiss.emit()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       }
     </div>
   `,
@@ -71,6 +71,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
   `,
 })
 export class UiAlert {
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   tone = input<UiAlertTone>('info');
   heading = input<string>();

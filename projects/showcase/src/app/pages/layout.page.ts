@@ -1,5 +1,5 @@
 import { Component, signal } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout } from '@zouriel/ui/layout';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout, UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiSideNav } from '@zouriel/ui/navigation';
 import { UiDivider } from '@zouriel/ui/divider';
@@ -9,7 +9,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-layout',
   imports: [
-    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout,
+    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout, UiFloatingPanel,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -34,6 +34,23 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <ui-stack direction="row" [gap]="3" align="center">
             <ui-badge tone="primary">left</ui-badge><ui-spacer /><ui-badge>right</ui-badge>
           </ui-stack>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Floating panel" anchor="floating-panel" selector="ui-floating-panel" [api]="floatApi"
+        summary="A raised surface floating over the bottom (or top) of its positioned parent: the details card over a map. Non-modal: it takes no focus and blocks nothing outside its own box, so what is around it stays usable and draggable. It sits 16px in from the edges plus the device's safe-area insets, up to 480px wide and centred, so it fits a 390px phone with a 16px gutter. With ariaLabel it is a named region.">
+        <doc-demo code="<div style=&quot;position: relative&quot;>
+  <app-map />
+  <ui-floating-panel ariaLabel=&quot;Nurse&quot;>…</ui-floating-panel>
+</div>">
+          <div class="float-demo" (pointerdown)="floatDown($event)" (pointermove)="floatMove($event)" (pointerup)="floatDrag = null">
+            <div class="float-map" [style.background-position]="floatPos()[0] + 'px ' + floatPos()[1] + 'px'">Drag the map</div>
+            <ui-floating-panel ariaLabel="Nurse" [placement]="floatTop() ? 'top' : 'bottom'">
+              <strong>Aminath Hassan, RN</strong>
+              <div class="float-meta">12 min away · Home visits</div>
+              <div class="float-acts"><ui-button size="sm" (click)="floatTop.set(!floatTop())">Move to {{ floatTop() ? 'bottom' : 'top' }}</ui-button></div>
+            </ui-floating-panel>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -132,6 +149,13 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     </doc-page>
   `,
   styles: `
+    .float-demo { position: relative; height: 280px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; touch-action: none; cursor: grab; }
+    .float-map { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm);
+      background-color: var(--ui-color-surface-subtle);
+      background-image: linear-gradient(var(--ui-color-border) 1px, transparent 1px), linear-gradient(90deg, var(--ui-color-border) 1px, transparent 1px);
+      background-size: 32px 32px; }
+    .float-meta { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); margin-top: var(--ui-space-1); }
+    .float-acts { margin-top: var(--ui-space-3); }
     .tile { display: flex; align-items: center; justify-content: center; height: 44px; background: var(--ui-color-surface-raised);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted); font-family: var(--ui-font-mono); }
     .ln { padding: 2px var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
@@ -149,6 +173,24 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   `,
 })
 export class LayoutPage {
+  protected readonly floatTop = signal(false);
+  protected readonly floatPos = signal([0, 0]);
+  protected floatDrag: { x: number; y: number; at: number[] } | null = null;
+  protected floatDown(e: PointerEvent): void {
+    if ((e.target as HTMLElement).closest('ui-floating-panel')) return;
+    this.floatDrag = { x: e.clientX, y: e.clientY, at: this.floatPos() };
+  }
+  protected floatMove(e: PointerEvent): void {
+    const d = this.floatDrag;
+    if (d) this.floatPos.set([d.at[0] + e.clientX - d.x, d.at[1] + e.clientY - d.y]);
+  }
+  protected readonly floatApi: ApiRow[] = [
+    { name: 'placement', type: "'bottom' | 'top'", default: "'bottom'", desc: 'The edge of the parent it floats over.' },
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Names it as a region for screen readers.' },
+    { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Frosted surface.' },
+    { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: '--ui-floating-panel-width', type: 'CSS length', default: '480px', desc: 'Its widest.' },
+  ];
   protected readonly lines = Array.from({ length: 20 }, (_, i) => i + 1);
   protected readonly shellWidths = [{ value: 'desktop', label: 'Desktop' }, { value: 'phone', label: 'Phone' }];
   /** Phones start on the Phone preview: the desktop shell would squeeze the page column to a few words a line. */

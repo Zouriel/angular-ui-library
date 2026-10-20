@@ -1,7 +1,7 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, effect, inject, input, model, viewChild } from '@angular/core';
-import { UI_ANIM, UI_CONFIG, uiLeaveHidden } from '@zouriel/ui';
+import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 let modalSeq = 0;
@@ -37,7 +37,7 @@ let modalSeq = 0;
           @if (title()) {
             <header class="hd">
               <span [id]="labelId" class="title">{{ title() }}</span>
-              <button class="x" type="button" aria-label="Close" (click)="open.set(false)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+              <button class="x" type="button" [attr.aria-label]="strings.close" (click)="open.set(false)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </header>
           }
           <div class="bd"><ng-content /></div>
@@ -113,6 +113,7 @@ let modalSeq = 0;
   `,
 })
 export class UiModal {
+  protected readonly strings = injectUiStrings();
   /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
   protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
 

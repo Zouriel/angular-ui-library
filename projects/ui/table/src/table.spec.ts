@@ -57,8 +57,11 @@ describe('UiTable row actions', () => {
     const [edit] = buttons('Edit');
     const [remove] = buttons('Remove');
     expect(edit.nextElementSibling).toBe(remove);
-    expect(getComputedStyle(remove).marginLeft).toBe('var(--ui-space-2)');
-    expect(getComputedStyle(edit).marginLeft).toBe('var(--ui-space-1)');
+    // A flex gap between them, not margins (which went the wrong way in RTL).
+    const row = edit.parentElement!;
+    expect(getComputedStyle(row).display).toBe('flex');
+    expect(getComputedStyle(row).gap).toBe('var(--ui-space-2)');
+    expect(getComputedStyle(remove).marginLeft).toBe('');
   });
 
   it('can be unavailable for one row and not another', () => {

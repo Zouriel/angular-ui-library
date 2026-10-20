@@ -2,6 +2,7 @@ import { Overlay, OverlayRef, type ConnectedPosition } from '@angular/cdk/overla
 import { ComponentPortal } from '@angular/cdk/portal';
 import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, Directive, ElementRef, NgZone, effect, inject, input, model, output, signal, untracked } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** Which side of its anchor a hint opens on. `start` / `end` follow the text direction. */
 export type UiHintPlacement = 'top' | 'bottom' | 'start' | 'end';
@@ -26,7 +27,7 @@ let hintSeq = 0;
     <div class="ui-hint" [id]="id" role="status" aria-live="polite" aria-atomic="true" (click)="tapped()">
       <span class="text">{{ shown() }}</span>
       @if (dismissible()) {
-        <button type="button" class="x" aria-label="Dismiss" (click)="$event.stopPropagation(); tapped()">
+        <button type="button" class="x" [attr.aria-label]="strings.dismiss" (click)="$event.stopPropagation(); tapped()">
           <svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       }
@@ -72,6 +73,7 @@ let hintSeq = 0;
   `,
 })
 export class UiHintPanel {
+  protected readonly strings = injectUiStrings();
   readonly id = `ui-hint-${hintSeq++}`;
   /** The text announced and shown (set a beat after the panel appears, so it is announced). */
   readonly shown = signal('');

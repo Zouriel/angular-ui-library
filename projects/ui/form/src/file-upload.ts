@@ -1,6 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
+import { injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-file-upload` — drag-and-drop / click dropzone. Emits `(filesSelected)`. Dropped files are checked
@@ -14,7 +15,7 @@ import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
            (dragover)="onDragOver($event)" (dragleave)="dragOver.set(false)" (drop)="onDrop($event)">
       <input type="file" class="native" [disabled]="disabled()" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)" />
       <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
-      <span class="hint"><strong>Click to upload</strong> or drag & drop</span>
+      <span class="hint"><strong>{{ label() ?? strings.uploadLabel }}</strong>@if (hint() ?? strings.uploadHint; as h) { {{ ' ' + h }} }</span>
       @if (acceptLabel() ?? accept(); as label) { <span class="accept">{{ label }}</span> }
     </label>
     @if (files().length) {
@@ -54,6 +55,11 @@ export class UiFileUpload {
   accept = input<string>();
   /** What to show for the accepted types, when `accept` itself reads badly (e.g. "PNG, JPEG or WebP"). */
   acceptLabel = input<string>();
+  /** The action, in bold; defaults to the built-in uploadLabel string ("Click to upload"). */
+  label = input<string | undefined>(undefined);
+  /** What follows it ("or drag & drop" by default, the uploadHint string); '' hides it (a phone has nothing to drag from). */
+  hint = input<string | undefined>(undefined);
+  protected readonly strings = injectUiStrings();
   radius = input(true);
   disabled = input(false);
   filesSelected = output<File[]>();

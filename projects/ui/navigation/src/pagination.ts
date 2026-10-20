@@ -1,11 +1,12 @@
 import { Component, computed, input, model } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-pagination` — page navigation with truncation and prev/next. */
 @Component({
   selector: 'ui-pagination',
   template: `
     <nav class="ui-pagination" [attr.aria-label]="label()">
-      <button type="button" class="pg" [disabled]="page() <= 1" aria-label="Previous page" (click)="go(page() - 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 3l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="pg" [disabled]="page() <= 1" [attr.aria-label]="strings.previousPage" (click)="go(page() - 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 3l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       @for (item of items(); track $index) {
         @if (item === -1) {
           <span class="ellipsis" aria-hidden="true">…</span>
@@ -21,7 +22,7 @@ import { Component, computed, input, model } from '@angular/core';
           </button>
         }
       }
-      <button type="button" class="pg" [disabled]="page() >= total()" aria-label="Next page" (click)="go(page() + 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4.5 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="pg" [disabled]="page() >= total()" [attr.aria-label]="strings.nextPage" (click)="go(page() + 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4.5 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </nav>
   `,
   styles: `
@@ -45,6 +46,7 @@ import { Component, computed, input, model } from '@angular/core';
   `,
 })
 export class UiPagination {
+  protected readonly strings = injectUiStrings();
   page = model(1);
   total = input(1);
   /** Sibling pages to show around current. */

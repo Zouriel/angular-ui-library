@@ -1,6 +1,6 @@
 import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 import { isPlatformBrowser } from '@angular/common';
-import { UI_ANIM, uiLeaveHidden } from '@zouriel/ui';
+import { UI_ANIM, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 import {
   Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
   untracked, viewChild,
@@ -81,7 +81,7 @@ interface Drag {
             <span class="title">{{ title() }}</span>
             <span class="actions"><ng-content select="[sheet-actions]" /></span>
             @if (closable()) {
-              <button type="button" class="x" aria-label="Close" (click)="close()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+              <button type="button" class="x" [attr.aria-label]="strings.close" (click)="close()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             }
           </div>
         }
@@ -143,6 +143,7 @@ interface Drag {
   `,
 })
 export class UiBottomSheet {
+  protected readonly strings = injectUiStrings();
   /** The backdrop fades out and stays at 0 until it is removed. */
   protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
   private readonly zone = inject(NgZone);

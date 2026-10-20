@@ -17,6 +17,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'foundation': [
     { name: 'Design tokens', anchor: 'design-tokens' },
     { name: 'provideUiConfig()', anchor: 'provideuiconfig' },
+    { name: 'Built-in strings', anchor: 'built-in-strings' },
     { name: 'Theme service', anchor: 'theme-service' },
     { name: 'Themes', anchor: 'themes' },
     { name: 'Scoped theme', anchor: 'scoped-theme' },
@@ -31,6 +32,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'layout': [
     { name: 'Grid', anchor: 'grid' },
     { name: 'Stack', anchor: 'stack' },
+    { name: 'Floating panel', anchor: 'floating-panel' },
     { name: 'Spacer', anchor: 'spacer' },
     { name: 'Container', anchor: 'container' },
     { name: 'Aspect ratio', anchor: 'aspect-ratio' },
@@ -210,6 +212,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   ],
   'behaviors': [
     { name: 'copyToClipboard', anchor: 'copytoclipboard' },
+    { name: 'slideTransition', anchor: 'slide-transition' },
     { name: 'ripple', anchor: 'ripple' },
     { name: 'swipe', anchor: 'swipe' },
     { name: 'intersect', anchor: 'intersect' },

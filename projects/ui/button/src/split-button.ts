@@ -1,5 +1,5 @@
-import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { Component, HostAttributeToken, inject, input, output } from '@angular/core';
+import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
 import type { UiButtonVariant } from './button';
 
 /**
@@ -8,14 +8,16 @@ import type { UiButtonVariant } from './button';
  */
 @Component({
   selector: 'ui-split-button',
+  host: { '[attr.aria-label]': 'null' },
   template: `
     <div class="split" [class.no-radius]="!radius()">
       <button type="button" class="main" [attr.data-variant]="variant()" [attr.data-size]="size()"
+              [attr.aria-label]="ariaLabel() ?? staticLabel"
               [disabled]="disabled()" (click)="action.emit()">
         <ng-content />
       </button>
       <button type="button" class="caret" [attr.data-variant]="variant()" [attr.data-size]="size()"
-              aria-label="More actions" aria-haspopup="menu"
+              [attr.aria-label]="menuLabel() ?? strings.moreActions" aria-haspopup="menu"
               [disabled]="disabled()" (click)="menu.emit()"><svg class="chev" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
   `,
@@ -67,4 +69,10 @@ export class UiSplitButton {
   radius = input<boolean>(this.config.radius);
   action = output<void>();
   menu = output<void>();
+  /** Accessible name for the main button, when its text doesn't say enough. A plain `aria-label` works too. */
+  ariaLabel = input<string | undefined>(undefined);
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
+  /** The menu (caret) button's accessible name; defaults to the built-in moreActions string. */
+  menuLabel = input<string | undefined>(undefined);
+  protected readonly strings = injectUiStrings();
 }

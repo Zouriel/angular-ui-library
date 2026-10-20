@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, HostAttributeToken, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
@@ -18,6 +18,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       [attr.type]="type()"
       [attr.data-variant]="variant()"
       [attr.data-size]="size()"
+      [attr.aria-label]="ariaLabel() ?? staticLabel"
       [disabled]="disabled() || loading()"
       [attr.aria-busy]="loading() || null">
       @if (loading()) { <span class="spin" aria-hidden="true"></span> }
@@ -124,10 +125,15 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     }
     @keyframes ui-btn-spin { to { transform: rotate(360deg); } }
   `,
-  host: { '[class.block-host]': 'block()' },
+  // The name belongs on the inner button, not on this wrapper.
+  host: { '[class.block-host]': 'block()', '[attr.aria-label]': 'null' },
 })
 export class UiButton {
   private config = inject(UI_CONFIG);
+  /** Accessible name for the inner native control, when its visible text doesn't say enough
+   *  ("View" in a row of doctors: "View Dr Aminath"). A plain `aria-label="…"` on the element works too. */
+  ariaLabel = input<string | undefined>(undefined);
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
   variant = input<UiButtonVariant>('primary');
   size = input<UiSize>('md');
   type = input<'button' | 'submit' | 'reset'>('button');

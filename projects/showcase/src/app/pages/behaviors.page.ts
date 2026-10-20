@@ -1,13 +1,13 @@
 import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, type UiSize2D } from '@zouriel/ui/behaviors';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition, type UiSize2D, type UiSlideFrom } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-behaviors',
   imports: [
-    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList,
+    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -23,6 +23,39 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <ui-button variant="outline" [uiCopyToClipboard]="'npm i ui'" #c="uiCopy">
             <span class="swap"><span [class.off]="c.copied()">Copy "npm i ui"</span><span [class.off]="!c.copied()">Copied!</span></span>
           </ui-button>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="slideTransition" anchor="slide-transition" selector="[uiSlideTransition] · uiSlideRouteTransition" [api]="slideApi"
+        summary="Slides a view in from a side when it changes: a step in a flow, or a route. start is the left in LTR and the right in RTL. It uses the View Transitions API (the old view gives way, the new one slides over it, clipped to the region), with a short slide-and-fade where the browser lacks it. Going back, the current view leaves to the side it came from. Under reduced motion it cross-fades; with the library's animations off the view just changes. For an in-page stack, change the view inside run(); for routes, pass uiSlideRouteTransition to withViewTransitions and give routes data.uiSlide.">
+        <doc-demo lang="ts + html" code="import { UiSlideTransition, uiSlideRouteTransition } from '@zouriel/ui/behaviors';
+
+<section [uiSlideTransition]=&quot;'start'&quot; #slide=&quot;uiSlideTransition&quot;>@switch (step()) {…}</section>
+slide.run(() => step.set('nurses'));                  // the new step slides in from the start side
+slide.run(() => step.set('search'), { back: true });  // back: the current step leaves to the start side
+
+// Routes
+provideRouter(routes, withViewTransitions({ onViewTransitionCreated: uiSlideRouteTransition }));
+{ path: 'nurses', component: NurseList, data: { uiSlide: 'start' } }
+<main uiSlideTransition><router-outlet /></main>">
+          <div class="slide-demo">
+            <div class="slide-bar">
+              @for (f of slideSides; track f) {
+                <ui-button size="sm" [variant]="slideFrom() === f ? 'secondary' : 'ghost'" (click)="slideFrom.set(f)">from {{ f }}</ui-button>
+              }
+              <ui-button size="sm" [variant]="slideRtl() ? 'secondary' : 'ghost'" (click)="slideRtl.set(!slideRtl())">RTL</ui-button>
+            </div>
+            <section class="slide-stack" [uiSlideTransition]="slideFrom()" #slide="uiSlideTransition" [attr.dir]="slideRtl() ? 'rtl' : 'ltr'">
+              <div class="slide-view">
+                <strong>{{ slideSteps[slideStep()] }}</strong>
+                <span>Step {{ slideStep() + 1 }} of {{ slideSteps.length }}</span>
+                <div class="slide-actions">
+                  <ui-button size="sm" variant="outline" [disabled]="slideStep() === 0" (click)="slide.run(() => slideStep.set(slideStep() - 1), { back: true })">Back</ui-button>
+                  <ui-button size="sm" [disabled]="slideStep() === slideSteps.length - 1" (click)="slide.run(() => slideStep.set(slideStep() + 1))">Next</ui-button>
+                </div>
+              </div>
+            </section>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -101,6 +134,11 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
     </doc-page>
   `,
   styles: `
+    .slide-demo { display: grid; gap: var(--ui-space-2); max-width: 420px; }
+    .slide-bar { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); }
+    .slide-stack { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); overflow: hidden; }
+    .slide-view { display: grid; gap: var(--ui-space-2); padding: var(--ui-space-4); min-height: 120px; align-content: start; }
+    .slide-actions { display: flex; gap: var(--ui-space-2); }
     .ro { width: 260px; max-width: 100%; height: 72px; min-width: 140px; min-height: 48px; resize: both; overflow: auto; padding: var(--ui-space-2) var(--ui-space-3);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .ripple-host { border-radius: var(--ui-radius); } /* the ripple clips to the host: round it like the button */
@@ -123,6 +161,16 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
   `,
 })
 export class BehaviorsPage {
+  protected readonly slideSides: UiSlideFrom[] = ['start', 'end'];
+  protected readonly slideFrom = signal<UiSlideFrom>('start');
+  protected readonly slideRtl = signal(false);
+  protected readonly slideStep = signal(0);
+  protected readonly slideSteps = ['Find a nurse', 'Nurses near you', 'Aminath Hassan, RN', 'Book a visit'];
+  protected readonly slideApi: ApiRow[] = [
+    { name: 'uiSlideTransition', type: "UiSlideFrom: 'start' | 'end'", default: "'end'", desc: 'The side new views come from; start is the left in LTR, the right in RTL. exportAs uiSlideTransition.' },
+    { name: 'run(update, options?)', type: '(update: () => unknown, { from?: UiSlideFrom; back?: boolean }) => Promise<void>', default: '—', desc: 'Runs update (the view change), renders it and slides it in; back makes the current view leave to the from side instead. Resolves when done.' },
+    { name: 'uiSlideRouteTransition', type: '(info) => void', default: '—', desc: 'Pass to withViewTransitions({ onViewTransitionCreated }). A route with data.uiSlide slides in from that side; leaving one for a route without it slides back. Other navigations change at once. It slides the last [uiSlideTransition] region (put it on the outlet container), else the body.' },
+  ];
   protected readonly vis = signal(false);
   protected readonly Math = Math;
   protected readonly page = signal(0);

@@ -1,10 +1,12 @@
-import { Component, forwardRef, input, signal } from '@angular/core';
+import { Component, HostAttributeToken, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import type { UiSize } from '@zouriel/ui';
 
 /** `ui-switch` — on/off toggle (CVA). Uses role="switch" on a native checkbox. */
 @Component({
   selector: 'ui-switch',
+  // The name belongs on the inner switch, not on this wrapper.
+  host: { '[attr.aria-label]': 'null' },
   template: `
     <label class="ui-switch" [class.disabled]="disabled()" [attr.data-size]="size()">
       <input
@@ -14,6 +16,7 @@ import type { UiSize } from '@zouriel/ui';
         [checked]="checked()"
         [disabled]="disabled()"
         [attr.aria-checked]="checked()"
+        [attr.aria-label]="ariaLabel() ?? staticLabel"
         (change)="toggle($event)"
         (blur)="onTouched()" />
       <span class="track" aria-hidden="true"><span class="thumb"></span></span>
@@ -50,6 +53,9 @@ import type { UiSize } from '@zouriel/ui';
 export class UiSwitch implements ControlValueAccessor {
   /** `sm` for dense panels (inspectors, settings): a smaller track and 13px label. */
   size = input<UiSize>('md');
+  /** Accessible name when there is no visible label text (projected content). A plain `aria-label` works too. */
+  ariaLabel = input<string | undefined>(undefined);
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
   protected readonly checked = signal(false);
   protected readonly disabled = signal(false);
   private onChange: (v: boolean) => void = () => {};

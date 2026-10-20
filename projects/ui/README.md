@@ -92,9 +92,39 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `file-viewer`, `pdf-viewer` | image/video/audio/text/code viewers, lightbox, explorer, lazy PDF |
 | `form-builder` | form builder, form renderer, global form settings, option sources ([guide](form-builder/README.md)) |
 | `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide) |
-| `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer |
+| `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer, slide transition (views and routes) |
 | `theme` | `UiThemeService`, `ui-theme-provider` |
 
 ## License
 
 MIT
+
+## Built-in strings
+
+The library's own words (names of icon-only buttons, default labels) are English. Replace them with
+`provideUiStrings({ … })` (partial; the rest stay English): `close` (modal, drawer, bottom sheet),
+`dismiss` (toast, alert, hint), `clear` (combobox), `clearAll` (multi-select), `clearSearch` (search
+input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
+picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
+`uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs). Flutter has the same
+keys in `UiConfig(strings: UiStrings(...))`.
+
+Still English only (0.34.0), to move to `UiStrings` next:
+
+| Component | Words |
+| --- | --- |
+| canvas viewport, transform box | Zoom in, Zoom out, Fit to view (and their tooltips), Rotate |
+| command palette | Command palette |
+| file viewer: audio, video, image viewer, lightbox, explorer | Seek, Volume, Playback speed, Fullscreen, Play, Previous/Next (image), Zoom in/out, Reset view, Close, Everything in this set, Path |
+| color picker | Pick color, Hex color |
+| OTP input | One-time code |
+| intro loader | Loading… |
+| sidebar layout, splitter | Toggle navigation, Resize panes |
+| carousel, gallery | Previous/Next slide, Previous, Next, Close, Image viewer |
+| anchor nav, breadcrumbs | On this page, Breadcrumb |
+| PDF viewer | Previous/Next page, Zoom in/out |
+| sequencer | Playhead, Drag to reorder |
+| table | Actions, Select all rows, Select row N |
+| window | Close |
+| form builder, workflow | their editors' interface text (many strings; separate work) |
+

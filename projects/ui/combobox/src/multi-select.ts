@@ -1,7 +1,7 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, ElementRef, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
 import type { UiComboboxOption } from './combobox';
 
 let nextId = 0;
@@ -34,7 +34,7 @@ let nextId = 0;
       <!-- Clear all and the chevron sit at the end, centred on the whole field however many rows the chips take. -->
       <span class="end">
         @if (clearable() && value().length && !disabled()) {
-          <button type="button" class="clear" tabindex="-1" aria-label="Clear all" (mousedown)="$event.preventDefault()" (click)="clear($event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button type="button" class="clear" tabindex="-1" [attr.aria-label]="strings.clearAll" (mousedown)="$event.preventDefault()" (click)="clear($event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         }
         <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </span>
@@ -116,6 +116,7 @@ let nextId = 0;
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiMultiSelect), multi: true }],
 })
 export class UiMultiSelect implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Select…');

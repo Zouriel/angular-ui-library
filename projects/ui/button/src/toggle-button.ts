@@ -1,9 +1,10 @@
-import { Component, inject, input, model } from '@angular/core';
+import { Component, HostAttributeToken, inject, input, model } from '@angular/core';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 
 /** `ui-toggle-button` — two-state button (`aria-pressed`). Bind `[(pressed)]`. */
 @Component({
   selector: 'ui-toggle-button',
+  host: { '[attr.aria-label]': 'null' },
   template: `
     <button
       type="button"
@@ -12,6 +13,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [class.no-radius]="!radius()"
       [attr.data-size]="size()"
       [attr.aria-pressed]="pressed()"
+      [attr.aria-label]="ariaLabel() ?? staticLabel"
       [disabled]="disabled()"
       (click)="toggle()">
       <ng-content />
@@ -55,6 +57,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
 })
 export class UiToggleButton {
   private config = inject(UI_CONFIG);
+  /** Accessible name for the inner native control, when its visible text doesn't say enough.
+   *  A plain `aria-label="…"` on the element works too. */
+  ariaLabel = input<string | undefined>(undefined);
+  protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
   pressed = model(false);
   size = input<UiSize>('md');
   disabled = input(false);

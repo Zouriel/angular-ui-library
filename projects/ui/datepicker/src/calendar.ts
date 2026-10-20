@@ -4,6 +4,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import { formatIsoDate, isoMonth, monthYear, WEEKDAYS } from './date-names';
+import { injectUiStrings } from '@zouriel/ui';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
@@ -14,9 +15,9 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
   template: `
     <div class="cal" [class.disabled]="disabled()">
       <div class="head">
-        <button type="button" class="nav" aria-label="Previous month" [disabled]="disabled()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
+        <button type="button" class="nav" [attr.aria-label]="strings.previousMonth" [disabled]="disabled()" (click)="shift(-1)"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" /></button>
         <span class="month">{{ heading() }}</span>
-        <button type="button" class="nav" aria-label="Next month" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
+        <button type="button" class="nav" [attr.aria-label]="strings.nextMonth" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
       </div>
       <div class="weekdays">@for (w of weekdays; track w) { <span>{{ w }}</span> }</div>
       <div class="grid">
@@ -58,6 +59,7 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCalendar), multi: true }],
 })
 export class UiCalendar implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   protected readonly weekdays = WEEKDAYS;
   protected readonly prevIcon = ArrowLeft01Icon;
   protected readonly nextIcon = ArrowRight01Icon;

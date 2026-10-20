@@ -13,7 +13,15 @@ export interface UiTimelineItem {
    * currentColor), or a short string such as a letter or a step number.
    */
   icon?: string | IconSvgObject;
+  /**
+   * Where the item stands in a flow (a booking's steps). `done` and unset look as they always have;
+   * `current` is marked `aria-current="step"` and gets a halo; `upcoming` is muted with a hollow dot.
+   */
+  state?: UiTimelineState;
 }
+
+/** A timeline item's place in a flow. */
+export type UiTimelineState = 'done' | 'current' | 'upcoming';
 
 /** `ui-timeline` — vertical sequence of events with connector line. */
 @Component({
@@ -22,7 +30,7 @@ export interface UiTimelineItem {
   template: `
     <ol class="ui-timeline">
       @for (item of items(); track $index) {
-        <li class="event">
+        <li class="event" [attr.data-state]="item.state || null" [attr.aria-current]="item.state === 'current' ? 'step' : null">
           <span class="mark" aria-hidden="true">
             @if (item.icon) {
               <span class="badge" [attr.data-tone]="item.tone || 'primary'">
@@ -49,7 +57,7 @@ export interface UiTimelineItem {
     .event { position: relative; display: flex; gap: var(--ui-space-3); padding-bottom: var(--ui-space-4); }
     .event:last-child { padding-bottom: 0; }
     /* The connector runs down the centre of the marker column, which is as wide as the widest marker in the list. */
-    .event::before { content: ''; position: absolute; left: calc(var(--ui-tl-mark) / 2); top: var(--ui-space-4); bottom: 0; width: 1px; background: var(--ui-color-border); }
+    .event::before { content: ''; position: absolute; inset-inline-start: calc(var(--ui-tl-mark) / 2); top: var(--ui-space-4); bottom: 0; width: 1px; background: var(--ui-color-border); }
     .event:last-child::before { display: none; }
     .ui-timeline { --ui-tl-mark: 11px; }
     .ui-timeline:has(.badge) { --ui-tl-mark: 20px; }
@@ -66,6 +74,15 @@ export interface UiTimelineItem {
     .badge[data-tone="warning"] { color: var(--ui-color-warning-contrast); }
     .badge[data-tone="danger"] { color: var(--ui-color-danger-contrast); }
     .badge[data-tone="neutral"] { color: var(--ui-color-secondary-contrast); }
+    /* Current: a soft halo of its tone around the marker, and a heavier title. */
+    .event[data-state="current"] :is(.dot, .badge) {
+      box-shadow: 0 0 0 2px var(--ui-timeline-ring, var(--ui-color-surface)), 0 0 0 5px color-mix(in srgb, var(--ui-color-primary) 30%, transparent);
+    }
+    .event[data-state="current"] .title { font-weight: 600; }
+    /* Upcoming: not reached yet, so hollow and muted. */
+    .event[data-state="upcoming"] .dot { box-sizing: border-box; background: var(--ui-color-surface); border: 2px solid var(--ui-color-border-strong); }
+    .event[data-state="upcoming"] .badge { background: var(--ui-color-surface); color: var(--ui-color-text-muted); border: 1.5px solid var(--ui-color-border-strong); }
+    .event[data-state="upcoming"] .title { color: var(--ui-color-text-muted); font-weight: 400; }
     .body { min-width: 0; }
     .row { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--ui-space-2); }
     .title { font-size: var(--ui-font-size-md); color: var(--ui-color-text); font-weight: 500; min-width: 0; overflow-wrap: anywhere; }

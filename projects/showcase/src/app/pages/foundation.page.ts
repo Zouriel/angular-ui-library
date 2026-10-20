@@ -63,6 +63,15 @@ export const appConfig: ApplicationConfig = {
 };"></doc-demo>
       </doc-section>
 
+      <doc-section name="Built-in strings" anchor="built-in-strings" selector="provideUiStrings" [api]="stringsApi"
+        summary="The library's own words: the names of icon-only buttons (Close, Dismiss, Clear, Previous page…) and a few default labels (the file upload's Click to upload). English by default; give your app's language once with provideUiStrings, partly or whole, and the rest stay English. Components with their own input for a word (ui-file-upload label and hint, ui-split-button menuLabel) use that first. The words not yet covered are listed in the library README under Built-in strings.">
+        <doc-demo lang="ts" code="import { provideUiStrings } from '@zouriel/ui';
+
+providers: [
+  provideUiStrings({ close: 'ބަންދުކުރޭ', dismiss: 'ފޮރުވާ', previousPage: 'ކުރީ ޞަފްޙާ', nextPage: 'ދެން ޞަފްޙާ' }),
+]"></doc-demo>
+      </doc-section>
+
       <doc-section name="Theme service" selector="UiThemeService" [api]="themeApi"
         summary="Sets data-theme on the html element; read the current theme from the theme signal. The default is dark. Any string is accepted, so you can add your own themes in CSS under [data-theme=&quot;name&quot;]. toggle() flips dark and light, or winterDark and winterLight if the app uses those names; from any other theme it goes to dark. The service does not remember the choice between visits; store it yourself if you need to."
         [shapes]="THEME_TYPE">
@@ -153,6 +162,14 @@ export class FoundationPage {
   | 'lightOrange' | 'lightPink' | 'darkPink' | 'goldBlack' | 'goldRed'
   | 'lightTeal' | 'darkTeal' | 'lightPurple' | 'darkPurple' | 'lightPurpleGold'
   | 'maldives' | 'maldives-dark' | (string & {});`;
+  protected readonly stringsApi: ApiRow[] = [
+    { name: 'close / dismiss', type: 'string', default: "'Close' / 'Dismiss'", desc: 'Modal, drawer and bottom sheet close; toast, alert and hint dismiss.' },
+    { name: 'clear / clearAll / clearSearch', type: 'string', default: "'Clear' / 'Clear all' / 'Clear search'", desc: 'Combobox, multi-select and search input.' },
+    { name: 'previousPage / nextPage', type: 'string', default: "'Previous page' / 'Next page'", desc: 'Pagination.' },
+    { name: 'previousMonth / nextMonth / chooseDate', type: 'string', default: "'Previous month' / 'Next month' / 'Choose a date'", desc: 'Calendar, date range picker, date picker.' },
+    { name: 'moreActions', type: 'string', default: "'More actions'", desc: 'Split button menu.' },
+    { name: 'uploadLabel / uploadHint', type: 'string', default: "'Click to upload' / 'or drag & drop'", desc: 'File upload.' },
+  ];
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Default rounded corners for components with a radius input.' },

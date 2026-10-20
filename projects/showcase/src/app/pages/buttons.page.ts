@@ -186,6 +186,7 @@ export class ButtonsPage {
   ];
 
   protected readonly buttonApi: ApiRow[] = [
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height & font size.' },
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
@@ -232,6 +233,7 @@ export class ButtonsPage {
     { name: '(content)', type: 'slot', default: '—', desc: 'The ui-button elements to join.' },
   ];
   protected readonly toggleApi: ApiRow[] = [
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
     { name: 'pressed', type: 'boolean (model)', default: 'false', desc: 'Two-way (`[(pressed)]`). Whether it is on; mirrored to aria-pressed.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
@@ -239,6 +241,8 @@ export class ButtonsPage {
     { name: '(content)', type: 'slot', default: '—', desc: SLOT },
   ];
   protected readonly splitApi: ApiRow[] = [
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the main button when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
+    { name: 'menuLabel', type: 'string', default: "strings.moreActions ('More actions')", desc: 'The menu (caret) button\'s accessible name.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style. link, brand and accent have no style of their own here and draw as a plain surface button.' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable both buttons.' },

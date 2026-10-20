@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, Injectable, PLATFORM_ID, computed, inject, input, signal, viewChild } from '@angular/core';
 import { UiSnackbarService } from './snackbar';
+import { injectUiStrings } from '@zouriel/ui';
 
 export type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
 
@@ -130,7 +131,7 @@ export class UiToastService {
           @if (t.action) {
             <button class="act" type="button" (click)="toasts.act(t.id)">{{ t.action.label }}</button>
           }
-          <button class="x" type="button" aria-label="Dismiss" (click)="toasts.dismiss(t.id)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="x" type="button" [attr.aria-label]="strings.dismiss" (click)="toasts.dismiss(t.id)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
       }
     </div>
@@ -202,6 +203,7 @@ export class UiToastService {
   `,
 })
 export class UiToastHost {
+  protected readonly strings = injectUiStrings();
   protected readonly toasts = inject(UiToastService);
   position = input<UiToastPosition>('bottom-right');
 

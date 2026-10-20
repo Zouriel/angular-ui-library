@@ -1,7 +1,7 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, ElementRef, computed, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, uiFontStack, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, uiFontStack, type UiSize, injectUiStrings } from '@zouriel/ui';
 
 let nextId = 0;
 
@@ -44,7 +44,7 @@ export interface UiComboboxOption {
         (keydown)="onKeydown($event)"
         (blur)="onBlur($event)" />
       @if (showClear()) {
-        <button type="button" class="clear" tabindex="-1" aria-label="Clear" (mousedown)="$event.preventDefault()" (click)="clear()"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="clear" tabindex="-1" [attr.aria-label]="strings.clear" (mousedown)="$event.preventDefault()" (click)="clear()"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       }
       <svg class="chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
@@ -116,6 +116,7 @@ export interface UiComboboxOption {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCombobox), multi: true }],
 })
 export class UiCombobox implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
   placeholder = input('Search…');

@@ -512,6 +512,7 @@ export class FormsPage {
   protected readonly checkApi: ApiRow[] = [
     { name: 'invalid', type: 'boolean (ui-checkbox only)', default: 'false', desc: 'Error styling and aria-invalid.' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The label text.' },
+    { name: 'ariaLabel', type: 'string (ui-switch)', default: '—', desc: 'Accessible name for the switch when it has no label text (a plain aria-label works too).' },
   ];
   protected readonly radioApi: ApiRow[] = [
     { name: 'options', type: 'UiRadioOption[]', default: '[]', desc: 'Choices.' },
@@ -558,6 +559,8 @@ export class FormsPage {
     { name: 'multiple', type: 'boolean', default: 'false', desc: 'Allow multiple files.' },
     { name: 'accept', type: 'string', default: '—', desc: 'Accept filter (e.g. image/*); also shown under the hint.' },
     { name: 'acceptLabel', type: 'string', default: '—', desc: 'Text shown for the accepted types instead of accept, e.g. "PNG, JPEG or WebP".' },
+    { name: 'label', type: 'string', default: "strings.uploadLabel ('Click to upload')", desc: 'The action, in bold. Translate here or app-wide with provideUiStrings.' },
+    { name: 'hint', type: 'string', default: "strings.uploadHint ('or drag & drop')", desc: "What follows it; '' hides it (a phone has nothing to drag)." },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Rounded corners.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Greys out the dropzone and ignores clicks and drops.' },
   ];

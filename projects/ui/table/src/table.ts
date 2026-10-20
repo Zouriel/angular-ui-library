@@ -95,14 +95,14 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
                 <td [attr.data-align]="col.align || 'left'">{{ cell(row, col) }}</td>
               }
               @if (actions().length) {
-                <td class="acts">
+                <td class="acts"><div class="acts-in">
                   @for (action of actions(); track action.label) {
                     <button type="button" class="act"
                             [disabled]="action.disabled ? action.disabled(row) : false"
                             [attr.aria-label]="action.ariaLabel ? action.ariaLabel(row) : null"
                             (click)="action.run(row)">{{ action.label }}</button>
                   }
-                </td>
+                </div></td>
               }
             </tr>
           } @empty {
@@ -145,14 +145,15 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
     .empty { text-align: center; color: var(--ui-color-text-muted); padding: var(--ui-space-6); }
     /* Trailing and narrow: the actions are the one column that should never take width from the
        data, and never wrap onto a second line. */
-    .acts { width: 1px; white-space: nowrap; text-align: right; }
-    .act { position: relative; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-2); margin-left: var(--ui-space-1);
+    .acts { width: 1px; white-space: nowrap; }
+    /* Several actions on a row keep space-2 apart (a flex gap, so the order and RTL don't matter),
+       at the end of the row. */
+    .acts-in { display: flex; justify-content: flex-end; gap: var(--ui-space-2); }
+    .act { position: relative; flex: none; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
-    /* Several actions on a row keep space-2 apart, so neighbours read as separate buttons. */
-    .act + .act { margin-left: var(--ui-space-2); }
     .act:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     .act:disabled { opacity: .5; cursor: not-allowed; }
     .act:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -248,4 +249,26 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
     this.selected.set(next);
     this.selectionChange.emit([...next]);
   }
+}
+
+/**
+ * `ui-row-actions` — the buttons of a row in a table you build yourself (or any small group of
+ * actions): space-2 apart so neighbours never touch, at the end of the row, wrapping onto a second
+ * line when the cell is narrow (a table shown as cards on a phone). `align="start"` puts them at the
+ * start instead.
+ *
+ *   <td><ui-row-actions><ui-button size="sm" variant="outline">View</ui-button>…</ui-row-actions></td>
+ */
+@Component({
+  selector: 'ui-row-actions',
+  host: { '[attr.data-align]': 'align()' },
+  template: `<ng-content />`,
+  styles: `
+    :host { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--ui-space-2); }
+    :host([data-align="start"]) { justify-content: flex-start; }
+  `,
+})
+export class UiRowActions {
+  /** Which end of the cell the actions sit at. */
+  align = input<'start' | 'end'>('end');
 }

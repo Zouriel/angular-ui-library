@@ -2,7 +2,7 @@ import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
 
 /** `ui-search-input` — search field with icon and clear button (CVA). */
 @Component({
@@ -25,7 +25,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         (input)="handleInput($event)"
         (blur)="onTouched()" />
       @if (value()) {
-        <button type="button" class="clear" aria-label="Clear search" [disabled]="disabled()" (click)="clear(inp)"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="clear" [attr.aria-label]="strings.clearSearch" [disabled]="disabled()" (click)="clear(inp)"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       }
     </div>
   `,
@@ -56,6 +56,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSearchInput), multi: true }],
 })
 export class UiSearchInput implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   protected readonly searchIcon = Search01Icon;
 
   private config = inject(UI_CONFIG);

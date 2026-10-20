@@ -181,7 +181,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Timeline" selector="ui-timeline" [api]="timelineApi"
-        summary="Vertical sequence of events in an ordered list, joined by a connector line. Each event shows a tone-coloured dot, or a marker holding its icon when icon is set (a HugeIcons icon or a short string such as a step number). Markers are decorative; the title and description carry the meaning."
+        summary="Vertical sequence of events in an ordered list, joined by a connector line. Each event shows a tone-coloured dot, or a marker holding its icon when icon is set (a HugeIcons icon or a short string such as a step number). Markers are decorative; the title and description carry the meaning. In a flow, give items a state: done (as without one), current (aria-current=&quot;step&quot; and a halo) or upcoming (muted, with a hollow dot)."
         [shapes]="TIMELINE">
         <doc-demo code="<ui-timeline [items]=&quot;events&quot; />
 
@@ -192,6 +192,7 @@ events: UiTimelineItem[] = [
           <div class="cols2">
             <ui-timeline [items]="timeline" />
             <ui-timeline [items]="timelineIcons" />
+            <ui-timeline [items]="timelineFlow" />
           </div>
         </doc-demo>
       </doc-section>
@@ -253,6 +254,7 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   meta?: string;                   // e.g. a date, shown beside the title
   tone?: ${STATUS};   // default 'primary'
   icon?: string | IconSvgObject;   // replaces the dot with a marker
+  state?: 'done' | 'current' | 'upcoming'; // a flow's steps
 }`;
 
   protected readonly sel = signal(0);
@@ -314,6 +316,13 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
     { title: 'Review', meta: 'Tue', tone: 'warning', description: 'Two comments to address.' },
     { title: 'Shipped', meta: 'Wed', tone: 'success' },
   ];
+  protected readonly timelineFlow = [
+    { title: 'Request sent', meta: '09:12', state: 'done' as const },
+    { title: 'Nurse assigned', meta: '09:20', description: 'Aminath Hassan, RN', state: 'done' as const },
+    { title: 'On the way', meta: 'Now', state: 'current' as const },
+    { title: 'Visit', state: 'upcoming' as const },
+    { title: 'Payment', state: 'upcoming' as const },
+  ];
   protected readonly timelineIcons = [
     { title: 'Created', meta: 'Mon', icon: Flag01Icon },
     { title: 'Edited', meta: 'Tue', icon: PencilEdit02Icon, tone: 'neutral' as const },
@@ -328,7 +337,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'columns', type: 'UiColumn<T>[]', default: '[]', desc: 'Column definitions (see Data shapes).' },
     { name: 'data', type: 'T[]', default: '[]', desc: 'Row objects. Selection is tracked by object reference.' },
     { name: 'selectable', type: 'boolean', default: 'false', desc: 'Show a checkbox per row and a select-all box.' },
-    { name: 'actions', type: 'UiRowAction<T>[]', default: '[]', desc: 'Per-row buttons in a trailing column; an empty list renders no column.' },
+    { name: 'actions', type: 'UiRowAction<T>[]', default: '[]', desc: 'Per-row buttons in a trailing column, space-2 apart at the row end; an empty list renders no column.' },
+    { name: 'ui-row-actions', type: "component: align 'start' | 'end' = 'end'", default: '—', desc: 'For a table you build yourself: wrap a row\'s buttons in it and they keep space-2 apart, at the end, wrapping when the cell is narrow.' },
     { name: 'emptyText', type: 'string', default: "'No data'", desc: 'Shown across the table when data is empty.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
@@ -396,6 +406,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   ];
   protected readonly timelineApi: ApiRow[] = [
     { name: 'items', type: 'UiTimelineItem[]', default: '[]', desc: 'Events, top to bottom.' },
+    { name: 'item.state', type: "UiTimelineState: 'done' | 'current' | 'upcoming'", default: '—', desc: 'Place in a flow. current is aria-current=&quot;step&quot; with a halo; upcoming is muted with a hollow dot; unset or done look as before.' },
     { name: '--ui-timeline-ring', type: 'CSS colour', default: 'var(--ui-color-surface)', desc: 'Ring around each marker; set it to the colour behind the timeline.' },
   ];
   protected readonly codeApi: ApiRow[] = [
