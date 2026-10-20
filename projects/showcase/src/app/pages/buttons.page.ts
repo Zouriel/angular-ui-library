@@ -8,9 +8,10 @@ import TextBoldIcon from '@hugeicons/core-free-icons/TextBoldIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiSwitch } from '@zouriel/ui/form';
 import {
-  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
-  type UiDropdownItem, type UiSegmentedOption,
+  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab,
+  type UiSegmentedOption,
 } from '@zouriel/ui/button';
+import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
@@ -137,7 +138,7 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
       </doc-section>
 
       <doc-section name="Dropdown button" selector="ui-dropdown-button" [api]="ddApi" [outputs]="ddOut"
-        summary="A button that opens a menu of actions (CDK Overlay). Pass items; listen to (select). Opening moves focus to the first enabled item; ArrowUp/Down (wrapping), Home and End move between items, Enter chooses, Escape closes and returns focus to the trigger, Tab or a click outside closes. The menu flips to stay on screen. Projects the trigger label as content."
+        summary="A button that opens a menu of actions (CDK Overlay). Pass items; listen to (select). Opening moves focus to the first enabled item; ArrowUp/Down (wrapping), Home and End move between items, Enter chooses, Escape closes and returns focus to the trigger, Tab or a click outside closes. The menu flips to stay on screen. Projects the trigger label as content. Import it from @zouriel/ui/dropdown-button (since 0.33.1; it was in @zouriel/ui/button, which then put the CDK overlay in every app's first download)."
         shapes="interface UiDropdownItem {
   label: string;
   value: string;

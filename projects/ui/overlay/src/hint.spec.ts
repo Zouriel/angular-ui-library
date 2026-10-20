@@ -22,7 +22,7 @@ class Host {
 }
 
 describe('uiHint', () => {
-  beforeEach(() => vi.useFakeTimers());
+  beforeEach(() => vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] }));
   afterEach(() => {
     vi.useRealTimers();
     document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
@@ -131,19 +131,21 @@ describe('uiHint', () => {
     expect(f.componentInstance.reasons).toEqual([]);
   });
 
-  it('tries the preferred side, then the opposite, then the perpendicular ones; start/end follow the text direction', () => {
+  it('slides along its side before flipping to the opposite one, never beside the anchor unless placed there; start/end follow the text direction', () => {
     const { f, anchor, openIt } = setup();
     const strategy = Object.getPrototypeOf(TestBed.inject(Overlay).position().flexibleConnectedTo(document.body));
     const spy = vi.spyOn(strategy, 'withPositions');
     const created = vi.spyOn(TestBed.inject(Overlay), 'create');
     const sides = () => (spy.mock.lastCall![0] as { uiSide: string }[]).map((p) => p.uiSide);
     openIt();
-    expect(sides()).toEqual(['top', 'bottom', 'end', 'start']);
+    expect(sides()).toEqual(['top', 'top', 'top', 'bottom', 'bottom', 'bottom']);
+    const aligned = (spy.mock.lastCall![0] as { originX: string; overlayX: string }[]).slice(0, 3).map((p) => `${p.originX}/${p.overlayX}`);
+    expect(aligned).toEqual(['center/center', 'start/start', 'end/end']);
     f.componentInstance.open.set(false);
     f.componentInstance.placement.set('start');
     f.detectChanges();
     openIt();
-    expect(sides()).toEqual(['start', 'end', 'top', 'bottom']);
+    expect(sides()).toEqual(['start', 'end', 'top', 'top', 'top', 'bottom', 'bottom', 'bottom']);
     const first = (spy.mock.lastCall![0] as { originX: string; overlayX: string; offsetX: number }[])[0];
     expect([first.originX, first.overlayX, first.offsetX < 0]).toEqual(['start', 'end', true]);
     f.componentInstance.open.set(false);
@@ -156,5 +158,22 @@ describe('uiHint', () => {
     anchor.style.direction = '';
     spy.mockRestore();
     created.mockRestore();
+  });
+
+  it('follows its anchor when it moves (Thaana typed swaps a slot icon to the other side)', () => {
+    const { anchor, openIt } = setup();
+    let left = 10;
+    vi.spyOn(anchor, 'getBoundingClientRect').mockImplementation(() => ({ left, top: 100, width: 30, height: 30, right: left + 30, bottom: 130, x: left, y: 100, toJSON() {} }) as DOMRect);
+    const updates = vi.spyOn(Object.getPrototypeOf(TestBed.inject(Overlay).create()), 'updatePosition');
+    openIt();
+    vi.advanceTimersByTime(100);
+    const before = updates.mock.calls.length;
+    left = 300;
+    vi.advanceTimersByTime(50);
+    expect(updates.mock.calls.length).toBeGreaterThan(before);
+    const after = updates.mock.calls.length;
+    vi.advanceTimersByTime(200);
+    expect(updates.mock.calls.length).toBe(after); // still: nothing to do
+    updates.mockRestore();
   });
 });

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -124,5 +126,17 @@ describe('uiTextDirection', () => {
     expect(uiTextDirection('')).toBeNull();
     expect(uiResolvedDir(null, 'ދ')).toBeNull();
     expect(uiResolvedDir('ltr', 'ދ')).toBe('ltr');
+  });
+});
+
+describe('field font hook', () => {
+  // Flutter 0.33.0 lost an app font on the placeholder; here the placeholder inherits the field's
+  // font, and --ui-field-font (set on the host) is the way to give both an app font.
+  it('ui-input and ui-textarea take their font from --ui-field-font, defaulting to the theme font', () => {
+    for (const file of ['input.ts', 'textarea.ts']) {
+      const src = readFileSync(join(process.cwd(), 'projects/ui/form/src', file), 'utf8');
+      expect(src, file).toContain('font-family: var(--ui-field-font, var(--ui-font-default));');
+      expect(src, file).not.toMatch(/::placeholder\s*\{[^}]*font-family/);
+    }
   });
 });

@@ -1,7 +1,7 @@
 # @zouriel/ui
 
 A token-driven, signal-first component library for **Angular 22**. It is:
-- standalone, zoneless and tree-shakeable, with 34 secondary entry points;
+- standalone, zoneless and tree-shakeable, with 35 secondary entry points;
 - themeable, with 15 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
@@ -70,7 +70,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 
 | Import from `@zouriel/ui/…` | What's in it |
 | --- | --- |
-| `button` | button, icon button, button group, segmented, toggle, split, dropdown, FAB |
+| `button` | button, icon button, button group, segmented, toggle, split, FAB |
+| `dropdown-button` | dropdown button (its own entry since 0.33.1: it needs the CDK overlay) |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |

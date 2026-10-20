@@ -36,7 +36,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Hint" anchor="hint" selector="[uiHint]" [api]="hintApi"
-        summary="A coachmark: a small callout pointed at an element, opened from code (a first-run tip, “hold to record”). Not a dialog: it is a polite live region (role=status), never takes focus and never blocks typing or taps outside it. It closes on a tap on it or on its anchor, on Escape, or after uiHintDuration ms (0 keeps it until dismissed), and uiHintClosed says why. It flips to the opposite side, then the perpendicular ones, to stay on screen, and the arrow keeps pointing at the anchor. start and end follow the text direction. Primary colours from the theme; under reduced motion it only fades.">
+        summary="A coachmark: a small callout pointed at an element, opened from code (a first-run tip, “hold to record”). Not a dialog: it is a polite live region (role=status), never takes focus and never blocks typing or taps outside it. It closes on a tap on it or on its anchor, on Escape, or after uiHintDuration ms (0 keeps it until dismissed), and uiHintClosed says why. Above or below, it slides along that side to stay on screen and flips to the opposite side only when there is no room; it never moves beside the anchor unless placed there. It follows the anchor when it moves, and the arrow keeps pointing at it. start and end follow the text direction. Primary colours from the theme; under reduced motion it only fades.">
         <doc-demo lang="ts + html" code="import { UiHint, type UiHintCloseReason } from '@zouriel/ui/overlay';
 
 <ui-icon-button label=&quot;Record&quot; [uiHint]=&quot;'Hold to record a voice note'&quot;
@@ -330,7 +330,7 @@ interface UiToastAction {
   protected readonly hintApi: ApiRow[] = [
     { name: 'uiHint', type: 'string (required)', default: '—', desc: 'The hint text (the directive value).' },
     { name: 'uiHintOpen', type: 'boolean (model)', default: 'false', desc: 'Two-way ([(uiHintOpen)]). Set true to show it; it sets itself false when it closes.' },
-    { name: 'uiHintPlacement', type: "UiHintPlacement: 'top' | 'bottom' | 'start' | 'end'", default: "'top'", desc: 'Preferred side; start/end follow the text direction. Flips to the opposite, then the perpendicular sides, to stay on screen.' },
+    { name: 'uiHintPlacement', type: "UiHintPlacement: 'top' | 'bottom' | 'start' | 'end'", default: "'top'", desc: 'Preferred side; start/end follow the text direction. Above/below slide along their side and flip only to the opposite one; start/end may fall back to above or below.' },
     { name: 'uiHintDuration', type: 'number (ms)', default: '6000', desc: 'How long it stays; 0 keeps it until it is tapped or Escape is pressed.' },
     { name: 'uiHintDismissible', type: 'boolean', default: 'false', desc: 'Show a small × (aria-label “Dismiss”); it closes with reason tap.' },
     { name: '(uiHintClosed)', type: "UiHintCloseReason: 'timeout' | 'tap' | 'escape'", default: '—', desc: 'It closed by itself or by the person (a tap on it, its × or its anchor). Not emitted when the app sets uiHintOpen false.' },

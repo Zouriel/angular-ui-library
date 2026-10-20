@@ -11,6 +11,9 @@ import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
  * `ui-icon-button`). They sit inside the border at the inline start and end, centred on the line,
  * swap sides in RTL, and the text keeps clear of them. A click on a slot's empty space focuses the
  * field; buttons in it take their own.
+ *
+ * Font: set `--ui-field-font` on it (e.g. `style="--ui-field-font: Faruma, 'Noto Sans Thaana'"`) to type,
+ * and show the placeholder, in an app font; it defaults to the theme's `--ui-font-default`.
  */
 @Component({
   selector: 'ui-input',
@@ -59,7 +62,7 @@ import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
       height: var(--ui-size-md); padding: 0 var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
+      font-family: var(--ui-field-font, var(--ui-font-default)); font-size: var(--ui-font-size-md);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-input::placeholder { color: var(--ui-color-text-muted); }

@@ -441,6 +441,7 @@ export class FormsPage {
     { name: '[textarea-trailing] / [input-trailing]', type: 'content', default: '—', desc: 'Shown inside the border at the inline end, aligned to the last line.' },
     { name: 'dir', type: "UiTextDir: 'ltr' | 'rtl' | 'auto' | null", default: 'null (inherit)', desc: 'Passed to the native field; auto follows the first strong character typed, and the slots follow the resolved direction.' },
     { name: 'focus()', type: 'method', default: '—', desc: 'Focuses the native field.' },
+    { name: '--ui-field-font', type: 'CSS custom property', default: 'var(--ui-font-default)', desc: "Set on ui-input / ui-textarea to type, and show the placeholder, in an app font, e.g. style=\"--ui-field-font: Faruma, 'Noto Sans Thaana'\"." },
   ];
   protected readonly textareaApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "''", desc: 'Placeholder text.' },

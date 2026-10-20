@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { UiToggleButton } from './toggle-button';
 import { UiSplitButton } from './split-button';
 import { UiFab } from './fab';
-import { UiDropdownButton } from './dropdown-button';
+import { UiDropdownButton } from '../../dropdown-button/src/dropdown-button';
 import { UiSegmented } from './segmented';
 
 @Component({

@@ -10,12 +10,9 @@ export type UiHintPlacement = 'top' | 'bottom' | 'start' | 'end';
 export type UiHintCloseReason = 'timeout' | 'tap' | 'escape';
 
 const OPPOSITE: Record<UiHintPlacement, UiHintPlacement> = { top: 'bottom', bottom: 'top', start: 'end', end: 'start' };
-const PERPENDICULAR: Record<UiHintPlacement, UiHintPlacement[]> = {
-  top: ['end', 'start'],
-  bottom: ['end', 'start'],
-  start: ['top', 'bottom'],
-  end: ['top', 'bottom'],
-};
+
+/** Along a side: centred on the anchor, else lined up with its start edge, else its end edge. */
+type UiHintAlign = 'center' | 'start' | 'end';
 /** Anchor to bubble: the arrow (7px) plus a 3px breath. */
 const GAP = 10;
 
@@ -97,9 +94,10 @@ export class UiHintPanel {
  *
  * Not a dialog: it is a polite live region (`role="status"`), never takes focus and never blocks
  * typing or the pointer outside itself. It closes on a tap on it or on its anchor, Escape, or after
- * `uiHintDuration` ms (0 keeps it until dismissed), and reports why in `(uiHintClosed)`. It flips
- * to the other side (then the perpendicular ones) to stay on screen, follows the theme (the primary
- * colour), and only fades under reduced motion.
+ * `uiHintDuration` ms (0 keeps it until dismissed), and reports why in `(uiHintClosed)`. Above or
+ * below, it slides along that side to stay on screen, and flips to the opposite side only when there
+ * is no room; it never moves beside the anchor unless placed there. It follows the anchor when it
+ * moves, follows the theme (the primary colour), and only fades under reduced motion.
  */
 @Directive({
   selector: '[uiHint]',
@@ -169,10 +167,17 @@ export class UiHint {
     const anchor = this.anchor();
     const rtl = this.doc.defaultView?.getComputedStyle(anchor).direction === 'rtl';
     const preferred = this.placement();
-    const order = [preferred, OPPOSITE[preferred], ...PERPENDICULAR[preferred]];
+    // Above or below: stay on that side and slide along it (centred, then lined up with either
+    // edge of the anchor) before trying the opposite side; never move beside the anchor, where it
+    // would cover what sits next to it (a field around an icon). Start or end: that side, the
+    // opposite one, then above or below.
+    const vertical = preferred === 'top' || preferred === 'bottom';
+    const sides = vertical ? [preferred, OPPOSITE[preferred]] : [preferred, OPPOSITE[preferred], 'top', 'bottom'] as UiHintPlacement[];
+    const aligns: UiHintAlign[] = ['center', 'start', 'end'];
+    const order = sides.flatMap((p) => (p === 'top' || p === 'bottom' ? aligns.map((a) => this.positionFor(p, rtl, a)) : [this.positionFor(p, rtl)]));
     const strategy = this.overlay.position()
       .flexibleConnectedTo(anchor)
-      .withPositions(order.map((p) => this.positionFor(p, rtl)))
+      .withPositions(order)
       .withFlexibleDimensions(false)
       .withPush(true)
       .withViewportMargin(8);
@@ -205,7 +210,29 @@ export class UiHint {
       if (e.key === 'Escape') this.zone.run(() => this.close('escape'));
     };
     this.zone.runOutsideAngular(() => this.doc.addEventListener('keydown', onKey, true));
-    this.stopKeys = () => this.doc.removeEventListener('keydown', onKey, true);
+    // Follow the anchor: it can move without the page scrolling or resizing (Thaana typed into a
+    // field swaps its slot icons to the other side). A frame loop compares its box while open.
+    const view = this.doc.defaultView;
+    let last = '';
+    let frame = 0;
+    const follow = () => {
+      if (!this.ref) return;
+      const r = anchor.getBoundingClientRect();
+      const key = `${r.left},${r.top},${r.width},${r.height}`;
+      if (key !== last) {
+        if (last) {
+          this.ref.updatePosition();
+          this.aimArrow();
+        }
+        last = key;
+      }
+      frame = view?.requestAnimationFrame(follow) ?? 0;
+    };
+    if (view?.requestAnimationFrame) this.zone.runOutsideAngular(() => (frame = view.requestAnimationFrame(follow)));
+    this.stopKeys = () => {
+      this.doc.removeEventListener('keydown', onKey, true);
+      if (frame) view?.cancelAnimationFrame(frame);
+    };
   }
 
   /** (Re)starts the timeout. */
@@ -258,16 +285,16 @@ export class UiHint {
     return el;
   }
 
-  private positionFor(p: UiHintPlacement, rtl: boolean): ConnectedPosition {
+  private positionFor(p: UiHintPlacement, rtl: boolean, align: UiHintAlign = 'center'): ConnectedPosition {
     // CDK resolves start/end against the overlay's direction, so these swap in RTL; its offsets are
     // physical, so the gap's sign flips with them.
     const x = rtl ? -GAP : GAP;
     const pos: ConnectedPosition = (() => {
       switch (p) {
-        case 'bottom': return { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: GAP };
+        case 'bottom': return { originX: align, originY: 'bottom', overlayX: align, overlayY: 'top', offsetY: GAP };
         case 'start': return { originX: 'start', originY: 'center', overlayX: 'end', overlayY: 'center', offsetX: -x };
         case 'end': return { originX: 'end', originY: 'center', overlayX: 'start', overlayY: 'center', offsetX: x };
-        default: return { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -GAP };
+        default: return { originX: align, originY: 'top', overlayX: align, overlayY: 'bottom', offsetY: -GAP };
       }
     })();
     return Object.assign(pos, { uiSide: p });

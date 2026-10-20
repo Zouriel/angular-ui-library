@@ -3,7 +3,7 @@
 A token-driven, signal-first **Angular v22** component library. Standalone, zoneless,
 tree-shakeable across secondary entry points, themeable, and accessible (ARIA roles,
 keyboard support, CDK focus handling). About 140 components and directives across
-34 secondary entry points, plus a small core (`@zouriel/ui`):
+35 secondary entry points, plus a small core (`@zouriel/ui`):
 - the everyday catalog;
 - design tools;
 - three flagships: a floating-window system, a multi-format file viewer and a form builder;
@@ -26,6 +26,8 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   `UiThemeService.set('goldBlack')`.
 - **Secondary entry points**: import only what you use (`@zouriel/ui/button`,
   `@zouriel/ui/form`, `@zouriel/ui/overlay`, `@zouriel/ui/form-builder`, …).
+  Breaking in 0.33.1: `UiDropdownButton` / `UiDropdownItem` moved from `@zouriel/ui/button` to
+  `@zouriel/ui/dropdown-button`, so importing a button no longer brings in the CDK overlay.
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,
