@@ -55,6 +55,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Form field', anchor: 'form-field' },
     { name: 'Input', anchor: 'input' },
     { name: 'Textarea', anchor: 'textarea' },
+    { name: 'Field slots', anchor: 'field-slots' },
     { name: 'Number input', anchor: 'number-input' },
     { name: 'Password input', anchor: 'password-input' },
     { name: 'Search input', anchor: 'search-input' },
@@ -81,6 +82,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   ],
   'overlays': [
     { name: 'Tooltip', anchor: 'tooltip' },
+    { name: 'Hint', anchor: 'hint' },
     { name: 'Popover', anchor: 'popover' },
     { name: 'Menu', anchor: 'menu' },
     { name: 'Context menu', anchor: 'context-menu' },

@@ -1,4 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Attachment01Icon from '@hugeicons/core-free-icons/Attachment01Icon';
+import SentIcon from '@hugeicons/core-free-icons/SentIcon';
+import Mail01Icon from '@hugeicons/core-free-icons/Mail01Icon';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
@@ -6,7 +10,7 @@ import {
   UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput,
   type UiChoice, type UiAnchor, type UiTokenRun,
 } from '@zouriel/ui/form';
-import { UiButton } from '@zouriel/ui/button';
+import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
 import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepicker';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -34,7 +38,7 @@ const TOKEN = `interface UiTokenRun {
 @Component({
   selector: 'page-forms',
   imports: [
-    ReactiveFormsModule, FormsModule, UiButton, UiTokenInput,
+    ReactiveFormsModule, FormsModule, UiButton, UiIconButton, HugeiconsIconComponent, UiTokenInput,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
     UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker,
@@ -78,6 +82,38 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
         summary="Multi-line text field. Value type: string. It has no resize handle; with autosize it grows with the text from rows up to maxRows lines.">
         <doc-demo code="<ui-textarea formControlName=&quot;bio&quot; [rows]=&quot;3&quot; [autosize]=&quot;true&quot; [maxRows]=&quot;8&quot; />">
           <ui-textarea formControlName="bio" [rows]="2" placeholder="About you…" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Field slots" anchor="field-slots" selector="[textarea-leading] · [textarea-trailing] · [input-leading] · [input-trailing]" [api]="slotApi"
+        summary="Content inside the border of a textarea or input: an icon, or a ui-icon-button to attach or send. Leading sits at the inline start and trailing at the inline end, so they swap sides in RTL; on the textarea both are aligned to the last line and stay at the bottom while autosize grows. The text keeps clear of them, the focus ring and the invalid border go round the whole field, a click on a slot's empty space focuses the field (buttons in it take their own clicks), and an icon button keeps its 44px touch target on touch screens without making the field taller. dir is passed to the native field; auto follows what is typed, so a Thaana message turns the field right to left.">
+        <doc-demo code="<ui-textarea [autosize]=&quot;true&quot; [rows]=&quot;1&quot; dir=&quot;auto&quot; placeholder=&quot;Message…&quot;>
+  <ui-icon-button textarea-leading label=&quot;Attach a file&quot; size=&quot;sm&quot;>
+    <hugeicons-icon [icon]=&quot;attachIcon&quot; [size]=&quot;16&quot; [strokeWidth]=&quot;1.8&quot; />
+  </ui-icon-button>
+  <ui-icon-button textarea-trailing label=&quot;Send&quot; size=&quot;sm&quot; variant=&quot;primary&quot;>
+    <hugeicons-icon [icon]=&quot;sendIcon&quot; [size]=&quot;16&quot; [strokeWidth]=&quot;1.8&quot; />
+  </ui-icon-button>
+</ui-textarea>
+
+<ui-input type=&quot;email&quot; placeholder=&quot;you@example.com&quot;>
+  <hugeicons-icon input-leading [icon]=&quot;mailIcon&quot; [size]=&quot;16&quot; [strokeWidth]=&quot;1.8&quot; />
+</ui-input>">
+          <div class="slot-demos">
+            <ui-textarea [autosize]="true" [rows]="1" [maxRows]="5" dir="auto" placeholder="Message… (try ދިވެހި)" ariaLabel="Message">
+              <ui-icon-button textarea-leading label="Attach a file" size="sm"><hugeicons-icon [icon]="icons.attach" [size]="16" [strokeWidth]="1.8" /></ui-icon-button>
+              <ui-icon-button textarea-trailing label="Send" size="sm" variant="primary"><hugeicons-icon [icon]="icons.send" [size]="16" [strokeWidth]="1.8" /></ui-icon-button>
+            </ui-textarea>
+            <div dir="rtl">
+              <ui-textarea [autosize]="true" [rows]="1" placeholder="ސިޓީ ލިޔުއްވާ…" ariaLabel="Message, right to left">
+                <ui-icon-button textarea-leading label="Attach a file" size="sm"><hugeicons-icon [icon]="icons.attach" [size]="16" [strokeWidth]="1.8" /></ui-icon-button>
+                <ui-icon-button textarea-trailing label="Send" size="sm" variant="primary"><hugeicons-icon [icon]="icons.send" [size]="16" [strokeWidth]="1.8" /></ui-icon-button>
+              </ui-textarea>
+            </div>
+            <ui-input type="email" placeholder="you@example.com" ariaLabel="Email">
+              <hugeicons-icon input-leading [icon]="icons.mail" [size]="16" [strokeWidth]="1.8" />
+            </ui-input>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -274,6 +310,7 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
     </doc-page>
   `,
   styles: `
+    .slot-demos { display: grid; gap: var(--ui-space-4); max-width: 420px; }
     .stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
@@ -395,7 +432,15 @@ export class FormsPage {
     { name: 'inputmode', type: 'string', default: '—', desc: 'Virtual keyboard hint.' },
     { name: 'autocomplete', type: 'string', default: '—', desc: "Native autocomplete, e.g. 'email'." },
     { name: 'name', type: 'string', default: '—', desc: 'Native name, used by browser autofill.' },
+    { name: 'dir', type: "'ltr' | 'rtl' | 'auto' | null", default: 'null', desc: 'Writing direction of the native input (see Field slots).' },
     ...this.common,
+  ];
+  protected readonly icons = { attach: Attachment01Icon, send: SentIcon, mail: Mail01Icon };
+  protected readonly slotApi: ApiRow[] = [
+    { name: '[textarea-leading] / [input-leading]', type: 'content', default: '—', desc: 'Shown inside the border at the inline start (the left in LTR, the right in RTL), aligned to the last line.' },
+    { name: '[textarea-trailing] / [input-trailing]', type: 'content', default: '—', desc: 'Shown inside the border at the inline end, aligned to the last line.' },
+    { name: 'dir', type: "UiTextDir: 'ltr' | 'rtl' | 'auto' | null", default: 'null (inherit)', desc: 'Passed to the native field; auto follows the first strong character typed, and the slots follow the resolved direction.' },
+    { name: 'focus()', type: 'method', default: '—', desc: 'Focuses the native field.' },
   ];
   protected readonly textareaApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "''", desc: 'Placeholder text.' },
@@ -406,6 +451,7 @@ export class FormsPage {
     { name: 'name', type: 'string', default: '—', desc: 'Native name.' },
     { name: 'invalid', type: 'boolean', default: 'false', desc: 'Error styling.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'dir', type: "'ltr' | 'rtl' | 'auto' | null", default: 'null', desc: 'Writing direction of the native textarea (see Field slots).' },
   ];
   protected readonly numberApi: ApiRow[] = [
     { name: 'min', type: 'number', default: '—', desc: 'Minimum (clamped).' },

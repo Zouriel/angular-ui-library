@@ -6,9 +6,10 @@ import Copy01Icon from '@hugeicons/core-free-icons/Copy01Icon';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
 import Moon02Icon from '@hugeicons/core-free-icons/Moon02Icon';
+import Mic01Icon from '@hugeicons/core-free-icons/Mic01Icon';
 import { UiText } from '@zouriel/ui/text';
-import { UiButton } from '@zouriel/ui/button';
-import { UiBackdrop, UiTooltip, UiPopover, UiMenu, UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+import { UiButton, UiIconButton } from '@zouriel/ui/button';
+import { UiBackdrop, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, type UiMenuItem, type UiHintCloseReason, type UiHintPlacement } from '@zouriel/ui/overlay';
 import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService } from '@zouriel/ui/dialog';
 import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -18,7 +19,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 @Component({
   selector: 'page-overlays',
   imports: [ UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
-    UiText, UiButton, UiTooltip, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
+    UiText, UiButton, UiIconButton, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -31,6 +32,27 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
 <button uiTooltip=&quot;Saved to cloud&quot; uiTooltipPosition=&quot;top&quot;>Hover</button>">
           <ui-button variant="outline" uiTooltip="Backed by the CDK Overlay">Hover me</ui-button>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Hint" anchor="hint" selector="[uiHint]" [api]="hintApi"
+        summary="A coachmark: a small callout pointed at an element, opened from code (a first-run tip, “hold to record”). Not a dialog: it is a polite live region (role=status), never takes focus and never blocks typing or taps outside it. It closes on a tap on it or on its anchor, on Escape, or after uiHintDuration ms (0 keeps it until dismissed), and uiHintClosed says why. It flips to the opposite side, then the perpendicular ones, to stay on screen, and the arrow keeps pointing at the anchor. start and end follow the text direction. Primary colours from the theme; under reduced motion it only fades.">
+        <doc-demo lang="ts + html" code="import { UiHint, type UiHintCloseReason } from '@zouriel/ui/overlay';
+
+<ui-icon-button label=&quot;Record&quot; [uiHint]=&quot;'Hold to record a voice note'&quot;
+  [(uiHintOpen)]=&quot;showHint&quot; uiHintPlacement=&quot;top&quot; [uiHintDuration]=&quot;6000&quot;
+  (uiHintClosed)=&quot;closedBy = $event&quot;>…</ui-icon-button>">
+          <div class="hint-demo">
+            <ui-icon-button label="Record a voice note" variant="outline" [uiHint]="'Hold to record a voice note'" [(uiHintOpen)]="hintOpen"
+              [uiHintPlacement]="hintPlacement()" [uiHintDuration]="hintSticky() ? 0 : 6000" [uiHintDismissible]="hintSticky()"
+              (uiHintClosed)="hintReason.set($event)"><hugeicons-icon [icon]="micIcon" [size]="16" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-button size="sm" (click)="hintOpen.set(true)">Show hint</ui-button>
+            @for (p of hintPlacements; track p) {
+              <ui-button size="sm" [variant]="hintPlacement() === p ? 'secondary' : 'ghost'" (click)="hintPlacement.set(p)">{{ p }}</ui-button>
+            }
+            <ui-button size="sm" [variant]="hintSticky() ? 'secondary' : 'ghost'" (click)="hintSticky.set(!hintSticky())">Until dismissed, with ×</ui-button>
+            <ui-text variant="caption">Closed by: {{ hintReason() }}</ui-text>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -207,6 +229,7 @@ onKey(e: KeyboardEvent) {
     <ui-confirm-dialog [(open)]="confirm" title="Delete item?" message="This cannot be undone." confirmLabel="Delete" [destructive]="true" (confirm)="toast.warning('Deleted')" />
   `,
   styles: `
+    .hint-demo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); padding-top: var(--ui-space-12); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .floating { position: fixed; z-index: calc(var(--ui-z-overlay) + 1); left: 50%; top: 50%; transform: translate(-50%, -50%);
       padding: var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);
@@ -298,6 +321,20 @@ interface UiToastAction {
     { label: 'Edit', value: 'edit' }, { label: 'Duplicate', value: 'dup' }, { label: 'Delete', value: 'del', danger: true },
   ];
 
+  protected readonly micIcon = Mic01Icon;
+  protected readonly hintOpen = signal(false);
+  protected readonly hintPlacement = signal<UiHintPlacement>('top');
+  protected readonly hintPlacements: UiHintPlacement[] = ['top', 'bottom', 'start', 'end'];
+  protected readonly hintSticky = signal(false);
+  protected readonly hintReason = signal<UiHintCloseReason | '—'>('—');
+  protected readonly hintApi: ApiRow[] = [
+    { name: 'uiHint', type: 'string (required)', default: '—', desc: 'The hint text (the directive value).' },
+    { name: 'uiHintOpen', type: 'boolean (model)', default: 'false', desc: 'Two-way ([(uiHintOpen)]). Set true to show it; it sets itself false when it closes.' },
+    { name: 'uiHintPlacement', type: "UiHintPlacement: 'top' | 'bottom' | 'start' | 'end'", default: "'top'", desc: 'Preferred side; start/end follow the text direction. Flips to the opposite, then the perpendicular sides, to stay on screen.' },
+    { name: 'uiHintDuration', type: 'number (ms)', default: '6000', desc: 'How long it stays; 0 keeps it until it is tapped or Escape is pressed.' },
+    { name: 'uiHintDismissible', type: 'boolean', default: 'false', desc: 'Show a small × (aria-label “Dismiss”); it closes with reason tap.' },
+    { name: '(uiHintClosed)', type: "UiHintCloseReason: 'timeout' | 'tap' | 'escape'", default: '—', desc: 'It closed by itself or by the person (a tap on it, its × or its anchor). Not emitted when the app sets uiHintOpen false.' },
+  ];
   protected readonly tooltipApi: ApiRow[] = [
     { name: 'uiTooltip', type: 'string (required)', default: '—', desc: 'Tooltip text (the directive value). Read when it opens.' },
     { name: 'uiTooltipPosition', type: "UiTooltipPosition: 'top' | 'bottom' | 'left' | 'right'", default: "'top'", desc: 'Preferred side. The opposite side is used when this one has no room.' },

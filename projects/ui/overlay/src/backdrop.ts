@@ -1,4 +1,5 @@
 import { Component, input, output } from '@angular/core';
+import { UI_ANIM, uiLeaveHidden } from '@zouriel/ui';
 
 /**
  * `ui-backdrop` — full-viewport scrim behind overlays. Emits `(backdropClick)`.
@@ -12,7 +13,7 @@ import { Component, input, output } from '@angular/core';
       [class.blur]="blur()"
       (click)="backdropClick.emit()"
       animate.enter="ui-backdrop-enter"
-      animate.leave="ui-backdrop-leave"></div>
+      (animate.leave)="backdropLeave($event)"></div>
   `,
   styles: `
     .ui-backdrop { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay); }
@@ -20,6 +21,9 @@ import { Component, input, output } from '@angular/core';
   `,
 })
 export class UiBackdrop {
+  /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
+  protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
+
   blur = input(false);
   backdropClick = output<void>();
 }

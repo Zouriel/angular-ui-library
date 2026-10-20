@@ -1,7 +1,7 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, output, viewChild } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_ANIM, UI_CONFIG, uiLeaveHidden } from '@zouriel/ui';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 export type UiDrawerSide = 'left' | 'right' | 'top' | 'bottom';
@@ -19,7 +19,7 @@ let drawerSeq = 0;
     @if (open()) {
       <div #layer class="ui-layer">
       @if (modal()) {
-        <div class="backdrop" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave" (click)="onBackdrop()"></div>
+        <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="onBackdrop()"></div>
       }
       <div
         class="panel"
@@ -89,6 +89,9 @@ let drawerSeq = 0;
   `,
 })
 export class UiDrawer {
+  /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
+  protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
+
   private config = inject(UI_CONFIG);
   private doc = inject(DOCUMENT);
   open = model(false);

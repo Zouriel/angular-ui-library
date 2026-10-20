@@ -1,7 +1,7 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, effect, inject, input, model, viewChild } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_ANIM, UI_CONFIG, uiLeaveHidden } from '@zouriel/ui';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 let modalSeq = 0;
@@ -17,7 +17,7 @@ let modalSeq = 0;
   template: `
     @if (open()) {
       <div #layer class="ui-layer">
-      <div class="backdrop" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave" (click)="onBackdrop()"></div>
+      <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="onBackdrop()"></div>
       <div
         class="panel-wrap"
         (keydown.escape)="onEscape()">
@@ -113,6 +113,9 @@ let modalSeq = 0;
   `,
 })
 export class UiModal {
+  /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
+  protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
+
   private config = inject(UI_CONFIG);
   private doc = inject(DOCUMENT);
   open = model(false);

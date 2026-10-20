@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_ANIM, UI_CONFIG, uiLeaveHidden } from '@zouriel/ui';
 
 export interface UiCommand {
   label: string;
@@ -39,7 +39,7 @@ let paletteSeq = 0;
   template: `
     @if (open()) {
       <div #layer class="ui-layer">
-      <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" animate.leave="ui-backdrop-leave"></div>
+      <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
         <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
              animate.enter="ui-scale-enter" animate.leave="ui-scale-leave">
@@ -101,6 +101,9 @@ let paletteSeq = 0;
   `,
 })
 export class UiCommandPalette {
+  /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
+  protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
+
   private config = inject(UI_CONFIG);
   open = model(false);
   commands = input<UiCommand[]>([]);

@@ -1,6 +1,7 @@
 export * from './form-field';
 export * from './input';
 export * from './textarea';
+export * from './text-dir';
 export * from './checkbox';
 export * from './switch';
 export * from './radio-group';

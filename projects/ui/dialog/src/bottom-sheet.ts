@@ -1,5 +1,6 @@
 import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 import { isPlatformBrowser } from '@angular/common';
+import { UI_ANIM, uiLeaveHidden } from '@zouriel/ui';
 import {
   Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
   untracked, viewChild,
@@ -64,7 +65,7 @@ interface Drag {
   },
   template: `
     @if (backdrop() && isOpen()) {
-      <div class="backdrop" (click)="snap.set(0)"></div>
+      <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="snap.set(0)"></div>
     }
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
@@ -142,6 +143,8 @@ interface Drag {
   `,
 })
 export class UiBottomSheet {
+  /** The backdrop fades out and stays at 0 until it is removed. */
+  protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
   private readonly zone = inject(NgZone);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');

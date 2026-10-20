@@ -121,7 +121,9 @@ export const appConfig = {
 A component's own input always wins over the config. The core entry point also exports
 `UI_CONFIG` (the injection token), `injectUiConfig()`, `defaultUiConfig`, the shared
 `UiSize` (`'sm' | 'md' | 'lg'`) and `UiStatus` types, and `UI_ANIM`, the class names of
-the shared enter/leave animations for Angular's `animate.enter` / `animate.leave`.
+the shared enter/leave animations for Angular's `animate.enter` / `animate.leave`, and
+`uiLeaveHidden(leaveClass)`, an `(animate.leave)` handler for a backdrop that leaves next to a
+longer panel animation: it holds the backdrop at 0 instead of letting it flash back.
 
 ## Theming
 

@@ -1,17 +1,26 @@
-import { Component, HostAttributeToken, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
 
 /**
  * `ui-input` — single-line text field. Implements ControlValueAccessor so it
  * works with template-driven, reactive, and Signal Forms.
+ *
+ * Content slots, as on ui-textarea: project `[input-leading]` and `[input-trailing]` (an icon, a
+ * `ui-icon-button`). They sit inside the border at the inline start and end, centred on the line,
+ * swap sides in RTL, and the text keeps clear of them. A click on a slot's empty space focuses the
+ * field; buttons in it take their own.
  */
 @Component({
   selector: 'ui-input',
   // The label belongs on the inner field, not on this wrapper.
   host: { '[attr.aria-label]': 'null' },
   template: `
+    <div class="frame" [attr.data-size]="size()" [class.disabled]="disabled()" [attr.dir]="frameDir()">
+    <span #lead class="slot lead" (pointerdown)="slotDown($event)"><ng-content select="[input-leading]" /></span>
     <input
+      #field
       class="ui-input"
       [class.no-radius]="!radius()"
       [attr.data-size]="size()"
@@ -22,13 +31,29 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [attr.name]="name()"
       [attr.aria-label]="ariaLabel() ?? staticLabel"
       [attr.aria-invalid]="invalid() || null"
+      [attr.dir]="dir() ?? null"
+      [style.padding-inline-start]="leadW() ? 'calc(' + leadW() + 'px + var(--ui-space-1) + var(--ui-space-2))' : null"
+      [style.padding-inline-end]="trailW() ? 'calc(' + trailW() + 'px + var(--ui-space-1) + var(--ui-space-2))' : null"
       [value]="value()"
       [disabled]="disabled()"
       (input)="handleInput($event)"
       (blur)="onTouched()" />
+    <span #trail class="slot trail" (pointerdown)="slotDown($event)"><ng-content select="[input-trailing]" /></span>
+    </div>
   `,
   styles: `
     :host { display: block; }
+    .frame { position: relative; }
+    .slot {
+      position: absolute; top: 1px; bottom: 1px; z-index: 1;
+      display: flex; align-items: center; gap: var(--ui-space-1);
+      color: var(--ui-color-text-muted); cursor: text;
+    }
+    .slot:empty { display: none; }
+    .slot.lead { inset-inline-start: calc(1px + var(--ui-space-1)); }
+    .slot.trail { inset-inline-end: calc(1px + var(--ui-space-1)); }
+    .slot :where(button, a, [role=button]) { cursor: pointer; }
+    .frame.disabled .slot { opacity: .5; pointer-events: none; }
     .ui-input {
       width: 100%; box-sizing: border-box;
       height: var(--ui-size-md); padding: 0 var(--ui-space-3);
@@ -66,6 +91,46 @@ export class UiInput implements ControlValueAccessor {
   size = input<UiSize>('md');
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** The writing direction, passed to the native input; `auto` follows the text and the slots swap with it. */
+  dir = input<UiTextDir | null>(null);
+
+  private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
+  private readonly lead = viewChild.required<ElementRef<HTMLElement>>('lead');
+  private readonly trail = viewChild.required<ElementRef<HTMLElement>>('trail');
+  protected readonly leadW = signal(0);
+  protected readonly trailW = signal(0);
+  protected readonly frameDir = computed(() => uiResolvedDir(this.dir(), this.value()));
+
+  constructor() {
+    const destroy = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      const measure = () => {
+        this.leadW.set(Math.round(this.lead().nativeElement.getBoundingClientRect().width));
+        this.trailW.set(Math.round(this.trail().nativeElement.getBoundingClientRect().width));
+      };
+      measure();
+      const ro = new ResizeObserver(measure);
+      ro.observe(this.lead().nativeElement);
+      ro.observe(this.trail().nativeElement);
+      destroy.onDestroy(() => ro.disconnect());
+    });
+  }
+
+  /** Focuses the field. */
+  focus(): void {
+    this.field().nativeElement.focus();
+  }
+
+  /** A press on a slot's empty space (or a plain icon) focuses the field; buttons keep their own. */
+  protected slotDown(e: PointerEvent): void {
+    const target = e.target as Element | null;
+    const slot = e.currentTarget as HTMLElement;
+    const hit = target?.closest(UI_SLOT_INTERACTIVE);
+    if (hit && slot.contains(hit)) return;
+    e.preventDefault();
+    if (!this.disabled()) this.field().nativeElement.focus();
+  }
 
   protected readonly value = signal('');
   protected readonly disabled = signal(false);

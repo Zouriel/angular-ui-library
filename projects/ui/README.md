@@ -53,6 +53,7 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 - `UI_CONFIG`, `injectUiConfig()`, `defaultUiConfig`, `UiConfig`: read the resolved config in your own components.
 - `UiSize` (`'sm' | 'md' | 'lg'`) and `UiStatus` (`'neutral' | 'primary' | 'success' | 'warning' | 'danger'`).
 - `UI_ANIM`: class names of the shared animations in `animations.css`, for `animate.enter` / `animate.leave`.
+- `uiLeaveHidden(leaveClass)`: an `(animate.leave)` handler that plays the class and then holds the element at opacity 0 until it is removed; use it for a backdrop that leaves alongside a longer panel animation (the class form flashes the backdrop back in Angular 22.2).
 
 ## Themes
 
@@ -70,10 +71,10 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | Import from `@zouriel/ui/…` | What's in it |
 | --- | --- |
 | `button` | button, icon button, button group, segmented, toggle, split, dropdown, FAB |
-| `form` | input, textarea, number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
+| `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
-| `overlay` | tooltip, popover, menu, context menu, backdrop, click-outside |
+| `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |
 | `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts |
 | `navigation` | navbar, side nav, bottom nav, menubar, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card, alert, spinner, skeleton, divider, text |
