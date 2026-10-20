@@ -26,3 +26,19 @@ describe('UiAvatar', () => {
     expect(el.querySelector('img')?.getAttribute('src')).toBe('/other.png');
   });
 });
+
+describe('ui-avatar sizes', () => {
+  it('takes xl, and a pixel dimension that scales the initials', () => {
+    const f = TestBed.createComponent(UiAvatar);
+    f.componentRef.setInput('name', 'Aminath Hassan');
+    f.componentRef.setInput('size', 'xl');
+    f.detectChanges();
+    const a = (f.nativeElement as HTMLElement).querySelector('.ui-avatar') as HTMLElement;
+    expect(a.getAttribute('data-size')).toBe('xl');
+    expect(a.style.width).toBe('');
+    f.componentRef.setInput('dimension', 96);
+    f.detectChanges();
+    expect([a.style.width, a.style.height, a.style.fontSize]).toEqual(['96px', '96px', '36px']);
+    expect(a.textContent!.trim()).toBe('AH');
+  });
+});

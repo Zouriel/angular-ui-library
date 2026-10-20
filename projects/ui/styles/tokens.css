@@ -90,6 +90,8 @@
   --ui-size-sm: 26px;
   --ui-size-md: 30px;
   --ui-size-lg: 38px;
+  /* Extra large: one big action on a phone screen (start a visit, confirm arrival). Buttons only. */
+  --ui-size-xl: 56px;
   /* Apple HIG minimum hit target — icon-buttons/checkboxes/chips can pad out to this
      without growing their visible box, so touch users always get a 44px target. */
   --ui-size-touch: 44px;

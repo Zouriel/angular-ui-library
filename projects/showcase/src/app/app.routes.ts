@@ -12,6 +12,7 @@ export const routes: Routes = [
   { path: 'navigation', loadComponent: () => import('./pages/navigation.page').then((m) => m.NavigationPage), title: 'Navigation · @zouriel/ui' },
   { path: 'data', loadComponent: () => import('./pages/data.page').then((m) => m.DataPage), title: 'Data display · @zouriel/ui' },
   { path: 'media', loadComponent: () => import('./pages/media.page').then((m) => m.MediaPage), title: 'Media · @zouriel/ui' },
+  { path: 'map', loadComponent: () => import('./pages/map.page').then((m) => m.MapPage), title: 'Map · @zouriel/ui' },
   { path: 'window', loadComponent: () => import('./pages/window.page').then((m) => m.WindowPage), title: 'Window system · @zouriel/ui' },
   { path: 'design-tools', loadComponent: () => import('./pages/design-tools.page').then((m) => m.DesignToolsPage), title: 'Design tools · @zouriel/ui' },
   { path: 'form-builder', loadComponent: () => import('./pages/form-builder.page').then((m) => m.FormBuilderPage), title: 'Form builder · @zouriel/ui' },
@@ -51,6 +52,7 @@ export const NAV = [
       { label: 'Navigation', value: 'navigation' },
       { label: 'Data display', value: 'data' },
       { label: 'Media', value: 'media' },
+      { label: 'Map', value: 'map' },
     ],
   },
   {

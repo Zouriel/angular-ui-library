@@ -1,14 +1,18 @@
 import { Component, computed, input, linkedSignal } from '@angular/core';
-import type { UiSize } from '@zouriel/ui';
+import type { UiButtonSize } from '@zouriel/ui';
 
 /**
  * `ui-avatar` — user/entity image with graceful initials fallback.
  * Provide `src`+`alt`, or `name` to render initials. Initials also replace an image that fails to load.
+ * Sizes sm/md/lg/xl (26/30/38/56px); `dimension` gives any pixel size for a profile photo (the
+ * initials scale with it).
  */
 @Component({
   selector: 'ui-avatar',
   template: `
-    <span class="ui-avatar" [attr.data-size]="size()" [class.square]="square()" role="img" [attr.aria-label]="alt() || name() || 'avatar'">
+    <span class="ui-avatar" [attr.data-size]="size()" [class.square]="square()"
+          [style.width.px]="dimension() ?? null" [style.height.px]="dimension() ?? null"
+          [style.font-size.px]="dimension() ? Math.round(dimension()! * 0.38) : null" role="img" [attr.aria-label]="alt() || name() || 'avatar'">
       @if (src() && !failed()) {
         <img [src]="src()" [alt]="alt() || name() || ''" (error)="failed.set(true)" />
       } @else {
@@ -30,6 +34,8 @@ import type { UiSize } from '@zouriel/ui';
     .ui-avatar.square { border-radius: var(--ui-radius); }
     .ui-avatar[data-size="sm"] { width: var(--ui-size-sm); height: var(--ui-size-sm); font-size: 11px; }
     .ui-avatar[data-size="lg"] { width: var(--ui-size-lg); height: var(--ui-size-lg); font-size: var(--ui-font-size-md); }
+    .ui-avatar[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); font-size: 21px; }
+    .ui-avatar { box-sizing: border-box; flex: none; }
     img { width: 100%; height: 100%; object-fit: cover; }
   `,
 })
@@ -37,8 +43,11 @@ export class UiAvatar {
   src = input<string>();
   alt = input<string>();
   name = input<string>();
-  size = input<UiSize>('md');
+  size = input<UiButtonSize>('md');
+  /** A pixel size, for a profile photo bigger than xl (e.g. 96 or 128); overrides `size`. */
+  dimension = input<number | null>(null);
   square = input(false);
+  protected readonly Math = Math;
   /** The image failed to load; show initials instead. Resets when `src` changes. */
   protected readonly failed = linkedSignal({ source: this.src, computation: () => false });
 

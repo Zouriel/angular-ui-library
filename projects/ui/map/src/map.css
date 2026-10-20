@@ -1,0 +1,55 @@
+/* ui-map: the theme on Leaflet's controls, markers and pin. Unencapsulated (Leaflet builds its own
+   DOM), so everything is under .ui-map. */
+.ui-map {
+  display: block; position: relative; height: var(--ui-map-height, 320px);
+  background: var(--ui-color-surface-subtle); border-radius: var(--ui-radius); overflow: hidden;
+  font-family: var(--ui-font-default);
+}
+.ui-map .ui-map-canvas { position: absolute; inset: 0; direction: ltr; background: var(--ui-color-surface-subtle); }
+.ui-map .leaflet-container { font-family: var(--ui-font-default); background: var(--ui-color-surface-subtle); }
+.ui-map .leaflet-container:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
+/* Dark themes: dim and darken the tiles rather than shine a white street map. */
+.ui-map[data-dark] .leaflet-tile-pane { filter: brightness(0.62) contrast(1.15) saturate(0.6); }
+
+.ui-map .leaflet-bar { display: flex; flex-direction: column; gap: var(--ui-space-1); border: 0; box-shadow: none; }
+/* Separate buttons, a little apart, each with its own border and shadow. */
+.ui-map .leaflet-bar a, .ui-map .leaflet-bar a:first-child, .ui-map .leaflet-bar a:last-child {
+  width: var(--ui-size-md); height: var(--ui-size-md); line-height: var(--ui-size-md);
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+  border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
+}
+.ui-map .leaflet-bar a:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
+.ui-map .leaflet-bar a:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
+.ui-map .leaflet-bar a.leaflet-disabled { color: var(--ui-color-text-muted); background: var(--ui-color-surface-raised); }
+/* Touch: a 44px target for each zoom button. */
+@media (pointer: coarse) {
+  .ui-map .leaflet-bar a { width: var(--ui-size-touch); height: var(--ui-size-touch); line-height: var(--ui-size-touch); }
+}
+.ui-map .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--ui-color-surface-raised) 85%, transparent); color: var(--ui-color-text-muted);
+  font-size: 11px; padding: 2px var(--ui-space-1); border-radius: var(--ui-radius-xs) 0 0 0;
+}
+.ui-map .leaflet-control-attribution a { color: var(--ui-color-primary); }
+
+/* Markers: a tone dot with an optional label pill beside it, anchored on the dot. */
+.ui-map .ui-map-marker { display: flex; align-items: center; gap: var(--ui-space-1); width: auto !important; height: auto !important;
+  margin: -8px 0 0 -8px !important; white-space: nowrap; }
+.ui-map .ui-map-marker:focus-visible { outline: none; }
+.ui-map .ui-map-marker:focus-visible .ui-map-dot { box-shadow: var(--ui-focus-ring); }
+.ui-map .ui-map-dot { box-sizing: border-box; width: 16px; height: 16px; border-radius: 50%; flex: none;
+  background: var(--ui-color-primary); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-dot[data-tone="success"] { background: var(--ui-color-success); }
+.ui-map .ui-map-dot[data-tone="warning"] { background: var(--ui-color-warning); }
+.ui-map .ui-map-dot[data-tone="danger"] { background: var(--ui-color-danger); }
+.ui-map .ui-map-dot[data-tone="neutral"] { background: var(--ui-color-text-muted); }
+.ui-map .ui-map-label { padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-pill); font-size: 12px; font-weight: 600;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1); }
+
+/* The pin: a teardrop in the accent (or primary) colour, its tip on the point. */
+.ui-map .ui-map-pin { cursor: grab; }
+.ui-map .ui-map-pin:active { cursor: grabbing; }
+.ui-map .ui-map-pin-head { position: absolute; left: 3px; top: 0; width: 22px; height: 22px; box-sizing: border-box;
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg); transform-origin: center;
+  background: var(--ui-color-accent, var(--ui-color-primary)); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-pin:focus-visible { outline: none; }
+.ui-map .ui-map-pin:focus-visible .ui-map-pin-head { box-shadow: var(--ui-focus-ring); }

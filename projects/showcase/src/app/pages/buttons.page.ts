@@ -12,16 +12,18 @@ import {
   type UiSegmentedOption,
 } from '@zouriel/ui/button';
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
+import { UiHoldButton } from '@zouriel/ui/hold-button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
 const SIZE = "'sm' | 'md' | 'lg'";
+const BUTTON_SIZE = "UiButtonSize: 'sm' | 'md' | 'lg' | 'xl'";
 const SLOT = 'Projected content is the label (text, or an icon followed by text).';
 
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
+    UiText, UiHoldButton, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -31,14 +33,15 @@ const SLOT = 'Projected content is the label (text, or an icon followed by text)
       <doc-section name="Button" selector="ui-button" [api]="buttonApi"
         shapes="// exported from @zouriel/ui/button; the variant input of every button here takes it
 type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';"
-        summary="Eight variants, three sizes, loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Accent fills with the theme's --ui-color-accent (the coral call to action in maldives; secondary in themes without an accent of their own). Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). The link variant is sized to its text but never smaller than 24x24. On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
+        summary="Eight variants, four sizes (xl is 56px, for the one big action on a phone screen), loading and block states. Brand is a pill with the theme's --ui-gradient-brand fill; keep it for the one action per view that should stand out. Accent fills with the theme's --ui-color-accent (the coral call to action in maldives; secondary in themes without an accent of their own). Loading shows a spinner, sets aria-busy and disables the button. Glass is opt-in (buttons are solid by default). The link variant is sized to its text but never smaller than 24x24. On coarse pointers the hit area grows to 44px tall. Projects its label as content.">
         <doc-demo code="<ui-button variant=&quot;primary&quot;>Primary</ui-button>
 <ui-button variant=&quot;outline&quot; size=&quot;sm&quot;>Outline</ui-button>
 <ui-button variant=&quot;destructive&quot;>Delete</ui-button>
 <ui-button variant=&quot;brand&quot;>Get started</ui-button>
 <ui-button variant=&quot;accent&quot;>Get guidance</ui-button>
 <ui-button type=&quot;submit&quot; [loading]=&quot;true&quot;>Saving</ui-button>
-<ui-button [block]=&quot;true&quot;>Full width</ui-button>">
+<ui-button [block]=&quot;true&quot;>Full width</ui-button>
+<ui-button size=&quot;xl&quot;>Start visit</ui-button>">
           <div class="row items-center">
             <ui-button variant="primary">Primary</ui-button>
             <ui-button variant="secondary">Secondary</ui-button>
@@ -60,6 +63,22 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
             <ui-button [disabled]="true">Disabled</ui-button>
           </div>
           <ui-button variant="outline" [block]="true">Full width</ui-button>
+          <div class="row items-center">
+            <ui-button size="sm">Small</ui-button><ui-button>Medium</ui-button><ui-button size="lg">Large</ui-button><ui-button size="xl">Start visit</ui-button>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Hold button" anchor="hold-button" selector="ui-hold-button" [api]="holdApi" [outputs]="holdOut"
+        summary="Press and hold to confirm, for an action that shouldn't happen on a stray tap (start a visit, mark as arrived). A fill grows across the button while it is held; letting go early cancels it. Space or Enter held does the same from the keyboard. Holding isn't accessible to everyone, so a tap (shorter than 300ms), a quick Enter or a screen reader's activation opens a confirm dialog instead, which confirms the same way. The button is described by holdHint. From @zouriel/ui/hold-button.">
+        <doc-demo lang="ts + html" code="import { UiHoldButton } from '@zouriel/ui/hold-button';
+
+<ui-hold-button size=&quot;xl&quot; [block]=&quot;true&quot; [hold]=&quot;2000&quot; (confirmed)=&quot;arrive()&quot;>I've arrived</ui-hold-button>">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 360px">
+            <ui-hold-button size="xl" [block]="true" (confirmed)="held.set(held() + 1)">I've arrived</ui-hold-button>
+            <ui-hold-button variant="destructive" [hold]="1500" [destructive]="true" confirmTitle="Cancel the visit?" (confirmed)="held.set(held() + 1)">Hold to cancel the visit</ui-hold-button>
+            <ui-text variant="caption">Confirmed {{ held() }} times</ui-text>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -185,10 +204,20 @@ export class ButtonsPage {
     { label: 'Rename', value: 'rename' }, { label: 'Duplicate', value: 'dup' }, { label: 'Delete', value: 'del', danger: true },
   ];
 
+  protected readonly held = signal(0);
+  protected readonly holdApi: ApiRow[] = [
+    { name: 'hold', type: 'number (ms)', default: '2000', desc: 'How long to hold.' },
+    { name: 'variant / size / block / disabled', type: 'as ui-button', default: "'primary' / 'md' / false / false", desc: 'Look of the button; size takes xl.' },
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name when the text does not say enough.' },
+    { name: 'holdHint', type: 'string', default: "strings.holdHint ('Press and hold to confirm')", desc: 'Read with the button (aria-describedby).' },
+    { name: 'confirmTitle / confirmMessage / confirmLabel', type: 'string', default: "strings.confirmTitle / '' / strings.confirm", desc: 'The tap fallback dialog.' },
+    { name: 'destructive', type: 'boolean', default: 'false', desc: 'The dialog\'s confirm button is destructive.' },
+  ];
+  protected readonly holdOut: ApiRow[] = [{ name: 'confirmed', type: 'void', default: '—', desc: 'Held to the end, or confirmed in the dialog.' }];
   protected readonly buttonApi: ApiRow[] = [
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style.' },
-    { name: 'size', type: SIZE, default: "'md'", desc: 'Control height & font size.' },
+    { name: 'size', type: BUTTON_SIZE, default: "'md'", desc: 'Control height & font size; xl is 56px.' },
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
     { name: 'loading', type: 'boolean', default: 'false', desc: 'Show spinner & disable.' },
@@ -200,7 +229,7 @@ export class ButtonsPage {
   protected readonly iconApi: ApiRow[] = [
     { name: 'label', type: 'string (required)', default: '—', desc: 'Accessible name (aria-label).' },
     { name: 'variant', type: VARIANT, default: "'ghost'", desc: 'Visual style.' },
-    { name: 'size', type: SIZE, default: "'md'", desc: 'Square dimension.' },
+    { name: 'size', type: BUTTON_SIZE, default: "'md'", desc: 'Square dimension; xl is 56px.' },
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
     { name: 'round', type: 'boolean', default: 'false', desc: 'Fully circular (pill).' },

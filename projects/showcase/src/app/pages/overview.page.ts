@@ -12,7 +12,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   imports: [RouterLink, UiText, UiCard, UiBadge, UiButton, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Introduction" title="UI Library"
-      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 35 secondary entry points, and themeable, with 15 themes whose text and status colours pass WCAG AA.">
+      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 37 secondary entry points, and themeable, with 15 themes whose text and status colours pass WCAG AA.">
 
       <doc-section name="Install" anchor="install"
         summary="The package is on GitHub Packages: point the @zouriel scope there, then install it with its peers. Peers: @angular/core, @angular/common, @angular/forms and @angular/cdk ^22, @hugeicons/angular ^1.0.11 and @hugeicons/core-free-icons ^4.3.0. pdfjs-dist ^4.10.38 is optional and only needed to show PDFs.">
@@ -108,7 +108,7 @@ this.theme.theme();           // the current theme (a signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="What's inside" anchor="catalog"
-        summary="About 140 components and directives across 35 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
+        summary="About 140 components and directives across 37 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
         <div class="grid">
           @for (g of groups; track g.route) {
             <ui-card padding="sm">
@@ -185,13 +185,14 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Foundation', route: 'foundation', entries: '@zouriel/ui, /theme', items: ['provideUiConfig', 'UiThemeService', 'theme-provider', 'UI_ANIM'] },
     { title: 'Typography', route: 'typography', entries: '/text, /link', items: ['text', 'link', 'kbd', 'inline-code', 'blockquote'] },
     { title: 'Layout & grid', route: 'layout', entries: '/layout, /divider', items: ['grid', 'stack', 'container', 'spacer', 'splitter', 'sidebar-layout', 'panel-section', 'scroll-area', 'aspect-ratio', 'divider'] },
-    { title: 'Buttons & actions', route: 'buttons', entries: '/button, /dropdown-button', items: ['button', 'icon-button', 'button-group', 'segmented', 'toggle-button', 'split-button', 'dropdown-button', 'fab'] },
+    { title: 'Buttons & actions', route: 'buttons', entries: '/button, /dropdown-button, /hold-button', items: ['button', 'icon-button', 'button-group', 'segmented', 'toggle-button', 'split-button', 'dropdown-button', 'hold-button', 'fab'] },
     { title: 'Form controls', route: 'forms', entries: '/form, /combobox, /datepicker', items: ['input', 'textarea', 'number-input', 'password-input', 'search-input', 'select', 'combobox', 'multi-select', 'checkbox', 'checkbox-group', 'radio-group', 'switch', 'slider', 'rating', 'otp-input', 'chip-input', 'color-picker', 'file-upload', 'choice-grid', 'anchor-picker', 'editable-text', 'time-picker', 'date-picker', 'date-range-picker', 'calendar', 'form-field', 'uiNumberLabel'] },
     { title: 'Overlays & dialogs', route: 'overlays', entries: '/overlay, /dialog, /command-palette', items: ['uiTooltip', 'uiHint', 'popover', 'menu', 'uiContextMenu', 'backdrop', 'uiClickOutside', 'modal', 'drawer', 'bottom-sheet', 'confirm-dialog', 'toast-host', 'UiToastService', 'command-palette'] },
-    { title: 'Feedback & status', route: 'feedback', entries: '/alert, /progress, /spinner, /skeleton, /feedback', items: ['alert', 'progress-bar', 'meter', 'spinner', 'skeleton', 'empty-state', 'result', 'loading-overlay'] },
+    { title: 'Feedback & status', route: 'feedback', entries: '/alert, /progress, /spinner, /skeleton, /feedback', items: ['alert', 'progress-bar', 'progress-circle', 'meter', 'spinner', 'skeleton', 'empty-state', 'result', 'loading-overlay'] },
     { title: 'Navigation', route: 'navigation', entries: '/navigation, /tabs', items: ['navbar', 'side-nav', 'bottom-nav', 'menubar', 'breadcrumbs', 'pagination', 'stepper', 'anchor-nav', 'tabs'] },
-    { title: 'Data display', route: 'data', entries: '/table, /list, /data, /accordion, /card, /badge', items: ['table', 'list', 'tree', 'tree-table', 'timeline', 'description-list', 'code-block', 'accordion', 'card', 'stat-card', 'badge', 'chip', 'avatar', 'avatar-group'] },
+    { title: 'Data display', route: 'data', entries: '/table, /list, /data, /accordion, /card, /badge', items: ['table', 'list', 'tree', 'tree-table', 'timeline', 'chat-bubble', 'description-list', 'code-block', 'accordion', 'card', 'stat-card', 'badge', 'chip', 'avatar', 'avatar-group'] },
     { title: 'Media', route: 'media', entries: '/media', items: ['carousel', 'gallery', 'image-picker'] },
+    { title: 'Map', route: 'map', entries: '/map (lazy, needs leaflet)', items: ['map'] },
     { title: 'Window system', route: 'window', entries: '/window', items: ['window', 'UiWindowManager', 'uiDraggable', 'uiResizable'] },
     { title: 'File viewer', route: 'file-viewer', entries: '/file-viewer, /pdf-viewer', items: ['file-viewer', 'image-viewer', 'video-player', 'audio-player', 'text-viewer', 'code-viewer', 'media-lightbox', 'file-explorer', 'pdf-viewer'] },
     { title: 'Design tools', route: 'design-tools', entries: '/canvas, /sequencer, /form, /media, /layout', items: ['transform-box', 'snap-guides', 'path-editor', 'sequencer', 'scrubber', 'token-input', 'device-frame', 'resize-handle'] },

@@ -44,6 +44,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   ],
   'buttons': [
     { name: 'Button', anchor: 'button' },
+    { name: 'Hold button', anchor: 'hold-button' },
     { name: 'Icon button', anchor: 'icon-button' },
     { name: 'Button group', anchor: 'button-group' },
     { name: 'Segmented', anchor: 'segmented' },
@@ -101,6 +102,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Alert', anchor: 'alert' },
     { name: 'Spinner', anchor: 'spinner' },
     { name: 'Progress bar', anchor: 'progress-bar' },
+    { name: 'Progress circle', anchor: 'progress-circle' },
     { name: 'Skeleton', anchor: 'skeleton' },
     { name: 'Loading overlay', anchor: 'loading-overlay' },
     { name: 'Empty state', anchor: 'empty-state' },
@@ -126,6 +128,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Card & stat-card', anchor: 'card-stat-card' },
     { name: 'Badge, chip, avatar', anchor: 'badge-chip-avatar' },
     { name: 'Description list', anchor: 'description-list' },
+    { name: 'Chat bubble', anchor: 'chat-bubble' },
     { name: 'Timeline', anchor: 'timeline' },
     { name: 'Code block', anchor: 'code-block' },
   ],
@@ -133,6 +136,10 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Carousel', anchor: 'carousel' },
     { name: 'Gallery', anchor: 'gallery' },
     { name: 'Image picker', anchor: 'image-picker' },
+  ],
+  'map': [
+    { name: 'Map', anchor: 'map' },
+    { name: 'Pin', anchor: 'pin' },
   ],
   'window': [
     { name: 'Window', anchor: 'window' },

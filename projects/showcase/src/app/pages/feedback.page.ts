@@ -6,7 +6,7 @@ import { UiButton } from '@zouriel/ui/button';
 import { UiAlert } from '@zouriel/ui/alert';
 import { UiSpinner } from '@zouriel/ui/spinner';
 import { UiSkeleton } from '@zouriel/ui/skeleton';
-import { UiProgressBar } from '@zouriel/ui/progress';
+import { UiProgressBar, UiProgressCircle } from '@zouriel/ui/progress';
 import { UiEmptyState, UiResult, UiLoadingOverlay } from '@zouriel/ui/feedback';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -16,7 +16,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 @Component({
   selector: 'page-feedback',
   imports: [HugeiconsIconComponent, 
-    UiText, UiButton, UiAlert, UiSpinner, UiSkeleton, UiProgressBar, UiEmptyState, UiResult, UiLoadingOverlay,
+    UiText, UiButton, UiAlert, UiSpinner, UiSkeleton, UiProgressBar, UiProgressCircle, UiEmptyState, UiResult, UiLoadingOverlay,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -58,6 +58,19 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
             <ui-progress-bar [value]="70" tone="success" />
             <ui-progress-bar [value]="50" tone="neutral" label="Storage used" />
             <ui-progress-bar [value]="null" label="Uploading" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Progress circle" anchor="progress-circle" selector="ui-progress-circle" [api]="circleApi"
+        summary="The round sibling of the progress bar: determinate with a value (0–100), a turning arc without one. showValue writes the percentage in the middle; projected content goes in the middle instead, such as a countdown's seconds. A progressbar named by label; under reduced motion the arc turns more slowly.">
+        <doc-demo code="<ui-progress-circle [value]=&quot;65&quot; [showValue]=&quot;true&quot; label=&quot;Upload&quot; />
+<ui-progress-circle [value]=&quot;left / 30 * 100&quot; [size]=&quot;96&quot; [strokeWidth]=&quot;6&quot; label=&quot;Seconds left&quot;>{{ '{{' }} left {{ '}}' }}</ui-progress-circle>">
+          <div class="row">
+            <ui-progress-circle [value]="65" [showValue]="true" label="Upload" />
+            <ui-progress-circle label="Loading" />
+            <ui-progress-circle [value]="countdown() / 30 * 100" [size]="96" [strokeWidth]="6" tone="success" label="Seconds left">{{ countdown() }}</ui-progress-circle>
+            <ui-button size="sm" variant="outline" (click)="startCountdown()">Count down</ui-button>
           </div>
         </doc-demo>
       </doc-section>
@@ -149,6 +162,24 @@ export class FeedbackPage {
   protected readonly spinnerApi: ApiRow[] = [
     { name: 'size', type: SIZE, default: "'md'", desc: 'Diameter.' },
     { name: 'label', type: 'string', default: "'Loading'", desc: 'Accessible name (aria-label); not shown.' },
+  ];
+  protected readonly countdown = signal(30);
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  protected startCountdown(): void {
+    if (this.countdownTimer) clearInterval(this.countdownTimer);
+    this.countdown.set(30);
+    this.countdownTimer = setInterval(() => {
+      this.countdown.update((v) => Math.max(0, v - 1));
+      if (this.countdown() === 0 && this.countdownTimer) clearInterval(this.countdownTimer);
+    }, 1000);
+  }
+  protected readonly circleApi: ApiRow[] = [
+    { name: 'value', type: 'number | null', default: 'null', desc: '0–100 (clamped); null turns an indeterminate arc.' },
+    { name: 'size / strokeWidth', type: 'number (px)', default: '40 / 4', desc: 'Diameter and ring thickness.' },
+    { name: 'tone', type: 'UiStatus', default: "'primary'", desc: 'Arc colour.' },
+    { name: 'label', type: 'string', default: "'Progress'", desc: 'Accessible name.' },
+    { name: 'showValue', type: 'boolean', default: 'false', desc: 'Write the percentage in the middle.' },
+    { name: '(content)', type: 'slot', default: '—', desc: 'Shown in the middle instead (countdown seconds).' },
   ];
   protected readonly progressApi: ApiRow[] = [
     { name: 'value', type: 'number | null', default: 'null', desc: '0–100, determinate; null, indeterminate.' },

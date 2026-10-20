@@ -18,7 +18,7 @@ import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard } from '@zouriel/ui/card';
 import {
-  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
+  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble,
   type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
 } from '@zouriel/ui/data';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -30,7 +30,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent,
     UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
-    UiCard, UiStatCard, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, DocPage, DocSection, DocDemo,
+    UiCard, UiStatCard, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -140,7 +140,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load. ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
+        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
 <ui-badge tone=&quot;danger&quot; [dot]=&quot;true&quot; role=&quot;img&quot; aria-label=&quot;Offline&quot; />
 <ui-chip tone=&quot;primary&quot; [removable]=&quot;true&quot; label=&quot;angular&quot; (remove)=&quot;drop('angular')&quot;>angular</ui-chip>
@@ -162,6 +162,7 @@ nodes: UiTreeNode[] = [
           </div>
           <div class="row">
             <ui-avatar name="Ada Lovelace" size="sm" /><ui-avatar name="Ada Lovelace" /><ui-avatar name="Ada Lovelace" size="lg" />
+            <ui-avatar name="Ada Lovelace" size="xl" /><ui-avatar name="Aminath Hassan" [dimension]="96" />
             <ui-avatar name="Square Team" [square]="true" />
             <ui-avatar-group class="on-surface"><ui-avatar name="Ada Lovelace" /><ui-avatar name="Grace Hopper" /><ui-avatar name="Alan Turing" /></ui-avatar-group>
           </div>
@@ -176,6 +177,22 @@ nodes: UiTreeNode[] = [
           <div class="cols2">
             <ui-description-list [items]="details" />
             <ui-description-list [items]="details" layout="stacked" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Chat bubble" anchor="chat-bubble" selector="ui-chat-bubble" [api]="bubbleApi"
+        summary="One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves; text wraps at 80% of it.">
+        <doc-demo code="<ui-chat-bubble meta=&quot;09:40&quot;>Hello, I'm on my way to you.</ui-chat-bubble>
+<ui-chat-bubble [mine]=&quot;true&quot; meta=&quot;09:41 · Read&quot;>Thank you! The gate code is 2468.</ui-chat-bubble>">
+          <div class="chat">
+            <ui-chat-bubble meta="09:40">Hello, I'm on my way to you.</ui-chat-bubble>
+            <ui-chat-bubble [mine]="true" meta="09:41 · Read">Thank you! The gate code is 2468.</ui-chat-bubble>
+            <ui-chat-bubble meta="09:43">Arriving in about ten minutes. Is there parking nearby?</ui-chat-bubble>
+          </div>
+          <div class="chat" dir="rtl">
+            <ui-chat-bubble meta="09:40">އައްސަލާމު ޢަލައިކުމް</ui-chat-bubble>
+            <ui-chat-bubble [mine]="true" meta="09:41">ޝުކުރިއްޔާ</ui-chat-bubble>
           </div>
         </doc-demo>
       </doc-section>
@@ -206,6 +223,7 @@ events: UiTimelineItem[] = [
     </doc-page>
   `,
   styles: `
+    .chat { display: flex; flex-direction: column; gap: var(--ui-space-2); max-width: 420px; margin-bottom: var(--ui-space-4); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
@@ -393,7 +411,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'avatar: src', type: 'string', default: '—', desc: 'Image URL. Initials show instead if it fails to load.' },
     { name: 'avatar: alt', type: 'string', default: '—', desc: 'Accessible name; falls back to name, then "avatar".' },
     { name: 'avatar: name', type: 'string', default: '—', desc: 'Initials (first and last word) and fallback accessible name.' },
-    { name: 'avatar: size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Avatar size.' },
+    { name: 'avatar: size', type: "'sm' | 'md' | 'lg' | 'xl'", default: "'md'", desc: 'Avatar size: 26, 30, 38 or 56px.' },
+    { name: 'avatar: dimension', type: 'number | null', default: 'null', desc: 'Any pixel size (96, 128 for a profile photo); overrides size, and the initials scale with it.' },
     { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Rounded square instead of a circle.' },
     { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational only; trim the list yourself.' },
     { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-1)', desc: 'How far grouped avatars overlap.' },
@@ -403,6 +422,12 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   protected readonly dlApi: ApiRow[] = [
     { name: 'items', type: 'UiDescriptionItem[]', default: '[]', desc: 'Term/detail pairs.' },
     { name: 'layout', type: "'stacked' | 'row'", default: "'row'", desc: 'Term beside (row) or above (stacked) its detail.' },
+  ];
+  protected readonly bubbleApi: ApiRow[] = [
+    { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end, primary colour.' },
+    { name: 'meta', type: 'string', default: '—', desc: 'A small line under the text: the time, read status.' },
+    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Names the message (e.g. "You, 09:41") when the text alone does not say who sent it.' },
+    { name: '(content)', type: 'slot', default: '—', desc: 'The message; line breaks are kept.' },
   ];
   protected readonly timelineApi: ApiRow[] = [
     { name: 'items', type: 'UiTimelineItem[]', default: '[]', desc: 'Events, top to bottom.' },

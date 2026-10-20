@@ -1,7 +1,7 @@
 # @zouriel/ui
 
 A token-driven, signal-first component library for **Angular 22**. It is:
-- standalone, zoneless and tree-shakeable, with 35 secondary entry points;
+- standalone, zoneless and tree-shakeable, with 37 secondary entry points;
 - themeable, with 15 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
@@ -51,7 +51,7 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
   components with those inputs; `animations: false` adds `.ui-no-anim` to `<html>`, which turns
   every library animation off; `defaultFont` sets the `--ui-font-default` token on `<html>`.
 - `UI_CONFIG`, `injectUiConfig()`, `defaultUiConfig`, `UiConfig`: read the resolved config in your own components.
-- `UiSize` (`'sm' | 'md' | 'lg'`) and `UiStatus` (`'neutral' | 'primary' | 'success' | 'warning' | 'danger'`).
+- `UiSize` (`'sm' | 'md' | 'lg'`), `UiButtonSize` (`UiSize | 'xl'`, 56px: buttons, icon buttons, hold button, avatar) and `UiStatus` (`'neutral' | 'primary' | 'success' | 'warning' | 'danger'`).
 - `UI_ANIM`: class names of the shared animations in `animations.css`, for `animate.enter` / `animate.leave`.
 - `uiLeaveHidden(leaveClass)`: an `(animate.leave)` handler that plays the class and then holds the element at opacity 0 until it is removed; use it for a backdrop that leaves alongside a longer panel animation (the class form flashes the backdrop back in Angular 22.2).
 
@@ -72,6 +72,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | --- | --- |
 | `button` | button, icon button, button group, segmented, toggle, split, FAB |
 | `dropdown-button` | dropdown button (its own entry since 0.33.1: it needs the CDK overlay) |
+| `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
+| `map` | OpenStreetMap map with markers and a pin (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
@@ -80,7 +82,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `navigation` | navbar, side nav, bottom nav, menubar, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
-| `feedback`, `progress` | empty state, result, loading overlay; progress bar, meter |
+| `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
 | `data` | tree, tree table, timeline, description list, code block |
 | `layout` | grid, stack, container, spacer, splitter, sidebar layout, panel section, scroll area, aspect ratio, resize handle |

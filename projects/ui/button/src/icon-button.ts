@@ -1,5 +1,5 @@
 import { Component, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
 import type { UiButtonVariant } from './button';
 
 /**
@@ -52,6 +52,7 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
     .ui-icon-btn[data-size="sm"] { width: var(--ui-size-sm); height: var(--ui-size-sm); }
     .ui-icon-btn[data-size="lg"] { width: var(--ui-size-lg); height: var(--ui-size-lg); }
+    .ui-icon-btn[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); }
     .ui-icon-btn[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }
     .ui-icon-btn[data-variant="destructive"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
@@ -71,6 +72,7 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn ::ng-deep svg { width: 16px; height: 16px; flex: none; }
     .ui-icon-btn[data-size="sm"] ::ng-deep svg { width: 14px; height: 14px; }
     .ui-icon-btn[data-size="lg"] ::ng-deep svg { width: 18px; height: 18px; }
+    .ui-icon-btn[data-size="xl"] ::ng-deep svg { width: 24px; height: 24px; }
   `,
 })
 export class UiIconButton {
@@ -78,7 +80,7 @@ export class UiIconButton {
   /** Accessible name for the icon-only control (required for a11y). */
   label = input.required<string>();
   variant = input<UiButtonVariant>('ghost');
-  size = input<UiSize>('md');
+  size = input<UiButtonSize>('md');
   type = input<'button' | 'submit' | 'reset'>('button');
   disabled = input(false);
   round = input(false);

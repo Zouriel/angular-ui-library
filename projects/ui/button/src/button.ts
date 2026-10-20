@@ -1,5 +1,5 @@
 import { Component, HostAttributeToken, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
 
@@ -19,8 +19,13 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       [attr.data-variant]="variant()"
       [attr.data-size]="size()"
       [attr.aria-label]="ariaLabel() ?? staticLabel"
+      [attr.aria-describedby]="ariaDescribedby() ?? null"
+      [class.filling]="fill() !== null"
       [disabled]="disabled() || loading()"
       [attr.aria-busy]="loading() || null">
+      @if (fill() !== null) {
+        <span class="fill" aria-hidden="true" [style.width.%]="fill()! * 100" [style.transition-duration.ms]="fillDuration()"></span>
+      }
       @if (loading()) { <span class="spin" aria-hidden="true"></span> }
       <ng-content />
     </button>
@@ -65,6 +70,8 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     }
     .ui-btn[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
     .ui-btn[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
+    .ui-btn[data-size="xl"] { height: var(--ui-size-xl); font-size: 17px; font-weight: 600; padding: 0 var(--ui-space-8); gap: var(--ui-space-3); border-radius: var(--ui-radius-lg); }
+    .ui-btn[data-size="xl"].no-radius { border-radius: 0; }
     .ui-btn[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }
     .ui-btn[data-variant="primary"]:active:not(:disabled) { background: var(--ui-color-primary-active); }
@@ -124,6 +131,10 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       .ui-btn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
     }
     @keyframes ui-btn-spin { to { transform: rotate(360deg); } }
+    /* A fill growing from the inline start under the label: hold-to-confirm progress. */
+    .ui-btn.filling { position: relative; overflow: hidden; isolation: isolate; }
+    .fill { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: -1; pointer-events: none;
+      background: color-mix(in srgb, currentColor 22%, transparent); transition-property: width; transition-timing-function: linear; }
   `,
   // The name belongs on the inner button, not on this wrapper.
   host: { '[class.block-host]': 'block()', '[attr.aria-label]': 'null' },
@@ -134,8 +145,15 @@ export class UiButton {
    *  ("View" in a row of doctors: "View Dr Aminath"). A plain `aria-label="…"` on the element works too. */
   ariaLabel = input<string | undefined>(undefined);
   protected readonly staticLabel = inject(new HostAttributeToken('aria-label'), { optional: true });
+  /** Ids of elements describing the inner button (a hint such as "Hold to confirm"). */
+  ariaDescribedby = input<string | undefined>(undefined);
+  /** A progress fill under the label, 0 to 1 (null: none). Used by ui-hold-button. */
+  fill = input<number | null>(null);
+  /** How long the fill takes to reach a new value, in ms. */
+  fillDuration = input(0);
   variant = input<UiButtonVariant>('primary');
-  size = input<UiSize>('md');
+  /** `xl` (56px) is for the one big action on a phone screen. */
+  size = input<UiButtonSize>('md');
   type = input<'button' | 'submit' | 'reset'>('button');
   disabled = input(false);
   loading = input(false);

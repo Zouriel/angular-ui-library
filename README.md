@@ -3,7 +3,7 @@
 A token-driven, signal-first **Angular v22** component library. Standalone, zoneless,
 tree-shakeable across secondary entry points, themeable, and accessible (ARIA roles,
 keyboard support, CDK focus handling). About 140 components and directives across
-35 secondary entry points, plus a small core (`@zouriel/ui`):
+37 secondary entry points, plus a small core (`@zouriel/ui`):
 - the everyday catalog;
 - design tools;
 - three flagships: a floating-window system, a multi-format file viewer and a form builder;

@@ -115,3 +115,22 @@ describe('ui-row-actions and ui-floating-panel', () => {
     expect(el.querySelector('#q')!.getAttribute('data-placement')).toBe('top');
   });
 });
+
+@Component({
+  imports: [UiButton],
+  template: `<ui-button id="x" size="xl">Start visit</ui-button><ui-button id="f" [fill]="0.5" [fillDuration]="100">Hold</ui-button>`,
+})
+class Sizes {}
+
+describe('xl buttons and the button fill', () => {
+  it('passes size xl through, and draws a fill only when asked', () => {
+    const f = TestBed.createComponent(Sizes);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('#x button')!.getAttribute('data-size')).toBe('xl');
+    expect(el.querySelector('#x .fill')).toBeNull();
+    const fill = el.querySelector('#f .fill') as HTMLElement;
+    expect(fill.style.width).toBe('50%');
+    expect(fill.getAttribute('aria-hidden')).toBe('true');
+  });
+});
