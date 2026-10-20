@@ -10,6 +10,9 @@
  * Opt-in (it pulls Poppins). Include AFTER tokens.css, then switch with
  * UiThemeService.set('maldives') or <html data-theme="maldives">.
  *
+ * The same file carries the night variant, "maldives-dark" (0.32.0): UiThemeService.set('maldives-dark')
+ * or <html data-theme="maldives-dark">. A day/night toggle is just switching between the two names.
+ *
  *   @import '@zouriel/ui/styles/tokens.css';
  *   @import '@zouriel/ui/styles/theme-maldives.css';
  *
@@ -101,4 +104,90 @@
 [data-theme="maldives"] ::selection {
   background: rgba(74, 144, 164, 0.28);
   color: #0b2d3a;
+}
+
+/*
+ * "maldives-dark": the same sea at night. A deep ocean canvas (near-black teal), raised surfaces a
+ * step lighter, Foam ink, a brightened Lagoon primary and the Coral accent. Same token set as
+ * maldives; the brand tokens keep their roles, so --ui-color-ocean-deep (the ink and the palm
+ * silhouettes) becomes the light Foam ink, and --ui-color-mist (the canvas the waves blend into)
+ * becomes the night canvas. Text on Coral and Lagoon fills is the night canvas colour.
+ */
+[data-theme="maldives-dark"] {
+  color-scheme: dark;
+
+  /* Brand colours, raw, re-tuned for a dark page. */
+  --ui-color-ocean-deep: #e6f1f3; /* the ink: Foam on night */
+  --ui-color-lagoon: #5fb4c9;
+  --ui-color-coral: #ff8a84;
+  --ui-color-sand: #f2dfcb;
+  --ui-color-mist: #071b23; /* the canvas */
+
+  /* Canvas: cards a step lighter than the night sea */
+  --ui-color-bg: #071b23;
+  --ui-glass-bg: rgba(10, 34, 44, 0.92);
+  --ui-color-surface: #0d2731;
+  --ui-color-surface-raised: #12303b;
+  --ui-color-surface-subtle: #0f2b36;
+  --ui-color-surface-hover: #173845;
+  --ui-color-elevated-hover: #1c404d;
+  --ui-color-text: #e6f1f3;
+  --ui-color-text-muted: #a3bfc8; /* Lagoon-grey Foam: 7:1+ on every surface (thin Poppins captions) */
+  --ui-color-border: #1f414d;
+  --ui-color-border-strong: #4a7280;
+
+  /* Roles */
+  --ui-color-primary: #6cc0d4; /* Lagoon, lifted so links clear 4.5:1 on raised cards */
+  --ui-color-primary-hover: #8dd0e0;
+  --ui-color-primary-contrast: #071b23;
+  --ui-color-secondary: #4a90a4; /* raw Lagoon fill with night text */
+  --ui-color-secondary-contrast: #071b23;
+  --ui-color-success: #5fd0a2;
+  --ui-color-warning: #f0b955;
+  --ui-color-warning-contrast: #071b23;
+  --ui-color-danger: #ff8a84; /* Coral reads as danger on night: 6:1+ */
+  --ui-color-accent: #ff8a84;
+  --ui-color-accent-contrast: #071b23;
+  --ui-color-accent-subtle: rgba(255, 138, 132, 0.16);
+  --ui-color-accent-strong: #ffa9a4;
+  --ui-color-selected: rgba(108, 192, 212, 0.18);
+  --ui-color-track: #1f414d;
+  --ui-color-overlay: rgba(1, 10, 14, 0.62);
+
+  /* Icons on neutral surfaces take Lagoon, as in maldives. */
+  --ui-color-icon: #5fb4c9;
+  /* An off switch's track clears 3:1 on the surfaces. */
+  --ui-switch-track: #5d8695;
+
+  --ui-rating-fill: #ff8a84;
+  --ui-cursor-color: #e6f1f3;
+  --ui-section-label-bracket: #ff8a84; /* the coral eyebrow bar */
+  --ui-scroll-progress-track: rgba(230, 241, 243, 0.08);
+
+  /* Sunrise → coral → lagoon → foam: bright end stops, so gradient text reads on night. */
+  --ui-gradient-brand: linear-gradient(90deg, #f2dfcb 0%, #ff8a84 35%, #5fb4c9 70%, #bfe3ec 100%);
+  /* Dusk over a night sea: dark from the top, deepening to the canvas. */
+  --ui-gradient-hero: linear-gradient(180deg, #2c2a40 0%, #5a3b4c 20%, #1d5566 48%, #071b23 86%);
+  --ui-gradient-highlight: linear-gradient(
+    180deg,
+    rgba(108, 192, 212, 0.16) 0%,
+    rgba(108, 192, 212, 0) 100%
+  );
+  --ui-glow-amber: 0 0 24px rgba(255, 138, 132, 0.32);
+
+  /* Dark-surface recipe: a faint foam edge, deeper shadows */
+  --ui-glass-border: rgba(230, 241, 243, 0.1);
+  --ui-shadow-1: 0 1px 2px rgba(0, 6, 9, 0.4);
+  --ui-shadow-2: 0 4px 16px rgba(0, 6, 9, 0.45);
+  --ui-shadow-3: 0 12px 40px rgba(0, 6, 9, 0.55);
+
+  --ui-radius: var(--ui-radius-sm);
+
+  --ui-font-default: "Poppins", system-ui, -apple-system, sans-serif;
+  --ui-font-display: "Poppins", system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="maldives-dark"] ::selection {
+  background: rgba(108, 192, 212, 0.34);
+  color: #e6f1f3;
 }

@@ -148,7 +148,7 @@ function themes(): { name: string; vars: Record<string, string> }[] {
   const out: { name: string; vars: Record<string, string> }[] = [];
   for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
-    for (const m of text.matchAll(/\[data-theme="(\w+)"\]\s*\{([^}]*)\}/g)) {
+    for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
       const vars = Object.fromEntries([...m[2].matchAll(/(--ui-color-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
       if (vars['--ui-color-bg']) out.push({ name: m[1], vars });
     }
@@ -161,8 +161,23 @@ describe('theme palettes', () => {
 
   it('finds every named skin', () => {
     expect(list.map((t) => t.name).sort()).toEqual(
-      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives'].sort(),
+      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark'].sort(),
     );
+  });
+
+  it('gives maldives-dark exactly the token set of maldives, as a dark theme', () => {
+    const text = withoutComments(readFileSync(join(root, 'styles/theme-maldives.css'), 'utf8'));
+    const keys = (name: string) => {
+      const m = text.match(new RegExp(`\\[data-theme="${name}"\\]\\s*\\{([^}]*)\\}`));
+      return m ? [...m[1].matchAll(/(--ui-[\w-]+):/g)].map((d) => d[1]).sort() : [];
+    };
+    expect(keys('maldives').length).toBeGreaterThan(40);
+    expect(keys('maldives-dark')).toEqual(keys('maldives'));
+    const dark = list.find((t) => t.name === 'maldives-dark')!;
+    const [bg, ink] = [parseColor(dark.vars['--ui-color-bg'])!, parseColor(dark.vars['--ui-color-ocean-deep'])!];
+    // Night canvas, and Ocean Deep (the ink in maldives) turned into a light ink on it.
+    expect(contrast(bg, [0, 0, 0, 1])).toBeLessThan(1.5);
+    expect(contrast(ink, bg)).toBeGreaterThan(7);
   });
 
   it('meets WCAG AA for text and status colours on every background', () => {
@@ -206,7 +221,7 @@ describe('theme palettes', () => {
     const fails: string[] = [];
     for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
-      for (const m of text.matchAll(/\[data-theme="(\w+)"\]\s*\{([^}]*)\}/g)) {
+      for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
         const v = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
         if (!v['--ui-color-bg']) continue;
         const raised = parseColor(v['--ui-color-surface-raised']);

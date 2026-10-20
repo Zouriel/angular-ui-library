@@ -18,6 +18,8 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  * - `maldives` is the calm, light sea skin (Find Doctor brand: Ocean Deep, Lagoon, Coral, Sand,
  *   Mist; Poppins) with its own sea backdrops in `@zouriel/ui/fx`, and requires
  *   `@zouriel/ui/styles/theme-maldives.css`.
+ * - `maldives-dark` is its night variant (deep ocean canvas, Foam ink, Lagoon primary, Coral
+ *   accent), in the same stylesheet; toggle day/night by switching between the two names.
  *
  * Consumers may register their own theme names too — any string is accepted by
  * {@link UiThemeService.set}.
@@ -39,6 +41,7 @@ export type UiTheme =
   | 'darkPurple'
   | 'lightPurpleGold'
   | 'maldives'
+  | 'maldives-dark'
   | (string & {});
 
 /**

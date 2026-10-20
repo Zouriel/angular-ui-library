@@ -2,7 +2,7 @@
 
 A token-driven, signal-first component library for **Angular 22**. It is:
 - standalone, zoneless and tree-shakeable, with 34 secondary entry points;
-- themeable, with 14 themes that all pass WCAG AA;
+- themeable, with 15 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
 Docs with live examples: <https://zouriel.com/uilib/> · Source: <https://github.com/Zouriel/angular-ui-library>
@@ -27,7 +27,7 @@ Load the styles once (global stylesheet or `angular.json` styles):
 @import '@zouriel/ui/styles/animations.css';        /* enter/leave animations used by overlays */
 @import '@zouriel/ui/styles/theme-palettes.css';    /* optional: the ten colour palettes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: cinematic Dark Orange (loads Google Fonts) */
-@import '@zouriel/ui/styles/theme-maldives.css';    /* optional: light Maldives sea skin (loads Poppins) */
+@import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives sea skins, day and night (loads Poppins) */
 @import '@zouriel/ui/styles/fx.css';                /* optional: FX utility classes */
 @import '@zouriel/ui/styles/theme-animations.css';  /* optional: palette motion on the FX classes */
 @import '@zouriel/ui/styles/color-aliases.css';     /* optional: --color-* aliases for app code */
@@ -60,7 +60,7 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 - `dark` / `light` (Winter, the default; also `winterDark` / `winterLight`), in `tokens.css`;
 - `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed`, in `theme-palettes.css`;
 - `darkOrange`, in `theme-dark-orange.css`;
-- `maldives`, in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`).
+- `maldives` and its night variant `maldives-dark`, both in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`; `ui-sea-surface` scopes `maldives` unless given `theme="maldives-dark"` or `[theme]="null"`).
 
 `ui-theme-provider` scopes a theme to part of the page. A custom theme sets the core `--ui-color-*`
 tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).

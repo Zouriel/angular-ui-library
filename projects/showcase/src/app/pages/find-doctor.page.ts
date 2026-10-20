@@ -68,7 +68,7 @@ interface Doctor {
     <doc-page
       eyebrow="Themes"
       title="Find Doctor"
-      lead="The Maldives theme in use: the five Find Doctor app screens rebuilt from existing components inside ui-sea-surface. White cards on Mist, Ocean Deep ink and buttons, a Coral call to action, Poppins, and the sea backdrops from @zouriel/ui/fx. Opening this page switches the app to Maldives (and back when you leave); the screens follow whatever theme is picked while you are here."
+      lead="The Maldives theme in use: the five Find Doctor app screens rebuilt from existing components inside ui-sea-surface. White cards on Mist, Ocean Deep ink and buttons, a Coral call to action, Poppins, and the sea backdrops from @zouriel/ui/fx. Opening this page switches the app to Maldives (and back when you leave); the screens follow whatever theme is picked while you are here, so pick Maldives Dark to see them at night."
     >
       <doc-section
         name="Splash"
@@ -603,7 +603,8 @@ interface Doctor {
     .splash-hero {
       flex: 1.3;
     }
-    /* The sun rises in the sky; the wordmark sits low, over the deep water where white text reads. */
+    /* The sun rises in the sky; the wordmark sits low, over the deep water. Sand is a light ink there
+       in both maldives and maldives-dark (primary-contrast is the night canvas colour in the dark one). */
     .splash-brand {
       height: 100%;
       box-sizing: border-box;
@@ -613,7 +614,7 @@ interface Doctor {
       justify-content: space-between;
       gap: var(--ui-space-2);
       padding: var(--ui-space-8) var(--ui-space-4) var(--ui-space-12);
-      color: var(--ui-color-primary-contrast);
+      color: var(--ui-color-sand, var(--ui-color-primary-contrast));
     }
     .brand-text {
       display: flex;
@@ -735,7 +736,8 @@ export class FindDoctorPage implements OnDestroy {
   private readonly previous: UiTheme = this.themes.theme();
 
   constructor() {
-    this.themes.set('maldives');
+    // Already on a Maldives variant (day or night): keep it.
+    if (this.previous !== 'maldives' && this.previous !== 'maldives-dark') this.themes.set('maldives');
   }
 
   ngOnDestroy(): void {

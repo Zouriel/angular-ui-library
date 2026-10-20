@@ -75,7 +75,7 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Themes" selector="data-theme"
-        summary="Fourteen built-in themes. dark and light are the Winter colour system in tokens.css, also reachable as winterDark and winterLight. The ten accent palettes live in theme-palettes.css and change colours only. darkOrange lives in theme-dark-orange.css and also changes the fonts; maldives, the light sea theme, lives in theme-maldives.css, sets Poppins and has its own sea backdrops (see Motion & FX). Each tile below is a ui-theme-provider island; Use sets it for the whole page.">
+        summary="Fifteen built-in themes. dark and light are the Winter colour system in tokens.css, also reachable as winterDark and winterLight. The ten accent palettes live in theme-palettes.css and change colours only. darkOrange lives in theme-dark-orange.css and also changes the fonts; maldives, the light sea theme, and maldives-dark, its night variant, live in theme-maldives.css, set Poppins and have their own sea backdrops (see Motion & FX). Each tile below is a ui-theme-provider island; Use sets it for the whole page.">
         <div class="themes">
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
@@ -146,12 +146,13 @@ export class FoundationPage {
     { name: 'darkPurple', file: 'theme-palettes.css' },
     { name: 'lightPurpleGold', file: 'theme-palettes.css' },
     { name: 'maldives', file: 'theme-maldives.css' },
+    { name: 'maldives-dark', file: 'theme-maldives.css' },
   ];
   protected readonly THEME_TYPE = `type UiTheme =
   | 'dark' | 'light' | 'winterDark' | 'winterLight' | 'darkOrange'
   | 'lightOrange' | 'lightPink' | 'darkPink' | 'goldBlack' | 'goldRed'
   | 'lightTeal' | 'darkTeal' | 'lightPurple' | 'darkPurple' | 'lightPurpleGold'
-  | 'maldives' | (string & {});`;
+  | 'maldives' | 'maldives-dark' | (string & {});`;
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Default rounded corners for components with a radius input.' },

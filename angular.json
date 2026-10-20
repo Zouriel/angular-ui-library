@@ -82,8 +82,9 @@
                   // and @angular/forms code it uses. Raise this only for a reason like that one.
                   // 0.31.0: +10 kB for the maldives theme, whose stylesheet the showcase loads globally
                   // like every theme (~7 kB of CSS); main.js was already at the old 560 kB line.
+                  // 0.32.0: +5 kB for maldives-dark, the night block in the same global stylesheet.
                   "type": "initial",
-                  "maximumWarning": "570kB",
+                  "maximumWarning": "575kB",
                   "maximumError": "1MB"
                 },
                 {

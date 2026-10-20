@@ -318,7 +318,7 @@ export class FxPage {
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'The logo, centred on the sun.' },
   ];
   protected readonly surfaceApi: ApiRow[] = [
-    { name: 'theme', type: 'string | null', default: "'maldives'", desc: 'Theme scoped to the region; null keeps the page theme.' },
+    { name: 'theme', type: 'string | null', default: "'maldives'", desc: "Theme scoped to the region ('maldives-dark' for the night sea); null keeps the page theme." },
     { name: 'waves', type: 'boolean', default: 'true', desc: 'Show the wave footer.' },
     { name: 'waveLayers', type: 'UiWaveLayers', default: '3', desc: 'Wave bands.' },
     { name: 'waveHeight', type: 'number', default: '120', desc: 'Wave footer height (px).' },

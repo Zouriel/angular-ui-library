@@ -178,8 +178,8 @@ export class App {
   protected readonly shortcut = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform ?? '') ? '⌘ K' : 'Ctrl K';
   /** Themes that ship the cinematic FX layer (grain + custom cursor). */
   protected readonly fxTheme = computed(() => this.theme.theme() === 'darkOrange');
-  /** The maldives theme's fx layer: the tide along the bottom of the window. */
-  protected readonly seaTheme = computed(() => this.theme.theme() === 'maldives');
+  /** The maldives themes' fx layer (day and night): the tide along the bottom of the window. */
+  protected readonly seaTheme = computed(() => this.theme.theme() === 'maldives' || this.theme.theme() === 'maldives-dark');
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
   protected readonly THEMES = [
@@ -197,6 +197,7 @@ export class App {
     { value: 'darkPurple', label: 'Dark Purple' },
     { value: 'lightPurpleGold', label: 'Light Purple Gold' },
     { value: 'maldives', label: 'Maldives' },
+    { value: 'maldives-dark', label: 'Maldives Dark' },
   ];
 
   /**

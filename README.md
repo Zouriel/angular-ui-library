@@ -16,11 +16,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 ## Highlights
 
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
-  set of token overrides. Ships **14 themes**:
+  set of token overrides. Ships **15 themes**:
   - **Winter**: Dark and Light, the defaults;
   - **colour palettes** (10): Light Orange; Light and Dark Pink, Teal and Purple; Gold Black, Gold Red and Light Purple Gold;
   - **Dark Orange**: a cinematic theme with web fonts and FX;
-  - **Maldives**: a calm, light sea theme (Poppins) with its own sea backdrops.
+  - **Maldives** and **Maldives Dark**: a calm sea theme (Poppins) by day and by night, with its own sea backdrops.
 
   All text and status colours meet WCAG AA in every theme. Switch at runtime with
   `UiThemeService.set('goldBlack')`.
@@ -75,7 +75,7 @@ Load the global styles once (e.g. in `angular.json` styles or your global styles
 @import '@zouriel/ui/styles/theme-palettes.css';
 /* optional: the cinematic Dark Orange skin (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';
-/* optional: the light Maldives sea skin (loads Poppins) */
+/* optional: the Maldives sea skins, maldives and maldives-dark (loads Poppins) */
 @import '@zouriel/ui/styles/theme-maldives.css';
 /* optional: FX utility classes (.ui-glow, .ui-gradient-text, .ui-underline)
    and the palettes' signature motion on them */
@@ -138,7 +138,7 @@ this.theme.toggle();           // dark <-> light
 | Winter (default) | `dark` (`winterDark`), `light` (`winterLight`) | `tokens.css` |
 | Palettes | `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed` | `theme-palettes.css` |
 | Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
-| Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins | `theme-maldives.css` |
+| Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins; `maldives-dark`: the same sea at night (deep ocean canvas, Foam ink, Lagoon primary, Coral accent). A day/night toggle switches between the two names | `theme-maldives.css` |
 
 `toggle()` moves from `dark` to `light` and from any other theme to `dark`; `winterDark` and
 `winterLight` swap with each other.

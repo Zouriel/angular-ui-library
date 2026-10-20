@@ -86,7 +86,8 @@
 [data-theme="goldBlack"]   .ui-gradient-text,
 [data-theme="goldRed"]     .ui-gradient-text,
 [data-theme="lightPurpleGold"] .ui-gradient-text,
-[data-theme="maldives"]    .ui-gradient-text {
+[data-theme="maldives"]    .ui-gradient-text,
+[data-theme="maldives-dark"] .ui-gradient-text {
   background-size: 220% 100%;
 }
 
@@ -146,11 +147,13 @@
   animation: ui-fx-regal-glow 3.8s var(--ui-ease-standard) infinite;
 }
 
-/* Maldives — calm: a slow tide across the gradient + a shimmer of light on the glow. */
-[data-theme="maldives"] .ui-gradient-text {
+/* Maldives (day and night) — calm: a slow tide across the gradient + a shimmer of light on the glow. */
+[data-theme="maldives"] .ui-gradient-text,
+[data-theme="maldives-dark"] .ui-gradient-text {
   animation: ui-fx-tide 14s ease-in-out infinite;
 }
-[data-theme="maldives"] .ui-glow {
+[data-theme="maldives"] .ui-glow,
+[data-theme="maldives-dark"] .ui-glow {
   animation: ui-fx-shimmer 8s var(--ui-ease-standard) infinite;
 }
 
