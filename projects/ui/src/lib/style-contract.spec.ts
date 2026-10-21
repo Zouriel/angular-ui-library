@@ -326,4 +326,61 @@ describe('theme palettes', () => {
     }
     expect(fails).toEqual([]);
   });
+
+  /*
+   * surface="tinted" (0.38): the card is an 8% wash of its tone over the surface with 4% of the text (5% of the
+   * text alone for neutral), with no border.
+   * On it the title is text, the description is text-muted deepened 25% towards text, primary-coloured words
+   * (eyebrow, action) are primary deepened 25% towards text, and the primary/brand badge is an 18% tint of
+   * primary under a primary icon. Checked in every theme, Winter Dark and Winter Light included, with CSS
+   * color-mix semantics (premultiplied alpha, as text-muted is translucent in some themes).
+   */
+  it('keeps the tinted ui-feature-card readable in every theme', () => {
+    const blocks: Record<string, Record<string, string>> = {};
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
+      for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+        const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+        for (const sel of m[1].split(',').map((x) => x.trim())) blocks[sel] = { ...blocks[sel], ...decls };
+      }
+    }
+    const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+    const names = ['winterDark', 'winterLight', ...list.map((t) => t.name)];
+    // color-mix(in srgb, a k, b): premultiplied interpolation; the result is composited over `ground`.
+    const cmix = (a: Rgba, b: Rgba, k: number): Rgba => {
+      const alpha = a[3] * k + b[3] * (1 - k);
+      return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
+    };
+    const fails: string[] = [];
+    expect(names.length).toBe(15);
+    for (const name of names) {
+      const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
+      const get = (k: string, depth = 0): Rgba | null => {
+        const v = vars[k] ?? '';
+        const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+        return ref && depth < 5 ? get(ref[1], depth + 1) : parseColor(v);
+      };
+      const [surface, text, muted, primary, accent] = ['surface', 'text', 'text-muted', 'primary', 'accent'].map((k) => get(`--ui-color-${k}`));
+      if (!surface || !text || !muted || !primary || !accent) {
+        fails.push(`${name}: colours unreadable`);
+        continue;
+      }
+      const desc = cmix(muted, text, 0.75);
+      const ink = cmix(primary, text, 0.75);
+      for (const [tone, k, c] of [['primary', 0.08, primary], ['accent', 0.08, accent], ['neutral', 0.05, text]] as const) {
+        const ground = tone === 'neutral' ? surface : over(cmix(text, surface, 0.04), surface);
+        const wash = over(cmix(c, ground, k), ground);
+        const check = (what: string, fg: Rgba, need: number) => {
+          const r = contrast(fg, wash);
+          if (r < need) fails.push(`${name}/${tone}: ${what} on the tinted wash is ${r.toFixed(2)}:1, needs ${need}:1`);
+        };
+        check('title (text)', text, 4.5);
+        check('description', desc, 4.5);
+        if (tone === 'primary') check('eyebrow / action', ink, 4.5);
+      }
+      const badge = over(cmix(primary, surface, 0.18), surface);
+      if (contrast(primary, badge) < 3) fails.push(`${name}: tinted badge icon is ${contrast(primary, badge).toFixed(2)}:1`);
+    }
+    expect(fails).toEqual([]);
+  });
 });

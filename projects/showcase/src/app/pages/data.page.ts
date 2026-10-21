@@ -20,7 +20,8 @@ import { UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
-import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout } from '@zouriel/ui/card';
+import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
+import { UiInput } from '@zouriel/ui/form';
 import { UiSegmented } from '@zouriel/ui/button';
 import {
   UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
@@ -36,7 +37,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent,
     UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
-    UiCard, UiStatCard, UiFeatureCard, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
+    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -178,6 +179,42 @@ nodes: UiTreeNode[] = [
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Feature card: compact tinted" selector="ui-feature-card"
+        summary="The start-screen tile: two cards side by side under a text field, together exactly its width and equal in height (a two-column grid). size sm, surface tinted (a soft wash in the tone instead of a bordered card), radius control (the field's corners), trailingArrow (the whole card is one button named by its title and description, with an arrow that points the reading way) and descriptionLines 2. They lift and cast a shadow on hover, scale a little on press, show the focus ring, and keep still with reduced motion.">
+        <doc-demo id="fc-compact" code="<ui-input placeholder=&quot;Describe how you feel&quot; ariaLabel=&quot;Ask&quot; />
+<div class=&quot;pair&quot;> <!-- grid-template-columns: 1fr 1fr; gap: var(--ui-space-3) -->
+  <ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
+    tone=&quot;primary&quot; title=&quot;Find a doctor&quot; description=&quot;Book a clinic visit near you.&quot; (action)=&quot;open('doctors')&quot;>
+    <hugeicons-icon feature-icon [icon]=&quot;StethoscopeIcon&quot; />
+  </ui-feature-card>
+  <ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
+    tone=&quot;accent&quot; title=&quot;Nurse at home&quot; description=&quot;A nurse comes to you.&quot; (action)=&quot;open('nurse')&quot;>
+    <hugeicons-icon feature-icon [icon]=&quot;AmbulanceIcon&quot; />
+  </ui-feature-card>
+</div>">
+          <div class="row fc-controls">
+            <ui-segmented size="sm" label="Direction" [options]="fcDirs" [value]="fcDir()" (valueChange)="fcDir.set($any($event))" />
+          </div>
+          <div class="fc-start" [attr.dir]="fcDir()">
+            <ui-input placeholder="Describe how you feel" ariaLabel="Ask" />
+            <div class="fc-pair">
+              <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="primary"
+                [title]="fcDir() === 'rtl' ? 'ޑޮކްޓަރެއް ހޯދާ' : 'Find a doctor'"
+                [description]="fcDir() === 'rtl' ? 'ކައިރީގައި ހުންނަ ކްލިނިކެއްގައި ވަގުތު ހައްދަވާ.' : 'Book a clinic visit near you.'"
+                (action)="fcLast.set('Find a doctor')">
+                <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
+              </ui-feature-card>
+              <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="accent"
+                [title]="fcDir() === 'rtl' ? 'ގެއަށް ނަރުހެއް' : 'Nurse at home'"
+                [description]="fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'"
+                (action)="fcLast.set('Nurse at home')">
+                <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
+              </ui-feature-card>
+            </div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
         summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
@@ -275,6 +312,9 @@ events: UiTimelineItem[] = [
     .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-4); }
     .fc-grid.wide { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
     @media (max-width: 640px) { .fc-grid, .fc-grid.wide { grid-template-columns: 1fr; } }
+    /* The start-screen pair: two tiles exactly the field's width, equal heights. */
+    .fc-start { display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 640px; }
+    .fc-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
     .fc-last { margin: var(--ui-space-3) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--ui-color-primary); text-decoration: underline; cursor: pointer; border-radius: var(--ui-radius-xs); }
     .linkish:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -283,7 +323,9 @@ events: UiTimelineItem[] = [
 export class DataPage {
   protected readonly icons = { money: Money03Icon, users: UserGroupIcon, doctor: StethoscopeIcon, ambulance: AmbulanceIcon, medicine: Medicine01Icon, calendar: Calendar03Icon };
   protected readonly fcLayout = signal<UiFeatureLayout>('vertical');
-  protected readonly fcSize = signal<'md' | 'lg'>('md');
+  protected readonly fcSize = signal<UiFeatureSize>('md');
+  protected readonly fcDir = signal<'ltr' | 'rtl'>('ltr');
+  protected readonly fcDirs = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
   protected readonly fcLast = signal('');
   protected readonly fcLayouts = [{ value: 'vertical', label: 'Vertical' }, { value: 'horizontal', label: 'Horizontal' }];
   protected readonly fcSizes = [{ value: 'md', label: 'md' }, { value: 'lg', label: 'lg' }];
@@ -295,10 +337,14 @@ export class DataPage {
     { name: 'href / target', type: 'string', default: '—', desc: 'Makes the action a link. With href and no actionLabel, the title is the link.' },
     { name: 'tone', type: "'primary' | 'accent' | 'brand' | 'neutral'", default: "'primary'", desc: 'Badge tint and surface treatment.' },
     { name: 'layout', type: "'vertical' | 'horizontal'", default: "'vertical'", desc: 'Badge above the text, or beside it at the start.' },
-    { name: 'size', type: "'md' | 'lg'", default: "'md'", desc: 'Padding 24 / 32, badge 48 / 56, bigger title.' },
+    { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Padding 16 / 24 / 32, badge 40 / 48 / 56. sm is the compact tile: 20px icon, body-strong title, small description, tighter gaps.' },
+    { name: 'surface', type: "'default' | 'tinted'", default: "'default'", desc: 'tinted: a soft wash in the tone (8%), no border, shadow only on hover; muted and primary words deepened to stay AA on the wash. Ignores glass.' },
+    { name: 'trailingArrow', type: 'boolean', default: 'false', desc: 'Without actionLabel, the whole card is one button (a link with href) named "title, description", with a small arrow that flips in RTL: at the end of the badge row in the vertical layout, at the end of the title row when horizontal or without an icon. Ignored when actionLabel is set.' },
+    { name: 'descriptionLines', type: 'number', default: '0', desc: 'Clamp the description to this many lines with an ellipsis; 0 shows it all.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Dimmed; the action does nothing and (action) is not emitted.' },
     { name: 'headingLevel', type: 'number', default: '3', desc: 'The title\'s aria-level.' },
-    { name: 'glass / radius', type: 'boolean', default: 'UiConfig', desc: 'Translucent surface; rounded corners.' },
+    { name: 'glass', type: 'boolean', default: 'UiConfig', desc: 'Translucent surface.' },
+    { name: 'radius', type: "boolean | 'control'", default: 'UiConfig', desc: "Corners: true the card radius (--ui-radius-lg), false square, 'control' an input's radius (--ui-radius), so a tile matches the field above it; square when UiConfig.radius is off, like the input." },
     { name: '(action)', type: 'MouseEvent', default: '—', desc: 'The card was activated.' },
     { name: '[feature-icon]', type: 'slot', default: '—', desc: 'The icon, shown in the badge (decorative). [icon] works too, except on hugeicons-icon.' },
   ];

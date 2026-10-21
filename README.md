@@ -40,6 +40,9 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `fill` becomes a full-height chat-style shell driven by the app's own top bar (`compact()`,
   `toggle()`). `ui-feature-card` (`@zouriel/ui/card`) is a clickable product card for landing pages.
   `UiGoogleAuthorization` asks the signed-in user for more Google scopes and returns an access token.
+- **Compact tinted feature card** (0.38): `ui-feature-card` gains `size="sm"`, `surface="tinted"`,
+  `radius="control"`, `trailingArrow` (the whole card is one button named by its title and
+  description) and `descriptionLines`, for start-screen tiles under a chat bar.
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,

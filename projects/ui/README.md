@@ -195,6 +195,39 @@ signal, true in drawer mode. In drawer mode Escape and the backdrop close the dr
 on open and back to the opener on close, and a closed drawer is inert. Its words are the strings
 `sidebarToggle`, `sidebarClose` and `sidebarLabel`.
 
+## Compact tinted tiles (`ui-feature-card`, 0.38)
+
+Two shortcut tiles under a chat bar, together exactly its width and equal in height:
+
+```html
+<ui-input placeholder="Describe how you feel" ariaLabel="Ask" />
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3)">
+  <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+    tone="primary" title="Find a doctor" description="Book a clinic visit near you." (action)="open('doctors')">
+    <hugeicons-icon feature-icon [icon]="StethoscopeIcon" />
+  </ui-feature-card>
+  <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+    tone="accent" title="Nurse at home" description="A nurse comes to you." (action)="open('nurse')">
+    <hugeicons-icon feature-icon [icon]="AmbulanceIcon" />
+  </ui-feature-card>
+</div>
+```
+
+- `size="sm"`: 16px padding, 40px badge with a 20px icon, body-strong title, small description.
+- `surface="tinted"`: a soft wash in the tone (8% over the surface with 4% of the text), no border,
+  a shadow only on hover; muted and primary words are deepened a quarter towards the text colour so
+  they stay AA on the wash in every theme. `glass` is ignored.
+- `trailingArrow` (without `actionLabel`): the whole card is one `<button>` (`<a>` with `href`)
+  named "title, description", with a small arrow that points the reading way, at the end of the
+  badge row in the vertical layout (the end of the title row when horizontal or without an icon).
+- `radius`: `true` (card radius), `false` (square) or `'control'` (an input's `--ui-radius`;
+  square when `UiConfig.radius` is off, like the input).
+- `descriptionLines`: clamp the description with an ellipsis.
+
+The Flutter twin: `UiFeatureCard(size: UiSize.sm, surface: UiFeatureSurface.tinted,
+controlRadius: true, trailingArrow: true, descriptionLines: 2, onPressed: ...)`, two of them in an
+`IntrinsicHeight` + stretched `Row`.
+
 ## License
 
 MIT

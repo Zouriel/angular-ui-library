@@ -5,6 +5,11 @@ import { UI_CONFIG } from '@zouriel/ui';
 
 export type UiFeatureTone = 'primary' | 'accent' | 'brand' | 'neutral';
 export type UiFeatureLayout = 'vertical' | 'horizontal';
+export type UiFeatureSize = 'sm' | 'md' | 'lg';
+/** `default`: a white bordered card with a faint wash. `tinted`: a soft wash in the tone, no border, shadow only on hover. */
+export type UiFeatureSurface = 'default' | 'tinted';
+/** `true` the card radius (--ui-radius-lg), `false` square, `'control'` an input's radius (--ui-radius). */
+export type UiFeatureRadius = boolean | 'control';
 
 let featureSeq = 0;
 
@@ -22,6 +27,12 @@ let featureSeq = 0;
  * there is only one control, named "title, action label" and described by the description. Without
  * either it is a static card. The title is a heading (`headingLevel`, default 3).
  *
+ * `trailingArrow` without `actionLabel` makes the card itself the action: the whole card is one `<button>`
+ * (or `<a>` with `href`) named "title, description", with a small arrow at the end of the title row that
+ * points the reading way: at the end of the badge row in the vertical layout (the end of the title row
+ * when horizontal or without an icon). `size="sm"`, `surface="tinted"`, `radius="control"` and `descriptionLines`
+ * make the compact tile of a start screen (two side by side under a chat bar, matching its corners).
+ *
  * The icon goes in the `[feature-icon]` slot (`[icon]` works too for an `<img>` or `<svg>`, but not on
  * `<hugeicons-icon>`, whose own `icon` input would take the attribute).
  */
@@ -30,12 +41,25 @@ let featureSeq = 0;
   imports: [HugeiconsIconComponent],
   template: `
     <div class="fc" [attr.data-tone]="tone()" [attr.data-layout]="layout()" [attr.data-size]="size()"
-         [class.interactive]="interactive()" [class.disabled]="disabled()" [class.glass]="glass()" [class.no-radius]="!radius()">
+         [attr.data-surface]="surface()" [attr.data-radius]="radius() === 'control' ? 'control' : null"
+         [class.interactive]="interactive()" [class.disabled]="disabled()" [class.glass]="glass() && surface() !== 'tinted'"
+         [class.no-radius]="square()" [class.card-action]="cardAction()">
       <span class="badge" aria-hidden="true"><ng-content select="[feature-icon], [icon]" /></span>
       <div class="text">
         @if (eyebrow()) { <span class="eyebrow">{{ eyebrow() }}</span> }
+        <div class="title-row">
         <div class="title" role="heading" [attr.aria-level]="headingLevel()" [id]="titleId">
-          @if (href() && !actionLabel()) {
+          @if (cardAction()) {
+            <!-- The card is the action: one control over the whole card, named by the title and the description. -->
+            @if (href()) {
+              <a class="hit card-hit" [attr.href]="disabled() ? null : href()" [attr.target]="target() || null"
+                 [attr.aria-disabled]="disabled() ? 'true' : null" [attr.aria-labelledby]="cardName()"
+                 (click)="activate($event)"><span [id]="titleTextId">{{ title() }}</span></a>
+            } @else {
+              <button type="button" class="hit card-hit" [disabled]="disabled()" [attr.aria-labelledby]="cardName()"
+                      (click)="activate($event)"><span [id]="titleTextId">{{ title() }}</span></button>
+            }
+          } @else if (href() && !actionLabel()) {
             <a class="hit" [attr.href]="disabled() ? null : href()" [attr.target]="target() || null"
                [attr.aria-disabled]="disabled() ? 'true' : null" [attr.aria-describedby]="description() ? descId : null"
                (click)="activate($event)">{{ title() }}</a>
@@ -43,7 +67,11 @@ let featureSeq = 0;
             {{ title() }}
           }
         </div>
-        @if (description()) { <p class="desc" [id]="descId">{{ description() }}</p> }
+        @if (cardAction()) { <hugeicons-icon class="arrow trail" [icon]="arrow" [size]="16" [strokeWidth]="2" aria-hidden="true" /> }
+        </div>
+        @if (description()) {
+          <p class="desc" [id]="descId" [class.clamp]="descriptionLines() > 0" [style.--fc-lines]="descriptionLines() > 0 ? descriptionLines() : null">{{ description() }}</p>
+        }
         <ng-content />
         @if (actionLabel()) {
           <div class="act-row">
@@ -112,6 +140,34 @@ let featureSeq = 0;
     .fc.no-radius, .fc.no-radius .badge { border-radius: 0; }
 
     .fc[data-size="lg"] { padding: var(--ui-space-8); --fc-badge: 56px; --fc-icon: 28px; }
+    /* sm: the compact tile (a start screen's shortcuts): 40px badge, 16px padding, body-strong title. */
+    .fc[data-size="sm"] { padding: var(--ui-space-4); gap: var(--ui-space-3); --fc-badge: 40px; --fc-icon: 20px; }
+    .fc[data-size="sm"][data-layout="horizontal"] { gap: var(--ui-space-3); }
+
+    /* Control radius: the corners of an input (--ui-radius), so a tile matches the field above it. */
+    .fc[data-radius="control"]:not(.no-radius) { border-radius: var(--ui-radius); }
+    .fc[data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-radius); }
+
+    /*
+     * Tinted: a soft wash in the tone instead of a white bordered card; no border (kept transparent, so the
+     * size matches the default surface), no shadow until hover. On the wash the muted and primary-coloured
+     * words are deepened a quarter towards the text colour (text-muted fails 4.5:1 on an 8% wash in
+     * lightPink), and the primary badge tint is raised to 18% so it still reads on the wash.
+     */
+    .fc[data-surface="tinted"] {
+      /* 8% of the tone over the surface with 4% of the text, so a pale tone (Winter's sun accent) still shows. */
+      --fc-wash: color-mix(in srgb, var(--fc-tone) 8%, color-mix(in srgb, var(--ui-color-text) 4%, var(--ui-color-surface)));
+      --fc-desc: color-mix(in srgb, var(--ui-color-text-muted) 75%, var(--ui-color-text));
+      background: var(--fc-wash);
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .fc[data-surface="tinted"]:is([data-tone="primary"], [data-tone="brand"]) {
+      --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface));
+      --fc-ink: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text));
+      --fc-eyebrow: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text));
+    }
+    .fc[data-surface="tinted"][data-tone="neutral"] { --fc-wash: color-mix(in srgb, var(--ui-color-text) 5%, var(--ui-color-surface)); }
     .fc[data-layout="horizontal"] { flex-direction: row; align-items: flex-start; }
 
     .badge {
@@ -119,6 +175,8 @@ let featureSeq = 0;
       width: var(--fc-badge); height: var(--fc-badge); box-sizing: border-box;
       border-radius: var(--ui-radius-lg);
       background: var(--fc-badge-bg); color: var(--fc-badge-fg);
+      /* The icon follows the badge colour, not a theme's icon tint (maldives' Lagoon on the coral badge was 1.5:1). */
+      --ui-color-icon: currentColor;
     }
     .badge:empty { display: none; }
     .fc[data-tone="neutral"] .badge { border: 1px solid var(--ui-color-border); }
@@ -127,6 +185,8 @@ let featureSeq = 0;
       background: linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box, var(--ui-gradient-brand) border-box;
     }
     .badge ::ng-deep svg { width: var(--fc-icon); height: var(--fc-icon); }
+    .fc[data-size="sm"]:not(.no-radius) .badge { border-radius: var(--ui-radius-sm); }
+    .fc[data-size="sm"][data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-radius); }
 
     .text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
     .eyebrow {
@@ -134,19 +194,30 @@ let featureSeq = 0;
       font-size: var(--ui-font-size-sm); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
       color: var(--fc-eyebrow);
     }
+    /* The title and, for a card action, the trailing arrow at the end of its row. */
+    .title-row { display: flex; align-items: flex-start; gap: var(--ui-space-2); }
     .title {
+      flex: 1 1 auto; min-width: 0;
       font-size: var(--ui-font-size-lg); font-weight: 600; line-height: 1.3; letter-spacing: var(--ui-tracking-tight);
       color: var(--ui-color-text); overflow-wrap: anywhere;
     }
     .fc[data-size="lg"] .title { font-family: var(--ui-font-display); font-size: 22px; font-weight: 700; }
+    .fc[data-size="sm"] .title { font-size: var(--ui-font-size-md); line-height: 1.35; letter-spacing: normal; }
     .desc {
       margin: var(--ui-space-2) 0 0;
-      font-size: var(--ui-font-size-md); line-height: 1.5; color: var(--ui-color-text-muted);
+      font-size: var(--ui-font-size-md); line-height: 1.5; color: var(--fc-desc, var(--ui-color-text-muted));
     }
     .fc[data-size="lg"] .desc { font-size: 16px; }
+    .fc[data-size="sm"] .desc { margin-top: var(--ui-space-1); font-size: var(--ui-font-size-sm); line-height: 1.4; }
+    /* descriptionLines: clamp with an ellipsis. */
+    .desc.clamp {
+      display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+      -webkit-line-clamp: var(--fc-lines); line-clamp: var(--fc-lines);
+    }
 
     /* Sits at the bottom, so actions line up across a row of cards. */
     .act-row { margin-top: auto; padding-top: var(--ui-space-4); }
+    .fc[data-size="sm"] .act-row { padding-top: var(--ui-space-3); }
     .act {
       display: inline-flex; align-items: center; gap: var(--ui-space-2);
       padding: 0; border: none; background: none; color: var(--fc-ink);
@@ -154,6 +225,23 @@ let featureSeq = 0;
       cursor: pointer;
     }
     .title .hit { color: inherit; text-decoration: none; }
+    .card-hit {
+      display: inline; padding: 0; margin: 0; border: none; background: none;
+      font: inherit; color: inherit; letter-spacing: inherit; text-align: start; cursor: pointer;
+    }
+    /*
+     * The card action's arrow: subtle (muted). Horizontal, or with no icon: at the end of the title row,
+     * centred on its first line. Vertical with an icon: at the end of the badge row, centred on the badge,
+     * so the title keeps the full width (a narrow tile no longer wraps its title around the arrow).
+     */
+    .trail { flex: none; height: 1.35em; align-items: center; color: var(--fc-desc, var(--ui-color-text-muted)); }
+    .fc:not([data-size="sm"]) .trail { height: 1.3em; }
+    .fc[data-layout="vertical"]:has(.badge:not(:empty)) .trail {
+      position: absolute; height: 16px;
+      inset-inline-end: var(--ui-space-6); top: calc(var(--ui-space-6) + 16px);
+    }
+    .fc[data-layout="vertical"][data-size="sm"]:has(.badge:not(:empty)) .trail { inset-inline-end: var(--ui-space-4); top: calc(var(--ui-space-4) + 12px); }
+    .fc[data-layout="vertical"][data-size="lg"]:has(.badge:not(:empty)) .trail { inset-inline-end: var(--ui-space-8); top: calc(var(--ui-space-8) + 20px); }
     .hit { outline: none; }
     /* The one control's hit area covers the whole card. */
     .hit::after { content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: 1; }
@@ -168,7 +256,7 @@ let featureSeq = 0;
                   border-color var(--ui-motion-base) var(--ui-ease-standard);
     }
     .fc.interactive:not(.disabled):hover { transform: translateY(-2px); box-shadow: var(--ui-shadow-2); }
-    .fc.interactive:not(.disabled):not([data-tone="brand"]):not(.glass):hover { border-color: var(--ui-color-border-strong); }
+    .fc.interactive:not(.disabled):not([data-tone="brand"]):not(.glass):not([data-surface="tinted"]):hover { border-color: var(--ui-color-border-strong); }
     .fc.interactive:not(.disabled):active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
     .fc.interactive:not(.disabled):hover .arrow { transform: translateX(3px); }
     :host-context([dir="rtl"]) .fc.interactive:not(.disabled):hover .arrow { transform: scaleX(-1) translateX(3px); }
@@ -199,21 +287,36 @@ export class UiFeatureCard {
   /** Badge tint and surface treatment. */
   tone = input<UiFeatureTone>('primary');
   layout = input<UiFeatureLayout>('vertical');
-  size = input<'md' | 'lg'>('md');
+  /** sm: the compact tile (40px badge, 16px padding, body-strong title); lg: roomier. */
+  size = input<UiFeatureSize>('md');
+  /** `tinted`: a soft wash in the tone, no border, shadow only on hover (and `glass` is ignored). */
+  surface = input<UiFeatureSurface>('default');
+  /** With no `actionLabel`, the whole card is one button named "title, description", with a trailing arrow. */
+  trailingArrow = input(false, { transform: booleanAttribute });
+  /** Clamp the description to this many lines with an ellipsis; 0 shows it all. */
+  descriptionLines = input(0, { transform: numberAttribute });
   disabled = input(false, { transform: booleanAttribute });
   /** The title's heading level (aria-level). */
   headingLevel = input(3, { transform: numberAttribute });
   glass = input<boolean>(this.config.glass);
-  radius = input<boolean>(this.config.radius);
+  /** Corners: `true` the card radius, `false` square, `'control'` an input's radius (square too when UiConfig.radius is off, like the input). */
+  radius = input<UiFeatureRadius, UiFeatureRadius | '' | 'true' | 'false'>(this.config.radius, {
+    transform: (v) => (v === 'control' ? 'control' : booleanAttribute(v)),
+  });
 
   /** The card (its action) was activated. Not emitted while disabled. */
   readonly action = output<MouseEvent>();
 
-  protected readonly interactive = computed(() => !!this.actionLabel() || !!this.href());
+  /** The card itself is the action (trailingArrow without an action label). */
+  protected readonly cardAction = computed(() => this.trailingArrow() && !this.actionLabel());
+  protected readonly interactive = computed(() => !!this.actionLabel() || !!this.href() || this.cardAction());
+  protected readonly square = computed(() => this.radius() === false || (this.radius() === 'control' && !this.config.radius));
+  protected readonly cardName = computed(() => (this.description() ? `${this.titleTextId} ${this.descId}` : this.titleTextId));
   private readonly seq = featureSeq++;
   protected readonly titleId = `ui-feature-${this.seq}-title`;
   protected readonly descId = `ui-feature-${this.seq}-desc`;
   protected readonly actId = `ui-feature-${this.seq}-act`;
+  protected readonly titleTextId = `ui-feature-${this.seq}-name`;
 
   protected activate(e: MouseEvent): void {
     if (this.disabled()) {
