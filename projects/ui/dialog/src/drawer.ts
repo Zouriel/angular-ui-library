@@ -2,6 +2,7 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, output, viewChild } from '@angular/core';
 import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 export type UiDrawerSide = 'left' | 'right' | 'top' | 'bottom';
@@ -11,10 +12,21 @@ let drawerSeq = 0;
 /**
  * `ui-drawer` — edge-anchored sheet. Slides in from `side`, traps focus, locks
  * scroll, and dismisses on Escape / backdrop click.
+ *
+ * Top to bottom: the title bar, an optional fixed `[drawer-header]`, the body (default slot, the
+ * only part that scrolls) and an optional fixed `[drawer-footer]`, which stays at the bottom of the
+ * panel clear of the home indicator. A hairline shows under the header while the body is scrolled
+ * away from its top, and over the footer while more of the body is below it.
+ *
+ *   <ui-drawer [(open)]="open" side="left" title="Menu">
+ *     <ui-button drawer-header block>New chat</ui-button>
+ *     @for (c of chats(); track c.id) { <ui-list-item>…</ui-list-item> }
+ *     <div drawer-footer>My visits · Profile</div>
+ *   </ui-drawer>
  */
 @Component({
   selector: 'ui-drawer',
-  imports: [CdkTrapFocus],
+  imports: [CdkTrapFocus, UiScrollFade],
   template: `
     @if (open()) {
       <div #layer class="ui-layer">
@@ -43,7 +55,9 @@ let drawerSeq = 0;
             <button class="x" type="button" [attr.aria-label]="strings.close" (click)="open.set(false)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
           </header>
         }
-        <div class="bd"><ng-content /></div>
+        <div class="dh" [class.edge]="bd.more().start"><ng-content select="[drawer-header]" /></div>
+        <div class="bd" #bd="uiScrollFade" uiScrollFade uiScrollFadeAxis="y" [uiScrollFadeSize]="0"><ng-content /></div>
+        <div class="df" [class.edge]="bd.more().end"><ng-content select="[drawer-footer]" /></div>
         <!-- Where focus lands on open unless the content marks an element cdkFocusInitial (which comes
              first in the document, so it wins): the panel itself, rather than the close button, which
              showed a focus ring on every open that followed a key press. Tab then reaches the controls. -->
@@ -72,6 +86,17 @@ let drawerSeq = 0;
     .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
     .title { min-width: 0; overflow-wrap: anywhere; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     .bd { padding: var(--ui-space-3) var(--ui-space-4); overflow: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
+    /* Fixed parts around the body. Each keeps a 1px border so its height never changes; the border
+       shows only while the body has content scrolled out of sight on that side. */
+    .dh, .df { flex: none; padding: var(--ui-space-3) var(--ui-space-4); border: 0 solid transparent;
+      transition: border-color var(--ui-motion-fast) var(--ui-ease-standard); }
+    .dh { border-bottom-width: 1px; }
+    .df { border-top-width: 1px; }
+    .dh.edge, .df.edge { border-color: var(--ui-color-border); }
+    .dh:empty, .df:empty { display: none; }
+    /* Left and right drawers run the full height: the footer keeps clear of the home indicator
+       (a bottom drawer already pads the whole panel). */
+    .panel[data-side="left"] .df, .panel[data-side="right"] .df { padding-bottom: calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px)); }
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;

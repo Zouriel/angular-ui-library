@@ -4,6 +4,7 @@ import {
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { injectUiStrings } from '@zouriel/ui';
+import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 let sidebarSeq = 0;
 
@@ -31,6 +32,18 @@ let sidebarSeq = 0;
  *     <my-chat />
  *   </ui-sidebar-layout>
  *
+ * The sidebar can have a fixed top and bottom: `[sidebar-header]` (a New chat button) and
+ * `[sidebar-footer]` (account, settings) stay put, docked or in the drawer, and only `[sidebar]`
+ * between them scrolls. With `fill` the footer sits at the bottom of the viewport; without it, the
+ * header and footer stick to the top and bottom of the screen while the page scrolls.
+ *
+ *   <ui-sidebar-layout [bar]="false" fill>
+ *     <ui-button sidebar-header block>New chat</ui-button>
+ *     <my-chat-list sidebar />
+ *     <my-account sidebar-footer />
+ *     …
+ *   </ui-sidebar-layout>
+ *
  * Bind `[(open)]` to drive the drawer yourself (e.g. close it on navigation), or call `toggle()` /
  * `close()`. The breakpoint is driven by `matchMedia`, not a hardcoded CSS `@media`, so it stays
  * configurable per app. In drawer mode Escape and the backdrop close the drawer, focus moves into it
@@ -39,7 +52,7 @@ let sidebarSeq = 0;
  */
 @Component({
   selector: 'ui-sidebar-layout',
-  imports: [CdkTrapFocus],
+  imports: [CdkTrapFocus, UiScrollFade],
   host: {
     '[class.ui-compact]': 'compact()',
     '[class.ui-open]': 'drawer()',
@@ -61,7 +74,9 @@ let sidebarSeq = 0;
         <!-- For keyboard and screen-reader users, who have no backdrop to tap: hidden until focused. -->
         <button type="button" class="skip-close" (click)="close()">{{ strings.sidebarClose }}</button>
       }
-      <ng-content select="[sidebar]" />
+      <div class="sb-hd" [class.edge]="sbBody.more().start"><ng-content select="[sidebar-header]" /></div>
+      <div class="sb-bd" #sbBody="uiScrollFade" uiScrollFade uiScrollFadeAxis="y" [uiScrollFadeSize]="0"><ng-content select="[sidebar]" /></div>
+      <div class="sb-ft" [class.edge]="sbBody.more().end"><ng-content select="[sidebar-footer]" /></div>
     </aside>
     <div class="main" [attr.inert]="drawer() ? '' : null">
       @if (bar()) {
@@ -94,13 +109,38 @@ let sidebarSeq = 0;
     :host(:dir(ltr)) { --ui-sb-from: -100%; }
 
     .backdrop { display: none; }
+    /* A column: fixed header, the scrolling [sidebar] body, fixed footer. The edge padding (the
+       safe area in fill and drawer mode) goes on whichever part is first and last; --sb-pt/-pb/-ps
+       carry it. */
     .sidebar {
+      --sb-pt: var(--ui-space-3); --sb-pb: var(--ui-space-3); --sb-ps: var(--ui-space-3);
+      display: flex; flex-direction: column;
       background: var(--ui-color-surface);
       border-inline-end: 1px solid var(--ui-color-border);
-      min-width: 0; overflow-y: auto; overscroll-behavior: contain;
-      box-sizing: border-box; padding: var(--ui-space-3);
+      min-width: 0; min-height: 0;
+      box-sizing: border-box;
       outline: none;
     }
+    .sb-bd {
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      padding-block-start: var(--sb-pt); padding-block-end: var(--sb-pb);
+      padding-inline-start: var(--sb-ps); padding-inline-end: var(--ui-space-3);
+    }
+    .sb-hd, .sb-ft {
+      flex: none; background: inherit; z-index: 1;
+      padding-block: var(--ui-space-3); padding-inline-start: var(--sb-ps); padding-inline-end: var(--ui-space-3);
+      border: 0 solid transparent;
+      transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .sb-hd { padding-block-start: var(--sb-pt); border-bottom-width: 1px; }
+    .sb-ft { padding-block-end: var(--sb-pb); border-top-width: 1px; }
+    .sb-hd.edge, .sb-ft.edge { border-color: var(--ui-color-border); }
+    .sb-hd:empty, .sb-ft:empty { display: none; }
+    .sb-hd:not(:empty) + .sb-bd { padding-block-start: var(--ui-space-3); }
+    .sb-bd:has(+ .sb-ft:not(:empty)) { padding-block-end: var(--ui-space-3); }
+    /* Docked without fill the sidebar grows with the page: the header and footer stick to the screen. */
+    :host(:not(.ui-fill):not(.ui-compact)) .sb-hd { position: sticky; top: 0; }
+    :host(:not(.ui-fill):not(.ui-compact)) .sb-ft { position: sticky; bottom: 0; }
     .main { display: flex; flex-direction: column; min-width: 0; }
     .bar {
       display: flex; align-items: center; gap: var(--ui-space-3);
@@ -140,7 +180,7 @@ let sidebarSeq = 0;
     :host(.ui-compact) .sidebar {
       position: fixed; inset-block: 0; inset-inline-start: 0;
       width: var(--ui-sb-w, 248px); max-width: 84vw; z-index: 30;
-      padding-block: max(var(--ui-space-3), env(safe-area-inset-top)) max(var(--ui-space-3), env(safe-area-inset-bottom));
+      --sb-pt: max(var(--ui-space-3), env(safe-area-inset-top)); --sb-pb: max(var(--ui-space-3), env(safe-area-inset-bottom));
       transform: translateX(var(--ui-sb-from));
       visibility: hidden;
       /* Hidden only once the slide out has finished. */
@@ -169,7 +209,7 @@ let sidebarSeq = 0;
       grid-template-rows: minmax(0, 1fr);
     }
     :host(.ui-fill) .sidebar {
-      padding-block: max(var(--ui-space-3), env(safe-area-inset-top)) max(var(--ui-space-3), env(safe-area-inset-bottom));
+      --sb-pt: max(var(--ui-space-3), env(safe-area-inset-top)); --sb-pb: max(var(--ui-space-3), env(safe-area-inset-bottom));
     }
     :host(.ui-fill) .main {
       min-height: 0; overflow: hidden;
@@ -177,8 +217,8 @@ let sidebarSeq = 0;
       padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
       box-sizing: border-box;
     }
-    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(ltr) { padding-left: max(var(--ui-space-3), env(safe-area-inset-left)); }
-    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(rtl) { padding-right: max(var(--ui-space-3), env(safe-area-inset-right)); }
+    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(ltr) { --sb-ps: max(var(--ui-space-3), env(safe-area-inset-left)); }
+    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(rtl) { --sb-ps: max(var(--ui-space-3), env(safe-area-inset-right)); }
     :host(.ui-fill:not(.ui-compact)) .main:dir(ltr) { padding-left: 0; }
     :host(.ui-fill:not(.ui-compact)) .main:dir(rtl) { padding-right: 0; }
     /* A flex column, so the app's own column (top bar, messages, composer) can take the height

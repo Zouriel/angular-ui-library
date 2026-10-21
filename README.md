@@ -49,6 +49,13 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Fixed header and footer in drawers and sidebars** (0.41.0): `ui-drawer` gains `[drawer-header]`
+  and `[drawer-footer]`, and `ui-sidebar-layout` gains `[sidebar-header]` and `[sidebar-footer]`.
+  They stay put (docked and in the drawer, the footer at the bottom of the viewport with `fill`,
+  clear of the home indicator) while only the body between them scrolls, with a hairline under the
+  header and over the footer while the body is scrolled out of sight on that side. Focus and screen
+  readers go header, body, footer. Without them nothing changes. `uiScrollFade` is exportable
+  (`#x="uiScrollFade"`) and draws no fade with size 0.
 - **Feature card colours follow the active theme from the first frame** (0.40.2): a `ui-feature-card`
   with `colors` created while the app's stylesheet was still loading (critical-CSS builds inline only
   the Winter Dark `:root` tokens) no longer keeps the dark pair on a light theme. Components that read

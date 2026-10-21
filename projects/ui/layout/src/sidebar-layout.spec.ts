@@ -201,7 +201,9 @@ describe('UiSidebarLayout', () => {
     const content = getComputedStyle(q('.content')!);
     expect([content.overflowY, content.minHeight, content.display, content.flexDirection]).toEqual(['auto', '0px', 'flex', 'column']);
     expect(content.paddingTop).toMatch(/^0(px)?$/);
-    expect(getComputedStyle(q('aside')!).overflowY).toBe('auto');
+    // The sidebar's body scrolls (0.41: inside the aside, between the fixed header and footer).
+    expect(getComputedStyle(q('.sb-bd')!).overflowY).toBe('auto');
+    expect(getComputedStyle(q('aside')!).overflowY).not.toBe('auto');
   });
 
   it('places the sidebar with logical properties and slides the drawer from the start edge, also in RTL', () => {
@@ -216,5 +218,136 @@ describe('UiSidebarLayout', () => {
     f.componentInstance.dir.set('rtl');
     f.detectChanges();
     expect(getComputedStyle(host).getPropertyValue('--ui-sb-from').trim()).toBe('100%');
+  });
+});
+
+/** 0.41: a fixed [sidebar-header] and [sidebar-footer] around the scrolling [sidebar]. */
+@Component({
+  imports: [UiSidebarLayout],
+  template: `
+    <div [attr.dir]="dir()">
+      <ui-sidebar-layout [bar]="false" [fill]="fill()" [(open)]="open">
+        @if (parts()) { <button id="new" sidebar-header type="button">New chat</button> }
+        <nav sidebar>@for (i of rows; track i) { <a class="row" href="#">Chat {{ i }}</a> }</nav>
+        @if (parts()) { <div sidebar-footer><button id="visits" type="button">My nurse visits</button><button id="me" type="button">Profile</button></div> }
+        <p>page</p>
+      </ui-sidebar-layout>
+    </div>
+  `,
+})
+class Pinned {
+  readonly fill = signal(true);
+  readonly open = signal(false);
+  readonly parts = signal(true);
+  readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly rows = Array.from({ length: 80 }, (_, i) => i + 1);
+}
+
+describe('UiSidebarLayout fixed sidebar header and footer', () => {
+  const original = window.matchMedia;
+  let narrow = false;
+  beforeEach(() => {
+    narrow = false;
+    window.matchMedia = ((q: string) => ({ matches: narrow, media: q, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => { window.matchMedia = original; });
+
+  const make = () => {
+    const f = TestBed.createComponent(Pinned);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    return { f, el, q: (s: string) => el.querySelector(s) as HTMLElement };
+  };
+  const overflows = (e: Element) => {
+    const st = getComputedStyle(e);
+    return [st.overflow, st.overflowY].some((v) => v === 'auto' || v === 'scroll');
+  };
+
+  for (const mode of ['docked', 'drawer'] as const) {
+    it(`${mode}: header, body, footer are the aside's column; only the body scrolls`, () => {
+      narrow = mode === 'drawer';
+      const { f, q } = make();
+      if (mode === 'drawer') { f.componentInstance.open.set(true); f.detectChanges(); }
+      const aside = q('aside');
+      const parts = Array.from(aside.children).filter((c) => c.tagName === 'DIV').map((c) => c.className.split(' ')[0]);
+      expect(parts).toEqual(['sb-hd', 'sb-bd', 'sb-ft']);
+      expect(q('.sb-hd').contains(q('#new'))).toBe(true);
+      expect(q('.sb-ft').contains(q('#visits'))).toBe(true);
+      expect(q('.sb-bd').querySelectorAll('.row').length).toBe(80);
+      const st = getComputedStyle(aside);
+      expect([st.display, st.flexDirection]).toEqual(['flex', 'column']);
+      expect(getComputedStyle(q('.sb-bd')).minHeight).toBe('0px');
+      for (const s of ['.sb-hd', '.sb-ft']) expect(getComputedStyle(q(s)).flex.startsWith('0 0') || getComputedStyle(q(s)).flex === 'none', s).toBe(true);
+      const scrollers = [aside, ...Array.from(aside.querySelectorAll('*'))].filter(overflows);
+      expect(scrollers).toEqual([q('.sb-bd')]);
+    });
+  }
+
+  it('hairlines show only while the list is scrolled out of sight on that side', () => {
+    const { f, q } = make();
+    const bd = q('.sb-bd');
+    let top = 0;
+    Object.defineProperty(bd, 'clientHeight', { get: () => 400 });
+    Object.defineProperty(bd, 'scrollHeight', { get: () => 3200 });
+    Object.defineProperty(bd, 'scrollTop', { get: () => top, set: (v: number) => { top = v; } });
+    const scrollTo = (v: number) => { top = v; bd.dispatchEvent(new Event('scroll')); f.detectChanges(); };
+    scrollTo(0);
+    expect([q('.sb-hd').classList.contains('edge'), q('.sb-ft').classList.contains('edge')]).toEqual([false, true]);
+    scrollTo(1000);
+    expect([q('.sb-hd').classList.contains('edge'), q('.sb-ft').classList.contains('edge')]).toEqual([true, true]);
+    scrollTo(2800);
+    expect([q('.sb-hd').classList.contains('edge'), q('.sb-ft').classList.contains('edge')]).toEqual([true, false]);
+  });
+
+  it('the safe area goes on the first and last part: header top, footer bottom (fill and drawer)', () => {
+    for (const n of [false, true]) {
+      narrow = n;
+      const { q } = make();
+      expect(getComputedStyle(q('.sb-hd')).paddingBlockStart || getComputedStyle(q('.sb-hd')).getPropertyValue('padding-block-start')).toBe('var(--sb-pt)');
+      expect(getComputedStyle(q('.sb-ft')).paddingBlockEnd || getComputedStyle(q('.sb-ft')).getPropertyValue('padding-block-end')).toBe('var(--sb-pb)');
+      const aside = getComputedStyle(q('aside'));
+      expect(aside.getPropertyValue('--sb-pt')).toContain('safe-area-inset-top');
+      expect(aside.getPropertyValue('--sb-pb')).toContain('safe-area-inset-bottom');
+    }
+  });
+
+  it('without header and footer the slots take no room and the list keeps its padding (backward compatible)', () => {
+    const { f, q } = make();
+    f.componentInstance.parts.set(false);
+    f.detectChanges();
+    expect(getComputedStyle(q('.sb-hd')).display).toBe('none');
+    expect(getComputedStyle(q('.sb-ft')).display).toBe('none');
+    const bd = getComputedStyle(q('.sb-bd'));
+    expect(bd.paddingBlockStart || bd.getPropertyValue('padding-block-start')).toBe('var(--sb-pt)');
+  });
+
+  it('docked without fill, the header and footer stick to the screen while the page scrolls', () => {
+    const { f, q } = make();
+    f.componentInstance.fill.set(false);
+    f.detectChanges();
+    expect(getComputedStyle(q('.sb-hd')).position).toBe('sticky');
+    expect(getComputedStyle(q('.sb-ft')).position).toBe('sticky');
+    f.componentInstance.fill.set(true);
+    f.detectChanges();
+    expect(getComputedStyle(q('.sb-ft')).position).not.toBe('sticky');
+  });
+
+  it('focus order is header, list, footer, in LTR and RTL; the drawer stays labelled', () => {
+    narrow = true;
+    for (const dir of ['ltr', 'rtl'] as const) {
+      const { f, q } = make();
+      f.componentInstance.dir.set(dir);
+      f.componentInstance.open.set(true);
+      f.detectChanges();
+      const order = Array.from(q('aside').querySelectorAll('a, button')).map((b) => b.id || b.className);
+      expect(order[0]).toBe('skip-close');
+      expect(order[1]).toBe('new');
+      expect(order.slice(2, 82).every((c) => c === 'row')).toBe(true);
+      expect(order.slice(82)).toEqual(['visits', 'me']);
+      expect(q('aside').getAttribute('aria-label')).toBe('Navigation');
+      // Logical padding, so the start inset follows the direction.
+      const bd = getComputedStyle(q('.sb-bd'));
+      expect(bd.paddingInlineStart || bd.getPropertyValue('padding-inline-start')).toBe('var(--sb-ps)');
+    }
   });
 });

@@ -195,6 +195,27 @@ signal, true in drawer mode. In drawer mode Escape and the backdrop close the dr
 on open and back to the opener on close, and a closed drawer is inert. Its words are the strings
 `sidebarToggle`, `sidebarClose` and `sidebarLabel`.
 
+**Fixed top and bottom (0.41).** A chat list between a New chat button and the account, with the
+account always in view:
+
+```html
+<ui-sidebar-layout [bar]="false" fill>
+  <ui-button sidebar-header [block]="true">New chat</ui-button>
+  <my-chat-list sidebar />          <!-- the only part that scrolls -->
+  <my-account sidebar-footer />     <!-- at the bottom of the viewport -->
+  …
+</ui-sidebar-layout>
+```
+
+The aside is a column: `[sidebar-header]`, the `[sidebar]` body (`overflow-y: auto`), and
+`[sidebar-footer]`, docked and in the drawer. The safe-area insets go on the outer parts (the header's
+top, the footer's bottom); a hairline shows under the header while the list is scrolled down and over
+the footer while more is below. Without `fill` the header and footer stick to the screen while the
+page scrolls. `ui-drawer` has the same structure with `[drawer-header]` and `[drawer-footer]`: under
+the title bar, the fixed header, the scrolling body, the fixed footer (left and right drawers pad it
+by `env(safe-area-inset-bottom)`). Leave the slots empty and both look exactly as before (the sidebar's
+`[sidebar]` content now scrolls in an inner `.sb-bd` instead of the aside itself).
+
 ## Compact tinted tiles (`ui-feature-card`, 0.38)
 
 Two shortcut tiles under a chat bar, together exactly its width and equal in height:

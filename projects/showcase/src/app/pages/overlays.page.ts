@@ -103,9 +103,12 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi" [outputs]="drawerOut"
-        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. With [modal]=&quot;false&quot; it sits over the page without blocking it (no backdrop, scroll lock or focus trap; Escape still closes it), for a peek opened on hover; (panelEnter) and (panelLeave) say when the pointer enters or leaves it. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content.">
+        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. With [modal]=&quot;false&quot; it sits over the page without blocking it (no backdrop, scroll lock or focus trap; Escape still closes it), for a peek opened on hover; (panelEnter) and (panelLeave) say when the pointer enters or leaves it. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content. [drawer-header] and [drawer-footer] are fixed above and below it: only the body scrolls, the footer stays at the bottom of the panel (clear of the home indicator), and a hairline shows under the header and over the footer while the body is scrolled out of sight on that side. Focus and screen readers go header, body, footer.">
         <doc-demo code="<ui-drawer [(open)]=&quot;open&quot; side=&quot;right&quot; title=&quot;Panel&quot;>…</ui-drawer>">
           <ui-button variant="outline" (click)="drawer.set(true)">Open drawer</ui-button>
+        </doc-demo>
+        <doc-demo [code]="chatsDrawerCode">
+          <ui-button (click)="chatsDrawer.set(true)">Chats (fixed header and footer)</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -226,9 +229,22 @@ onKey(e: KeyboardEvent) {
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
     </ui-modal>
     <ui-drawer [(open)]="drawer" side="right" title="Drawer"><ui-text variant="body">A right-anchored sheet.</ui-text></ui-drawer>
+    <ui-drawer [(open)]="chatsDrawer" side="left" title="Chats">
+      <ui-button drawer-header [block]="true" (click)="chatsDrawer.set(false)">New chat</ui-button>
+      @for (c of chatRows; track c) { <button type="button" class="chat-row" (click)="chatsDrawer.set(false)">Conversation {{ c }}</button> }
+      <div drawer-footer class="chat-foot">
+        <ui-button variant="ghost" [block]="true" (click)="chatsDrawer.set(false)">My nurse visits</ui-button>
+        <ui-button variant="ghost" [block]="true" (click)="chatsDrawer.set(false)">Profile</ui-button>
+      </div>
+    </ui-drawer>
     <ui-confirm-dialog [(open)]="confirm" title="Delete item?" message="This cannot be undone." confirmLabel="Delete" [destructive]="true" (confirm)="toast.warning('Deleted')" />
   `,
   styles: `
+    .chat-row { display: block; width: 100%; box-sizing: border-box; min-height: var(--ui-size-touch); padding: 0 var(--ui-space-2);
+      text-align: start; background: none; border: none; border-radius: var(--ui-radius); color: var(--ui-color-text); font: inherit; cursor: pointer; }
+    .chat-row:hover { background: var(--ui-color-surface-hover); }
+    .chat-row:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .chat-foot { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .hint-demo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); padding-top: var(--ui-space-12); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .floating { position: fixed; z-index: calc(var(--ui-z-overlay) + 1); left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -316,6 +332,16 @@ interface UiToastAction {
 }`;
   protected readonly modal = signal(false);
   protected readonly drawer = signal(false);
+  protected readonly chatsDrawer = signal(false);
+  protected readonly chatRows = Array.from({ length: 40 }, (_, i) => i + 1);
+  protected readonly chatsDrawerCode = `<ui-drawer [(open)]="open" side="left" title="Chats">
+  <ui-button drawer-header [block]="true">New chat</ui-button>
+  @for (c of chats; track c.id) { <button class="chat">{{ c.title }}</button> }   <!-- only this scrolls -->
+  <div drawer-footer>
+    <ui-button variant="ghost" [block]="true">My nurse visits</ui-button>
+    <ui-button variant="ghost" [block]="true">Profile</ui-button>
+  </div>
+</ui-drawer>`;
   protected readonly confirm = signal(false);
   protected readonly menuItems: UiMenuItem[] = [
     { label: 'Edit', value: 'edit' }, { label: 'Duplicate', value: 'dup' }, { label: 'Delete', value: 'del', danger: true },
@@ -382,7 +408,9 @@ interface UiToastAction {
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'modal', type: 'boolean', default: 'true', desc: 'False: no backdrop, scroll lock or focus trap, so the page stays usable (a hover peek).' },
-    { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls when it is taller than the drawer.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Body; the only part that scrolls, when it is taller than the drawer.' },
+    { name: '[drawer-header]', type: 'slot', default: '—', desc: 'Fixed above the body, under the title bar (a New chat button). Hairline under it while the body is scrolled down. (0.41)' },
+    { name: '[drawer-footer]', type: 'slot', default: '—', desc: 'Fixed at the bottom, clear of the home indicator (account, settings). Hairline over it while more of the body is below. (0.41)' },
   ];
   protected readonly drawerOut: ApiRow[] = [
     { name: 'openChange', type: 'boolean', default: '—', desc: 'From `[(open)]`.' },

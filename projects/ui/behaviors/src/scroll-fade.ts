@@ -10,12 +10,13 @@ import { Directive, ElementRef, NgZone, OnDestroy, afterNextRender, computed, in
  */
 @Directive({
   selector: '[uiScrollFade]',
+  exportAs: 'uiScrollFade',
   host: { '[style.mask-image]': 'mask()' },
 })
 export class UiScrollFade implements OnDestroy {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private zone = inject(NgZone);
-  /** Width of the fade, in px. */
+  /** Width of the fade, in px. 0 draws no fade: only [more] is tracked (`#x="uiScrollFade"`). */
   size = input(24, { alias: 'uiScrollFadeSize' });
   /** Which way the element scrolls: 'x' (default) or 'y'. */
   axis = input<'x' | 'y'>('x', { alias: 'uiScrollFadeAxis' });
@@ -25,6 +26,7 @@ export class UiScrollFade implements OnDestroy {
   protected readonly mask = computed(() => {
     const { start, end } = this.more();
     const s = this.size();
+    if (s <= 0) return null;
     const to = this.axis() === 'y' ? 'to bottom' : 'to right';
     if (start && end) return `linear-gradient(${to}, transparent, #000 ${s}px, #000 calc(100% - ${s}px), transparent)`;
     if (end) return `linear-gradient(${to}, #000 calc(100% - ${s}px), transparent)`;
