@@ -16,6 +16,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Space+Grotesk:wght@400..700&family=JetBrains+Mono:wght@400..700&display=swap");
 
 [data-theme="darkOrange"] {
+  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.16;
   /* Color — warm ink canvas */
   --ui-color-bg: #0a0608;
   --ui-color-surface: #120a0d;

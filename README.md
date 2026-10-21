@@ -49,6 +49,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Glass bottom sheet and floating panel** (0.41.2): `ui-bottom-sheet` gains `glass` and
+  `ui-floating-panel`'s `glass` uses the same recipe: a see-through surface for a form and a status
+  card over a full-screen map, the theme's surface at 60% over a blurred backdrop held to a per-theme
+  range (`--ui-glass-sheet-floor` / `--ui-glass-sheet-ceiling`) so text stays WCAG AA over any tile,
+  pure white and pure black included, in every theme. Solid without `backdrop-filter` and under
+  `prefers-reduced-transparency` or `prefers-contrast: more`.
 - **Image and PDF viewers can fill the page** (0.41.1): `ui-image-viewer` and `ui-pdf-viewer` take
   `fill`: all the space the parent gives, no frame, the photo or page fitted (contain, centred) and
   the zoom controls floating over the bottom, safe-area aware, instead of a bar of their own. Without

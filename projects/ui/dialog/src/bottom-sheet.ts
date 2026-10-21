@@ -2,7 +2,7 @@ import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 import { isPlatformBrowser } from '@angular/common';
 import { UI_ANIM, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 import {
-  Component, DestroyRef, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
+  Component, DestroyRef, booleanAttribute, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
   untracked, viewChild,
 } from '@angular/core';
 
@@ -62,6 +62,13 @@ interface Drag {
  * sheet stays at the snap nearest the height it rested at, and `snap` follows; an index past the end
  * is read as the last snap, never as closed.</p>
  *
+ * <p>`glass` (0.41.2) makes it see-through, for a sheet over a map or a photo: the theme's surface at
+ * 60% over a blurred backdrop that is first squeezed into the theme's `--ui-glass-sheet-floor` to
+ * `--ui-glass-sheet-ceiling` range, so text, muted text, primary and status colours keep WCAG AA over
+ * anything, pure white and pure black included. Fields and buttons inside keep their own solid
+ * backgrounds. Where `backdrop-filter` isn't supported, or the user asks for reduced transparency or
+ * more contrast, it is the solid surface. Off by default.</p>
+ *
  * <p>Positioned `fixed`; keep it out of transformed ancestors.</p>
  */
 @Component({
@@ -70,6 +77,7 @@ interface Drag {
     class: 'ui-bottom-sheet',
     '[class.open]': 'isOpen()',
     '[class.dragging]': 'dragHeight() !== null',
+    '[class.glass]': 'glass()',
     '[style.--ui-sheet-offset.px]': 'bottom()',
     '[style.--ui-sheet-hidden.px]': 'hiddenBelow()',
     '[style.--ui-sheet-max-width]': 'maxWidthCss()',
@@ -153,6 +161,20 @@ interface Drag {
       padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + var(--ui-sheet-hidden, 0px) + env(safe-area-inset-bottom));
       box-sizing: border-box; }
     @media (prefers-reduced-motion: reduce) { .sheet { transition: visibility 0s; } }
+    /* glass: see-through over a map. The filter squeezes the backdrop into the theme's floor-ceiling
+       range before the tint, which is what keeps the text AA over any map (see tokens.css). */
+    :host(.glass) .sheet {
+      background: var(--ui-glass-sheet-bg); border-color: var(--ui-glass-border);
+      -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
+    }
+    :host(.glass) .bd { border-top-color: var(--ui-glass-border); }
+    /* No backdrop-filter: an unfiltered map under a 60% tint can't promise contrast, so solid. */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      :host(.glass) .sheet { background: var(--ui-color-surface); }
+    }
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      :host(.glass) .sheet { background: var(--ui-color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
   `,
 })
 export class UiBottomSheet {
@@ -184,6 +206,12 @@ export class UiBottomSheet {
   hasHeader = input(false);
   /** Rise to the tallest snap when a field inside is focused on a touch screen. */
   expandOnFocus = input(true);
+  /**
+   * See-through frosted surface, for a sheet over a map (0.41.2). AA over any backdrop in every
+   * theme; solid where backdrop-filter is missing or under reduced transparency / more contrast.
+   * Off by default, whatever `UiConfig.glass` says.
+   */
+  glass = input(false, { transform: booleanAttribute });
   /**
    * The widest the sheet gets: a number in px or a CSS length (`'560px'`, `'40rem'`). On a wider
    * screen the sheet is that wide and centred; the backdrop still covers the whole screen. Default:

@@ -85,6 +85,13 @@
   --ui-glass-bg: rgba(255, 255, 255, 0.06);
   --ui-glass-blur: 14px;
   --ui-glass-border: rgba(255, 255, 255, 0.12);
+  /* See-through glass for a surface over a map or photo (ui-bottom-sheet and ui-floating-panel
+     glass, 0.41.2): this much of the surface colour (0-1) over a blurred backdrop. Each theme sets
+     --ui-glass-sheet-floor / --ui-glass-sheet-ceiling (0-1), the range the backdrop is squeezed into
+     before the tint goes on, so that text, muted text, primary and status colours stay AA over a pure
+     white or a pure black backdrop (style-contract spec). */
+  --ui-glass-sheet-tint: 0.6;
+  --ui-glass-sheet-blur: 20px;
 
   /* Sizing — FIXED set, no arbitrary values */
   --ui-size-sm: 26px;
@@ -229,6 +236,15 @@
      readable: it isn't drawn everywhere (no GPU, some WebViews), and where it is, crisp text right
      under the panel still bleeds through a 6% tint. Mostly the raised surface, a little see-through. */
   --ui-glass-panel-bg: color-mix(in srgb, var(--ui-color-surface-raised) 90%, transparent);
+
+  /* See-through glass (0.41.2), from the theme's surface and backdrop range. contrast(c) brightness(b)
+     maps a channel v to v*c*b + b*(1-c)/2, so these two land every backdrop colour in
+     [floor, ceiling]. Solid surface instead where backdrop-filter is missing or the user asks for
+     less transparency (the components handle that). */
+  --ui-glass-sheet-bg: color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-sheet-tint) * 100%), transparent);
+  --ui-glass-sheet-filter: blur(var(--ui-glass-sheet-blur))
+    contrast(calc((var(--ui-glass-sheet-ceiling) - var(--ui-glass-sheet-floor)) / (var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor))))
+    brightness(calc(var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor)));
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
@@ -262,6 +278,9 @@
   --ui-color-success: var(--ui-winter-green-300);
   --ui-color-warning: var(--ui-winter-amber-300);
   --ui-color-danger: var(--ui-winter-red-300);
+  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.43;
 }
 
 :root:not([data-theme]),
@@ -330,6 +349,9 @@
 [data-theme="light"],
 [data-theme="winterLight"] {
   color-scheme: light;
+  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0.70;
+  --ui-glass-sheet-ceiling: 1;
 
   --ui-color-bg: var(--ui-winter-blue-50);
   --ui-color-surface: var(--ui-winter-blue-25);

@@ -3,6 +3,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { provideUiConfig } from '@zouriel/ui';
 import { UiBottomSheet } from './bottom-sheet';
 
 @Component({
@@ -382,5 +383,40 @@ describe('UiBottomSheet maxWidth', () => {
     const b = await render(560);
     expect(a.fixture.componentInstance.covers.at(-1)).toBeGreaterThan(0);
     expect(b.fixture.componentInstance.covers.at(-1)).toBe(a.fixture.componentInstance.covers.at(-1));
+  });
+});
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `<ui-bottom-sheet [snap]="1" [snaps]="[0, 1]" title="Find a nurse" [glass]="glass()"><input id="field" /></ui-bottom-sheet>`,
+})
+class GlassHost {
+  glass = signal(false);
+}
+
+/** The glass look itself (tint, blur, fallbacks, contrast in every theme) is checked in style-contract.spec. */
+describe('UiBottomSheet glass', () => {
+  it('is solid by default, even when the app turns glass on for other surfaces', async () => {
+    TestBed.configureTestingModule({ providers: [provideUiConfig({ glass: true })] });
+    const fixture = TestBed.createComponent(GlassHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('ui-bottom-sheet').classList.contains('glass')).toBe(false);
+  });
+
+  it('turns the see-through surface on and off with glass', async () => {
+    const fixture = TestBed.createComponent(GlassHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const host: HTMLElement = fixture.nativeElement.querySelector('ui-bottom-sheet');
+    fixture.componentInstance.glass.set(true);
+    fixture.detectChanges();
+    expect(host.classList.contains('glass')).toBe(true);
+    // Still the same dialog, open, with its content.
+    expect(host.querySelector('.sheet')!.hasAttribute('inert')).toBe(false);
+    expect(host.querySelector('#field')).toBeTruthy();
+    fixture.componentInstance.glass.set(false);
+    fixture.detectChanges();
+    expect(host.classList.contains('glass')).toBe(false);
   });
 });

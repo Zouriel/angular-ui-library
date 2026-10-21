@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, effect, inject, input, output } from '@angular/core';
+import { Component, DestroyRef, ElementRef, booleanAttribute, PLATFORM_ID, afterNextRender, effect, inject, input, output } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
 /**
@@ -17,6 +17,10 @@ import { UI_CONFIG } from '@zouriel/ui';
  * `(coverChange)` reports how much of the parent's edge it covers, in px (its gutter plus its
  * height), whenever that changes: feed it to a map's `insets` so the map centres below a status
  * card at the top.
+ *
+ * `glass` (0.41.2) is the same see-through surface as `ui-bottom-sheet`'s `glass`: the theme's
+ * surface at 60% over a blurred, range-limited backdrop, AA over any map; solid where
+ * `backdrop-filter` is missing or under reduced transparency or more contrast.
  */
 @Component({
   selector: 'ui-floating-panel',
@@ -49,7 +53,18 @@ import { UI_CONFIG } from '@zouriel/ui';
       top: calc(var(--ui-space-4) + env(safe-area-inset-top, 0px));
       animation-name: ui-floating-panel-in-top;
     }
-    :host(.glass) { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    /* glass: the see-through recipe of ui-bottom-sheet's glass (0.41.2), so a status card over a
+       map matches the sheet: AA over any backdrop (see tokens.css); solid when it can't be. */
+    :host(.glass) {
+      background: var(--ui-glass-sheet-bg); border-color: var(--ui-glass-border);
+      -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      :host(.glass) { background: var(--ui-color-surface-raised); }
+    }
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      :host(.glass) { background: var(--ui-color-surface-raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
     :host(.no-radius) { border-radius: 0; }
     @keyframes ui-floating-panel-in { from { opacity: 0; transform: translateY(8px); } }
     @keyframes ui-floating-panel-in-top { from { opacity: 0; transform: translateY(-8px); } }
@@ -64,7 +79,8 @@ export class UiFloatingPanel {
   placement = input<'bottom' | 'top'>('bottom');
   /** Names it as a region for screen readers. */
   ariaLabel = input<string | undefined>(undefined);
-  glass = input<boolean>(this.config.glass);
+  /** See-through frosted surface over a map, as ui-bottom-sheet's glass (0.41.2). */
+  glass = input(this.config.glass, { transform: booleanAttribute });
   radius = input<boolean>(this.config.radius);
 
   /** Px of the parent's edge (top or bottom, per `placement`) it covers: its gutter plus its height. */

@@ -442,6 +442,7 @@ interface UiToastAction {
     { name: 'closable', type: 'boolean', default: 'true', desc: 'Close button in the header.' },
     { name: 'hasHeader', type: 'boolean', default: 'false', desc: 'Show the header row without a title, for the close button and [sheet-actions].' },
     { name: 'expandOnFocus', type: 'boolean', default: 'true', desc: 'Rise to the tallest snap when a field inside gains focus on a touch screen.' },
+    { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through frosted surface for a sheet over a map (0.41.2): AA over any backdrop in every theme; solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },

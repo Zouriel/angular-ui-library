@@ -234,7 +234,7 @@ export class LayoutPage {
   protected readonly floatApi: ApiRow[] = [
     { name: 'placement', type: "'bottom' | 'top'", default: "'bottom'", desc: 'The edge of the parent it floats over.' },
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Names it as a region for screen readers.' },
-    { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Frosted surface.' },
+    { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'See-through frosted surface, the same as ui-bottom-sheet glass (0.41.2): AA over any backdrop in every theme; solid without backdrop-filter or under reduced transparency / more contrast.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: '--ui-floating-panel-width', type: 'CSS length', default: '480px', desc: 'Its widest.' },
   ];

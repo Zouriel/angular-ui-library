@@ -52,11 +52,11 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
     [pulse]="{ lat: home.lat, lng: home.lng, active: searching() }"
     [insets]="{ top: cardCover(), bottom: sheetCover() }" />
-  <ui-floating-panel placement="top" ariaLabel="Status" (coverChange)="cardCover.set($event)">
+  <ui-floating-panel placement="top" ariaLabel="Status" glass (coverChange)="cardCover.set($event)">
     <span role="status">{{ searching() ? 'Looking for a nurse near you' : 'Where should the nurse come?' }}</span>
   </ui-floating-panel>
   <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" [maxWidth]="560"
-    (coverChange)="sheetCover.set($event)">
+    glass (coverChange)="sheetCover.set($event)">
     <ui-form-field label="Address"><ui-input [(ngModel)]="address" /></ui-form-field>
     <ui-button [block]="true" (click)="searching.set(!searching())">Find a nurse</ui-button>
   </ui-bottom-sheet>
@@ -125,7 +125,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
       </doc-section>
 
       <doc-section name="Map page" anchor="map-page" selector="ui-map fill · [pulse] · [insets]" [api]="pageApi"
-        summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part.">
+        summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part. glass on the sheet and the card (0.41.2) makes them see-through: the map shows through, blurred and held to a range that keeps every text colour AA over any tile, in every theme; solid where backdrop-filter is missing or under reduced transparency or more contrast.">
         <doc-demo lang="html" [code]="PAGE_CODE">
           <div class="page-intro">
             <ui-text variant="body">Opens over the whole window, the way an app shows it on a phone.</ui-text>
@@ -141,7 +141,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
           <ui-map #page fill [center]="home" [zoom]="15" [markers]="markers" [pin]="home" [pinDraggable]="false" pinLabel="Your home"
             [pulse]="pulse()" [insets]="insets()" [userLocation]="me()" locateControl [locating]="locating()" [locateOff]="locOff() === 'off'"
             (locate)="findMe(page)" ariaLabel="Nurses near your home" />
-          <ui-floating-panel placement="top" ariaLabel="Status" (coverChange)="cardCover.set($event)">
+          <ui-floating-panel placement="top" ariaLabel="Status" [glass]="surface() === 'glass'" (coverChange)="cardCover.set($event)">
             <div class="status">
               @if (searching()) {
                 <ui-spinner size="sm" label="Searching" />
@@ -153,12 +153,13 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
               <ui-button size="sm" variant="ghost" (click)="closePage()">Close</ui-button>
             </div>
           </ui-floating-panel>
-          <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" [maxWidth]="560" (coverChange)="sheetCover.set($event)">
+          <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" [maxWidth]="560" [glass]="surface() === 'glass'" (coverChange)="sheetCover.set($event)">
             <div class="form">
               <ui-form-field label="Address">
                 <ui-input placeholder="Building, street, island" autocomplete="street-address" [(ngModel)]="address" />
               </ui-form-field>
               <ui-segmented label="When" [options]="whenOptions" [(value)]="when" />
+              <ui-segmented label="Surface (demo)" size="sm" [options]="surfaceOptions" [value]="surface()" (valueChange)="surface.set($any($event))" />
               <ui-segmented label="Location (demo)" size="sm" [options]="locOptions" [value]="locOff()" (valueChange)="locOff.set($any($event))" />
               <ui-segmented label="Direction (demo)" size="sm" [options]="dirOptions" [value]="dir()" (valueChange)="dir.set($any($event))" />
               <ui-button [block]="true" [variant]="searching() ? 'outline' : 'primary'" (click)="searching.set(!searching())">
@@ -220,6 +221,9 @@ export class MapPage {
   protected address = 'M. Blue Lagoon, Majeedhee Magu';
   protected readonly when = signal<string | null>('now');
   protected readonly whenOptions = [{ value: 'now', label: 'Now' }, { value: 'later', label: 'Later today' }];
+  /** The sheet and status card: see-through glass (the default here) or the solid surface. */
+  protected readonly surface = signal<'glass' | 'solid'>('glass');
+  protected readonly surfaceOptions = [{ value: 'glass', label: 'Glass' }, { value: 'solid', label: 'Solid' }];
   protected readonly dirOptions = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
   protected readonly pulse = computed<UiMapPulse>(() => ({ ...this.home, active: this.searching() }));
   protected readonly insets = computed<UiMapInsets>(() => ({ top: this.cardCover(), bottom: this.sheetCover() }));
@@ -284,6 +288,7 @@ export class MapPage {
     { name: 'ui-floating-panel (coverChange)', type: 'number', default: '—', desc: 'Px of its edge the card covers (gutter plus height): feed it to insets.top.' },
     { name: 'ui-bottom-sheet (coverChange)', type: 'number', default: '—', desc: 'Px of the screen bottom the sheet covers once it settles: feed it to insets.bottom.' },
     { name: 'ui-bottom-sheet maxWidth', type: 'number | string | null', default: 'null', desc: 'The widest the sheet gets (px or a CSS length). On a wider screen it is that wide and centred, the backdrop still covers everything, and coverChange still reports the covered height. 560 suits tablets and desktops.' },
+    { name: 'ui-bottom-sheet glass · ui-floating-panel glass', type: 'boolean', default: 'false · UiConfig.glass', desc: 'See-through frosted surface (0.41.2): the theme surface at 60% over the map, blurred and squeezed into the theme\'s --ui-glass-sheet-floor/-ceiling range, so text stays AA over white or black tiles. Fields and buttons stay solid. Solid without backdrop-filter, and under prefers-reduced-transparency or prefers-contrast: more.' },
     { name: 'ui-bottom-sheet persistent()', type: 'boolean', default: '—', desc: 'True when the smallest snap is above 0, as here: the sheet never closes. Escape collapses it to that snap and does nothing there; browser Back always leaves the page.' },
   ];
 }

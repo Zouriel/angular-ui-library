@@ -461,3 +461,132 @@ describe('theme palettes', () => {
     expect(fails).toEqual([]);
   });
 });
+
+/* ── See-through glass over a map (ui-bottom-sheet / ui-floating-panel `glass`, 0.41.2) ─────────── */
+
+describe('see-through glass', () => {
+  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css'];
+  const blocks: Record<string, Record<string, string>> = {};
+  /** Per selector, the properties set in a block that names only that selector. */
+  const own: Record<string, Set<string>> = {};
+  for (const file of files) {
+    const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
+    for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].replace(/\s+/g, ' ').trim()]));
+      const sels = m[1].split(',').map((x) => x.trim());
+      for (const sel of sels) blocks[sel] = { ...blocks[sel], ...decls };
+      for (const sel of sels) for (const k of Object.keys(decls)) (own[sel] ??= new Set()).add(k);
+    }
+  }
+  const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+  const names = ['dark', 'light', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold',
+    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark'];
+  const resolve = (name: string) => {
+    const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
+    const raw = (k: string, depth = 0): string => {
+      const v = vars[k] ?? '';
+      const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+      return ref && depth < 5 ? raw(ref[1], depth + 1) : v;
+    };
+    return { raw, color: (k: string) => parseColor(raw(k)), num: (k: string) => Number(raw(k)) };
+  };
+
+  it('derives the tint and the backdrop filter from the theme, with the maths this spec models', () => {
+    // The model below is only as good as these two definitions: change them together.
+    expect(base['--ui-glass-sheet-bg']).toBe('color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-sheet-tint) * 100%), transparent)');
+    expect(base['--ui-glass-sheet-filter']).toBe(
+      'blur(var(--ui-glass-sheet-blur)) contrast(calc((var(--ui-glass-sheet-ceiling) - var(--ui-glass-sheet-floor)) / (var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor)))) brightness(calc(var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor)))',
+    );
+    // contrast(c) then brightness(b): v -> ((v - 0.5) * c + 0.5) * b. Black lands on the floor, white on the ceiling.
+    for (const [floor, ceiling] of [[0, 0.43], [0.7, 1], [0.87, 1]]) {
+      const c = (ceiling - floor) / (ceiling + floor);
+      const b = ceiling + floor;
+      expect(((0 - 0.5) * c + 0.5) * b).toBeCloseTo(floor, 9);
+      expect(((1 - 0.5) * c + 0.5) * b).toBeCloseTo(ceiling, 9);
+    }
+  });
+
+  it('sets the backdrop range in every theme’s own block, so a theme island never inherits the page’s', () => {
+    const missing: string[] = [];
+    for (const name of names) {
+      const keys = new Set([...(own[`[data-theme="${name}"]`] ?? [])]);
+      for (const k of ['--ui-glass-sheet-floor', '--ui-glass-sheet-ceiling']) if (!keys.has(k)) missing.push(`${name}: ${k}`);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it('is see-through: a translucent tint over a backdrop that still shows through', () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const [tint, floor, ceiling, blur] = [t.num('--ui-glass-sheet-tint'), t.num('--ui-glass-sheet-floor'), t.num('--ui-glass-sheet-ceiling'), t.raw('--ui-glass-sheet-blur')];
+      if (!(tint > 0 && tint < 1)) fails.push(`${name}: tint ${tint} is not translucent`);
+      if (!(ceiling > floor && floor >= 0 && ceiling <= 1)) fails.push(`${name}: backdrop range ${floor}-${ceiling} shows nothing`);
+      if (!/^\d+px$/.test(blur) || parseFloat(blur) < 8) fails.push(`${name}: blur ${blur}`);
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('keeps text, muted text, primary and status colours AA over pure white and pure black in every theme', () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const surface = t.color('--ui-color-surface');
+      const [tint, floor, ceiling] = [t.num('--ui-glass-sheet-tint'), t.num('--ui-glass-sheet-floor'), t.num('--ui-glass-sheet-ceiling')];
+      if (!surface || surface[3] !== 1) {
+        fails.push(`${name}: surface unreadable or translucent`);
+        continue;
+      }
+      const glass: Rgba = [surface[0], surface[1], surface[2], tint];
+      // A filtered channel always lies in [floor, ceiling], and luminance rises with every channel, so
+      // the darkest and lightest possible panels are the ones over pure black and pure white.
+      for (const [where, v] of [['black', floor], ['white', ceiling]] as const) {
+        const g = v * 255;
+        const panel = over(glass, [g, g, g, 1]);
+        for (const [fg, need] of [['text', 4.5], ['text-muted', 4.5], ['primary', 4.5], ['success', 4.5], ['danger', 4.5], ['warning', 3], ['icon', 3]] as const) {
+          const c = t.color(`--ui-color-${fg}`);
+          if (!c) {
+            if (fg !== 'icon' && fg !== 'warning') fails.push(`${name}: --ui-color-${fg} unreadable`);
+            continue;
+          }
+          const r = contrast(c, panel);
+          if (r < need) fails.push(`${name}: ${fg} on glass over ${where} is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('keeps fields solid inside: inputs, selects and textareas paint the opaque surface', () => {
+    for (const f of ['form/src/input.ts', 'form/src/select.ts', 'form/src/textarea.ts']) {
+      expect(componentCss(readFileSync(join(root, f), 'utf8'))).toMatch(/background:\s*var\(--ui-color-surface\)/);
+    }
+    for (const name of names) expect(resolve(name).color('--ui-color-surface')?.[3]).toBe(1);
+  });
+
+  for (const [file, sel, solid] of [
+    ['dialog/src/bottom-sheet.ts', ':host(.glass) .sheet', 'var(--ui-color-surface)'],
+    ['layout/src/floating-panel.ts', ':host(.glass)', 'var(--ui-color-surface-raised)'],
+  ] as const) {
+    it(`${file}: glass blurs and tints, and falls back to solid without backdrop-filter or under reduced transparency`, () => {
+      const text = withoutComments(componentCss(readFileSync(join(root, file), 'utf8')));
+      const rule = (scope: string) => {
+        const at = text.indexOf(scope);
+        expect(at, scope).toBeGreaterThanOrEqual(0);
+        const inner = text.slice(at);
+        const m = inner.match(new RegExp(sel.replace(/[().]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
+        expect(m, `${scope} ${sel}`).toBeTruthy();
+        return m![1];
+      };
+      const glass = rule(sel + ' {');
+      expect(glass).toMatch(/background:\s*var\(--ui-glass-sheet-bg\)/);
+      expect(glass).toMatch(/(^|[\s;])backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
+      expect(glass).toMatch(/-webkit-backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
+      const unsupported = rule('@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))');
+      expect(unsupported).toContain(`background: ${solid}`);
+      const reduced = rule('@media (prefers-reduced-transparency: reduce), (prefers-contrast: more)');
+      expect(reduced).toContain(`background: ${solid}`);
+      expect(reduced).toMatch(/(^|[\s;])backdrop-filter:\s*none/);
+    });
+  }
+});

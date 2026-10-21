@@ -318,10 +318,23 @@ on the map while the app looks for someone:
   and `coverChange` still reports the covered height. The demo uses 560, for tablets and desktops.
 - The map is its own stacking context (`isolation: isolate`), the card sits above it (`z-index: 1`)
   and the sheet on the overlay layer, so both stay usable over it and the map pans around them.
+- `glass` (0.41.2) on `ui-bottom-sheet` (default `false`, not set by `UiConfig.glass`) and
+  `ui-floating-panel` (default `UiConfig.glass`), e.g. `<ui-bottom-sheet glass …>`: a see-through
+  frosted surface over the map. `--ui-glass-sheet-bg` (the theme's surface at
+  `--ui-glass-sheet-tint`, 0.6) over `backdrop-filter: var(--ui-glass-sheet-filter)`, which blurs
+  (`--ui-glass-sheet-blur`, 20px) and maps every backdrop channel into the theme's
+  `--ui-glass-sheet-floor`..`--ui-glass-sheet-ceiling` first. Each theme sets that range so text,
+  muted text, primary and status colours keep WCAG AA over pure white and pure black (the
+  style-contract spec checks all 15 themes); the colourful light palettes need a narrow one, so the map
+  shows through faintly there. Fields and buttons inside keep their solid backgrounds. Solid surface
+  where `backdrop-filter` isn't supported and under `prefers-reduced-transparency: reduce` or
+  `prefers-contrast: more`. An app theme of its own should set the floor and ceiling too (light:
+  floor high, ceiling 1; dark: floor 0, ceiling low) and check its colours.
 
 The Flutter twin: `UiMap(fill: true, pulse: UiMapPulse(lat:, lng:, active:), viewInsets:
 EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChanged` and
-`UiBottomSheet.onCoverChanged`.
+`UiBottomSheet.onCoverChanged`, and `glass: true` on both (solid under `MediaQuery.highContrast`, as
+Flutter has no reduce-transparency setting).
 
 ## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
 
