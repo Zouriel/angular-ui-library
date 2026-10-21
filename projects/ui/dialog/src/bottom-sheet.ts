@@ -48,7 +48,10 @@ interface Drag {
  * the page dims and a backdrop tap closes it, it is marked `aria-modal`, focus moves into it (to an
  * element marked `cdkFocusInitial`, else the first focusable one, the handle), and Tab is trapped
  * inside (CDK `FocusTrap`). Escape closes it while focus is inside; closing either way sends focus
- * back to where it came from. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
+ * back to where it came from. A sheet whose smallest snap is above 0 is `persistent`: it has no
+ * closed state, so Escape only collapses it to that smallest snap and does nothing once it rests
+ * there (the sheet never touches browser history, so the browser's Back button always leaves the
+ * page). With `maxWidth`, a wider screen gets a sheet that wide, centred. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
  * rises to its tallest snap (turn that off with `expandOnFocus`), and while an on-screen keyboard is up
  * the sheet rests on top of it rather than behind it.</p>
  *
@@ -62,6 +65,7 @@ interface Drag {
     '[class.dragging]': 'dragHeight() !== null',
     '[style.--ui-sheet-offset.px]': 'bottom()',
     '[style.--ui-sheet-hidden.px]': 'hiddenBelow()',
+    '[style.--ui-sheet-max-width]': 'maxWidthCss()',
   },
   template: `
     @if (backdrop() && isOpen()) {
@@ -69,7 +73,7 @@ interface Drag {
     }
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
-      (keydown.escape)="close()" (focusin)="onFocusIn($event)">
+      (keydown.escape)="onEscape()" (focusin)="onFocusIn($event)">
       <header class="grab"
         (touchstart)="onTouchStart($event, false)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)"
         (pointerdown)="onPointerDown($event)">
@@ -97,6 +101,8 @@ interface Drag {
     .backdrop { position: fixed; inset: 0; z-index: var(--ui-sheet-z, var(--ui-z-overlay)); background: var(--ui-color-overlay); }
     .sheet {
       position: fixed; left: 0; right: 0; bottom: var(--ui-sheet-offset, 0px); z-index: var(--ui-sheet-z, var(--ui-z-overlay));
+      /* With maxWidth on a wider screen: that wide and centred (auto margins split what is left). */
+      max-width: var(--ui-sheet-max-width, none); margin-inline: auto;
       display: flex; flex-direction: column; box-sizing: border-box;
       background: var(--ui-color-surface); color: var(--ui-color-text); font-family: var(--ui-font-default); line-height: 1.35;
       border: 1px solid var(--ui-color-border); border-bottom: 0; border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
@@ -171,6 +177,16 @@ export class UiBottomSheet {
   hasHeader = input(false);
   /** Rise to the tallest snap when a field inside is focused on a touch screen. */
   expandOnFocus = input(true);
+  /**
+   * The widest the sheet gets: a number in px or a CSS length (`'560px'`, `'40rem'`). On a wider
+   * screen the sheet is that wide and centred; the backdrop still covers the whole screen. Default:
+   * the full width.
+   */
+  maxWidth = input<number | string | null>(null);
+  protected readonly maxWidthCss = computed(() => {
+    const w = this.maxWidth();
+    return w === null || w === '' ? null : typeof w === 'number' ? `${w}px` : w;
+  });
 
   /** The height it came to rest at, in px, once each drag or change settles. */
   readonly heightChange = output<number>();
@@ -196,6 +212,13 @@ export class UiBottomSheet {
   protected readonly maxHeight = computed(() => Math.round(this.room() * Math.max(0, ...this.snaps())));
   private readonly snapHeight = (i: number) => Math.round(this.room() * (this.snaps()[i] ?? 0));
   protected readonly isOpen = computed(() => this.snapHeight(this.snap()) > 0);
+  /** Index of the smallest snap. */
+  private readonly lowest = computed(() => {
+    const snaps = this.snaps();
+    return snaps.reduce((lo, s, i) => (s < snaps[lo] ? i : lo), 0);
+  });
+  /** Has no closed state: its smallest snap is above 0, so it is always on screen. */
+  readonly persistent = computed(() => (this.snaps()[this.lowest()] ?? 0) > 0);
   /** With a backdrop and open, it's a modal dialog: focus moves in and is trapped. */
   protected readonly modal = computed(() => this.backdrop() && this.isOpen());
   protected readonly translate = computed(() => this.maxHeight() - (this.dragHeight() ?? this.snapHeight(this.snap())));
@@ -291,11 +314,22 @@ export class UiBottomSheet {
 
   /**
    * Closes it (snap 0). If focus is inside, it goes back to where it came from first: the closed
-   * sheet is inert, and the browser would otherwise drop focus on <body>.
+   * sheet is inert, and the browser would otherwise drop focus on <body>. A `persistent` sheet
+   * collapses to its smallest snap instead and keeps focus, since it stays on screen.
    */
   close(): void {
+    if (this.persistent()) {
+      this.snap.set(this.lowest());
+      return;
+    }
     this.restoreFocus(false);
     this.snap.set(0);
+  }
+
+  /** Escape closes it, or collapses a `persistent` sheet to its smallest snap and does nothing there. */
+  protected onEscape(): void {
+    if (this.persistent() && this.snap() === this.lowest()) return;
+    this.close();
   }
 
   /** Hands focus back to where it came from, if it's in the sheet (or, when `fromBody`, lost to <body>). */

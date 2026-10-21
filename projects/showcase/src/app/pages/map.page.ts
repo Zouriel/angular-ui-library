@@ -32,7 +32,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-floating-panel placement="top" ariaLabel="Status" (coverChange)="cardCover.set($event)">
     <span role="status">{{ searching() ? 'Looking for a nurse near you' : 'Where should the nurse come?' }}</span>
   </ui-floating-panel>
-  <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false"
+  <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" [maxWidth]="560"
     (coverChange)="sheetCover.set($event)">
     <ui-form-field label="Address"><ui-input [(ngModel)]="address" /></ui-form-field>
     <ui-button [block]="true" (click)="searching.set(!searching())">Find a nurse</ui-button>
@@ -104,7 +104,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
               <ui-button size="sm" variant="ghost" (click)="closePage()">Close</ui-button>
             </div>
           </ui-floating-panel>
-          <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" (coverChange)="sheetCover.set($event)">
+          <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false" [maxWidth]="560" (coverChange)="sheetCover.set($event)">
             <div class="form">
               <ui-form-field label="Address">
                 <ui-input placeholder="Building, street, island" autocomplete="street-address" [(ngModel)]="address" />
@@ -194,5 +194,7 @@ export class MapPage {
     { name: 'fill', type: 'boolean', default: 'false', desc: 'Fill the parent\'s height with square corners: a full-screen map page.' },
     { name: 'ui-floating-panel (coverChange)', type: 'number', default: '—', desc: 'Px of its edge the card covers (gutter plus height): feed it to insets.top.' },
     { name: 'ui-bottom-sheet (coverChange)', type: 'number', default: '—', desc: 'Px of the screen bottom the sheet covers once it settles: feed it to insets.bottom.' },
+    { name: 'ui-bottom-sheet maxWidth', type: 'number | string | null', default: 'null', desc: 'The widest the sheet gets (px or a CSS length). On a wider screen it is that wide and centred, the backdrop still covers everything, and coverChange still reports the covered height. 560 suits tablets and desktops.' },
+    { name: 'ui-bottom-sheet persistent()', type: 'boolean', default: '—', desc: 'True when the smallest snap is above 0, as here: the sheet never closes. Escape collapses it to that snap and does nothing there; browser Back always leaves the page.' },
   ];
 }

@@ -259,6 +259,14 @@ on the map while the app looks for someone:
 - `fill`: the map fills its parent's height with square corners.
 - `ui-floating-panel (coverChange)`: px of the parent's edge the card covers (gutter plus height);
   `ui-bottom-sheet (coverChange)`: px of the screen bottom the sheet covers once it settles.
+- A sheet with no 0 snap, like `[0.42, 0.75]` here, is `persistent()` (0.39.1): it never closes.
+  Escape (and `close()`) collapse it to its smallest snap and keep focus inside; at that snap Escape
+  does nothing. The sheet leaves browser history alone, so the browser's Back button always leaves
+  the page. A sheet with a 0 snap still closes on Escape and hands focus back.
+- `ui-bottom-sheet [maxWidth]` (0.39.1, a number in px or a CSS length, default `null` = full
+  width): on a wider screen the sheet (surface, handle, title row and body) is that wide and
+  centred (`margin-inline: auto`, so RTL is the same); the backdrop still covers the whole screen
+  and `coverChange` still reports the covered height. The demo uses 560, for tablets and desktops.
 - The map is its own stacking context (`isolation: isolate`), the card sits above it (`z-index: 1`)
   and the sheet on the overlay layer, so both stay usable over it and the map pans around them.
 

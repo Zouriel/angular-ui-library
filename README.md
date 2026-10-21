@@ -49,6 +49,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Persistent bottom sheets** (0.39.1): a `ui-bottom-sheet` whose smallest snap is above 0 (peek /
+  half / full, no closed state) is `persistent()`: Escape collapses it to that snap and does nothing
+  there, and the sheet never touches browser history, so Back always leaves the page. `maxWidth`
+  (px or a CSS length) caps the sheet and centres it on wider screens, e.g. 560 on tablets and desktops.
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,

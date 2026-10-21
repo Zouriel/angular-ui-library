@@ -1,6 +1,7 @@
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiBottomSheet } from './bottom-sheet';
 
@@ -206,5 +207,180 @@ describe('UiBottomSheet with a backdrop', () => {
     expect(document.activeElement).toBe(opener);
     fixture.destroy();
     el.remove();
+  });
+});
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `
+    <button id="opener" type="button">Before</button>
+    <ui-bottom-sheet [(snap)]="snap" [snaps]="snaps()" title="Doctors" [expandOnFocus]="false">
+      <input id="field" />
+    </ui-bottom-sheet>
+  `,
+})
+class PersistentHost {
+  snap = signal(0);
+  snaps = signal<readonly number[]>([0.3, 0.55, 1]);
+}
+
+/**
+ * A sheet with no closed snap (peek / half / full) never "closes": Escape collapses it to its
+ * smallest snap and stops there, and it leaves browser history alone so Back always leaves the page.
+ */
+describe('UiBottomSheet without a closed snap', () => {
+  async function render(snap = 0) {
+    const fixture = TestBed.createComponent(PersistentHost);
+    fixture.componentInstance.snap.set(snap);
+    document.body.appendChild(fixture.nativeElement);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    const sheet = () => el.querySelector<HTMLElement>('.sheet')!;
+    const opener = el.querySelector<HTMLButtonElement>('#opener')!;
+    const field = el.querySelector<HTMLInputElement>('#field')!;
+    const component = fixture.debugElement.query(By.directive(UiBottomSheet)).componentInstance as UiBottomSheet;
+    const settle = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+    const escape = () => {
+      const e = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+      field.dispatchEvent(e);
+      return e;
+    };
+    return { fixture, el, sheet, opener, field, component, settle, escape };
+  }
+
+  it('is persistent only when its smallest snap is above 0', async () => {
+    const { fixture, component, settle } = await render();
+    expect(component.persistent()).toBe(true);
+    fixture.componentInstance.snaps.set([0, 0.5, 1]);
+    await settle();
+    expect(component.persistent()).toBe(false);
+    fixture.destroy();
+  });
+
+  it('at its smallest snap, Escape does nothing: it stays at its peek and focus stays put', async () => {
+    const { fixture, el, sheet, opener, field, settle, escape } = await render(0);
+    expect(sheet().hasAttribute('inert')).toBe(false);
+    opener.focus();
+    field.focus();
+    escape();
+    await settle();
+    expect(fixture.componentInstance.snap()).toBe(0);
+    expect(document.activeElement).toBe(field);
+    expect(sheet().hasAttribute('inert')).toBe(false);
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('from a higher snap, Escape collapses it to the smallest snap and keeps focus inside', async () => {
+    for (const from of [1, 2]) {
+      const { fixture, el, opener, field, settle, escape } = await render(from);
+      opener.focus();
+      field.focus();
+      escape();
+      await settle();
+      expect(fixture.componentInstance.snap()).toBe(0);
+      expect(document.activeElement).toBe(field);
+      escape();
+      await settle();
+      expect(fixture.componentInstance.snap()).toBe(0);
+      fixture.destroy();
+      el.remove();
+    }
+  });
+
+  it('the close button collapses it to the smallest snap', async () => {
+    const { fixture, el, settle } = await render(2);
+    el.querySelector<HTMLButtonElement>('.x')!.click();
+    await settle();
+    expect(fixture.componentInstance.snap()).toBe(0);
+    fixture.destroy();
+    el.remove();
+  });
+
+  it('never touches browser history, so the browser Back button always leaves the page', async () => {
+    const push = vi.spyOn(window.history, 'pushState');
+    const replace = vi.spyOn(window.history, 'replaceState');
+    const listen = vi.spyOn(window, 'addEventListener');
+    const { fixture, el, opener, field, settle, escape } = await render(2);
+    opener.focus();
+    field.focus();
+    escape();
+    await settle();
+    escape();
+    await settle();
+    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    const events = listen.mock.calls.map((c) => c[0]);
+    expect(events).not.toContain('popstate');
+    expect(events).not.toContain('beforeunload');
+    expect(events).not.toContain('hashchange');
+    vi.restoreAllMocks();
+    fixture.destroy();
+    el.remove();
+  });
+});
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `
+    <ui-bottom-sheet [snap]="1" [snaps]="[0, 0.5, 1]" title="Doctors" [maxWidth]="maxWidth()" [backdrop]="true" [expandOnFocus]="false"
+      (coverChange)="covers.push($event)">
+      <p>Body</p>
+    </ui-bottom-sheet>
+  `,
+})
+class WidthHost {
+  maxWidth = signal<number | string | null>(null);
+  covers: number[] = [];
+}
+
+/**
+ * maxWidth caps the sheet and centres it. jsdom has no layout, so these check the wiring (the
+ * custom property and the rule using it); the widths themselves are measured in a real browser at
+ * 1280 and 390 px, LTR and RTL, for 0.39.1 (noted in the Flutter repo's docs/PORTING.md).
+ */
+describe('UiBottomSheet maxWidth', () => {
+  async function render(maxWidth: number | string | null) {
+    const fixture = TestBed.createComponent(WidthHost);
+    fixture.componentInstance.maxWidth.set(maxWidth);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const host = fixture.nativeElement.querySelector('ui-bottom-sheet') as HTMLElement;
+    return { fixture, host };
+  }
+
+  it('is the full width by default: no cap is set', async () => {
+    const { host } = await render(null);
+    expect(host.style.getPropertyValue('--ui-sheet-max-width')).toBe('');
+  });
+
+  it('a number is px and a string is used as given', async () => {
+    const { fixture, host } = await render(560);
+    expect(host.style.getPropertyValue('--ui-sheet-max-width')).toBe('560px');
+    fixture.componentInstance.maxWidth.set('40rem');
+    fixture.detectChanges();
+    expect(host.style.getPropertyValue('--ui-sheet-max-width')).toBe('40rem');
+  });
+
+  it('the sheet takes the cap and centres with logical auto margins; the backdrop stays full screen', async () => {
+    await render(560);
+    const css = [...document.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n');
+    const sheetRule = css.match(/\.sheet\[[^\]]+\]\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(sheetRule).toContain('max-width: var(--ui-sheet-max-width, none)');
+    expect(sheetRule).toContain('margin-inline: auto');
+    const backdropRule = css.match(/\.backdrop\[[^\]]+\]\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(backdropRule).toContain('inset: 0');
+    expect(backdropRule).not.toContain('max-width');
+  });
+
+  it('the reported cover is still the height, with or without a cap', async () => {
+    const a = await render(null);
+    const b = await render(560);
+    expect(a.fixture.componentInstance.covers.at(-1)).toBeGreaterThan(0);
+    expect(b.fixture.componentInstance.covers.at(-1)).toBe(a.fixture.componentInstance.covers.at(-1));
   });
 });
