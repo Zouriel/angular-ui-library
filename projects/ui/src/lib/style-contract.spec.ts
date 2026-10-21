@@ -112,7 +112,9 @@ describe('style contract', () => {
   it('takes colours from tokens, so every theme can restyle them', () => {
     // Allowed: media chrome that always sits on photos/video, a physical device mock, and fx
     // effects whose colours are documented, overridable inputs.
-    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/];
+    // Also Google's brand colours on the drawn sign-in button, fixed by
+    // https://developers.google.com/identity/branding-guidelines whatever the theme.
+    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/, /^google-sign-in\/src\/google-button\.ts$/];
     const bad: string[] = [];
     for (const { file, text } of css) {
       if (allowed.some((r) => r.test(file))) continue;

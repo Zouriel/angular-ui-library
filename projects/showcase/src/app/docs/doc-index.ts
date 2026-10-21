@@ -45,6 +45,8 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'buttons': [
     { name: 'Button', anchor: 'button' },
     { name: 'Hold button', anchor: 'hold-button' },
+    { name: 'Google button', anchor: 'google-button' },
+    { name: 'Google sign-in', anchor: 'google-sign-in' },
     { name: 'Icon button', anchor: 'icon-button' },
     { name: 'Button group', anchor: 'button-group' },
     { name: 'Segmented', anchor: 'segmented' },

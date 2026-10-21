@@ -3,7 +3,7 @@
 A token-driven, signal-first **Angular v22** component library. Standalone, zoneless,
 tree-shakeable across secondary entry points, themeable, and accessible (ARIA roles,
 keyboard support, CDK focus handling). About 140 components and directives across
-39 secondary entry points, plus a small core (`@zouriel/ui`):
+40 secondary entry points, plus a small core (`@zouriel/ui`):
 - the everyday catalog;
 - design tools;
 - three flagships: a floating-window system, a multi-format file viewer and a form builder;
@@ -31,6 +31,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   Breaking in 0.35.1: `UiMenubar` / `UiMenubarMenu` moved from `@zouriel/ui/navigation` to
   `@zouriel/ui/menubar`, for the same reason. `UiChatBubble` has its own entry,
   `@zouriel/ui/chat-bubble` (still re-exported from `@zouriel/ui/data`).
+- **Sign in with Google** (`@zouriel/ui/google-sign-in`, 0.36): `ui-google-sign-in` wraps Google
+  Identity Services' own button and emits the ID token; `ui-google-button` is the same button drawn
+  to Google's branding guidelines, for apps with their own OAuth flow (and the twin of Flutter's
+  `UiGoogleSignInButton`).
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon';
@@ -13,6 +13,9 @@ import {
 } from '@zouriel/ui/button';
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
+import {
+  UI_GOOGLE_IDENTITY, UiGoogleButton, UiGoogleSignIn, type UiGoogleButtonTheme, type UiGoogleIdentity,
+} from '@zouriel/ui/google-sign-in';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
@@ -20,10 +23,52 @@ const SIZE = "'sm' | 'md' | 'lg'";
 const BUTTON_SIZE = "UiButtonSize: 'sm' | 'md' | 'lg' | 'xl'";
 const SLOT = 'Projected content is the label (text, or an icon followed by text).';
 
+/**
+ * The showcase has no Google client ID, so ui-google-sign-in gets a stand-in for Google Identity
+ * Services: it draws a clearly marked placeholder where Google's button would be, and "signs in"
+ * with a fake token when clicked. A real app leaves UI_GOOGLE_IDENTITY alone.
+ */
+function demoIdentity(): UiGoogleIdentity {
+  let callback: ((r: { credential: string }) => void) | null = null;
+  return {
+    initialize: (c) => (callback = c.callback),
+    renderButton: (el, o) => {
+      const b = el.ownerDocument.createElement('button');
+      b.type = 'button';
+      b.textContent = `Demo placeholder: Google's own button renders here (${o.theme}, ${o.text}, ${o.shape})`;
+      b.style.cssText = 'min-height: 40px; padding: 0 var(--ui-space-3); border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius);'
+        + ' background: transparent; color: var(--ui-color-text-muted); font: inherit; font-size: 13px; cursor: pointer; text-align: start;';
+      b.onclick = () => callback?.({ credential: 'demo.header.payload' });
+      el.appendChild(b);
+    },
+  };
+}
+
+@Component({
+  selector: 'demo-google-sign-in',
+  imports: [UiGoogleSignIn],
+  providers: [{ provide: UI_GOOGLE_IDENTITY, useValue: () => Promise.resolve(demoIdentity()) }],
+  template: `<ui-google-sign-in clientId="demo-placeholder.apps.googleusercontent.com" [theme]="theme()" (credential)="credential.emit($event)" />`,
+})
+export class DemoGoogleSignIn {
+  theme = input<UiGoogleButtonTheme>('auto');
+  readonly credential = output<string>();
+}
+
+@Component({
+  selector: 'demo-google-sign-in-blocked',
+  imports: [UiGoogleSignIn],
+  providers: [{ provide: UI_GOOGLE_IDENTITY, useValue: () => Promise.reject(new Error('Google sign-in could not load (blocked or offline)')) }],
+  template: `<ui-google-sign-in clientId="demo-placeholder.apps.googleusercontent.com" text="continue_with" (failed)="failed.emit($event.message)" />`,
+})
+export class DemoGoogleSignInBlocked {
+  readonly failed = output<string>();
+}
+
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
+    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -78,6 +123,52 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
             <ui-hold-button size="xl" [block]="true" (confirmed)="held.set(held() + 1)">I've arrived</ui-hold-button>
             <ui-hold-button variant="destructive" [hold]="1500" [destructive]="true" confirmTitle="Cancel the visit?" (confirmed)="held.set(held() + 1)">Hold to cancel the visit</ui-hold-button>
             <ui-text variant="caption">Confirmed {{ held() }} times</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Google button" anchor="google-button" selector="ui-google-button" [api]="googleButtonApi" [outputs]="googleButtonOut"
+        shapes="// from @zouriel/ui/google-sign-in
+type UiGoogleButtonText = 'signIn' | 'signUp' | 'continueWith' | 'signInShort';
+type UiGoogleButtonTheme = 'auto' | 'light' | 'dark' | 'neutral';
+type UiGoogleButtonShape = 'rectangular' | 'pill';"
+        summary="Google's sign-in button drawn to its branding guidelines: the official multicolour G, Google's light (white, grey stroke), dark and neutral (light grey, no stroke) colours, 40px high, Google Sans Medium 14/20 (Roboto, then the library font, when Google Sans isn't installed; the library ships neither), rectangular or pill. auto is dark on a dark theme and light otherwise, and follows theme changes. It is a plain button that emits (pressed), for apps running their own OAuth flow; to get an ID token in the browser use ui-google-sign-in below. loading swaps the G for a spinner at the same width. The words come from the library strings (googleSignIn, googleSignUp, googleContinue, googleSignInShort); Google allows only its approved wordings, translated. The Flutter twin is UiGoogleSignInButton, paired with the google_sign_in package. From @zouriel/ui/google-sign-in.">
+        <doc-demo lang="ts + html" code="import { UiGoogleButton } from '@zouriel/ui/google-sign-in';
+
+<ui-google-button [loading]=&quot;busy()&quot; (pressed)=&quot;startOAuth()&quot; />
+<ui-google-button theme=&quot;dark&quot; shape=&quot;pill&quot; text=&quot;continueWith&quot; />
+<ui-google-button theme=&quot;neutral&quot; text=&quot;signUp&quot; [expand]=&quot;true&quot; />">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 400px">
+            <div class="row items-center">
+              <ui-google-button [loading]="googleBusy()" (pressed)="fakeGoogle()" />
+              <ui-google-button theme="light" shape="pill" text="continueWith" />
+            </div>
+            <div class="row items-center">
+              <ui-google-button theme="dark" text="signUp" />
+              <ui-google-button theme="neutral" shape="pill" text="signInShort" />
+              <ui-google-button [disabled]="true" />
+            </div>
+            <ui-google-button [expand]="true" text="continueWith" />
+            <ui-text variant="caption">Pressed {{ googlePresses() }} times</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Google sign-in" anchor="google-sign-in" selector="ui-google-sign-in" [api]="gsiApi" [outputs]="gsiOut"
+        summary="Google's own Sign in with Google button (Google Identity Services), the only way to get a Google ID token in the browser without a client secret. It loads https://accounts.google.com/gsi/client once (a skeleton holds the space meanwhile), initializes with your web client ID, ux_mode popup and FedCM, and renders the button; (credential) gives the ID token for your API to verify. theme auto is filled_black on a dark theme and outline otherwise, and re-renders when the theme changes; GIS has no neutral theme, so neutral renders as outline. If the script is blocked it shows a disabled drawn button and emits (failed). One per page: GIS's initialize is page-wide. The showcase has no client ID, so the demos below use a stand-in loader (UI_GOOGLE_IDENTITY) that draws a placeholder; tests do the same. Flutter apps get the token from google_sign_in (authenticate(), serverClientId = this web client ID) behind UiGoogleSignInButton.">
+        <doc-demo lang="ts + html" code="import { UiGoogleSignIn } from '@zouriel/ui/google-sign-in';
+
+<ui-google-sign-in
+  clientId=&quot;1234-abc.apps.googleusercontent.com&quot;
+  text=&quot;continue_with&quot;
+  [nonce]=&quot;nonce&quot;
+  (credential)=&quot;signIn($event)&quot;
+  (failed)=&quot;showError($event.message)&quot; />">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 400px">
+            <demo-google-sign-in (credential)="gsiToken.set($event)" />
+            <ui-text variant="caption">credential: {{ gsiToken() ?? 'none yet (click the placeholder)' }}</ui-text>
+            <demo-google-sign-in-blocked (failed)="gsiError.set($event)" />
+            <ui-text variant="caption">When the script is blocked: {{ gsiError() ?? '…' }}</ui-text>
           </div>
         </doc-demo>
       </doc-section>
@@ -205,6 +296,40 @@ export class ButtonsPage {
   ];
 
   protected readonly held = signal(0);
+  protected readonly googleBusy = signal(false);
+  protected readonly googlePresses = signal(0);
+  protected readonly gsiToken = signal<string | null>(null);
+  protected readonly gsiError = signal<string | null>(null);
+  protected fakeGoogle(): void {
+    this.googleBusy.set(true);
+    setTimeout(() => {
+      this.googleBusy.set(false);
+      this.googlePresses.update((n) => n + 1);
+    }, 1000);
+  }
+  protected readonly googleButtonApi: ApiRow[] = [
+    { name: 'text', type: 'UiGoogleButtonText', default: "'signIn'", desc: "'signIn' (Sign in with Google), 'signUp', 'continueWith', 'signInShort' (Sign in)." },
+    { name: 'theme', type: 'UiGoogleButtonTheme', default: "'auto'", desc: "Google's 'light', 'dark' or 'neutral'; 'auto' is dark on a dark library theme." },
+    { name: 'shape', type: 'UiGoogleButtonShape', default: "'rectangular'", desc: "'rectangular' (4px corners) or 'pill'." },
+    { name: 'loading', type: 'boolean', default: 'false', desc: 'Spinner in place of the G, same width, aria-busy, not clickable.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
+    { name: 'expand', type: 'boolean', default: 'false', desc: 'Full width; the G stays at the start, the words centre.' },
+    { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
+  ];
+  protected readonly googleButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
+  protected readonly gsiApi: ApiRow[] = [
+    { name: 'clientId', type: 'string (required)', default: '—', desc: 'Your OAuth web client ID.' },
+    { name: 'text', type: "'signin_with' | 'signup_with' | 'continue_with' | 'signin'", default: "'signin_with'", desc: "GIS's wording." },
+    { name: 'theme', type: 'UiGoogleButtonTheme', default: "'auto'", desc: "light and neutral → 'outline', dark → 'filled_black'; auto follows the library theme and re-renders." },
+    { name: 'shape', type: 'UiGoogleButtonShape', default: "'rectangular'", desc: "'rectangular' or 'pill'." },
+    { name: 'width', type: 'number (px)', default: 'the host width', desc: "Kept within GIS's 200–400px." },
+    { name: 'locale', type: 'string', default: "the browser's", desc: "The button's language (GIS locale)." },
+    { name: 'nonce', type: 'string', default: '—', desc: 'Bound into the ID token, for your server to check.' },
+  ];
+  protected readonly gsiOut: ApiRow[] = [
+    { name: 'credential', type: 'string', default: '—', desc: 'The Google ID token (JWT) after sign-in.' },
+    { name: 'failed', type: '{ message: string }', default: '—', desc: 'The script could not load, or GIS failed to set up.' },
+  ];
   protected readonly holdApi: ApiRow[] = [
     { name: 'hold', type: 'number (ms)', default: '2000', desc: 'How long to hold.' },
     { name: 'variant / size / block / disabled', type: 'as ui-button', default: "'primary' / 'md' / false / false", desc: 'Look of the button; size takes xl.' },

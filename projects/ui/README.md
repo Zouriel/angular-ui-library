@@ -76,6 +76,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap map with markers and a pin (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
+| `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token) and `ui-google-button` (the drawn, branded button); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
@@ -99,6 +100,39 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer, slide transition (views and routes) |
 | `theme` | `UiThemeService`, `ui-theme-provider` |
 
+## Sign in with Google (`@zouriel/ui/google-sign-in`)
+
+```ts
+import { UiGoogleSignIn } from '@zouriel/ui/google-sign-in';
+```
+```html
+<ui-google-sign-in clientId="1234-abc.apps.googleusercontent.com" text="continue_with"
+  [nonce]="nonce" (credential)="signIn($event)" (failed)="showError($event.message)" />
+```
+
+- `ui-google-sign-in` loads `https://accounts.google.com/gsi/client` once, calls
+  `google.accounts.id.initialize({ client_id, callback, nonce, ux_mode: 'popup', use_fedcm_for_button: true })`
+  and renders Google's button. `(credential)` is the ID token (a JWT): send it to your API, which
+  verifies it for the same client ID (and the nonce, if you gave one). A skeleton holds the space
+  while the script loads; if it can't load (blocked, offline) a disabled drawn button shows and
+  `(failed)` fires. Inputs: `clientId` (required), `text` (`'signin_with' | 'signup_with' |
+  'continue_with' | 'signin'`), `theme` (`'auto' | 'light' | 'dark' | 'neutral'`: light → `outline`,
+  dark → `filled_black`, neutral → `outline` because GIS has no neutral theme; auto follows the
+  library theme and re-renders when it changes), `shape` (`'rectangular' | 'pill'`), `width` (px,
+  kept within GIS's 200–400; otherwise the host's width), `locale`, `nonce`. GIS's initialize is
+  page-wide, so show one per page. A Content-Security-Policy must allow `accounts.google.com`
+  (script, frame, connect). Tests provide `UI_GOOGLE_IDENTITY` (a loader returning a fake with
+  `initialize` / `renderButton`).
+- `ui-google-button` is the button drawn to Google's branding guidelines (the official G, Google's
+  light / dark / neutral colours, 40px, rectangular or pill), a plain `<button>` that emits
+  `(pressed)`, for apps that run their own OAuth flow. Inputs: `text` (`'signIn' | 'signUp' |
+  'continueWith' | 'signInShort'`), `theme`, `shape`, `loading`, `disabled`, `expand`, `ariaLabel`.
+  Its words come from `provideUiStrings`. The guideline's font is Google Sans Medium 14/20; the
+  library bundles no Google font, so it uses Google Sans if the device has it, then Roboto, then
+  the library font (`--ui-font-default`).
+- Flutter: `UiGoogleSignInButton` draws the same button; the app pairs it with the `google_sign_in`
+  package (`authenticate()` → `idToken`, with `serverClientId` = this web client ID).
+
 ## License
 
 MIT
@@ -111,7 +145,8 @@ The library's own words (names of icon-only buttons, default labels) are English
 input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
 `uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
-`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` (map). Flutter has the same
+`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` (map), `googleSignIn` /
+`googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.
 
 Still English only (0.34.0), to move to `UiStrings` next:

@@ -42,6 +42,12 @@ export interface UiStrings {
   zoomIn: string;
   zoomOut: string;
   placePinAtCentre: string;
+  /** Google sign-in button: Google's approved wordings (a translation must keep the meaning: signing
+   *  in to this app with a Google account, not creating one). */
+  googleSignIn: string;
+  googleSignUp: string;
+  googleContinue: string;
+  googleSignInShort: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -65,6 +71,10 @@ export const defaultUiStrings: UiStrings = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   placePinAtCentre: 'Place the pin at the centre',
+  googleSignIn: 'Sign in with Google',
+  googleSignUp: 'Sign up with Google',
+  googleContinue: 'Continue with Google',
+  googleSignInShort: 'Sign in',
 };
 
 export const UI_STRINGS = new InjectionToken<UiStrings>('UI_STRINGS', { providedIn: 'root', factory: () => defaultUiStrings });
