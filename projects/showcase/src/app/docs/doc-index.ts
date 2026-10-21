@@ -194,6 +194,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'file-viewer': [
     { name: 'File viewer (dispatcher)', anchor: 'file-viewer-dispatcher' },
     { name: 'Image viewer', anchor: 'image-viewer' },
+    { name: 'Full-page document viewer', anchor: 'full-page-document-viewer' },
     { name: 'Media lightbox', anchor: 'media-lightbox' },
     { name: 'Audio player', anchor: 'audio-player' },
     { name: 'Video player', anchor: 'video-player' },

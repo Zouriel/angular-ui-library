@@ -13,7 +13,7 @@ import {
   type UiMediaAction,
   type UiMediaItem,
 } from '@zouriel/ui/file-viewer';
-import { UiButton } from '@zouriel/ui/button';
+import { UiButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
 import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -79,7 +79,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
 
 @Component({
   selector: 'page-file-viewer',
-  imports: [UiText, UiButton, UiFileViewer, UiImageViewer, UiFileExplorer, UiMediaLightbox, UiAudioPlayer, UiVideoPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiButton, UiSegmented, UiFileViewer, UiImageViewer, UiFileExplorer, UiMediaLightbox, UiAudioPlayer, UiVideoPlayer, UiTextViewer, UiCodeViewer, UiPdfViewer, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Flagship" title="File viewer"
       lead="A viewer for any file: a dispatcher works out the file's type and hands it to the matching renderer. Each renderer can also be used on its own, inline or inside a ui-window. The PDF viewer is a separate entry point that loads pdfjs-dist only when it is used.">
@@ -110,6 +110,32 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
               (previous)="slideAt.set(slideAt() - 1)" (next)="slideAt.set(slideAt() + 1)" />
           </div>
           <ui-text variant="caption">Slide {{ slideAt() + 1 }} of {{ slides.length }}. Use the step buttons, a swipe, or Left/Right with the image focused.</ui-text>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Full-page document viewer" selector="ui-image-viewer fill · ui-pdf-viewer fill" [api]="fillApi"
+        summary="For a page whose whole point is one document, such as a payment slip opened from a list: give the viewer fill and a parent with a height (a full-height page, or a flex: 1 child under the title). It takes all of that space, the photo or page is fitted into it (contain, centred; 100% is fitted), pinch, Ctrl+wheel and the buttons still zoom, a zoomed photo still pans, and the controls float over the bottom on the glass surface, above the home indicator, instead of sitting in a bar of their own. There is no frame around it. With fill the image viewer is focusable and takes + - 0; the PDF viewer adds a Fit button.">
+        <doc-demo lang="html + css" code="<main class=&quot;slip-page&quot;>
+  <h1>Payment slip</h1>
+  @if (isPdf) {
+    <ui-pdf-viewer fill [src]=&quot;url&quot; />
+  } @else {
+    <ui-image-viewer fill [src]=&quot;url&quot; alt=&quot;Payment slip&quot; />
+  }
+</main>
+
+.slip-page { display: flex; flex-direction: column; height: 100dvh; }
+.slip-page > ui-image-viewer, .slip-page > ui-pdf-viewer { flex: 1; min-height: 0; }">
+          <ui-segmented [options]="fillKinds" [value]="fillKind()" (valueChange)="fillKind.set($any($event))" label="Document" />
+          <div class="phone" data-demo="fill">
+            <div class="phone-top"><ui-text variant="h5">Payment slip</ui-text></div>
+            @if (fillKind() === 'pdf') {
+              <ui-pdf-viewer fill [src]="pdf" />
+            } @else {
+              <ui-image-viewer fill [src]="slipPhoto" alt="Photo of a payment receipt" />
+            }
+          </div>
+          <ui-text variant="caption">A phone-sized page: the title, then the viewer filling everything below it. Switch between a photo and a PDF.</ui-text>
         </doc-demo>
       </doc-section>
 
@@ -188,10 +214,19 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
     .wide { width: 100%; }
     .video { max-width: 560px; }
     @media (max-width: 720px) { .cols2 { grid-template-columns: 1fr; } }
+    /* A phone-sized page for the fill demo: a title, then the viewer taking the rest. */
+    .phone { display: flex; flex-direction: column; width: min(100%, 390px); height: 640px; margin-top: var(--ui-space-3);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg); overflow: hidden; background: var(--ui-color-bg); }
+    .phone-top { flex: none; padding: var(--ui-space-3) var(--ui-space-4); }
+    .phone > ui-image-viewer, .phone > ui-pdf-viewer { flex: 1; min-height: 0; }
   `,
 })
 export class FileViewerPage {
   protected readonly img = sampleImg;
+  /** A photo of a receipt on a table (relative, so it works under the docs' base path). */
+  protected readonly slipPhoto = 'demo/slip.jpg';
+  protected readonly fillKinds: UiSegmentedOption[] = [{ value: 'image', label: 'Photo' }, { value: 'pdf', label: 'PDF' }];
+  protected readonly fillKind = signal<'image' | 'pdf'>('image');
   protected readonly slides = SLIDES;
   protected readonly slideAt = signal(0);
   protected readonly pdf = samplePdf();
@@ -235,6 +270,11 @@ export class FileViewerPage {
     { name: 'kind', type: "'image' | 'video'", default: "'image'", desc: 'What src points at.' },
     { name: 'hasPrevious', type: 'boolean', default: 'false', desc: 'A previous item exists: shows the step buttons and allows the swipe and the Left key.' },
     { name: 'hasNext', type: 'boolean', default: 'false', desc: 'A next item exists.' },
+    { name: 'fill', type: 'boolean', default: 'false', desc: 'Take all the space the parent gives, with the picture fitted and the controls floating over the bottom. See Full-page document viewer.' },
+  ];
+  protected readonly fillApi: ApiRow[] = [
+    { name: 'fill', type: 'boolean', default: 'false', desc: 'On ui-image-viewer and ui-pdf-viewer. The parent must give a height (a flex: 1 child with min-height: 0, or height: 100dvh).' },
+    { name: '--ui-image-viewer-min-height / --ui-pdf-viewer-min-height', type: 'CSS length', default: '60svh', desc: 'Without fill: the height the viewer takes in a parent that gives none (it stays within a parent that does).' },
   ];
   protected readonly imgOut: ApiRow[] = [
     { name: 'previous', type: 'void', default: '—', desc: 'Swipe, arrow key or step button asked for the previous item.' },
@@ -268,6 +308,7 @@ export class FileViewerPage {
   ];
   protected readonly pdfApi: ApiRow[] = [
     { name: 'src', type: 'string (required)', default: '—', desc: 'PDF URL (also a blob: or data: URL). Changing it loads the new file from page 1.' },
+    { name: 'fill', type: 'boolean', default: 'false', desc: 'Fill the parent: each page fitted (100% = fitted), controls floating at the bottom, a Fit button. See Full-page document viewer.' },
     { name: 'workerSrc', type: 'string', default: 'cdnjs URL', desc: 'URL of pdf.worker.min.mjs. Default: https://cdnjs.cloudflare.com/ajax/libs/pdf.js/<version>/pdf.worker.min.mjs. pdfjs keeps one worker setting per page, so use the same value everywhere.' },
   ];
   protected readonly fxApi: ApiRow[] = [

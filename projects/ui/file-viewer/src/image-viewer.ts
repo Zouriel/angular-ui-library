@@ -1,11 +1,11 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { booleanAttribute, Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
-import { clampOffset, isSwipe, resist } from './gestures';
+import { clampOffset, fitContain, isSwipe, resist } from './gestures';
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 6;
@@ -22,18 +22,24 @@ const MAX_ZOOM = 6;
  * over a stage that has already captured the pointer, so the viewer detects the gesture and the
  * host moves: {@link hasPrevious}/{@link hasNext} say what exists, {@link previous}/{@link next}
  * report the intent, and the list itself stays where it belongs — with whoever owns it.</p>
+ *
+ * <p>With {@link fill} it is a whole page rather than a box on one: it takes every pixel its parent
+ * gives, the picture is fitted into that, and the controls float over the bottom of it instead of
+ * sitting in a bar of their own.</p>
  */
 @Component({
   selector: 'ui-image-viewer',
   imports: [DecimalPipe, HugeiconsIconComponent],
   template: `
-    <div class="iv">
+    <div class="iv" [class.fill]="fill()">
       <div #stage class="stage" [class.panning]="pannable()"
+           [attr.role]="focusable() ? 'group' : null"
+           [attr.aria-label]="focusable() ? (alt() || 'Image') : null"
            (wheel)="onWheel($event)"
            (pointerdown)="onDown($event)" (pointermove)="onMove($event)"
            (pointerup)="onUp($event)" (pointercancel)="onUp($event)"
            (keydown)="onKey($event)"
-           [attr.tabindex]="navigable() || pannable() ? 0 : null"
+           [attr.tabindex]="focusable() ? 0 : null"
            (dblclick)="toggleZoom()">
         @if (isVideo()) {
           <!-- Its own controls, not ours: scrubbing a clip is what the browser is already good at,
@@ -46,7 +52,7 @@ const MAX_ZOOM = 6;
                [class.settling]="!interacting()" (load)="reset()" draggable="false" />
         }
       </div>
-      <div class="bar">
+      <div class="bar" [class.overlay]="fill()" role="group" [attr.aria-label]="isVideo() ? 'Clip controls' : 'Image controls'">
         @if (navigable()) {
           <button type="button" class="step" (click)="previous.emit()"
                   [disabled]="!hasPrevious()" aria-label="Previous image"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
@@ -74,18 +80,26 @@ const MAX_ZOOM = 6;
       unreachable. The cap keeps the whole viewer inside one screen so the bar is always in view, and
       a host that DOES give a definite height still gets all of it.
     */
-    .iv { display: flex; flex-direction: column; height: 100%;
+    .iv { position: relative; display: flex; flex-direction: column; height: 100%;
       min-height: 200px; max-height: var(--ui-image-viewer-max-height, 70svh); }
     /* min-height:0 is load-bearing: a flex child refuses to shrink below its content without it, so
        a tall image would push the bar out however the parent is sized. We own every gesture here —
        see the class comment. */
-    .stage { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; align-items: center;
-      justify-content: center; background: var(--ui-color-bg); touch-action: none; }
+    .stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden;
+      background: var(--ui-color-bg); touch-action: none; }
+    /*
+      The stage's own preferred height. The picture is laid out absolutely (below), so it never sizes
+      the stage: a 1 px image and a 4000 px photograph get the same frame. In a parent with no definite
+      height this spacer is what the viewer grows to (60% of the screen, under the 70% cap), so it is
+      never a short box with its zoom bar under it and the page empty below; in a parent that does
+      give a height, the stage shrinks past it (min-height: 0) and the parent wins.
+    */
+    .stage::before { content: ''; display: block; height: var(--ui-image-viewer-min-height, 60svh); }
     .stage.panning { cursor: grab; }
     .stage.panning:active { cursor: grabbing; }
     .stage:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    /* contain, so the shot is fitted to the box rather than cropped or overflowing it. */
-    img, video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none;
+    /* contain, so the shot is fitted to the stage (centred, never cropped), whatever its own size. */
+    img, video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none;
       -webkit-user-drag: none; will-change: transform; }
     /* A clip is never zoomed or panned, so it never needs to claim the gestures an image does —
        and taking them would be taking them from its own scrubber. */
@@ -119,6 +133,19 @@ const MAX_ZOOM = 6;
       .bar { gap: var(--ui-space-3); }
       .bar button { min-width: var(--ui-size-touch); height: var(--ui-size-touch); }
     }
+    /*
+      fill: the viewer is the page. No cap, no spacer, no bar of its own: the controls float over the
+      bottom of the picture on the glass panel surface, clear of the home indicator.
+    */
+    .iv.fill { max-height: none; }
+    .iv.fill .stage::before { display: none; }
+    .bar.overlay { position: absolute; left: 50%; transform: translateX(-50%);
+      bottom: calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px));
+      max-width: calc(100% - 2 * var(--ui-space-3)); box-sizing: border-box;
+      border-top: none; border-radius: var(--ui-radius-pill); background: var(--ui-glass-panel-bg);
+      -webkit-backdrop-filter: blur(var(--ui-glass-blur)); backdrop-filter: blur(var(--ui-glass-blur));
+      box-shadow: var(--ui-shadow-2); }
+    .bar.overlay button.step:first-child, .bar.overlay button.step:last-child { margin: 0; }
     .pct { font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); min-width: 42px; text-align: center;
       font-variant-numeric: tabular-nums; }
   `,
@@ -140,6 +167,13 @@ export class UiImageViewer {
    */
   hasPrevious = input(false);
   hasNext = input(false);
+
+  /**
+   * Take all the space the parent gives (a full page, or an expanded flex child) instead of being a
+   * box on the page: no height cap, the picture fitted (contain, centred) into the whole area, and
+   * the zoom controls floating over its bottom edge. The parent must have a height.
+   */
+  fill = input(false, { transform: booleanAttribute });
 
   /** A swipe, arrow key or step button asking for the neighbour. The host changes `src`. */
   previous = output<void>();
@@ -182,6 +216,12 @@ export class UiImageViewer {
     return `translate(${o.x + this.swipe()}px, ${o.y}px) scale(${this.zoom()})`;
   });
 
+  /**
+   * In the tab order when the keyboard can do something there: step, pan, or (filling a page, where
+   * the viewer is the whole point of it) zoom.
+   */
+  protected readonly focusable = computed(() => this.navigable() || this.pannable() || (this.fill() && !this.isVideo()));
+
   /** There is only something to drag once the image is bigger than the stage. */
   protected readonly pannable = computed(() => !this.isVideo() && this.zoom() > 1);
 
@@ -213,12 +253,10 @@ export class UiImageViewer {
     const stage = this.stage()?.nativeElement;
     const img = this.img()?.nativeElement;
     if (!stage || !img) return o;
-    return clampOffset(
-      o,
-      { width: img.clientWidth, height: img.clientHeight },
-      { width: stage.clientWidth, height: stage.clientHeight },
-      this.zoom(),
-    );
+    const box = { width: stage.clientWidth, height: stage.clientHeight };
+    // The element fills the stage; what is drawn is the picture fitted into it (object-fit: contain),
+    // and that is what must stay reachable, not the letterbox around it.
+    return clampOffset(o, fitContain({ width: img.naturalWidth, height: img.naturalHeight }, box), box, this.zoom());
   }
 
   protected onWheel(e: WheelEvent): void {
@@ -240,6 +278,15 @@ export class UiImageViewer {
   }
 
   protected onKey(e: KeyboardEvent): void {
+    // + / - / 0 zoom and reset, as in the Flutter viewer and most image apps.
+    if (!this.isVideo() && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const zoomKey: Record<string, () => void> = { '+': () => this.zoomBy(0.25), '=': () => this.zoomBy(0.25), '-': () => this.zoomBy(-0.25), '0': () => this.reset() };
+      if (zoomKey[e.key]) {
+        zoomKey[e.key]();
+        e.preventDefault();
+        return;
+      }
+    }
     // Zoomed in, the arrows pan — the keyboard's version of dragging the picture around.
     const pan: Record<string, [number, number]> = { ArrowLeft: [1, 0], ArrowRight: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
     if (this.pannable() && pan[e.key]) {

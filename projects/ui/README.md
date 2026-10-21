@@ -216,6 +216,34 @@ the title bar, the fixed header, the scrolling body, the fixed footer (left and 
 by `env(safe-area-inset-bottom)`). Leave the slots empty and both look exactly as before (the sidebar's
 `[sidebar]` content now scrolls in an inner `.sb-bd` instead of the aside itself).
 
+## A document as the whole page (`fill`, 0.41.1)
+
+`ui-image-viewer` and `ui-pdf-viewer` take `fill` for a page whose point is one document, such as a
+payment slip opened from a list. Give the parent a height:
+
+```html
+<main class="slip-page">            <!-- display: flex; flex-direction: column; height: 100dvh -->
+  <h1>Payment slip</h1>
+  @if (isPdf) {
+    <ui-pdf-viewer fill [src]="url" />
+  } @else {
+    <ui-image-viewer fill [src]="url" alt="Payment slip" />
+  }
+</main>
+```
+
+```css
+.slip-page > ui-image-viewer, .slip-page > ui-pdf-viewer { flex: 1; min-height: 0; }
+```
+
+The viewer takes all of that space with no frame; the photo or page is fitted into it (contain,
+centred; 100% means fitted), pinch, Ctrl+wheel and the buttons zoom, a zoomed photo pans, and the
+controls float over the bottom (glass panel surface, pill, above `env(safe-area-inset-bottom)`)
+instead of a bar of their own. In fill the image viewer is focusable (named by `alt`) and takes
+`+`/`-`/`0`; the PDF viewer adds a Fit button. Without `fill`, a viewer in a parent that gives no
+height is 60% of the screen (`--ui-image-viewer-min-height`, `--ui-pdf-viewer-min-height`), still
+within a parent that does give one, and the photo is fitted to its stage whatever its size.
+
 ## Compact tinted tiles (`ui-feature-card`, 0.38)
 
 Two shortcut tiles under a chat bar, together exactly its width and equal in height:
@@ -408,14 +436,14 @@ Still English only (0.34.0), to move to `UiStrings` next:
 | --- | --- |
 | canvas viewport, transform box | Zoom in, Zoom out, Fit to view (and their tooltips), Rotate |
 | command palette | Command palette |
-| file viewer: audio, video, image viewer, lightbox, explorer | Seek, Volume, Playback speed, Fullscreen, Play, Previous/Next (image), Zoom in/out, Reset view, Close, Everything in this set, Path |
+| file viewer: audio, video, image viewer, lightbox, explorer | Seek, Volume, Playback speed, Fullscreen, Play, Previous/Next (image), Zoom in/out, Reset view, Image controls, Clip controls, Image, Close, Everything in this set, Path |
 | color picker | Pick color, Hex color |
 | OTP input | One-time code |
 | intro loader | Loading… |
 | splitter | Resize panes |
 | carousel, gallery | Previous/Next slide, Previous, Next, Close, Image viewer |
 | anchor nav, breadcrumbs | On this page, Breadcrumb |
-| PDF viewer | Previous/Next page, Zoom in/out |
+| PDF viewer | Previous/Next page, Zoom in/out, Fit page, Page controls, Page N of M |
 | sequencer | Playhead, Drag to reorder |
 | table | Actions, Select all rows, Select row N |
 | window | Close |

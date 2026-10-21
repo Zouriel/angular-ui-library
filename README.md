@@ -49,6 +49,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Image and PDF viewers can fill the page** (0.41.1): `ui-image-viewer` and `ui-pdf-viewer` take
+  `fill`: all the space the parent gives, no frame, the photo or page fitted (contain, centred) and
+  the zoom controls floating over the bottom, safe-area aware, instead of a bar of their own. Without
+  `fill` a viewer in a parent with no height is now 60% of the screen rather than a short box, and a
+  photo is fitted to its stage whatever its size. The PDF viewer also zooms with Ctrl+wheel and a
+  two-finger pinch; the image viewer takes `+`/`-`/`0` when focused.
 - **Fixed header and footer in drawers and sidebars** (0.41.0): `ui-drawer` gains `[drawer-header]`
   and `[drawer-footer]`, and `ui-sidebar-layout` gains `[sidebar-header]` and `[sidebar-footer]`.
   They stay put (docked and in the drawer, the footer at the bottom of the viewport with `fill`,

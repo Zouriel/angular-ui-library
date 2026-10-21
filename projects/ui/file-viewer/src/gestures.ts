@@ -34,3 +34,16 @@ export function clampOffset(
     y: Math.min(maxY, Math.max(-maxY, offset.y)),
   };
 }
+
+/**
+ * The size `content` is drawn at when fitted (contain) into `stage`: the whole picture, as large as
+ * it fits. An unknown content size (an image still loading) counts as filling the stage.
+ */
+export function fitContain(
+  content: { width: number; height: number },
+  stage: { width: number; height: number },
+): { width: number; height: number } {
+  if (!content.width || !content.height || !stage.width || !stage.height) return { ...stage };
+  const s = Math.min(stage.width / content.width, stage.height / content.height);
+  return { width: content.width * s, height: content.height * s };
+}
