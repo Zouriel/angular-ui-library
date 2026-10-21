@@ -378,6 +378,34 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
+## Map controls, a fit that holds, labels off the edge (`ui-map`, 0.42.1)
+
+```html
+<ui-map #map fill [insets]="{ top: cardCover(), bottom: sheetCover() }" locateControl (locate)="findMe()"
+  [controls]="[{ id: 'fit', icon: CenterFocusIcon, label: 'Show both', tooltip: 'Show both' }]"
+  (controlPress)="map.fitPoints([me(), patient])" />
+```
+
+- A fit owns the camera: when `insets` change while `fitPoints` animates or after it (a sheet growing
+  as the route appears), the fit is worked out again for the new insets instead of panning by the
+  inset difference, so the points stay inside the visible part. While Leaflet is mid-zoom (it drops
+  a `setView` then) the new fit runs once it lands. The fit lets go when anything else moves the map:
+  a drag, the wheel, a double click, a pinch, the arrow or +/- keys, the zoom buttons, `flyTo` or a
+  new `center` / `zoom`; after that inset changes pan as before.
+- `controls: UiMapControl[]` (`{ id, icon, label, tooltip?, disabled? }`, the icon a hugeicons object
+  imported one file per icon): round buttons with the locate button's surface, border and
+  `--ui-shadow-2`, 38px (44px with a 48px hit area on touch), stacked 8px apart above the locate
+  button at the bottom-end of the visible part (in its place without one), following the insets and
+  at the bottom-left in RTL; the tooltip faces into the map. `(controlPress)` emits the pressed control
+  (never while `disabled`). There is no built-in "Show all" control: `fitPoints` in the handler is one
+  line, and the app knows which points (and which words) it means.
+- Marker labels sit 12px from the point at the inline end of the dot (right; left in RTL) and flip to
+  the other side when they would run off the map there (8px to spare), re-checked as the map moves;
+  `uiMapLabelSide(x, labelWidth, mapWidth, rtl)` is the rule, and the marker gets `data-side`.
+
+The Flutter twin: `UiMap(controls: [UiMapControl(id:, icon:, semanticLabel:, onPressed:, tooltip:)])`
+and `uiMapLabelSide(x, labelWidth, mapWidth, rtl:)`.
+
 ## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
 
 ```html

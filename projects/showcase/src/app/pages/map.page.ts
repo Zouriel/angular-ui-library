@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import type { UiGlassStrength } from '@zouriel/ui';
-import { UiMap, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, type UiLatLng, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import CenterFocusIcon from '@hugeicons/core-free-icons/CenterFocusIcon';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiBottomSheet } from '@zouriel/ui/dialog';
@@ -39,10 +40,18 @@ interface UiMapFitOptions {
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number }; // px, default 24
   maxZoom?: number;  // default 17, and the zoom for a single point
   animate?: boolean; // default true; never under reduced motion
+}
+interface UiMapControl {  // 0.42.1: your own round button, in the locate button's stack
+  id: string;
+  icon: IconSvgObject;     // a hugeicons icon, one file per icon
+  label: string;           // its accessible name
+  tooltip?: string;
+  disabled?: boolean;
 }`;
 
 const ROUTE_CODE = `<ui-map #map fill [insets]="{ top: cardCover(), bottom: sheetCover() }" [userLocation]="me()"
-  [markers]="[patient]" [routes]="route() ? [{ id: 'to-patient', points: route()!.points, label: 'Route, ' + route()!.km + ' km' }] : []" />
+  [markers]="[patient]" [routes]="route() ? [{ id: 'to-patient', points: route()!.points, label: 'Route, ' + route()!.km + ' km' }] : []"
+  [controls]="[{ id: 'fit', icon: CenterFocusIcon, label: 'Show both', tooltip: 'Show both' }]" (controlPress)="map.fitPoints([me(), patient])" />
 
 // The moment she accepts: fetch the road route (OSRM GeoJSON is [lng, lat]: swap it) and show it all.
 const r = await api.route(job.id, me);
@@ -146,10 +155,11 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
       </doc-section>
 
       <doc-section name="Routes" anchor="routes" selector="ui-map [routes] · fitPoints()" [api]="routeApi"
-        summary="routes draws lines along the road, from OSRM say: each one a line in its tone over a casing, round-capped, 5px over 9px close in and thinner zoomed out. They sit above the tiles and below the pulse, the you-are-here dot, the markers and the pin, so the dots stay on top. A new list redraws the lines on the same map, and an empty one removes them. Each tone is a theme token (--ui-map-route-primary, -muted, -success, -warning, -danger over --ui-map-route-casing) checked at 3:1 against MapTiler's streets-v2 and dataviz tiles in the theme's own brightness. label is the route's one name for screen readers, such as Route, 1.3 km. fitPoints shows every point you give it (the nurse, the patient, the route) inside the part of the map the insets leave visible, with 24px to spare, at a whole zoom no closer than 17; one point is centred there at 17. It animates unless reduced motion. This map uses the tile URLs pasted under Styled tiles, to see a route over your own style. Marker labels now size to their text, up to 320px or the map's width less 32px, and wrap to a second line before the ellipsis; the zoom buttons share the locate button's raised surface and shadow.">
+        summary="routes draws lines along the road, from OSRM say: each one a line in its tone over a casing, round-capped, 5px over 9px close in and thinner zoomed out. They sit above the tiles and below the pulse, the you-are-here dot, the markers and the pin, so the dots stay on top. A new list redraws the lines on the same map, and an empty one removes them. Each tone is a theme token (--ui-map-route-primary, -muted, -success, -warning, -danger over --ui-map-route-casing) checked at 3:1 against MapTiler's streets-v2 and dataviz tiles in the theme's own brightness. label is the route's one name for screen readers, such as Route, 1.3 km. fitPoints shows every point you give it (the nurse, the patient, the route) inside the part of the map the insets leave visible, with 24px to spare, at a whole zoom no closer than 17; one point is centred there at 17. It animates unless reduced motion. This map uses the tile URLs pasted under Styled tiles, to see a route over your own style. Marker labels now size to their text, up to 320px or the map's width less 32px, and wrap to a second line before the ellipsis; the zoom buttons share the locate button's raised surface and shadow. Near the map's edge a label flips to the other side of its dot rather than run off (0.42.1; in RTL it starts on the left). A fit owns the camera (0.42.1): if the insets change while it animates or after it, say a sheet grows as the route appears, the fit is worked out again for the new insets, until the person or the app moves the map. controls (0.42.1) adds your own round buttons in the locate button's stack and style, above it at the bottom-end of the visible part, and (controlPress) says which was pressed; the one here, Show the whole route, calls fitPoints.">
         <doc-demo lang="ts + html" [code]="ROUTE_CODE">
           <div class="map-wrap">
             <ui-map #routeMap [center]="center()" [zoom]="15" [routes]="routes()" [markers]="routeMarkers" [userLocation]="routeStart" locateControl ariaLabel="The way to the patient"
+              [controls]="routeControls" (controlPress)="routeMap.fitPoints(routePoints)"
               [tileUrl]="tileLight || osm" [tileUrlDark]="tileDark || null" [attribution]="tileLight ? 'Tiles from your URL &copy; OpenStreetMap contributors' : osmAttribution" />
           </div>
           <div class="route-acts">
@@ -177,6 +187,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         <div class="map-page" [attr.dir]="d">
           <ui-map #page fill [center]="home" [zoom]="15" [markers]="markers" [pin]="home" [pinDraggable]="false" pinLabel="Your home"
             [pulse]="pulse()" [insets]="insets()" [userLocation]="me()" locateControl [locating]="locating()" [locateOff]="locOff() === 'off'"
+            [controls]="pageControls" (controlPress)="page.fitPoints(allNurses)"
             (locate)="findMe(page)" ariaLabel="Nurses near your home" />
           <ui-floating-panel placement="top" ariaLabel="Status" [glass]="surface() !== 'solid'" [glassStrength]="strength()" (coverChange)="cardCover.set($event)">
             <div class="status">
@@ -241,6 +252,8 @@ export class MapPage {
   protected readonly toneOptions = (['primary', 'muted', 'success', 'warning', 'danger'] as const).map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) }));
   protected readonly showRoute = signal(true);
   protected readonly routes = computed<UiMapRoute[]>(() => (this.showRoute() ? [{ id: 'to-patient', points: this.routePoints, tone: this.tone(), label: 'Route, 1.3 km' }] : []));
+  protected readonly routeControls: UiMapControl[] = [{ id: 'fit', icon: CenterFocusIcon, label: 'Show the whole route', tooltip: 'Show the whole route' }];
+  protected readonly pageControls: UiMapControl[] = [{ id: 'fit', icon: CenterFocusIcon, label: 'Show all the nurses', tooltip: 'Show all the nurses' }];
   protected readonly routeApi: ApiRow[] = [
     { name: 'routes', type: 'UiMapRoute[]', default: '[]', desc: 'Lines along the road: id, points ([lat, lng] or { lat, lng }), tone, label. Under the pulse, dot, markers and pin; updated in place; [] removes them.' },
     { name: 'UiMapRoute.tone', type: 'UiMapRouteTone', default: "'primary'", desc: "'primary' | 'muted' | 'success' | 'warning' | 'danger': the --ui-map-route-<tone> token over --ui-map-route-casing." },
@@ -250,6 +263,10 @@ export class MapPage {
     { name: 'uiMapRouteWidth(zoom)', type: 'function', default: '—', desc: 'The line and casing widths at a zoom: 5 over 9px from zoom 14, down to 60% at zoom 10.' },
     { name: '--ui-map-route-casing / -primary / -muted / -success / -warning / -danger', type: 'CSS colour', default: 'theme', desc: 'The route colours, 3:1 against streets-v2 and dataviz tiles in every theme; override per theme.' },
     { name: '--ui-map-label-max', type: 'CSS length', default: 'min(320px, map width - 32px)', desc: 'The widest a marker label gets (set by the map); labels wrap to two lines before the ellipsis.' },
+    { name: 'controls', type: 'UiMapControl[]', default: '[]', desc: 'Your own round buttons (0.42.1), above the locate button at the bottom-end of the visible part (in its place without one), 8px apart, following the insets; the bottom-left in RTL.' },
+    { name: '(controlPress)', type: 'UiMapControl', default: '—', desc: 'One of controls was pressed (never while disabled).' },
+    { name: 'UiMapControl', type: '{ id, icon, label, tooltip?, disabled? }', default: '—', desc: 'A stable id, a hugeicons icon, its accessible name, an optional tooltip; disabled shows it but it can\'t be pressed.' },
+    { name: 'uiMapLabelSide(x, labelWidth, mapWidth, rtl?)', type: 'function', default: '—', desc: "Which side of its dot a label goes (0.42.1): the inline end unless it would run off the map there (8px to spare), then the other side, else the roomier one. Sets the marker's data-side." },
   ];
   protected readonly osm = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   protected readonly osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -305,6 +322,8 @@ export class MapPage {
     { id: 'n2', lat: 4.1738, lng: 73.5072, label: 'Ibrahim Rasheed, RN' },
     { id: 'n3', lat: 4.1781, lng: 73.5068, label: 'Busy', tone: 'warning' },
   ];
+  /** The map page's Show all control: home and every nurse. */
+  protected readonly allNurses: UiLatLng[] = [this.home, ...this.markers];
   protected readonly api: ApiRow[] = [
     { name: 'center', type: 'UiLatLng', default: 'Malé', desc: 'Where the map is centred; changing it moves the map.' },
     { name: 'zoom', type: 'number', default: '13', desc: 'Zoom level (0–19).' },

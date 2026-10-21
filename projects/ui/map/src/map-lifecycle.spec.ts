@@ -10,11 +10,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 let release!: () => void;
 const gate = new Promise<void>((r) => (release = r));
 const created = vi.fn();
-const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, getElement: () => null, options: {} });
+const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, eachLayer: () => {}, getElement: () => null, options: {} });
 const fakeLeaflet = {
   map: (...a: unknown[]) => {
     created(...a);
-    return { ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) };
+    return { ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, getSize: () => ({ x: 0, y: 0 }), invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) };
   },
   control: { zoom: () => chain(), attribution: () => chain() },
   layerGroup: () => chain(),

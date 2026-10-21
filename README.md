@@ -49,6 +49,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Map controls, a fit that holds, labels off the edge** (0.42.1): a `fitPoints` fit owns the camera,
+  so when `insets` change while it animates or after it (a sheet growing as the route appears) it is
+  worked out again for the new insets, until the person or the app moves the map. `ui-map` gains
+  `controls` (the app's own round buttons in the locate button's stack and style, `(controlPress)`),
+  and marker labels flip to the other side of their dot near the map's edge (mirrored in RTL).
 - **Map routes and fit to points** (0.42.0): `ui-map` gains `routes` (lines along the road in a tone
   over a casing, under the dots, markers and pin; `--ui-map-route-*` tokens, 3:1 against MapTiler
   streets-v2 and dataviz tiles in every theme) and `fitPoints(points, { padding, maxZoom, animate })`

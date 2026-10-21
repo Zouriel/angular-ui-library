@@ -3,7 +3,7 @@ import {
   Component, DestroyRef, booleanAttribute, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
-import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
 import { injectUiStrings, uiWatchTheme, type UiStatus } from '@zouriel/ui';
@@ -121,6 +121,50 @@ export interface UiMapFitOptions {
   maxZoom?: number;
   /** Animate the move (never under reduced motion); true by default. */
   animate?: boolean;
+}
+
+/**
+ * An app's own button on the map (0.42.1, Flutter `UiMapControl`), drawn in the same stack and style
+ * as the "Show my location" button: round, raised, at the bottom-end of the visible part, above the
+ * locate button; 48px targets on touch. Pressing it emits `(controlPress)` with the control.
+ * For "Show both": `{ id: 'fit', icon: CenterFocusIcon, label: 'Show both' }` and
+ * `(controlPress)="map.fitPoints([me, patient])"`.
+ */
+export interface UiMapControl {
+  /** Identifies the control (tracked by it: keep it stable). */
+  id: string;
+  /** A hugeicons icon, imported one file per icon. */
+  icon: IconSvgObject;
+  /** Its accessible name, read out for the icon. */
+  label: string;
+  /** Shown beside it on hover and focus; none by default. */
+  tooltip?: string;
+  /** Shown but not pressable. */
+  disabled?: boolean;
+}
+
+/** Which side of its dot a marker label sits on, on screen. */
+export type UiMapLabelSide = 'left' | 'right';
+
+/** The gap from a marker's point to its label (the dot's 8px radius and 4px). */
+export const UI_MAP_LABEL_GAP = 12;
+/** The room a marker label keeps from the map's edge. */
+export const UI_MAP_LABEL_EDGE = 8;
+
+/**
+ * Which side of its dot a `labelWidth` px label goes for a marker `x` px from the map's left edge on
+ * a `mapWidth` map (0.42.1, Flutter `uiMapLabelSide`): the inline end (the right, the left in RTL)
+ * unless it would run past the map's edge there (keeping 8px); then the other side; when neither
+ * fits, the side with more room.
+ */
+export function uiMapLabelSide(x: number, labelWidth: number, mapWidth: number, rtl = false): UiMapLabelSide {
+  const fits = (side: UiMapLabelSide) =>
+    side === 'right' ? x + UI_MAP_LABEL_GAP + labelWidth <= mapWidth - UI_MAP_LABEL_EDGE : x - UI_MAP_LABEL_GAP - labelWidth >= UI_MAP_LABEL_EDGE;
+  const first: UiMapLabelSide = rtl ? 'left' : 'right';
+  const other: UiMapLabelSide = rtl ? 'right' : 'left';
+  if (fits(first)) return first;
+  if (fits(other)) return other;
+  return mapWidth - x >= x ? 'right' : 'left';
 }
 
 /** The closest `fitPoints` zooms by default, and the zoom it shows a single point at. */
@@ -269,7 +313,15 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *   `label` is its one name for screen readers ("Route, 1.2 km").
  * - `fitPoints(points, { padding, maxZoom, animate })` (0.42.0): shows every point (the nurse and the
  *   patient, a route) inside the visible part (between the insets) plus padding, at a whole zoom up
- *   to maxZoom (17); one point is centred there at maxZoom. Animated unless reduced motion.
+ *   to maxZoom (17); one point is centred there at maxZoom. Animated unless reduced motion. The fit
+ *   then owns the camera (0.42.1): when the insets change while it animates or after it (a sheet
+ *   growing as the route appears), it is worked out again for the new insets, until the person or
+ *   the app moves the map (a drag, wheel, keys, the zoom buttons, `flyTo`, a new `center`).
+ * - Marker labels sit at the inline end of the dot (right; left in RTL) and flip to the other side
+ *   when they would run off the map there (0.42.1, `uiMapLabelSide`).
+ * - `controls` (0.42.1): the app's own round buttons (`UiMapControl`) in the locate button's stack
+ *   and style, above it at the bottom-end of the visible part, following the insets; pressing one
+ *   emits `(controlPress)`.
  *
  * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
@@ -290,6 +342,16 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
           <hugeicons-icon [icon]="locateOff() ? icons.off : icons.locate" [size]="20" [strokeWidth]="1.8" aria-hidden="true" />
         }
       </button>
+    }
+    @if (controls().length) {
+      <div class="ui-map-controls" [attr.data-locate]="locateControl() || null">
+        @for (c of controls(); track c.id) {
+          <button type="button" class="ui-map-control" [attr.data-control]="c.id" [attr.aria-label]="c.label" [disabled]="!!c.disabled"
+            [uiTooltip]="c.tooltip ?? ''" [uiTooltipPosition]="tooltipSide()" (click)="onControl(c)">
+            <hugeicons-icon [icon]="c.icon" [size]="20" [strokeWidth]="1.8" aria-hidden="true" />
+          </button>
+        }
+      </div>
     }`,
   styleUrls: ['./leaflet.css', './map.css'],
 })
@@ -333,16 +395,22 @@ export class UiMap {
   userLocation = input<UiMapUserLocation | null>(null);
   /** Route lines (0.42.0), drawn under the dot, markers and pin; an empty list removes them. */
   routes = input<readonly UiMapRoute[]>([]);
+  /** The app's own buttons (0.42.1), above the locate button at the bottom-end of the visible part. */
+  controls = input<readonly UiMapControl[]>([]);
 
   readonly markerSelected = output<UiMapMarker>();
   readonly centerChanged = output<UiMapView>();
   /** The "Show my location" button was pressed (not while `locating`). */
   readonly locate = output<void>();
+  /** One of `controls` was pressed (not while disabled). */
+  readonly controlPress = output<UiMapControl>();
 
   protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon };
 
   /** The map is on a dark theme: tiles dimmed, or the dark tiles shown. */
   protected readonly dark = signal(false);
+  /** The controls' tooltips face into the map: left of them, right in RTL (set once laid out). */
+  protected readonly tooltipSide = signal<'left' | 'right'>('left');
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly loadLeaflet = inject(UI_MAP_LEAFLET);
@@ -369,6 +437,13 @@ export class UiMap {
   private destroyed = false;
   /** Undoes what init set up (map, observers); set once the map exists. */
   private teardown: (() => void) | null = null;
+  /**
+   * The last `fitPoints`, while it owns the camera (0.42.1): an inset change works it out again for
+   * the new insets. Let go when anything else moves the map.
+   */
+  private fit: { points: readonly UiMapPoint[]; options: UiMapFitOptions } | null = null;
+  /** Insets changed while Leaflet was mid-zoom (it drops a setView then): fit again once it lands. */
+  private refitPending = false;
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -463,6 +538,7 @@ export class UiMap {
         const z = map.getZoom() + dir * (map.options.zoomDelta ?? 1) * (e?.shiftKey ? 3 : 1);
         if (z > map.getMaxZoom() || z < map.getMinZoom()) return;
         const mid = map.getSize().divideBy(2);
+        this.release();
         map.setZoomAround(L.point(mid.x + this.shift.x, mid.y + this.shift.y), z); // a Point: a container point
       };
       Object.assign(zoom, { _zoomIn: around(1), _zoomOut: around(-1) });
@@ -484,6 +560,24 @@ export class UiMap {
       routePane.style.pointerEvents = 'none';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
+      // The person moves the map (drag, wheel, double click, pinch, keys, box zoom): it is theirs now.
+      map.on('dragstart boxzoomend', () => this.release());
+      el.addEventListener('wheel', () => this.release(), { passive: true });
+      el.addEventListener('dblclick', () => this.release());
+      el.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1) this.release();
+      }, { passive: true });
+      el.addEventListener('keydown', (e) => {
+        if (e.target === el && /^(Arrow(Up|Down|Left|Right)|[-+=_])$/.test(e.key)) this.release();
+      });
+      // A fit asked for while Leaflet was mid-zoom runs once it has landed.
+      map.on('zoomend moveend', () => {
+        if (!this.refitPending) return;
+        this.refitPending = false;
+        this.applyFit();
+      });
+      // Labels pick their side from where the marker is on screen.
+      map.on('move zoomend resize', () => this.placeLabels());
       map.on('moveend', () => {
         const c = this.visibleCenter();
         this.view = { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
@@ -501,6 +595,7 @@ export class UiMap {
       const ro = new ResizeObserver(() => {
         map.invalidateSize({ animate: false });
         this.sizeLabels();
+        this.placeLabels();
       });
       ro.observe(el);
       this.sizeLabels();
@@ -521,8 +616,11 @@ export class UiMap {
         this.routeLayers.clear();
         this.tiles = null;
         this.tilesKey = '';
+        this.fit = null;
+        this.refitPending = false;
       };
     });
+    this.tooltipSide.set(rtl ? 'right' : 'left');
     // Laid out from no insets, so a non-zero first value centres the view in the visible part.
     this.shift = { x: 0, y: 0 };
     this.applyInsets(this.insets());
@@ -543,6 +641,7 @@ export class UiMap {
     const map = this.map;
     if (!map) return;
     const z = zoom ?? map.getZoom();
+    this.release();
     map.setView(this.mapCenterFor(c, z), z, { animate: !this.reduced() });
   }
 
@@ -551,10 +650,30 @@ export class UiMap {
    * default), at a whole zoom up to `maxZoom` (17); a single point is centred there at `maxZoom`.
    * Animated unless `animate` is false or reduced motion is on. For "show me and the patient": the
    * nurse's position, the patient's, and the route's points.
+   *
+   * The fit then owns the camera (0.42.1): when the insets change while it animates or after it (a
+   * sheet growing as the route appears), it is worked out again for the new insets, so the points
+   * stay inside the visible part. It lets go when anything else moves the map: a drag, the wheel,
+   * keys, the zoom buttons, `flyTo` or a new `center` / `zoom`.
    */
   fitPoints(points: readonly UiMapPoint[], options: UiMapFitOptions = {}): void {
+    if (!this.map || !points.length) return;
+    this.fit = { points: [...points], options: { ...options } };
+    this.refitPending = false;
+    this.applyFit();
+  }
+
+  /** Moves to the held fit for the current insets; while Leaflet is mid-zoom, once it lands. */
+  private applyFit(): void {
     const map = this.map;
-    if (!map || !points.length) return;
+    const f = this.fit;
+    if (!map || !f) return;
+    // Leaflet drops a setView during its zoom animation (_tryAnimatedZoom): ask again on zoomend.
+    if ((map as unknown as { _animatingZoom?: boolean })._animatingZoom) {
+      this.refitPending = true;
+      return;
+    }
+    const { points, options } = f;
     const pad = typeof options.padding === 'number' ? { top: options.padding, right: options.padding, bottom: options.padding, left: options.padding } : (options.padding ?? {});
     const d = UI_MAP_FIT_PADDING;
     const i = this.insets();
@@ -574,6 +693,16 @@ export class UiMap {
   protected onLocate(): void {
     if (this.locating()) return;
     this.locate.emit();
+  }
+
+  protected onControl(c: UiMapControl): void {
+    if (!c.disabled) this.controlPress.emit(c);
+  }
+
+  /** Something other than a fit moves the map: the fit lets go. */
+  private release(): void {
+    this.fit = null;
+    this.refitPending = false;
   }
 
   /** The point in the middle of the part of the map between the insets. */
@@ -601,6 +730,7 @@ export class UiMap {
     if (!map) return;
     const v = this.view;
     if (v && Math.abs(v.lat - c.lat) < 1e-7 && Math.abs(v.lng - c.lng) < 1e-7 && v.zoom === zoom) return;
+    this.release();
     map.setView(this.mapCenterFor(c, zoom), zoom, { animate: !this.reduced() });
   }
 
@@ -626,6 +756,11 @@ export class UiMap {
     this.shift = next;
     const map = this.map;
     if (!map || (old.x === next.x && old.y === next.y)) return;
+    // A fit owns the camera: work it out again for the new insets (not a pan at a stale zoom).
+    if (this.fit) {
+      this.applyFit();
+      return;
+    }
     if (!this.view) {
       // Not moved yet: centre the input centre in the new visible part.
       map.setView(this.mapCenterFor(this.center(), this.zoom()), this.zoom(), { animate: false });
@@ -781,6 +916,27 @@ export class UiMap {
       marker.on('click', () => this.zone.run(() => this.markerSelected.emit(m)));
       marker.addTo(markerLayer);
     }
+    this.placeLabels();
+  }
+
+  /**
+   * Puts each marker label on the side of its dot where it fits (`uiMapLabelSide`): the inline end,
+   * or the other side near the map's edge. Run as the map moves, zooms or resizes.
+   */
+  private placeLabels(): void {
+    const { map, markerLayer } = this;
+    if (!map || !markerLayer) return;
+    const width = map.getSize().x;
+    const rtl = this.rtl();
+    markerLayer.eachLayer((layer) => {
+      const marker = layer as Leaflet.Marker;
+      const el = marker.getElement?.();
+      const label = el?.querySelector<HTMLElement>('.ui-map-label');
+      if (!el || !label) return;
+      const x = map.latLngToContainerPoint(marker.getLatLng()).x;
+      const side = uiMapLabelSide(x, label.offsetWidth, width, rtl);
+      if (el.getAttribute('data-side') !== side) el.setAttribute('data-side', side);
+    });
   }
 
   private drawPin(p: UiLatLng | null): void {

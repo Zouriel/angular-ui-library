@@ -62,11 +62,14 @@
 .ui-map .ui-map-dot[data-tone="neutral"] { background: var(--ui-color-text-muted); }
 /* The label sizes to its text up to --ui-map-label-max (320px, or the map's width less 32px: set by
    the map), and wraps to a second line before it is cut with an ellipsis. One line is a pill; the
-   large radius clamps to half the height, so two lines are a soft rectangle. */
-.ui-map .ui-map-label { padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-lg); font-size: 12px; font-weight: 600; line-height: 16px;
+   large radius clamps to half the height, so two lines are a soft rectangle.
+   0.42.1: it hangs beside the dot, 12px from the point, on the side the map picks (data-side, from
+   uiMapLabelSide): the right, or the left when it would run off the map there (mirrored in RTL). */
+.ui-map .ui-map-label { position: absolute; top: 50%; transform: translateY(-50%); left: calc(100% + var(--ui-space-1)); padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-lg); font-size: 12px; font-weight: 600; line-height: 16px;
   background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1);
   box-sizing: border-box; width: max-content; max-width: var(--ui-map-label-max, 320px); white-space: normal; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.ui-map .ui-map-marker[data-side="left"] .ui-map-label { left: auto; right: calc(100% + var(--ui-space-1)); }
 
 /* The pin: a teardrop in the accent (or primary) colour, its tip on the point. */
 .ui-map .ui-map-pin { cursor: grab; }
@@ -123,6 +126,32 @@
   border: 2px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-map-spin 700ms linear infinite; }
 @keyframes ui-map-spin { to { transform: rotate(360deg); } }
 
+/* controls (0.42.1): the app's own round buttons, in the locate button's stack and style: above it
+   at the bottom-end of the visible part (in its place without one), 8px apart, following the insets. */
+.ui-map .ui-map-controls {
+  position: absolute; z-index: 1000; display: flex; flex-direction: column; gap: var(--ui-space-2);
+  bottom: calc(var(--ui-map-inset-bottom, 0px) + var(--ui-space-8));
+  inset-inline-end: calc(var(--ui-map-inset-end, 0px) + var(--ui-space-3));
+  transition: bottom var(--ui-motion-base) var(--ui-ease-standard);
+}
+.ui-map .ui-map-controls[data-locate] { bottom: calc(var(--ui-map-inset-bottom, 0px) + var(--ui-space-8) + var(--ui-size-lg) + var(--ui-space-2)); }
+.ui-map .ui-map-control {
+  position: relative; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  width: var(--ui-size-lg); height: var(--ui-size-lg); border-radius: 50%;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+  border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-2); cursor: pointer;
+  transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard);
+}
+.ui-map .ui-map-control:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
+.ui-map .ui-map-control:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
+.ui-map .ui-map-control:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.ui-map .ui-map-control:disabled { color: var(--ui-color-text-muted); cursor: not-allowed; }
+@media (pointer: coarse) {
+  .ui-map .ui-map-control { width: var(--ui-size-touch); height: var(--ui-size-touch); }
+  .ui-map .ui-map-control::before { content: ''; position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; transform: translate(-50%, -50%); }
+  .ui-map .ui-map-controls[data-locate] { bottom: calc(var(--ui-map-inset-bottom, 0px) + var(--ui-space-8) + var(--ui-size-touch) + var(--ui-space-2)); }
+}
+
 /* userLocation: the "you are here" dot (16px, a white ring) over a soft accuracy halo sized in metres. */
 .ui-map .ui-map-user { --ui-map-user-tone: var(--ui-color-location); }
 .ui-map .ui-map-user-dot { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%;
@@ -165,6 +194,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-map .ui-map-pulse-ring { animation: none; opacity: 0; }
   .ui-map .ui-map-pulse-ring:first-child { opacity: 1; transform: scale(0.6); }
-  .ui-map .leaflet-top, .ui-map .leaflet-bottom, .ui-map .ui-map-locate, .ui-map .ui-map-user-halo { transition: none; }
+  .ui-map .leaflet-top, .ui-map .leaflet-bottom, .ui-map .ui-map-locate, .ui-map .ui-map-user-halo, .ui-map .ui-map-controls, .ui-map .ui-map-control { transition: none; }
   .ui-map .ui-map-locate-spin { animation-duration: 1.4s; }
 }
