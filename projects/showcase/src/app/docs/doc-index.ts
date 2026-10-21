@@ -147,6 +147,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Pin', anchor: 'pin' },
     { name: 'Styled tiles', anchor: 'styled-tiles' },
     { name: 'My location', anchor: 'my-location' },
+    { name: 'Routes', anchor: 'routes' },
     { name: 'Map page', anchor: 'map-page' },
   ],
   'window': [

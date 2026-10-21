@@ -75,7 +75,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `menubar` | menubar (its own entry since 0.35.1: it needs the CDK overlay) |
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
-| `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
+| `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, route lines, fit-to-points, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button) and `UiGoogleAuthorization` (an access token for more scopes); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
@@ -346,6 +346,37 @@ The Flutter twin: `UiMap(fill: true, pulse: UiMapPulse(lat:, lng:, active:), vie
 EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChanged` and
 `UiBottomSheet.onCoverChanged`, and `glass: true` on both (solid under `MediaQuery.highContrast`, as
 Flutter has no reduce-transparency setting).
+
+## Routes and fit to points (`ui-map`, 0.42)
+
+```html
+<ui-map #map fill [insets]="{ top: cardCover(), bottom: sheetCover() }" [userLocation]="me()" [markers]="[patient]"
+  [routes]="[{ id: 'to-patient', points: route.points, tone: 'primary', label: 'Route, 1.2 km' }]" />
+```
+```ts
+// OSRM GeoJSON is [lng, lat]: swap it. Points are [lat, lng] or { lat, lng }.
+this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 });
+```
+
+- `routes: UiMapRoute[]` (`{ id, points, tone?: 'primary' | 'muted' | 'success' | 'warning' | 'danger', label? }`):
+  each a line in `--ui-map-route-<tone>` over `--ui-map-route-casing`, round caps and joins, 5px over
+  9px from zoom 14 in and down to 60% at zoom 10 (`uiMapRouteWidth`). In a pane above the tiles and
+  below the pulse, the dot, markers and pin; never hit. A new list moves, recolours or removes the
+  lines already drawn (the map is not rebuilt); `[]` removes them. `label` names the line for screen
+  readers (`role="img"`); without it the line is hidden. The tones default to the theme's primary,
+  text-muted and status colours; themes where those don't hold 3:1 against MapTiler's streets-v2 and
+  dataviz tiles (in the theme's own brightness) and the casing set their own (the style-contract spec
+  checks all 15 themes).
+- `fitPoints(points, { padding = 24, maxZoom = 17, animate = true })`: every point inside the part
+  between the insets less the padding (px, or `{ top, right, bottom, left }`), at a whole zoom up to
+  maxZoom; one point is centred there at maxZoom. Animated unless `animate: false` or reduced motion.
+  `uiMapFitView(points, size, area, maxZoom)` is the same sum, returning the map's centre and zoom.
+- Marker labels: sized to their text up to `--ui-map-label-max` (min(320px, the map's width less
+  32px), set by the map), two lines before the ellipsis. Zoom buttons: the locate button's surface,
+  border and `--ui-shadow-2`, 38px (44px with a 48px hit area on touch).
+
+The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
+and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
 ## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
 

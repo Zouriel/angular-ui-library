@@ -49,6 +49,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Map routes and fit to points** (0.42.0): `ui-map` gains `routes` (lines along the road in a tone
+  over a casing, under the dots, markers and pin; `--ui-map-route-*` tokens, 3:1 against MapTiler
+  streets-v2 and dataviz tiles in every theme) and `fitPoints(points, { padding, maxZoom, animate })`
+  (every point inside the part the insets leave visible, at a whole zoom up to 17). Marker labels size
+  to their text up to 320px (or the map less 32px) and wrap to two lines; the zoom buttons share the
+  locate button's raised surface and shadow.
 - **Clear glass; sheet cover follows the sheet** (0.41.3): `glassStrength` on `ui-bottom-sheet` and
   `ui-floating-panel`, `'clear'` by default: over a map in the theme's brightness the map plainly
   shows through (a 12% tint, a 3px blur, a per-theme squeeze only as far as AA over such a map needs,

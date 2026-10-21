@@ -71,6 +71,11 @@
   --ui-font-default: "Space Grotesk", system-ui, -apple-system, sans-serif;
   --ui-font-display: "Bricolage Grotesque", "Space Grotesk", system-ui, sans-serif;
   --ui-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: #aca5a2;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #f08996;
 }
 
 /* Selection tint in the darkOrange theme */

@@ -105,6 +105,10 @@
   /* Typography: Poppins throughout (400 body, 600 headings). */
   --ui-font-default: "Poppins", system-ui, -apple-system, sans-serif;
   --ui-font-display: "Poppins", system-ui, -apple-system, sans-serif;
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-success: #1d7657;
+  --ui-map-route-danger: #b83d3c;
 }
 
 [data-theme="maldives"] ::selection {
@@ -197,6 +201,10 @@
 
   --ui-font-default: "Poppins", system-ui, -apple-system, sans-serif;
   --ui-font-display: "Poppins", system-ui, -apple-system, sans-serif;
+
+  /* Map route tones: its own colours hold 3:1 here (see tokens.css); set to match maldives' token set. */
+  --ui-map-route-success: var(--ui-color-success);
+  --ui-map-route-danger: var(--ui-color-danger);
 }
 
 [data-theme="maldives-dark"] ::selection {

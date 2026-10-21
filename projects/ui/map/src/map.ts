@@ -86,6 +86,105 @@ export function uiMapUserHtml(halo: number): string {
   return `${halo ? `<span class="ui-map-user-halo" style="width:${halo}px;height:${halo}px;left:${-halo / 2}px;top:${-halo / 2}px"></span>` : ''}<span class="ui-map-user-dot"></span>`;
 }
 
+/** A point given as `{ lat, lng }` or as `[lat, lng]` (the order OSRM's GeoJSON is not: swap those). */
+export type UiMapPoint = UiLatLng | readonly [number, number];
+
+/** A route line's colour: the theme's `--ui-map-route-<tone>` token. */
+export type UiMapRouteTone = 'primary' | 'muted' | 'success' | 'warning' | 'danger';
+
+/**
+ * A route drawn on the map: a line in its tone over a casing, under the dots, markers and the pin.
+ * `label` is its one accessible name ("Route, 1.2 km"), from the app.
+ */
+export interface UiMapRoute {
+  id: string;
+  points: readonly UiMapPoint[];
+  /** The line's colour; 'primary' by default. */
+  tone?: UiMapRouteTone;
+  /** What screen readers hear for the route, e.g. "Route, 1.2 km"; without it the route is not read out. */
+  label?: string;
+}
+
+/** Px of room kept free on each (physical) side by `fitPoints`, on top of the insets. */
+export interface UiMapPadding {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}
+
+/** Options for `fitPoints`. */
+export interface UiMapFitOptions {
+  /** Room kept free inside the visible part, px per side or one number for all; 24 by default. */
+  padding?: number | UiMapPadding;
+  /** The closest it zooms in, and the zoom for a single point; 17 by default. */
+  maxZoom?: number;
+  /** Animate the move (never under reduced motion); true by default. */
+  animate?: boolean;
+}
+
+/** The closest `fitPoints` zooms by default, and the zoom it shows a single point at. */
+export const UI_MAP_FIT_MAX_ZOOM = 17;
+/** The room `fitPoints` leaves around the points by default, px per side. */
+export const UI_MAP_FIT_PADDING = 24;
+
+/** `[lat, lng]` or `{ lat, lng }` as `{ lat, lng }`. */
+export function uiMapPoint(p: UiMapPoint): UiLatLng {
+  return Array.isArray(p) ? { lat: (p as readonly [number, number])[0], lng: (p as readonly [number, number])[1] } : (p as UiLatLng);
+}
+
+/**
+ * The route line's width and its casing's, in px, at `zoom`: 5px over a 9px casing (2px each side)
+ * from zoom 14 in, thinning to 60% at zoom 10 and out, so a whole island's route doesn't swamp it.
+ */
+export function uiMapRouteWidth(zoom: number): { line: number; casing: number } {
+  const k = Math.min(1, Math.max(0.6, 0.6 + 0.1 * (zoom - 10)));
+  return { line: 5 * k, casing: 9 * k };
+}
+
+const MAX_LAT = 85.0511287798;
+const unitX = (lng: number) => (lng + 180) / 360;
+const unitY = (lat: number) => {
+  const s = Math.sin((Math.max(-MAX_LAT, Math.min(MAX_LAT, lat)) * Math.PI) / 180);
+  return 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+};
+const unitLat = (y: number) => (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
+
+/**
+ * Where a map of `size` px looks so every point fits inside the part left free by `area` (the
+ * insets plus padding, px per physical side): the map's own centre and a whole zoom level (Web
+ * Mercator, 256 px tiles at zoom 0), at most `maxZoom`. All the points in one place (or one point):
+ * `maxZoom`, the point in the middle of that part. Null without points.
+ */
+export function uiMapFitView(
+  points: readonly UiMapPoint[],
+  size: { width: number; height: number },
+  area: Required<UiMapPadding>,
+  maxZoom = UI_MAP_FIT_MAX_ZOOM,
+  minZoom = 1,
+): UiMapView | null {
+  if (!points.length) return null;
+  const ll = points.map(uiMapPoint);
+  const xs = ll.map((p) => unitX(p.lng));
+  const ys = ll.map((p) => unitY(p.lat));
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const w = Math.max(1, size.width - area.left - area.right);
+  const h = Math.max(1, size.height - area.top - area.bottom);
+  const dx = (x1 - x0) * 256;
+  const dy = (y1 - y0) * 256;
+  let zoom = maxZoom;
+  if (dx > 1e-12 || dy > 1e-12) {
+    const fit = Math.log2(Math.min(dx > 1e-12 ? w / dx : Infinity, dy > 1e-12 ? h / dy : Infinity));
+    zoom = Math.min(maxZoom, Math.floor(fit + 1e-9));
+  }
+  zoom = Math.max(minZoom, zoom);
+  const scale = 256 * 2 ** zoom;
+  // The middle of the points goes to the middle of the free part: the map's centre is that far off it.
+  const cx = (x0 + x1) / 2 - (area.left - area.right) / 2 / scale;
+  const cy = (y0 + y1) / 2 - (area.top - area.bottom) / 2 / scale;
+  return { lat: unitLat(cy), lng: cx * 360 - 180, zoom };
+}
+
 /** The tile URL a map shows: the dark one on a dark theme when it is given, else the light one. */
 export function uiMapTileUrl(tileUrl: string, tileUrlDark: string | null | undefined, dark: boolean): string {
   return dark && tileUrlDark ? tileUrlDark : tileUrl;
@@ -109,6 +208,8 @@ export function uiMapPulseHtml(still: boolean): string {
 const PULSE_PANE = 'uiMapPulse';
 /** The "you are here" dot's pane: above the pulse, below the markers and the pin. */
 const USER_PANE = 'uiMapUser';
+/** The routes' pane: above the tiles (200) and overlays (400), below the pulse (450), dot and markers. */
+const ROUTE_PANE = 'uiMapRoute';
 
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
 export const UI_MAP_OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -162,6 +263,13 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *   spinner (and presses do nothing), `locateOff` a struck-through icon with "Location is off".
  * - `userLocation`: the "you are here" dot with a white ring and a soft accuracy halo, sized in
  *   metres on the map; above the tiles and pulse, below the markers and the pin; named "Your location".
+ * - `routes` (0.42.0): lines along the road (from OSRM, say) in a tone over a casing, round caps and
+ *   joins, 5px over 9px (thinner when zoomed out), above the tiles and below the pulse, dot, markers
+ *   and pin. Changing the list redraws only the lines; an empty list removes them. Each route's
+ *   `label` is its one name for screen readers ("Route, 1.2 km").
+ * - `fitPoints(points, { padding, maxZoom, animate })` (0.42.0): shows every point (the nurse and the
+ *   patient, a route) inside the visible part (between the insets) plus padding, at a whole zoom up
+ *   to maxZoom (17); one point is centred there at maxZoom. Animated unless reduced motion.
  *
  * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
@@ -223,6 +331,8 @@ export class UiMap {
   locateOff = input(false, { transform: booleanAttribute });
   /** The "you are here" dot, with an accuracy halo; null for none. */
   userLocation = input<UiMapUserLocation | null>(null);
+  /** Route lines (0.42.0), drawn under the dot, markers and pin; an empty list removes them. */
+  routes = input<readonly UiMapRoute[]>([]);
 
   readonly markerSelected = output<UiMapMarker>();
   readonly centerChanged = output<UiMapView>();
@@ -245,6 +355,8 @@ export class UiMap {
   private tiles: Leaflet.TileLayer | null = null;
   private pulseMarker: Leaflet.Marker | null = null;
   private userMarker: Leaflet.Marker | null = null;
+  /** Each route's casing and line, by id, so an update moves them instead of rebuilding them. */
+  private routeLayers = new Map<string, { casing: Leaflet.Polyline; line: Leaflet.Polyline }>();
   /** What the tile layer was built with (all but the URL, which it can swap in place). */
   private tilesKey = '';
   /** What the pulse marker was built for: rebuilt when its tone or the motion setting changes. */
@@ -309,6 +421,10 @@ export class UiMap {
       const u = this.userLocation();
       untracked(() => this.drawUser(u));
     });
+    effect(() => {
+      const r = this.routes();
+      untracked(() => this.drawRoutes(r));
+    });
   }
 
   private reduced(): boolean {
@@ -363,6 +479,9 @@ export class UiMap {
       const userPane = map.createPane(USER_PANE);
       userPane.style.zIndex = '500';
       userPane.style.pointerEvents = 'none';
+      const routePane = map.createPane(ROUTE_PANE);
+      routePane.style.zIndex = '420';
+      routePane.style.pointerEvents = 'none';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       map.on('moveend', () => {
@@ -379,10 +498,17 @@ export class UiMap {
         const c = this.visibleCenter();
         this.zone.run(() => this.pin.set({ lat: c.lat, lng: c.lng }));
       });
-      const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+      const ro = new ResizeObserver(() => {
+        map.invalidateSize({ animate: false });
+        this.sizeLabels();
+      });
       ro.observe(el);
-      // The accuracy halo is sized in metres: redraw it for the new zoom.
-      map.on('zoomend', () => this.drawUser(this.userLocation()));
+      this.sizeLabels();
+      // The accuracy halo is sized in metres, the route lines thin out: redraw them for the new zoom.
+      map.on('zoomend', () => {
+        this.drawUser(this.userLocation());
+        this.styleRoutes();
+      });
       this.teardown = () => {
         ro.disconnect();
         map.remove();
@@ -392,6 +518,7 @@ export class UiMap {
         this.pulseMarker = null;
         this.pulseKey = '';
         this.userMarker = null;
+        this.routeLayers.clear();
         this.tiles = null;
         this.tilesKey = '';
       };
@@ -404,6 +531,7 @@ export class UiMap {
     this.drawPin(this.pin());
     this.drawPulse(this.pulse());
     this.drawUser(this.userLocation());
+    this.drawRoutes(this.routes());
   }
 
   /**
@@ -416,6 +544,31 @@ export class UiMap {
     if (!map) return;
     const z = zoom ?? map.getZoom();
     map.setView(this.mapCenterFor(c, z), z, { animate: !this.reduced() });
+  }
+
+  /**
+   * Shows every point inside the visible part (between the insets) with `padding` px to spare (24 by
+   * default), at a whole zoom up to `maxZoom` (17); a single point is centred there at `maxZoom`.
+   * Animated unless `animate` is false or reduced motion is on. For "show me and the patient": the
+   * nurse's position, the patient's, and the route's points.
+   */
+  fitPoints(points: readonly UiMapPoint[], options: UiMapFitOptions = {}): void {
+    const map = this.map;
+    if (!map || !points.length) return;
+    const pad = typeof options.padding === 'number' ? { top: options.padding, right: options.padding, bottom: options.padding, left: options.padding } : (options.padding ?? {});
+    const d = UI_MAP_FIT_PADDING;
+    const i = this.insets();
+    const rtl = this.rtl();
+    const area = {
+      top: (i.top ?? 0) + (pad.top ?? d),
+      bottom: (i.bottom ?? 0) + (pad.bottom ?? d),
+      left: (rtl ? (i.end ?? 0) : (i.start ?? 0)) + (pad.left ?? d),
+      right: (rtl ? (i.start ?? 0) : (i.end ?? 0)) + (pad.right ?? d),
+    };
+    const s = map.getSize();
+    const v = uiMapFitView(points, { width: s.x, height: s.y }, area, Math.min(options.maxZoom ?? UI_MAP_FIT_MAX_ZOOM, map.getMaxZoom()), Math.max(1, map.getMinZoom()));
+    if (!v) return;
+    map.setView([v.lat, v.lng], v.zoom, { animate: options.animate !== false && !this.reduced() });
   }
 
   protected onLocate(): void {
@@ -548,6 +701,69 @@ export class UiMap {
     const el = marker.getElement();
     el?.setAttribute('role', 'img');
     el?.setAttribute('aria-label', this.strings.mapYourLocation);
+  }
+
+  /** The widest a marker label gets: 320px, or the map's width less 32px when that is narrower. */
+  private sizeLabels(): void {
+    const canvas = this.host.nativeElement.querySelector('.ui-map-canvas') as HTMLElement | null;
+    const w = canvas?.clientWidth ?? 0;
+    // Not laid out yet: the stylesheet's 320px stands.
+    if (w > 0) this.host.nativeElement.style.setProperty('--ui-map-label-max', `${Math.max(80, Math.min(320, w - 32))}px`);
+  }
+
+  /** Draws `list`: moves, recolours or relabels the routes already drawn, adds new ones, removes the rest. */
+  private drawRoutes(list: readonly UiMapRoute[]): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    const seen = new Set<string>();
+    for (const r of list) {
+      const pts = r.points.map(uiMapPoint).map((p) => [p.lat, p.lng] as [number, number]);
+      if (pts.length < 2 || seen.has(r.id)) continue;
+      seen.add(r.id);
+      let layers = this.routeLayers.get(r.id);
+      if (!layers) {
+        const { line: lw, casing: cw } = uiMapRouteWidth(map.getZoom());
+        const opts = { pane: ROUTE_PANE, interactive: false, lineCap: 'round', lineJoin: 'round', smoothFactor: 1 } as const;
+        layers = {
+          casing: L.polyline(pts, { ...opts, weight: cw, className: 'ui-map-route-casing' }).addTo(map),
+          line: L.polyline(pts, { ...opts, weight: lw, className: 'ui-map-route-line' }).addTo(map),
+        };
+        this.routeLayers.set(r.id, layers);
+        layers.casing.getElement()?.setAttribute('aria-hidden', 'true');
+      } else {
+        layers.casing.setLatLngs(pts);
+        layers.line.setLatLngs(pts);
+      }
+      const el = layers.line.getElement();
+      el?.setAttribute('data-tone', r.tone ?? 'primary');
+      el?.setAttribute('data-route', r.id);
+      if (r.label) {
+        el?.setAttribute('role', 'img');
+        el?.setAttribute('aria-label', r.label);
+        el?.removeAttribute('aria-hidden');
+      } else {
+        el?.removeAttribute('role');
+        el?.removeAttribute('aria-label');
+        el?.setAttribute('aria-hidden', 'true');
+      }
+    }
+    for (const [id, layers] of this.routeLayers) {
+      if (seen.has(id)) continue;
+      layers.casing.remove();
+      layers.line.remove();
+      this.routeLayers.delete(id);
+    }
+  }
+
+  /** The route widths for the current zoom. */
+  private styleRoutes(): void {
+    const map = this.map;
+    if (!map || !this.routeLayers.size) return;
+    const { line, casing } = uiMapRouteWidth(map.getZoom());
+    for (const r of this.routeLayers.values()) {
+      r.casing.setStyle({ weight: casing });
+      r.line.setStyle({ weight: line });
+    }
   }
 
   private drawMarkers(list: UiMapMarker[]): void {

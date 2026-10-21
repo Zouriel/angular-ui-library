@@ -17,10 +17,12 @@
 
 .ui-map .leaflet-bar { display: flex; flex-direction: column; gap: var(--ui-space-1); border: 0; box-shadow: none; }
 /* Separate buttons, a little apart, each with its own border and shadow. */
+/* The same surface, border and lift as the locate button (0.42.0: they were 32px with a faint
+   shadow and read as washed out over a light street map), so every control stands off the tiles. */
 .ui-map .leaflet-bar a, .ui-map .leaflet-bar a:first-child, .ui-map .leaflet-bar a:last-child {
-  width: var(--ui-size-md); height: var(--ui-size-md); line-height: var(--ui-size-md);
+  box-sizing: border-box; width: var(--ui-size-lg); height: var(--ui-size-lg); line-height: calc(var(--ui-size-lg) - 2px);
   background: var(--ui-color-surface-raised); color: var(--ui-color-text);
-  border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-1);
+  border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
 }
 .ui-map .leaflet-bar a:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
 .ui-map .leaflet-bar a:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
@@ -30,7 +32,7 @@
    centred on it; with the 4px gap the two hit areas never overlap. */
 @media (pointer: coarse) {
   .ui-map .leaflet-bar a, .ui-map .leaflet-bar a:first-child, .ui-map .leaflet-bar a:last-child {
-    position: relative; width: var(--ui-size-touch); height: var(--ui-size-touch); line-height: var(--ui-size-touch);
+    position: relative; width: var(--ui-size-touch); height: var(--ui-size-touch); line-height: calc(var(--ui-size-touch) - 2px);
   }
   .ui-map .leaflet-bar a::before { content: ''; position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; transform: translate(-50%, -50%); }
 }
@@ -45,7 +47,7 @@
 
 /* Markers: a tone dot with an optional label pill beside it, anchored on the dot. */
 .ui-map .ui-map-marker { display: flex; align-items: center; gap: var(--ui-space-1); width: auto !important; height: auto !important;
-  margin: -8px 0 0 -8px !important; white-space: nowrap; }
+  margin: -8px 0 0 -8px !important; }
 /* At least 24px to hit (WCAG 2.5.8), and 44px on touch screens without growing the marker. */
 .ui-map .ui-map-marker { min-height: 24px; position: relative; }
 .ui-map .ui-map-marker::before { content: ''; position: absolute; left: -4px; top: -4px; width: 24px; height: 24px; }
@@ -58,8 +60,13 @@
 .ui-map .ui-map-dot[data-tone="warning"] { background: var(--ui-color-warning); }
 .ui-map .ui-map-dot[data-tone="danger"] { background: var(--ui-color-danger); }
 .ui-map .ui-map-dot[data-tone="neutral"] { background: var(--ui-color-text-muted); }
-.ui-map .ui-map-label { padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-pill); font-size: 12px; font-weight: 600;
-  background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1); }
+/* The label sizes to its text up to --ui-map-label-max (320px, or the map's width less 32px: set by
+   the map), and wraps to a second line before it is cut with an ellipsis. One line is a pill; the
+   large radius clamps to half the height, so two lines are a soft rectangle. */
+.ui-map .ui-map-label { padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-lg); font-size: 12px; font-weight: 600; line-height: 16px;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1);
+  box-sizing: border-box; width: max-content; max-width: var(--ui-map-label-max, 320px); white-space: normal; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 
 /* The pin: a teardrop in the accent (or primary) colour, its tip on the point. */
 .ui-map .ui-map-pin { cursor: grab; }
@@ -69,6 +76,15 @@
   background: var(--ui-color-accent, var(--ui-color-primary)); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
 .ui-map .ui-map-pin:focus-visible { outline: none; }
 .ui-map .ui-map-pin:focus-visible .ui-map-pin-head { box-shadow: var(--ui-focus-ring); }
+
+/* routes: a line in its tone over a casing, round caps and joins. Colours from the theme's
+   --ui-map-route-* tokens (they beat Leaflet's stroke attribute); widths are set per zoom. */
+.ui-map .ui-map-route-casing { stroke: var(--ui-map-route-casing); stroke-opacity: 1; fill: none; }
+.ui-map .ui-map-route-line { stroke: var(--ui-map-route-primary); stroke-opacity: 1; fill: none; }
+.ui-map .ui-map-route-line[data-tone="muted"] { stroke: var(--ui-map-route-muted); }
+.ui-map .ui-map-route-line[data-tone="success"] { stroke: var(--ui-map-route-success); }
+.ui-map .ui-map-route-line[data-tone="warning"] { stroke: var(--ui-map-route-warning); }
+.ui-map .ui-map-route-line[data-tone="danger"] { stroke: var(--ui-map-route-danger); }
 
 /* fill: the whole of its parent, square-cornered (a full-screen map page). */
 .ui-map.ui-map-fill { height: 100%; border-radius: 0; }

@@ -80,6 +80,9 @@
   --ui-color-danger: #c42b25;
   --ui-gradient-brand: linear-gradient(90deg, #ea6c0b 0%, #ff8320 50%, #ffb457 100%);
   --ui-glow-amber: 0 0 24px rgba(234, 108, 11, 0.22);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-primary: #b83e0b;
 }
 
 /* ── Light Pink ─────────────────────────────────────────────────────── */
@@ -186,6 +189,12 @@
   --ui-color-danger: #f0576b;
   --ui-gradient-brand: linear-gradient(90deg, #be185d 0%, #ec4899 55%, #f9a8d4 100%);
   --ui-glow-amber: 0 0 30px rgba(236, 72, 153, 0.35), 0 0 80px rgba(190, 24, 93, 0.22);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-primary: #f282b9;
+  --ui-map-route-muted: #b0a3aa;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #f48694;
 }
 
 /* ── Dark Teal ──────────────────────────────────────────────────────── */
@@ -211,6 +220,11 @@
   --ui-color-danger: #f0576b;
   --ui-gradient-brand: linear-gradient(90deg, #0f766e 0%, #14b8a6 55%, #5eead4 100%);
   --ui-glow-amber: 0 0 30px rgba(20, 184, 166, 0.32), 0 0 80px rgba(15, 118, 110, 0.22);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: #9ba9a5;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #f48694;
 }
 
 /* ── Dark Purple ────────────────────────────────────────────────────── */
@@ -236,6 +250,12 @@
   --ui-color-danger: #f0576b;
   --ui-gradient-brand: linear-gradient(90deg, #6d28d9 0%, #8b5cf6 55%, #c4b5fd 100%);
   --ui-glow-amber: 0 0 30px rgba(139, 92, 246, 0.35), 0 0 80px rgba(109, 40, 217, 0.22);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-primary: #b397f9;
+  --ui-map-route-muted: #aaa5b4;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #f48694;
 }
 
 /* ── Gold Black (luxe gold-on-black) ────────────────────────────────── */
@@ -261,6 +281,11 @@
   --ui-color-danger: #f0574f;
   --ui-gradient-brand: linear-gradient(90deg, #a67c00 0%, #d4af37 50%, #f5e08a 100%);
   --ui-glow-amber: 0 0 30px rgba(212, 175, 55, 0.32), 0 0 80px rgba(166, 124, 0, 0.20);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: #aaa699;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #f48883;
 }
 
 /* ── Gold Red (gold accents over deep oxblood) ──────────────────────── */
@@ -286,6 +311,11 @@
   --ui-color-danger: #e5484d;
   --ui-gradient-brand: linear-gradient(90deg, #b91c1c 0%, #d4af37 60%, #f5e08a 100%);
   --ui-glow-amber: 0 0 30px rgba(212, 175, 55, 0.30), 0 0 80px rgba(185, 28, 28, 0.28);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: #b3a49f;
+  --ui-map-route-success: #34bc7a;
+  --ui-map-route-danger: #ef8b8e;
 }
 
 /* ── Light Purple Gold (regal: royal-purple primary, gold accents) ──── */

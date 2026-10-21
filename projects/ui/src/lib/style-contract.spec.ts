@@ -671,4 +671,38 @@ describe('see-through glass', () => {
       }
     });
   }
+
+  // ── Map routes (ui-map routes, 0.42.0) ──
+  // The colours MapTiler's streets-v2 and streets-v2-dark styles draw Male and Hulhumale in (real
+  // tiles at zoom 15-16, every colour covering more than 0.2%: water 84caf9, land, roads, parks;
+  // dark: ground 162030, roads 365485, grey 545454), alongside the dataviz ones above.
+  const streetsLight = ['#84caf9', '#fefefe', '#f5f0e4', '#ededed', '#fcf5cd', '#e9e4d9', '#f2ecd6', '#e8e3d1', '#e4ecd7', '#dae9c7', '#e4e0d6', '#e6e4d5'];
+  const streetsDark = ['#162030', '#151f2f', '#162132', '#365485', '#545454', '#25364e', '#243650', '#16465a', '#2c3758', '#2c405f', '#2e4870'];
+
+  it('route lines: every tone holds 3:1 against the map tiles (streets-v2, dataviz) in the theme’s brightness and against the casing', () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const casing = t.color('--ui-map-route-casing');
+      if (!casing || casing[3] !== 1) {
+        fails.push(`${name}: route casing unreadable or translucent`);
+        continue;
+      }
+      const tiles = (isDark(t) ? [...darkMap, ...streetsDark] : [...lightMap, ...streetsLight]).map((h) => parseColor(h)!);
+      for (const tone of ['primary', 'muted', 'success', 'warning', 'danger']) {
+        const raw = t.color(`--ui-map-route-${tone}`);
+        if (!raw) {
+          fails.push(`${name}: --ui-map-route-${tone} unreadable`);
+          continue;
+        }
+        const line = over(raw, casing); // the line is drawn over its casing
+        const worst = Math.min(...tiles.map((g) => contrast(line, g)));
+        if (worst < 3) fails.push(`${name}: ${tone} route is ${worst.toFixed(2)}:1 over the tiles, needs 3:1`);
+        const c = contrast(line, casing);
+        if (c < 3) fails.push(`${name}: ${tone} route is ${c.toFixed(2)}:1 on its casing, needs 3:1`);
+      }
+    }
+    expect(names.length).toBe(15);
+    expect(fails).toEqual([]);
+  });
 });

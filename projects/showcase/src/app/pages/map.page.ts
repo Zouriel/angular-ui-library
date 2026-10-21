@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import type { UiGlassStrength } from '@zouriel/ui';
-import { UiMap, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiBottomSheet } from '@zouriel/ui/dialog';
@@ -27,7 +27,27 @@ interface UiMapPulse extends UiLatLng {
 interface UiMapInsets { top?: number; bottom?: number; start?: number; end?: number; } // px
 interface UiMapUserLocation extends UiLatLng {
   accuracy?: number; // metres: the soft halo's radius, drawn 28..240px across
+}
+type UiMapPoint = UiLatLng | [lat: number, lng: number];
+interface UiMapRoute {
+  id: string;
+  points: UiMapPoint[];
+  tone?: 'primary' | 'muted' | 'success' | 'warning' | 'danger'; // default 'primary'
+  label?: string;    // its one name for screen readers: "Route, 1.3 km"
+}
+interface UiMapFitOptions {
+  padding?: number | { top?: number; right?: number; bottom?: number; left?: number }; // px, default 24
+  maxZoom?: number;  // default 17, and the zoom for a single point
+  animate?: boolean; // default true; never under reduced motion
 }`;
+
+const ROUTE_CODE = `<ui-map #map fill [insets]="{ top: cardCover(), bottom: sheetCover() }" [userLocation]="me()"
+  [markers]="[patient]" [routes]="route() ? [{ id: 'to-patient', points: route()!.points, label: 'Route, ' + route()!.km + ' km' }] : []" />
+
+// The moment she accepts: fetch the road route (OSRM GeoJSON is [lng, lat]: swap it) and show it all.
+const r = await api.route(job.id, me);
+this.route.set({ points: r.geometry.map(([lng, lat]) => [lat, lng]), km: (r.distance / 1000).toFixed(1) });
+this.map().fitPoints([me, patient, ...this.route()!.points]); // inside the part between the insets`;
 
 const TILES_CODE = `<!-- MapTiler raster (256 px): {r} is @2x on high-density screens. Keep the key out of the repo. -->
 <ui-map
@@ -125,6 +145,22 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Routes" anchor="routes" selector="ui-map [routes] · fitPoints()" [api]="routeApi"
+        summary="routes draws lines along the road, from OSRM say: each one a line in its tone over a casing, round-capped, 5px over 9px close in and thinner zoomed out. They sit above the tiles and below the pulse, the you-are-here dot, the markers and the pin, so the dots stay on top. A new list redraws the lines on the same map, and an empty one removes them. Each tone is a theme token (--ui-map-route-primary, -muted, -success, -warning, -danger over --ui-map-route-casing) checked at 3:1 against MapTiler's streets-v2 and dataviz tiles in the theme's own brightness. label is the route's one name for screen readers, such as Route, 1.3 km. fitPoints shows every point you give it (the nurse, the patient, the route) inside the part of the map the insets leave visible, with 24px to spare, at a whole zoom no closer than 17; one point is centred there at 17. It animates unless reduced motion. This map uses the tile URLs pasted under Styled tiles, to see a route over your own style. Marker labels now size to their text, up to 320px or the map's width less 32px, and wrap to a second line before the ellipsis; the zoom buttons share the locate button's raised surface and shadow.">
+        <doc-demo lang="ts + html" [code]="ROUTE_CODE">
+          <div class="map-wrap">
+            <ui-map #routeMap [center]="center()" [zoom]="15" [routes]="routes()" [markers]="routeMarkers" [userLocation]="routeStart" locateControl ariaLabel="The way to the patient"
+              [tileUrl]="tileLight || osm" [tileUrlDark]="tileDark || null" [attribution]="tileLight ? 'Tiles from your URL &copy; OpenStreetMap contributors' : osmAttribution" />
+          </div>
+          <div class="route-acts">
+            <ui-segmented label="Tone (demo)" size="sm" [options]="toneOptions" [value]="tone()" (valueChange)="tone.set($any($event))" />
+            <ui-button size="sm" variant="outline" (click)="routeMap.fitPoints(routePoints)">Fit the route</ui-button>
+            <ui-button size="sm" variant="outline" (click)="routeMap.fitPoints([routeStart])">Fit one point</ui-button>
+            <ui-button size="sm" variant="ghost" (click)="showRoute.set(!showRoute())">{{ showRoute() ? 'Remove the route' : 'Show the route' }}</ui-button>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Map page" anchor="map-page" selector="ui-map fill · [pulse] · [insets]" [api]="pageApi"
         summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part. glass on the sheet and the card (0.41.2) makes them see-through, and glassStrength (0.41.3) says how much: clear, the default, lets a map in the theme's brightness plainly show through (roads, coastline, parks), lightly blurred and squeezed just enough to keep every text colour AA over such a map; frosted is the near-opaque surface that stays AA over any backdrop, for photos or a map in the other brightness. Solid where backdrop-filter is missing or under reduced transparency or more contrast.">
         <doc-demo lang="html" [code]="PAGE_CODE">
@@ -184,6 +220,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     .status-text strong { font-size: var(--ui-font-size-md); }
     .status .meta { margin-top: 0; }
     .form { display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .route-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
     .tile-fields { display: grid; gap: var(--ui-space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: var(--ui-space-3); }
   `,
 })
@@ -192,6 +229,28 @@ export class MapPage {
   protected readonly PAGE_CODE = PAGE_CODE;
   protected readonly TILES_CODE = TILES_CODE;
   protected readonly LOCATE_CODE = LOCATE_CODE;
+  protected readonly ROUTE_CODE = ROUTE_CODE;
+  /** A real road route across Male (OSRM, 1.3 km), from the nurse to the patient. */
+  protected readonly routePoints: [number, number][] = [
+    [4.17682, 73.5121], [4.17678, 73.51237], [4.17708, 73.51244], [4.17709, 73.51223], [4.17716, 73.51216], [4.17773, 73.51224], [4.17785, 73.51146],
+    [4.1769, 73.51136], [4.1771, 73.50974], [4.17284, 73.50825], [4.17311, 73.50751], [4.1732, 73.50755], [4.17344, 73.50696], [4.17388, 73.50715], [4.17387, 73.50721],
+  ];
+  protected readonly routeStart: UiMapUserLocation = { lat: 4.17682, lng: 73.5121, accuracy: 20 };
+  protected readonly routeMarkers: UiMapMarker[] = [{ id: 'patient', lat: 4.17387, lng: 73.50721, label: 'Lily Magu, Hiyaa Tower 4, Hulhumale', tone: 'danger' }];
+  protected readonly tone = signal<UiMapRouteTone>('primary');
+  protected readonly toneOptions = (['primary', 'muted', 'success', 'warning', 'danger'] as const).map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) }));
+  protected readonly showRoute = signal(true);
+  protected readonly routes = computed<UiMapRoute[]>(() => (this.showRoute() ? [{ id: 'to-patient', points: this.routePoints, tone: this.tone(), label: 'Route, 1.3 km' }] : []));
+  protected readonly routeApi: ApiRow[] = [
+    { name: 'routes', type: 'UiMapRoute[]', default: '[]', desc: 'Lines along the road: id, points ([lat, lng] or { lat, lng }), tone, label. Under the pulse, dot, markers and pin; updated in place; [] removes them.' },
+    { name: 'UiMapRoute.tone', type: 'UiMapRouteTone', default: "'primary'", desc: "'primary' | 'muted' | 'success' | 'warning' | 'danger': the --ui-map-route-<tone> token over --ui-map-route-casing." },
+    { name: 'UiMapRoute.label', type: 'string', default: '—', desc: 'The route\'s one accessible name ("Route, 1.3 km"); without it the line is hidden from screen readers.' },
+    { name: 'fitPoints(points, options?)', type: 'method', default: '—', desc: 'Shows every point inside the visible part (between the insets) plus padding (24px), at a whole zoom up to maxZoom (17); one point is centred at maxZoom. Animated unless animate: false or reduced motion.' },
+    { name: 'uiMapFitView(points, size, area, maxZoom?)', type: 'function', default: '—', desc: 'The view fitPoints moves to (the map\'s own centre and zoom), for tests or a first view.' },
+    { name: 'uiMapRouteWidth(zoom)', type: 'function', default: '—', desc: 'The line and casing widths at a zoom: 5 over 9px from zoom 14, down to 60% at zoom 10.' },
+    { name: '--ui-map-route-casing / -primary / -muted / -success / -warning / -danger', type: 'CSS colour', default: 'theme', desc: 'The route colours, 3:1 against streets-v2 and dataviz tiles in every theme; override per theme.' },
+    { name: '--ui-map-label-max', type: 'CSS length', default: 'min(320px, map width - 32px)', desc: 'The widest a marker label gets (set by the map); labels wrap to two lines before the ellipsis.' },
+  ];
   protected readonly osm = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   protected readonly osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   /** Pasted tile URLs for the styled-tiles demo; never stored. */

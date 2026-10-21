@@ -262,6 +262,17 @@
     contrast(calc((var(--ui-glass-clear-ceiling) - var(--ui-glass-clear-floor)) / (var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor))))
     brightness(calc(var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor)))
     saturate(var(--ui-glass-clear-saturate));
+
+  /* Map routes (ui-map routes, 0.42.0): the line in each tone over a casing. Each tone must hold
+     3:1 against the colours MapTiler's streets-v2 and dataviz styles draw (in the theme's own
+     brightness) and against the casing; themes whose own colour doesn't, set their own below
+     (style-contract.spec checks every theme). */
+  --ui-map-route-casing: var(--ui-color-surface-raised);
+  --ui-map-route-primary: var(--ui-color-primary);
+  --ui-map-route-muted: var(--ui-color-text-muted);
+  --ui-map-route-success: var(--ui-color-success);
+  --ui-map-route-warning: var(--ui-color-warning);
+  --ui-map-route-danger: var(--ui-color-danger);
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
@@ -362,6 +373,9 @@
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
   --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.7);
   --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.8);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: #92aabd;
 }
 
 /* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
