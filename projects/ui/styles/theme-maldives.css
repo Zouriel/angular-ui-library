@@ -24,9 +24,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 
 [data-theme="maldives"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.87;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.46;
+  --ui-glass-clear-ceiling: 1;
   color-scheme: light;
 
   /* Brand colours, raw. For the fx layers and accent fills, not for text on the canvas. */
@@ -117,9 +120,12 @@
  * becomes the night canvas. Text on Coral and Lagoon fills is the night canvas colour.
  */
 [data-theme="maldives-dark"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.39;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
   color-scheme: dark;
 
   /* Brand colours, raw, re-tuned for a dark page. */

@@ -510,7 +510,7 @@ describe('see-through glass', () => {
     const missing: string[] = [];
     for (const name of names) {
       const keys = new Set([...(own[`[data-theme="${name}"]`] ?? [])]);
-      for (const k of ['--ui-glass-sheet-floor', '--ui-glass-sheet-ceiling']) if (!keys.has(k)) missing.push(`${name}: ${k}`);
+      for (const k of ['--ui-glass-sheet-floor', '--ui-glass-sheet-ceiling', '--ui-glass-clear-floor', '--ui-glass-clear-ceiling']) if (!keys.has(k)) missing.push(`${name}: ${k}`);
     }
     expect(missing).toEqual([]);
   });
@@ -557,6 +557,77 @@ describe('see-through glass', () => {
     expect(fails).toEqual([]);
   });
 
+  // ── Clear glass (glassStrength 'clear', the default since 0.41.3) ──
+  // Made for a map in the theme's own brightness. The colours MapTiler's dataviz and dataviz-dark
+  // styles draw Malé in (sampled from real tiles at zoom 15-16, every colour covering more than 0.2%
+  // of a 390x844 view: water, buildings, land, parks, roads; the darkest of the light style and the
+  // lightest of the dark one are the realistic worst cases). Thin label text is blurred into its ground.
+  const lightMap = ['#d1e6e9', '#d2e7ea', '#dedede', '#e1e1e1', '#e6e6e6', '#edf5e1', '#faf9f9', '#ffffff'];
+  const darkMap = ['#000000', '#141414', '#222222', '#292929', '#323232'];
+  /** CSS saturate(s) in sRGB, as the Filter Effects spec defines it. */
+  const saturate = (s: number, [r, g, b]: number[]) => [
+    (0.213 + 0.787 * s) * r + (0.715 - 0.715 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 + 0.285 * s) * g + (0.072 - 0.072 * s) * b,
+    (0.213 - 0.213 * s) * r + (0.715 - 0.715 * s) * g + (0.072 + 0.928 * s) * b,
+  ].map((v) => Math.min(1, Math.max(0, v)));
+  const clearPanel = (t: ReturnType<typeof resolve>, hex: string): Rgba => {
+    const surface = t.color('--ui-color-surface')!;
+    const [tint, floor, ceiling, sat] = [t.num('--ui-glass-clear-tint'), t.num('--ui-glass-clear-floor'), t.num('--ui-glass-clear-ceiling'), t.num('--ui-glass-clear-saturate')];
+    const ground = parseColor(hex)!.slice(0, 3).map((v) => floor + (ceiling - floor) * (v / 255));
+    const seen = saturate(sat, ground).map((v) => v * 255);
+    return over([surface[0], surface[1], surface[2], tint], [seen[0], seen[1], seen[2], 1]);
+  };
+  const isDark = (t: ReturnType<typeof resolve>) => {
+    const s = t.color('--ui-color-surface')!;
+    return contrast([0, 0, 0, 1], s) < contrast([255, 255, 255, 1], s);
+  };
+
+  it('clear: derives its tint and filter with the maths this spec models (squeeze, then saturate)', () => {
+    expect(base['--ui-glass-clear-bg']).toBe('color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-clear-tint) * 100%), transparent)');
+    expect(base['--ui-glass-clear-filter']).toBe(
+      'blur(var(--ui-glass-clear-blur)) contrast(calc((var(--ui-glass-clear-ceiling) - var(--ui-glass-clear-floor)) / (var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor)))) brightness(calc(var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor))) saturate(var(--ui-glass-clear-saturate))',
+    );
+    // saturate() keeps a grey grey and pushes a colour away from it.
+    expect(saturate(1.8, [0.5, 0.5, 0.5]).map((v) => +v.toFixed(9))).toEqual([0.5, 0.5, 0.5]);
+    const water = saturate(1.8, [0.82, 0.9, 0.91]);
+    expect(water[2] - water[0]).toBeGreaterThan(0.09);
+  });
+
+  it('clear: is clearly see-through in every theme, far more than frosted, with a light blur and tint', () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const [tint, floor, ceiling, blur, sat] = [t.num('--ui-glass-clear-tint'), t.num('--ui-glass-clear-floor'), t.num('--ui-glass-clear-ceiling'), t.raw('--ui-glass-clear-blur'), t.num('--ui-glass-clear-saturate')];
+      // How much of the map's own contrast comes through: the squeeze times what the tint leaves.
+      const through = (1 - tint) * (ceiling - floor);
+      const frosted = (1 - t.num('--ui-glass-sheet-tint')) * (t.num('--ui-glass-sheet-ceiling') - t.num('--ui-glass-sheet-floor'));
+      if (!(floor >= 0 && ceiling <= 1 && ceiling > floor)) fails.push(`${name}: clear range ${floor}-${ceiling}`);
+      if (!(through >= 0.4)) fails.push(`${name}: only ${(through * 100).toFixed(0)}% of the map's contrast shows through clear glass, needs 40%`);
+      if (!(through >= 1.5 * frosted)) fails.push(`${name}: clear (${through.toFixed(2)}) is not clearer than frosted (${frosted.toFixed(2)})`);
+      if (!(tint > 0 && tint <= 0.2)) fails.push(`${name}: clear tint ${tint} is a heavy tint`);
+      if (!/^\d+px$/.test(blur) || parseFloat(blur) < 2 || parseFloat(blur) > 4) fails.push(`${name}: clear blur ${blur} (2-4px keeps roads recognisable)`);
+      if (!(sat >= 1 && sat <= 2)) fails.push(`${name}: saturate ${sat}`);
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it("clear: keeps text, muted text, primary and status colours AA and icons 3:1 over a map in the theme's brightness", () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      for (const hex of isDark(t) ? darkMap : lightMap) {
+        const panel = clearPanel(t, hex);
+        for (const [fg, need] of [['text', 4.5], ['text-muted', 4.5], ['primary', 4.5], ['success', 4.5], ['danger', 4.5], ['warning', 3], ['icon', 3]] as const) {
+          const c = t.color(`--ui-color-${fg}`);
+          if (!c) continue;
+          const r = contrast(c, panel);
+          if (r < need) fails.push(`${name}: ${fg} on clear glass over ${hex} is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
   it('keeps fields solid inside: inputs, selects and textareas paint the opaque surface', () => {
     for (const f of ['form/src/input.ts', 'form/src/select.ts', 'form/src/textarea.ts']) {
       expect(componentCss(readFileSync(join(root, f), 'utf8'))).toMatch(/background:\s*var\(--ui-color-surface\)/);
@@ -564,29 +635,40 @@ describe('see-through glass', () => {
     for (const name of names) expect(resolve(name).color('--ui-color-surface')?.[3]).toBe(1);
   });
 
-  for (const [file, sel, solid] of [
-    ['dialog/src/bottom-sheet.ts', ':host(.glass) .sheet', 'var(--ui-color-surface)'],
-    ['layout/src/floating-panel.ts', ':host(.glass)', 'var(--ui-color-surface-raised)'],
+  for (const [file, sel, frosted, solid] of [
+    ['dialog/src/bottom-sheet.ts', ':host(.glass) .sheet', ':host(.glass.frosted) .sheet', 'var(--ui-color-surface)'],
+    ['layout/src/floating-panel.ts', ':host(.glass)', ':host(.glass.frosted)', 'var(--ui-color-surface-raised)'],
   ] as const) {
     it(`${file}: glass blurs and tints, and falls back to solid without backdrop-filter or under reduced transparency`, () => {
       const text = withoutComments(componentCss(readFileSync(join(root, file), 'utf8')));
-      const rule = (scope: string) => {
+      const rule = (scope: string, which: string = sel) => {
         const at = text.indexOf(scope);
         expect(at, scope).toBeGreaterThanOrEqual(0);
         const inner = text.slice(at);
-        const m = inner.match(new RegExp(sel.replace(/[().]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
+        const m = inner.match(new RegExp(which.replace(/[().]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
         expect(m, `${scope} ${sel}`).toBeTruthy();
         return m![1];
       };
+      // Clear (the default glassStrength, 0.41.3) on .glass; the 0.41.2 frosted recipe on .glass.frosted.
       const glass = rule(sel + ' {');
-      expect(glass).toMatch(/background:\s*var\(--ui-glass-sheet-bg\)/);
-      expect(glass).toMatch(/(^|[\s;])backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
-      expect(glass).toMatch(/-webkit-backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
-      const unsupported = rule('@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))');
-      expect(unsupported).toContain(`background: ${solid}`);
-      const reduced = rule('@media (prefers-reduced-transparency: reduce), (prefers-contrast: more)');
-      expect(reduced).toContain(`background: ${solid}`);
-      expect(reduced).toMatch(/(^|[\s;])backdrop-filter:\s*none/);
+      expect(glass).toMatch(/background:\s*var\(--ui-glass-clear-bg\)/);
+      expect(glass).toMatch(/(^|[\s;])backdrop-filter:\s*var\(--ui-glass-clear-filter\)/);
+      expect(glass).toMatch(/-webkit-backdrop-filter:\s*var\(--ui-glass-clear-filter\)/);
+      const thick = rule(frosted + ' {', frosted);
+      expect(thick).toMatch(/background:\s*var\(--ui-glass-sheet-bg\)/);
+      expect(thick).toMatch(/(^|[\s;])backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
+      expect(thick).toMatch(/-webkit-backdrop-filter:\s*var\(--ui-glass-sheet-filter\)/);
+      // The solid fallbacks name the frosted selector too: it is more specific than .glass alone.
+      for (const scope of ['@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))', '@media (prefers-reduced-transparency: reduce), (prefers-contrast: more)']) {
+        const at = text.indexOf(scope);
+        expect(at, scope).toBeGreaterThanOrEqual(0);
+        const m = text.slice(at).match(/\{\s*([^{}]+)\{([^}]*)\}/);
+        expect(m, scope).toBeTruthy();
+        const sels = m![1].split(',').map((x) => x.trim());
+        expect(sels, scope).toEqual(expect.arrayContaining([sel, frosted]));
+        expect(m![2]).toContain(`background: ${solid}`);
+        if (scope.startsWith('@media')) expect(m![2]).toMatch(/(^|[\s;])backdrop-filter:\s*none/);
+      }
     });
   }
 });

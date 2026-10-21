@@ -8,3 +8,10 @@ export type UiButtonSize = UiSize | 'xl';
 
 /** Status/tone scale shared by badges, chips, progress, etc. */
 export type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
+
+/**
+ * How see-through a glass bottom sheet or floating panel is (0.41.3). `'clear'`: for a map in the
+ * theme's own brightness, which plainly shows through. `'frosted'`: near-opaque, AA over any backdrop
+ * (photos, a map in the other brightness).
+ */
+export type UiGlassStrength = 'clear' | 'frosted';

@@ -330,6 +330,17 @@ on the map while the app looks for someone:
   where `backdrop-filter` isn't supported and under `prefers-reduced-transparency: reduce` or
   `prefers-contrast: more`. An app theme of its own should set the floor and ceiling too (light:
   floor high, ceiling 1; dark: floor 0, ceiling low) and check its colours.
+- `glassStrength` (0.41.3) on both, `'clear'` (default) or `'frosted'`. The 0.41.2 recipe above is
+  `'frosted'`: AA over anything, but over a real map it reads as near-opaque. `'clear'` is made for a
+  map in the theme's own brightness (light tiles under a light theme, dark tiles under a dark one):
+  `--ui-glass-clear-bg` (the surface at `--ui-glass-clear-tint`, 0.12) over
+  `--ui-glass-clear-filter`, a 3px blur (`--ui-glass-clear-blur`), the squeeze into the theme's
+  `--ui-glass-clear-floor`..`--ui-glass-clear-ceiling`, then `saturate(1.8)`
+  (`--ui-glass-clear-saturate`) so water and parks stay apart. The range is set per theme only as far
+  as text, muted text, primary, success and danger (4.5:1) and icons and warning (3:1) need over the
+  colours MapTiler's dataviz / dataviz-dark draw Malé in (the style-contract spec checks all 15
+  themes), so 43-75% of the map's own contrast comes through (maldives 48%, maldives-dark 75%),
+  against 5-17% frosted. Over photos or a map in the other brightness use `glassStrength="frosted"`.
 
 The Flutter twin: `UiMap(fill: true, pulse: UiMapPulse(lat:, lng:, active:), viewInsets:
 EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChanged` and

@@ -49,6 +49,13 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Clear glass; sheet cover follows the sheet** (0.41.3): `glassStrength` on `ui-bottom-sheet` and
+  `ui-floating-panel`, `'clear'` by default: over a map in the theme's brightness the map plainly
+  shows through (a 12% tint, a 3px blur, a per-theme squeeze only as far as AA over such a map needs,
+  and a saturation boost); `'frosted'` is the 0.41.2 surface, AA over anything. A bottom `ui-drawer`
+  rests on the on-screen keyboard (it was `bottom: 0`, behind the keyboard wherever the browser shrinks
+  only the visual viewport). `coverChange` is covered by a spec for new snaps at the same index and a
+  new offset (the Flutter twin did not report those).
 - **Glass bottom sheet and floating panel** (0.41.2): `ui-bottom-sheet` gains `glass` and
   `ui-floating-panel`'s `glass` uses the same recipe: a see-through surface for a form and a status
   card over a full-screen map, the theme's surface at 60% over a blurred backdrop held to a per-theme

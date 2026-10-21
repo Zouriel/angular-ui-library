@@ -8,6 +8,8 @@ import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
 import Moon02Icon from '@hugeicons/core-free-icons/Moon02Icon';
 import Mic01Icon from '@hugeicons/core-free-icons/Mic01Icon';
 import { UiText } from '@zouriel/ui/text';
+import { FormsModule } from '@angular/forms';
+import { UiFormField, UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, type UiMenuItem, type UiHintCloseReason, type UiHintPlacement } from '@zouriel/ui/overlay';
 import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService } from '@zouriel/ui/dialog';
@@ -18,7 +20,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
 @Component({
   selector: 'page-overlays',
-  imports: [ UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
+  imports: [ UiFormField, UiInput, FormsModule, UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
     UiText, UiButton, UiIconButton, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
     DocPage, DocSection, DocDemo,
   ],
@@ -103,12 +105,15 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi" [outputs]="drawerOut"
-        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. With [modal]=&quot;false&quot; it sits over the page without blocking it (no backdrop, scroll lock or focus trap; Escape still closes it), for a peek opened on hover; (panelEnter) and (panelLeave) say when the pointer enters or leaves it. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. Project the body as content. [drawer-header] and [drawer-footer] are fixed above and below it: only the body scrolls, the footer stays at the bottom of the panel (clear of the home indicator), and a hairline shows under the header and over the footer while the body is scrolled out of sight on that side. Focus and screen readers go header, body, footer.">
+        summary="Edge-anchored panel that slides in from side (role=&quot;dialog&quot;, aria-modal). Like the modal it opens on its own layer at the end of <body>, traps focus and gives it back on close, locks scroll, and closes on Escape or a backdrop click. With [modal]=&quot;false&quot; it sits over the page without blocking it (no backdrop, scroll lock or focus trap; Escape still closes it), for a peek opened on hover; (panelEnter) and (panelLeave) say when the pointer enters or leaves it. Left and right drawers are up to 360px wide; top and bottom ones up to 320px tall. A bottom drawer rests on the on-screen keyboard while it is up (0.41.3), sized to the part left visible, so its fields and footer stay in view. Project the body as content. [drawer-header] and [drawer-footer] are fixed above and below it: only the body scrolls, the footer stays at the bottom of the panel (clear of the home indicator), and a hairline shows under the header and over the footer while the body is scrolled out of sight on that side. Focus and screen readers go header, body, footer.">
         <doc-demo code="<ui-drawer [(open)]=&quot;open&quot; side=&quot;right&quot; title=&quot;Panel&quot;>…</ui-drawer>">
           <ui-button variant="outline" (click)="drawer.set(true)">Open drawer</ui-button>
         </doc-demo>
         <doc-demo [code]="chatsDrawerCode">
           <ui-button (click)="chatsDrawer.set(true)">Chats (fixed header and footer)</ui-button>
+        </doc-demo>
+        <doc-demo [code]="formDrawerCode">
+          <ui-button variant="outline" class="open-form-drawer" (click)="formDrawer.set(true)">Bottom drawer with fields</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -229,6 +234,10 @@ onKey(e: KeyboardEvent) {
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
     </ui-modal>
     <ui-drawer [(open)]="drawer" side="right" title="Drawer"><ui-text variant="body">A right-anchored sheet.</ui-text></ui-drawer>
+    <ui-drawer [(open)]="formDrawer" side="bottom" title="Why cancel?">
+      <ui-form-field label="Reason"><ui-input placeholder="The customer asked me to" [(ngModel)]="cancelReason" /></ui-form-field>
+      <div drawer-footer><ui-button [block]="true" (click)="formDrawer.set(false)">Cancel the job</ui-button></div>
+    </ui-drawer>
     <ui-drawer [(open)]="chatsDrawer" side="left" title="Chats">
       <ui-button drawer-header [block]="true" (click)="chatsDrawer.set(false)">New chat</ui-button>
       @for (c of chatRows; track c) { <button type="button" class="chat-row" (click)="chatsDrawer.set(false)">Conversation {{ c }}</button> }
@@ -333,6 +342,13 @@ interface UiToastAction {
   protected readonly modal = signal(false);
   protected readonly drawer = signal(false);
   protected readonly chatsDrawer = signal(false);
+  /** The bottom drawer with a field: rests on the on-screen keyboard (0.41.3). */
+  protected readonly formDrawer = signal(false);
+  protected cancelReason = '';
+  protected readonly formDrawerCode = `<ui-drawer [(open)]="open" side="bottom" title="Why cancel?">
+  <ui-form-field label="Reason"><ui-input [(ngModel)]="reason" /></ui-form-field>
+  <div drawer-footer><ui-button [block]="true">Cancel the job</ui-button></div>
+</ui-drawer>`;
   protected readonly chatRows = Array.from({ length: 40 }, (_, i) => i + 1);
   protected readonly chatsDrawerCode = `<ui-drawer [(open)]="open" side="left" title="Chats">
   <ui-button drawer-header [block]="true">New chat</ui-button>
@@ -442,7 +458,8 @@ interface UiToastAction {
     { name: 'closable', type: 'boolean', default: 'true', desc: 'Close button in the header.' },
     { name: 'hasHeader', type: 'boolean', default: 'false', desc: 'Show the header row without a title, for the close button and [sheet-actions].' },
     { name: 'expandOnFocus', type: 'boolean', default: 'true', desc: 'Rise to the tallest snap when a field inside gains focus on a touch screen.' },
-    { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through frosted surface for a sheet over a map (0.41.2): AA over any backdrop in every theme; solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
+    { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through surface for a sheet over a map (0.41.2); solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
+    { name: 'glassStrength', type: "'clear' | 'frosted'", default: "'clear'", desc: 'How see-through glass is (0.41.3): clear lets a map in the theme\'s brightness plainly show through, text AA over such a map; frosted is near-opaque, AA over any backdrop.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },

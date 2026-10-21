@@ -57,9 +57,12 @@
 
 /* ── Light Orange ───────────────────────────────────────────────────── */
 [data-theme="lightOrange"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.94;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.51;
+  --ui-glass-clear-ceiling: 1;
   --ui-color-bg: #fffaf4;
   --ui-glass-bg: rgba(255, 250, 244, 0.9);
   --ui-color-surface: #fff2e4;
@@ -81,9 +84,12 @@
 
 /* ── Light Pink ─────────────────────────────────────────────────────── */
 [data-theme="lightPink"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.92;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.4;
+  --ui-glass-clear-ceiling: 1;
   --ui-color-bg: #fff7fb;
   --ui-glass-bg: rgba(255, 247, 251, 0.9);
   --ui-color-surface: #ffedf5;
@@ -105,9 +111,12 @@
 
 /* ── Light Teal ─────────────────────────────────────────────────────── */
 [data-theme="lightTeal"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.92;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.39;
+  --ui-glass-clear-ceiling: 1;
   --ui-color-bg: #f4fbfa;
   --ui-glass-bg: rgba(244, 251, 250, 0.9);
   --ui-color-surface: #e6f6f3;
@@ -129,9 +138,12 @@
 
 /* ── Light Purple ───────────────────────────────────────────────────── */
 [data-theme="lightPurple"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.95;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.42;
+  --ui-glass-clear-ceiling: 1;
   --ui-color-bg: #faf8ff;
   --ui-glass-bg: rgba(250, 248, 255, 0.9);
   --ui-color-surface: #f0ebfd;
@@ -153,9 +165,12 @@
 
 /* ── Dark Pink ──────────────────────────────────────────────────────── */
 [data-theme="darkPink"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.20;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.72;
   --ui-color-bg: #140910;
   --ui-color-surface: #1c0e16;
   --ui-color-surface-raised: #26131f;
@@ -175,9 +190,12 @@
 
 /* ── Dark Teal ──────────────────────────────────────────────────────── */
 [data-theme="darkTeal"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.21;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.8;
   --ui-color-bg: #07120f;
   --ui-color-surface: #0d1a17;
   --ui-color-surface-raised: #12241f;
@@ -197,9 +215,12 @@
 
 /* ── Dark Purple ────────────────────────────────────────────────────── */
 [data-theme="darkPurple"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.24;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.81;
   --ui-color-bg: #0d0a16;
   --ui-color-surface: #150f20;
   --ui-color-surface-raised: #1d152c;
@@ -219,9 +240,12 @@
 
 /* ── Gold Black (luxe gold-on-black) ────────────────────────────────── */
 [data-theme="goldBlack"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.23;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.79;
   --ui-color-bg: #0a0a08;
   --ui-color-surface: #12110c;
   --ui-color-surface-raised: #1a1810;
@@ -241,9 +265,12 @@
 
 /* ── Gold Red (gold accents over deep oxblood) ──────────────────────── */
 [data-theme="goldRed"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.11;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.5;
   --ui-color-bg: #140809;
   --ui-color-surface: #1c0d0e;
   --ui-color-surface-raised: #261314;
@@ -263,9 +290,12 @@
 
 /* ── Light Purple Gold (regal: royal-purple primary, gold accents) ──── */
 [data-theme="lightPurpleGold"] {
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.93;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.41;
+  --ui-glass-clear-ceiling: 1;
   --ui-color-bg: #fbf9ff;
   --ui-glass-bg: rgba(251, 249, 255, 0.9);
   --ui-color-surface: #f3edfc;

@@ -3,7 +3,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { provideUiConfig } from '@zouriel/ui';
+import { provideUiConfig, type UiGlassStrength } from '@zouriel/ui';
 import { UiBottomSheet } from './bottom-sheet';
 
 @Component({
@@ -388,10 +388,11 @@ describe('UiBottomSheet maxWidth', () => {
 
 @Component({
   imports: [UiBottomSheet],
-  template: `<ui-bottom-sheet [snap]="1" [snaps]="[0, 1]" title="Find a nurse" [glass]="glass()"><input id="field" /></ui-bottom-sheet>`,
+  template: `<ui-bottom-sheet [snap]="1" [snaps]="[0, 1]" title="Find a nurse" [glass]="glass()" [glassStrength]="strength()"><input id="field" /></ui-bottom-sheet>`,
 })
 class GlassHost {
   glass = signal(false);
+  strength = signal<UiGlassStrength>('clear');
 }
 
 /** The glass look itself (tint, blur, fallbacks, contrast in every theme) is checked in style-contract.spec. */
@@ -418,5 +419,59 @@ describe('UiBottomSheet glass', () => {
     fixture.componentInstance.glass.set(false);
     fixture.detectChanges();
     expect(host.classList.contains('glass')).toBe(false);
+  });
+
+  it("is clear by default (0.41.3); glassStrength 'frosted' adds the frosted class, only while glass is on", async () => {
+    const fixture = TestBed.createComponent(GlassHost);
+    fixture.componentInstance.glass.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const host: HTMLElement = fixture.nativeElement.querySelector('ui-bottom-sheet');
+    expect(host.classList.contains('glass')).toBe(true);
+    expect(host.classList.contains('frosted')).toBe(false);
+    fixture.componentInstance.strength.set('frosted');
+    fixture.detectChanges();
+    expect(host.classList.contains('frosted')).toBe(true);
+    fixture.componentInstance.glass.set(false);
+    fixture.detectChanges();
+    expect(host.classList.contains('frosted')).toBe(false);
+  });
+});
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `
+    <ui-bottom-sheet [snap]="0" [snaps]="snaps()" [offset]="offset()" [closable]="false" [expandOnFocus]="false" (coverChange)="covers.push($event)">
+      <p>Step</p>
+    </ui-bottom-sheet>
+  `,
+})
+class PeekHost {
+  snaps = signal<readonly number[]>([0.2, 1]);
+  offset = signal(0);
+  covers: number[] = [];
+}
+
+/**
+ * 0.41.3 (found by Dhirumi's nurse app): an app that sizes its peek to the content (an SOS button
+ * appears under the step) passes new snaps at the same index, and the map's insets come from
+ * coverChange. The cover must follow the sheet's resting top whatever moved it.
+ */
+describe('UiBottomSheet coverChange follows the resting top', () => {
+  it('new snaps at the same index (content grew at the peek), and a new offset, are reported', async () => {
+    const fixture = TestBed.createComponent(PeekHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const room = window.innerHeight;
+    const c = fixture.componentInstance;
+    expect(c.covers.at(-1)).toBe(Math.round(room * 0.2));
+    c.snaps.set([0.3, 1]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(c.covers.at(-1)).toBe(Math.round(room * 0.3));
+    c.offset.set(60);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(c.covers.at(-1)).toBe(Math.round((room - 60) * 0.3) + 60);
   });
 });

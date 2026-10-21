@@ -1,15 +1,16 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideUiConfig } from '@zouriel/ui';
+import { provideUiConfig, type UiGlassStrength } from '@zouriel/ui';
 import { describe, expect, it } from 'vitest';
 import { UiFloatingPanel } from './floating-panel';
 
 @Component({
   imports: [UiFloatingPanel],
-  template: `<div style="position: relative; height: 400px"><ui-floating-panel ariaLabel="Status" [glass]="glass()">Looking for a nurse</ui-floating-panel></div>`,
+  template: `<div style="position: relative; height: 400px"><ui-floating-panel ariaLabel="Status" [glass]="glass()" [glassStrength]="strength()">Looking for a nurse</ui-floating-panel></div>`,
 })
 class GlassHost {
   glass = signal(true);
+  strength = signal<UiGlassStrength>('clear');
 }
 
 @Component({
@@ -41,6 +42,19 @@ describe('UiFloatingPanel glass', () => {
     fixture.componentInstance.glass.set(false);
     fixture.detectChanges();
     expect(host.classList.contains('glass')).toBe(false);
+  });
+
+  it("is clear by default (0.41.3); glassStrength 'frosted' adds the frosted class, only while glass is on", () => {
+    const fixture = TestBed.createComponent(GlassHost);
+    fixture.detectChanges();
+    const host: HTMLElement = fixture.nativeElement.querySelector('ui-floating-panel');
+    expect(host.classList.contains('frosted')).toBe(false);
+    fixture.componentInstance.strength.set('frosted');
+    fixture.detectChanges();
+    expect(host.classList.contains('frosted')).toBe(true);
+    fixture.componentInstance.glass.set(false);
+    fixture.detectChanges();
+    expect(host.classList.contains('frosted')).toBe(false);
   });
 });
 

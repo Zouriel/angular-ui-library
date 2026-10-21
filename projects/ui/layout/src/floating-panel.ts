@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, booleanAttribute, PLATFORM_ID, afterNextRender, effect, inject, input, output } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
 
 /**
  * `ui-floating-panel` — a raised surface floating over the bottom (or top) of its positioned parent:
@@ -18,8 +18,9 @@ import { UI_CONFIG } from '@zouriel/ui';
  * height), whenever that changes: feed it to a map's `insets` so the map centres below a status
  * card at the top.
  *
- * `glass` (0.41.2) is the same see-through surface as `ui-bottom-sheet`'s `glass`: the theme's
- * surface at 60% over a blurred, range-limited backdrop, AA over any map; solid where
+ * `glass` (0.41.2) is the same see-through surface as `ui-bottom-sheet`'s `glass`, with the same
+ * `glassStrength` (0.41.3): `'clear'` (the default) lets a map in the theme's brightness plainly show
+ * through, `'frosted'` is the near-opaque surface that stays AA over anything; solid where
  * `backdrop-filter` is missing or under reduced transparency or more contrast.
  */
 @Component({
@@ -28,6 +29,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     class: 'ui-floating-panel',
     '[attr.data-placement]': 'placement()',
     '[class.glass]': 'glass()',
+    '[class.frosted]': "glass() && glassStrength() === 'frosted'",
     '[class.no-radius]': '!radius()',
     '[attr.role]': "ariaLabel() ? 'region' : null",
     '[attr.aria-label]': 'ariaLabel() || null',
@@ -53,17 +55,22 @@ import { UI_CONFIG } from '@zouriel/ui';
       top: calc(var(--ui-space-4) + env(safe-area-inset-top, 0px));
       animation-name: ui-floating-panel-in-top;
     }
-    /* glass: the see-through recipe of ui-bottom-sheet's glass (0.41.2), so a status card over a
-       map matches the sheet: AA over any backdrop (see tokens.css); solid when it can't be. */
+    /* glass: the see-through recipe of ui-bottom-sheet's glass, so a status card over a map matches
+       the sheet (see tokens.css). Clear by default (0.41.3): the map shows through; frosted holds AA
+       over any backdrop. Solid when it can't be either. */
     :host(.glass) {
-      background: var(--ui-glass-sheet-bg); border-color: var(--ui-glass-border);
+      background: var(--ui-glass-clear-bg); border-color: var(--ui-glass-border);
+      -webkit-backdrop-filter: var(--ui-glass-clear-filter); backdrop-filter: var(--ui-glass-clear-filter);
+    }
+    :host(.glass.frosted) {
+      background: var(--ui-glass-sheet-bg);
       -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
     }
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-      :host(.glass) { background: var(--ui-color-surface-raised); }
+      :host(.glass), :host(.glass.frosted) { background: var(--ui-color-surface-raised); }
     }
     @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-      :host(.glass) { background: var(--ui-color-surface-raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
+      :host(.glass), :host(.glass.frosted) { background: var(--ui-color-surface-raised); -webkit-backdrop-filter: none; backdrop-filter: none; }
     }
     :host(.no-radius) { border-radius: 0; }
     @keyframes ui-floating-panel-in { from { opacity: 0; transform: translateY(8px); } }
@@ -79,8 +86,13 @@ export class UiFloatingPanel {
   placement = input<'bottom' | 'top'>('bottom');
   /** Names it as a region for screen readers. */
   ariaLabel = input<string | undefined>(undefined);
-  /** See-through frosted surface over a map, as ui-bottom-sheet's glass (0.41.2). */
+  /** See-through surface over a map, as ui-bottom-sheet's glass (0.41.2). */
   glass = input(this.config.glass, { transform: booleanAttribute });
+  /**
+   * How see-through `glass` is (0.41.3), as ui-bottom-sheet's: `'clear'` (default) for a map in the
+   * theme's brightness, which plainly shows through; `'frosted'` for anything else (AA over any backdrop).
+   */
+  glassStrength = input<UiGlassStrength>('clear');
   radius = input<boolean>(this.config.radius);
 
   /** Px of the parent's edge (top or bottom, per `placement`) it covers: its gutter plus its height. */

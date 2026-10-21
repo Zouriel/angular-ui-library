@@ -1,6 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, output, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, output, signal, viewChild } from '@angular/core';
 import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 import { UiScrollFade } from '@zouriel/ui/behaviors';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
@@ -17,6 +17,10 @@ let drawerSeq = 0;
  * only part that scrolls) and an optional fixed `[drawer-footer]`, which stays at the bottom of the
  * panel clear of the home indicator. A hairline shows under the header while the body is scrolled
  * away from its top, and over the footer while more of the body is below it.
+ *
+ * A bottom drawer rests on the on-screen keyboard while it is up (0.41.3), whether the browser
+ * shrinks the page for it or only the visual viewport, its height taken from the part left visible,
+ * so its fields and footer stay in view. Until then it stayed at the screen edge, behind the keyboard.
  *
  *   <ui-drawer [(open)]="open" side="left" title="Menu">
  *     <ui-button drawer-header block>New chat</ui-button>
@@ -41,6 +45,9 @@ let drawerSeq = 0;
         [class.glass]="glass()"
         [class.no-radius]="!radius()"
         [style.--ui-slide-from]="slideFrom()"
+        [style.--ui-drawer-keyboard.px]="side() === 'bottom' && keyboard() ? keyboardEdge() : null"
+        [style.--ui-drawer-room.px]="side() === 'bottom' && keyboard() ? visible() : null"
+        [class.on-keyboard]="side() === 'bottom' && keyboard() > 0"
         role="dialog"
         [attr.aria-modal]="modal() ? 'true' : null"
         (pointerenter)="panelEnter.emit()"
@@ -82,7 +89,10 @@ let drawerSeq = 0;
     .panel[data-side="left"]   { top: 0; left: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0; }
     .panel[data-side="right"]  { top: 0; right: 0; bottom: 0; width: min(360px, 90vw); border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg); }
     .panel[data-side="top"]    { top: 0; left: 0; right: 0; height: min(320px, 80dvh); padding-top: env(safe-area-inset-top); box-sizing: border-box; border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg); }
-    .panel[data-side="bottom"] { bottom: 0; left: 0; right: 0; height: min(320px, 80dvh); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; }
+    /* On the keyboard while it's up: the drawer sets how far its top edge is from the layout viewport's
+       bottom and the visible height (see the class docs). */
+    .panel[data-side="bottom"] { bottom: var(--ui-drawer-keyboard, 0px); left: 0; right: 0; height: min(320px, calc(var(--ui-drawer-room, 100dvh) * 0.8)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; }
+    .panel[data-side="bottom"].on-keyboard { padding-bottom: 0; }
     .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
     .title { min-width: 0; overflow-wrap: anywhere; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     .bd { padding: var(--ui-space-3) var(--ui-space-4); overflow: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
@@ -147,6 +157,12 @@ export class UiDrawer {
   });
 
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
+  /** How much of the layout viewport's bottom an on-screen keyboard covers (0: none). */
+  protected readonly keyboard = signal(0);
+  /** Distance from the layout viewport's bottom to the visible bottom while the keyboard is up. */
+  protected readonly keyboardEdge = signal(0);
+  /** The visible height while the keyboard is up. */
+  protected readonly visible = signal(0);
   private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
 
   /** The layer this instance last moved to <body>; kept after close so destroy can still find it. */
@@ -155,6 +171,27 @@ export class UiDrawer {
   private locked = false;
 
   constructor() {
+    // The keyboard, read as ui-bottom-sheet reads it: what the visual viewport lost, however the
+    // browser has panned it (Chrome on Android pans to bring the focused field into view).
+    if (this.browser) {
+      const onResize = () => {
+        const vv = window.visualViewport;
+        const lost = vv ? window.innerHeight - vv.height : 0;
+        const open = !!vv && lost > 120; // less is browser chrome settling, not a keyboard
+        this.keyboard.set(open ? Math.round(lost) : 0);
+        this.keyboardEdge.set(open ? Math.max(0, Math.round(window.innerHeight - vv!.height - vv!.offsetTop)) : 0);
+        this.visible.set(open ? Math.round(vv!.height) : 0);
+      };
+      onResize();
+      window.addEventListener('resize', onResize);
+      window.visualViewport?.addEventListener('resize', onResize);
+      window.visualViewport?.addEventListener('scroll', onResize);
+      inject(DestroyRef).onDestroy(() => {
+        window.removeEventListener('resize', onResize);
+        window.visualViewport?.removeEventListener('resize', onResize);
+        window.visualViewport?.removeEventListener('scroll', onResize);
+      });
+    }
     // Opens on its own layer at the end of <body>. Rendered where it is declared, a dialog inside a
     // sticky bar, a card or anything with a transform or backdrop-filter is positioned against that
     // box instead of the screen and comes out clipped or squashed. Angular still removes the layer

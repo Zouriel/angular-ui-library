@@ -85,13 +85,24 @@
   --ui-glass-bg: rgba(255, 255, 255, 0.06);
   --ui-glass-blur: 14px;
   --ui-glass-border: rgba(255, 255, 255, 0.12);
-  /* See-through glass for a surface over a map or photo (ui-bottom-sheet and ui-floating-panel
-     glass, 0.41.2): this much of the surface colour (0-1) over a blurred backdrop. Each theme sets
+  /* Frosted glass for a surface over a map or photo (ui-bottom-sheet and ui-floating-panel
+     glass with glassStrength="frosted", 0.41.2): this much of the surface colour (0-1) over a blurred backdrop. Each theme sets
      --ui-glass-sheet-floor / --ui-glass-sheet-ceiling (0-1), the range the backdrop is squeezed into
      before the tint goes on, so that text, muted text, primary and status colours stay AA over a pure
      white or a pure black backdrop (style-contract spec). */
   --ui-glass-sheet-tint: 0.6;
   --ui-glass-sheet-blur: 20px;
+  /* Clear glass (0.41.3, the default glassStrength of ui-bottom-sheet and ui-floating-panel glass):
+     made for a map in the theme's own brightness (light tiles under a light theme, dark under a dark
+     one), so the map plainly shows through. A light tint and a light blur (3px), so roads, buildings
+     and the coastline stay recognisable; each theme's --ui-glass-clear-floor / --ui-glass-clear-ceiling squeeze the
+     backdrop only as far as text, muted text, primary and status colours (4.5:1) and icons and warning
+     (3:1) need over the colours such a map is drawn in (style-contract spec), and the saturation keeps
+     water and parks apart once their brightness is squeezed. Over anything else (photos, a map in the
+     other brightness) use glassStrength="frosted", which holds AA over pure white and pure black. */
+  --ui-glass-clear-tint: 0.12;
+  --ui-glass-clear-blur: 3px;
+  --ui-glass-clear-saturate: 1.8;
 
   /* Sizing — FIXED set, no arbitrary values */
   --ui-size-sm: 26px;
@@ -237,7 +248,7 @@
      under the panel still bleeds through a 6% tint. Mostly the raised surface, a little see-through. */
   --ui-glass-panel-bg: color-mix(in srgb, var(--ui-color-surface-raised) 90%, transparent);
 
-  /* See-through glass (0.41.2), from the theme's surface and backdrop range. contrast(c) brightness(b)
+  /* Frosted glass (0.41.2), from the theme's surface and backdrop range. contrast(c) brightness(b)
      maps a channel v to v*c*b + b*(1-c)/2, so these two land every backdrop colour in
      [floor, ceiling]. Solid surface instead where backdrop-filter is missing or the user asks for
      less transparency (the components handle that). */
@@ -245,6 +256,12 @@
   --ui-glass-sheet-filter: blur(var(--ui-glass-sheet-blur))
     contrast(calc((var(--ui-glass-sheet-ceiling) - var(--ui-glass-sheet-floor)) / (var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor))))
     brightness(calc(var(--ui-glass-sheet-ceiling) + var(--ui-glass-sheet-floor)));
+  /* Clear glass (0.41.3): the same squeeze into the theme's clear range, then the saturation. */
+  --ui-glass-clear-bg: color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-clear-tint) * 100%), transparent);
+  --ui-glass-clear-filter: blur(var(--ui-glass-clear-blur))
+    contrast(calc((var(--ui-glass-clear-ceiling) - var(--ui-glass-clear-floor)) / (var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor))))
+    brightness(calc(var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor)))
+    saturate(var(--ui-glass-clear-saturate));
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
@@ -278,9 +295,12 @@
   --ui-color-success: var(--ui-winter-green-300);
   --ui-color-warning: var(--ui-winter-amber-300);
   --ui-color-danger: var(--ui-winter-red-300);
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.43;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
 }
 
 :root:not([data-theme]),
@@ -349,9 +369,12 @@
 [data-theme="light"],
 [data-theme="winterLight"] {
   color-scheme: light;
-  /* Glass over a map (bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0.70;
   --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.35;
+  --ui-glass-clear-ceiling: 1;
 
   --ui-color-bg: var(--ui-winter-blue-50);
   --ui-color-surface: var(--ui-winter-blue-25);
