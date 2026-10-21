@@ -1,10 +1,10 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  booleanAttribute, Component, computed, DestroyRef, effect, ElementRef, inject, input, isDevMode, numberAttribute, output, PLATFORM_ID, signal, untracked,
+  afterNextRender, booleanAttribute, Component, computed, DestroyRef, effect, ElementRef, inject, input, isDevMode, numberAttribute, output, PLATFORM_ID, signal, untracked,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowRight02Icon from '@hugeicons/core-free-icons/ArrowRight02Icon';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, uiWatchTheme } from '@zouriel/ui';
 import { uiLuminance, uiParseColor, uiParseColorAlpha, uiResolveFeatureColors, type UiFeatureCardColors, type UiFeatureColorTheme } from './feature-colors';
 
 export type UiFeatureTone = 'primary' | 'accent' | 'brand' | 'neutral';
@@ -16,6 +16,8 @@ export type UiFeatureSurface = 'default' | 'tinted';
 export type UiFeatureRadius = boolean | 'control';
 
 let featureSeq = 0;
+
+const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}|${t.muted}` : '');
 
 /**
  * `ui-feature-card` — a product or service card for a landing page: an icon in a tinted badge, an
@@ -384,7 +386,7 @@ export class UiFeatureCard {
   protected readonly titleTextId = `ui-feature-${this.seq}-name`;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  /** The theme colours under the card, read from the page (and again when a theme changes). */
+  /** The theme colours under the card, read from the page: when colours are set, after the first render, and whenever the tokens may change. */
   private readonly themeColors = signal<UiFeatureColorTheme | null>(null);
   /** The custom colours this card draws, or null (none given, invalid, or not in a browser). */
   protected readonly custom = computed(() => {
@@ -399,16 +401,29 @@ export class UiFeatureCard {
   constructor() {
     if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     const destroy = inject(DestroyRef);
-    let observer: MutationObserver | null = null;
-    destroy.onDestroy(() => observer?.disconnect());
+    // Only re-set when a token changed, so a re-check that finds the same theme doesn't re-render.
+    const read = () => {
+      const next = this.readTheme();
+      if (themeKey(next) !== themeKey(untracked(this.themeColors))) this.themeColors.set(next);
+    };
+    let rendered = false;
+    let watching = false;
+    const watch = () => {
+      if (watching) return;
+      watching = true;
+      uiWatchTheme(this.host, destroy, read);
+    };
+    // As soon as colours are given: read the tokens now, so the first paint has the colours when the page
+    // is already styled. Before the first render that read can be early (the host not yet in the page, or
+    // the app's stylesheet with its [data-theme] rules not yet loaded, leaving the inlined :root tokens), so
+    // after it the card reads again and keeps watching everything that can change the tokens (uiWatchTheme).
     effect(() => {
-      if (!this.colors() || observer) return;
-      untracked(() => {
-        const read = () => this.themeColors.set(this.readTheme());
-        read();
-        observer = new MutationObserver(read);
-        observer.observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['data-theme'] });
-      });
+      if (!this.colors()) return;
+      untracked(() => (rendered ? watch() : read()));
+    });
+    afterNextRender(() => {
+      rendered = true;
+      if (untracked(this.colors)) watch();
     });
   }
 

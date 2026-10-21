@@ -1,4 +1,5 @@
 import type { DestroyRef } from '@angular/core';
+import { uiWatchTheme } from '@zouriel/ui';
 
 /** The words on the drawn button (Google's approved wordings; the words come from UI_STRINGS). */
 export type UiGoogleButtonText = 'signIn' | 'signUp' | 'continueWith' | 'signInShort';
@@ -25,12 +26,10 @@ export function uiGoogleIsDarkTheme(el: Element): boolean {
 }
 
 /**
- * Calls `onChange` with whether the theme at `el` is dark, now and whenever a `data-theme` on the
- * page changes, until `destroy`. Browser only (call after render).
+ * Calls `onChange` with whether the theme at `el` is dark, now and whenever anything that can change
+ * the theme changes (see `uiWatchTheme`: a `data-theme`, a class or style up the tree, a stylesheet
+ * arriving late, the device's preference), until `destroy`. Browser only (call after render).
  */
 export function uiGoogleObserveTheme(el: Element, destroy: DestroyRef, onChange: (dark: boolean) => void): void {
-  onChange(uiGoogleIsDarkTheme(el));
-  const mo = new MutationObserver(() => onChange(uiGoogleIsDarkTheme(el)));
-  mo.observe(el.ownerDocument.documentElement, { attributes: true, subtree: true, attributeFilter: ['data-theme'] });
-  destroy.onDestroy(() => mo.disconnect());
+  uiWatchTheme(el, destroy, () => onChange(uiGoogleIsDarkTheme(el)));
 }

@@ -49,6 +49,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Feature card colours follow the active theme from the first frame** (0.40.2): a `ui-feature-card`
+  with `colors` created while the app's stylesheet was still loading (critical-CSS builds inline only
+  the Winter Dark `:root` tokens) no longer keeps the dark pair on a light theme. Components that read
+  theme tokens (feature-card colours, the Google button's auto theme, the map's dark tiles) share
+  `uiWatchTheme`, which re-reads after render and on `data-theme`, class and style changes up the
+  tree, stylesheets arriving, and `prefers-color-scheme` changes.
 - **48px map controls on touch, LTR attribution** (0.40.1): on coarse pointers the `ui-map` locate
   button and zoom buttons get a 48px hit area centred on the visible control (the zoom buttons are
   now really 44px on touch), and the attribution is an LTR isolate, so English credits keep their ©

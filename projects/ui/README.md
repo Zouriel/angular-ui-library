@@ -348,6 +348,13 @@ locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))`
   exported (`uiResolveFeatureColors`, `uiParseColor`, `uiContrast`) and match Flutter exactly.
   Both cards get the same derived dark surface, since it comes from the shared accent: pass
   `surfaceDark` to keep them apart on dark themes.
+  The dark/light choice comes from the theme in effect at the card (its computed tokens), read again
+  after the first render and whenever they can change: a `data-theme` anywhere, a class or inline
+  style on the card or an ancestor, a stylesheet added or finishing loading, and the device's
+  `prefers-color-scheme` (0.40.2; before, a card created while a critical-CSS build was still loading
+  its stylesheet kept the inlined Winter Dark tokens until the theme was toggled). The same watcher
+  is exported as `uiWatchTheme(el, destroyRef, check)` and also drives the Google button's auto theme
+  and the map's dark tiles.
 - `enter` / `enterDelay` (ms): a fade and 8px rise over `--ui-motion-slow` (decelerate), once,
   when the card first appears; stagger cards with the delay. Not replayed on re-render or a theme
   change.

@@ -6,7 +6,7 @@ import type * as Leaflet from 'leaflet';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
-import { injectUiStrings, type UiStatus } from '@zouriel/ui';
+import { injectUiStrings, uiWatchTheme, type UiStatus } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
 /**
@@ -610,10 +610,6 @@ export class UiMap {
 
   /** Dark theme: dim the tiles, or show the dark ones. Re-check when a theme changes anywhere up the tree. */
   private watchTheme(destroy: DestroyRef): void {
-    const check = () => this.dark.set(uiMapIsDark(getComputedStyle(this.host.nativeElement).backgroundColor));
-    check();
-    const mo = new MutationObserver(check);
-    mo.observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['data-theme'] });
-    destroy.onDestroy(() => mo.disconnect());
+    uiWatchTheme(this.host.nativeElement, destroy, () => this.dark.set(uiMapIsDark(getComputedStyle(this.host.nativeElement).backgroundColor)));
   }
 }
