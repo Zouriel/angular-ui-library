@@ -49,6 +49,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **48px map controls on touch, LTR attribution** (0.40.1): on coarse pointers the `ui-map` locate
+  button and zoom buttons get a 48px hit area centred on the visible control (the zoom buttons are
+  now really 44px on touch), and the attribution is an LTR isolate, so English credits keep their ©
+  signs in place in RTL while its corner still flips.
 - **Map tiles, my location, a sheet that holds still** (0.40): `ui-map` gains `tileUrlDark` (dark
   tiles shown undimmed, swapped live with the theme), `tileSize` / `zoomOffset` (512 px tiles) and
   `{r}` retina URLs; `locateControl` (a round "Show my location" button above the bottom sheet, with

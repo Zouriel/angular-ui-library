@@ -354,7 +354,8 @@ export class UiMap {
       // The map surface is the focusable, keyboard-pannable element: it carries the name.
       el.setAttribute('aria-label', this.ariaLabel());
       if (this.pinMode()) el.setAttribute('aria-description', this.strings.placePinAtCentre + ' (Enter)');
-      L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map);
+      // English credits: laid out LTR in any page direction (map.css isolates them too).
+      L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map).getContainer?.()?.setAttribute('dir', 'ltr');
       // The pulse's own pane: geo-anchored like a marker, under the markers, never hit.
       const pane = map.createPane(PULSE_PANE);
       pane.style.zIndex = '450';

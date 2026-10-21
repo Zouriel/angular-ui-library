@@ -25,11 +25,19 @@
 .ui-map .leaflet-bar a:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
 .ui-map .leaflet-bar a:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
 .ui-map .leaflet-bar a.leaflet-disabled { color: var(--ui-color-text-muted); background: var(--ui-color-surface-raised); }
-/* Touch: a 44px target for each zoom button. */
+/* Touch: 44px zoom buttons (the :first-/:last-child selectors match the rule above, which used to
+   win and keep them at 30px), each with an invisible 48px hit area (Android's tap-target minimum)
+   centred on it; with the 4px gap the two hit areas never overlap. */
 @media (pointer: coarse) {
-  .ui-map .leaflet-bar a { width: var(--ui-size-touch); height: var(--ui-size-touch); line-height: var(--ui-size-touch); }
+  .ui-map .leaflet-bar a, .ui-map .leaflet-bar a:first-child, .ui-map .leaflet-bar a:last-child {
+    position: relative; width: var(--ui-size-touch); height: var(--ui-size-touch); line-height: var(--ui-size-touch);
+  }
+  .ui-map .leaflet-bar a::before { content: ''; position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; transform: translate(-50%, -50%); }
 }
+/* The credits are English ("© MapTiler © OpenStreetMap contributors"): an LTR isolate, so an RTL page
+   doesn't move the © signs; only the corner is mirrored. */
 .ui-map .leaflet-control-attribution {
+  direction: ltr; unicode-bidi: isolate;
   background: color-mix(in srgb, var(--ui-color-surface-raised) 85%, transparent); color: var(--ui-color-text-muted);
   font-size: 11px; padding: 2px var(--ui-space-1); border-radius: var(--ui-radius-xs) 0 0 0;
 }
@@ -85,7 +93,11 @@
   transition: bottom var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard),
               transform var(--ui-motion-fast) var(--ui-ease-standard);
 }
-@media (pointer: coarse) { .ui-map .ui-map-locate { width: var(--ui-size-touch); height: var(--ui-size-touch); } }
+/* Touch: a 44px circle with an invisible 48px hit area centred on it, so the circle stays put. */
+@media (pointer: coarse) {
+  .ui-map .ui-map-locate { width: var(--ui-size-touch); height: var(--ui-size-touch); }
+  .ui-map .ui-map-locate::before { content: ''; position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; transform: translate(-50%, -50%); }
+}
 .ui-map .ui-map-locate:hover { background: var(--ui-color-surface-hover); }
 .ui-map .ui-map-locate:active { transform: scale(var(--ui-scale-press)); }
 .ui-map .ui-map-locate:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

@@ -291,7 +291,8 @@ EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChange
   rebuild). Without it, dark themes dim the light tiles as before. `{r}` in either URL is `@2x` on a
   high-density screen and empty otherwise (Leaflet's own placeholder). `tileSize` (256) and
   `zoomOffset` (0) are for 512 px tiles: 512 and -1. Serve keys from your API, not the bundle.
-- `locateControl`: a round button (38px, 44px on touch screens; raised surface, shadow) at the
+- `locateControl`: a round button (38px, 44px on touch screens with a 48px hit area centred on it
+  since 0.40.1; the zoom buttons get the same 48px hit area; raised surface, shadow) at the
   bottom-end corner of the visible part: `bottom: insets.bottom + 32px`, `inset-inline-end:
   insets.end + 12px`, so it floats just above a bottom sheet and moves with it (and sits above the
   attribution). Named `mapLocate` ("Show my location"), hugeicons `Gps01Icon`. It emits `(locate)`.
@@ -305,6 +306,9 @@ EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChange
   the pulse, below the markers and the pin; `role="img"` named `mapYourLocation` ("Your location").
 - `flyTo(point, zoom?)`: moves the map so the point sits in the middle of the visible part (between
   the insets); animated unless reduced motion. The app does the geolocation itself.
+- The attribution is always laid out left to right (`dir="ltr"`, `unicode-bidi: isolate`, 0.40.1),
+  so "© MapTiler © OpenStreetMap contributors" reads correctly on an RTL page; it still sits at the
+  inline end (bottom-left in RTL).
 
 The Flutter twin: `UiMap(tileUrlDark:, tileDimension:, zoomOffset:, locateControl: true, locating:,
 locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))` and

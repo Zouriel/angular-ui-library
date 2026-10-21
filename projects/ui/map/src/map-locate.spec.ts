@@ -200,8 +200,68 @@ describe('ui-map "my location" button', () => {
     expect(rule).toMatch(/inset-inline-end: calc\(var\(--ui-map-inset-end, 0px\) \+ var\(--ui-space-3\)\)/);
     expect(rule).toMatch(/border-radius: 50%/);
     expect(rule).toMatch(/transition: bottom var\(--ui-motion-base\)/);
-    // A 44px target on touch screens.
-    expect(css()).toMatch(/@media \(pointer: coarse\) \{ \.ui-map \.ui-map-locate \{ width: var\(--ui-size-touch\); height: var\(--ui-size-touch\); \} \}/);
+  });
+
+  // 0.40.1: the Dhirumi apps' tap-target check found the 44px circle was also the whole hit area.
+  it('on coarse pointers: a 44px circle (38px with a mouse) and a 48px hit area centred on it; the zoom buttons too', () => {
+    const coarse = coarseRules();
+    expect(coarse['.ui-map .ui-map-locate']).toMatchObject({ width: 'var(--ui-size-touch)', height: 'var(--ui-size-touch)' });
+    expect(/\.ui-map \.ui-map-locate \{[^}]*width: var\(--ui-size-lg\)/.test(css())).toBe(true);
+    // As specific as the base rule's :first-child / :last-child, or that rule wins and keeps them small.
+    for (const sel of ['.ui-map .leaflet-bar a', '.ui-map .leaflet-bar a:first-child', '.ui-map .leaflet-bar a:last-child'])
+      expect(coarse[sel], sel).toMatchObject({ position: 'relative', width: 'var(--ui-size-touch)', height: 'var(--ui-size-touch)' });
+    for (const sel of ['.ui-map .ui-map-locate::before', '.ui-map .leaflet-bar a::before']) {
+      const r = coarse[sel];
+      expect(r, sel).toBeTruthy();
+      expect(r.content, sel).toBe("''");
+      expect(r.position, sel).toBe('absolute');
+      expect(parseFloat(r.width!), sel).toBeGreaterThanOrEqual(48);
+      expect(parseFloat(r.height!), sel).toBeGreaterThanOrEqual(48);
+      // Centred on the visible control, so the circle and the buttons stay where they were.
+      expect([r.left, r.top, r.transform], sel).toEqual(['50%', '50%', 'translate(-50%, -50%)']);
+    }
+    // Nothing grows the hit area with a mouse: the ::before rules are touch-only.
+    expect(css().replace(/@media \(pointer: coarse\) \{[\s\S]*?\n\}/g, '')).not.toMatch(/(ui-map-locate|leaflet-bar a)::before/);
+  });
+});
+
+/** The declarations inside every `@media (pointer: coarse)` block of map.css, by selector. */
+type Decls = Partial<Record<'content' | 'position' | 'width' | 'height' | 'left' | 'top' | 'transform', string>>;
+function coarseRules(): Record<string, Decls> {
+  const out: Record<string, Decls> = {};
+  const text = css();
+  for (const m of text.matchAll(/@media \(pointer: coarse\) \{/g)) {
+    let depth = 1;
+    let i = m.index! + m[0].length;
+    const start = i;
+    for (; depth && i < text.length; i++) depth += text[i] === '{' ? 1 : text[i] === '}' ? -1 : 0;
+    for (const r of text.slice(start, i - 1).matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const decls = Object.fromEntries(r[2].split(';').map((d) => d.split(/:(.*)/s).map((x) => x.trim())).filter((d) => d[0]).map((d) => [d[0], d[1]]));
+      for (const sel of r[1].split(',').map((x) => x.replace(/\/\*[\s\S]*?\*\//g, '').trim())) out[sel] = { ...out[sel], ...decls };
+    }
+  }
+  return out;
+}
+
+// 0.40.1: in Dhivehi the English credits were laid out right to left, with the © signs misplaced.
+describe('ui-map attribution', () => {
+  it('is an LTR isolate in an RTL map, in the mirrored (bottom-left) corner', async () => {
+    const { root } = await setup((h) => h.dir.set('rtl'));
+    const attr = root.querySelector('.leaflet-control-attribution') as HTMLElement;
+    expect(attr.textContent).toContain('OpenStreetMap');
+    expect(attr.getAttribute('dir')).toBe('ltr');
+    expect(attr.parentElement!.classList.contains('leaflet-left')).toBe(true);
+    expect(attr.parentElement!.classList.contains('leaflet-bottom')).toBe(true);
+    const rule = /\.ui-map \.leaflet-control-attribution \{([^}]*)\}/.exec(css())![1];
+    expect(rule).toMatch(/direction: ltr;/);
+    expect(rule).toMatch(/unicode-bidi: isolate;/);
+  });
+
+  it('is LTR in an LTR map too, at the bottom right', async () => {
+    const { root } = await setup();
+    const attr = root.querySelector('.leaflet-control-attribution') as HTMLElement;
+    expect(attr.getAttribute('dir')).toBe('ltr');
+    expect(attr.parentElement!.classList.contains('leaflet-right')).toBe(true);
   });
 });
 
