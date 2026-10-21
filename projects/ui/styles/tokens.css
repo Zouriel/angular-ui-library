@@ -188,6 +188,9 @@
   --ui-color-selected: color-mix(in srgb, var(--ui-color-primary) 18%, transparent);
   --ui-color-track: var(--ui-color-surface-raised);
   --ui-color-overlay: rgba(0, 0, 0, 0.55);
+  /* The map's "you are here" dot and its ring: the blue and white people know from every maps app, in every theme. */
+  --ui-color-location: #1a73e8;
+  --ui-color-location-ring: #ffffff;
 
   /* Focus ring (WCAG AA visible focus) */
   --ui-focus-ring: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-border-focus);

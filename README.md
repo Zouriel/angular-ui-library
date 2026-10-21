@@ -49,6 +49,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Map tiles, my location, a sheet that holds still** (0.40): `ui-map` gains `tileUrlDark` (dark
+  tiles shown undimmed, swapped live with the theme), `tileSize` / `zoomOffset` (512 px tiles) and
+  `{r}` retina URLs; `locateControl` (a round "Show my location" button above the bottom sheet, with
+  `locating` and `locateOff` states, `(locate)`), `userLocation` (the "you are here" dot with an
+  accuracy halo) and `flyTo()`. `ui-bottom-sheet` no longer jumps or re-opens while typing on a phone.
 - **Persistent bottom sheets** (0.39.1): a `ui-bottom-sheet` whose smallest snap is above 0 (peek /
   half / full, no closed state) is `persistent()`: Escape collapses it to that snap and does nothing
   there, and the sheet never touches browser history, so Back always leaves the page. `maxWidth`

@@ -75,7 +75,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `menubar` | menubar (its own entry since 0.35.1: it needs the CDK overlay) |
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
-| `map` | OpenStreetMap map with markers, a pin, a "searching" pulse and view insets for full-screen map pages (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
+| `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button) and `UiGoogleAuthorization` (an access token for more scopes); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
@@ -274,6 +274,53 @@ The Flutter twin: `UiMap(fill: true, pulse: UiMapPulse(lat:, lng:, active:), vie
 EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChanged` and
 `UiBottomSheet.onCoverChanged`.
 
+## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
+
+```html
+<ui-map fill [insets]="{ top: cardCover(), bottom: sheetCover() }"
+  tileUrl="https://api.maptiler.com/maps/dataviz/256/{z}/{x}/{y}{r}.png?key=…"
+  tileUrlDark="https://api.maptiler.com/maps/dataviz-dark/256/{z}/{x}/{y}{r}.png?key=…"
+  attribution="&copy; MapTiler &copy; OpenStreetMap contributors"
+  locateControl [locating]="locating()" [locateOff]="denied()" (locate)="findMe()"
+  [userLocation]="me()" />
+```
+
+- `tileUrlDark: string | null` (default null): on a dark theme these tiles are shown as they are (no
+  dimming filter; the host gets `data-dark-tiles`). The map swaps between `tileUrl` and
+  `tileUrlDark` the moment the theme changes, by changing the URL of the same tile layer (no map
+  rebuild). Without it, dark themes dim the light tiles as before. `{r}` in either URL is `@2x` on a
+  high-density screen and empty otherwise (Leaflet's own placeholder). `tileSize` (256) and
+  `zoomOffset` (0) are for 512 px tiles: 512 and -1. Serve keys from your API, not the bundle.
+- `locateControl`: a round button (38px, 44px on touch screens; raised surface, shadow) at the
+  bottom-end corner of the visible part: `bottom: insets.bottom + 32px`, `inset-inline-end:
+  insets.end + 12px`, so it floats just above a bottom sheet and moves with it (and sits above the
+  attribution). Named `mapLocate` ("Show my location"), hugeicons `Gps01Icon`. It emits `(locate)`.
+  `locating`: a spinner instead of the icon, `aria-busy`, presses do nothing. `locateOff`:
+  `GpsOff01Icon` (struck through), `aria-description` and tooltip `mapLocationOff` ("Location is
+  off"); presses still emit so the app can ask for permission again.
+- `userLocation: UiMapUserLocation | null` (`{ lat, lng, accuracy? }`, accuracy in metres): a 16px
+  dot in `--ui-color-location` (#1a73e8 in every theme) with a 3px white ring (`--ui-color-location-ring`), over a soft halo
+  `uiMapAccuracyPx(accuracy, lat, zoom)` px across (twice the accuracy in metres at that zoom,
+  clamped to 28..240; none without an accuracy), redrawn on zoom. Its own pane above the tiles and
+  the pulse, below the markers and the pin; `role="img"` named `mapYourLocation` ("Your location").
+- `flyTo(point, zoom?)`: moves the map so the point sits in the middle of the visible part (between
+  the insets); animated unless reduced motion. The app does the geolocation itself.
+
+The Flutter twin: `UiMap(tileUrlDark:, tileDimension:, zoomOffset:, locateControl: true, locating:,
+locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))` and
+`UiMapState.flyTo`; `tileHeaders` go with both the light and the dark tiles.
+
+## Bottom sheet while typing (`ui-bottom-sheet`, 0.40)
+
+- An index past the end of `snaps` reads as the last snap, never as closed. When `snaps` changes and
+  the app didn't move `snap` with it, the sheet stays at the snap nearest the height it rested at,
+  and `snap` follows. (An app that sized its snaps to the viewport lost a snap when the keyboard
+  shrank the window; the sheet read as closed, went inert, blurred the field, the keyboard dropped,
+  the snaps came back and the sheet re-opened, over and over.)
+- `expandOnFocus` raises the sheet once per field: focus coming straight back to the same field
+  (within 600 ms of leaving the sheet) doesn't raise a sheet the person lowered.
+- The visual viewport is read in whole px; a pan only moves the sheet with the visible area.
+
 ## Feature card colours and motion (`ui-feature-card`, 0.39)
 
 ```html
@@ -318,7 +365,7 @@ The library's own words (names of icon-only buttons, default labels) are English
 input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
 `uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
-`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` (map), `googleSignIn` /
+`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` (map), `googleSignIn` /
 `googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback),
 `sidebarToggle` / `sidebarClose` / `sidebarLabel` (sidebar layout). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.

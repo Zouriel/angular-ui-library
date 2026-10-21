@@ -42,6 +42,10 @@ export interface UiStrings {
   zoomIn: string;
   zoomOut: string;
   placePinAtCentre: string;
+  /** Map: the "my location" button, its off state (location off or denied), and the "you are here" dot. */
+  mapLocate: string;
+  mapLocationOff: string;
+  mapYourLocation: string;
   /** Google sign-in button: Google's approved wordings (a translation must keep the meaning: signing
    *  in to this app with a Google account, not creating one). */
   googleSignIn: string;
@@ -76,6 +80,9 @@ export const defaultUiStrings: UiStrings = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   placePinAtCentre: 'Place the pin at the centre',
+  mapLocate: 'Show my location',
+  mapLocationOff: 'Location is off',
+  mapYourLocation: 'Your location',
   googleSignIn: 'Sign in with Google',
   googleSignUp: 'Sign up with Google',
   googleContinue: 'Continue with Google',

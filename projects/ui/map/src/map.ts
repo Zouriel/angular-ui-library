@@ -3,7 +3,11 @@ import {
   Component, DestroyRef, booleanAttribute, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
+import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
 import { injectUiStrings, type UiStatus } from '@zouriel/ui';
+import { UiTooltip } from '@zouriel/ui/overlay';
 
 /**
  * How ui-map loads Leaflet: `import('leaflet')` by default. Provide another loader to test a map
@@ -56,6 +60,37 @@ export interface UiMapInsets {
   end?: number;
 }
 
+/** Where the person is, from the app's own geolocation: the "you are here" dot. */
+export interface UiMapUserLocation extends UiLatLng {
+  /** How sure the position is, in metres: drawn as a soft halo of that radius (clamped on screen). */
+  accuracy?: number;
+}
+
+/** The smallest and largest the accuracy halo is drawn, in px across. */
+export const UI_MAP_ACCURACY_MIN = 28;
+export const UI_MAP_ACCURACY_MAX = 240;
+
+/**
+ * How many px across the accuracy halo is: twice `accuracy` metres at `zoom` and `lat` (Web
+ * Mercator, 256 px per tile at zoom 0), clamped to 28..240 so it never vanishes or swamps the map.
+ * 0 without an accuracy.
+ */
+export function uiMapAccuracyPx(accuracy: number | undefined, lat: number, zoom: number): number {
+  if (accuracy === undefined || !(accuracy > 0)) return 0;
+  const metresPerPx = (40075016.686 * Math.cos((lat * Math.PI) / 180)) / 2 ** (zoom + 8);
+  return Math.min(UI_MAP_ACCURACY_MAX, Math.max(UI_MAP_ACCURACY_MIN, Math.round((2 * accuracy) / metresPerPx)));
+}
+
+/** The "you are here" HTML: the halo (when sized) under a dot with a white ring. */
+export function uiMapUserHtml(halo: number): string {
+  return `${halo ? `<span class="ui-map-user-halo" style="width:${halo}px;height:${halo}px;left:${-halo / 2}px;top:${-halo / 2}px"></span>` : ''}<span class="ui-map-user-dot"></span>`;
+}
+
+/** The tile URL a map shows: the dark one on a dark theme when it is given, else the light one. */
+export function uiMapTileUrl(tileUrl: string, tileUrlDark: string | null | undefined, dark: boolean): string {
+  return dark && tileUrlDark ? tileUrlDark : tileUrl;
+}
+
 /** The shift, in px from the map's middle, of the middle of the part between the insets. */
 export function uiMapInsetShift(insets: UiMapInsets, rtl: boolean): { x: number; y: number } {
   const start = insets.start ?? 0;
@@ -72,6 +107,8 @@ export function uiMapPulseHtml(still: boolean): string {
 
 /** The Leaflet pane the pulse is drawn in: above the tiles (200) and overlays (400), below markers (600). */
 const PULSE_PANE = 'uiMapPulse';
+/** The "you are here" dot's pane: above the pulse, below the markers and the pin. */
+const USER_PANE = 'uiMapUser';
 
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
 export const UI_MAP_OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -115,14 +152,37 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *   between the insets, and the zoom buttons zoom around its middle. When the insets change, the map
  *   pans so the point that was in the middle of the visible part stays in the middle of the new one.
  * - `fill`: fills its parent's height, square-cornered, for a full-screen map page.
+ * - `tileUrlDark`: tiles drawn for dark themes (MapTiler's "-dark" styles, say). On a dark theme the
+ *   map shows them undimmed, and swaps between the two live when the theme changes; without it the
+ *   light tiles are dimmed. `{r}` in a URL is `@2x` on a high-density screen and empty otherwise;
+ *   `tileSize` / `zoomOffset` are for 512 px tiles (512 and -1).
+ * - `locateControl`: a round "Show my location" button at the bottom-end corner of the visible part
+ *   (it follows `insets`, so it floats just above a bottom sheet). It emits `(locate)`; the app finds
+ *   the position, sets `userLocation` and moves the map (`center`, or `flyTo`). `locating` shows a
+ *   spinner (and presses do nothing), `locateOff` a struck-through icon with "Location is off".
+ * - `userLocation`: the "you are here" dot with a white ring and a soft accuracy halo, sized in
+ *   metres on the map; above the tiles and pulse, below the markers and the pin; named "Your location".
  *
  * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
 @Component({
   selector: 'ui-map',
   encapsulation: ViewEncapsulation.None,
-  host: { class: 'ui-map', '[attr.data-dark]': 'dark() || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
-  template: `<div class="ui-map-canvas" #canvas></div>`,
+  host: { class: 'ui-map', '[attr.data-dark]': 'dark() || null', '[attr.data-dark-tiles]': '(dark() && !!tileUrlDark()) || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
+  imports: [HugeiconsIconComponent, UiTooltip],
+  template: `<div class="ui-map-canvas" #canvas></div>
+    @if (locateControl()) {
+      <button type="button" class="ui-map-locate" [attr.data-state]="locating() ? 'locating' : locateOff() ? 'off' : null"
+        [attr.aria-label]="strings.mapLocate" [attr.aria-busy]="locating() ? 'true' : null"
+        [attr.aria-description]="locateOff() ? strings.mapLocationOff : null"
+        [uiTooltip]="locateOff() ? strings.mapLocationOff : ''" uiTooltipPosition="left" (click)="onLocate()">
+        @if (locating()) {
+          <span class="ui-map-locate-spin" aria-hidden="true"></span>
+        } @else {
+          <hugeicons-icon [icon]="locateOff() ? icons.off : icons.locate" [size]="20" [strokeWidth]="1.8" aria-hidden="true" />
+        }
+      </button>
+    }`,
   styleUrls: ['./leaflet.css', './map.css'],
 })
 export class UiMap {
@@ -141,6 +201,12 @@ export class UiMap {
   /** The tiles' Referer policy (OSM's tile policy needs a Referer). */
   tileReferrerPolicy = input<Exclude<ReferrerPolicy, ''>>('strict-origin-when-cross-origin');
   tileUrl = input(UI_MAP_OSM_TILES);
+  /** Tiles for dark themes, shown undimmed; null dims the light tiles instead. */
+  tileUrlDark = input<string | null>(null);
+  /** The tiles' size in px: 512 for 512 px tiles (with `zoomOffset` -1). */
+  tileSize = input(256);
+  /** Added to the zoom in tile URLs: -1 for 512 px tiles. */
+  zoomOffset = input(0);
   attribution = input(UI_MAP_OSM_ATTRIBUTION);
   ariaLabel = input('Map');
   /** The "searching" rings around a point; null or `active: false` for none. */
@@ -149,16 +215,28 @@ export class UiMap {
   insets = input<UiMapInsets>({});
   /** Fill the parent's height with square corners (a full-screen map page). */
   fill = input(false, { transform: booleanAttribute });
+  /** A "Show my location" button at the bottom-end of the visible part; it emits `(locate)`. */
+  locateControl = input(false, { transform: booleanAttribute });
+  /** The app is finding the position: the button shows a spinner and ignores presses. */
+  locating = input(false, { transform: booleanAttribute });
+  /** Location is off or denied: the icon is struck through, with "Location is off". Still pressable, to ask again. */
+  locateOff = input(false, { transform: booleanAttribute });
+  /** The "you are here" dot, with an accuracy halo; null for none. */
+  userLocation = input<UiMapUserLocation | null>(null);
 
   readonly markerSelected = output<UiMapMarker>();
   readonly centerChanged = output<UiMapView>();
+  /** The "Show my location" button was pressed (not while `locating`). */
+  readonly locate = output<void>();
 
-  /** The map is on a dark theme: tiles dimmed. */
+  protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon };
+
+  /** The map is on a dark theme: tiles dimmed, or the dark tiles shown. */
   protected readonly dark = signal(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly loadLeaflet = inject(UI_MAP_LEAFLET);
-  private readonly strings = injectUiStrings();
+  protected readonly strings = injectUiStrings();
   private readonly zone = inject(NgZone);
   private L: typeof Leaflet | null = null;
   private map: Leaflet.Map | null = null;
@@ -166,6 +244,9 @@ export class UiMap {
   private pinMarker: Leaflet.Marker | null = null;
   private tiles: Leaflet.TileLayer | null = null;
   private pulseMarker: Leaflet.Marker | null = null;
+  private userMarker: Leaflet.Marker | null = null;
+  /** What the tile layer was built with (all but the URL, which it can swap in place). */
+  private tilesKey = '';
   /** What the pulse marker was built for: rebuilt when its tone or the motion setting changes. */
   private pulseKey = '';
   /** The inset shift the view was last laid out for, to pan by the difference when it changes. */
@@ -217,10 +298,16 @@ export class UiMap {
       untracked(() => this.applyInsets(i));
     });
     effect(() => {
-      const url = this.tileUrl();
+      const url = uiMapTileUrl(this.tileUrl(), this.tileUrlDark(), this.dark());
       const attr = this.attribution();
       this.tileReferrerPolicy();
+      this.tileSize();
+      this.zoomOffset();
       untracked(() => this.drawTiles(url, attr));
+    });
+    effect(() => {
+      const u = this.userLocation();
+      untracked(() => this.drawUser(u));
     });
   }
 
@@ -272,6 +359,9 @@ export class UiMap {
       const pane = map.createPane(PULSE_PANE);
       pane.style.zIndex = '450';
       pane.style.pointerEvents = 'none';
+      const userPane = map.createPane(USER_PANE);
+      userPane.style.zIndex = '500';
+      userPane.style.pointerEvents = 'none';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       map.on('moveend', () => {
@@ -290,6 +380,8 @@ export class UiMap {
       });
       const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
       ro.observe(el);
+      // The accuracy halo is sized in metres: redraw it for the new zoom.
+      map.on('zoomend', () => this.drawUser(this.userLocation()));
       this.teardown = () => {
         ro.disconnect();
         map.remove();
@@ -298,16 +390,36 @@ export class UiMap {
         this.pinMarker = null;
         this.pulseMarker = null;
         this.pulseKey = '';
+        this.userMarker = null;
         this.tiles = null;
+        this.tilesKey = '';
       };
     });
     // Laid out from no insets, so a non-zero first value centres the view in the visible part.
     this.shift = { x: 0, y: 0 };
     this.applyInsets(this.insets());
-    this.drawTiles(this.tileUrl(), this.attribution());
+    this.drawTiles(uiMapTileUrl(this.tileUrl(), this.tileUrlDark(), this.dark()), this.attribution());
     this.drawMarkers(this.markers());
     this.drawPin(this.pin());
     this.drawPulse(this.pulse());
+    this.drawUser(this.userLocation());
+  }
+
+  /**
+   * Moves the map so `c` sits in the middle of the visible part (between the insets), at `zoom` or
+   * the current zoom; animated unless reduced motion. For "my location": the app calls it with the
+   * position it found.
+   */
+  flyTo(c: UiLatLng, zoom?: number): void {
+    const map = this.map;
+    if (!map) return;
+    const z = zoom ?? map.getZoom();
+    map.setView(this.mapCenterFor(c, z), z, { animate: !this.reduced() });
+  }
+
+  protected onLocate(): void {
+    if (this.locating()) return;
+    this.locate.emit();
   }
 
   /** The point in the middle of the part of the map between the insets. */
@@ -353,6 +465,8 @@ export class UiMap {
     el.style.setProperty('--ui-map-inset-bottom', px(insets.bottom ?? 0));
     el.style.setProperty('--ui-map-inset-left', px(rtl ? end : start));
     el.style.setProperty('--ui-map-inset-right', px(rtl ? start : end));
+    // The locate button sits at the inline end (its own CSS flips it in RTL).
+    el.style.setProperty('--ui-map-inset-end', px(end));
     const next = uiMapInsetShift(insets, rtl);
     const old = this.shift;
     this.shift = next;
@@ -395,11 +509,44 @@ export class UiMap {
     el?.setAttribute('data-tone', p.tone ?? 'primary');
   }
 
+  /**
+   * Shows the tiles at `url`. Only the URL changed (the theme flipped between the light and dark
+   * tiles): the same layer swaps its URL in place, so the map isn't rebuilt. Otherwise a new layer.
+   */
   private drawTiles(url: string, attribution: string): void {
     const { L, map } = this;
     if (!L || !map) return;
+    const tileSize = this.tileSize();
+    const zoomOffset = this.zoomOffset();
+    const referrerPolicy = this.tileReferrerPolicy();
+    const key = JSON.stringify([attribution, tileSize, zoomOffset, referrerPolicy]);
+    const layer = this.tiles as (Leaflet.TileLayer & { _url?: string }) | null;
+    if (layer && key === this.tilesKey && typeof layer.setUrl === 'function') {
+      if (layer._url !== url) layer.setUrl(url);
+      return;
+    }
     this.tiles?.remove();
-    this.tiles = L.tileLayer(url, { attribution, maxZoom: 19, crossOrigin: true, referrerPolicy: this.tileReferrerPolicy() }).addTo(map);
+    this.tiles = L.tileLayer(url, { attribution, maxZoom: 19, tileSize, zoomOffset, crossOrigin: true, referrerPolicy }).addTo(map);
+    this.tilesKey = key;
+  }
+
+  private drawUser(u: UiMapUserLocation | null): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    this.userMarker?.remove();
+    this.userMarker = null;
+    if (!u) return;
+    const halo = uiMapAccuracyPx(u.accuracy, u.lat, map.getZoom());
+    const marker = L.marker([u.lat, u.lng], {
+      pane: USER_PANE,
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({ className: 'ui-map-user', html: uiMapUserHtml(halo), iconSize: [0, 0] }),
+    });
+    this.userMarker = marker.addTo(map);
+    const el = marker.getElement();
+    el?.setAttribute('role', 'img');
+    el?.setAttribute('aria-label', this.strings.mapYourLocation);
   }
 
   private drawMarkers(list: UiMapMarker[]): void {
@@ -460,7 +607,7 @@ export class UiMap {
     }
   }
 
-  /** Dim the tiles on a dark theme; re-check when a theme changes anywhere up the tree. */
+  /** Dark theme: dim the tiles, or show the dark ones. Re-check when a theme changes anywhere up the tree. */
   private watchTheme(destroy: DestroyRef): void {
     const check = () => this.dark.set(uiMapIsDark(getComputedStyle(this.host.nativeElement).backgroundColor));
     check();

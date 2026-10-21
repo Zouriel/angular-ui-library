@@ -1,5 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
-import { UiMap, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiBottomSheet } from '@zouriel/ui/dialog';
@@ -23,7 +23,30 @@ interface UiMapPulse extends UiLatLng {
   tone?: UiStatus;   // the rings' colour, default 'primary'
   active?: boolean;  // false: nothing shown, nothing running
 }
-interface UiMapInsets { top?: number; bottom?: number; start?: number; end?: number; } // px`;
+interface UiMapInsets { top?: number; bottom?: number; start?: number; end?: number; } // px
+interface UiMapUserLocation extends UiLatLng {
+  accuracy?: number; // metres: the soft halo's radius, drawn 28..240px across
+}`;
+
+const TILES_CODE = `<!-- MapTiler raster (256 px): {r} is @2x on high-density screens. Keep the key out of the repo. -->
+<ui-map
+  tileUrl="https://api.maptiler.com/maps/dataviz/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY"
+  tileUrlDark="https://api.maptiler.com/maps/dataviz-dark/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY"
+  attribution="&copy; MapTiler &copy; OpenStreetMap contributors" />
+<!-- 512 px tiles: [tileSize]="512" [zoomOffset]="-1" -->`;
+
+const LOCATE_CODE = `<ui-map fill [insets]="{ bottom: sheetCover() }" [userLocation]="me()"
+  locateControl [locating]="locating()" [locateOff]="denied()" (locate)="findMe()" />
+
+async findMe() {
+  this.locating.set(true);
+  navigator.geolocation.getCurrentPosition((p) => {
+    const me = { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy };
+    this.me.set(me);
+    this.map().flyTo(me, 16); // centred in the part above the sheet
+    this.locating.set(false);
+  }, () => { this.denied.set(true); this.locating.set(false); });
+}`;
 
 const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
@@ -76,6 +99,31 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Styled tiles" anchor="styled-tiles" selector="ui-map tileUrl · tileUrlDark" [api]="tilesApi"
+        summary="Any raster tile service: tileUrl for light themes and tileUrlDark for dark ones. On a dark theme the dark tiles are shown as they are (no dimming), and the map swaps between the two the moment the theme changes, in the same tile layer. Without tileUrlDark the light tiles are dimmed on dark themes. {r} in the URL becomes @2x on a high-density screen; for 512 px tiles pass tileSize 512 and zoomOffset -1. Paste your own URLs below to try a style (this page never stores a key).">
+        <doc-demo lang="html" [code]="TILES_CODE">
+          <div class="tile-fields">
+            <ui-form-field label="Light tile URL" hint="Empty: OpenStreetMap"><ui-input placeholder="https://api.maptiler.com/maps/dataviz/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY" [(ngModel)]="tileLight" /></ui-form-field>
+            <ui-form-field label="Dark tile URL" hint="Empty: the light tiles, dimmed"><ui-input placeholder="https://api.maptiler.com/maps/dataviz-dark/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY" [(ngModel)]="tileDark" /></ui-form-field>
+          </div>
+          <div class="map-wrap">
+            <ui-map [center]="center()" [zoom]="15" [markers]="markers" [tileUrl]="tileLight || osm" [tileUrlDark]="tileDark || null"
+              [attribution]="tileLight ? 'Tiles from your URL &copy; OpenStreetMap contributors' : osmAttribution" ariaLabel="Styled map" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="My location" anchor="my-location" selector="ui-map locateControl · [userLocation]" [api]="locateApi"
+        summary="locateControl adds a round Show my location button at the bottom-end corner of the visible part: it follows insets, so on a map page it floats just above the bottom sheet and moves with it. It emits locate; the app finds the position itself, sets userLocation and moves the map with flyTo (or center), which centre in the visible part. locating shows a spinner and ignores presses; locateOff shows the icon struck through with the tooltip Location is off, and a press still emits so the app can ask again. userLocation draws the you-are-here dot, blue with a white ring, over a soft halo as wide as the accuracy in metres (28 to 240 px across), above the tiles and below markers and the pin, named Your location. Try it on the map page.">
+        <doc-demo lang="ts + html" [code]="LOCATE_CODE">
+          <div class="map-wrap">
+            <ui-map #small [center]="center()" [zoom]="15" [userLocation]="me()" locateControl [locating]="locating()" [locateOff]="locOff() === 'off'"
+              (locate)="findMe(small)" ariaLabel="Where you are" />
+          </div>
+          <ui-segmented label="Location (demo)" size="sm" [options]="locOptions" [value]="locOff()" (valueChange)="locOff.set($any($event))" />
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Map page" anchor="map-page" selector="ui-map fill · [pulse] · [insets]" [api]="pageApi"
         summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part.">
         <doc-demo lang="html" [code]="PAGE_CODE">
@@ -90,8 +138,9 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     @if (pageOpen()) {
       @for (d of [dir()]; track d) {
         <div class="map-page" [attr.dir]="d">
-          <ui-map fill [center]="home" [zoom]="15" [markers]="markers" [pin]="home" [pinDraggable]="false" pinLabel="Your home"
-            [pulse]="pulse()" [insets]="insets()" ariaLabel="Nurses near your home" />
+          <ui-map #page fill [center]="home" [zoom]="15" [markers]="markers" [pin]="home" [pinDraggable]="false" pinLabel="Your home"
+            [pulse]="pulse()" [insets]="insets()" [userLocation]="me()" locateControl [locating]="locating()" [locateOff]="locOff() === 'off'"
+            (locate)="findMe(page)" ariaLabel="Nurses near your home" />
           <ui-floating-panel placement="top" ariaLabel="Status" (coverChange)="cardCover.set($event)">
             <div class="status">
               @if (searching()) {
@@ -110,6 +159,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
                 <ui-input placeholder="Building, street, island" autocomplete="street-address" [(ngModel)]="address" />
               </ui-form-field>
               <ui-segmented label="When" [options]="whenOptions" [(value)]="when" />
+              <ui-segmented label="Location (demo)" size="sm" [options]="locOptions" [value]="locOff()" (valueChange)="locOff.set($any($event))" />
               <ui-segmented label="Direction (demo)" size="sm" [options]="dirOptions" [value]="dir()" (valueChange)="dir.set($any($event))" />
               <ui-button [block]="true" [variant]="searching() ? 'outline' : 'primary'" (click)="searching.set(!searching())">
                 {{ searching() ? 'Stop searching' : 'Find a nurse' }}
@@ -132,11 +182,34 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     .status-text strong { font-size: var(--ui-font-size-md); }
     .status .meta { margin-top: 0; }
     .form { display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .tile-fields { display: grid; gap: var(--ui-space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: var(--ui-space-3); }
   `,
 })
 export class MapPage {
   protected readonly MARKER = MARKER;
   protected readonly PAGE_CODE = PAGE_CODE;
+  protected readonly TILES_CODE = TILES_CODE;
+  protected readonly LOCATE_CODE = LOCATE_CODE;
+  protected readonly osm = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  protected readonly osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  /** Pasted tile URLs for the styled-tiles demo; never stored. */
+  protected tileLight = '';
+  protected tileDark = '';
+  // "My location": a stand-in position (the showcase doesn't ask for the real one).
+  protected readonly me = signal<UiMapUserLocation | null>(null);
+  protected readonly locating = signal(false);
+  protected readonly locOff = signal<'on' | 'off'>('on');
+  protected readonly locOptions = [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }];
+  protected findMe(map: UiMap): void {
+    if (this.locOff() === 'off') return; // the app would ask for permission here
+    this.locating.set(true);
+    setTimeout(() => {
+      const me: UiMapUserLocation = { lat: 4.1768, lng: 73.5121, accuracy: 35 };
+      this.me.set(me);
+      map.flyTo(me, 16);
+      this.locating.set(false);
+    }, 700);
+  }
   protected readonly home: UiLatLng = { lat: 4.1752, lng: 73.5089 };
   protected readonly pageOpen = signal(false);
   protected readonly searching = signal(false);
@@ -187,6 +260,22 @@ export class MapPage {
     { name: 'pinMode', type: 'boolean', default: 'false', desc: 'A tap on the map, or Enter on it, moves the pin there.' },
     { name: 'pinLabel', type: 'string', default: "'Chosen location'", desc: "The pin's accessible name." },
     { name: 'pinDraggable', type: 'boolean', default: 'true', desc: 'false shows a fixed location with the pin\'s look (not draggable, not focusable, still named).' },
+  ];
+  protected readonly tilesApi: ApiRow[] = [
+    { name: 'tileUrl', type: 'string', default: 'OSM standard tiles', desc: 'Tile URL template for light themes. {r} is @2x on a high-density screen, empty otherwise.' },
+    { name: 'tileUrlDark', type: 'string | null', default: 'null', desc: 'Tiles for dark themes, shown undimmed; swapped live on a theme change (same layer). null: the light tiles, dimmed.' },
+    { name: 'tileSize', type: 'number', default: '256', desc: 'Tile size in px: 512 for 512 px tiles.' },
+    { name: 'zoomOffset', type: 'number', default: '0', desc: 'Added to the zoom in tile URLs: -1 with 512 px tiles.' },
+    { name: 'attribution', type: 'string (HTML)', default: '© OpenStreetMap contributors', desc: 'The tiles\' credit, e.g. © MapTiler © OpenStreetMap contributors.' },
+  ];
+  protected readonly locateApi: ApiRow[] = [
+    { name: 'locateControl', type: 'boolean', default: 'false', desc: 'A round Show my location button at the bottom-end of the visible part; follows insets.' },
+    { name: 'locating', type: 'boolean', default: 'false', desc: 'A spinner (aria-busy) instead of the icon; presses do nothing.' },
+    { name: 'locateOff', type: 'boolean', default: 'false', desc: 'Location off or denied: struck-through icon, tooltip and description Location is off. Presses still emit, to ask again.' },
+    { name: '(locate)', type: 'void', default: '—', desc: 'The button was pressed (not while locating).' },
+    { name: 'userLocation', type: 'UiMapUserLocation | null', default: 'null', desc: 'The you-are-here dot (--ui-color-location, a white ring) over an accuracy halo sized in metres; named Your location.' },
+    { name: 'flyTo(point, zoom?)', type: 'method', default: '—', desc: 'Moves the map so the point is in the middle of the visible part (between the insets).' },
+    { name: 'mapLocate / mapLocationOff / mapYourLocation', type: 'UiStrings', default: "'Show my location' / 'Location is off' / 'Your location'", desc: 'The words, from provideUiStrings.' },
   ];
   protected readonly pageApi: ApiRow[] = [
     { name: 'pulse', type: 'UiMapPulse | null', default: 'null', desc: 'Soft rings radiating from a point (3 staggered, 2.4s, up to 120px) while active; a still halo under reduced motion. Geo-anchored, under the markers and pin, silent.' },

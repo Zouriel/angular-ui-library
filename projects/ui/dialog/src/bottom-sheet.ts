@@ -10,6 +10,8 @@ import {
 const SLOP = 6;
 /** Faster than this on release (px per ms) moves one snap in that direction, however short the drag. */
 const FLICK = 0.45;
+/** Focus back on the same field within this long (ms) of leaving it is the browser's churn, not a new focus. */
+const REFOCUS_MS = 600;
 /** Where a drag that starts inside the body is never read as moving the sheet. */
 const OWN_DRAG = 'input, textarea, select, [contenteditable="true"], [role="slider"], [data-sheet-nodrag]';
 
@@ -52,8 +54,13 @@ interface Drag {
  * closed state, so Escape only collapses it to that smallest snap and does nothing once it rests
  * there (the sheet never touches browser history, so the browser's Back button always leaves the
  * page). With `maxWidth`, a wider screen gets a sheet that wide, centred. The handle is a button that steps through the snaps, and ↑/↓ on it do the same. When a field inside gains focus on a touch screen, the sheet
- * rises to its tallest snap (turn that off with `expandOnFocus`), and while an on-screen keyboard is up
- * the sheet rests on top of it rather than behind it.</p>
+ * rises to its tallest snap (turn that off with `expandOnFocus`), once per field: typing, the keyboard
+ * opening, and the browser taking focus away and straight back do not raise it again. While an
+ * on-screen keyboard is up the sheet rests on top of it rather than behind it.</p>
+ *
+ * <p>When `snaps` changes (an app that sizes them to the viewport, which the keyboard shrinks), the
+ * sheet stays at the snap nearest the height it rested at, and `snap` follows; an index past the end
+ * is read as the last snap, never as closed.</p>
  *
  * <p>Positioned `fixed`; keep it out of transformed ancestors.</p>
  */
@@ -73,7 +80,7 @@ interface Drag {
     }
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
-      (keydown.escape)="onEscape()" (focusin)="onFocusIn($event)">
+      (keydown.escape)="onEscape()" (focusin)="onFocusIn($event)" (focusout)="onFocusOut($event)">
       <header class="grab"
         (touchstart)="onTouchStart($event, false)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)"
         (pointerdown)="onPointerDown($event)">
@@ -210,8 +217,14 @@ export class UiBottomSheet {
   protected readonly room = computed(() =>
     Math.max(0, this.viewport() - (this.keyboard() > 0 ? 0 : this.offset()) - this.topInset()));
   protected readonly maxHeight = computed(() => Math.round(this.room() * Math.max(0, ...this.snaps())));
+  /**
+   * `snap` within the snaps. Out of range reads as the nearest end: an app whose snaps shrank (fewer
+   * of them while the keyboard is up) once had its sheet read as closed, which made it inert, blurred
+   * the field, dropped the keyboard and restored the snaps: the sheet re-opened, over and over.
+   */
+  private readonly index = computed(() => Math.min(Math.max(0, this.snap()), Math.max(0, this.snaps().length - 1)));
   private readonly snapHeight = (i: number) => Math.round(this.room() * (this.snaps()[i] ?? 0));
-  protected readonly isOpen = computed(() => this.snapHeight(this.snap()) > 0);
+  protected readonly isOpen = computed(() => this.snapHeight(this.index()) > 0);
   /** Index of the smallest snap. */
   private readonly lowest = computed(() => {
     const snaps = this.snaps();
@@ -221,13 +234,19 @@ export class UiBottomSheet {
   readonly persistent = computed(() => (this.snaps()[this.lowest()] ?? 0) > 0);
   /** With a backdrop and open, it's a modal dialog: focus moves in and is trapped. */
   protected readonly modal = computed(() => this.backdrop() && this.isOpen());
-  protected readonly translate = computed(() => this.maxHeight() - (this.dragHeight() ?? this.snapHeight(this.snap())));
+  protected readonly translate = computed(() => this.maxHeight() - (this.dragHeight() ?? this.snapHeight(this.index())));
   /** How far the sheet's settled position hangs below its resting edge. Not live while dragging, so content doesn't jump. */
-  protected readonly hiddenBelow = computed(() => this.maxHeight() - this.snapHeight(this.snap()));
-  protected readonly handleLabel = computed(() => (this.snap() >= this.snaps().length - 1 ? 'Make smaller' : 'Make larger'));
+  protected readonly hiddenBelow = computed(() => this.maxHeight() - this.snapHeight(this.index()));
+  protected readonly handleLabel = computed(() => (this.index() >= this.snaps().length - 1 ? 'Make smaller' : 'Make larger'));
 
   private drag: Drag | null = null;
   private touched = false;
+  /** The field that last raised the sheet, and when focus last left the sheet: a field that gets focus straight back doesn't raise it again. */
+  private expandedFor: Element | null = null;
+  private leftAt = -Infinity;
+  /** The snaps the sheet last rested on, to find the same height in new ones. */
+  private lastSnaps: readonly number[] | null = null;
+  private lastIndex = -1;
 
   constructor() {
     if (this.browser) {
@@ -245,8 +264,10 @@ export class UiBottomSheet {
         const open = keyboardHeight > 120; // less is browser chrome settling, not a keyboard
         this.keyboard.set(open ? Math.round(keyboardHeight) : 0);
         // Rest on the bottom of what's VISIBLE: the layout viewport's bottom less the keyboard, less any pan.
+        // A pan moves the sheet with the visible area, so where it is on screen doesn't change.
         this.keyboardEdge.set(open ? Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) : 0);
-        this.viewport.set(open ? vv.height : window.innerHeight);
+        // Whole px: sub-pixel jitter in the visual viewport (zoom, scroll) must not resize the sheet.
+        this.viewport.set(Math.round(open ? vv.height : window.innerHeight));
       };
       onResize();
       window.addEventListener('resize', onResize);
@@ -284,9 +305,32 @@ export class UiBottomSheet {
         }
       });
     });
+    // New snaps: stay at the snap nearest the fraction it rested at (and tell the app), unless the
+    // app moved `snap` along with them, which says where it wants the sheet.
+    effect(() => {
+      const snaps = this.snaps();
+      const i = this.snap();
+      untracked(() => {
+        const prev = this.lastSnaps;
+        const prevIndex = this.lastIndex;
+        this.lastSnaps = snaps;
+        this.lastIndex = i;
+        if (!prev || !snaps.length || prev === snaps || i !== prevIndex) return;
+        const was = prev[Math.min(Math.max(0, i), prev.length - 1)];
+        if (was === undefined) return;
+        let best = 0;
+        snaps.forEach((s, j) => {
+          if (Math.abs(s - was) < Math.abs(snaps[best] - was)) best = j;
+        });
+        if (best !== i) {
+          this.lastIndex = best;
+          this.snap.set(best);
+        }
+      });
+    });
     effect(() => {
       if (this.dragHeight() !== null) return;
-      const height = this.snapHeight(this.snap());
+      const height = this.snapHeight(this.index());
       this.heightChange.emit(height);
       this.coverChange.emit(height > 0 ? height + this.bottom() : 0);
     });
@@ -301,13 +345,13 @@ export class UiBottomSheet {
     }
     const last = this.snaps().length - 1;
     const firstOpen = this.snaps().findIndex((s) => s > 0);
-    this.snap.set(this.snap() >= last ? Math.max(0, firstOpen) : this.snap() + 1);
+    this.snap.set(this.index() >= last ? Math.max(0, firstOpen) : this.index() + 1);
   }
 
   protected onHandleKey(e: KeyboardEvent): void {
     const last = this.snaps().length - 1;
-    if (e.key === 'ArrowUp') this.snap.set(Math.min(last, this.snap() + 1));
-    else if (e.key === 'ArrowDown') this.snap.set(Math.max(0, this.snap() - 1));
+    if (e.key === 'ArrowUp') this.snap.set(Math.min(last, this.index() + 1));
+    else if (e.key === 'ArrowDown') this.snap.set(Math.max(0, this.index() - 1));
     else return;
     e.preventDefault();
   }
@@ -328,7 +372,7 @@ export class UiBottomSheet {
 
   /** Escape closes it, or collapses a `persistent` sheet to its smallest snap and does nothing there. */
   protected onEscape(): void {
-    if (this.persistent() && this.snap() === this.lowest()) return;
+    if (this.persistent() && this.index() === this.lowest()) return;
     this.close();
   }
 
@@ -348,8 +392,18 @@ export class UiBottomSheet {
     if (from instanceof HTMLElement && !this.sheet().nativeElement.contains(from) && !from.classList.contains('cdk-focus-trap-anchor')) this.returnFocus = from;
     if (!this.expandOnFocus() || !(this.touched || window.matchMedia('(pointer: coarse)').matches)) return;
     const target = e.target as Element | null;
-    if (target?.closest('input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea, [contenteditable="true"]'))
-      this.snap.set(this.snaps().length - 1);
+    const field = target?.closest('input:not([type=range]):not([type=checkbox]):not([type=radio]), textarea, [contenteditable="true"]');
+    if (!field) return;
+    // The same field getting focus straight back (the browser blurred it for a moment) is not a new
+    // focus: the person may have lowered the sheet on purpose.
+    if (field === this.expandedFor && e.timeStamp - this.leftAt < REFOCUS_MS) return;
+    this.expandedFor = field;
+    this.snap.set(this.snaps().length - 1);
+  }
+
+  protected onFocusOut(e: FocusEvent): void {
+    const to = e.relatedTarget;
+    if (!(to instanceof Node) || !this.sheet().nativeElement.contains(to)) this.leftAt = e.timeStamp;
   }
 
   private suppressClick = false;
@@ -438,7 +492,7 @@ export class UiBottomSheet {
 
   private begin(id: number, x: number, y: number, at: number, fromBody: boolean): void {
     this.drag = {
-      id, startX: x, startY: y, startHeight: this.snapHeight(this.snap()), lastY: y, lastAt: at, velocity: 0,
+      id, startX: x, startY: y, startHeight: this.snapHeight(this.index()), lastY: y, lastAt: at, velocity: 0,
       engaged: fromBody ? null : true, fromBody,
     };
   }
@@ -457,7 +511,7 @@ export class UiBottomSheet {
   /** A body drag moves the sheet when the content can't use it: already at its top going down, or while there's more sheet above. */
   private bodyShouldMove(target: Element | null, dy: number): boolean {
     if (dy > 0) return !this.scrollableAbove(target);
-    return this.snap() < this.snaps().length - 1;
+    return this.index() < this.snaps().length - 1;
   }
 
   private scrollableAbove(target: Element | null): boolean {

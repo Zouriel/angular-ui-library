@@ -12,7 +12,8 @@
 .ui-map .leaflet-container { font-family: var(--ui-font-default); background: var(--ui-color-surface-subtle); }
 .ui-map .leaflet-container:focus-visible { outline: none; box-shadow: inset var(--ui-focus-ring); }
 /* Dark themes: dim and darken the tiles rather than shine a white street map. */
-.ui-map[data-dark] .leaflet-tile-pane { filter: brightness(0.62) contrast(1.15) saturate(0.6); }
+/* With tiles drawn for the dark (tileUrlDark), they are shown as they are. */
+.ui-map[data-dark]:not([data-dark-tiles]) .leaflet-tile-pane { filter: brightness(0.62) contrast(1.15) saturate(0.6); }
 
 .ui-map .leaflet-bar { display: flex; flex-direction: column; gap: var(--ui-space-1); border: 0; box-shadow: none; }
 /* Separate buttons, a little apart, each with its own border and shadow. */
@@ -71,6 +72,38 @@
 .ui-map .leaflet-right { right: var(--ui-map-inset-right, 0px); }
 .ui-map .leaflet-top, .ui-map .leaflet-bottom { transition: top var(--ui-motion-base) var(--ui-ease-standard), bottom var(--ui-motion-base) var(--ui-ease-standard); }
 
+/* locateControl: a round "Show my location" button at the bottom-end of the visible part, above the
+   attribution; it follows the insets (a bottom sheet's height) like the other controls. */
+.ui-map .ui-map-locate {
+  position: absolute; z-index: 1000; box-sizing: border-box;
+  bottom: calc(var(--ui-map-inset-bottom, 0px) + var(--ui-space-8));
+  inset-inline-end: calc(var(--ui-map-inset-end, 0px) + var(--ui-space-3));
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  width: var(--ui-size-lg); height: var(--ui-size-lg); border-radius: 50%;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+  border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-2); cursor: pointer;
+  transition: bottom var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard),
+              transform var(--ui-motion-fast) var(--ui-ease-standard);
+}
+@media (pointer: coarse) { .ui-map .ui-map-locate { width: var(--ui-size-touch); height: var(--ui-size-touch); } }
+.ui-map .ui-map-locate:hover { background: var(--ui-color-surface-hover); }
+.ui-map .ui-map-locate:active { transform: scale(var(--ui-scale-press)); }
+.ui-map .ui-map-locate:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.ui-map .ui-map-locate[data-state="off"] { color: var(--ui-color-text-muted); }
+.ui-map .ui-map-locate[data-state="locating"] { cursor: progress; }
+.ui-map .ui-map-locate-spin { box-sizing: border-box; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--ui-color-border); border-top-color: var(--ui-color-primary); animation: ui-map-spin 700ms linear infinite; }
+@keyframes ui-map-spin { to { transform: rotate(360deg); } }
+
+/* userLocation: the "you are here" dot (16px, a white ring) over a soft accuracy halo sized in metres. */
+.ui-map .ui-map-user { --ui-map-user-tone: var(--ui-color-location); }
+.ui-map .ui-map-user-dot { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%;
+  background: var(--ui-map-user-tone); border: 3px solid var(--ui-color-location-ring); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-user-halo { position: absolute; box-sizing: border-box; border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-map-user-tone) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-map-user-tone) 40%, transparent);
+  transition: width var(--ui-motion-base) var(--ui-ease-standard), height var(--ui-motion-base) var(--ui-ease-standard); }
+
 /* pulse: soft rings radiating from a point while the app searches. The marker is a 0x0 point; the
    rings are centred on it, 120px across at their widest, and fade as they grow. */
 .ui-map .ui-map-pulse { --ui-map-pulse-tone: var(--ui-color-primary); }
@@ -104,5 +137,6 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-map .ui-map-pulse-ring { animation: none; opacity: 0; }
   .ui-map .ui-map-pulse-ring:first-child { opacity: 1; transform: scale(0.6); }
-  .ui-map .leaflet-top, .ui-map .leaflet-bottom { transition: none; }
+  .ui-map .leaflet-top, .ui-map .leaflet-bottom, .ui-map .ui-map-locate, .ui-map .ui-map-user-halo { transition: none; }
+  .ui-map .ui-map-locate-spin { animation-duration: 1.4s; }
 }
