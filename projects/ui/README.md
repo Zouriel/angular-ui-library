@@ -75,7 +75,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `menubar` | menubar (its own entry since 0.35.1: it needs the CDK overlay) |
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
-| `map` | OpenStreetMap map with markers and a pin (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
+| `map` | OpenStreetMap map with markers, a pin, a "searching" pulse and view insets for full-screen map pages (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button) and `UiGoogleAuthorization` (an access token for more scopes); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
@@ -227,6 +227,76 @@ Two shortcut tiles under a chat bar, together exactly its width and equal in hei
 The Flutter twin: `UiFeatureCard(size: UiSize.sm, surface: UiFeatureSurface.tinted,
 controlRadius: true, trailingArrow: true, descriptionLines: 2, onPressed: ...)`, two of them in an
 `IntrinsicHeight` + stretched `Row`.
+
+## Full-screen map page (`ui-map`, 0.39)
+
+A map behind the whole page, the form in a bottom sheet, a status card at the top, and soft rings
+on the map while the app looks for someone:
+
+```html
+<div class="page"> <!-- position: fixed; inset: 0 -->
+  <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
+    [pulse]="{ lat: home.lat, lng: home.lng, active: searching() }"
+    [insets]="{ top: cardCover(), bottom: sheetCover() }" />
+  <ui-floating-panel placement="top" ariaLabel="Status" (coverChange)="cardCover.set($event)">
+    <span role="status">{{ searching() ? 'Looking for a nurse near you' : 'Where should the nurse come?' }}</span>
+  </ui-floating-panel>
+  <ui-bottom-sheet title="Find a nurse" [snaps]="[0.42, 0.75]" [(snap)]="snap" [closable]="false"
+    (coverChange)="sheetCover.set($event)">…</ui-bottom-sheet>
+</div>
+```
+
+- `pulse: UiMapPulse | null` (`{ lat, lng, tone?: UiStatus = 'primary', active?: boolean = true }`):
+  three rings, 0.8s apart in a 2.4s loop, growing to 120px as they fade, in the tone at low
+  opacity. They live in their own Leaflet pane above the tiles and below the markers and the pin,
+  move with the map, never take a click, and say nothing to screen readers (put the words in the
+  status card). Under reduced motion: one still 72px halo. `active: false` or `null` removes them.
+- `insets: UiMapInsets` (`{ top?, bottom?, start?, end? }` in px; start/end follow the direction):
+  the map still draws edge to edge, but `center`, the pin's Enter-to-centre, `centerChanged`, the
+  zoom buttons' zooming, and the zoom and attribution controls use the part between the insets.
+  When the insets change (the sheet moves to another snap) the map pans, over 0.32s, so the point in
+  the middle of the old visible part sits in the middle of the new one; no pan under reduced motion.
+- `fill`: the map fills its parent's height with square corners.
+- `ui-floating-panel (coverChange)`: px of the parent's edge the card covers (gutter plus height);
+  `ui-bottom-sheet (coverChange)`: px of the screen bottom the sheet covers once it settles.
+- The map is its own stacking context (`isolation: isolate`), the card sits above it (`z-index: 1`)
+  and the sheet on the overlay layer, so both stay usable over it and the map pans around them.
+
+The Flutter twin: `UiMap(fill: true, pulse: UiMapPulse(lat:, lng:, active:), viewInsets:
+EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChanged` and
+`UiBottomSheet.onCoverChanged`.
+
+## Feature card colours and motion (`ui-feature-card`, 0.39)
+
+```html
+<ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+  [colors]="{ surface: '#E1F4EF', accent: '#4B8791' }" enter [enterDelay]="0"
+  title="Nurse at home" description="A nurse comes to you." (action)="open('nurse')">…</ui-feature-card>
+<ui-feature-card … [colors]="{ surface: '#E5F0FA', accent: '#4B8791' }" enter [enterDelay]="90"
+  title="Prescriptions" description="Order and refill your medicines.">…</ui-feature-card>
+<ui-feature-card … tone="accent" badgeTone="primary" title="Book a clinic">…</ui-feature-card>
+```
+
+- `badgeTone`: the badge's own tone (tint and icon); the card's `tone` when left out.
+- `colors: UiFeatureCardColors` (`{ surface, accent, surfaceDark?, accentDark? }`, hex or rgb
+  strings): `surface` is the card's background (no border at rest); `accent` is the badge tint (14%
+  over the surface), the icon, the arrow and the border on hover and focus. The action words and
+  eyebrow use the accent deepened until 4.5:1; the title and description keep the theme's text
+  colours (the description moved towards the text until 4.5:1). On a dark theme (surface luminance
+  under 0.2) a missing `surfaceDark` is the accent 18% into the theme's surface and a missing
+  `accentDark` is the accent lightened until 4.5:1 on it and 3:1 on its badge. Invalid strings fall
+  back to the tone, with a warning in dev mode. Wins over `tone` and `badgeTone`. The sums are
+  exported (`uiResolveFeatureColors`, `uiParseColor`, `uiContrast`) and match Flutter exactly.
+  Both cards get the same derived dark surface, since it comes from the shared accent: pass
+  `surfaceDark` to keep them apart on dark themes.
+- `enter` / `enterDelay` (ms): a fade and 8px rise over `--ui-motion-slow` (decelerate), once,
+  when the card first appears; stagger cards with the delay. Not replayed on re-render or a theme
+  change.
+- On hover, keyboard focus and press the badge icon lifts 2px and grows 8% and the trailing arrow
+  nudges 3px towards the end (flipped in RTL). Under reduced motion none of this moves.
+
+The Flutter twin: `UiFeatureCard(badgeTone:, colors: UiFeatureCardColors.tryParse(surface: '#E1F4EF',
+accent: '#4B8791'), enter: true, enterDelay: Duration(milliseconds: 90))`.
 
 ## License
 

@@ -1,7 +1,11 @@
-import { booleanAttribute, Component, computed, inject, input, numberAttribute, output } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  booleanAttribute, Component, computed, DestroyRef, effect, ElementRef, inject, input, isDevMode, numberAttribute, output, PLATFORM_ID, signal, untracked,
+} from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowRight02Icon from '@hugeicons/core-free-icons/ArrowRight02Icon';
 import { UI_CONFIG } from '@zouriel/ui';
+import { uiLuminance, uiParseColor, uiParseColorAlpha, uiResolveFeatureColors, type UiFeatureCardColors, type UiFeatureColorTheme } from './feature-colors';
 
 export type UiFeatureTone = 'primary' | 'accent' | 'brand' | 'neutral';
 export type UiFeatureLayout = 'vertical' | 'horizontal';
@@ -33,6 +37,14 @@ let featureSeq = 0;
  * when horizontal or without an icon). `size="sm"`, `surface="tinted"`, `radius="control"` and `descriptionLines`
  * make the compact tile of a start screen (two side by side under a chat bar, matching its corners).
  *
+ * `badgeTone` gives the badge (its tint and icon) a tone of its own, e.g. a coral accent card with a
+ * primary badge. `colors` gives the card an app's own surface and accent (derived for dark themes,
+ * contrast-checked; see `UiFeatureCardColors`); it wins over `tone` and `badgeTone` for the wash,
+ * the badge, the arrow and the action words, while the title and description keep the theme's text
+ * colours. `enter` plays a short entrance (fade and an 8px rise) once, when the card first appears,
+ * after `enterDelay` ms, so two cards can stagger. On hover, keyboard focus or press the badge icon
+ * lifts a little and the arrow nudges towards the end. No motion under reduced motion.
+ *
  * The icon goes in the `[feature-icon]` slot (`[icon]` works too for an `<img>` or `<svg>`, but not on
  * `<hugeicons-icon>`, whose own `icon` input would take the attribute).
  */
@@ -42,8 +54,13 @@ let featureSeq = 0;
   template: `
     <div class="fc" [attr.data-tone]="tone()" [attr.data-layout]="layout()" [attr.data-size]="size()"
          [attr.data-surface]="surface()" [attr.data-radius]="radius() === 'control' ? 'control' : null"
-         [class.interactive]="interactive()" [class.disabled]="disabled()" [class.glass]="glass() && surface() !== 'tinted'"
-         [class.no-radius]="square()" [class.card-action]="cardAction()">
+         [class.interactive]="interactive()" [class.disabled]="disabled()" [class.glass]="glass() && surface() !== 'tinted' && !custom()"
+         [class.no-radius]="square()" [class.card-action]="cardAction()"
+         [attr.data-badge-tone]="badgeTone() ?? null" [class.enter]="enter()" [style.--fc-enter-delay.ms]="enter() ? enterDelay() : null"
+         [attr.data-colors]="custom() ? '' : null" [style.--fc-wash]="custom()?.surface ?? null"
+         [style.--fc-badge-bg]="custom()?.badge ?? null" [style.--fc-badge-fg]="custom()?.accent ?? null"
+         [style.--fc-accent]="custom()?.accent ?? null" [style.--fc-ink]="custom()?.ink ?? null"
+         [style.--fc-eyebrow]="custom()?.ink ?? null" [style.--fc-desc]="custom()?.desc ?? null">
       <span class="badge" aria-hidden="true"><ng-content select="[feature-icon], [icon]" /></span>
       <div class="text">
         @if (eyebrow()) { <span class="eyebrow">{{ eyebrow() }}</span> }
@@ -264,9 +281,48 @@ let featureSeq = 0;
     .fc.interactive:has(.hit:focus-visible) { box-shadow: var(--ui-focus-ring); }
     .fc.disabled { opacity: 0.5; cursor: not-allowed; }
     .fc.disabled .hit { cursor: not-allowed; }
+
+    /* badgeTone: the badge's own tone (tint and icon), over whatever the card's tone set. Each rule also has a
+       [data-surface] form, so it outranks the tinted tone rules (.fc[data-surface="tinted"]:is(...)). */
+    .fc[data-badge-tone] .badge { border: 0; background: var(--fc-badge-bg); }
+    .fc[data-surface]:is([data-badge-tone="primary"], [data-badge-tone="brand"]) {
+      --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 14%, var(--ui-color-surface));
+      --fc-badge-fg: var(--ui-color-primary);
+    }
+    .fc[data-surface="tinted"]:is([data-badge-tone="primary"], [data-badge-tone="brand"]) {
+      --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface));
+    }
+    .fc[data-surface][data-badge-tone="accent"] { --fc-badge-bg: var(--ui-color-accent); --fc-badge-fg: var(--ui-color-accent-contrast); }
+    .fc[data-surface][data-badge-tone="neutral"] { --fc-badge-bg: var(--ui-color-surface-raised); --fc-badge-fg: var(--ui-color-text); }
+    .fc[data-badge-tone="neutral"] .badge { border: 1px solid var(--ui-color-border); }
+    .fc[data-badge-tone="brand"] .badge {
+      border: 2px solid transparent;
+      background: linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box, var(--ui-gradient-brand) border-box;
+    }
+
+    /* colors: the app's surface and accent. No border at rest; the accent border on hover and focus. */
+    .fc[data-colors], .fc[data-colors][data-tone="brand"] { background: var(--fc-wash); border-color: transparent; }
+    .fc[data-colors] .badge, .fc[data-colors][data-tone="brand"] .badge { border: 0; background: var(--fc-badge-bg); }
+    .fc[data-colors] .trail { color: var(--fc-accent); }
+    .fc[data-colors].interactive:not(.disabled):hover, .fc[data-colors].interactive:has(.hit:focus-visible) { border-color: var(--fc-accent); }
+
+    /* enter: a short fade and rise when the card first appears (backwards fill, so hover still lifts it after). */
+    .fc.enter { animation: ui-fc-enter var(--ui-motion-slow) var(--ui-ease-decelerate) backwards; animation-delay: var(--fc-enter-delay, 0ms); }
+    @keyframes ui-fc-enter { from { opacity: 0; transform: translateY(8px); } }
+
+    /* Hover, keyboard focus and press: the badge icon lifts a little; the arrow nudges towards the end. */
+    .badge ::ng-deep > * { transition: transform var(--ui-motion-base) var(--ui-ease-spring); }
+    .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible)) .badge ::ng-deep > * { transform: translateY(-2px) scale(1.08); }
+    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow { transform: translateX(3px); }
+    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) { transform: scaleX(-1) translateX(3px); }
+
     @media (prefers-reduced-motion: reduce) {
       .fc.interactive:hover, .fc.interactive:active { transform: none; }
       .fc.interactive:not(.disabled):hover .arrow { transform: none; }
+      .fc.enter { animation: none; }
+      .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible)) .badge ::ng-deep > * { transform: none; }
+      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow { transform: none; }
+      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) { transform: scaleX(-1); }
     }
   `,
 })
@@ -304,6 +360,15 @@ export class UiFeatureCard {
     transform: (v) => (v === 'control' ? 'control' : booleanAttribute(v)),
   });
 
+  /** The badge's own tone (its tint and icon colour); the card's `tone` when left out. */
+  badgeTone = input<UiFeatureTone | undefined>(undefined);
+  /** The app's own surface and accent (see UiFeatureCardColors); wins over `tone`/`badgeTone`. Invalid colours fall back to the tone. */
+  colors = input<UiFeatureCardColors | null>(null);
+  /** Play a short entrance (fade and an 8px rise) once, when the card first appears. Off under reduced motion. */
+  enter = input(false, { transform: booleanAttribute });
+  /** Wait this many ms before the entrance, to stagger cards. */
+  enterDelay = input(0, { transform: numberAttribute });
+
   /** The card (its action) was activated. Not emitted while disabled. */
   readonly action = output<MouseEvent>();
 
@@ -317,6 +382,44 @@ export class UiFeatureCard {
   protected readonly descId = `ui-feature-${this.seq}-desc`;
   protected readonly actId = `ui-feature-${this.seq}-act`;
   protected readonly titleTextId = `ui-feature-${this.seq}-name`;
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  /** The theme colours under the card, read from the page (and again when a theme changes). */
+  private readonly themeColors = signal<UiFeatureColorTheme | null>(null);
+  /** The custom colours this card draws, or null (none given, invalid, or not in a browser). */
+  protected readonly custom = computed(() => {
+    const c = this.colors();
+    const theme = this.themeColors();
+    if (!c || !theme) return null;
+    const r = uiResolveFeatureColors(c, theme);
+    if (!r && isDevMode()) console.warn('ui-feature-card: colors must be hex (#rgb, #rrggbb) or rgb() strings; using the tone instead.', c);
+    return r;
+  });
+
+  constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    const destroy = inject(DestroyRef);
+    let observer: MutationObserver | null = null;
+    destroy.onDestroy(() => observer?.disconnect());
+    effect(() => {
+      if (!this.colors() || observer) return;
+      untracked(() => {
+        const read = () => this.themeColors.set(this.readTheme());
+        read();
+        observer = new MutationObserver(read);
+        observer.observe(document.documentElement, { attributes: true, subtree: true, attributeFilter: ['data-theme'] });
+      });
+    });
+  }
+
+  private readTheme(): UiFeatureColorTheme | null {
+    const cs = getComputedStyle(this.host);
+    const surface = uiParseColor(cs.getPropertyValue('--ui-color-surface'));
+    const text = uiParseColorAlpha(cs.getPropertyValue('--ui-color-text'));
+    const muted = uiParseColorAlpha(cs.getPropertyValue('--ui-color-text-muted'));
+    if (!surface || !text || !muted) return null;
+    return { surface, text, muted, dark: uiLuminance(surface) < 0.2 };
+  }
 
   protected activate(e: MouseEvent): void {
     if (this.disabled()) {

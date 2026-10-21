@@ -43,6 +43,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 - **Compact tinted feature card** (0.38): `ui-feature-card` gains `size="sm"`, `surface="tinted"`,
   `radius="control"`, `trailingArrow` (the whole card is one button named by its title and
   description) and `descriptionLines`, for start-screen tiles under a chat bar.
+- **Full-screen map pages** (0.39): `ui-map` gains `pulse` (soft "searching" rings around a point,
+  geo-anchored, a still halo under reduced motion), `insets` (centring, the pin's centre and the
+  controls use the part a sheet and a status card leave visible) and `fill`; `ui-floating-panel`
+  and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
+  `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
+  `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,

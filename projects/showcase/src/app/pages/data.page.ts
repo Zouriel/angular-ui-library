@@ -22,7 +22,7 @@ import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
-import { UiSegmented } from '@zouriel/ui/button';
+import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import {
   UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
   type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
@@ -35,7 +35,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
 @Component({
   selector: 'page-data',
-  imports: [HugeiconsIconComponent,
+  imports: [HugeiconsIconComponent, UiButton,
     UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
     UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
@@ -180,7 +180,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Feature card: compact tinted" selector="ui-feature-card"
-        summary="The start-screen tile: two cards side by side under a text field, together exactly its width and equal in height (a two-column grid). size sm, surface tinted (a soft wash in the tone instead of a bordered card), radius control (the field's corners), trailingArrow (the whole card is one button named by its title and description, with an arrow that points the reading way) and descriptionLines 2. They lift and cast a shadow on hover, scale a little on press, show the focus ring, and keep still with reduced motion.">
+        summary="The start-screen tile: two cards side by side under a text field, together exactly its width and equal in height (a two-column grid). size sm, surface tinted (a soft wash in the tone instead of a bordered card), radius control (the field's corners), trailingArrow (the whole card is one button named by its title and description, with an arrow that points the reading way) and descriptionLines 2. They lift and cast a shadow on hover, scale a little on press, show the focus ring, and keep still with reduced motion. On hover, focus or press the badge icon lifts a little and the arrow nudges towards the end. The second demo gives the cards an app's own colours (colors: Dhirumi's nursing mint and prescription blue with a #4B8791 accent; switch to a dark theme to see the derived pair), a staggered entrance (enter, enterDelay), and badges in another tone than the card (badgeTone).">
         <doc-demo id="fc-compact" code="<ui-input placeholder=&quot;Describe how you feel&quot; ariaLabel=&quot;Ask&quot; />
 <div class=&quot;pair&quot;> <!-- grid-template-columns: 1fr 1fr; gap: var(--ui-space-3) -->
   <ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
@@ -212,6 +212,45 @@ nodes: UiTreeNode[] = [
               </ui-feature-card>
             </div>
           </div>
+        </doc-demo>
+        <doc-demo id="fc-colors" code="<!-- An app's own colours (light; the dark pair is derived), a staggered entrance, a badge in another tone -->
+<ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
+  [colors]=&quot;{ surface: '#E1F4EF', accent: '#4B8791' }&quot; enter [enterDelay]=&quot;0&quot;
+  title=&quot;Nurse at home&quot; description=&quot;A nurse comes to you.&quot;>…</ui-feature-card>
+<ui-feature-card … [colors]=&quot;{ surface: '#E5F0FA', accent: '#4B8791' }&quot; enter [enterDelay]=&quot;90&quot;
+  title=&quot;Prescriptions&quot; description=&quot;Order and refill your medicines.&quot;>…</ui-feature-card>
+<ui-feature-card … tone=&quot;accent&quot; badgeTone=&quot;primary&quot; title=&quot;Book a clinic&quot; …>…</ui-feature-card>">
+          <div class="row fc-controls">
+            <ui-button size="sm" variant="outline" (click)="fcRun.set(fcRun() + 1)">Replay the entrance</ui-button>
+          </div>
+          @for (run of [fcRun()]; track run) {
+            <div class="fc-start" [attr.dir]="fcDir()">
+              <div class="fc-pair">
+                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" [colors]="fcMint" enter [enterDelay]="0"
+                  [title]="fcDir() === 'rtl' ? 'ގެއަށް ނަރުހެއް' : 'Nurse at home'"
+                  [description]="fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'"
+                  (action)="fcLast.set('Nurse at home')">
+                  <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
+                </ui-feature-card>
+                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" [colors]="fcBlue" enter [enterDelay]="90"
+                  [title]="fcDir() === 'rtl' ? 'ބޭސް' : 'Prescriptions'"
+                  [description]="fcDir() === 'rtl' ? 'ބޭސް އޯޑަރ ކުރައްވާ.' : 'Order and refill your medicines.'"
+                  (action)="fcLast.set('Prescriptions')">
+                  <hugeicons-icon feature-icon [icon]="icons.medicine" [strokeWidth]="1.8" />
+                </ui-feature-card>
+              </div>
+              <div class="fc-pair">
+                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="accent" badgeTone="primary" enter [enterDelay]="180"
+                  title="Book a clinic" description="An accent card with a primary badge." (action)="fcLast.set('Book a clinic')">
+                  <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
+                </ui-feature-card>
+                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="primary" badgeTone="accent" enter [enterDelay]="270"
+                  title="Appointments" description="A primary card with an accent badge." (action)="fcLast.set('Appointments')">
+                  <hugeicons-icon feature-icon [icon]="icons.calendar" [strokeWidth]="1.8" />
+                </ui-feature-card>
+              </div>
+            </div>
+          }
         </doc-demo>
       </doc-section>
 
@@ -327,6 +366,9 @@ export class DataPage {
   protected readonly fcDir = signal<'ltr' | 'rtl'>('ltr');
   protected readonly fcDirs = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
   protected readonly fcLast = signal('');
+  protected readonly fcMint = { surface: '#E1F4EF', accent: '#4B8791' };
+  protected readonly fcBlue = { surface: '#E5F0FA', accent: '#4B8791' };
+  protected readonly fcRun = signal(0);
   protected readonly fcLayouts = [{ value: 'vertical', label: 'Vertical' }, { value: 'horizontal', label: 'Horizontal' }];
   protected readonly fcSizes = [{ value: 'md', label: 'md' }, { value: 'lg', label: 'lg' }];
   protected readonly featureApi: ApiRow[] = [
@@ -345,6 +387,9 @@ export class DataPage {
     { name: 'headingLevel', type: 'number', default: '3', desc: 'The title\'s aria-level.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig', desc: 'Translucent surface.' },
     { name: 'radius', type: "boolean | 'control'", default: 'UiConfig', desc: "Corners: true the card radius (--ui-radius-lg), false square, 'control' an input's radius (--ui-radius), so a tile matches the field above it; square when UiConfig.radius is off, like the input." },
+    { name: 'badgeTone', type: "'primary' | 'accent' | 'brand' | 'neutral'", default: 'tone', desc: 'The badge\'s own tone (its tint and icon colour), e.g. an accent card with a primary badge. Icon 3:1 on its badge in every theme.' },
+    { name: 'colors', type: 'UiFeatureCardColors | null', default: 'null', desc: "The app's own { surface, accent, surfaceDark?, accentDark? } (hex or rgb strings). surface is the card's background (no border at rest); accent is the badge tint (14%), icon, arrow and hover/focus border; action words and eyebrow use the accent deepened to 4.5:1. Title and description keep the theme's text colours. On a dark theme, left-out dark colours are derived: the accent 18% into the theme surface, and the accent lightened until 4.5:1. Invalid strings fall back to the tone (with a dev-mode warning). Wins over tone and badgeTone." },
+    { name: 'enter / enterDelay', type: 'boolean / number (ms)', default: 'false / 0', desc: 'A short entrance (fade and an 8px rise, --ui-motion-slow, decelerate) once, when the card first appears, after enterDelay ms (stagger cards with it). Off under reduced motion.' },
     { name: '(action)', type: 'MouseEvent', default: '—', desc: 'The card was activated.' },
     { name: '[feature-icon]', type: 'slot', default: '—', desc: 'The icon, shown in the badge (decorative). [icon] works too, except on hugeicons-icon.' },
   ];

@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  Component, DestroyRef, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
+  Component, DestroyRef, booleanAttribute, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
 import { injectUiStrings, type UiStatus } from '@zouriel/ui';
@@ -33,6 +33,45 @@ export interface UiMapMarker extends UiLatLng {
 export interface UiMapView extends UiLatLng {
   zoom: number;
 }
+
+/**
+ * The "searching" animation: soft rings radiating from a point on the map while `active` (true by
+ * default). Under reduced motion, one still halo instead.
+ */
+export interface UiMapPulse extends UiLatLng {
+  /** The rings' colour; 'primary' by default. */
+  tone?: UiStatus;
+  /** False shows nothing (and runs nothing); true or left out shows the rings. */
+  active?: boolean;
+}
+
+/**
+ * How much of the map, in px from each edge, is covered by something floating over it: a bottom
+ * sheet, a status card. `start`/`end` follow the reading direction.
+ */
+export interface UiMapInsets {
+  top?: number;
+  bottom?: number;
+  start?: number;
+  end?: number;
+}
+
+/** The shift, in px from the map's middle, of the middle of the part between the insets. */
+export function uiMapInsetShift(insets: UiMapInsets, rtl: boolean): { x: number; y: number } {
+  const start = insets.start ?? 0;
+  const end = insets.end ?? 0;
+  const left = rtl ? end : start;
+  const right = rtl ? start : end;
+  return { x: (left - right) / 2, y: ((insets.top ?? 0) - (insets.bottom ?? 0)) / 2 };
+}
+
+/** The pulse's HTML: three staggered rings, or one still halo under reduced motion. */
+export function uiMapPulseHtml(still: boolean): string {
+  return still ? '<span class="ui-map-pulse-halo"></span>' : '<span class="ui-map-pulse-ring"></span>'.repeat(3);
+}
+
+/** The Leaflet pane the pulse is drawn in: above the tiles (200) and overlays (400), below markers (600). */
+const PULSE_PANE = 'uiMapPulse';
 
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
 export const UI_MAP_OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -68,13 +107,21 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  * - Theme-aware: the controls use the theme, and on a dark theme the tiles are dimmed.
  * - The zoom buttons sit at the inline start (left in LTR, right in RTL) and the OSM attribution at
  *   the inline end; under reduced motion there are no zoom or pan animations.
+ * - `pulse`: the "searching" rings around a point, geo-anchored (they move with the map), drawn
+ *   above the tiles and below markers and the pin. A still halo under reduced motion. Silent: the
+ *   page's own status text announces the search.
+ * - `insets`: for a full-screen map with a sheet or card floating over it. The map still draws
+ *   edge to edge, but `center`, the pin's "centre", `centerChanged` and the controls use the part
+ *   between the insets, and the zoom buttons zoom around its middle. When the insets change, the map
+ *   pans so the point that was in the middle of the visible part stays in the middle of the new one.
+ * - `fill`: fills its parent's height, square-cornered, for a full-screen map page.
  *
- * Give it a height (`--ui-map-height`, 320px by default, or a height on the element).
+ * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
 @Component({
   selector: 'ui-map',
   encapsulation: ViewEncapsulation.None,
-  host: { class: 'ui-map', '[attr.data-dark]': 'dark() || null', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
+  host: { class: 'ui-map', '[attr.data-dark]': 'dark() || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
   template: `<div class="ui-map-canvas" #canvas></div>`,
   styleUrls: ['./leaflet.css', './map.css'],
 })
@@ -96,6 +143,12 @@ export class UiMap {
   tileUrl = input(UI_MAP_OSM_TILES);
   attribution = input(UI_MAP_OSM_ATTRIBUTION);
   ariaLabel = input('Map');
+  /** The "searching" rings around a point; null or `active: false` for none. */
+  pulse = input<UiMapPulse | null>(null);
+  /** Px covered by panels over each edge; centring and the controls use the part between them. */
+  insets = input<UiMapInsets>({});
+  /** Fill the parent's height with square corners (a full-screen map page). */
+  fill = input(false, { transform: booleanAttribute });
 
   readonly markerSelected = output<UiMapMarker>();
   readonly centerChanged = output<UiMapView>();
@@ -112,6 +165,11 @@ export class UiMap {
   private markerLayer: Leaflet.LayerGroup | null = null;
   private pinMarker: Leaflet.Marker | null = null;
   private tiles: Leaflet.TileLayer | null = null;
+  private pulseMarker: Leaflet.Marker | null = null;
+  /** What the pulse marker was built for: rebuilt when its tone or the motion setting changes. */
+  private pulseKey = '';
+  /** The inset shift the view was last laid out for, to pan by the difference when it changes. */
+  private shift = { x: 0, y: 0 };
   /** The map's own view, so a center input that only echoes it doesn't move it again. */
   private view: UiMapView | null = null;
   /** Destroyed, possibly while Leaflet was still loading. */
@@ -151,6 +209,14 @@ export class UiMap {
       untracked(() => this.drawPin(p));
     });
     effect(() => {
+      const p = this.pulse();
+      untracked(() => this.drawPulse(p));
+    });
+    effect(() => {
+      const i = this.insets();
+      untracked(() => this.applyInsets(i));
+    });
+    effect(() => {
       const url = this.tileUrl();
       const attr = this.attribution();
       this.tileReferrerPolicy();
@@ -188,15 +254,28 @@ export class UiMap {
         inertia: !still,
         keyboard: true,
       });
-      L.control.zoom({ position: rtl ? 'topright' : 'topleft', zoomInTitle: this.strings.zoomIn, zoomOutTitle: this.strings.zoomOut }).addTo(map);
+      const zoom = L.control.zoom({ position: rtl ? 'topright' : 'topleft', zoomInTitle: this.strings.zoomIn, zoomOutTitle: this.strings.zoomOut });
+      // The buttons zoom around the middle of the visible part (between the insets), not the map's own centre.
+      const around = (dir: 1 | -1) => (e: { shiftKey?: boolean }) => {
+        const z = map.getZoom() + dir * (map.options.zoomDelta ?? 1) * (e?.shiftKey ? 3 : 1);
+        if (z > map.getMaxZoom() || z < map.getMinZoom()) return;
+        const mid = map.getSize().divideBy(2);
+        map.setZoomAround(L.point(mid.x + this.shift.x, mid.y + this.shift.y), z); // a Point: a container point
+      };
+      Object.assign(zoom, { _zoomIn: around(1), _zoomOut: around(-1) });
+      zoom.addTo(map);
       // The map surface is the focusable, keyboard-pannable element: it carries the name.
       el.setAttribute('aria-label', this.ariaLabel());
       if (this.pinMode()) el.setAttribute('aria-description', this.strings.placePinAtCentre + ' (Enter)');
       L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map);
+      // The pulse's own pane: geo-anchored like a marker, under the markers, never hit.
+      const pane = map.createPane(PULSE_PANE);
+      pane.style.zIndex = '450';
+      pane.style.pointerEvents = 'none';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       map.on('moveend', () => {
-        const c = map.getCenter();
+        const c = this.visibleCenter();
         this.view = { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
         this.zone.run(() => this.centerChanged.emit({ ...this.view! }));
       });
@@ -206,7 +285,7 @@ export class UiMap {
       // Enter on the focused map drops the pin at its centre (keyboard users pan with the arrows).
       el.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' || !this.pinMode() || e.target !== el) return;
-        const c = map.getCenter();
+        const c = this.visibleCenter();
         this.zone.run(() => this.pin.set({ lat: c.lat, lng: c.lng }));
       });
       const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
@@ -217,12 +296,38 @@ export class UiMap {
         this.map = null;
         this.markerLayer = null;
         this.pinMarker = null;
+        this.pulseMarker = null;
+        this.pulseKey = '';
         this.tiles = null;
       };
     });
+    // Laid out from no insets, so a non-zero first value centres the view in the visible part.
+    this.shift = { x: 0, y: 0 };
+    this.applyInsets(this.insets());
     this.drawTiles(this.tileUrl(), this.attribution());
     this.drawMarkers(this.markers());
     this.drawPin(this.pin());
+    this.drawPulse(this.pulse());
+  }
+
+  /** The point in the middle of the part of the map between the insets. */
+  private visibleCenter(): Leaflet.LatLng {
+    const map = this.map!;
+    const c = map.getCenter();
+    const { x, y } = this.shift;
+    if (!x && !y) return c;
+    // From the exact centre, not a container point (Leaflet rounds the pixel origin).
+    const zoom = map.getZoom();
+    const p = map.project(c, zoom);
+    return map.unproject([p.x + x, p.y + y], zoom);
+  }
+
+  /** Where the map's own centre goes so that `c` lands in the middle of the visible part. */
+  private mapCenterFor(c: UiLatLng, zoom: number): Leaflet.LatLngExpression {
+    const { map, shift } = this;
+    if (!map || (!shift.x && !shift.y)) return [c.lat, c.lng];
+    const p = map.project([c.lat, c.lng], zoom);
+    return map.unproject([p.x - shift.x, p.y - shift.y], zoom);
   }
 
   private moveTo(c: UiLatLng, zoom: number): void {
@@ -230,7 +335,64 @@ export class UiMap {
     if (!map) return;
     const v = this.view;
     if (v && Math.abs(v.lat - c.lat) < 1e-7 && Math.abs(v.lng - c.lng) < 1e-7 && v.zoom === zoom) return;
-    map.setView([c.lat, c.lng], zoom, { animate: !this.reduced() });
+    map.setView(this.mapCenterFor(c, zoom), zoom, { animate: !this.reduced() });
+  }
+
+  /**
+   * Lays the controls out between the insets and keeps the middle of the visible part in place: the
+   * point that was in the middle of the old visible part pans to the middle of the new one.
+   */
+  private applyInsets(insets: UiMapInsets): void {
+    const el = this.host.nativeElement;
+    const rtl = this.rtl();
+    const start = insets.start ?? 0;
+    const end = insets.end ?? 0;
+    const px = (n: number) => `${Math.max(0, n)}px`;
+    // The canvas lays out LTR (tiles are physical), so the controls' insets are physical too.
+    el.style.setProperty('--ui-map-inset-top', px(insets.top ?? 0));
+    el.style.setProperty('--ui-map-inset-bottom', px(insets.bottom ?? 0));
+    el.style.setProperty('--ui-map-inset-left', px(rtl ? end : start));
+    el.style.setProperty('--ui-map-inset-right', px(rtl ? start : end));
+    const next = uiMapInsetShift(insets, rtl);
+    const old = this.shift;
+    this.shift = next;
+    const map = this.map;
+    if (!map || (old.x === next.x && old.y === next.y)) return;
+    if (!this.view) {
+      // Not moved yet: centre the input centre in the new visible part.
+      map.setView(this.mapCenterFor(this.center(), this.zoom()), this.zoom(), { animate: false });
+      return;
+    }
+    map.panBy([old.x - next.x, old.y - next.y], { animate: !this.reduced(), duration: 0.32, easeLinearity: 0.5 });
+  }
+
+  private drawPulse(p: UiMapPulse | null): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    if (!p || p.active === false) {
+      this.pulseMarker?.remove();
+      this.pulseMarker = null;
+      this.pulseKey = '';
+      return;
+    }
+    const still = this.reduced();
+    const key = `${p.tone ?? 'primary'}|${still}`;
+    if (this.pulseMarker && key === this.pulseKey) {
+      this.pulseMarker.setLatLng([p.lat, p.lng]);
+      return;
+    }
+    this.pulseMarker?.remove();
+    const marker = L.marker([p.lat, p.lng], {
+      pane: PULSE_PANE,
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({ className: 'ui-map-pulse', html: uiMapPulseHtml(still), iconSize: [0, 0] }),
+    });
+    this.pulseMarker = marker.addTo(map);
+    this.pulseKey = key;
+    const el = marker.getElement();
+    el?.setAttribute('aria-hidden', 'true');
+    el?.setAttribute('data-tone', p.tone ?? 'primary');
   }
 
   private drawTiles(url: string, attribution: string): void {
@@ -279,7 +441,8 @@ export class UiMap {
         title: this.pinLabel(),
         alt: this.pinLabel(),
         zIndexOffset: 1000,
-        icon: L.divIcon({ className: 'ui-map-pin', html: '<span class="ui-map-pin-head"></span>', iconSize: [28, 36], iconAnchor: [14, 34] }),
+        // The head is a 22px square turned 45deg: its point is 11 + 11 * sqrt(2) = 27px down.
+        icon: L.divIcon({ className: 'ui-map-pin', html: '<span class="ui-map-pin-head"></span>', iconSize: [28, 36], iconAnchor: [14, 27] }),
       });
       marker.on('dragend', () => {
         const ll = marker.getLatLng();

@@ -14,7 +14,7 @@ function recorder() {
   const el = document.createElement('div');
   const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, getElement: () => el, options: {}, setLatLng: () => {} });
   const L = {
-    map: () => ({ ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, invalidateSize: () => {}, setView: () => {} }),
+    map: () => ({ ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) }),
     control: { zoom: (o: unknown) => (note('zoom', o), chain()), attribution: () => chain() },
     layerGroup: () => chain(),
     tileLayer: (u: unknown, o: unknown) => (note('tileLayer', u, o), chain()),

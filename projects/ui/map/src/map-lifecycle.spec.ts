@@ -14,7 +14,7 @@ const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => 
 const fakeLeaflet = {
   map: (...a: unknown[]) => {
     created(...a);
-    return { ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, invalidateSize: () => {}, setView: () => {} };
+    return { ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) };
   },
   control: { zoom: () => chain(), attribution: () => chain() },
   layerGroup: () => chain(),

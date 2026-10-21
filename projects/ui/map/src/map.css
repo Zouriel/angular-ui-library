@@ -60,3 +60,49 @@
   background: var(--ui-color-accent, var(--ui-color-primary)); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
 .ui-map .ui-map-pin:focus-visible { outline: none; }
 .ui-map .ui-map-pin:focus-visible .ui-map-pin-head { box-shadow: var(--ui-focus-ring); }
+
+/* fill: the whole of its parent, square-cornered (a full-screen map page). */
+.ui-map.ui-map-fill { height: 100%; border-radius: 0; }
+
+/* insets: the controls sit inside the part of the map that panels over it leave visible. */
+.ui-map .leaflet-top { top: var(--ui-map-inset-top, 0px); }
+.ui-map .leaflet-bottom { bottom: var(--ui-map-inset-bottom, 0px); }
+.ui-map .leaflet-left { left: var(--ui-map-inset-left, 0px); }
+.ui-map .leaflet-right { right: var(--ui-map-inset-right, 0px); }
+.ui-map .leaflet-top, .ui-map .leaflet-bottom { transition: top var(--ui-motion-base) var(--ui-ease-standard), bottom var(--ui-motion-base) var(--ui-ease-standard); }
+
+/* pulse: soft rings radiating from a point while the app searches. The marker is a 0x0 point; the
+   rings are centred on it, 120px across at their widest, and fade as they grow. */
+.ui-map .ui-map-pulse { --ui-map-pulse-tone: var(--ui-color-primary); }
+.ui-map .ui-map-pulse[data-tone="success"] { --ui-map-pulse-tone: var(--ui-color-success); }
+.ui-map .ui-map-pulse[data-tone="warning"] { --ui-map-pulse-tone: var(--ui-color-warning); }
+.ui-map .ui-map-pulse[data-tone="danger"] { --ui-map-pulse-tone: var(--ui-color-danger); }
+.ui-map .ui-map-pulse[data-tone="neutral"] { --ui-map-pulse-tone: var(--ui-color-text-muted); }
+.ui-map .ui-map-pulse-ring, .ui-map .ui-map-pulse-halo {
+  position: absolute; left: -60px; top: -60px; width: 120px; height: 120px; box-sizing: border-box; border-radius: 50%;
+  background: color-mix(in srgb, var(--ui-map-pulse-tone) 20%, transparent);
+  border: 2px solid color-mix(in srgb, var(--ui-map-pulse-tone) 75%, transparent);
+}
+.ui-map .ui-map-pulse-ring {
+  opacity: 0; transform: scale(0.15);
+  /* Grows on an ease-out, fades in over the first 12% and out linearly (the Flutter twin does the same sums). */
+  animation: ui-map-pulse 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite, ui-map-pulse-fade 2.4s linear infinite;
+}
+.ui-map .ui-map-pulse-ring:nth-child(2) { animation-delay: 0.8s, 0.8s; }
+.ui-map .ui-map-pulse-ring:nth-child(3) { animation-delay: 1.6s, 1.6s; }
+@keyframes ui-map-pulse {
+  from { transform: scale(0.15); }
+  to { transform: scale(1); }
+}
+@keyframes ui-map-pulse-fade {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* The still halo: one soft disc, 72px across. */
+.ui-map .ui-map-pulse-halo { left: -36px; top: -36px; width: 72px; height: 72px; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-pulse-ring { animation: none; opacity: 0; }
+  .ui-map .ui-map-pulse-ring:first-child { opacity: 1; transform: scale(0.6); }
+  .ui-map .leaflet-top, .ui-map .leaflet-bottom { transition: none; }
+}

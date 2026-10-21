@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { uiLuminance, uiResolveFeatureColors, type UiRgba } from '../../card/src/feature-colors';
 
 /*
  * Static checks over every component's styles and the theme files. They catch the mistakes that
@@ -381,6 +382,82 @@ describe('theme palettes', () => {
       const badge = over(cmix(primary, surface, 0.18), surface);
       if (contrast(primary, badge) < 3) fails.push(`${name}: tinted badge icon is ${contrast(primary, badge).toFixed(2)}:1`);
     }
+    expect(fails).toEqual([]);
+  });
+
+  /*
+   * 0.39 badgeTone and colors, in every theme (Winter pair included), with the same block parsing as above:
+   * - an accent card with a primary or brand badge (default and tinted surface): the icon (primary) 3:1 on
+   *   its 14% / 18% primary tint, and the card's words still 4.5:1 on the accent wash;
+   * - the Dhirumi colours (mint #E1F4EF and blue #E5F0FA surfaces, #4B8791 accent): on light themes the
+   *   owner's colours as given, on dark themes the derived pair; title and description 4.5:1 on the
+   *   surface, icon 3:1 on its badge, arrow 3:1 on the surface (4.5:1 on dark), action words 4.5:1.
+   */
+  it('keeps badgeTone combinations and custom feature-card colours readable in every theme', () => {
+    const blocks: Record<string, Record<string, string>> = {};
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
+      for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+        const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+        for (const sel of m[1].split(',').map((x) => x.trim())) blocks[sel] = { ...blocks[sel], ...decls };
+      }
+    }
+    const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+    const names = ['winterDark', 'winterLight', ...list.map((t) => t.name)];
+    const cmix = (a: Rgba, b: Rgba, k: number): Rgba => {
+      const alpha = a[3] * k + b[3] * (1 - k);
+      return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
+    };
+    const fails: string[] = [];
+    const white: Rgba = [255, 255, 255, 1];
+    const rgb = (c: Rgba) => [c[0], c[1], c[2]] as const;
+    const hex = (h: string) => parseColor(h) as Rgba;
+    for (const name of names) {
+      const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
+      const get = (k: string, depth = 0): Rgba | null => {
+        const v = vars[k] ?? '';
+        const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+        return ref && depth < 5 ? get(ref[1], depth + 1) : parseColor(v);
+      };
+      const [surfaceRaw, text, muted, primary, accent] = ['surface', 'text', 'text-muted', 'primary', 'accent'].map((k) => get(`--ui-color-${k}`));
+      if (!surfaceRaw || !text || !muted || !primary || !accent) {
+        fails.push(`${name}: colours unreadable`);
+        continue;
+      }
+      const surface = over(surfaceRaw, white);
+      // badgeTone primary/brand on an accent card.
+      for (const [surf, k] of [['default', 0.14], ['tinted', 0.18]] as const) {
+        const badge = over(cmix(primary, surface, k), surface);
+        const r = contrast(primary, badge);
+        if (r < 3) fails.push(`${name}: primary badge on an accent ${surf} card, icon ${r.toFixed(2)}:1`);
+      }
+      const ground = over(cmix(text, surface, 0.04), surface);
+      const accentWash = over(cmix(accent, ground, 0.08), ground);
+      if (contrast(text, accentWash) < 4.5) fails.push(`${name}: title on the accent wash`);
+      if (contrast(cmix(muted, text, 0.75), accentWash) < 4.5) fails.push(`${name}: description on the accent wash`);
+      // Custom colours.
+      const dark = uiLuminance(rgb(surface)) < 0.2;
+      const theme = { surface: rgb(surface), text: text as unknown as UiRgba, muted: muted as unknown as UiRgba, dark };
+      for (const [label, c] of [['mint', { surface: '#E1F4EF', accent: '#4B8791' }], ['blue', { surface: '#E5F0FA', accent: '#4B8791' }]] as const) {
+        const r = uiResolveFeatureColors(c, theme);
+        if (!r) {
+          fails.push(`${name}/${label}: not resolved`);
+          continue;
+        }
+        if (!dark && (r.surface !== c.surface.toLowerCase() || r.accent !== '#4b8791')) fails.push(`${name}/${label}: a light theme changed the owner's colours (${r.surface}, ${r.accent})`);
+        const S = hex(r.surface);
+        const need = (what: string, fg: Rgba, bg: Rgba, n: number) => {
+          const x = contrast(fg, bg);
+          if (x < n) fails.push(`${name}/${label}: ${what} ${x.toFixed(2)}:1, needs ${n}:1`);
+        };
+        need('title', text, S, 4.5);
+        need('description', hex(r.desc), S, 4.5);
+        need('icon on its badge', hex(r.accent), hex(r.badge), 3);
+        need('arrow', hex(r.accent), S, dark ? 4.5 : 3);
+        need('action words', hex(r.ink), S, 4.5);
+      }
+    }
+    expect(names.length).toBe(15);
     expect(fails).toEqual([]);
   });
 });

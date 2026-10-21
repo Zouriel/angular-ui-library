@@ -1,4 +1,5 @@
-import { Component, inject, input } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, effect, inject, input, output } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
 /**
@@ -12,6 +13,10 @@ import { UI_CONFIG } from '@zouriel/ui';
  * readers can jump to. The parent needs `position: relative` (or any positioning).
  *
  *   <div class="map-wrap"><ui-map … /><ui-floating-panel ariaLabel="Nurse">…</ui-floating-panel></div>
+ *
+ * `(coverChange)` reports how much of the parent's edge it covers, in px (its gutter plus its
+ * height), whenever that changes: feed it to a map's `insets` so the map centres below a status
+ * card at the top.
  */
 @Component({
   selector: 'ui-floating-panel',
@@ -61,4 +66,41 @@ export class UiFloatingPanel {
   ariaLabel = input<string | undefined>(undefined);
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
+
+  /** Px of the parent's edge (top or bottom, per `placement`) it covers: its gutter plus its height. */
+  readonly coverChange = output<number>();
+
+  private readonly el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private last = -1;
+  private destroyed = false;
+
+  constructor() {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
+    const destroy = inject(DestroyRef);
+    destroy.onDestroy(() => (this.destroyed = true));
+    afterNextRender(() => {
+      const ro = new ResizeObserver(() => this.measure());
+      ro.observe(this.el);
+      destroy.onDestroy(() => ro.disconnect());
+      this.measure();
+    });
+    // The other edge's gutter is read once the placement has been applied.
+    effect(() => {
+      this.placement();
+      queueMicrotask(() => this.measure());
+    });
+  }
+
+  /** Its height plus the gap between it and the parent's edge, from layout (the entry slide's transform doesn't count). */
+  private measure(): void {
+    if (this.destroyed) return;
+    const el = this.el;
+    const height = el.offsetHeight;
+    const parent = el.offsetParent as HTMLElement | null;
+    const gap = !parent ? 0 : this.placement() === 'top' ? el.offsetTop : parent.clientHeight - el.offsetTop - height;
+    const cover = height ? Math.round(height + Math.max(0, gap)) : 0;
+    if (cover === this.last) return;
+    this.last = cover;
+    this.coverChange.emit(cover);
+  }
 }
