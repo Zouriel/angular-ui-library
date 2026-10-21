@@ -11,12 +11,17 @@ import Flag01Icon from '@hugeicons/core-free-icons/Flag01Icon';
 import CheckmarkCircle02Icon from '@hugeicons/core-free-icons/CheckmarkCircle02Icon';
 import Money03Icon from '@hugeicons/core-free-icons/Money03Icon';
 import UserGroupIcon from '@hugeicons/core-free-icons/UserGroupIcon';
+import StethoscopeIcon from '@hugeicons/core-free-icons/StethoscopeIcon';
+import AmbulanceIcon from '@hugeicons/core-free-icons/AmbulanceIcon';
+import Medicine01Icon from '@hugeicons/core-free-icons/Medicine01Icon';
+import Calendar03Icon from '@hugeicons/core-free-icons/Calendar03Icon';
 import { UiText } from '@zouriel/ui/text';
 import { UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
-import { UiCard, UiStatCard } from '@zouriel/ui/card';
+import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout } from '@zouriel/ui/card';
+import { UiSegmented } from '@zouriel/ui/button';
 import {
   UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
   type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
@@ -31,7 +36,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent,
     UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
-    UiCard, UiStatCard, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
+    UiCard, UiStatCard, UiFeatureCard, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -140,6 +145,39 @@ nodes: UiTreeNode[] = [
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Feature card" selector="ui-feature-card" [api]="featureApi"
+        summary="A product or service card for a landing page: an icon in a tinted badge, an optional eyebrow, a title, a description and an action. With actionLabel (or href) the whole card is the target: the action is one real button (or link) whose hit area covers the card, so a click anywhere activates it and screen readers hear one control, named by the title and the action and described by the description. tone sets the badge and a faint wash over the surface (brand puts the theme's brand gradient on the edge and around the badge); layout puts the badge above or beside the text; the action sits at the bottom so a row of cards lines up. The title is a heading (headingLevel). The arrow follows the reading direction.">
+        <doc-demo code="<ui-feature-card title=&quot;Find a doctor&quot; eyebrow=&quot;Clinics&quot;
+  description=&quot;Book a visit at a clinic near you.&quot;
+  actionLabel=&quot;Book now&quot; tone=&quot;primary&quot; (action)=&quot;open('doctors')&quot;>
+  <hugeicons-icon feature-icon [icon]=&quot;StethoscopeIcon&quot; />
+</ui-feature-card>">
+          <div class="row fc-controls">
+            <ui-segmented size="sm" label="Layout" [options]="fcLayouts" [value]="fcLayout()" (valueChange)="fcLayout.set($any($event))" />
+            <ui-segmented size="sm" label="Size" [options]="fcSizes" [value]="fcSize()" (valueChange)="fcSize.set($any($event))" />
+          </div>
+          <div class="fc-grid" [class.wide]="fcLayout() === 'horizontal'">
+            <ui-feature-card title="Find a doctor" eyebrow="Clinics" description="Book a visit at a clinic near you, today or later this week."
+              actionLabel="Book now" tone="primary" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Find a doctor')">
+              <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
+            </ui-feature-card>
+            <ui-feature-card title="Nurse at home" eyebrow="New" description="A nurse comes to you for injections, dressings and checks."
+              actionLabel="Request a visit" tone="accent" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Nurse at home')">
+              <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
+            </ui-feature-card>
+            <ui-feature-card title="Pharmacy" description="Order prescriptions and have them delivered."
+              actionLabel="Order" tone="brand" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Pharmacy')">
+              <hugeicons-icon feature-icon [icon]="icons.medicine" [strokeWidth]="1.8" />
+            </ui-feature-card>
+            <ui-feature-card title="Appointments" description="See and change your bookings."
+              actionLabel="Coming soon" tone="neutral" disabled [layout]="fcLayout()" [size]="fcSize()">
+              <hugeicons-icon feature-icon [icon]="icons.calendar" [strokeWidth]="1.8" />
+            </ui-feature-card>
+          </div>
+          <p class="fc-last" aria-live="polite">{{ fcLast() ? 'Opened: ' + fcLast() : 'Click a card.' }}</p>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
         summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
@@ -233,12 +271,37 @@ events: UiTimelineItem[] = [
       .cols3 { grid-template-columns: 1fr 1fr; } .cols3 > ui-card { grid-column: 1 / -1; } }
     /* The demo sits on a surface, so ring the stacked avatars in that colour. */
     .on-surface { --ui-avatar-ring: var(--ui-color-surface); }
+    .fc-controls { margin-bottom: var(--ui-space-3); }
+    .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-4); }
+    .fc-grid.wide { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    @media (max-width: 640px) { .fc-grid, .fc-grid.wide { grid-template-columns: 1fr; } }
+    .fc-last { margin: var(--ui-space-3) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--ui-color-primary); text-decoration: underline; cursor: pointer; border-radius: var(--ui-radius-xs); }
     .linkish:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,
 })
 export class DataPage {
-  protected readonly icons = { money: Money03Icon, users: UserGroupIcon };
+  protected readonly icons = { money: Money03Icon, users: UserGroupIcon, doctor: StethoscopeIcon, ambulance: AmbulanceIcon, medicine: Medicine01Icon, calendar: Calendar03Icon };
+  protected readonly fcLayout = signal<UiFeatureLayout>('vertical');
+  protected readonly fcSize = signal<'md' | 'lg'>('md');
+  protected readonly fcLast = signal('');
+  protected readonly fcLayouts = [{ value: 'vertical', label: 'Vertical' }, { value: 'horizontal', label: 'Horizontal' }];
+  protected readonly fcSizes = [{ value: 'md', label: 'md' }, { value: 'lg', label: 'lg' }];
+  protected readonly featureApi: ApiRow[] = [
+    { name: 'title', type: 'string (required)', default: '—', desc: 'The heading.' },
+    { name: 'description', type: 'string', default: "''", desc: 'Text under the title; also describes the action to screen readers.' },
+    { name: 'eyebrow', type: 'string', default: "''", desc: 'A short tag above the title.' },
+    { name: 'actionLabel', type: 'string', default: "''", desc: 'The action\'s words. With it (or href) the whole card is clickable.' },
+    { name: 'href / target', type: 'string', default: '—', desc: 'Makes the action a link. With href and no actionLabel, the title is the link.' },
+    { name: 'tone', type: "'primary' | 'accent' | 'brand' | 'neutral'", default: "'primary'", desc: 'Badge tint and surface treatment.' },
+    { name: 'layout', type: "'vertical' | 'horizontal'", default: "'vertical'", desc: 'Badge above the text, or beside it at the start.' },
+    { name: 'size', type: "'md' | 'lg'", default: "'md'", desc: 'Padding 24 / 32, badge 48 / 56, bigger title.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Dimmed; the action does nothing and (action) is not emitted.' },
+    { name: 'headingLevel', type: 'number', default: '3', desc: 'The title\'s aria-level.' },
+    { name: 'glass / radius', type: 'boolean', default: 'UiConfig', desc: 'Translucent surface; rounded corners.' },
+    { name: '(action)', type: 'MouseEvent', default: '—', desc: 'The card was activated.' },
+    { name: '[feature-icon]', type: 'slot', default: '—', desc: 'The icon, shown in the badge (decorative). [icon] works too, except on hugeicons-icon.' },
+  ];
   protected readonly COLUMN = `interface UiColumn<T = Record<string, unknown>> {
   key: string;
   header: string;

@@ -119,7 +119,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Sidebar layout" selector="ui-sidebar-layout" [api]="sidebarApi"
-        summary="An app shell: a sidebar beside a scrolling main column, with a sticky top bar. At or below breakpoint the sidebar becomes a drawer opened by a built-in menu button, over a dimmed backdrop that closes it on click. The breakpoint is read with matchMedia, so each app picks its own. Widening past the breakpoint closes the drawer. The drawer slide is turned off under prefers-reduced-motion. The content region is the page's main landmark unless mainLandmark is false.">
+        summary="An app shell: a sidebar beside the main column, with a sticky top bar. At or below breakpoint the sidebar becomes a drawer opened by a built-in menu button, over a dimmed backdrop. The breakpoint is read with matchMedia, so each app picks its own; widening past it closes the drawer. The sidebar sits on the start side, so in dir=rtl it is on the right and the drawer slides in from the right. In drawer mode Escape and the backdrop close it, focus moves into it on open and back to the opener on close, the page behind is inert, and a closed drawer is inert and hidden from screen readers; a Close navigation button appears for keyboard users. The slide is off under prefers-reduced-motion. The menu button's words come from provideUiStrings (sidebarToggle, sidebarClose, sidebarLabel). The content region is the page's main landmark unless mainLandmark is false.">
         <doc-demo code="<ui-sidebar-layout [breakpoint]=&quot;860&quot; [(open)]=&quot;navOpen&quot;>
   <ui-side-nav sidebar [groups]=&quot;nav&quot; />
   <h1 header>Dashboard</h1>
@@ -131,6 +131,37 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
               <ui-side-nav sidebar [groups]="shellNav" [(active)]="shellActive" (navigate)="shellOpen.set(false)" />
               <strong header>{{ shellActive() }}</strong>
               <p class="pane-text">Page content scrolls here while the bar stays put.</p>
+            </ui-sidebar-layout>
+          </div>
+        </doc-demo>
+        <doc-demo code="<ui-sidebar-layout #shell [bar]=&quot;false&quot; fill [(open)]=&quot;navOpen&quot;>
+  <ui-side-nav sidebar [groups]=&quot;nav&quot; (navigate)=&quot;navOpen.set(false)&quot; />
+  <header class=&quot;top&quot;>
+    @if (shell.compact()) {
+      <ui-icon-button ariaLabel=&quot;Menu&quot; (click)=&quot;shell.toggle()&quot;>…</ui-icon-button>
+    }
+    <strong>Chat</strong>
+  </header>
+  <div class=&quot;messages&quot;>…</div>   <!-- flex: 1; min-height: 0; overflow-y: auto -->
+  <form class=&quot;composer&quot;>…</form>
+</ui-sidebar-layout>">
+          <div class="row">
+            <ui-segmented size="sm" label="Width" [options]="shellWidths" [value]="appWidth()" (valueChange)="appWidth.set($any($event)); appOpen.set(false)" />
+            <ui-segmented size="sm" label="Direction" [options]="dirs" [value]="appDir()" (valueChange)="appDir.set($any($event))" />
+          </div>
+          <div class="shell-host app" [class.phone]="appWidth() === 'phone'" [attr.dir]="appDir()">
+            <ui-sidebar-layout #shell [breakpoint]="appWidth() === 'phone' ? 100000 : 0" sidebarWidth="200px" [bar]="false" fill mainLandmark="false" [(open)]="appOpen">
+              <ui-side-nav sidebar [groups]="appNav" [(active)]="appActive" (navigate)="appOpen.set(false)" />
+              <header class="app-top">
+                @if (shell.compact()) {
+                  <ui-button variant="ghost" size="sm" (click)="shell.toggle()">{{ appDir() === 'rtl' ? 'މެނޫ' : 'Menu' }}</ui-button>
+                }
+                <strong>{{ appActive() }}</strong>
+              </header>
+              <div class="app-msgs">
+                @for (n of lines; track n) { <p class="pane-text">Message {{ n }}</p> }
+              </div>
+              <div class="app-composer"><span class="pane-text">Composer stays at the bottom</span></div>
             </ui-sidebar-layout>
           </div>
         </doc-demo>
@@ -167,6 +198,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       overflow: hidden; transform: translateZ(0); /* keeps the drawer's fixed layers inside the demo */ }
     .shell-host.phone { max-width: 390px; }
     .shell-host ui-sidebar-layout { min-height: 100%; height: 100%; }
+    /* fill sizes the shell to the viewport; inside this box it takes the box instead. */
+    .shell-host.app { height: 320px; }
+    .shell-host ui-sidebar-layout.ui-fill { height: 100%; }
+    .app-top { display: flex; align-items: center; gap: var(--ui-space-3); min-height: var(--ui-size-touch); padding: 0 var(--ui-space-4);
+      border-bottom: 1px solid var(--ui-color-border); background: var(--ui-color-bg); flex: none; }
+    .app-msgs { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--ui-space-3) var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    .app-composer { flex: none; padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
+    .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); margin-top: var(--ui-space-2); }
     .vrow { display: flex; align-items: center; gap: var(--ui-space-3); height: var(--ui-size-md); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .pane-text { margin: 0; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .pane { padding: var(--ui-space-3); height: 100%; box-sizing: border-box; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
@@ -197,12 +236,21 @@ export class LayoutPage {
   protected readonly shellWidth = signal<'desktop' | 'phone'>(globalThis.matchMedia?.('(max-width: 600px)').matches ? 'phone' : 'desktop');
   protected readonly shellOpen = signal(false);
   protected readonly shellActive = signal('Dashboard');
+  protected readonly dirs = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
+  protected readonly appWidth = signal<'desktop' | 'phone'>(globalThis.matchMedia?.('(max-width: 600px)').matches ? 'phone' : 'desktop');
+  protected readonly appDir = signal<'ltr' | 'rtl'>('ltr');
+  protected readonly appOpen = signal(false);
+  protected readonly appActive = signal('Chat');
+  protected readonly appNav = [{ label: 'Dhirumi', items: [{ label: 'Chat', value: 'Chat' }, { label: 'Doctors', value: 'Doctors' }, { label: 'Bookings', value: 'Bookings' }] }];
   protected readonly shellNav = [{ label: 'Workspace', items: [{ label: 'Dashboard', value: 'Dashboard' }, { label: 'Events', value: 'Events' }, { label: 'Guests', value: 'Guests' }] }];
   protected readonly sidebarApi: ApiRow[] = [
     { name: 'breakpoint', type: 'number', default: '860', desc: 'Widest viewport (px) that still uses the drawer.' },
     { name: 'sidebarWidth', type: 'string', default: "'248px'", desc: 'Sidebar width, any CSS length.' },
     { name: 'mainLandmark', type: 'boolean', default: 'true', desc: 'The content region has role=main. Set false when the shell is nested inside another main (as in this demo).' },
+    { name: 'bar', type: 'boolean', default: 'true', desc: 'The built-in top bar (menu button + [header] slot). false: no bar at all; the app opens the drawer through [(open)] or toggle() from its own button, shown while compact().' },
+    { name: 'fill', type: 'boolean', default: 'false', desc: 'Exactly the viewport height (100dvh, safe-area aware) instead of at least it: the sidebar and the content scroll inside themselves, and the content is an unpadded flex column (give the app\'s scrolling part flex: 1; min-height: 0, and dock a composer below it).' },
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the drawer is open. Ignored above the breakpoint.' },
+    { name: 'compact', type: 'Signal<boolean>', default: '—', desc: 'Read-only: true in drawer mode. Show the app\'s own menu button only then.' },
     { name: 'toggle()', type: 'method', default: '—', desc: 'Open or close the drawer.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close the drawer, e.g. on navigation.' },
     { name: '[sidebar]', type: 'slot', default: '—', desc: 'The navigation.' },

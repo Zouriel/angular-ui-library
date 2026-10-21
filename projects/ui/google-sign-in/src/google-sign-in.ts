@@ -9,6 +9,38 @@ import { uiGoogleObserveTheme, type UiGoogleButtonShape, type UiGoogleButtonText
 export interface UiGoogleIdentity {
   initialize(config: UiGoogleIdConfig): void;
   renderButton(parent: HTMLElement, options: UiGoogleButtonOptions): void;
+  /**
+   * `google.accounts.oauth2`, for `UiGoogleAuthorization`. The real script keeps it beside
+   * `google.accounts.id`, where it is read from when this is absent; a fake loader puts it here.
+   */
+  oauth2?: UiGoogleOAuth2;
+}
+
+/** The parts of Google Identity Services' `google.accounts.oauth2` that `UiGoogleAuthorization` uses. */
+export interface UiGoogleOAuth2 {
+  initTokenClient(config: UiGoogleTokenClientConfig): { requestAccessToken(overrides?: { prompt?: '' | 'consent' }): void };
+  hasGrantedAllScopes?(response: UiGoogleTokenResponse, firstScope: string, ...restScopes: string[]): boolean;
+}
+
+/** What `google.accounts.oauth2.initTokenClient` is called with (GIS's own names). */
+export interface UiGoogleTokenClientConfig {
+  client_id: string;
+  scope: string;
+  callback: (response: UiGoogleTokenResponse) => void;
+  error_callback?: (error: { type: 'popup_closed' | 'popup_failed_to_open' | 'unknown' | string; message?: string }) => void;
+  hint?: string;
+  prompt?: '' | 'consent';
+  include_granted_scopes?: boolean;
+}
+
+/** GIS's token response. */
+export interface UiGoogleTokenResponse {
+  access_token?: string;
+  expires_in?: number | string;
+  scope?: string;
+  token_type?: string;
+  error?: string;
+  error_description?: string;
 }
 
 /** What `google.accounts.id.initialize` is called with. */

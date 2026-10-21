@@ -48,6 +48,11 @@ export interface UiStrings {
   googleSignUp: string;
   googleContinue: string;
   googleSignInShort: string;
+  /** Sidebar layout: the menu (burger) button, the drawer's close button (shown to keyboard and
+   *  screen-reader users), and the drawer's name. */
+  sidebarToggle: string;
+  sidebarClose: string;
+  sidebarLabel: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -75,6 +80,9 @@ export const defaultUiStrings: UiStrings = {
   googleSignUp: 'Sign up with Google',
   googleContinue: 'Continue with Google',
   googleSignInShort: 'Sign in',
+  sidebarToggle: 'Toggle navigation',
+  sidebarClose: 'Close navigation',
+  sidebarLabel: 'Navigation',
 };
 
 export const UI_STRINGS = new InjectionToken<UiStrings>('UI_STRINGS', { providedIn: 'root', factory: () => defaultUiStrings });

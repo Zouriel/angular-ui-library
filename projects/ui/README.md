@@ -76,14 +76,14 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap map with markers and a pin (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
-| `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token) and `ui-google-button` (the drawn, branded button); see below |
+| `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button) and `UiGoogleAuthorization` (an access token for more scopes); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
 | `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |
 | `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts |
 | `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
-| `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card, alert, spinner, skeleton, divider, text |
+| `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
@@ -133,6 +133,68 @@ import { UiGoogleSignIn } from '@zouriel/ui/google-sign-in';
 - Flutter: `UiGoogleSignInButton` draws the same button; the app pairs it with the `google_sign_in`
   package (`authenticate()` → `idToken`, with `serverClientId` = this web client ID).
 
+### Asking for more Google data
+
+Sign-in gives only name, email and picture. For more (birthday, phone number, contacts), ask the
+signed-in user for an OAuth access token with extra scopes, then call the Google API with it:
+
+```ts
+import { UiGoogleAuthorization, UiGoogleAuthorizationError } from '@zouriel/ui/google-sign-in';
+
+private auth = inject(UiGoogleAuthorization);
+ngOnInit() { this.auth.preload(); }   // load GIS before the click
+
+async addBirthday() {                 // call from a click: browsers block popups otherwise
+  try {
+    const t = await this.auth.requestAccessToken({
+      clientId: '1234-abc.apps.googleusercontent.com',
+      scopes: ['https://www.googleapis.com/auth/user.birthday.read'],
+      hint: this.user.email,          // skips the account chooser
+    });
+    if (t.grantedScopes.includes('https://www.googleapis.com/auth/user.birthday.read')) {
+      // t.accessToken is valid for t.expiresIn seconds
+    }
+  } catch (e) {
+    if (e instanceof UiGoogleAuthorizationError && e.kind === 'cancelled') return;
+    throw e;
+  }
+}
+```
+
+- `requestAccessToken({ clientId, scopes, hint?, prompt? })` uses Google Identity Services'
+  token client (`google.accounts.oauth2.initTokenClient`, popup, `include_granted_scopes: true`)
+  through the same `UI_GOOGLE_IDENTITY` loader, and resolves with
+  `{ accessToken, grantedScopes, expiresIn }`. The user can untick scopes, so check
+  `grantedScopes` before calling an API. `prompt: 'consent'` always shows the consent screen.
+- It rejects with a `UiGoogleAuthorizationError` whose `kind` is `'cancelled'` (popup closed or
+  consent declined), `'popup_blocked'`, `'unavailable'` (the script could not load) or `'failed'`
+  (anything else; `googleError` has Google's code).
+- The scopes must be enabled for the client in Google Cloud (and sensitive ones verified). Tests
+  give the fake from `UI_GOOGLE_IDENTITY` an `oauth2` part with `initTokenClient`.
+- Flutter has no library equivalent: apps use the `google_sign_in` package's `authorizationClient`.
+
+## Sidebar layout as an app shell
+
+`ui-sidebar-layout` (`@zouriel/ui/layout`) puts the sidebar on the start side (the right in
+`dir="rtl"`, where the drawer slides in from the right). For an app with its own top bar and a
+part docked at the bottom (a chat composer):
+
+```html
+<ui-sidebar-layout #shell [bar]="false" fill [(open)]="navOpen">
+  <my-nav sidebar (navigate)="navOpen.set(false)" />
+  <my-top-bar [showMenu]="shell.compact()" (menu)="shell.toggle()" />
+  <div class="messages">…</div>   <!-- flex: 1; min-height: 0; overflow-y: auto -->
+  <my-composer />
+</ui-sidebar-layout>
+```
+
+`bar` (default true) is the built-in top bar with the menu button and `[header]` slot; `fill`
+(default false) makes the shell exactly the viewport (100dvh, safe-area aware), with the sidebar and
+the content scrolling inside and the content an unpadded flex column. `compact` is a readonly
+signal, true in drawer mode. In drawer mode Escape and the backdrop close the drawer, focus moves in
+on open and back to the opener on close, and a closed drawer is inert. Its words are the strings
+`sidebarToggle`, `sidebarClose` and `sidebarLabel`.
+
 ## License
 
 MIT
@@ -146,7 +208,8 @@ input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` 
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
 `uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
 `confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` (map), `googleSignIn` /
-`googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback). Flutter has the same
+`googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback),
+`sidebarToggle` / `sidebarClose` / `sidebarLabel` (sidebar layout). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.
 
 Still English only (0.34.0), to move to `UiStrings` next:
@@ -159,7 +222,7 @@ Still English only (0.34.0), to move to `UiStrings` next:
 | color picker | Pick color, Hex color |
 | OTP input | One-time code |
 | intro loader | Loading… |
-| sidebar layout, splitter | Toggle navigation, Resize panes |
+| splitter | Resize panes |
 | carousel, gallery | Previous/Next slide, Previous, Next, Close, Image viewer |
 | anchor nav, breadcrumbs | On this page, Breadcrumb |
 | PDF viewer | Previous/Next page, Zoom in/out |

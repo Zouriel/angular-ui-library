@@ -81,4 +81,11 @@ describe('UiSideNav links', () => {
     plain.click();
     expect(host.chosen.map((i) => i.value)).toEqual(['plain']);
   });
+
+  it('aligns items to the start side, so it reads right to left in dir=rtl', () => {
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    const item = (f.nativeElement as HTMLElement).querySelector<HTMLElement>('.item')!;
+    expect(getComputedStyle(item).textAlign).toBe('start');
+  });
 });

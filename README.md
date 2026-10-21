@@ -35,6 +35,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   Identity Services' own button and emits the ID token; `ui-google-button` is the same button drawn
   to Google's branding guidelines, for apps with their own OAuth flow (and the twin of Flutter's
   `UiGoogleSignInButton`).
+- **App shell, feature card, Google authorization** (0.37): `ui-sidebar-layout` puts the sidebar on
+  the start side (right in RTL), takes its words from `provideUiStrings`, and with `[bar]="false"`
+  and `fill` becomes a full-height chat-style shell driven by the app's own top bar (`compact()`,
+  `toggle()`). `ui-feature-card` (`@zouriel/ui/card`) is a clickable product card for landing pages.
+  `UiGoogleAuthorization` asks the signed-in user for more Google scopes and returns an access token.
 - **Signals + modern APIs**: `input()` / `output()` / `model()`, control flow, no NgModules.
 - **CVA form controls**: work with template-driven, reactive, and Signal Forms.
 - **Consistent by test**: a style-contract spec and a browser audit (below) keep spacing,

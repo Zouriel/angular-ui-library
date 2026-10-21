@@ -1,13 +1,19 @@
-import { booleanAttribute, Component, effect, inject, input, model, PLATFORM_ID, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import {
+  afterNextRender, booleanAttribute, Component, computed, effect, ElementRef, inject, Injector, input, model, PLATFORM_ID, signal, viewChild,
+} from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { injectUiStrings } from '@zouriel/ui';
+
+let sidebarSeq = 0;
 
 /**
- * `ui-sidebar-layout` — responsive application shell. A fixed sidebar beside a
- * scrolling main column on desktop; below `breakpoint` the sidebar becomes an
- * off-canvas drawer toggled by a built-in hamburger, over a dimmed backdrop.
+ * `ui-sidebar-layout` — responsive application shell. A sidebar beside the main column on desktop;
+ * at or below `breakpoint` the sidebar becomes an off-canvas drawer over a dimmed backdrop. The
+ * sidebar sits on the start side (the right in `dir="rtl"`) and the drawer slides in from there.
  *
- * Project the nav into `[sidebar]`, the top-bar content into `[header]`, and the
- * page into the default slot:
+ * Project the nav into `[sidebar]`, the top-bar content into `[header]`, and the page into the
+ * default slot:
  *
  *   <ui-sidebar-layout [breakpoint]="860">
  *     <my-nav sidebar></my-nav>
@@ -15,46 +21,85 @@ import { isPlatformBrowser } from '@angular/common';
  *     <router-outlet></router-outlet>
  *   </ui-sidebar-layout>
  *
- * Bind `[(open)]` to drive the mobile drawer yourself (e.g. close it on
- * navigation), or call `close()`. The breakpoint is driven by `matchMedia`, not
- * a hardcoded CSS `@media`, so it stays configurable per app.
+ * As an app shell with the app's own top bar (`[bar]="false"`) and a full-height content area that
+ * scrolls inside itself (`fill`), open the drawer from the app's own menu button, shown only in
+ * drawer mode:
+ *
+ *   <ui-sidebar-layout #shell [bar]="false" fill [(open)]="navOpen">
+ *     <my-nav sidebar></my-nav>
+ *     <my-top-bar [showMenu]="shell.compact()" (menu)="shell.toggle()" />
+ *     <my-chat />
+ *   </ui-sidebar-layout>
+ *
+ * Bind `[(open)]` to drive the drawer yourself (e.g. close it on navigation), or call `toggle()` /
+ * `close()`. The breakpoint is driven by `matchMedia`, not a hardcoded CSS `@media`, so it stays
+ * configurable per app. In drawer mode Escape and the backdrop close the drawer, focus moves into it
+ * on open and back to whatever opened it on close, and the page behind is inert; a closed drawer is
+ * inert and hidden from screen readers.
  */
 @Component({
   selector: 'ui-sidebar-layout',
+  imports: [CdkTrapFocus],
   host: {
     '[class.ui-compact]': 'compact()',
-    '[class.ui-open]': 'open()',
+    '[class.ui-open]': 'drawer()',
+    '[class.ui-fill]': 'fill()',
+    '[class.ui-no-bar]': '!bar()',
     '[style.--ui-sb-w]': 'sidebarWidth()',
+    '(keydown.escape)': 'onEscape($event)',
   },
   template: `
-    <div class="backdrop" (click)="open.set(false)"></div>
-    <aside class="sidebar"><ng-content select="[sidebar]" /></aside>
-    <div class="main">
-      <header class="bar">
-        @if (compact()) {
-          <button type="button" class="burger" aria-label="Toggle navigation"
-                  [attr.aria-expanded]="open()" (click)="toggle()">
-            <span></span><span></span><span></span>
-          </button>
-        }
-        <ng-content select="[header]" />
-      </header>
+    <div class="backdrop" aria-hidden="true" (click)="close()"></div>
+    <aside #side class="sidebar" [id]="sideId" [attr.tabindex]="compact() ? -1 : null"
+           [attr.role]="compact() ? 'dialog' : null"
+           [attr.aria-modal]="drawer() ? 'true' : null"
+           [attr.aria-label]="compact() ? strings.sidebarLabel : null"
+           [attr.inert]="compact() && !open() ? '' : null"
+           [attr.aria-hidden]="compact() && !open() ? 'true' : null"
+           [cdkTrapFocus]="drawer()">
+      @if (compact()) {
+        <!-- For keyboard and screen-reader users, who have no backdrop to tap: hidden until focused. -->
+        <button type="button" class="skip-close" (click)="close()">{{ strings.sidebarClose }}</button>
+      }
+      <ng-content select="[sidebar]" />
+    </aside>
+    <div class="main" [attr.inert]="drawer() ? '' : null">
+      @if (bar()) {
+        <header class="bar">
+          @if (compact()) {
+            <button type="button" class="burger" [attr.aria-label]="strings.sidebarToggle"
+                    [attr.aria-expanded]="open()" [attr.aria-controls]="sideId" (click)="toggle()">
+              <span></span><span></span><span></span>
+            </button>
+          }
+          <ng-content select="[header]" />
+        </header>
+      }
       <div class="content" [attr.role]="mainLandmark() ? 'main' : null"><ng-content /></div>
     </div>
   `,
   styles: `
     :host {
       display: grid;
-      grid-template-columns: var(--ui-sb-w, 248px) 1fr;
+      grid-template-columns: var(--ui-sb-w, 248px) minmax(0, 1fr);
       min-height: 100vh;
       font-family: var(--ui-font-default);
+      /* The drawer's offset when closed: off the start edge (left in LTR, right in RTL). */
+      --ui-sb-from: -100%;
     }
+    /* RTL: ancestors' dir attribute for older browsers, :dir() where supported (it also handles an
+       ltr island inside an rtl page, so it comes last). */
+    :host-context([dir="rtl"]) { --ui-sb-from: 100%; }
+    :host(:dir(rtl)) { --ui-sb-from: 100%; }
+    :host(:dir(ltr)) { --ui-sb-from: -100%; }
+
     .backdrop { display: none; }
     .sidebar {
       background: var(--ui-color-surface);
-      border-right: 1px solid var(--ui-color-border);
+      border-inline-end: 1px solid var(--ui-color-border);
       min-width: 0; overflow-y: auto; overscroll-behavior: contain;
       box-sizing: border-box; padding: var(--ui-space-3);
+      outline: none;
     }
     .main { display: flex; flex-direction: column; min-width: 0; }
     .bar {
@@ -79,28 +124,80 @@ import { isPlatformBrowser } from '@angular/common';
     .burger:active { transform: scale(var(--ui-scale-press)); }
     .burger:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
 
-    /* Compact mode — toggled by the matchMedia-driven host class. */
-    :host(.ui-compact) { grid-template-columns: 1fr; }
-    :host(.ui-compact) .sidebar {
-      position: fixed; top: 0; left: 0; bottom: 0;
-      width: var(--ui-sb-w, 248px); max-width: 84vw; z-index: 30;
-      transform: translateX(-100%);
-      transition: transform var(--ui-motion-base) var(--ui-ease-standard);
+    .skip-close {
+      position: absolute; inset-block-start: var(--ui-space-2); inset-inline-end: var(--ui-space-2); z-index: 1;
+      min-height: var(--ui-size-touch); padding: 0 var(--ui-space-3);
+      background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+      border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
+      font: inherit; font-size: var(--ui-font-size-sm); font-weight: 600; cursor: pointer;
+      /* Visually hidden until focused. */
+      clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap;
     }
-    :host(.ui-compact.ui-open) .sidebar { transform: translateX(0); box-shadow: var(--ui-shadow-2); }
-    :host(.ui-compact.ui-open) .backdrop {
+    .skip-close:focus-visible { clip-path: none; width: auto; height: auto; overflow: visible; outline: none; box-shadow: var(--ui-focus-ring); }
+
+    /* Compact mode — toggled by the matchMedia-driven host class. */
+    :host(.ui-compact) { grid-template-columns: minmax(0, 1fr); }
+    :host(.ui-compact) .sidebar {
+      position: fixed; inset-block: 0; inset-inline-start: 0;
+      width: var(--ui-sb-w, 248px); max-width: 84vw; z-index: 30;
+      padding-block: max(var(--ui-space-3), env(safe-area-inset-top)) max(var(--ui-space-3), env(safe-area-inset-bottom));
+      transform: translateX(var(--ui-sb-from));
+      visibility: hidden;
+      /* Hidden only once the slide out has finished. */
+      transition: transform var(--ui-motion-base) var(--ui-ease-standard), visibility 0s linear var(--ui-motion-base);
+    }
+    :host(.ui-compact.ui-open) .sidebar {
+      transform: translateX(0); visibility: visible; box-shadow: var(--ui-shadow-2);
+      transition: transform var(--ui-motion-base) var(--ui-ease-standard), visibility 0s;
+    }
+    :host(.ui-compact) .backdrop {
       display: block; position: fixed; inset: 0; z-index: 20;
       background: var(--ui-color-overlay);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity var(--ui-motion-base) var(--ui-ease-standard), visibility 0s linear var(--ui-motion-base);
+    }
+    :host(.ui-compact.ui-open) .backdrop {
+      opacity: 1; visibility: visible; pointer-events: auto;
+      transition: opacity var(--ui-motion-base) var(--ui-ease-standard), visibility 0s;
     }
     :host(.ui-compact) .bar { padding: var(--ui-space-2) var(--ui-space-4); }
     :host(.ui-compact) .content { padding: var(--ui-shell-pad, var(--ui-space-4)); }
 
+    /* Fill: exactly the viewport, safe-area aware; the sidebar and the content each scroll inside. */
+    :host(.ui-fill) {
+      height: 100vh; height: 100dvh; min-height: 0; overflow: hidden;
+      grid-template-rows: minmax(0, 1fr);
+    }
+    :host(.ui-fill) .sidebar {
+      padding-block: max(var(--ui-space-3), env(safe-area-inset-top)) max(var(--ui-space-3), env(safe-area-inset-bottom));
+    }
+    :host(.ui-fill) .main {
+      min-height: 0; overflow: hidden;
+      padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+      box-sizing: border-box;
+    }
+    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(ltr) { padding-left: max(var(--ui-space-3), env(safe-area-inset-left)); }
+    :host(.ui-fill:not(.ui-compact)) .sidebar:dir(rtl) { padding-right: max(var(--ui-space-3), env(safe-area-inset-right)); }
+    :host(.ui-fill:not(.ui-compact)) .main:dir(ltr) { padding-left: 0; }
+    :host(.ui-fill:not(.ui-compact)) .main:dir(rtl) { padding-right: 0; }
+    /* A flex column, so the app's own column (top bar, messages, composer) can take the height
+       with flex: 1 and min-height: 0. No padding: the app lays out its own edges. */
+    :host(.ui-fill) .content, :host(.ui-fill.ui-compact) .content {
+      flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      display: flex; flex-direction: column;
+      padding: 0;
+    }
+    :host(.ui-fill) .bar { position: static; }
+
     @media (prefers-reduced-motion: reduce) {
-      .sidebar { transition: none; }
+      :host(.ui-compact) .sidebar, :host(.ui-compact.ui-open) .sidebar,
+      :host(.ui-compact) .backdrop, :host(.ui-compact.ui-open) .backdrop { transition: none; }
     }
   `,
 })
 export class UiSidebarLayout {
+  protected readonly strings = injectUiStrings();
   /** Max viewport width (px) at which the sidebar collapses into a drawer. */
   breakpoint = input(860);
   /** Sidebar width (any CSS length). */
@@ -110,31 +207,78 @@ export class UiSidebarLayout {
    * another `<main>` (a preview, a docs page), since a page should have only one.
    */
   mainLandmark = input(true, { transform: booleanAttribute });
-  /** Two-way: whether the mobile drawer is open. Ignored above the breakpoint. */
+  /**
+   * The built-in top bar with the menu button and the `[header]` slot. Turn it off when the app has
+   * its own top bar: open the drawer through `[(open)]` / `toggle()` and show the app's menu button
+   * only while `compact()`.
+   */
+  bar = input(true, { transform: booleanAttribute });
+  /**
+   * Exactly the viewport's height (100dvh, safe-area aware) instead of at least it: the sidebar and
+   * the content each scroll inside themselves and the content gets no padding. For app shells with a
+   * part docked at the bottom (a chat composer).
+   */
+  fill = input(false, { transform: booleanAttribute });
+  /** Two-way: whether the drawer is open. Ignored above the breakpoint. */
   open = model(false);
 
-  /** True while below the breakpoint (drawer mode). */
-  protected compact = signal(false);
+  private readonly _compact = signal(false);
+  /** True at or below the breakpoint (drawer mode). Read it to show the app's own menu button. */
+  readonly compact = this._compact.asReadonly();
+  /** The drawer is showing. */
+  protected readonly drawer = computed(() => this._compact() && this.open());
 
-  private platformId = inject(PLATFORM_ID);
+  protected readonly sideId = `ui-sidebar-${sidebarSeq++}`;
+  private readonly side = viewChild.required<ElementRef<HTMLElement>>('side');
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly doc = inject(DOCUMENT);
+  private readonly injector = inject(Injector);
+  /** What had focus when the drawer opened, to give it back on close. */
+  private opener: HTMLElement | null = null;
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
-      effect((onCleanup) => {
-        const mql = window.matchMedia(`(max-width: ${this.breakpoint()}px)`);
-        const apply = () => {
-          this.compact.set(mql.matches);
-          if (!mql.matches) this.open.set(false); // never leave a stale drawer open on desktop
-        };
-        apply();
-        mql.addEventListener('change', apply);
-        onCleanup(() => mql.removeEventListener('change', apply));
-      });
-    }
+    if (!isPlatformBrowser(this.platformId)) return;
+    effect((onCleanup) => {
+      const mql = window.matchMedia(`(max-width: ${this.breakpoint()}px)`);
+      const apply = () => {
+        this._compact.set(mql.matches);
+        if (!mql.matches) this.open.set(false); // never leave a stale drawer open on desktop
+      };
+      apply();
+      mql.addEventListener('change', apply);
+      onCleanup(() => mql.removeEventListener('change', apply));
+    });
+
+    // Focus moves into the drawer on open and back to the opener on close.
+    let was = false;
+    effect(() => {
+      const now = this.drawer();
+      if (now === was) return;
+      was = now;
+      if (now) {
+        const active = this.doc.activeElement;
+        this.opener = active instanceof HTMLElement && active !== this.doc.body ? active : null;
+        afterNextRender(() => this.side().nativeElement.focus({ preventScroll: true }), { injector: this.injector });
+      } else {
+        const opener = this.opener;
+        this.opener = null;
+        afterNextRender(() => {
+          const active = this.doc.activeElement;
+          const lost = !active || active === this.doc.body || this.side().nativeElement.contains(active);
+          if (lost && opener?.isConnected) opener.focus({ preventScroll: true });
+        }, { injector: this.injector });
+      }
+    });
   }
 
-  /** Toggle the mobile drawer. */
+  /** Toggle the drawer. */
   toggle(): void { this.open.update((o) => !o); }
-  /** Close the mobile drawer (call on navigation). */
+  /** Close the drawer (call on navigation). */
   close(): void { this.open.set(false); }
+
+  protected onEscape(e: Event): void {
+    if (!this.drawer()) return;
+    e.stopPropagation();
+    this.close();
+  }
 }

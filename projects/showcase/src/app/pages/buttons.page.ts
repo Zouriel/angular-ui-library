@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon';
@@ -14,7 +14,8 @@ import {
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
 import {
-  UI_GOOGLE_IDENTITY, UiGoogleButton, UiGoogleSignIn, type UiGoogleButtonTheme, type UiGoogleIdentity,
+  UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn,
+  type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -65,10 +66,65 @@ export class DemoGoogleSignInBlocked {
   readonly failed = output<string>();
 }
 
+/**
+ * UiGoogleAuthorization with a stand-in token client: "grants" the birthday scope and leaves the
+ * phone scope unticked, or reports a closed popup, so the demo runs without a client ID.
+ */
+@Component({
+  selector: 'demo-google-authorization',
+  imports: [UiButton, UiText],
+  providers: [{
+    provide: UI_GOOGLE_IDENTITY,
+    useValue: (): Promise<UiGoogleIdentity> => Promise.resolve({
+      initialize: () => {},
+      renderButton: () => {},
+      oauth2: {
+        initTokenClient: (c) => ({
+          requestAccessToken: () => setTimeout(() => c.prompt === 'consent'
+            ? c.error_callback?.({ type: 'popup_closed', message: 'Popup window closed' })
+            : c.callback({ access_token: 'demo-access-token', expires_in: 3599, scope: c.scope.split(' ')[0] }), 400),
+        }),
+      },
+    }),
+  },
+  // The service is providedIn root, where it would use the real loader: give this demo its own
+  // instance, which picks up the stand-in above.
+  UiGoogleAuthorization],
+  template: `
+    <div style="display: flex; flex-wrap: wrap; gap: var(--ui-space-3)">
+      <ui-button [loading]="busy()" (click)="ask('')">Add birthday and phone</ui-button>
+      <ui-button variant="outline" [disabled]="busy()" (click)="ask('consent')">Ask, then close the popup</ui-button>
+    </div>
+    <ui-text variant="caption" aria-live="polite">{{ result() }}</ui-text>
+  `,
+  host: { style: 'display: grid; gap: var(--ui-space-3)' },
+})
+export class DemoGoogleAuthorization {
+  private readonly auth = inject(UiGoogleAuthorization);
+  protected readonly busy = signal(false);
+  protected readonly result = signal('No request yet.');
+  constructor() { void this.auth.preload(); }
+  protected async ask(prompt: '' | 'consent'): Promise<void> {
+    this.busy.set(true);
+    try {
+      const t = await this.auth.requestAccessToken({
+        clientId: 'demo-placeholder.apps.googleusercontent.com',
+        scopes: ['https://www.googleapis.com/auth/user.birthday.read', 'https://www.googleapis.com/auth/user.phonenumbers.read'],
+        prompt,
+      });
+      this.result.set(`Granted ${t.grantedScopes.map((s) => s.split('/').pop()).join(', ')} for ${t.expiresIn}s (phone was not granted).`);
+    } catch (e) {
+      this.result.set(e instanceof UiGoogleAuthorizationError ? `Failed: ${e.kind} (${e.message})` : 'Failed');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}
+
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
+    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -170,6 +226,37 @@ type UiGoogleButtonShape = 'rectangular' | 'pill';"
             <demo-google-sign-in-blocked (failed)="gsiError.set($event)" />
             <ui-text variant="caption">When the script is blocked: {{ gsiError() ?? '…' }}</ui-text>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Google authorization" anchor="google-authorization" selector="UiGoogleAuthorization" [api]="gauthApi"
+        shapes="// from @zouriel/ui/google-sign-in
+interface UiGoogleAccessRequest { clientId: string; scopes: string[]; hint?: string; prompt?: '' | 'consent' }
+interface UiGoogleAccessToken { accessToken: string; grantedScopes: string[]; expiresIn: number }
+type UiGoogleAuthorizationErrorKind = 'cancelled' | 'popup_blocked' | 'unavailable' | 'failed';
+class UiGoogleAuthorizationError extends Error { kind: UiGoogleAuthorizationErrorKind; googleError?: string }"
+        summary="Sign-in only gives an ID token with name, email and picture. To ask the signed-in user for more Google data (birthday, phone number, contacts), UiGoogleAuthorization (providedIn root) opens Google's consent popup through Google Identity Services' token client (google.accounts.oauth2.initTokenClient) and resolves with an access token, its lifetime and the scopes the user actually granted, since they can untick some. It loads GIS through the same UI_GOOGLE_IDENTITY loader as ui-google-sign-in. A closed popup or declined consent rejects with kind 'cancelled', a blocked popup with 'popup_blocked', a script that can't load with 'unavailable'. Browsers allow the popup only from a click: call preload() early and requestAccessToken() in the click handler. The demo uses a stand-in token client. Flutter has no library equivalent: apps use google_sign_in's authorizationClient.">
+        <doc-demo lang="ts" code="import { UiGoogleAuthorization, UiGoogleAuthorizationError } from '@zouriel/ui/google-sign-in';
+
+private auth = inject(UiGoogleAuthorization);
+ngOnInit() { this.auth.preload(); }
+
+async addBirthday() {   // from a (click)
+  try {
+    const t = await this.auth.requestAccessToken({
+      clientId: '1234-abc.apps.googleusercontent.com',
+      scopes: ['https://www.googleapis.com/auth/user.birthday.read'],
+      hint: this.user.email,
+    });
+    if (t.grantedScopes.includes('https://www.googleapis.com/auth/user.birthday.read')) {
+      await this.api.importBirthday(t.accessToken);
+    }
+  } catch (e) {
+    if (e instanceof UiGoogleAuthorizationError && e.kind === 'cancelled') return;
+    this.toast.error('Google could not be reached');
+  }
+}">
+          <demo-google-authorization />
         </doc-demo>
       </doc-section>
 
@@ -329,6 +416,12 @@ export class ButtonsPage {
   protected readonly gsiOut: ApiRow[] = [
     { name: 'credential', type: 'string', default: '—', desc: 'The Google ID token (JWT) after sign-in.' },
     { name: 'failed', type: '{ message: string }', default: '—', desc: 'The script could not load, or GIS failed to set up.' },
+  ];
+  protected readonly gauthApi: ApiRow[] = [
+    { name: 'requestAccessToken(req)', type: 'Promise<UiGoogleAccessToken>', default: '—', desc: 'Opens the consent popup for req.scopes (joined with spaces, include_granted_scopes on). Rejects with a UiGoogleAuthorizationError.' },
+    { name: 'req.hint', type: 'string', default: '—', desc: "The signed-in user's email or sub, so Google skips the account chooser." },
+    { name: 'req.prompt', type: "'' | 'consent'", default: "Google's ('')", desc: "'consent' always shows the consent screen." },
+    { name: 'preload()', type: 'Promise<void>', default: '—', desc: 'Loads GIS ahead of the click, so the popup opens inside the user gesture.' },
   ];
   protected readonly holdApi: ApiRow[] = [
     { name: 'hold', type: 'number (ms)', default: '2000', desc: 'How long to hold.' },

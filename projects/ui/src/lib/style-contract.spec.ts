@@ -299,4 +299,31 @@ describe('theme palettes', () => {
     }
     expect(fails).toEqual([]);
   });
+
+  /*
+   * ui-feature-card tints its surface with 3% of the tone (6% put lightOrange's primary at 4.33:1) and its badge with 14% of primary. Keep the
+   * words on the tinted surface (eyebrow and action in primary, description in text-muted) at 4.5:1
+   * and the badge icon (primary) at 3:1 on its tint, in every theme.
+   */
+  it('keeps ui-feature-card text and badge icons readable on their tints', () => {
+    const fails: string[] = [];
+    const mix = (a: Rgba, b: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + b[i] * (1 - k)).concat(1) as Rgba;
+    for (const { name, vars } of list) {
+      const c = (k: string) => parseColor(vars[`--ui-color-${k}`] ?? '');
+      const [surface, primary, muted, accent] = [c('surface'), c('primary'), c('text-muted'), c('accent') ?? c('secondary')];
+      if (!surface || !primary || !muted) {
+        fails.push(`${name}: colours unreadable`);
+        continue;
+      }
+      const solid = over(primary, surface);
+      for (const [tone, t] of [['primary', solid], ['accent', accent ? over(accent, surface) : solid]] as const) {
+        const wash = mix(t, surface, 0.03);
+        if (contrast(primary, wash) < 4.5 && tone === 'primary') fails.push(`${name}: primary on the ${tone} wash is ${contrast(primary, wash).toFixed(2)}:1`);
+        if (contrast(muted, wash) < 4.5) fails.push(`${name}: text-muted on the ${tone} wash is ${contrast(muted, wash).toFixed(2)}:1`);
+      }
+      const tint = mix(solid, surface, 0.14);
+      if (contrast(primary, tint) < 3) fails.push(`${name}: badge icon on its tint is ${contrast(primary, tint).toFixed(2)}:1`);
+    }
+    expect(fails).toEqual([]);
+  });
 });

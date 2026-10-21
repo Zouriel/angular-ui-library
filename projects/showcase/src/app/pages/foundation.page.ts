@@ -171,6 +171,8 @@ export class FoundationPage {
     { name: 'uploadLabel / uploadHint', type: 'string', default: "'Click to upload' / 'or drag & drop'", desc: 'File upload.' },
     { name: 'holdHint / confirmTitle / confirm / cancel', type: 'string', default: "'Press and hold to confirm' / 'Are you sure?' / 'Confirm' / 'Cancel'", desc: 'Hold button and its confirm dialog.' },
     { name: 'zoomIn / zoomOut / placePinAtCentre', type: 'string', default: "'Zoom in' / 'Zoom out' / 'Place the pin at the centre'", desc: 'Map.' },
+    { name: 'googleSignIn / googleSignUp / googleContinue / googleSignInShort', type: 'string', default: "'Sign in with Google' / 'Sign up with Google' / 'Continue with Google' / 'Sign in'", desc: 'Google button (Google\'s approved wordings only).' },
+    { name: 'sidebarToggle / sidebarClose / sidebarLabel', type: 'string', default: "'Toggle navigation' / 'Close navigation' / 'Navigation'", desc: 'Sidebar layout: menu button, the drawer\'s close button, the drawer\'s name.' },
   ];
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },

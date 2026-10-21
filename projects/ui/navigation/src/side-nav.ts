@@ -87,7 +87,7 @@ export interface UiSideNavGroup {
     ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
     .item { position: relative; display: flex; align-items: center; gap: var(--ui-space-2); width: 100%;
       padding: var(--ui-space-1) var(--ui-space-3); background: none; border: none; border-radius: var(--ui-radius);
-      color: var(--ui-color-text-muted); font: inherit; font-size: var(--ui-font-size-sm); text-align: left; text-decoration: none; cursor: pointer;
+      color: var(--ui-color-text-muted); font: inherit; font-size: var(--ui-font-size-sm); text-align: start; text-decoration: none; cursor: pointer;
       box-sizing: border-box;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .item:hover:not(:disabled):not([aria-disabled='true']) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
@@ -99,7 +99,7 @@ export interface UiSideNavGroup {
          generic hover background wins and the active highlight disappears on hover. */
       background: var(--ui-color-selected);
     }
-    .item.active::before { content: ''; position: absolute; left: 0; top: var(--ui-space-1); bottom: var(--ui-space-1); width: 2px; border-radius: var(--ui-radius-pill); background: var(--ui-color-primary); }
+    .item.active::before { content: ''; position: absolute; inset-inline-start: 0; inset-block: var(--ui-space-1); width: 2px; border-radius: var(--ui-radius-pill); background: var(--ui-color-primary); }
     .item:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .item:disabled, .item[aria-disabled='true'] { opacity: .5; cursor: not-allowed; }
     @media (pointer: coarse) { .item { min-height: var(--ui-size-touch); } }
