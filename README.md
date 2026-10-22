@@ -54,6 +54,8 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the
   page. `selectedMarkerId` draws one marker bigger, ringed and haloed on top with its label, and
   `markerLabels` ('all' | 'selected' | 'none') says which labels show.
+- **0.44.1**: no Angular change. The Flutter twin fixed dialogs opened from above its navigator (a held SOS fab
+  in `UiApp.builder`); web overlays never depended on one.
 - **Map search area, swipe screens, SOS fab** (0.44.0): `ui-map [area]` draws a search circle in
   true metres; with `editable` a handle on its edge drags the radius (a slider for keyboards and
   screen readers, `(areaChanging)` / `(areaChange)`), and `fitArea()` shows it all.
