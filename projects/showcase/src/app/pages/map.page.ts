@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import type { UiGlassStrength } from '@zouriel/ui';
-import { UiMap, type UiLatLng, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, type UiLatLng, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import CenterFocusIcon from '@hugeicons/core-free-icons/CenterFocusIcon';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
@@ -41,6 +41,7 @@ interface UiMapFitOptions {
   maxZoom?: number;  // default 17, and the zoom for a single point
   animate?: boolean; // default true; never under reduced motion
 }
+type UiMapMarkerLabels = 'all' | 'selected' | 'none'; // 0.43.0: which marker labels show
 interface UiMapControl {  // 0.42.1: your own round button, in the locate button's stack
   id: string;
   icon: IconSvgObject;     // a hugeicons icon, one file per icon
@@ -77,6 +78,14 @@ async findMe() {
     this.locating.set(false);
   }, () => { this.denied.set(true); this.locating.set(false); });
 }`;
+
+const PREVIEW_CODE = `<!-- A result card's Map tab: a still map of the results; clicking it opens the full map. -->
+<ui-map preview [markers]="results" markerLabels="none" (previewPress)="openResultsMap()" />
+<!-- previewLabel="See 3 nurses on the map" names it; the default is the mapOpen string, "Open map". -->
+<!-- Or place it on the results once it has loaded: map.fitPoints(points) (no animation on a preview). -->`;
+
+const SELECTED_CODE = `<ui-map [markers]="results" [selectedMarkerId]="selected()?.id ?? null" markerLabels="selected"
+  (markerSelected)="selected.set($event)" />`;
 
 const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
@@ -171,6 +180,34 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Preview" anchor="preview" selector="ui-map preview · (previewPress)" [api]="previewApi"
+        summary="preview (0.43.0) makes the map a still picture that is one button, for a map inside a list or a chat: clicking it, or Enter or Space when it has focus, emits previewPress, and the app opens the full map. Nothing on it moves: no pan, pinch, double-click or wheel zoom, no arrow keys, no zoom, locate or app buttons. The markers are drawn but take no clicks or focus of their own, and the attribution stays visible (the tile licence asks for it) without being a link. The mouse wheel or a finger dragging over it scrolls the page, as over a photo. It is one native button named previewLabel, Open map by default (the mapOpen string, so an app can translate it), with the focus ring inside its edge, a pointer cursor and a slight wash while pressed. A small round expand badge in the map controls' raised style sits in the top-end corner (top-left in RTL). center, zoom and fitPoints still place it, without animating. Turn preview off and the full map is back on the same map. Try it: scroll the page over the map, then click it.">
+        <doc-demo lang="html" [code]="PREVIEW_CODE">
+          <div class="map-wrap preview-wrap">
+            <ui-map [preview]="previewOn()" (previewPress)="openResults()" [center]="previewCenter" [zoom]="15" [markers]="markers"
+              [markerLabels]="previewOn() ? 'none' : 'all'" ariaLabel="Nurses near you" />
+          </div>
+          <div class="route-acts">
+            <ui-segmented label="Preview (demo)" size="sm" [options]="onOffOptions" [value]="previewOn() ? 'on' : 'off'" (valueChange)="previewOn.set($event === 'on')" />
+            <ui-text variant="caption">Opened {{ opened() }} {{ opened() === 1 ? 'time' : 'times' }}</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Selected marker" anchor="selected-marker" selector="ui-map [selectedMarkerId] · markerLabels" [api]="selectedApi"
+        summary="selectedMarkerId (0.43.0) marks one marker as the chosen one: its dot is drawn bigger (22px instead of 16) with a white ring and a soft halo in its tone, above the other markers, with its label shown, and it is aria-pressed (the others not), so screen readers hear which is selected. The others stay as they are. Changing it updates the markers in place, without rebuilding or moving the map. markerLabels says which labels show: all (the default), selected (only the selected marker's, for a busy map where a tapped pin shows its card) or none. A hidden label still names its marker for screen readers. Click a marker here to select it.">
+        <doc-demo lang="html" [code]="SELECTED_CODE">
+          <div class="map-wrap">
+            <ui-map [center]="center()" [zoom]="15" [markers]="markers" [selectedMarkerId]="selectedId()" [markerLabels]="labelMode()"
+              (markerSelected)="selectedId.set($event.id)" ariaLabel="Nurses near you" />
+          </div>
+          <div class="route-acts">
+            <ui-segmented label="Labels (demo)" size="sm" [options]="labelOptions" [value]="labelMode()" (valueChange)="labelMode.set($any($event))" />
+            <ui-button size="sm" variant="ghost" [disabled]="!selectedId()" (click)="selectedId.set(null)">Clear the selection</ui-button>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Map page" anchor="map-page" selector="ui-map fill · [pulse] · [insets]" [api]="pageApi"
         summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part. glass on the sheet and the card (0.41.2) makes them see-through, and glassStrength (0.41.3) says how much: clear, the default, lets a map in the theme's brightness plainly show through (roads, coastline, parks), lightly blurred and squeezed just enough to keep every text colour AA over such a map; frosted is the near-opaque surface that stays AA over any backdrop, for photos or a map in the other brightness. Solid where backdrop-filter is missing or under reduced transparency or more contrast.">
         <doc-demo lang="html" [code]="PAGE_CODE">
@@ -181,6 +218,22 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         </doc-demo>
       </doc-section>
     </doc-page>
+
+    @if (resultsOpen()) {
+      <div class="map-page">
+        <ui-map fill [center]="previewCenter" [zoom]="16" [markers]="markers" [selectedMarkerId]="resultsPick()?.id ?? null" markerLabels="selected"
+          [insets]="{ top: resultsCover() }" (markerSelected)="resultsPick.set($event)" ariaLabel="Nurses near you" />
+        <ui-floating-panel placement="top" ariaLabel="Nurse" (coverChange)="resultsCover.set($event)">
+          <div class="status">
+            <div class="status-text" role="status">
+              <strong>{{ resultsPick()?.label ?? 'Nurses near you' }}</strong>
+              <span class="meta">{{ resultsPick() ? resultsPick()!.lat.toFixed(4) + ', ' + resultsPick()!.lng.toFixed(4) : 'Click a pin to see the nurse.' }}</span>
+            </div>
+            <ui-button size="sm" variant="ghost" (click)="closeResults()">Close</ui-button>
+          </div>
+        </ui-floating-panel>
+      </div>
+    }
 
     @if (pageOpen()) {
       @for (d of [dir()]; track d) {
@@ -231,6 +284,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     .status-text strong { font-size: var(--ui-font-size-md); }
     .status .meta { margin-top: 0; }
     .form { display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .preview-wrap { --ui-map-height: 200px; }
     .route-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
     .tile-fields { display: grid; gap: var(--ui-space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: var(--ui-space-3); }
   `,
@@ -241,6 +295,40 @@ export class MapPage {
   protected readonly TILES_CODE = TILES_CODE;
   protected readonly LOCATE_CODE = LOCATE_CODE;
   protected readonly ROUTE_CODE = ROUTE_CODE;
+  protected readonly PREVIEW_CODE = PREVIEW_CODE;
+  protected readonly SELECTED_CODE = SELECTED_CODE;
+  // Preview (0.43.0): the still map, and the full map it opens.
+  protected readonly previewCenter: UiLatLng = { lat: 4.176, lng: 73.5087 };
+  protected readonly previewOn = signal(true);
+  protected readonly opened = signal(0);
+  protected readonly onOffOptions = [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }];
+  protected readonly resultsOpen = signal(false);
+  protected readonly resultsPick = signal<UiMapMarker | null>(null);
+  protected readonly resultsCover = signal(0);
+  protected openResults(): void {
+    this.opened.update((n) => n + 1);
+    this.resultsPick.set(null);
+    this.resultsOpen.set(true);
+  }
+  protected closeResults(): void {
+    this.resultsOpen.set(false);
+  }
+  // Selected marker (0.43.0).
+  protected readonly selectedId = signal<string | null>('n2');
+  protected readonly labelMode = signal<UiMapMarkerLabels>('all');
+  protected readonly labelOptions = [{ value: 'all', label: 'All' }, { value: 'selected', label: 'Selected' }, { value: 'none', label: 'None' }];
+  protected readonly previewApi: ApiRow[] = [
+    { name: 'preview', type: 'boolean', default: 'false', desc: 'A still picture that is one button (0.43.0): no gestures, keys or controls; markers drawn but not focusable; the wheel and drags scroll the page. Off at runtime gives the full map back.' },
+    { name: '(previewPress)', type: 'void', default: '—', desc: 'The preview was clicked, or Enter or Space pressed on it: open the full map.' },
+    { name: 'previewLabel', type: 'string | null', default: 'null', desc: 'Its accessible name. null: the mapOpen string.' },
+    { name: 'mapOpen', type: 'UiStrings', default: "'Open map'", desc: 'The default preview name, from provideUiStrings.' },
+    { name: '.ui-map-preview · .ui-map-preview-badge', type: 'CSS', default: '—', desc: 'The whole-map button (a slight wash while pressed, the focus ring inside the edge) and the 30px round expand badge at the top-end corner.' },
+  ];
+  protected readonly selectedApi: ApiRow[] = [
+    { name: 'selectedMarkerId', type: 'string | null', default: 'null', desc: 'The selected marker (0.43.0): a 22px dot (UI_MAP_SELECTED_DOT) with a white ring and a halo in its tone, on top, its label shown, aria-pressed.' },
+    { name: 'markerLabels', type: "'all' | 'selected' | 'none'", default: "'all'", desc: "Which labels show: every one, only the selected marker's, or none. Hidden labels still name their markers (aria-label)." },
+    { name: 'uiMapLabelShown(mode, selected)', type: 'function', default: '—', desc: 'Whether a marker\'s label shows under a mode.' },
+  ];
   /** A real road route across Male (OSRM, 1.3 km), from the nurse to the patient. */
   protected readonly routePoints: [number, number][] = [
     [4.17682, 73.5121], [4.17678, 73.51237], [4.17708, 73.51244], [4.17709, 73.51223], [4.17716, 73.51216], [4.17773, 73.51224], [4.17785, 73.51146],

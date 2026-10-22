@@ -6,6 +6,7 @@ import type * as Leaflet from 'leaflet';
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
+import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
 import { injectUiStrings, uiWatchTheme, type UiStatus } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
@@ -145,6 +146,21 @@ export interface UiMapControl {
 
 /** Which side of its dot a marker label sits on, on screen. */
 export type UiMapLabelSide = 'left' | 'right';
+
+/**
+ * Which marker labels a map shows (0.43.0, Flutter `UiMapMarkerLabels`): every one ('all', the
+ * default), only the selected marker's ('selected') or none ('none'). Hidden labels still name
+ * their markers for screen readers.
+ */
+export type UiMapMarkerLabels = 'all' | 'selected' | 'none';
+
+/** The selected marker's dot, in px across (0.43.0): the others' 16px, about 1.35x. */
+export const UI_MAP_SELECTED_DOT = 22;
+
+/** Whether a marker's label shows under `mode` (0.43.0). */
+export function uiMapLabelShown(mode: UiMapMarkerLabels, selected: boolean): boolean {
+  return mode === 'all' || (mode === 'selected' && selected);
+}
 
 /** The gap from a marker's point to its label (the dot's 8px radius and 4px). */
 export const UI_MAP_LABEL_GAP = 12;
@@ -322,16 +338,26 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  * - `controls` (0.42.1): the app's own round buttons (`UiMapControl`) in the locate button's stack
  *   and style, above it at the bottom-end of the visible part, following the insets; pressing one
  *   emits `(controlPress)`.
+ * - `preview` (0.43.0): a still picture of the map that is one button. No pan, zoom, keys or
+ *   controls; markers drawn but not focusable; the wheel or a drag over it scrolls the page. A
+ *   click, Enter or Space emits `(previewPress)`; it is named `previewLabel` ("Open map", from the
+ *   `mapOpen` string) and shows a round expand badge at the top-end corner. `center`, `zoom` and
+ *   `fitPoints` still place it (without animating). Turning it off gives the full map back.
+ * - `selectedMarkerId` (0.43.0): that marker is drawn bigger (a 22px dot) with a white ring and a
+ *   halo in its tone, above the others, its label shown, `aria-pressed="true"` (the others "false").
+ *   Changing it updates the markers in place.
+ * - `markerLabels` (0.43.0): 'all' (the default), 'selected' (only the selected marker's label) or
+ *   'none'. Hidden labels still name the markers (`aria-label`).
  *
  * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
 @Component({
   selector: 'ui-map',
   encapsulation: ViewEncapsulation.None,
-  host: { class: 'ui-map', '[attr.data-dark]': 'dark() || null', '[attr.data-dark-tiles]': '(dark() && !!tileUrlDark()) || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
+  host: { class: 'ui-map', '[attr.data-preview]': 'preview() || null', '[attr.data-dark]': 'dark() || null', '[attr.data-dark-tiles]': '(dark() && !!tileUrlDark()) || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
   imports: [HugeiconsIconComponent, UiTooltip],
   template: `<div class="ui-map-canvas" #canvas></div>
-    @if (locateControl()) {
+    @if (locateControl() && !preview()) {
       <button type="button" class="ui-map-locate" [attr.data-state]="locating() ? 'locating' : locateOff() ? 'off' : null"
         [attr.aria-label]="strings.mapLocate" [attr.aria-busy]="locating() ? 'true' : null"
         [attr.aria-description]="locateOff() ? strings.mapLocationOff : null"
@@ -343,7 +369,7 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
         }
       </button>
     }
-    @if (controls().length) {
+    @if (controls().length && !preview()) {
       <div class="ui-map-controls" [attr.data-locate]="locateControl() || null">
         @for (c of controls(); track c.id) {
           <button type="button" class="ui-map-control" [attr.data-control]="c.id" [attr.aria-label]="c.label" [disabled]="!!c.disabled"
@@ -352,6 +378,11 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
           </button>
         }
       </div>
+    }
+    @if (preview()) {
+      <button type="button" class="ui-map-preview" [attr.aria-label]="previewLabel() ?? strings.mapOpen" (click)="previewPress.emit()">
+        <span class="ui-map-preview-badge" aria-hidden="true"><hugeicons-icon [icon]="icons.expand" [size]="16" [strokeWidth]="1.8" /></span>
+      </button>
     }`,
   styleUrls: ['./leaflet.css', './map.css'],
 })
@@ -397,6 +428,14 @@ export class UiMap {
   routes = input<readonly UiMapRoute[]>([]);
   /** The app's own buttons (0.42.1), above the locate button at the bottom-end of the visible part. */
   controls = input<readonly UiMapControl[]>([]);
+  /** A still picture that is one button (0.43.0): no gestures, keys or controls; emits `(previewPress)`. */
+  preview = input(false, { transform: booleanAttribute });
+  /** The preview button's accessible name; null: the `mapOpen` string ("Open map"). */
+  previewLabel = input<string | null>(null);
+  /** The selected marker (0.43.0): bigger, ringed and haloed, on top, its label shown. */
+  selectedMarkerId = input<string | null>(null);
+  /** Which marker labels show (0.43.0); hidden ones still name their markers. */
+  markerLabels = input<UiMapMarkerLabels>('all');
 
   readonly markerSelected = output<UiMapMarker>();
   readonly centerChanged = output<UiMapView>();
@@ -404,8 +443,10 @@ export class UiMap {
   readonly locate = output<void>();
   /** One of `controls` was pressed (not while disabled). */
   readonly controlPress = output<UiMapControl>();
+  /** The preview was clicked, or Enter or Space pressed on it (0.43.0): open the full map. */
+  readonly previewPress = output<void>();
 
-  protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon };
+  protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon, expand: ArrowExpand01Icon };
 
   /** The map is on a dark theme: tiles dimmed, or the dark tiles shown. */
   protected readonly dark = signal(false);
@@ -419,6 +460,10 @@ export class UiMap {
   private L: typeof Leaflet | null = null;
   private map: Leaflet.Map | null = null;
   private markerLayer: Leaflet.LayerGroup | null = null;
+  /** The markers drawn, by id, so the selection and label mode update them in place. */
+  private markerById = new Map<string, Leaflet.Marker>();
+  /** The zoom buttons, taken off a preview and put back after. */
+  private zoomControl: Leaflet.Control.Zoom | null = null;
   private pinMarker: Leaflet.Marker | null = null;
   private tiles: Leaflet.TileLayer | null = null;
   private pulseMarker: Leaflet.Marker | null = null;
@@ -500,6 +545,20 @@ export class UiMap {
       const r = this.routes();
       untracked(() => this.drawRoutes(r));
     });
+    effect(() => {
+      this.selectedMarkerId();
+      this.markerLabels();
+      untracked(() => this.applySelection());
+    });
+    effect(() => {
+      const p = this.preview();
+      untracked(() => this.applyPreview(p));
+    });
+  }
+
+  /** No animation on a preview (a picture) or under reduced motion. */
+  private still(): boolean {
+    return this.preview() || this.reduced();
   }
 
   private reduced(): boolean {
@@ -543,6 +602,7 @@ export class UiMap {
       };
       Object.assign(zoom, { _zoomIn: around(1), _zoomOut: around(-1) });
       zoom.addTo(map);
+      this.zoomControl = zoom;
       // The map surface is the focusable, keyboard-pannable element: it carries the name.
       el.setAttribute('aria-label', this.ariaLabel());
       if (this.pinMode()) el.setAttribute('aria-description', this.strings.placePinAtCentre + ' (Enter)');
@@ -609,6 +669,8 @@ export class UiMap {
         map.remove();
         this.map = null;
         this.markerLayer = null;
+        this.markerById.clear();
+        this.zoomControl = null;
         this.pinMarker = null;
         this.pulseMarker = null;
         this.pulseKey = '';
@@ -630,6 +692,35 @@ export class UiMap {
     this.drawPulse(this.pulse());
     this.drawUser(this.userLocation());
     this.drawRoutes(this.routes());
+    this.applyPreview(this.preview());
+  }
+
+  /**
+   * A preview (0.43.0) is a picture under one button: every Leaflet handler off (drag, pinch,
+   * double-click and wheel zoom, box zoom, keys), the zoom buttons taken off, and the canvas inert
+   * and hidden from screen readers (the button names it). Off: all of it back.
+   */
+  private applyPreview(on: boolean): void {
+    const { map, zoomControl } = this;
+    if (!map) return;
+    for (const h of [map.dragging, map.touchZoom, map.doubleClickZoom, map.scrollWheelZoom, map.boxZoom, map.keyboard]) {
+      if (!h) continue;
+      if (on) h.disable();
+      else h.enable();
+    }
+    if (zoomControl) {
+      if (on) zoomControl.remove();
+      else if (!(zoomControl as unknown as { _map?: unknown })._map) zoomControl.addTo(map);
+    }
+    const el = this.host.nativeElement.querySelector('.ui-map-canvas') as HTMLElement | null;
+    if (!el) return;
+    if (on) {
+      el.setAttribute('inert', '');
+      el.setAttribute('aria-hidden', 'true');
+    } else {
+      el.removeAttribute('inert');
+      el.removeAttribute('aria-hidden');
+    }
   }
 
   /**
@@ -642,7 +733,7 @@ export class UiMap {
     if (!map) return;
     const z = zoom ?? map.getZoom();
     this.release();
-    map.setView(this.mapCenterFor(c, z), z, { animate: !this.reduced() });
+    map.setView(this.mapCenterFor(c, z), z, { animate: !this.still() });
   }
 
   /**
@@ -687,7 +778,7 @@ export class UiMap {
     const s = map.getSize();
     const v = uiMapFitView(points, { width: s.x, height: s.y }, area, Math.min(options.maxZoom ?? UI_MAP_FIT_MAX_ZOOM, map.getMaxZoom()), Math.max(1, map.getMinZoom()));
     if (!v) return;
-    map.setView([v.lat, v.lng], v.zoom, { animate: options.animate !== false && !this.reduced() });
+    map.setView([v.lat, v.lng], v.zoom, { animate: options.animate !== false && !this.still() });
   }
 
   protected onLocate(): void {
@@ -731,7 +822,7 @@ export class UiMap {
     const v = this.view;
     if (v && Math.abs(v.lat - c.lat) < 1e-7 && Math.abs(v.lng - c.lng) < 1e-7 && v.zoom === zoom) return;
     this.release();
-    map.setView(this.mapCenterFor(c, zoom), zoom, { animate: !this.reduced() });
+    map.setView(this.mapCenterFor(c, zoom), zoom, { animate: !this.still() });
   }
 
   /**
@@ -766,7 +857,7 @@ export class UiMap {
       map.setView(this.mapCenterFor(this.center(), this.zoom()), this.zoom(), { animate: false });
       return;
     }
-    map.panBy([old.x - next.x, old.y - next.y], { animate: !this.reduced(), duration: 0.32, easeLinearity: 0.5 });
+    map.panBy([old.x - next.x, old.y - next.y], { animate: !this.still(), duration: 0.32, easeLinearity: 0.5 });
   }
 
   private drawPulse(p: UiMapPulse | null): void {
@@ -905,6 +996,7 @@ export class UiMap {
     const { L, markerLayer } = this;
     if (!L || !markerLayer) return;
     markerLayer.clearLayers();
+    this.markerById.clear();
     for (const m of list) {
       const marker = L.marker([m.lat, m.lng], {
         icon: L.divIcon({ className: 'ui-map-marker', html: uiMapMarkerHtml(m), iconSize: undefined }),
@@ -915,6 +1007,31 @@ export class UiMap {
       });
       marker.on('click', () => this.zone.run(() => this.markerSelected.emit(m)));
       marker.addTo(markerLayer);
+      // Its name, whether or not its label is shown (0.43.0: markerLabels can hide it).
+      const name = m.ariaLabel ?? m.label;
+      if (name) marker.getElement()?.setAttribute('aria-label', name);
+      if (!this.markerById.has(m.id)) this.markerById.set(m.id, marker);
+    }
+    this.applySelection();
+  }
+
+  /**
+   * The selected marker (0.43.0) and the label mode, on the markers already drawn: the selected one
+   * gets data-selected (bigger, ringed, haloed), rises above the others and is aria-pressed; labels
+   * the mode hides get data-label-hidden (their aria-label still names the marker).
+   */
+  private applySelection(): void {
+    const selected = this.selectedMarkerId();
+    const mode = this.markerLabels();
+    for (const [id, marker] of this.markerById) {
+      const el = marker.getElement();
+      const on = selected !== null && id === selected;
+      marker.setZIndexOffset(on ? 500 : 0);
+      if (!el) continue;
+      el.toggleAttribute('data-selected', on);
+      if (selected === null) el.removeAttribute('aria-pressed');
+      else el.setAttribute('aria-pressed', on ? 'true' : 'false');
+      el.toggleAttribute('data-label-hidden', !uiMapLabelShown(mode, on));
     }
     this.placeLabels();
   }

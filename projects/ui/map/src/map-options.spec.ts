@@ -12,7 +12,7 @@ function recorder() {
   const calls: Record<string, unknown[][]> = {};
   const note = (k: string, ...a: unknown[]) => (calls[k] ??= []).push(a);
   const el = document.createElement('div');
-  const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, eachLayer: () => {}, getElement: () => el, options: {}, setLatLng: () => {} });
+  const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, eachLayer: () => {}, getElement: () => el, options: {}, setLatLng: () => {}, setZIndexOffset: () => {} });
   const L = {
     map: () => ({ ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, getSize: () => ({ x: 0, y: 0 }), invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) }),
     control: { zoom: (o: unknown) => (note('zoom', o), chain()), attribution: () => chain() },

@@ -54,12 +54,22 @@
 @media (pointer: coarse) { .ui-map .ui-map-marker::before { left: -14px; top: -14px; width: 44px; height: 44px; } }
 .ui-map .ui-map-marker:focus-visible { outline: none; }
 .ui-map .ui-map-marker:focus-visible .ui-map-dot { box-shadow: var(--ui-focus-ring); }
-.ui-map .ui-map-dot { box-sizing: border-box; width: 16px; height: 16px; border-radius: 50%; flex: none;
-  background: var(--ui-color-primary); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
-.ui-map .ui-map-dot[data-tone="success"] { background: var(--ui-color-success); }
-.ui-map .ui-map-dot[data-tone="warning"] { background: var(--ui-color-warning); }
-.ui-map .ui-map-dot[data-tone="danger"] { background: var(--ui-color-danger); }
-.ui-map .ui-map-dot[data-tone="neutral"] { background: var(--ui-color-text-muted); }
+.ui-map .ui-map-dot { --ui-map-dot-tone: var(--ui-color-primary); box-sizing: border-box; width: 16px; height: 16px; border-radius: 50%; flex: none;
+  background: var(--ui-map-dot-tone); border: 3px solid var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-dot[data-tone="success"] { --ui-map-dot-tone: var(--ui-color-success); }
+.ui-map .ui-map-dot[data-tone="warning"] { --ui-map-dot-tone: var(--ui-color-warning); }
+.ui-map .ui-map-dot[data-tone="danger"] { --ui-map-dot-tone: var(--ui-color-danger); }
+.ui-map .ui-map-dot[data-tone="neutral"] { --ui-map-dot-tone: var(--ui-color-text-muted); }
+/* selectedMarkerId (0.43.0): a 22px dot (about 1.35x) with a white ring and a soft halo in its tone,
+   still centred on its point (the map raises it above the others). Its hit area stays centred too. */
+.ui-map .ui-map-marker[data-selected] { margin: -11px 0 0 -11px !important; }
+.ui-map .ui-map-marker[data-selected]::before { left: -1px; top: -1px; }
+@media (pointer: coarse) { .ui-map .ui-map-marker[data-selected]::before { left: -11px; top: -11px; } }
+.ui-map .ui-map-marker[data-selected] .ui-map-dot { width: 22px; height: 22px; border-color: var(--ui-color-location-ring);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ui-map-dot-tone) 30%, transparent), var(--ui-shadow-2); }
+.ui-map .ui-map-marker[data-selected]:focus-visible .ui-map-dot { box-shadow: var(--ui-focus-ring); }
+/* markerLabels (0.43.0): a label the mode hides isn't drawn; the marker's aria-label still names it. */
+.ui-map .ui-map-marker[data-label-hidden] .ui-map-label { display: none; }
 /* The label sizes to its text up to --ui-map-label-max (320px, or the map's width less 32px: set by
    the map), and wraps to a second line before it is cut with an ellipsis. One line is a pill; the
    large radius clamps to half the height, so two lines are a soft rectangle.
@@ -196,4 +206,27 @@
   .ui-map .ui-map-pulse-ring:first-child { opacity: 1; transform: scale(0.6); }
   .ui-map .leaflet-top, .ui-map .leaflet-bottom, .ui-map .ui-map-locate, .ui-map .ui-map-user-halo, .ui-map .ui-map-controls, .ui-map .ui-map-control { transition: none; }
   .ui-map .ui-map-locate-spin { animation-duration: 1.4s; }
+}
+
+
+/* preview (0.43.0): the whole map is one button over a still picture. It takes every click (the
+   markers and credits under it take none, though the credits stay visible: the tile licence) but
+   claims no drag or wheel, so the page scrolls over it. A subtle wash while pressed, the focus ring
+   inside the edge, and a round expand badge in the controls' raised style at the top-end corner. */
+.ui-map .ui-map-preview {
+  position: absolute; inset: 0; z-index: 1001; display: block; box-sizing: border-box; width: 100%; height: 100%;
+  margin: 0; padding: 0; border: 0; border-radius: inherit; background: transparent; color: inherit; font: inherit;
+  cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: background var(--ui-motion-fast) var(--ui-ease-standard);
+}
+.ui-map .ui-map-preview:active { background: color-mix(in srgb, var(--ui-color-text) 8%, transparent); }
+.ui-map .ui-map-preview:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-bg), inset 0 0 0 4px var(--ui-color-border-focus); }
+.ui-map .ui-map-preview-badge {
+  position: absolute; top: var(--ui-space-2); inset-inline-end: var(--ui-space-2); box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; width: var(--ui-size-md); height: var(--ui-size-md); border-radius: 50%;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-2);
+}
+.ui-map[data-preview] .leaflet-grab, .ui-map[data-preview] .leaflet-interactive { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-preview { transition: none; }
 }

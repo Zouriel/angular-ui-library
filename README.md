@@ -49,6 +49,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Map preview, selected marker, label modes** (0.43.0): `ui-map preview` is a still picture of the
+  map that is one button (`(previewPress)`, named `previewLabel` / the `mapOpen` string, an expand badge
+  at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the
+  page. `selectedMarkerId` draws one marker bigger, ringed and haloed on top with its label, and
+  `markerLabels` ('all' | 'selected' | 'none') says which labels show.
 - **Chat bubbles keep their words whole** (0.42.2): `ui-chat-bubble` takes the whole row whatever its
   parent aligns (a column with `align-items: flex-start`/`flex-end`/`center`, a row, a grid), so its
   80% never resolves against a host shrunk to its own text ("okay" broke as "ok/ay"), and it uses

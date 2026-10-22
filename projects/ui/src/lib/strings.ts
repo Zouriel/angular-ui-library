@@ -46,6 +46,8 @@ export interface UiStrings {
   mapLocate: string;
   mapLocationOff: string;
   mapYourLocation: string;
+  /** Map preview (0.43.0): the still map's one button, which opens the full map. */
+  mapOpen: string;
   /** Google sign-in button: Google's approved wordings (a translation must keep the meaning: signing
    *  in to this app with a Google account, not creating one). */
   googleSignIn: string;
@@ -83,6 +85,7 @@ export const defaultUiStrings: UiStrings = {
   mapLocate: 'Show my location',
   mapLocationOff: 'Location is off',
   mapYourLocation: 'Your location',
+  mapOpen: 'Open map',
   googleSignIn: 'Sign in with Google',
   googleSignUp: 'Sign up with Google',
   googleContinue: 'Continue with Google',

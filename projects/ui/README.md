@@ -378,6 +378,39 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
+## Map preview, selected marker, label modes (`ui-map`, 0.43.0)
+
+```html
+<!-- A result card's Map tab: a still map; clicking it opens the full map. -->
+<ui-map preview [markers]="results" markerLabels="none" (previewPress)="openResultsMap()" />
+
+<!-- The full map: a tapped pin is the selected one, and only its label shows. -->
+<ui-map fill [markers]="results" [selectedMarkerId]="selected()?.id ?? null" markerLabels="selected"
+  (markerSelected)="selected.set($event)" />
+```
+
+- `preview`: a still picture of the map that is one native `<button class="ui-map-preview">` over it.
+  Every Leaflet handler is off (drag, pinch, double-click and wheel zoom, box zoom, keys), the zoom,
+  locate and app buttons are not drawn, and the canvas is `inert` and `aria-hidden`: the markers are
+  drawn but take no clicks or focus, and the attribution stays visible (the tile licence) but is not a
+  link. The button never cancels the wheel and has `touch-action: manipulation`, so the page scrolls
+  over it. A click, Enter or Space emits `(previewPress)` once. Its name is `previewLabel`, else the
+  `mapOpen` string ("Open map", from `provideUiStrings`). A pointer cursor, an 8% text-colour wash
+  while pressed, the focus ring inside the edge, and a 30px round expand badge (`ArrowExpand01Icon`)
+  in the map controls' raised style at the top-end corner (top-left in RTL). `center`, `zoom` and
+  `fitPoints` still place it, without animating. Turning `preview` off gives the full map back on the
+  same Leaflet map.
+- `selectedMarkerId: string | null`: that marker gets `data-selected` (a 22px dot, `UI_MAP_SELECTED_DOT`,
+  with a `--ui-color-location-ring` ring and a 6px halo at 30% of its tone, still centred on its point),
+  rises above the others (`zIndexOffset` 500) and is `aria-pressed="true"`, the others `"false"` (no
+  `aria-pressed` without a selection). Changing it updates the markers in place: no rebuild, no move.
+- `markerLabels: 'all' | 'selected' | 'none'` ('all' by default): labels the mode hides get
+  `data-label-hidden` (not drawn); every marker keeps its `aria-label` (`ariaLabel`, else `label`).
+  `uiMapLabelShown(mode, selected)` is the rule. 'none' hides the selected marker's label too.
+
+The Flutter twin: `UiMap(preview: true, onPreviewPressed:, previewLabel:, selectedMarkerId:,
+markerLabels: UiMapMarkerLabels.selected)` and `UiStrings.mapOpen`.
+
 ## Map controls, a fit that holds, labels off the edge (`ui-map`, 0.42.1)
 
 ```html
@@ -518,7 +551,7 @@ The library's own words (names of icon-only buttons, default labels) are English
 input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
 `uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
-`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` (map), `googleSignIn` /
+`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` / `mapOpen` (map), `googleSignIn` /
 `googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback),
 `sidebarToggle` / `sidebarClose` / `sidebarLabel` (sidebar layout). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.
