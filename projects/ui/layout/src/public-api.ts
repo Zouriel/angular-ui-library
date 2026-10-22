@@ -9,3 +9,4 @@ export * from './sidebar-layout';
 export * from './resize-handle';
 export * from './panel-section';
 export * from './floating-panel';
+export * from './swipe-screens';

@@ -54,6 +54,16 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the
   page. `selectedMarkerId` draws one marker bigger, ringed and haloed on top with its label, and
   `markerLabels` ('all' | 'selected' | 'none') says which labels show.
+- **Map search area, swipe screens, SOS fab** (0.44.0): `ui-map [area]` draws a search circle in
+  true metres; with `editable` a handle on its edge drags the radius (a slider for keyboards and
+  screen readers, `(areaChanging)` / `(areaChange)`), and `fitArea()` shows it all.
+  `ui-swipe-screens` puts full-height screens side by side (a chat with its map one swipe away),
+  leaving the leading edge to an app drawer and letting a map screen keep its drags. `ui-fab` gains
+  logical and centred placements, `tone="danger"` (a high-visibility SOS button), `text`,
+  `aboveOverlays`, `topOffset` and hold-to-activate (`UiFabHold`, `[hold]`). `ui-button` and
+  `ui-icon-button` gain `[badge]` (a count bubble read with the name; `uiBadgeCount`),
+  `ui-bottom-sheet` a `[sheet-footer]` action bar pinned at every snap, and `ui-floating-panel`
+  `[insetEnd]`.
 - **Map background taps** (0.43.1): `ui-map` emits `(mapTap)` with the tapped `UiLatLng` only for
   the map background (the user dot counts as background)—not for a marker, pin, zoom/locate/app control, attribution,
   preview, drag or double-click zoom. In `pinMode`, a background tap still moves the pin and also

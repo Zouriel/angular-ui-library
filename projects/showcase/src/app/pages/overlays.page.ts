@@ -136,11 +136,13 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Bottom sheet" selector="ui-bottom-sheet" [api]="sheetApi" [outputs]="sheetOut"
-        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal by default: opening it does not move focus and Tab can leave it. With backdrop it is modal while open: the page dims and a tap on it closes the sheet, the sheet is aria-modal, focus moves in (to the element marked cdkFocusInitial, else the handle) and Tab is trapped inside. Escape closes it while focus is inside; closing either way sends focus back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. Positioned fixed, so keep it out of transformed ancestors.">
+        summary="A panel that rests at the bottom of the screen and is dragged between heights: the mobile stand-in for a sidebar. Drag or flick the header; dragging the body moves the sheet when the content is already at its top. The handle is a button that steps through the snaps (ArrowUp/Down on it do the same). Non-modal by default: opening it does not move focus and Tab can leave it. With backdrop it is modal while open: the page dims and a tap on it closes the sheet, the sheet is aria-modal, focus moves in (to the element marked cdkFocusInitial, else the handle) and Tab is trapped inside. Escape closes it while focus is inside; closing either way sends focus back to where it came from. Fingers are followed with touch events, so it drags on a phone even inside scrolling pages. While an on-screen keyboard is up it rests on top of it. [sheet-footer] content (0.44.0) is a primary action bar pinned to the bottom of the visible sheet at every open snap, the peek included: the body scrolls above it, it has a top hairline, the sheet's surface and the safe area below it, it counts in coverChange and rests on the keyboard with the sheet, and a snap too short for the header and the footer is raised to fit them. Positioned fixed, so keep it out of transformed ancestors.">
         <doc-demo lang="ts + html" code="import { UiBottomSheet } from '@zouriel/ui/dialog';
 
 <ui-bottom-sheet [(snap)]=&quot;snap&quot; [snaps]=&quot;[0, 0.4, 0.9]&quot; title=&quot;Layers&quot; [offset]=&quot;56&quot;>
   …content…
+  <!-- 0.44.0: pinned to the bottom of the visible sheet at every snap; the body scrolls above it. -->
+  <div sheet-footer><ui-button [block]=&quot;true&quot;>Apply the layers</ui-button></div>
 </ui-bottom-sheet>">
           <div class="row">
             <ui-button variant="outline" (click)="sheetSnap.set(1)">Open half</ui-button>
@@ -221,6 +223,7 @@ onKey(e: KeyboardEvent) {
       <div class="sheet-rows">
         @for (n of sheetRows; track n) { <div class="sheet-row">Layer {{ n }}</div> }
       </div>
+      <div sheet-footer class="sheet-foot"><ui-button [block]="true" (click)="sheetSnap.set(0)">Apply the layers</ui-button></div>
     </ui-bottom-sheet>
 
     @if (backdrop()) {
@@ -249,6 +252,7 @@ onKey(e: KeyboardEvent) {
     <ui-confirm-dialog [(open)]="confirm" title="Delete item?" message="This cannot be undone." confirmLabel="Delete" [destructive]="true" (confirm)="toast.warning('Deleted')" />
   `,
   styles: `
+    .sheet-foot { display: flex; }
     .chat-row { display: block; width: 100%; box-sizing: border-box; min-height: var(--ui-size-touch); padding: 0 var(--ui-space-2);
       text-align: start; background: none; border: none; border-radius: var(--ui-radius); color: var(--ui-color-text); font: inherit; cursor: pointer; }
     .chat-row:hover { background: var(--ui-color-surface-hover); }
@@ -461,6 +465,7 @@ interface UiToastAction {
     { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through surface for a sheet over a map (0.41.2); solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
     { name: 'glassStrength', type: "'clear' | 'frosted'", default: "'clear'", desc: 'How see-through glass is (0.41.3): clear lets a map in the theme\'s brightness plainly show through, text AA over such a map; frosted is near-opaque, AA over any backdrop.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
+    { name: '[sheet-footer]', type: 'slot', default: '—', desc: 'A footer pinned to the bottom of the visible sheet at every open snap (0.44.0): a primary action bar. Counts in coverChange; a snap too short for it is raised to fit.' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },
     { name: 'cdkFocusInitial', type: 'attribute', default: '—', desc: 'With backdrop: the element that gets focus on open (default: the first focusable one, the handle).' },

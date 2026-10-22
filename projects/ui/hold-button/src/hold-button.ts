@@ -3,10 +3,9 @@ import { injectUiStrings, type UiButtonSize } from '@zouriel/ui';
 import { UiButton, type UiButtonVariant } from '@zouriel/ui/button';
 import { UiConfirmDialog } from '@zouriel/ui/dialog';
 
-let holdSeq = 0;
+import { UiHoldPress } from './hold-press';
 
-/** A press shorter than this is a tap, not an attempt to hold. */
-const TAP_MS = 300;
+let holdSeq = 0;
 
 /**
  * `ui-hold-button` — press and hold to confirm: for an action that shouldn't happen on a stray tap
@@ -73,125 +72,48 @@ export class UiHoldButton {
   protected readonly duration = signal(0);
   protected readonly confirming = signal(false);
 
-  private pressAt: number | null = null;
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  /** The press that just ended was a tap: the click that follows opens the dialog. */
-  private tapped = false;
-  /** A press is under way or just ended; the click that follows is ours to judge. */
-  private pressed = false;
-  /** The hold just completed: swallow the click that follows the release. */
-  private done = false;
+  /** The press-and-hold logic, shared with a holding ui-fab. */
+  protected readonly press = new UiHoldPress({
+    hold: () => this.hold(),
+    disabled: () => this.disabled(),
+    fill: (p, ms) => {
+      this.duration.set(ms);
+      this.progress.set(p);
+    },
+    openConfirm: () => this.confirming.set(true),
+    fire: () => this.fire(),
+  });
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.clearTimer());
+    inject(DestroyRef).onDestroy(() => this.press.destroy());
     // Disabled mid-press (the app reacting to a confirm, say): drop the press, confirm nothing.
     effect(() => {
       if (!this.disabled()) return;
-      untracked(() => {
-        if (this.pressAt === null && !this.timer) return;
-        this.pressAt = null;
-        this.pressed = false;
-        this.tapped = false;
-        this.cancel();
-      });
+      untracked(() => this.press.abort());
     });
   }
 
   protected down(e: PointerEvent): void {
-    if (this.disabled() || e.button !== 0) return;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    this.start();
+    this.press.down(e);
   }
 
   protected up(released: boolean): void {
-    if (this.pressAt === null) return;
-    const ms = performance.now() - this.pressAt;
-    this.pressAt = null;
-    if (!this.done) this.cancel();
-    this.tapped = released && !this.done && ms < TAP_MS;
+    this.press.up(released);
   }
 
   protected keyDown(e: KeyboardEvent): void {
-    if (e.key !== ' ' && e.key !== 'Enter') return;
-    // Ours to handle: a native button would click on Enter at once (and on Space at keyup).
-    e.preventDefault();
-    if (e.repeat || this.disabled() || this.pressAt !== null) return;
-    this.start();
+    this.press.keyDown(e);
   }
 
   protected keyUp(e: KeyboardEvent): void {
-    if (e.key !== ' ' && e.key !== 'Enter') return;
-    e.preventDefault();
-    if (this.pressAt === null) return;
-    const ms = performance.now() - this.pressAt;
-    this.pressAt = null;
-    if (this.done) {
-      this.done = false;
-      this.pressed = false;
-      return;
-    }
-    this.cancel();
-    this.pressed = false;
-    if (ms < TAP_MS) this.openConfirm();
+    this.press.keyUp(e);
   }
 
   protected clicked(e: Event): void {
-    if (this.disabled()) return;
-    if (this.done) {
-      this.done = false;
-      this.pressed = false;
-      return;
-    }
-    // A click with no press before it is a screen reader or other assistive activation.
-    const fallback = this.tapped || !this.pressed;
-    this.tapped = false;
-    this.pressed = false;
-    if (fallback) {
-      e.preventDefault();
-      this.openConfirm();
-    }
-  }
-
-  private start(): void {
-    this.done = false;
-    this.tapped = false;
-    this.pressed = true;
-    this.pressAt = performance.now();
-    this.duration.set(this.hold());
-    this.progress.set(1);
-    this.clearTimer();
-    this.timer = setTimeout(() => this.complete(), this.hold());
-  }
-
-  private cancel(): void {
-    this.clearTimer();
-    this.duration.set(160);
-    this.progress.set(0);
-  }
-
-  private complete(): void {
-    this.timer = null;
-    if (this.disabled()) return;
-    this.done = true;
-    if (typeof navigator !== 'undefined') navigator.vibrate?.(30);
-    this.fire();
-    // Let the full fill show for a moment, then empty it.
-    setTimeout(() => {
-      this.duration.set(160);
-      this.progress.set(0);
-    }, 250);
-  }
-
-  private openConfirm(): void {
-    this.confirming.set(true);
+    this.press.clicked(e);
   }
 
   protected fire(): void {
     this.confirmed.emit();
-  }
-
-  private clearTimer(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = null;
   }
 }

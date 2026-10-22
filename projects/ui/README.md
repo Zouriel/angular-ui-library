@@ -378,6 +378,58 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
+## Map search area, swipe screens, SOS fab (0.44.0)
+
+```html
+<ui-swipe-screens [(index)]="screen">
+  <ui-swipe-screen label="Chat"> … </ui-swipe-screen>
+  <ui-swipe-screen label="Map" edgeSwipeOnly>
+    <ui-map #map fill [center]="home" [zoom]="12"
+      [area]="{ lat: home.lat, lng: home.lng, radiusMeters: radius(), editable: true, minMeters: 500, maxMeters: 30000 }"
+      areaLabel="Search radius" (areaChanging)="live.set($event)" (areaChange)="radius.set($event)" />
+  </ui-swipe-screen>
+</ui-swipe-screens>
+<ui-fab label="SOS, call for help" position="top-center" tone="danger" text="SOS" aboveOverlays>…</ui-fab>
+```
+
+- **`ui-map [area]`** (`UiMapArea`: `lat`, `lng`, `radiusMeters`, `tone?`, `editable?`, `minMeters?` 200,
+  `maxMeters?` 50000): a soft circle in its tone (12% fill, a 2px line over a 4px casing), in true
+  metres (`radiusMeters / uiMapMetersPerPx(lat, zoom)` px), under the routes, markers and pin; the map
+  pans and zooms through it. `editable` adds a round handle on the inline-end edge (east; west in RTL),
+  a 48px target with a radius chip ("20 km", `uiMapFormatRadius`). Dragging it changes the radius
+  (`uiMapNiceRadius`: 10 m / 100 m / 1 km steps, clamped) without panning the map, emitting
+  `(areaChanging)` per change and `(areaChange)` on release. It is a `role="slider"` named `areaLabel`
+  (the `mapSearchArea` string): ArrowUp and the outward arrow +about 10% (`uiMapAreaStep`), ArrowDown and
+  the inward arrow -10%, Home / End to min / max, each step emitting both. No handle on a preview.
+  `fitArea(options?)` fits the whole circle (`fitPoints` options). Flutter: `UiMap(area: UiMapArea(...),
+  onAreaChanging:, onAreaChanged:, areaLabel:)` and `UiMapState.fitArea()`.
+- **`ui-swipe-screens [(index)]`** (`@zouriel/ui/layout`) with `ui-swipe-screen label [edgeSwipeOnly]`
+  children: full-height screens, screen i+1 at the inline end. Drags follow the finger and snap (a
+  400 px/s fling or past half the width, `uiSwipeTarget`; instant under reduced motion); only clearly
+  horizontal drags are taken; on screen 0 a drag within `leadingEdgeExclusion` (24px) of the leading
+  edge is left to the app's drawer; an `edgeSwipeOnly` screen keeps its drags and swipes back only from
+  a 24px strip (`edgeWidth`) on its leading edge. Setting `index` animates; screens out of view stay
+  alive but are `inert` and `aria-hidden`; the screen that comes in is announced. Flutter:
+  `UiSwipeScreens(screens: [UiSwipeScreen(...)], index:, onIndexChanged:)`.
+- **`ui-fab`**: `position` gains `top-start` / `top-center` / `top-end` / `bottom-start` /
+  `bottom-center` / `bottom-end` (safe-area aware: a top fab sits below the status bar); `tone="danger"`
+  is the high-visibility SOS style (danger fill, a raised-surface ring and a danger halo); `text` adds a
+  visible word (a pill); `aboveOverlays` puts it at `--ui-z-overlay` + 1, over sheets and drawers;
+  `topOffset` (px) puts a top fab under the app's own top bar. Hold to activate: import `UiFabHold`
+  from `@zouriel/ui/hold-button` (it lives there because the confirm dialog does) and add
+  `[hold]="2000"` with `confirmTitle` / `confirmMessage` / `confirmLabel` / `destructive` / `holdHint`
+  and `(confirmed)`: `ui-hold-button`'s behaviour (the shared `UiHoldPress`), a contrast-colour fill
+  growing from the inline start, a tap or screen-reader activation opening the confirm dialog.
+- **`[badge]`** on `ui-button` and `ui-icon-button`: a count bubble at the top-end corner (the bottom
+  nav's look), `badgeTone` 'danger' | 'primary', hidden from screen readers and added to the name
+  (`badgeLabel`, else its text: "Chat, 2 unread"). `uiBadgeCount(n, max = 9)` from `@zouriel/ui`
+  gives null / "1".."9" / "9+".
+- **`ui-bottom-sheet [sheet-footer]`**: a footer pinned to the bottom of the visible sheet at every
+  open snap (the body scrolls above it, top hairline, safe area below, part of `coverChange`, on the
+  keyboard with the sheet); a snap too short for the header and footer is raised to fit them.
+- **`ui-floating-panel [insetEnd]`**: px kept free at the inline end on top of the gutter (mirrored
+  in RTL), room for a top-end fab beside the card.
+
 ## Map background tap (`ui-map`, 0.43.1)
 
 ```html
@@ -564,7 +616,7 @@ The library's own words (names of icon-only buttons, default labels) are English
 input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
 picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
 `uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
-`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` / `mapOpen` (map), `googleSignIn` /
+`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` / `mapOpen` / `mapSearchArea` / `mapRadiusMeters` / `mapRadiusKilometers` (map), `googleSignIn` /
 `googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback),
 `sidebarToggle` / `sidebarClose` / `sidebarLabel` (sidebar layout). Flutter has the same
 keys in `UiConfig(strings: UiStrings(...))`.

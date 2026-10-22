@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
 import type { UiButtonVariant } from './button';
 
@@ -17,9 +17,10 @@ import type { UiButtonVariant } from './button';
       [attr.type]="type()"
       [attr.data-variant]="variant()"
       [attr.data-size]="size()"
-      [attr.aria-label]="label()"
+      [attr.aria-label]="name()"
       [disabled]="disabled()">
       <ng-content />
+      @if (badge() !== null) { <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span> }
     </button>
   `,
   styles: `
@@ -68,6 +69,13 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn[data-variant="ghost"], .ui-icon-btn[data-variant="link"] { background: transparent; border-color: transparent; }
     .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-icon-btn[data-variant="brand"]:hover:not(:disabled) { background: var(--ui-gradient-brand, var(--ui-color-primary)); box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-color-primary-contrast) 12%, transparent); }
+    /* badge (0.44.0): a count bubble at the top-end corner, the bottom nav's badge look. Hidden from
+       screen readers: the button's name carries it ("Chat, 2 unread"). */
+    .ui-badge { position: absolute; top: -6px; inset-inline-end: -6px; z-index: 1; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1);
+      box-sizing: border-box; border-radius: var(--ui-radius-pill); pointer-events: none; white-space: nowrap;
+      background: var(--ui-color-danger); color: var(--ui-color-danger-contrast);
+      font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+    .ui-badge[data-tone="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
     /* Projected icons carry the parent's content attribute, so they need ::ng-deep to be sized. */
     .ui-icon-btn ::ng-deep svg { width: 16px; height: 16px; flex: none; }
     .ui-icon-btn[data-size="sm"] ::ng-deep svg { width: 14px; height: 14px; }
@@ -87,4 +95,14 @@ export class UiIconButton {
   /** Opt-in glass treatment; solid by default (see UiButton). */
   glass = input(false);
   radius = input<boolean>(this.config.radius);
+  /** A count bubble at the top-end corner ("2", "9+": see uiBadgeCount); null for none (0.44.0). */
+  badge = input<string | null>(null);
+  badgeTone = input<'danger' | 'primary'>('danger');
+  /** What screen readers hear for the badge ("2 unread"); null: the badge text. Added to the name. */
+  badgeLabel = input<string | null>(null);
+  /** The aria-label with the badge after it: "Chat, 2 unread". */
+  protected readonly name = computed(() => {
+    const badge = this.badge();
+    return badge === null ? this.label() : `${this.label()}, ${this.badgeLabel() ?? badge}`;
+  });
 }

@@ -1,4 +1,4 @@
-import { Component, HostAttributeToken, inject, input } from '@angular/core';
+import { Component, HostAttributeToken, computed, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
@@ -18,9 +18,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       [attr.type]="type()"
       [attr.data-variant]="variant()"
       [attr.data-size]="size()"
-      [attr.aria-label]="ariaLabel() ?? staticLabel"
+      [attr.aria-label]="name()"
       [attr.aria-describedby]="ariaDescribedby() ?? null"
-      [class.filling]="fill() !== null"
+      [class.filling]="fill() !== null" [class.badged]="badge() !== null"
       [disabled]="disabled() || loading()"
       [attr.aria-busy]="loading() || null">
       @if (fill() !== null) {
@@ -28,6 +28,10 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       }
       @if (loading()) { <span class="spin" aria-hidden="true"></span> }
       <ng-content />
+      @if (badge() !== null) {
+        <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span>
+        @if (!(ariaLabel() ?? staticLabel)) { <span class="sr-only">, {{ badgeLabel() ?? badge() }}</span> }
+      }
     </button>
   `,
   styles: `
@@ -131,6 +135,15 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       .ui-btn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
     }
     @keyframes ui-btn-spin { to { transform: rotate(360deg); } }
+    .ui-btn.badged { position: relative; overflow: visible; }
+    /* badge (0.44.0): a count bubble at the top-end corner, the bottom nav's badge look. Hidden from
+       screen readers: the button's name carries it ("Chat, 2 unread"). */
+    .ui-badge { position: absolute; top: -6px; inset-inline-end: -6px; z-index: 1; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1);
+      box-sizing: border-box; border-radius: var(--ui-radius-pill); pointer-events: none; white-space: nowrap;
+      background: var(--ui-color-danger); color: var(--ui-color-danger-contrast);
+      font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+    .ui-badge[data-tone="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     /* A fill growing from the inline start under the label: hold-to-confirm progress. */
     .ui-btn.filling { position: relative; overflow: hidden; isolation: isolate; }
     .fill { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: -1; pointer-events: none;
@@ -162,4 +175,17 @@ export class UiButton {
    *  global glass config, which targets surface components only). */
   glass = input(false);
   radius = input<boolean>(this.config.radius);
+  /** A count bubble at the top-end corner ("2", "9+": see uiBadgeCount); null for none (0.44.0). */
+  badge = input<string | null>(null);
+  badgeTone = input<'danger' | 'primary'>('danger');
+  /** What screen readers hear for the badge ("2 unread"); null: the badge text. Added to the name. */
+  badgeLabel = input<string | null>(null);
+  /** The aria-label: the given one, with the badge after it ("Chat, 2 unread"). Without a given one
+   *  the visible text names the button and a hidden ", 2 unread" follows it. */
+  protected readonly name = computed(() => {
+    const label = this.ariaLabel() ?? this.staticLabel;
+    const badge = this.badge();
+    if (!label) return null;
+    return badge === null ? label : `${label}, ${this.badgeLabel() ?? badge}`;
+  });
 }

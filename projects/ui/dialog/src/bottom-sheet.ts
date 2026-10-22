@@ -73,6 +73,12 @@ interface Drag {
  * backgrounds. Where `backdrop-filter` isn't supported, or the user asks for reduced transparency or
  * more contrast, it is the solid surface. Off by default.</p>
  *
+ * <p>`[sheet-footer]` content (0.44.0) is a footer pinned to the bottom of the visible sheet at every
+ * open snap, the peek included: a primary action bar. The body scrolls above it; it has a top hairline,
+ * the sheet's surface and the safe area below it, counts in `coverChange` (it is part of the sheet) and
+ * rests on the keyboard with the sheet. A snap too short for the handle, header and footer is raised
+ * to fit them, so the footer is never cut off.</p>
+ *
  * <p>Positioned `fixed`; keep it out of transformed ancestors.</p>
  */
 @Component({
@@ -86,6 +92,8 @@ interface Drag {
     '[style.--ui-sheet-offset.px]': 'bottom()',
     '[style.--ui-sheet-hidden.px]': 'hiddenBelow()',
     '[style.--ui-sheet-max-width]': 'maxWidthCss()',
+    '[style.--ui-sheet-live-hidden.px]': 'translate()',
+    '[style.--ui-sheet-footer.px]': 'footerHeight() || null',
   },
   template: `
     @if (backdrop() && isOpen()) {
@@ -94,7 +102,7 @@ interface Drag {
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
       (keydown.escape)="onEscape()" (focusin)="onFocusIn($event)" (focusout)="onFocusOut($event)">
-      <header class="grab"
+      <header #grab class="grab"
         (touchstart)="onTouchStart($event, false)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)"
         (pointerdown)="onPointerDown($event)">
         <button type="button" class="handle" [attr.aria-label]="handleLabel()" (click)="onHandleClick()" (keydown)="onHandleKey($event)">
@@ -114,6 +122,7 @@ interface Drag {
         (touchstart)="onTouchStart($event, true)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)">
         <ng-content />
       </div>
+      <div #foot class="ft"><ng-content select="[sheet-footer]" /></div>
     </section>
   `,
   styles: `
@@ -163,8 +172,14 @@ interface Drag {
        is padding here, so the end of the content can still be scrolled into view at a lower snap. */
     /* Same body padding as ui-modal and ui-drawer, so content lines up with the title above it. */
     .bd { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; border-top: 1px solid var(--ui-color-border-subtle);
-      padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + var(--ui-sheet-hidden, 0px) + env(safe-area-inset-bottom));
+      padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + var(--ui-sheet-hidden, 0px) + var(--ui-sheet-footer, env(safe-area-inset-bottom)));
       box-sizing: border-box; }
+    /* [sheet-footer] (0.44.0): pinned to the bottom of the visible part (the sheet hangs below the screen
+       by --ui-sheet-live-hidden, which follows a drag), over the body's bottom padding. */
+    .ft { position: absolute; left: 0; right: 0; bottom: var(--ui-sheet-live-hidden, 0px); z-index: 1; box-sizing: border-box;
+      padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
+    .ft:empty { display: none; }
     @media (prefers-reduced-motion: reduce) { .sheet { transition: visibility 0s; } }
     /* glass: see-through over a map. The filter squeezes the backdrop into the theme's floor-ceiling
        range before the tint, which is what keeps the text AA (see tokens.css): clear (the default,
@@ -178,6 +193,7 @@ interface Drag {
       -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
     }
     :host(.glass) .bd { border-top-color: var(--ui-glass-border); }
+    :host(.glass) .ft { background: transparent; border-top-color: var(--ui-glass-border); }
     /* No backdrop-filter: an unfiltered map under a 60% tint can't promise contrast, so solid. */
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
       :host(.glass) .sheet, :host(.glass.frosted) .sheet { background: var(--ui-color-surface); }
@@ -195,6 +211,11 @@ export class UiBottomSheet {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly body = viewChild.required<ElementRef<HTMLElement>>('body');
   private readonly sheet = viewChild.required<ElementRef<HTMLElement>>('sheet');
+  private readonly grab = viewChild.required<ElementRef<HTMLElement>>('grab');
+  private readonly foot = viewChild.required<ElementRef<HTMLElement>>('foot');
+  /** The handle and header's height, and the footer's (0 without one), measured. */
+  protected readonly headHeight = signal(0);
+  protected readonly footerHeight = signal(0);
   /** Where focus came from when it first moved into the sheet; closing from the keyboard hands it back. */
   private returnFocus: HTMLElement | null = null;
   /** Created once the sheet is rendered; enabled only while the sheet is modal (`backdrop` and open). */
@@ -259,14 +280,24 @@ export class UiBottomSheet {
 
   protected readonly room = computed(() =>
     Math.max(0, this.viewport() - (this.keyboard() > 0 ? 0 : this.offset()) - this.topInset()));
-  protected readonly maxHeight = computed(() => Math.round(this.room() * Math.max(0, ...this.snaps())));
+  /** With a footer, the least an open sheet shows: the handle and header plus the footer. */
+  private readonly minOpen = computed(() => (this.footerHeight() > 0 ? this.headHeight() + this.footerHeight() : 0));
+  protected readonly maxHeight = computed(() => {
+    const top = Math.max(0, ...this.snaps());
+    return Math.max(Math.round(this.room() * top), top > 0 ? this.minOpen() : 0);
+  });
   /**
    * `snap` within the snaps. Out of range reads as the nearest end: an app whose snaps shrank (fewer
    * of them while the keyboard is up) once had its sheet read as closed, which made it inert, blurred
    * the field, dropped the keyboard and restored the snaps: the sheet re-opened, over and over.
    */
   private readonly index = computed(() => Math.min(Math.max(0, this.snap()), Math.max(0, this.snaps().length - 1)));
-  private readonly snapHeight = (i: number) => Math.round(this.room() * (this.snaps()[i] ?? 0));
+  private readonly snapHeight = (i: number) => {
+    const s = this.snaps()[i] ?? 0;
+    const h = Math.round(this.room() * s);
+    // A footer always fits: an open snap shorter than the handle, header and footer is raised to them.
+    return s > 0 ? Math.min(this.maxHeight(), Math.max(h, this.minOpen())) : h;
+  };
   protected readonly isOpen = computed(() => this.snapHeight(this.index()) > 0);
   /** Index of the smallest snap. */
   private readonly lowest = computed(() => {
@@ -326,6 +357,13 @@ export class UiBottomSheet {
     if (this.browser) {
       const trapFactory = inject(FocusTrapFactory);
       afterNextRender(() => {
+        this.measure();
+        if (typeof ResizeObserver !== 'undefined') {
+          const ro = new ResizeObserver(() => this.measure());
+          ro.observe(this.grab().nativeElement);
+          ro.observe(this.foot().nativeElement);
+          this.destroyRef.onDestroy(() => ro.disconnect());
+        }
         this.focusTrap = trapFactory.create(this.sheet().nativeElement);
         this.focusTrap.enabled = false;
         this.trapReady.set(true);
@@ -377,6 +415,14 @@ export class UiBottomSheet {
       this.heightChange.emit(height);
       this.coverChange.emit(height > 0 ? height + this.bottom() : 0);
     });
+  }
+
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Reads the header's and the footer's heights (the footer is 0 without content). */
+  protected measure(): void {
+    this.headHeight.set(Math.round(this.grab().nativeElement.offsetHeight));
+    this.footerHeight.set(Math.round(this.foot().nativeElement.offsetHeight));
   }
 
   // ----- Keyboard and taps -------------------------------------------------------------------------

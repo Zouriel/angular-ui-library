@@ -40,6 +40,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Splitter', anchor: 'splitter' },
     { name: 'Panel section', anchor: 'panel-section' },
     { name: 'Sidebar layout', anchor: 'sidebar-layout' },
+    { name: 'Swipe screens', anchor: 'swipe-screens' },
     { name: 'Divider', anchor: 'divider' },
   ],
   'buttons': [
@@ -150,6 +151,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Routes', anchor: 'routes' },
     { name: 'Preview', anchor: 'preview' },
     { name: 'Selected marker', anchor: 'selected-marker' },
+    { name: 'Search area', anchor: 'search-area' },
     { name: 'Map page', anchor: 'map-page' },
   ],
   'window': [

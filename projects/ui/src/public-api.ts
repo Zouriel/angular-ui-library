@@ -11,3 +11,4 @@ export * from './lib/animations';
 export * from './lib/fonts';
 export * from './lib/strings';
 export * from './lib/theme-watch';
+export * from './lib/badge';

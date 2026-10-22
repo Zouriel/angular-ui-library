@@ -33,6 +33,7 @@ import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
     '[class.no-radius]': '!radius()',
     '[attr.role]': "ariaLabel() ? 'region' : null",
     '[attr.aria-label]': 'ariaLabel() || null',
+    '[style.--ui-floating-panel-inset-end.px]': 'insetEnd() || null',
   },
   template: `<ng-content />`,
   styles: `
@@ -40,6 +41,8 @@ import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
       position: absolute; z-index: 1;
       left: calc(var(--ui-space-4) + env(safe-area-inset-left, 0px));
       right: calc(var(--ui-space-4) + env(safe-area-inset-right, 0px));
+      /* insetEnd (0.44.0): room kept free at the inline end, for a top-end fab beside it. */
+      inset-inline-end: calc(var(--ui-space-4) + max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)) + var(--ui-floating-panel-inset-end, 0px));
       bottom: calc(var(--ui-space-4) + env(safe-area-inset-bottom, 0px));
       margin-inline: auto; max-width: var(--ui-floating-panel-width, 480px); box-sizing: border-box;
       max-height: calc(100% - 2 * var(--ui-space-4)); overflow: auto; overscroll-behavior: contain;
@@ -94,6 +97,8 @@ export class UiFloatingPanel {
    */
   glassStrength = input<UiGlassStrength>('clear');
   radius = input<boolean>(this.config.radius);
+  /** Px kept free at the inline end (the right; the left in RTL) on top of the gutter (0.44.0): a top-end fab beside it. */
+  insetEnd = input(0);
 
   /** Px of the parent's edge (top or bottom, per `placement`) it covers: its gutter plus its height. */
   readonly coverChange = output<number>();

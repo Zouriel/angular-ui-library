@@ -7,7 +7,7 @@ import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
 import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
-import { injectUiStrings, uiWatchTheme, type UiStatus } from '@zouriel/ui';
+import { defaultUiStrings, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
 /**
@@ -78,13 +78,91 @@ export const UI_MAP_ACCURACY_MAX = 240;
  */
 export function uiMapAccuracyPx(accuracy: number | undefined, lat: number, zoom: number): number {
   if (accuracy === undefined || !(accuracy > 0)) return 0;
-  const metresPerPx = (40075016.686 * Math.cos((lat * Math.PI) / 180)) / 2 ** (zoom + 8);
+  const metresPerPx = uiMapMetersPerPx(lat, zoom);
   return Math.min(UI_MAP_ACCURACY_MAX, Math.max(UI_MAP_ACCURACY_MIN, Math.round((2 * accuracy) / metresPerPx)));
 }
 
 /** The "you are here" HTML: the halo (when sized) under a dot with a white ring. */
 export function uiMapUserHtml(halo: number): string {
   return `${halo ? `<span class="ui-map-user-halo" style="width:${halo}px;height:${halo}px;left:${-halo / 2}px;top:${-halo / 2}px"></span>` : ''}<span class="ui-map-user-dot"></span>`;
+}
+
+/**
+ * A search area on the map (0.44.0, Flutter `UiMapArea`): a soft circle of `radiusMeters` around a
+ * point, in true metres (it scales with the zoom). `editable` adds a round handle on the circle's
+ * inline-end edge (east; west in RTL) that drags the radius between `minMeters` and `maxMeters`, with
+ * a chip showing it ("20 km"); it is a slider for keyboards and screen readers.
+ */
+export interface UiMapArea extends UiLatLng {
+  radiusMeters: number;
+  /** The circle's colour; 'primary' by default. */
+  tone?: UiStatus;
+  /** A drag handle (and slider) that changes the radius; false by default. */
+  editable?: boolean;
+  /** The smallest radius the handle gives; 200 by default. */
+  minMeters?: number;
+  /** The largest radius the handle gives; 50000 by default. */
+  maxMeters?: number;
+}
+
+/** The default smallest and largest radius of an editable area, in metres. */
+export const UI_MAP_AREA_MIN = 200;
+export const UI_MAP_AREA_MAX = 50000;
+
+/** The Earth's radius the area's fit uses, in metres (Leaflet's `CRS.Earth.R`). */
+const EARTH_R = 6371000;
+
+/**
+ * How many metres one px covers at `lat` and `zoom` (0.44.0; Web Mercator, 256 px per tile at zoom
+ * 0): the scale the accuracy halo and the search area are drawn at.
+ */
+export function uiMapMetersPerPx(lat: number, zoom: number): number {
+  return (40075016.686 * Math.cos((lat * Math.PI) / 180)) / 2 ** (zoom + 8);
+}
+
+/** The step a radius moves in: 10 m under 1 km, 100 m under 10 km, 1 km above. */
+function radiusUnit(m: number): number {
+  return m < 1000 ? 10 : m < 10000 ? 100 : 1000;
+}
+
+/** A radius rounded to a figure people say (0.44.0): to 10 m under 1 km, 100 m under 10 km, else 1 km. */
+export function uiMapNiceRadius(m: number): number {
+  const u = radiusUnit(m);
+  return Math.round(m / u) * u;
+}
+
+/**
+ * The radius one keyboard step away (0.44.0): about 10% bigger (`dir` 1) or smaller (`dir` -1),
+ * rounded with `uiMapNiceRadius` and at least one unit on, kept within `min`..`max`.
+ */
+export function uiMapAreaStep(radius: number, dir: 1 | -1, min: number, max: number): number {
+  let next = uiMapNiceRadius(dir > 0 ? radius * 1.1 : radius / 1.1);
+  if (dir > 0 && next <= radius) next = radius + radiusUnit(radius);
+  if (dir < 0 && next >= radius) next = radius - radiusUnit(radius - 1);
+  return Math.min(max, Math.max(min, next));
+}
+
+/**
+ * A radius in words (0.44.0, Flutter `uiMapFormatRadius`): "800 m" under 1 km, "1.5 km" (one
+ * decimal, "2 km" without a trailing .0) under 10 km, "20 km" above. The units come from the
+ * `mapRadiusMeters` / `mapRadiusKilometers` strings (`{n}` is the number).
+ */
+export function uiMapFormatRadius(m: number, strings: Pick<UiStrings, 'mapRadiusMeters' | 'mapRadiusKilometers'> = defaultUiStrings): string {
+  if (m < 1000) return strings.mapRadiusMeters.replace('{n}', String(Math.round(m)));
+  const km = m < 10000 ? String(Math.round(m / 100) / 10) : String(Math.round(m / 1000));
+  return strings.mapRadiusKilometers.replace('{n}', km);
+}
+
+/** The circle's top, bottom, east and west points, for fitting it into view. */
+export function uiMapAreaBounds(a: UiLatLng & { radiusMeters: number }): UiLatLng[] {
+  const dLat = (a.radiusMeters / EARTH_R) * (180 / Math.PI);
+  const dLng = dLat / Math.max(1e-9, Math.cos((a.lat * Math.PI) / 180));
+  return [
+    { lat: a.lat + dLat, lng: a.lng },
+    { lat: a.lat - dLat, lng: a.lng },
+    { lat: a.lat, lng: a.lng + dLng },
+    { lat: a.lat, lng: a.lng - dLng },
+  ];
 }
 
 /** A point given as `{ lat, lng }` or as `[lat, lng]` (the order OSRM's GeoJSON is not: swap those). */
@@ -270,6 +348,8 @@ const PULSE_PANE = 'uiMapPulse';
 const USER_PANE = 'uiMapUser';
 /** The routes' pane: above the tiles (200) and overlays (400), below the pulse (450), dot and markers. */
 const ROUTE_PANE = 'uiMapRoute';
+/** The search area's pane (0.44.0): above the tiles and overlays, below the routes (420). */
+const AREA_PANE = 'uiMapArea';
 
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
 export const UI_MAP_OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -351,6 +431,17 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *   Changing it updates the markers in place.
  * - `markerLabels` (0.43.0): 'all' (the default), 'selected' (only the selected marker's label) or
  *   'none'. Hidden labels still name the markers (`aria-label`).
+ * - `area` (0.44.0): a search area, a soft circle in its tone with a clear outline, `radiusMeters`
+ *   in true metres around its point (it scales with the zoom), under the routes, markers and pin; the
+ *   map pans and zooms through it. With `editable` (not on a preview) a round handle sits on its
+ *   inline-end edge (east; west in RTL) with a chip showing the radius ("20 km", `uiMapFormatRadius`).
+ *   Dragging it changes the radius (rounded with `uiMapNiceRadius`, kept within `minMeters` 200 ..
+ *   `maxMeters` 50000) and the map doesn't pan meanwhile; it emits `(areaChanging)` while dragging and
+ *   `(areaChange)` on release. The handle is a slider named `areaLabel` (the `mapSearchArea` string):
+ *   ArrowUp and the outward arrow (Right; Left in RTL) about 10% bigger, ArrowDown and the inward
+ *   arrow smaller, Home / End the smallest and largest, each step emitting both outputs. Feed the
+ *   radius back into `area`; until then the map keeps the one the person chose. `fitArea()` shows the
+ *   whole circle in the visible part.
  *
  * Give it a height (`--ui-map-height`, 320px by default, or a height on the element, or `fill`).
  */
@@ -439,6 +530,10 @@ export class UiMap {
   selectedMarkerId = input<string | null>(null);
   /** Which marker labels show (0.43.0); hidden ones still name their markers. */
   markerLabels = input<UiMapMarkerLabels>('all');
+  /** A search area (0.44.0): a circle of `radiusMeters` around a point; `editable` adds a radius handle. */
+  area = input<UiMapArea | null>(null);
+  /** The radius handle's accessible name; null: the `mapSearchArea` string ("Search area"). */
+  areaLabel = input<string | null>(null);
 
   readonly markerSelected = output<UiMapMarker>();
   /** A map-background tap (0.43.1); also emitted after that tap moves the pin in `pinMode`. */
@@ -450,6 +545,10 @@ export class UiMap {
   readonly controlPress = output<UiMapControl>();
   /** The preview was clicked, or Enter or Space pressed on it (0.43.0): open the full map. */
   readonly previewPress = output<void>();
+  /** The area's radius in metres while its handle is dragged (0.44.0), on each change. */
+  readonly areaChanging = output<number>();
+  /** The area's radius in metres when its handle is let go, or after a keyboard step (0.44.0). */
+  readonly areaChange = output<number>();
 
   protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon, expand: ArrowExpand01Icon };
 
@@ -494,6 +593,14 @@ export class UiMap {
   private fit: { points: readonly UiMapPoint[]; options: UiMapFitOptions } | null = null;
   /** Insets changed while Leaflet was mid-zoom (it drops a setView then): fit again once it lands. */
   private refitPending = false;
+  /** The search area's casing and line (two circles), and its radius handle. */
+  private areaCasing: Leaflet.CircleMarker | null = null;
+  private areaLine: Leaflet.CircleMarker | null = null;
+  private areaHandle: Leaflet.Marker | null = null;
+  /** The radius the person chose with the handle, until the app gives a new `area`. */
+  private areaLocal: number | null = null;
+  /** The pointer dragging the handle, if one is. */
+  private areaPointer: number | null = null;
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -559,6 +666,17 @@ export class UiMap {
       const p = this.preview();
       untracked(() => this.applyPreview(p));
     });
+    effect(() => {
+      this.area();
+      untracked(() => {
+        this.areaLocal = null;
+        this.drawArea();
+      });
+    });
+    effect(() => {
+      this.areaLabel();
+      untracked(() => this.drawArea());
+    });
   }
 
   /** No animation on a preview (a picture) or under reduced motion. */
@@ -623,6 +741,9 @@ export class UiMap {
       const routePane = map.createPane(ROUTE_PANE);
       routePane.style.zIndex = '420';
       routePane.style.pointerEvents = 'none';
+      const areaPane = map.createPane(AREA_PANE);
+      areaPane.style.zIndex = '410';
+      areaPane.style.pointerEvents = 'none';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       // The person moves the map (drag, wheel, double click, pinch, keys, box zoom): it is theirs now.
@@ -673,6 +794,7 @@ export class UiMap {
       map.on('zoomend', () => {
         this.drawUser(this.userLocation());
         this.styleRoutes();
+        this.drawArea();
       });
       this.teardown = () => {
         ro.disconnect();
@@ -690,6 +812,10 @@ export class UiMap {
         this.tilesKey = '';
         this.fit = null;
         this.refitPending = false;
+        this.areaCasing = null;
+        this.areaLine = null;
+        this.areaHandle = null;
+        this.areaPointer = null;
       };
     });
     this.tooltipSide.set(rtl ? 'right' : 'left');
@@ -702,6 +828,7 @@ export class UiMap {
     this.drawPulse(this.pulse());
     this.drawUser(this.userLocation());
     this.drawRoutes(this.routes());
+    this.drawArea();
     this.applyPreview(this.preview());
   }
 
@@ -718,6 +845,8 @@ export class UiMap {
       if (on) h.disable();
       else h.enable();
     }
+    // The area's handle is not on a preview (the circle stays).
+    this.drawArea();
     if (zoomControl) {
       if (on) zoomControl.remove();
       else if (!(zoomControl as unknown as { _map?: unknown })._map) zoomControl.addTo(map);
@@ -789,6 +918,168 @@ export class UiMap {
     const v = uiMapFitView(points, { width: s.x, height: s.y }, area, Math.min(options.maxZoom ?? UI_MAP_FIT_MAX_ZOOM, map.getMaxZoom()), Math.max(1, map.getMinZoom()));
     if (!v) return;
     map.setView([v.lat, v.lng], v.zoom, { animate: options.animate !== false && !this.still() });
+  }
+
+  /**
+   * Shows the whole search area (0.44.0) inside the visible part (between the insets), with the
+   * same options as `fitPoints` (24px padding, whole zooms up to 17, animated unless reduced motion).
+   */
+  fitArea(options: UiMapFitOptions = {}): void {
+    const a = this.area();
+    if (!a) return;
+    this.fitPoints(uiMapAreaBounds({ lat: a.lat, lng: a.lng, radiusMeters: this.areaRadius() }), options);
+  }
+
+  /** The radius drawn: the one chosen with the handle, else the input's. */
+  private areaRadius(): number {
+    return this.areaLocal ?? this.area()?.radiusMeters ?? 0;
+  }
+
+  /**
+   * Draws the search area: two circles (a casing under the tone line, which carries the fill) sized
+   * in px for the current zoom, and the handle on the inline-end edge when editable.
+   */
+  private drawArea(): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    const a = this.area();
+    if (!a || !(a.radiusMeters >= 0)) {
+      this.areaCasing?.remove();
+      this.areaLine?.remove();
+      this.areaHandle?.remove();
+      this.areaCasing = this.areaLine = this.areaHandle = null;
+      this.areaPointer = null;
+      return;
+    }
+    const r = this.areaRadius();
+    const zoom = map.getZoom();
+    const px = r / uiMapMetersPerPx(a.lat, zoom);
+    const ll: [number, number] = [a.lat, a.lng];
+    if (!this.areaLine || !this.areaCasing) {
+      const opts = { pane: AREA_PANE, interactive: false, bubblingMouseEvents: false } as const;
+      this.areaCasing = L.circleMarker(ll, { ...opts, radius: px, weight: 4, fill: false, className: 'ui-map-area-casing' }).addTo(map);
+      this.areaLine = L.circleMarker(ll, { ...opts, radius: px, weight: 2, fill: true, className: 'ui-map-area-line' }).addTo(map);
+      this.areaCasing.getElement()?.setAttribute('aria-hidden', 'true');
+      this.areaLine.getElement()?.setAttribute('aria-hidden', 'true');
+    } else {
+      this.areaCasing.setLatLng(ll).setRadius(px);
+      this.areaLine.setLatLng(ll).setRadius(px);
+    }
+    this.areaLine.getElement()?.setAttribute('data-tone', a.tone ?? 'primary');
+    this.areaCasing.getElement()?.setAttribute('data-tone', a.tone ?? 'primary');
+
+    if (!a.editable || this.preview()) {
+      this.areaHandle?.remove();
+      this.areaHandle = null;
+      this.areaPointer = null;
+      return;
+    }
+    const p = map.project(ll, zoom);
+    const at = map.unproject([p.x + (this.rtl() ? -px : px), p.y], zoom);
+    if (!this.areaHandle) {
+      this.zone.runOutsideAngular(() => {
+        const marker = L.marker(at, {
+          interactive: false,
+          keyboard: false,
+          zIndexOffset: 2000,
+          icon: L.divIcon({ className: 'ui-map-area-handle', html: '<span class="ui-map-area-knob"></span><span class="ui-map-area-chip"></span>', iconSize: [48, 48], iconAnchor: [24, 24] }),
+        });
+        this.areaHandle = marker.addTo(map);
+        const el = marker.getElement();
+        if (el) this.wireAreaHandle(el);
+      });
+    } else {
+      this.areaHandle.setLatLng(at);
+    }
+    const el = this.areaHandle!.getElement();
+    if (!el) return;
+    const text = uiMapFormatRadius(r, this.strings);
+    el.setAttribute('role', 'slider');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-orientation', 'horizontal');
+    el.setAttribute('aria-label', this.areaLabel() ?? this.strings.mapSearchArea);
+    el.setAttribute('aria-valuemin', String(a.minMeters ?? UI_MAP_AREA_MIN));
+    el.setAttribute('aria-valuemax', String(a.maxMeters ?? UI_MAP_AREA_MAX));
+    el.setAttribute('aria-valuenow', String(Math.round(r)));
+    el.setAttribute('aria-valuetext', text);
+    el.setAttribute('data-tone', a.tone ?? 'primary');
+    el.toggleAttribute('data-dragging', this.areaPointer !== null);
+    const chip = el.querySelector('.ui-map-area-chip');
+    if (chip && chip.textContent !== text) chip.textContent = text;
+  }
+
+  /** The handle's pointer and keyboard handling (outside the Angular zone; outputs run inside it). */
+  private wireAreaHandle(el: HTMLElement): void {
+    const L = this.L!;
+    // Its presses never reach the map: no pan, no tap, no double-click zoom.
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+    const set = (r: number, done: boolean) => {
+      const changed = r !== this.areaRadius();
+      if (changed) {
+        this.areaLocal = r;
+        this.drawArea();
+        this.zone.run(() => this.areaChanging.emit(r));
+      }
+      if (done) this.zone.run(() => this.areaChange.emit(this.areaRadius()));
+    };
+    const limits = () => {
+      const a = this.area();
+      return { min: a?.minMeters ?? UI_MAP_AREA_MIN, max: a?.maxMeters ?? UI_MAP_AREA_MAX };
+    };
+    el.addEventListener('pointerdown', (e) => {
+      if (this.areaPointer !== null || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      e.stopPropagation();
+      // No mouse emulation: Leaflet's own drag never starts.
+      e.preventDefault();
+      el.focus({ preventScroll: true });
+      this.areaPointer = e.pointerId;
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* not capturable (synthetic events) */
+      }
+      this.map?.dragging.disable();
+      el.setAttribute('data-dragging', '');
+    });
+    el.addEventListener('pointermove', (e) => {
+      const map = this.map;
+      const a = this.area();
+      if (e.pointerId !== this.areaPointer || !map || !a) return;
+      e.stopPropagation();
+      const p = map.mouseEventToContainerPoint(e as unknown as MouseEvent);
+      const c = map.latLngToContainerPoint([a.lat, a.lng]);
+      const { min, max } = limits();
+      const raw = p.distanceTo(c) * uiMapMetersPerPx(a.lat, map.getZoom());
+      set(Math.min(max, Math.max(min, uiMapNiceRadius(raw))), false);
+    });
+    const end = (e: PointerEvent) => {
+      if (e.pointerId !== this.areaPointer) return;
+      e.stopPropagation();
+      this.areaPointer = null;
+      el.removeAttribute('data-dragging');
+      if (this.map && !this.preview()) this.map.dragging.enable();
+      set(this.areaRadius(), true);
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('keydown', (e) => {
+      const rtl = this.rtl();
+      const out = rtl ? 'ArrowLeft' : 'ArrowRight';
+      const inward = rtl ? 'ArrowRight' : 'ArrowLeft';
+      const { min, max } = limits();
+      const r = this.areaRadius();
+      let next: number | null = null;
+      if (e.key === 'ArrowUp' || e.key === out) next = uiMapAreaStep(r, 1, min, max);
+      else if (e.key === 'ArrowDown' || e.key === inward) next = uiMapAreaStep(r, -1, min, max);
+      else if (e.key === 'Home') next = min;
+      else if (e.key === 'End') next = max;
+      if (next === null) return;
+      // The map's own arrow-key panning never sees it.
+      e.preventDefault();
+      e.stopPropagation();
+      if (next !== r) set(next, true);
+    });
   }
 
   protected onLocate(): void {

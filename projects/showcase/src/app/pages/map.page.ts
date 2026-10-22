@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import type { UiGlassStrength } from '@zouriel/ui';
-import { UiMap, type UiLatLng, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, uiMapFormatRadius, type UiLatLng, type UiMapArea, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import CenterFocusIcon from '@hugeicons/core-free-icons/CenterFocusIcon';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
@@ -42,6 +42,13 @@ interface UiMapFitOptions {
   animate?: boolean; // default true; never under reduced motion
 }
 type UiMapMarkerLabels = 'all' | 'selected' | 'none'; // 0.43.0: which marker labels show
+interface UiMapArea extends UiLatLng { // 0.44.0: a search area
+  radiusMeters: number;
+  tone?: UiStatus;      // default 'primary'
+  editable?: boolean;   // a radius handle (a slider), default false
+  minMeters?: number;   // default 200
+  maxMeters?: number;   // default 50000
+}
 interface UiMapControl {  // 0.42.1: your own round button, in the locate button's stack
   id: string;
   icon: IconSvgObject;     // a hugeicons icon, one file per icon
@@ -86,6 +93,13 @@ const PREVIEW_CODE = `<!-- A result card's Map tab: a still map of the results; 
 
 const SELECTED_CODE = `<ui-map [markers]="results" [selectedMarkerId]="selected()?.id ?? null" markerLabels="selected"
   (markerSelected)="selected.set($event)" (mapTap)="selected.set(null)" />`;
+
+const AREA_CODE = `<!-- "Find a nurse within": the patient drags the handle on the circle's edge. -->
+<ui-map #map [center]="home" [zoom]="12" [pin]="home" [pinDraggable]="false"
+  [area]="{ lat: home.lat, lng: home.lng, radiusMeters: radius(), editable: true, minMeters: 500, maxMeters: 30000 }"
+  areaLabel="Search radius" (areaChanging)="live.set($event)" (areaChange)="radius.set($event)" />
+<ui-button (click)="map.fitArea()">Show the whole area</ui-button>
+<!-- uiMapFormatRadius(radius()) gives "5 km", "800 m" in the app's words (the mapRadius* strings). -->`;
 
 const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
@@ -208,6 +222,21 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Search area" anchor="search-area" selector="ui-map [area] · (areaChange) · fitArea()" [api]="areaApi"
+        summary="area (0.44.0) draws a search area: a soft circle in its tone with a clear outline (a 2px line over a light casing, so it reads over busy street tiles in light and dark), radiusMeters in true metres around its point, so it grows and shrinks with the zoom. It sits under the routes, markers and pin, and the map pans and zooms right through it. With editable a round handle sits on the circle's inline-end edge (east; west in RTL) with a chip showing the radius (5 km, 800 m: uiMapFormatRadius, in the mapRadiusMeters and mapRadiusKilometers strings). Drag it to change the radius, rounded to 10 m, 100 m or 1 km and kept between minMeters and maxMeters; the map doesn't pan while the handle moves. areaChanging reports each new radius while dragging, areaChange the one let go on. For keyboards and screen readers the handle is a slider named areaLabel (the mapSearchArea string, Search area): ArrowUp and the outward arrow make it about 10% bigger, ArrowDown and the inward arrow smaller, Home and End go to the smallest and largest. Feed the radius back into area. fitArea() shows the whole circle in the visible part (between the insets). Without editable, and on a preview, it is just the circle.">
+        <doc-demo lang="html" [code]="AREA_CODE">
+          <div class="map-wrap area-wrap">
+            <ui-map #areaMap [center]="home" [zoom]="12" [pin]="home" [pinDraggable]="false" [area]="area()" areaLabel="Search radius"
+              (areaChanging)="areaLive.set($event)" (areaChange)="areaCommit($event)" ariaLabel="Search area around your home" />
+          </div>
+          <div class="route-acts">
+            <ui-button size="sm" variant="outline" (click)="areaMap.fitArea()">Show the whole area</ui-button>
+            <ui-segmented label="Tone (demo)" size="sm" [options]="areaToneOptions" [value]="areaTone()" (valueChange)="areaTone.set($any($event))" />
+            <ui-text variant="caption">Nurses within {{ radiusText(areaLive() ?? radius()) }}{{ areaLive() !== null ? ' (dragging)' : '' }}</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Map page" anchor="map-page" selector="ui-map fill · [pulse] · [insets]" [api]="pageApi"
         summary="A full-screen map with the form in a ui-bottom-sheet and a ui-floating-panel status card at the top. fill makes the map fill its parent with square corners. pulse draws soft rings radiating from a point while the app searches (one still halo under reduced motion); they move with the map, sit under the markers and the pin, and say nothing to screen readers, so put the words in the status card. insets is how much of each edge the sheet and the card cover, straight from their coverChange outputs: the map still draws edge to edge, but its centre, the pin's centre, centerChanged and the zoom buttons and attribution use the part between them. When the sheet moves to another snap, the map pans so the point in the middle of the visible part stays in the middle of the new visible part. glass on the sheet and the card (0.41.2) makes them see-through, and glassStrength (0.41.3) says how much: clear, the default, lets a map in the theme's brightness plainly show through (roads, coastline, parks), lightly blurred and squeezed just enough to keep every text colour AA over such a map; frosted is the near-opaque surface that stays AA over any backdrop, for photos or a map in the other brightness. Solid where backdrop-filter is missing or under reduced transparency or more contrast.">
         <doc-demo lang="html" [code]="PAGE_CODE">
@@ -285,6 +314,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     .status .meta { margin-top: 0; }
     .form { display: flex; flex-direction: column; gap: var(--ui-space-4); }
     .preview-wrap { --ui-map-height: 200px; }
+    .area-wrap { --ui-map-height: 420px; }
     .route-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
     .tile-fields { display: grid; gap: var(--ui-space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: var(--ui-space-3); }
   `,
@@ -323,6 +353,29 @@ export class MapPage {
     { name: 'previewLabel', type: 'string | null', default: 'null', desc: 'Its accessible name. null: the mapOpen string.' },
     { name: 'mapOpen', type: 'UiStrings', default: "'Open map'", desc: 'The default preview name, from provideUiStrings.' },
     { name: '.ui-map-preview · .ui-map-preview-badge', type: 'CSS', default: '—', desc: 'The whole-map button (a slight wash while pressed, the focus ring inside the edge) and the 30px round expand badge at the top-end corner.' },
+  ];
+  protected readonly AREA_CODE = AREA_CODE;
+  protected readonly radius = signal(5000);
+  protected readonly areaLive = signal<number | null>(null);
+  protected readonly areaTone = signal<'primary' | 'success' | 'danger'>('primary');
+  protected readonly areaToneOptions = [{ value: 'primary', label: 'Primary' }, { value: 'success', label: 'Success' }, { value: 'danger', label: 'Danger' }];
+  protected readonly area = computed<UiMapArea>(() => ({ lat: this.home.lat, lng: this.home.lng, radiusMeters: this.radius(), tone: this.areaTone(), editable: true, minMeters: 500, maxMeters: 30000 }));
+  protected areaCommit(r: number): void {
+    this.areaLive.set(null);
+    this.radius.set(r);
+  }
+  protected radiusText(m: number): string {
+    return uiMapFormatRadius(m);
+  }
+  protected readonly areaApi: ApiRow[] = [
+    { name: 'area', type: 'UiMapArea | null', default: 'null', desc: 'A search area (0.44.0): a circle of radiusMeters (true metres) around lat/lng in its tone, under the routes, markers and pin. editable adds the radius handle (not on a preview).' },
+    { name: 'areaLabel', type: 'string | null', default: 'null', desc: 'The handle\'s accessible name (a slider). null: the mapSearchArea string, Search area.' },
+    { name: '(areaChanging)', type: 'number', default: '—', desc: 'The radius in metres on each change while the handle is dragged.' },
+    { name: '(areaChange)', type: 'number', default: '—', desc: 'The radius in metres when the handle is let go, and after each keyboard step.' },
+    { name: 'fitArea(options?)', type: 'method', default: '—', desc: 'Shows the whole circle in the visible part: the same options as fitPoints (padding 24, maxZoom 17, animate).' },
+    { name: 'uiMapFormatRadius(m, strings?)', type: 'function', default: '—', desc: '"800 m" under 1 km, "1.5 km" under 10 km, "20 km" above, from the mapRadiusMeters / mapRadiusKilometers strings.' },
+    { name: 'uiMapNiceRadius / uiMapAreaStep / uiMapMetersPerPx', type: 'function', default: '—', desc: 'The rounding the handle uses (10 m / 100 m / 1 km), one keyboard step (about 10%, within min..max), and metres per px at a latitude and zoom.' },
+    { name: 'mapSearchArea / mapRadiusMeters / mapRadiusKilometers', type: 'UiStrings', default: "'Search area' / '{n} m' / '{n} km'", desc: 'The words, from provideUiStrings.' },
   ];
   protected readonly selectedApi: ApiRow[] = [
     { name: 'selectedMarkerId', type: 'string | null', default: 'null', desc: 'The selected marker (0.43.0): a 22px dot (UI_MAP_SELECTED_DOT) with a white ring and a halo in its tone, on top, its label shown, aria-pressed.' },

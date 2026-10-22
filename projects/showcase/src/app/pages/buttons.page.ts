@@ -1,15 +1,19 @@
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon';
 import Add01Icon from '@hugeicons/core-free-icons/Add01Icon';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import TextBoldIcon from '@hugeicons/core-free-icons/TextBoldIcon';
+import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
+import BubbleChatIcon from '@hugeicons/core-free-icons/BubbleChatIcon';
+import { uiBadgeCount } from '@zouriel/ui';
+import { UiFabHold } from '@zouriel/ui/hold-button';
 import { UiText } from '@zouriel/ui/text';
 import { UiSwitch } from '@zouriel/ui/form';
 import {
   UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab,
-  type UiSegmentedOption,
+  type UiSegmentedOption, type UiFabPlacement,
 } from '@zouriel/ui/button';
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
@@ -124,7 +128,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab,
+    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -261,7 +265,7 @@ async addBirthday() {   // from a (click)
       </doc-section>
 
       <doc-section name="Icon button" selector="ui-icon-button" [api]="iconApi"
-        summary="Square, icon-only action. label is required and becomes the aria-label, so the control has a name for assistive tech. Takes every button variant (link draws like ghost). Project an icon as content; projected SVGs are sized to the button (14, 16 or 18px). On coarse pointers an invisible hit area brings it up to 44px.">
+        summary="Square, icon-only action. label is required and becomes the aria-label, so the control has a name for assistive tech. badge (0.44.0, on ui-button too) puts a small count bubble at the top-end corner, the bottom nav's badge look, danger or primary (badgeTone); it is hidden from screen readers and added to the name instead (badgeLabel, else its text: Chat, 2 unread). uiBadgeCount(n) gives the text: none at 0, 9+ above 9. Takes every button variant (link draws like ghost). Project an icon as content; projected SVGs are sized to the button (14, 16 or 18px). On coarse pointers an invisible hit area brings it up to 44px.">
         <doc-demo code="<!-- import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon' and expose it on the component -->
 <ui-icon-button label=&quot;Settings&quot; variant=&quot;outline&quot;><hugeicons-icon [icon]=&quot;Settings02Icon&quot; /></ui-icon-button>
 <ui-icon-button label=&quot;Add&quot; variant=&quot;primary&quot; [round]=&quot;true&quot;><hugeicons-icon [icon]=&quot;Add01Icon&quot; /></ui-icon-button>">
@@ -269,6 +273,17 @@ async addBirthday() {   // from a (click)
             <ui-icon-button label="Settings" variant="outline"><hugeicons-icon aria-hidden="true" [icon]="icons.settings" [strokeWidth]="1.8" /></ui-icon-button>
             <ui-icon-button label="Add" variant="primary" [round]="true"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [strokeWidth]="1.8" /></ui-icon-button>
             <ui-icon-button label="Delete" variant="ghost"><hugeicons-icon aria-hidden="true" [icon]="icons.remove" [strokeWidth]="1.8" /></ui-icon-button>
+          </div>
+        </doc-demo>
+        <doc-demo code="<!-- 0.44.0: a count badge, read with the name: &quot;Chat, 2 unread&quot;. -->
+<ui-icon-button label=&quot;Chat&quot; [badge]=&quot;uiBadgeCount(unread())&quot; [badgeLabel]=&quot;unread() + ' unread'&quot;>…</ui-icon-button>
+<ui-button variant=&quot;outline&quot; [badge]=&quot;uiBadgeCount(unread())&quot; [badgeLabel]=&quot;unread() + ' unread'&quot;>Chat</ui-button>">
+          <div class="row items-center badge-row">
+            <ui-icon-button label="Chat" variant="outline" [badge]="badgeText()" [badgeLabel]="unread() + ' unread'"><hugeicons-icon aria-hidden="true" [icon]="icons.chat" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-icon-button label="Alerts" variant="ghost" [badge]="badgeText()" badgeTone="primary" [badgeLabel]="unread() + ' new'"><hugeicons-icon aria-hidden="true" [icon]="icons.settings" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-button variant="outline" [badge]="badgeText()" [badgeLabel]="unread() + ' unread'">Chat</ui-button>
+            <ui-button size="sm" variant="ghost" (click)="unread.set(unread() + 1)">Add a message</ui-button>
+            <ui-button size="sm" variant="ghost" (click)="unread.set(0)">Read all</ui-button>
           </div>
         </doc-demo>
       </doc-section>
@@ -351,7 +366,7 @@ async addBirthday() {   // from a (click)
       </doc-section>
 
       <doc-section name="FAB" selector="ui-fab" [api]="fabApi"
-        summary="Floating action button pinned to a screen corner (position: fixed), offset by the device safe area. label is required (aria-label). Project an icon as content. The sm size grows to 44px on coarse pointers. The demo frame below is its own containing block, so the button sits in the frame's corner rather than the window's.">
+        summary="Floating action button pinned to a screen corner or centred at the top or bottom (position: fixed), offset from the edge by 24px plus the device safe area, so a top one sits below the status bar and notch, never over them. position takes top-start, top-center, top-end, bottom-start, bottom-center or bottom-end (0.44.0; start and end follow the reading direction), and the older physical corners. label is required (aria-label). Project an icon as content; text adds a visible word beside it and makes it a pill (keep the word in label too). tone danger (0.44.0) is the high-visibility style for an SOS button: the danger colour with a ring in the raised surface colour and a soft danger halo outside it, so it stands off any page or map. aboveOverlays keeps it above bottom sheets, drawers and modal backdrops (the overlay layer plus one), below floating windows and toasts. topOffset adds px below the top edge for a top fab, so it sits under the app's own top bar. hold (0.44.0, with UiFabHold from @zouriel/ui/hold-button) makes it press-and-hold like ui-hold-button: a fill in the contrast colour grows across it while held, letting go early cancels, Space or Enter held works the same, and a tap, a quick key press or a screen reader's activation opens the confirm dialog (confirmTitle, confirmMessage, confirmLabel, destructive); it emits confirmed. The sm size grows to 44px on coarse pointers. The demo frames below are their own containing blocks, so the buttons sit in the frame rather than the window.">
         <doc-demo code="<ui-fab label=&quot;New item&quot; position=&quot;bottom-right&quot; (click)=&quot;create()&quot;>
   <hugeicons-icon [icon]=&quot;Add01Icon&quot; />
 </ui-fab>">
@@ -359,6 +374,25 @@ async addBirthday() {   // from a (click)
             <span class="muted">clicks: {{ fabClicks() }}</span>
             <ui-fab label="New item" (click)="fabClicks.set(fabClicks() + 1)"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="22" [strokeWidth]="1.8" /></ui-fab>
             <ui-fab label="New item (small)" size="sm" position="top-right"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="18" [strokeWidth]="1.8" /></ui-fab>
+          </div>
+        </doc-demo>
+        <doc-demo lang="html" code="<!-- An SOS button floating at the top of the screen, over sheets and drawers. -->
+<!-- import { UiFabHold } from '@zouriel/ui/hold-button' for [hold]. -->
+<ui-fab label=&quot;SOS, call for help&quot; position=&quot;top-center&quot; [topOffset]=&quot;56&quot; tone=&quot;danger&quot; text=&quot;SOS&quot; aboveOverlays
+  [hold]=&quot;2000&quot; confirmTitle=&quot;Send an SOS?&quot; confirmLabel=&quot;Send SOS&quot; [destructive]=&quot;true&quot; (confirmed)=&quot;sos()&quot;>
+  <hugeicons-icon [icon]=&quot;Alert02Icon&quot; aria-hidden=&quot;true&quot; />
+</ui-fab>">
+          <div class="fab-frame fab-phone">
+            <span class="muted">Hold SOS for 2 s (or tap it to confirm): {{ sosClicks() }}</span>
+            <ui-fab label="SOS, call for help" [position]="sosPlace()" tone="danger" text="SOS" aboveOverlays [hold]="2000"
+              confirmTitle="Send an SOS?" confirmMessage="Your clinic and emergency contact are told where you are." confirmLabel="Send SOS" [destructive]="true"
+              (confirmed)="sosClicks.set(sosClicks() + 1)">
+              <hugeicons-icon aria-hidden="true" [icon]="icons.sos" [size]="20" [strokeWidth]="2" />
+            </ui-fab>
+            <ui-fab label="New message" position="bottom-end" size="sm"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="18" [strokeWidth]="1.8" /></ui-fab>
+          </div>
+          <div class="row fab-acts">
+            <ui-segmented label="SOS position (demo)" size="sm" [options]="sosOptions" [value]="sosPlace()" (valueChange)="sosPlace.set($any($event))" />
           </div>
         </doc-demo>
       </doc-section>
@@ -371,11 +405,20 @@ async addBirthday() {   // from a (click)
     /* transform makes this box the containing block for the fixed-position FABs inside it. */
     .fab-frame { position: relative; transform: translateZ(0); height: 160px; padding: var(--ui-space-3); overflow: hidden;
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
+    .fab-phone { height: 240px; max-width: 390px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+    .fab-acts { margin-top: var(--ui-space-3); }
+    /* Room above the badges so they don't touch the demo's top edge. */
+    .badge-row { padding-top: var(--ui-space-2); }
   `,
 })
 export class ButtonsPage {
-  protected readonly icons = { settings: Settings02Icon, add: Add01Icon, remove: Delete02Icon, bold: TextBoldIcon };
+  protected readonly icons = { settings: Settings02Icon, add: Add01Icon, remove: Delete02Icon, bold: TextBoldIcon, sos: Alert02Icon, chat: BubbleChatIcon };
+  protected readonly unread = signal(2);
+  protected readonly badgeText = computed(() => uiBadgeCount(this.unread()));
   protected readonly fabClicks = signal(0);
+  protected readonly sosClicks = signal(0);
+  protected readonly sosPlace = signal<UiFabPlacement>('top-center');
+  protected readonly sosOptions = [{ value: 'top-start', label: 'Start' }, { value: 'top-center', label: 'Centre' }, { value: 'top-end', label: 'End' }, { value: 'bottom-center', label: 'Bottom' }];
   protected readonly bold = signal(false);
   protected readonly msg = signal('—');
   protected readonly ddItems: UiDropdownItem[] = [
@@ -446,6 +489,9 @@ export class ButtonsPage {
   ];
   protected readonly iconApi: ApiRow[] = [
     { name: 'label', type: 'string (required)', default: '—', desc: 'Accessible name (aria-label).' },
+    { name: 'badge', type: 'string | null', default: 'null', desc: 'A count bubble at the top-end corner (0.44.0, also on ui-button); hidden from screen readers, added to the name. uiBadgeCount(n) gives "2", "9+" or null.' },
+    { name: 'badgeTone', type: "'danger' | 'primary'", default: "'danger'", desc: 'The bubble\'s colour.' },
+    { name: 'badgeLabel', type: 'string | null', default: 'null', desc: 'What screen readers hear for it ("2 unread"); null: the badge text. The name becomes "Chat, 2 unread".' },
     { name: 'variant', type: VARIANT, default: "'ghost'", desc: 'Visual style.' },
     { name: 'size', type: BUTTON_SIZE, default: "'md'", desc: 'Square dimension; xl is 56px.' },
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
@@ -513,7 +559,14 @@ export class ButtonsPage {
   ];
   protected readonly fabApi: ApiRow[] = [
     { name: 'label', type: 'string (required)', default: '—', desc: 'Accessible name (aria-label).' },
-    { name: 'position', type: "'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'", default: "'bottom-right'", desc: 'Fixed corner.' },
+    { name: 'position', type: "UiFabPlacement: 'top-start' | 'top-center' | 'top-end' | 'bottom-start' | 'bottom-center' | 'bottom-end' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'", default: "'bottom-right'", desc: 'Where it is fixed: start/end follow the reading direction (0.44.0), the others are physical corners. 24px from the edges plus the safe area.' },
+    { name: 'tone', type: "'primary' | 'danger'", default: "'primary'", desc: 'danger (0.44.0): the high-visibility SOS style, danger fill with a ring and a halo.' },
+    { name: 'text', type: 'string | null', default: 'null', desc: 'A visible word beside the icon, making it a pill (0.44.0). Keep it in label too.' },
+    { name: 'topOffset', type: 'number', default: '0', desc: 'Px below the top edge for top placements, on top of the 24px gap and the safe area: an app bar\'s height (0.44.0).' },
+    { name: 'hold', type: 'number | null', default: '—', desc: 'With UiFabHold (@zouriel/ui/hold-button): hold this many ms to activate; a tap opens the confirm dialog. null: a plain fab (0.44.0).' },
+    { name: 'holdHint / confirmTitle / confirmMessage / confirmLabel / destructive', type: 'string / boolean', default: 'the strings', desc: 'As on ui-hold-button: the hint read with it and the tap fallback\'s dialog (with UiFabHold).' },
+    { name: '(confirmed)', type: 'void', default: '—', desc: 'Held to the end, or confirmed in the dialog (with UiFabHold). Use it instead of (click).' },
+    { name: 'aboveOverlays', type: 'boolean', default: 'false', desc: 'Above sheets, drawers and modal backdrops (--ui-z-overlay + 1), below windows and toasts (0.44.0).' },
     { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: 'Diameter: 40px or 52px.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The icon. Give it aria-hidden; label names the button.' },

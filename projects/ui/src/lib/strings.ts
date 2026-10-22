@@ -48,6 +48,11 @@ export interface UiStrings {
   mapYourLocation: string;
   /** Map preview (0.43.0): the still map's one button, which opens the full map. */
   mapOpen: string;
+  /** Map search area (0.44.0): the radius handle's name, and the radius in metres / kilometres
+   *  (`{n}` is the number). */
+  mapSearchArea: string;
+  mapRadiusMeters: string;
+  mapRadiusKilometers: string;
   /** Google sign-in button: Google's approved wordings (a translation must keep the meaning: signing
    *  in to this app with a Google account, not creating one). */
   googleSignIn: string;
@@ -86,6 +91,9 @@ export const defaultUiStrings: UiStrings = {
   mapLocationOff: 'Location is off',
   mapYourLocation: 'Your location',
   mapOpen: 'Open map',
+  mapSearchArea: 'Search area',
+  mapRadiusMeters: '{n} m',
+  mapRadiusKilometers: '{n} km',
   googleSignIn: 'Sign in with Google',
   googleSignUp: 'Sign up with Google',
   googleContinue: 'Continue with Google',

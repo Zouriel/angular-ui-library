@@ -173,6 +173,7 @@ export class FoundationPage {
     { name: 'zoomIn / zoomOut / placePinAtCentre', type: 'string', default: "'Zoom in' / 'Zoom out' / 'Place the pin at the centre'", desc: 'Map.' },
     { name: 'mapLocate / mapLocationOff / mapYourLocation', type: 'string', default: "'Show my location' / 'Location is off' / 'Your location'", desc: 'Map: the my-location button, its off state, the you-are-here dot.' },
     { name: 'mapOpen', type: 'string', default: "'Open map'", desc: 'Map: the preview map\'s one button (0.43.0).' },
+    { name: 'mapSearchArea / mapRadiusMeters / mapRadiusKilometers', type: 'string', default: "'Search area' / '{n} m' / '{n} km'", desc: 'Map: the search area\'s radius handle and the radius in words (0.44.0); {n} is the number.' },
     { name: 'googleSignIn / googleSignUp / googleContinue / googleSignInShort', type: 'string', default: "'Sign in with Google' / 'Sign up with Google' / 'Continue with Google' / 'Sign in'", desc: 'Google button (Google\'s approved wordings only).' },
     { name: 'sidebarToggle / sidebarClose / sidebarLabel', type: 'string', default: "'Toggle navigation' / 'Close navigation' / 'Navigation'", desc: 'Sidebar layout: menu button, the drawer\'s close button, the drawer\'s name.' },
   ];

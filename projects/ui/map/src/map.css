@@ -230,3 +230,29 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-map .ui-map-preview { transition: none; }
 }
+
+/* area (0.44.0): the search area. A soft fill in its tone with a clear outline: a 2px tone line over
+   a 4px casing in the route casing colour, so it reads over busy street tiles in light and dark. The
+   circles take no pointer (the map pans and zooms through them). */
+.ui-map .ui-map-area-casing { stroke: var(--ui-map-route-casing); stroke-opacity: 0.9; fill: none; }
+.ui-map .ui-map-area-line { --ui-map-area-tone: var(--ui-color-primary); stroke: var(--ui-map-area-tone); stroke-opacity: 1; fill: var(--ui-map-area-tone); fill-opacity: 0.12; }
+.ui-map .ui-map-area-line[data-tone="success"], .ui-map .ui-map-area-handle[data-tone="success"] { --ui-map-area-tone: var(--ui-color-success); }
+.ui-map .ui-map-area-line[data-tone="warning"], .ui-map .ui-map-area-handle[data-tone="warning"] { --ui-map-area-tone: var(--ui-color-warning); }
+.ui-map .ui-map-area-line[data-tone="danger"], .ui-map .ui-map-area-handle[data-tone="danger"] { --ui-map-area-tone: var(--ui-color-danger); }
+.ui-map .ui-map-area-line[data-tone="neutral"], .ui-map .ui-map-area-handle[data-tone="neutral"] { --ui-map-area-tone: var(--ui-color-text-muted); }
+/* The radius handle: a 48px target centred on the circle's edge, a 24px knob (raised surface, 3px
+   tone border) and the radius chip 8px above the knob, in the marker label's pill style. */
+.ui-map .ui-map-area-handle { --ui-map-area-tone: var(--ui-color-primary); pointer-events: auto; touch-action: none; cursor: ew-resize; outline: none;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.ui-map .ui-map-area-knob { box-sizing: border-box; width: 24px; height: 24px; border-radius: 50%; flex: none;
+  background: var(--ui-color-surface-raised); border: 3px solid var(--ui-map-area-tone); box-shadow: var(--ui-shadow-2);
+  transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-map .ui-map-area-handle[data-dragging] .ui-map-area-knob { transform: scale(1.15); }
+.ui-map .ui-map-area-handle:focus-visible .ui-map-area-knob { box-shadow: var(--ui-focus-ring), var(--ui-shadow-2); }
+.ui-map .ui-map-area-chip { position: absolute; left: 50%; bottom: calc(50% + 12px + var(--ui-space-2)); transform: translateX(-50%);
+  box-sizing: border-box; width: max-content; padding: 2px var(--ui-space-2); border-radius: var(--ui-radius-lg);
+  font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; pointer-events: none;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); box-shadow: var(--ui-shadow-1); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-area-knob { transition: none; }
+}

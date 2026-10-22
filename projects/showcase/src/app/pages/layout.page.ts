@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout, UiFloatingPanel } from '@zouriel/ui/layout';
+import { Component, computed, signal } from '@angular/core';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen } from '@zouriel/ui/layout';
+import { UiMap, type UiMapArea } from '@zouriel/ui/map';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiSideNav } from '@zouriel/ui/navigation';
 import { UiDivider } from '@zouriel/ui/divider';
@@ -9,7 +10,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-layout',
   imports: [
-    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout, UiFloatingPanel,
+    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen, UiMap,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -38,18 +39,19 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Floating panel" anchor="floating-panel" selector="ui-floating-panel" [api]="floatApi"
-        summary="A raised surface floating over the bottom (or top) of its positioned parent: the details card over a map. Non-modal: it takes no focus and blocks nothing outside its own box, so what is around it stays usable and draggable. It sits 16px in from the edges plus the device's safe-area insets, up to 480px wide and centred, so it fits a 390px phone with a 16px gutter. With ariaLabel it is a named region.">
+        summary="A raised surface floating over the bottom (or top) of its positioned parent: the details card over a map. Non-modal: it takes no focus and blocks nothing outside its own box, so what is around it stays usable and draggable. It sits 16px in from the edges plus the device's safe-area insets, up to 480px wide and centred, so it fits a 390px phone with a 16px gutter. With ariaLabel it is a named region. insetEnd (0.44.0) keeps that many px free at the inline end (the right; the left in RTL) on top of the gutter, so a top-end floating button beside the card never overlaps it: move the card to the top to see room kept for one.">
         <doc-demo code="<div style=&quot;position: relative&quot;>
   <app-map />
   <ui-floating-panel ariaLabel=&quot;Nurse&quot;>…</ui-floating-panel>
 </div>">
           <div class="float-demo" (pointerdown)="floatDown($event)" (pointermove)="floatMove($event)" (pointerup)="floatDrag = null">
             <div class="float-map" [style.background-position]="floatPos()[0] + 'px ' + floatPos()[1] + 'px'">Drag the map</div>
-            <ui-floating-panel ariaLabel="Nurse" [placement]="floatTop() ? 'top' : 'bottom'">
+            <ui-floating-panel ariaLabel="Nurse" [placement]="floatTop() ? 'top' : 'bottom'" [insetEnd]="floatTop() ? 72 : 0">
               <strong>Aminath Hassan, RN</strong>
               <div class="float-meta">12 min away · Home visits</div>
               <div class="float-acts"><ui-button size="sm" (click)="floatTop.set(!floatTop())">Move to {{ floatTop() ? 'bottom' : 'top' }}</ui-button></div>
             </ui-floating-panel>
+            @if (floatTop()) { <span class="float-fab" aria-hidden="true">SOS</span> }
           </div>
         </doc-demo>
       </doc-section>
@@ -174,6 +176,34 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Swipe screens" anchor="swipe-screens" selector="ui-swipe-screens [(index)] · ui-swipe-screen" [api]="swipeApi"
+        summary="Full-height screens side by side (0.44.0), moved between with a horizontal swipe: a chat with its map one swipe away. Screen i+1 sits at the inline end (to the right; to the left in RTL). The screens follow the finger and snap on release: a fling faster than 400 px/s moves one screen that way, otherwise past half the width moves one, else they settle back; under reduced motion the snap is instant. Only clearly horizontal drags are taken, so lists inside scroll as usual. On the first screen a drag that starts within leadingEdgeExclusion (24px) of the leading edge is left alone, for an app drawer that opens from there. A screen with edgeSwipeOnly keeps its drags (a map pans and zooms): only a drag starting on its leading edge (edgeWidth, 24px) swipes back. Setting index animates there. Every screen stays alive off screen; screens out of view are inert and hidden from screen readers, and the screen that comes into view is announced by its label. There is no page indicator: add your own buttons that set index. Swipe the chat to the left to see the map; drag from the map's left edge to come back.">
+        <doc-demo lang="html" [code]="SWIPE_CODE">
+          <div class="swipe-host">
+            <ui-swipe-screens [(index)]="screen">
+              <ui-swipe-screen label="Chat">
+                <div class="swipe-chat">
+                  <div class="app-top"><strong>Dhirumi</strong><span class="swipe-grow"></span><ui-button size="sm" variant="outline" (click)="screen.set(1)">Map</ui-button></div>
+                  <div class="app-msgs">
+                    @for (m of chat; track $index) { <div class="bubble" [class.mine]="m.mine">{{ m.text }}</div> }
+                  </div>
+                </div>
+              </ui-swipe-screen>
+              <ui-swipe-screen label="Map" edgeSwipeOnly>
+                <div class="swipe-map">
+                  <ui-map fill [center]="home" [zoom]="12" [pin]="home" [pinDraggable]="false" [area]="area()" areaLabel="Search radius"
+                    (areaChange)="radius.set($event)" ariaLabel="Nurses near you" />
+                  <ui-button class="swipe-back" size="sm" variant="secondary" (click)="screen.set(0)">Back to chat</ui-button>
+                </div>
+              </ui-swipe-screen>
+            </ui-swipe-screens>
+          </div>
+          <div class="row">
+            <ui-segmented label="Screen (demo)" size="sm" [options]="screenOptions" [value]="screen() === 0 ? 'chat' : 'map'" (valueChange)="screen.set($event === 'chat' ? 0 : 1)" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Divider" selector="ui-divider" [api]="dividerApi"
         summary="Horizontal or vertical separator (role=separator), optionally with a centered label (horizontal only). A vertical divider stretches to the height of its row.">
         <doc-demo code="<ui-divider />
@@ -194,6 +224,10 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       background-size: 32px 32px; }
     .float-meta { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); margin-top: var(--ui-space-1); }
     .float-acts { margin-top: var(--ui-space-3); }
+    /* Stands in for a top-end fab beside the card (insetEnd). */
+    .float-fab { position: absolute; top: var(--ui-space-4); inset-inline-end: var(--ui-space-4); z-index: 2; display: grid; place-items: center;
+      width: 52px; height: 52px; border-radius: 50%; background: var(--ui-color-danger); color: var(--ui-color-danger-contrast);
+      font: 700 13px var(--ui-font-default); box-shadow: var(--ui-shadow-2); }
     .tile { display: flex; align-items: center; justify-content: center; height: 44px; background: var(--ui-color-surface-raised);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text-muted); font-family: var(--ui-font-mono); }
     .ln { padding: 2px var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
@@ -216,10 +250,48 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); margin-top: var(--ui-space-2); }
     .vrow { display: flex; align-items: center; gap: var(--ui-space-3); height: var(--ui-size-md); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .pane-text { margin: 0; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .swipe-host { height: 520px; max-width: 390px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-bg); }
+    .swipe-chat { display: flex; flex-direction: column; height: 100%; }
+    .swipe-grow { flex: 1; }
+    .bubble { max-width: 80%; padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius-lg); background: var(--ui-color-surface-raised);
+      border: 1px solid var(--ui-color-border); color: var(--ui-color-text); font-size: var(--ui-font-size-sm); line-height: 1.4; align-self: flex-start; }
+    .bubble.mine { align-self: flex-end; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
+    .swipe-map { position: relative; height: 100%; }
+    .swipe-back { position: absolute; top: var(--ui-space-3); inset-inline-end: var(--ui-space-3); z-index: 2; }
     .pane { padding: var(--ui-space-3); height: 100%; box-sizing: border-box; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
   `,
 })
 export class LayoutPage {
+  protected readonly SWIPE_CODE = `<ui-swipe-screens [(index)]="screen">
+  <ui-swipe-screen label="Chat"> <app-chat (openMap)="screen.set(1)" /> </ui-swipe-screen>
+  <!-- The map keeps its drags; a drag from its leading edge swipes back. -->
+  <ui-swipe-screen label="Map" edgeSwipeOnly>
+    <ui-map fill [area]="{ lat, lng, radiusMeters: radius(), editable: true }" (areaChange)="radius.set($event)" />
+  </ui-swipe-screen>
+</ui-swipe-screens>`;
+  protected readonly screen = signal(0);
+  protected readonly screenOptions = [{ value: 'chat', label: 'Chat' }, { value: 'map', label: 'Map' }];
+  protected readonly home = { lat: 4.1752, lng: 73.5089 };
+  protected readonly radius = signal(3000);
+  protected readonly area = computed<UiMapArea>(() => ({ ...this.home, radiusMeters: this.radius(), editable: true, minMeters: 500, maxMeters: 20000 }));
+  protected readonly chat = [
+    { mine: true, text: 'I need a nurse to change a dressing at home.' },
+    { mine: false, text: 'I can help with that. Where are you?' },
+    { mine: true, text: 'Hulhumale, near the Central Park.' },
+    { mine: false, text: 'Three nurses are within 3 km. Swipe left to see them on the map, and drag the circle\'s handle to look further.' },
+    { mine: true, text: 'Thanks!' },
+    { mine: false, text: 'Aminath Hassan, RN can come at 4 pm.' },
+    { mine: true, text: 'That works.' },
+    { mine: false, text: 'Booked. She will call when she leaves.' },
+  ];
+  protected readonly swipeApi: ApiRow[] = [
+    { name: 'index', type: 'number (model)', default: '0', desc: 'Two-way ([(index)]): the screen in view. Setting it animates there (instant under reduced motion).' },
+    { name: 'leadingEdgeExclusion', type: 'number', default: '24', desc: 'On the first screen, px from the leading edge where a drag is left to the app (its drawer).' },
+    { name: 'edgeWidth', type: 'number', default: '24', desc: 'The back-swipe strip on edgeSwipeOnly screens, px.' },
+    { name: 'ui-swipe-screen label', type: 'string (required)', default: '—', desc: 'The screen\'s name: its group label, announced when it comes into view.' },
+    { name: 'ui-swipe-screen edgeSwipeOnly', type: 'boolean', default: 'false', desc: 'The screen keeps its drags (a map); only a drag from its leading edge swipes back.' },
+    { name: 'uiSwipeTarget(start, pos, velocity, count, backOnly?)', type: 'function', default: '—', desc: 'Where a release settles: a 400 px/s fling moves one screen, else past half the width, else back.' },
+  ];
   protected readonly floatTop = signal(false);
   protected readonly floatPos = signal([0, 0]);
   protected floatDrag: { x: number; y: number; at: number[] } | null = null;
@@ -237,6 +309,7 @@ export class LayoutPage {
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'See-through surface, the same as ui-bottom-sheet glass (0.41.2); solid without backdrop-filter or under reduced transparency / more contrast.' },
     { name: 'glassStrength', type: "'clear' | 'frosted'", default: "'clear'", desc: 'How see-through glass is (0.41.3), as on ui-bottom-sheet: clear for a map in the theme\'s brightness, frosted for anything else.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'insetEnd', type: 'number', default: '0', desc: 'Px kept free at the inline end on top of the gutter, mirrored in RTL (0.44.0): room for a top-end fab.' },
     { name: '--ui-floating-panel-width', type: 'CSS length', default: '480px', desc: 'Its widest.' },
   ];
   protected readonly lines = Array.from({ length: 20 }, (_, i) => i + 1);
