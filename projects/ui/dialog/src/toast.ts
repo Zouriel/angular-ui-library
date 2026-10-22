@@ -101,6 +101,10 @@ export class UiToastService {
  * `ui-toast-host` — fixed renderer for queued toasts, in a corner or centred on the top or bottom
  * edge. Toasts slide in from the edge they sit against and slide back out that way. A bottom stack
  * moves up above a snackbar (`ui-snackbar-host`) that would otherwise cover it, as on a phone.
+ *
+ * Font (0.44.2): set `--ui-toast-font` on it (e.g. `style="--ui-toast-font: Faruma, 'Noto Sans Thaana'"`)
+ * to draw the title, message and action in an app font, as `--ui-field-font` does for the text
+ * fields; it defaults to the theme's `--ui-font-default`.
  */
 @Component({
   selector: 'ui-toast-host',
@@ -162,7 +166,7 @@ export class UiToastService {
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-left-width: 3px;
       border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
-      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
+      font-family: var(--ui-toast-font, var(--ui-font-default)); font-size: var(--ui-font-size-sm); line-height: 1.35;
     }
     .toast { --ui-color-icon: currentColor; }
     .toast[data-tone="info"]    { border-left-color: var(--ui-color-info); }
@@ -180,7 +184,7 @@ export class UiToastService {
     .act {
       align-self: center; flex: none; box-sizing: border-box; height: var(--ui-size-sm); padding: 0 var(--ui-space-2);
       border: 1px solid var(--ui-color-border-strong); border-radius: var(--ui-radius-xs);
-      background: transparent; color: var(--ui-color-text); font: 600 var(--ui-font-size-sm) var(--ui-font-default); cursor: pointer;
+      background: transparent; color: var(--ui-color-text); font: 600 var(--ui-font-size-sm) var(--ui-toast-font, var(--ui-font-default)); cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .act:hover { background: var(--ui-color-elevated-hover); }

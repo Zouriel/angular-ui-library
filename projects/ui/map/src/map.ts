@@ -796,6 +796,11 @@ export class UiMap {
         this.styleRoutes();
         this.drawArea();
       });
+      // A fit asked for before the map existed (fitPoints / fitArea on opening) runs now, without animating.
+      if (this.fit) {
+        this.fit = { ...this.fit, options: { ...this.fit.options, animate: false } };
+        this.applyFit();
+      }
       this.teardown = () => {
         ro.disconnect();
         map.remove();
@@ -887,8 +892,10 @@ export class UiMap {
    * keys, the zoom buttons, `flyTo` or a new `center` / `zoom`.
    */
   fitPoints(points: readonly UiMapPoint[], options: UiMapFitOptions = {}): void {
-    if (!this.map || !points.length) return;
+    if (!points.length) return;
     this.fit = { points: [...points], options: { ...options } };
+    // Asked before Leaflet has loaded (straight after the map is created): held, and run once it has (0.44.2).
+    if (!this.map) return;
     this.refitPending = false;
     this.applyFit();
   }

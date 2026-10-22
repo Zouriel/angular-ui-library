@@ -193,13 +193,18 @@ interface Drag {
       -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
     }
     :host(.glass) .bd { border-top-color: var(--ui-glass-border); }
-    :host(.glass) .ft { background: transparent; border-top-color: var(--ui-glass-border); }
+    /* The footer is always frosted (0.44.2): the body scrolls under it, so clear glass would show its text
+       through the buttons. */
+    :host(.glass) .ft {
+      background: var(--ui-glass-sheet-bg); border-top-color: var(--ui-glass-border);
+      -webkit-backdrop-filter: var(--ui-glass-sheet-filter); backdrop-filter: var(--ui-glass-sheet-filter);
+    }
     /* No backdrop-filter: an unfiltered map under a 60% tint can't promise contrast, so solid. */
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-      :host(.glass) .sheet, :host(.glass.frosted) .sheet { background: var(--ui-color-surface); }
+      :host(.glass) .sheet, :host(.glass.frosted) .sheet, :host(.glass) .ft { background: var(--ui-color-surface); }
     }
     @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-      :host(.glass) .sheet, :host(.glass.frosted) .sheet { background: var(--ui-color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+      :host(.glass) .sheet, :host(.glass.frosted) .sheet, :host(.glass) .ft { background: var(--ui-color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
     }
   `,
 })

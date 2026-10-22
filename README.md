@@ -54,6 +54,14 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the
   page. `selectedMarkerId` draws one marker bigger, ringed and haloed on top with its label, and
   `markerLabels` ('all' | 'selected' | 'none') says which labels show.
+- **0.44.2**: `ui-map` markers sit exactly on their points. Since 0.35.1 `.ui-map .ui-map-marker` set
+  `position: relative`, which outranked Leaflet's absolute marker positioning, so the icons fell into normal flow
+  and each was drawn about 16px below the one before (280 pins became a column); every dot was also 4px low.
+  `npm run audit:map-markers` checks every marker's dot and hit area in a real browser. A glass `ui-bottom-sheet`'s `[sheet-footer]` is always frosted, whatever `glassStrength`, so the
+  body scrolling under it never shows through. `fitPoints()` / `fitArea()` called before Leaflet has loaded are
+  held and run once it has, without animating (they did nothing). Toasts take their font from `--ui-toast-font`
+  on `ui-toast-host` (default the theme font), as the fields do with `--ui-field-font`. The Flutter twin also
+  made a one-row textarea at least 48dp on phones; the web textarea already meets its target rule.
 - **0.44.1**: no Angular change. The Flutter twin fixed dialogs opened from above its navigator (a held SOS fab
   in `UiApp.builder`); web overlays never depended on one.
 - **Map search area, swipe screens, SOS fab** (0.44.0): `ui-map [area]` draws a search circle in

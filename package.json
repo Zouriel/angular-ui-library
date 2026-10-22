@@ -10,7 +10,8 @@
     "audit:ui": "node projects/showcase/audit/ui-audit.mjs",
     "audit:shots": "node projects/showcase/audit/capture.mjs",
     "audit:close-flicker": "node projects/showcase/audit/close-flicker.mjs",
-    "audit:chat-wrap": "node projects/showcase/audit/chat-bubble-wrap.mjs"
+    "audit:chat-wrap": "node projects/showcase/audit/chat-bubble-wrap.mjs",
+    "audit:map-markers": "node projects/showcase/audit/map-markers.mjs"
   },
   "private": true,
   "packageManager": "npm@11.14.1",

@@ -254,7 +254,7 @@ describe('ui-map selected marker (0.43.0)', () => {
     const dot = rule('.ui-map .ui-map-marker[data-selected] .ui-map-dot');
     expect([prop(dot, 'width'), prop(dot, 'height'), prop(dot, 'border-color')]).toEqual(['22px', '22px', 'var(--ui-color-location-ring)']);
     expect(prop(dot, 'box-shadow')).toBe('0 0 0 6px color-mix(in srgb, var(--ui-map-dot-tone) 30%, transparent), var(--ui-shadow-2)');
-    expect(rule('.ui-map .ui-map-marker[data-selected]')).toContain('margin: -11px 0 0 -11px !important');
+    expect(rule('.ui-map .ui-map-marker[data-selected]')).toContain('margin: -12px 0 0 -11px !important');
     // The tone reaches the halo through --ui-map-dot-tone.
     expect(prop(rule('.ui-map .ui-map-dot[data-tone="success"]'), '--ui-map-dot-tone')).toBe('var(--ui-color-success)');
     expect(prop(rule('.ui-map .ui-map-dot'), 'background')).toBe('var(--ui-map-dot-tone)');

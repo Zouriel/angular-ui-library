@@ -9,7 +9,7 @@ import { UiBottomSheet } from './bottom-sheet';
 @Component({
   imports: [UiBottomSheet],
   template: `
-    <ui-bottom-sheet [(snap)]="snap" [snaps]="snaps()" title="Visit" [closable]="false" (coverChange)="covers.push($event)">
+    <ui-bottom-sheet [(snap)]="snap" [snaps]="snaps()" [glass]="glass()" title="Visit" [closable]="false" (coverChange)="covers.push($event)">
       <p class="body">Details</p>
       @if (footer()) { <div sheet-footer class="bar"><button type="button">Start the visit</button></div> }
     </ui-bottom-sheet>
@@ -19,6 +19,7 @@ class Host {
   snap = signal(0);
   snaps = signal<number[]>([0.1, 0.5, 0.9]);
   footer = signal(true);
+  glass = signal(false);
   covers: number[] = [];
 }
 
@@ -84,6 +85,17 @@ describe('ui-bottom-sheet footer (0.44.0)', () => {
     sizes(40, 72);
     expect(host.style.getPropertyValue('--ui-sheet-footer')).toBe('72px');
     expect(getComputedStyle(root.querySelector('.bd')!).getPropertyValue('padding')).toContain('var(--ui-sheet-footer, env(safe-area-inset-bottom))');
+  });
+
+  it('on a glass sheet the footer is frosted, so the body scrolling under it never shows through (0.44.2)', () => {
+    const { f, h, foot } = setup();
+    const bg = (el: HTMLElement) => getComputedStyle(el).getPropertyValue('background');
+    expect(bg(foot)).toContain('--ui-color-surface');
+    h.glass.set(true);
+    f.detectChanges();
+    const s = getComputedStyle(foot);
+    expect(bg(foot)).toContain('--ui-glass-sheet-bg');
+    expect(s.backdropFilter || s.getPropertyValue('-webkit-backdrop-filter')).toContain('--ui-glass-sheet-filter');
   });
 
   it('without footer content nothing changes: no padding var, the peek at its fraction', () => {

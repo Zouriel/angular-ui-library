@@ -47,11 +47,16 @@
 
 /* Markers: a tone dot with an optional label pill beside it, anchored on the dot. */
 .ui-map .ui-map-marker { display: flex; align-items: center; gap: var(--ui-space-1); width: auto !important; height: auto !important;
-  margin: -8px 0 0 -8px !important; }
-/* At least 24px to hit (WCAG 2.5.8), and 44px on touch screens without growing the marker. */
-.ui-map .ui-map-marker { min-height: 24px; position: relative; }
-.ui-map .ui-map-marker::before { content: ''; position: absolute; left: -4px; top: -4px; width: 24px; height: 24px; }
-@media (pointer: coarse) { .ui-map .ui-map-marker::before { left: -14px; top: -14px; width: 44px; height: 44px; } }
+  margin: -12px 0 0 -8px !important; }
+/* At least 24px to hit (WCAG 2.5.8), and 44px on touch screens without growing the marker.
+   Absolute, as Leaflet's .leaflet-marker-icon is (it is also the ::before's containing block): this
+   selector outranks Leaflet's, and from 0.35.1 to 0.44.1 its `position: relative` put the icons in
+   normal flow, so each marker was drawn about 16px below the one before (0.44.2). The box is 24px
+   tall with the dot centred in it, so it is lifted 12px (half its height) to put the dot's centre on
+   the point; it was lifted 8px, which left every dot 4px low. The hit area is centred on it too. */
+.ui-map .ui-map-marker { min-height: 24px; position: absolute; }
+.ui-map .ui-map-marker::before { content: ''; position: absolute; left: -4px; top: 0; width: 24px; height: 24px; }
+@media (pointer: coarse) { .ui-map .ui-map-marker::before { left: -14px; top: -10px; width: 44px; height: 44px; } }
 .ui-map .ui-map-marker:focus-visible { outline: none; }
 .ui-map .ui-map-marker:focus-visible .ui-map-dot { box-shadow: var(--ui-focus-ring); }
 .ui-map .ui-map-dot { --ui-map-dot-tone: var(--ui-color-primary); box-sizing: border-box; width: 16px; height: 16px; border-radius: 50%; flex: none;
@@ -62,9 +67,9 @@
 .ui-map .ui-map-dot[data-tone="neutral"] { --ui-map-dot-tone: var(--ui-color-text-muted); }
 /* selectedMarkerId (0.43.0): a 22px dot (about 1.35x) with a white ring and a soft halo in its tone,
    still centred on its point (the map raises it above the others). Its hit area stays centred too. */
-.ui-map .ui-map-marker[data-selected] { margin: -11px 0 0 -11px !important; }
-.ui-map .ui-map-marker[data-selected]::before { left: -1px; top: -1px; }
-@media (pointer: coarse) { .ui-map .ui-map-marker[data-selected]::before { left: -11px; top: -11px; } }
+.ui-map .ui-map-marker[data-selected] { margin: -12px 0 0 -11px !important; }
+.ui-map .ui-map-marker[data-selected]::before { left: -1px; top: 0; }
+@media (pointer: coarse) { .ui-map .ui-map-marker[data-selected]::before { left: -11px; top: -10px; } }
 .ui-map .ui-map-marker[data-selected] .ui-map-dot { width: 22px; height: 22px; border-color: var(--ui-color-location-ring);
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--ui-map-dot-tone) 30%, transparent), var(--ui-shadow-2); }
 .ui-map .ui-map-marker[data-selected]:focus-visible .ui-map-dot { box-shadow: var(--ui-focus-ring); }

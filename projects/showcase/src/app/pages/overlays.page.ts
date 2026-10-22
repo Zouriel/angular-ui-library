@@ -465,7 +465,7 @@ interface UiToastAction {
     { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through surface for a sheet over a map (0.41.2); solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
     { name: 'glassStrength', type: "'clear' | 'frosted'", default: "'clear'", desc: 'How see-through glass is (0.41.3): clear lets a map in the theme\'s brightness plainly show through, text AA over such a map; frosted is near-opaque, AA over any backdrop.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
-    { name: '[sheet-footer]', type: 'slot', default: '—', desc: 'A footer pinned to the bottom of the visible sheet at every open snap (0.44.0): a primary action bar. Counts in coverChange; a snap too short for it is raised to fit.' },
+    { name: '[sheet-footer]', type: 'slot', default: '—', desc: 'A footer pinned to the bottom of the visible sheet at every open snap (0.44.0): a primary action bar. Counts in coverChange; a snap too short for it is raised to fit. On a glass sheet it is always frosted, whatever glassStrength, so the body scrolling under it never shows through (0.44.2).' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },
     { name: 'cdkFocusInitial', type: 'attribute', default: '—', desc: 'With backdrop: the element that gets focus on open (default: the first focusable one, the handle).' },
@@ -478,6 +478,7 @@ interface UiToastAction {
   ];
   protected readonly toastApi: ApiRow[] = [
     { name: 'host: position', type: 'UiToastPosition', default: "'bottom-right'", desc: 'Where ui-toast-host stacks toasts: a corner, or centred on the top or bottom edge. Toasts slide in from that side.' },
+    { name: '--ui-toast-font', type: 'CSS custom property', default: 'var(--ui-font-default)', desc: "Set on ui-toast-host to draw the toasts' title, message and action in an app font, e.g. style=\"--ui-toast-font: Faruma, 'Noto Sans Thaana'\" so a Dhivehi name never shows as boxes (0.44.2)." },
     { name: 'service.show(opts)', type: '(UiToastOptions) => number', default: '—', desc: 'Enqueue; returns id.' },
     { name: 'service.info / success / warning / danger', type: '(message: string, title?: string) => number', default: '—', desc: 'Shorthands for show() with a tone.' },
     { name: 'service.dismiss(id)', type: '(number) => void', default: '—', desc: 'Remove a toast.' },
