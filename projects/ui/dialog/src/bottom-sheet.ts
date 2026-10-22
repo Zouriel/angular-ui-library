@@ -94,6 +94,7 @@ interface Drag {
     '[style.--ui-sheet-max-width]': 'maxWidthCss()',
     '[style.--ui-sheet-live-hidden.px]': 'translate()',
     '[style.--ui-sheet-footer.px]': 'footerHeight() || null',
+    '[class.has-footer]': 'footerHeight() > 0',
   },
   template: `
     @if (backdrop() && isOpen()) {
@@ -180,6 +181,9 @@ interface Drag {
       padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + env(safe-area-inset-bottom));
       border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .ft:empty { display: none; }
+    /* With a footer the body's scroll box ends at the footer's top (0.44.2), so nothing ever scrolls under
+       its buttons (on glass, frosting alone left the text readable through them in light themes). */
+    :host(.has-footer) .bd { padding-bottom: var(--ui-space-3); margin-bottom: calc(var(--ui-sheet-live-hidden, 0px) + var(--ui-sheet-footer, 0px)); }
     @media (prefers-reduced-motion: reduce) { .sheet { transition: visibility 0s; } }
     /* glass: see-through over a map. The filter squeezes the backdrop into the theme's floor-ceiling
        range before the tint, which is what keeps the text AA (see tokens.css): clear (the default,

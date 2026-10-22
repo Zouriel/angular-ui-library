@@ -80,11 +80,14 @@ describe('ui-bottom-sheet footer (0.44.0)', () => {
     expect(h.covers.at(-1)).toBe(Math.round(ROOM * 0.5));
   });
 
-  it('the body scrolls above it: its bottom padding takes the footer\'s height', () => {
+  it('the body scrolls above it: its scroll box ends at the footer\'s top, so nothing scrolls under it (0.44.2)', () => {
     const { sizes, host, root } = setup();
     sizes(40, 72);
     expect(host.style.getPropertyValue('--ui-sheet-footer')).toBe('72px');
-    expect(getComputedStyle(root.querySelector('.bd')!).getPropertyValue('padding')).toContain('var(--ui-sheet-footer, env(safe-area-inset-bottom))');
+    expect(host.classList.contains('has-footer')).toBe(true);
+    const bd = getComputedStyle(root.querySelector('.bd')!);
+    expect(bd.getPropertyValue('margin-bottom')).toBe('calc(var(--ui-sheet-live-hidden, 0px) + var(--ui-sheet-footer, 0px))');
+    expect(bd.getPropertyValue('padding-bottom')).toBe('var(--ui-space-3)');
   });
 
   it('on a glass sheet the footer is frosted, so the body scrolling under it never shows through (0.44.2)', () => {
@@ -103,5 +106,6 @@ describe('ui-bottom-sheet footer (0.44.0)', () => {
     sizes(40, 0);
     expect(host.style.getPropertyValue('--ui-sheet-footer')).toBe('');
     expect(h.covers.at(-1)).toBe(Math.round(ROOM * 0.1));
+    expect(host.classList.contains('has-footer')).toBe(false);
   });
 });

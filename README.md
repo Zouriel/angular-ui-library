@@ -62,6 +62,8 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   held and run once it has, without animating (they did nothing). Toasts take their font from `--ui-toast-font`
   on `ui-toast-host` (default the theme font), as the fields do with `--ui-field-font`. The Flutter twin also
   made a one-row textarea at least 48dp on phones; the web textarea already meets its target rule.
+- **0.44.3**: `ui-bottom-sheet` with a `[sheet-footer]`: the body's scroll box ends at the footer's top, so nothing
+  scrolls under its buttons (frosting alone left text readable in light themes).
 - **0.44.1**: no Angular change. The Flutter twin fixed dialogs opened from above its navigator (a held SOS fab
   in `UiApp.builder`); web overlays never depended on one.
 - **Map search area, swipe screens, SOS fab** (0.44.0): `ui-map [area]` draws a search circle in
