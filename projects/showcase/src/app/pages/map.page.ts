@@ -85,7 +85,7 @@ const PREVIEW_CODE = `<!-- A result card's Map tab: a still map of the results; 
 <!-- Or place it on the results once it has loaded: map.fitPoints(points) (no animation on a preview). -->`;
 
 const SELECTED_CODE = `<ui-map [markers]="results" [selectedMarkerId]="selected()?.id ?? null" markerLabels="selected"
-  (markerSelected)="selected.set($event)" />`;
+  (markerSelected)="selected.set($event)" (mapTap)="selected.set(null)" />`;
 
 const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
@@ -195,11 +195,11 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
       </doc-section>
 
       <doc-section name="Selected marker" anchor="selected-marker" selector="ui-map [selectedMarkerId] · markerLabels" [api]="selectedApi"
-        summary="selectedMarkerId (0.43.0) marks one marker as the chosen one: its dot is drawn bigger (22px instead of 16) with a white ring and a soft halo in its tone, above the other markers, with its label shown, and it is aria-pressed (the others not), so screen readers hear which is selected. The others stay as they are. Changing it updates the markers in place, without rebuilding or moving the map. markerLabels says which labels show: all (the default), selected (only the selected marker's, for a busy map where a tapped pin shows its card) or none. A hidden label still names its marker for screen readers. Click a marker here to select it.">
+        summary="selectedMarkerId (0.43.0) marks one marker as the chosen one: its dot is drawn bigger (22px instead of 16) with a white ring and a soft halo in its tone, above the other markers, with its label shown, and it is aria-pressed (the others not), so screen readers hear which is selected. The others stay as they are. Changing it updates the markers in place, without rebuilding or moving the map. markerLabels says which labels show: all (the default), selected (only the selected marker's, for a busy map where a tapped pin shows its card) or none. A hidden label still names its marker for screen readers. Click a marker here to select it; click empty map to clear it through mapTap (0.43.1).">
         <doc-demo lang="html" [code]="SELECTED_CODE">
           <div class="map-wrap">
             <ui-map [center]="center()" [zoom]="15" [markers]="markers" [selectedMarkerId]="selectedId()" [markerLabels]="labelMode()"
-              (markerSelected)="selectedId.set($event.id)" ariaLabel="Nurses near you" />
+              (markerSelected)="selectedId.set($event.id)" (mapTap)="selectedId.set(null)" ariaLabel="Nurses near you" />
           </div>
           <div class="route-acts">
             <ui-segmented label="Labels (demo)" size="sm" [options]="labelOptions" [value]="labelMode()" (valueChange)="labelMode.set($any($event))" />
@@ -222,7 +222,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     @if (resultsOpen()) {
       <div class="map-page">
         <ui-map fill [center]="previewCenter" [zoom]="16" [markers]="markers" [selectedMarkerId]="resultsPick()?.id ?? null" markerLabels="selected"
-          [insets]="{ top: resultsCover() }" (markerSelected)="resultsPick.set($event)" ariaLabel="Nurses near you" />
+          [insets]="{ top: resultsCover() }" (markerSelected)="resultsPick.set($event)" (mapTap)="resultsPick.set(null)" ariaLabel="Nurses near you" />
         <ui-floating-panel placement="top" ariaLabel="Nurse" (coverChange)="resultsCover.set($event)">
           <div class="status">
             <div class="status-text" role="status">
@@ -327,6 +327,7 @@ export class MapPage {
   protected readonly selectedApi: ApiRow[] = [
     { name: 'selectedMarkerId', type: 'string | null', default: 'null', desc: 'The selected marker (0.43.0): a 22px dot (UI_MAP_SELECTED_DOT) with a white ring and a halo in its tone, on top, its label shown, aria-pressed.' },
     { name: 'markerLabels', type: "'all' | 'selected' | 'none'", default: "'all'", desc: "Which labels show: every one, only the selected marker's, or none. Hidden labels still name their markers (aria-label)." },
+    { name: '(mapTap)', type: 'UiLatLng', default: '—', desc: 'A background tap (0.43.1), used here to clear the selection; never a marker, pin, control, attribution, preview, drag or double-click.' },
     { name: 'uiMapLabelShown(mode, selected)', type: 'function', default: '—', desc: 'Whether a marker\'s label shows under a mode.' },
   ];
   /** A real road route across Male (OSRM, 1.3 km), from the nurse to the patient. */
@@ -425,11 +426,12 @@ export class MapPage {
   ];
   protected readonly out: ApiRow[] = [
     { name: 'markerSelected', type: 'UiMapMarker', default: '—', desc: 'A marker was clicked or activated with Enter.' },
+    { name: 'mapTap', type: 'UiLatLng', default: '—', desc: 'The map background was tapped (0.43.1), inside the Angular zone. Not a marker, pin, control, attribution, preview, drag or double-click (the user dot counts as background). Also fires in pinMode.' },
     { name: 'centerChanged', type: 'UiMapView', default: '—', desc: 'The map stopped moving; where it is now.' },
   ];
   protected readonly pinApi: ApiRow[] = [
     { name: 'pin', type: 'UiLatLng | null (model)', default: 'null', desc: 'Two-way ([(pin)]): the chosen point, a draggable pin when set.' },
-    { name: 'pinMode', type: 'boolean', default: 'false', desc: 'A tap on the map, or Enter on it, moves the pin there.' },
+    { name: 'pinMode', type: 'boolean', default: 'false', desc: 'A background tap moves the pin there and also emits mapTap; Enter moves only the pin.' },
     { name: 'pinLabel', type: 'string', default: "'Chosen location'", desc: "The pin's accessible name." },
     { name: 'pinDraggable', type: 'boolean', default: 'true', desc: 'false shows a fixed location with the pin\'s look (not draggable, not focusable, still named).' },
   ];

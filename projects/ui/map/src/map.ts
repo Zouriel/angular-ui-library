@@ -299,6 +299,9 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *
  * - `markers`: dots in their tone with a label; selecting one (click, or Enter when focused) emits
  *   `(markerSelected)`.
+ * - `(mapTap)` (0.43.1): the point tapped on the map background (the user dot counts as background).
+ *   Markers, the pin, controls and attribution do not emit it; neither do a drag, double-click zoom or `preview`.
+ *   In `pinMode` a background tap both moves the pin and emits `(mapTap)`.
  * - `[(pin)]` with `pinMode`: a draggable pin; a tap on the map, or Enter with the map focused (it
  *   goes to the map's centre), moves it there. For choosing a location.
  * - `[center]` / `[zoom]` move the map; `(centerChanged)` reports where the person moved it.
@@ -438,6 +441,8 @@ export class UiMap {
   markerLabels = input<UiMapMarkerLabels>('all');
 
   readonly markerSelected = output<UiMapMarker>();
+  /** A map-background tap (0.43.1); also emitted after that tap moves the pin in `pinMode`. */
+  readonly mapTap = output<UiLatLng>();
   readonly centerChanged = output<UiMapView>();
   /** The "Show my location" button was pressed (not while `locating`). */
   readonly locate = output<void>();
@@ -644,7 +649,12 @@ export class UiMap {
         this.zone.run(() => this.centerChanged.emit({ ...this.view! }));
       });
       map.on('click', (e: Leaflet.LeafletMouseEvent) => {
-        if (this.pinMode()) this.zone.run(() => this.pin.set({ lat: e.latlng.lat, lng: e.latlng.lng }));
+        if (this.preview()) return;
+        const point = { lat: e.latlng.lat, lng: e.latlng.lng };
+        this.zone.run(() => {
+          if (this.pinMode()) this.pin.set(point);
+          this.mapTap.emit(point);
+        });
       });
       // Enter on the focused map drops the pin at its centre (keyboard users pan with the arrows).
       el.addEventListener('keydown', (e) => {
@@ -919,6 +929,7 @@ export class UiMap {
     const halo = uiMapAccuracyPx(u.accuracy, u.lat, map.getZoom());
     const marker = L.marker([u.lat, u.lng], {
       pane: USER_PANE,
+      // Not a target: its halo can be 240px across, and a tap there still places the pin / is a map tap.
       interactive: false,
       keyboard: false,
       icon: L.divIcon({ className: 'ui-map-user', html: uiMapUserHtml(halo), iconSize: [0, 0] }),
@@ -1074,7 +1085,9 @@ export class UiMap {
       const marker = L.marker([p.lat, p.lng], {
         draggable,
         keyboard: draggable,
-        interactive: draggable,
+        // A fixed pin is still a foreground object: it takes taps without becoming focusable.
+        interactive: true,
+        bubblingMouseEvents: false,
         title: this.pinLabel(),
         alt: this.pinLabel(),
         zIndexOffset: 1000,
@@ -1085,6 +1098,7 @@ export class UiMap {
         const ll = marker.getLatLng();
         this.zone.run(() => this.pin.set({ lat: ll.lat, lng: ll.lng }));
       });
+      marker.on('click', () => {});
       this.pinMarker = marker.addTo(map);
       if (!draggable) {
         // A fixed location: still named for screen readers, though it takes no input.

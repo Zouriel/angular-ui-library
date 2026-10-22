@@ -378,6 +378,19 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
+## Map background tap (`ui-map`, 0.43.1)
+
+```html
+<ui-map [markers]="results" [selectedMarkerId]="selected()?.id ?? null"
+  (markerSelected)="selected.set($event)" (mapTap)="selected.set(null)" />
+```
+
+`(mapTap)` emits the background point as `UiLatLng`, inside the Angular zone. It does not emit for
+a marker, the pin, zoom/locate/app controls, attribution, preview mode, a
+drag, or double-click zoom; the user-location dot counts as background. In `pinMode`, a background tap keeps moving the pin and also emits
+`(mapTap)`; Enter moves the pin without pretending there was a tap. The Flutter twin is
+`UiMap(onMapTap: (point) { ... })` with the same hit-testing rules.
+
 ## Map preview, selected marker, label modes (`ui-map`, 0.43.0)
 
 ```html

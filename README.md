@@ -54,6 +54,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the
   page. `selectedMarkerId` draws one marker bigger, ringed and haloed on top with its label, and
   `markerLabels` ('all' | 'selected' | 'none') says which labels show.
+- **Map background taps** (0.43.1): `ui-map` emits `(mapTap)` with the tapped `UiLatLng` only for
+  the map background (the user dot counts as background)—not for a marker, pin, zoom/locate/app control, attribution,
+  preview, drag or double-click zoom. In `pinMode`, a background tap still moves the pin and also
+  emits the event, so a results map can clear its selected card without breaking location picking.
 - **Chat bubbles keep their words whole** (0.42.2): `ui-chat-bubble` takes the whole row whatever its
   parent aligns (a column with `align-items: flex-start`/`flex-end`/`center`, a row, a grid), so its
   80% never resolves against a host shrunk to its own text ("okay" broke as "ok/ay"), and it uses
