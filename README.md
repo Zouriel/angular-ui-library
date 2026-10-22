@@ -49,6 +49,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **Chat bubbles keep their words whole** (0.42.2): `ui-chat-bubble` takes the whole row whatever its
+  parent aligns (a column with `align-items: flex-start`/`flex-end`/`center`, a row, a grid), so its
+  80% never resolves against a host shrunk to its own text ("okay" broke as "ok/ay"), and it uses
+  `overflow-wrap: break-word`: words wrap whole, a long URL breaks only where it would overflow.
 - **Map controls, a fit that holds, labels off the edge** (0.42.1): a `fitPoints` fit owns the camera,
   so when `insets` change while it animates or after it (a sheet growing as the route appears) it is
   worked out again for the new insets, until the person or the app moves the map. `ui-map` gains
@@ -256,6 +260,7 @@ ng test ui --watch=false                    # unit tests, plus the style contrac
                                             #   every named theme passes WCAG AA
 node projects/ui/styles/contrast-check.mjs  # Winter dark/light contrast table
 npm run audit:ui -- --url http://localhost:4200
+npm run audit:chat-wrap -- --url http://localhost:4310   # or --dist <showcase build>
 ```
 
 `audit:ui` opens every showcase page in Chromium, in several themes at desktop and phone width,
@@ -266,7 +271,10 @@ and reports what only a browser can measure. Errors cover:
 - controls of different heights in one row;
 - pages that scroll sideways.
 
-Warnings cover cut-off text and small tap targets. Run `npx playwright-core install chromium`
+Warnings cover cut-off text and small tap targets. `audit:chat-wrap` puts the showcase's chat
+bubbles in every common parent (flex columns aligned start/end/center/stretch, a row, a grid; LTR
+and RTL) at 390px and fails if a short word wraps, a bubble leaves its side of the row, or a
+200-character URL escapes 80% of the row. Run `npx playwright-core install chromium`
 once, or point `CHROME_PATH` at a Chrome.
 
 ## License

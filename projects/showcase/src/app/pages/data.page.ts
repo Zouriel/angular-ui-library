@@ -297,7 +297,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Chat bubble" anchor="chat-bubble" selector="ui-chat-bubble" [api]="bubbleApi"
-        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves; text wraps at 80% of it.">
+        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves: each takes the whole row whatever the column aligns (start, end, center, stretch), so text wraps at 80% of it, between words; a long URL breaks only where it would overflow.">
         <doc-demo code="<ui-chat-bubble meta=&quot;09:40&quot;>Hello, I'm on my way to you.</ui-chat-bubble>
 <ui-chat-bubble [mine]=&quot;true&quot; meta=&quot;09:41 · Read&quot;>Thank you! The gate code is 2468.</ui-chat-bubble>">
           <div class="chat">

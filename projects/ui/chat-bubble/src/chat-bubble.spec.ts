@@ -28,4 +28,24 @@ describe('ui-chat-bubble', () => {
     expect(getComputedStyle(m).justifyContent).toBe('flex-end');
     expect(getComputedStyle(o).justifyContent).toBe('flex-start');
   });
+
+  // 0.42.2: in a column with align-items: flex-start/flex-end the host shrank to its text, the 80%
+  // resolved against that and overflow-wrap: anywhere broke "okay" as "ok/ay". The layout itself is
+  // checked in Chromium by `npm run audit:chat-wrap`; this guards the rules it depends on.
+  it('takes the whole row whatever the parent aligns, and breaks words only when they overflow', () => {
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    for (const b of [el.querySelector('#m')!, el.querySelector('#o')!]) {
+      const s = getComputedStyle(b);
+      expect(s.alignSelf).toBe('stretch');
+      expect(s.justifySelf).toBe('stretch');
+      expect(s.width).toBe('100%');
+      expect(s.minWidth).toBe('0px');
+      expect(s.boxSizing).toBe('border-box');
+      const bubble = getComputedStyle(b.querySelector('.bubble')!);
+      expect(bubble.overflowWrap).toBe('break-word');
+      expect(bubble.maxWidth).toBe('80%');
+    }
+  });
 });

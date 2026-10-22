@@ -406,6 +406,16 @@ and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 The Flutter twin: `UiMap(controls: [UiMapControl(id:, icon:, semanticLabel:, onPressed:, tooltip:)])`
 and `uiMapLabelSide(x, labelWidth, mapWidth, rtl:)`.
 
+## Chat bubbles in any parent (`ui-chat-bubble`, 0.42.2)
+
+A bubble takes the whole row whatever its parent aligns: a column with `align-items: flex-start`,
+`flex-end` or `center`, a flex row, a grid with `justify-items: start`. Yours still sit at the
+inline end and theirs at the inline start (mirrored in RTL), and text wraps at 80% of the row.
+Before, such a parent shrank the bubble to its own text, the 80% resolved against that, and
+`overflow-wrap: anywhere` broke short words ("ok/ay"). Words now wrap whole
+(`overflow-wrap: break-word`); a word too long for 80% of the row (a URL) breaks only where it would
+overflow. No app change is needed; app-side workarounds (stretching the column) can go.
+
 ## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
 
 ```html

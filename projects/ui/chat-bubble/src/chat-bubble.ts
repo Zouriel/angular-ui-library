@@ -8,7 +8,9 @@ import { Component, input } from '@angular/core';
  *
  *   <ui-chat-bubble [mine]="true" meta="09:41 · Read">On my way</ui-chat-bubble>
  *
- * Put bubbles in a column (flex, gap) and they align themselves. Text wraps at 80% of the column.
+ * Put bubbles in a column (flex, gap) and they align themselves. Each takes the full row whatever the
+ * parent's alignment, so text wraps at 80% of the column, between words; a word too long for that
+ * (a URL) breaks only where it would overflow.
  */
 @Component({
   selector: 'ui-chat-bubble',
@@ -20,7 +22,12 @@ import { Component, input } from '@angular/core';
     </div>
   `,
   styles: `
-    :host { display: flex; justify-content: flex-start; }
+    /* The host always takes the whole row, whatever the parent's alignment (flex, grid or a row), so
+       the 80% below never resolves against a host shrunk to its own text. */
+    :host {
+      display: flex; justify-content: flex-start; box-sizing: border-box;
+      align-self: stretch; justify-self: stretch; width: 100%; min-width: 0;
+    }
     :host(.mine) { justify-content: flex-end; }
     .bubble {
       max-width: 80%; box-sizing: border-box; padding: var(--ui-space-2) var(--ui-space-3);
@@ -28,7 +35,7 @@ import { Component, input } from '@angular/core';
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.45;
-      overflow-wrap: anywhere; white-space: pre-line;
+      overflow-wrap: break-word; white-space: pre-line;
     }
     :host(.mine) .bubble {
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent;
