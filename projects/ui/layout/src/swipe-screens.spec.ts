@@ -11,7 +11,7 @@ import { UiSwipeScreen, UiSwipeScreens, uiSwipeTarget } from './swipe-screens';
     <ui-swipe-screens [(index)]="index">
       <ui-swipe-screen label="Chat"><div class="list" style="overflow: auto"><button type="button" class="send" (click)="sends = sends + 1">Send</button></div></ui-swipe-screen>
       <ui-swipe-screen label="Results"><p class="results">Results</p></ui-swipe-screen>
-      <ui-swipe-screen label="Map" edgeSwipeOnly><div class="map">Map</div></ui-swipe-screen>
+      <ui-swipe-screen label="Map" edgeSwipeOnly><div class="map"><button type="button" class="map-back" (click)="backs = backs + 1">Back</button>Map</div></ui-swipe-screen>
     </ui-swipe-screens>
   </div>`,
 })
@@ -19,6 +19,7 @@ class Host {
   index = signal(0);
   dir = signal<'ltr' | 'rtl'>('ltr');
   sends = 0;
+  backs = 0;
 }
 
 const W = 400;
@@ -214,5 +215,34 @@ describe('ui-swipe-screens (0.44.0)', () => {
     pointer(send, 'pointerup', 300, 300);
     send.click();
     expect(h.sends).toBe(1);
+  });
+
+  it('a tap on the back-swipe strip reaches what is under it (the screen\'s Back arrow); a swipe from it clicks nothing', () => {
+    const { h, root, tick } = setup((x) => x.index.set(2));
+    const strip = root.querySelector('[data-swipe-edge]') as HTMLElement;
+    const back = root.querySelector('.map-back') as HTMLElement;
+    const map = root.querySelector('.map') as HTMLElement;
+    const screen = strip.closest('ui-swipe-screen') as HTMLElement;
+    const doc = document as Document & { elementsFromPoint?: (x: number, y: number) => Element[] };
+    const was = doc.elementsFromPoint;
+    // jsdom has no layout: the strip, then the Back arrow under it, is what a real page reports at (10, 20).
+    doc.elementsFromPoint = () => [strip, back, map, screen, document.body];
+    const click = () => strip.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 10, clientY: 20 }));
+    try {
+      pointer(strip, 'pointerdown', 10, 20);
+      pointer(strip, 'pointerup', 10, 20);
+      click();
+      tick();
+      expect(h.backs).toBe(1);
+      expect(h.index(), 'a tap is not a swipe').toBe(2);
+
+      drag(strip, 10, 300, { y: 20 });
+      click();
+      tick();
+      expect(h.index()).toBe(1);
+      expect(h.backs, 'the click a swipe causes is swallowed, not passed through').toBe(1);
+    } finally {
+      doc.elementsFromPoint = was;
+    }
   });
 });

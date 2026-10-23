@@ -29,7 +29,7 @@ export function uiSwipeTarget(start: number, pos: number, velocity: number, coun
  * `ui-swipe-screen` — one full-height screen of a `ui-swipe-screens`. `label` names it for screen
  * readers (announced when it comes into view). `edgeSwipeOnly`: the screen keeps every drag for its
  * own content (a map that pans), and only a drag starting on its leading edge (`edgeWidth`, 24px)
- * swipes back to the screen before it.
+ * swipes back to the screen before it; a tap there goes to what is under the strip (0.45.1).
  */
 @Component({
   selector: 'ui-swipe-screen',
@@ -43,7 +43,7 @@ export function uiSwipeTarget(start: number, pos: number, velocity: number, coun
   },
   template: `<ng-content />
     @if (edgeSwipeOnly() && hasPrevious()) {
-      <div class="ui-swipe-edge" data-swipe-edge aria-hidden="true" [style.width.px]="edgeWidth()"></div>
+      <div class="ui-swipe-edge" data-swipe-edge aria-hidden="true" [style.width.px]="edgeWidth()" (click)="tapThrough($event)"></div>
     }`,
   styles: `
     :host { display: block; position: relative; flex: 0 0 100%; width: 100%; height: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; }
@@ -66,6 +66,26 @@ export class UiSwipeScreen {
   readonly edgeWidth = signal(24);
   /** The element, for the parent's hit tests. */
   readonly el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+  /**
+   * A tap on the back-swipe strip goes to what is under it (0.45.1): the strip is there for swipes,
+   * and it lies over the screen's own leading-edge controls, such as a header's Back arrow. A swipe
+   * from the strip clicks nothing (the parent swallows the click a drag causes before it gets here).
+   */
+  protected tapThrough(e: MouseEvent): void {
+    const strip = e.currentTarget as HTMLElement | null;
+    const doc = strip?.ownerDocument as (Document & { elementsFromPoint?: (x: number, y: number) => Element[] }) | undefined;
+    if (!strip || typeof doc?.elementsFromPoint !== 'function') return;
+    const under = doc.elementsFromPoint(e.clientX, e.clientY).find((el) => el !== strip && !strip.contains(el));
+    if (!under || under === this.el || !this.el.contains(under) || under.closest(':disabled')) return;
+    e.stopPropagation();
+    under.closest<HTMLElement>('input, textarea, select, [contenteditable]:not([contenteditable="false"])')?.focus({ preventScroll: true });
+    under.dispatchEvent(new MouseEvent('click', {
+      bubbles: true, cancelable: true, composed: true, view: e.view, detail: e.detail,
+      screenX: e.screenX, screenY: e.screenY, clientX: e.clientX, clientY: e.clientY,
+      ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, altKey: e.altKey, metaKey: e.metaKey, button: e.button, buttons: e.buttons,
+    }));
+  }
 }
 
 interface Gesture {
