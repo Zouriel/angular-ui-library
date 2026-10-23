@@ -134,12 +134,12 @@ const CRON_PRESETS: { value: string; label: string }[] = [
     .type hugeicons-icon { color: var(--ui-color-text-secondary); flex: none; }
     .type.on hugeicons-icon { color: var(--ui-color-primary); }
     .t { display: flex; flex-direction: column; min-width: 0; }
-    .l { font-size: 13px; font-weight: 550; }
+    .l { font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; }
     .h { font-size: 11.5px; color: var(--ui-color-text-muted); }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
+    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .opt input { accent-color: var(--ui-color-primary); margin: 0; }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
   `],
 })
 export class WfTriggerEditor {
@@ -282,7 +282,7 @@ export class WfTriggerEditor {
   `,
   styles: [WF_SHARED_STYLES, `
     .lw { display: block; min-width: 0; }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .var { display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 6px; align-items: center; }
     .var .def { grid-column: 1 / 3; }
     .key { font-family: var(--ui-font-mono); font-size: 12px; color: var(--ui-color-text-secondary); }
@@ -408,7 +408,7 @@ export class WfWorkflowEditor {
       </div>
     }
   `,
-  styles: [WF_SHARED_STYLES, `.lw { display: block; min-width: 0; } .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }`],
+  styles: [WF_SHARED_STYLES, `.lw { display: block; min-width: 0; } .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }`],
 })
 export class WfStateEditor {
   protected readonly store = inject(WfBuilderStore);
@@ -503,9 +503,9 @@ export class WfStateEditor {
   `,
   styles: [WF_SHARED_STYLES, `
     .lw { display: block; min-width: 0; }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 6px; }
-    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
+    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .opt input { accent-color: var(--ui-color-primary); margin: 0; }
     .more-from summary { font-size: 12px; color: var(--ui-color-primary); cursor: pointer; }
   `],
@@ -625,7 +625,7 @@ export class WfTransitionEditor {
   `,
   styles: [WF_SHARED_STYLES, `
     .lw { display: block; min-width: 0; }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .states { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-4); }
   `],
 })
@@ -735,7 +735,7 @@ export class WfResetEditor {
     .back { align-self: flex-start; }
     .sheet-bar { flex: none; display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); padding: 0 var(--ui-space-3) var(--ui-space-2);
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    h2 { flex: 1; margin: 0; font-size: 14px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    h2 { flex: 1; margin: 0; font-size: calc(14px * var(--ui-font-scale)); font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ico { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .body { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }
     .fields { min-width: 0; margin: 0; padding: 0; border: 0; }

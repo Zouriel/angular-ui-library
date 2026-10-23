@@ -50,7 +50,7 @@ let hintSeq = 0;
       position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center;
       width: 20px; height: 20px; margin: 0 calc(var(--ui-space-1) * -1) 0 0; padding: 0;
       border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: inherit;
-      font: inherit; font-size: 14px; line-height: 1; cursor: pointer; opacity: .85;
+      font: inherit; font-size: calc(14px * var(--ui-font-scale)); line-height: 1; cursor: pointer; opacity: .85;
     }
     .x:hover { opacity: 1; background: color-mix(in srgb, var(--ui-color-primary-contrast) 14%, transparent); }
     .x:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ui-color-primary-contrast); }

@@ -63,7 +63,7 @@ const EXT: Record<string, FileType> = {
     .audio ui-audio-player { width: min(100%, 560px); }
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-2);
       height: 100%; padding: var(--ui-space-6); text-align: center; font-family: var(--ui-font-default); color: var(--ui-color-text-muted); }
-    .big { font-size: 40px; }
+    .big { font-size: calc(40px * var(--ui-font-scale)); }
     .nm { color: var(--ui-color-text); word-break: break-all; }
     .dl { color: var(--ui-color-primary); text-decoration: none; font-size: var(--ui-font-size-sm); border-radius: var(--ui-radius-xs); }
     .dl:hover { text-decoration: underline; }

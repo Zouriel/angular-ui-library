@@ -273,7 +273,7 @@ export interface FbDeleteRequest {
     .tabs.more.less { mask: linear-gradient(to right, transparent, black var(--ui-space-8), black calc(100% - var(--ui-space-8)), transparent), linear-gradient(black, black) bottom / 100% 1px no-repeat; }
     .tab { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3); flex: none; max-width: 200px;
       border: 1px solid transparent; border-bottom: 0; border-radius: var(--ui-radius) var(--ui-radius) 0 0; margin-bottom: -1px;
-      background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+      background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .tab:hover { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .tab.on { color: var(--ui-color-text); background: var(--ui-color-surface); border-color: var(--ui-color-border-subtle, var(--ui-color-border)); font-weight: 550; }
     .tab.over { box-shadow: inset 0 0 0 2px var(--ui-color-primary); }
@@ -290,9 +290,9 @@ export interface FbDeleteRequest {
     .form-head:hover, .page-head:hover { border-color: var(--ui-color-border); }
     .form-head.selected, .page-head.selected { border-color: var(--ui-color-primary); }
     .form-head:focus-visible, .page-open:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .form-title { font-family: var(--ui-font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-    .form-desc { color: var(--ui-color-text-secondary); font-size: 13px; }
-    .page-title { font-size: 15px; font-weight: 600; }
+    .form-title { font-family: var(--ui-font-display); font-size: calc(20px * var(--ui-font-scale)); font-weight: 600; letter-spacing: -0.01em; }
+    .form-desc { color: var(--ui-color-text-secondary); font-size: calc(13px * var(--ui-font-scale)); }
+    .page-title { font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; }
     .list { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--ui-space-2); border-radius: var(--ui-radius); min-height: 8px; transition: background var(--ui-motion-fast); }
     .list.over { background: color-mix(in srgb, var(--ui-color-primary) 6%, transparent); }
     @container fb-paper (max-width: 520px) { .item { grid-column: span 12 !important; } }
@@ -323,7 +323,7 @@ export interface FbDeleteRequest {
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
     .head { display: flex; align-items: center; gap: 6px; min-height: 20px; flex-wrap: wrap; padding-right: 4px; }
     .type-ico { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: var(--ui-radius-xs); color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
-    .label { font-size: 13px; font-weight: 550; color: var(--ui-color-text); min-width: 0; overflow-wrap: anywhere; }
+    .label { font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; color: var(--ui-color-text); min-width: 0; overflow-wrap: anywhere; }
     .label.strong { font-weight: 600; }
     .label.muted { color: var(--ui-color-text-muted); font-style: italic; font-weight: 400; }
     .req { color: var(--ui-color-danger); margin-left: 3px; }
@@ -353,7 +353,7 @@ export interface FbDeleteRequest {
     .slider .range { font-size: 11px; color: var(--ui-color-text-muted); }
     .hidden-note { font-size: 12px; color: var(--ui-color-text-muted); font-style: italic; }
     .static .main { padding: 2px 0; }
-    .st-heading { font-family: var(--ui-font-display); font-size: 15px; font-weight: 600; }
+    .st-heading { font-family: var(--ui-font-display); font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; }
     .st-para { font-size: 12px; color: var(--ui-color-text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .st-divider { flex: 1; min-width: 60px; height: 1px; background: var(--ui-color-border); }
     .tools { position: absolute; top: -13px; right: 6px; z-index: 2; display: flex; gap: 1px; padding: 1px;
@@ -371,18 +371,18 @@ export interface FbDeleteRequest {
       border: 1px dashed transparent; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); font: inherit; font-size: 12px; cursor: pointer; }
     .add-in:hover, .add-end:hover { color: var(--ui-color-text); border-color: var(--ui-color-border); background: var(--ui-color-surface); }
     .add-in:focus-visible, .add-end:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .add-end { height: 34px; width: 100%; justify-content: center; border-color: var(--ui-color-border-subtle, var(--ui-color-border)); font-size: 13px; }
+    .add-end { height: 34px; width: 100%; justify-content: center; border-color: var(--ui-color-border-subtle, var(--ui-color-border)); font-size: calc(13px * var(--ui-font-scale)); }
     .empty { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-8) var(--ui-space-4); text-align: center;
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
-    .empty-title { margin: 0; font-size: 15px; font-weight: 600; }
-    .empty-text { margin: 0; font-size: 13px; color: var(--ui-color-text-secondary); }
+    .empty-title { margin: 0; font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; }
+    .empty-text { margin: 0; font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); }
     /* The palette is only beside the canvas in the wide layout; elsewhere fields come from the Add button. */
     .hint-wide { display: none; }
     :host-context(ui-form-builder[data-layout="wide"]) .hint-wide { display: inline; }
     :host-context(ui-form-builder[data-layout="wide"]) .hint-compact { display: none; }
     .starters { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     .starter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: 13px; cursor: pointer; }
+      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .starter:hover { border-color: var(--ui-color-border-strong, var(--ui-color-primary)); background: var(--ui-color-surface-hover); }
     .starter:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     @media (pointer: coarse) { .starter, .add-in { min-height: 40px; } .tools { top: -20px; } }

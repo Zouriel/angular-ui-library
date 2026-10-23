@@ -101,7 +101,7 @@ let modalSeq = 0;
       display: inline-flex; align-items: center; justify-content: center;
       width: var(--ui-size-sm); height: var(--ui-size-sm); padding: 0; margin: calc(var(--ui-space-1) * -1) 0;
       border: none; background: transparent; border-radius: var(--ui-radius-xs);
-      color: var(--ui-color-text-muted); font: inherit; font-size: 16px; line-height: 1; cursor: pointer;
+      color: var(--ui-color-text-muted); font: inherit; font-size: calc(16px * var(--ui-font-scale)); line-height: 1; cursor: pointer;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
     }

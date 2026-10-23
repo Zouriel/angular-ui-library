@@ -26,7 +26,7 @@ import type { UiButtonVariant } from './button';
     .split { display: inline-flex; }
     button { display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-2); box-sizing: border-box;
       border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text);
-      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: calc(14px * var(--ui-font-scale)); font-weight: 500;
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
@@ -50,8 +50,8 @@ import type { UiButtonVariant } from './button';
     .caret[data-variant="primary"], .caret[data-variant="secondary"], .caret[data-variant="destructive"] {
       border-left: 1px solid color-mix(in srgb, currentColor 28%, transparent); }
     .chev { flex: none; }
-    button[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; }
-    button[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; }
+    button[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); }
+    button[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); }
     .main[data-size="sm"] { padding: 0 var(--ui-space-3); }
     .main[data-size="lg"] { padding: 0 var(--ui-space-6); }
     @media (pointer: coarse) {

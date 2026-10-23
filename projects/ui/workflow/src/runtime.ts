@@ -143,13 +143,13 @@ export class UiWorkflowStateBadge {
     </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
-    .body { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .body { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: calc(14px * var(--ui-font-scale)); }
     .field, .intro { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .rec { margin: 0; font-weight: 600; }
     .instructions { margin: 0; line-height: 1.5; white-space: pre-wrap; }
     .meta { margin: 0; font-size: 12.5px; color: var(--ui-color-text-muted); }
     .late { color: var(--ui-color-danger); }
-    .decisions { margin: 0; padding-left: var(--ui-space-4); font-size: 13px; }
+    .decisions { margin: 0; padding-left: var(--ui-space-4); font-size: calc(13px * var(--ui-font-scale)); }
     .lw { display: block; }
     .delegate summary { font-size: 12.5px; color: var(--ui-color-primary); cursor: pointer; margin-bottom: 6px; }
     .people { flex: 1; min-width: 0; }
@@ -395,7 +395,7 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     <ui-wf-decide [task]="openTask()" [api]="client()" (closed)="openTask.set(null)" (decided)="afterDecide()" />
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: 13.5px; color: var(--ui-color-text); }
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-3); font-size: calc(13.5px * var(--ui-font-scale)); color: var(--ui-color-text); }
     :host(.idle) { display: none; }
     /* The dialogs open on a fixed layer; their empty host elements (and the decide dialog's own modal) must not add gaps to this column. */
     ui-modal, ui-wf-decide { position: absolute; }
@@ -414,7 +414,7 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     .who { grid-column: 1; font-size: 12px; color: var(--ui-color-text-muted); }
     .task .wf-chip { grid-row: 1 / 3; grid-column: 2; }
     /* Field groups (a form's questions, the remarks) 16px apart, like the form renderer's own fields. */
-    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: calc(14px * var(--ui-font-scale)); }
     .field { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .confirm p { margin: 0; }
     .undo { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
@@ -422,7 +422,7 @@ export function wfRemarksFor(t: Pick<UiWfTransitionOption, 'comment' | 'tone'>):
     .undo-head h3 { margin: 0; }
     .undo-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .undo-list li { display: flex; flex-direction: column; gap: 4px; padding: var(--ui-space-2) var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
-    .undo-title { font-size: 13.5px; font-weight: 550; }
+    .undo-title { font-size: calc(13.5px * var(--ui-font-scale)); font-weight: 550; }
     .undo-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-left: 26px; font-size: 12px; color: var(--ui-color-text-muted); }
     .undo-warn { padding-left: 26px; font-size: 12px; line-height: 1.4; color: var(--ui-color-text-muted); }
     .undo-warn[data-tone="warning"] { color: var(--ui-color-warning); }
@@ -726,11 +726,11 @@ export class WfRecordActions extends WfWithApi {
     .row.late { border-left: 3px solid var(--ui-color-danger); }
     .ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 7px; flex: none; color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-    .title { font-size: 13.5px; font-weight: 600; }
+    .title { font-size: calc(13.5px * var(--ui-font-scale)); font-weight: 600; }
     .sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .due { font-size: 12px; color: var(--ui-color-text-secondary); white-space: nowrap; }
     .overdue { color: var(--ui-color-danger); font-weight: 600; }
-    .empty { padding: var(--ui-space-6) 0; text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
+    .empty { padding: var(--ui-space-6) 0; text-align: center; color: var(--ui-color-text-muted); font-size: calc(13px * var(--ui-font-scale)); }
   `],
 })
 export class WfTaskInbox extends WfWithApi {
@@ -929,9 +929,9 @@ export class WfTaskInbox extends WfWithApi {
     </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: calc(13px * var(--ui-font-scale)); }
     .head { display: flex; flex-direction: column; gap: 2px; }
-    .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+    .t { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: calc(14px * var(--ui-font-scale)); }
     .v { font-family: var(--ui-font-mono); font-size: 11.5px; color: var(--ui-color-text-muted); }
     .m { font-size: 12px; color: var(--ui-color-text-muted); }
     .incident { padding: 8px 10px; border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 30%, transparent); }
@@ -958,7 +958,7 @@ export class WfTaskInbox extends WfWithApi {
     .tasks h4 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     .tasks ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
     .tasks li { padding: 5px 0; border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: calc(14px * var(--ui-font-scale)); }
     .dlg p { margin: 0; }
     .field { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .lw { display: block; min-width: 0; }
@@ -1242,7 +1242,7 @@ function auditRows(text: string | null): AuditRow[] {
     @if (hasMore()) { <div><ui-button size="sm" variant="outline" (click)="older()">Older entries</ui-button></div> }
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 13px; }
+    :host { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: calc(13px * var(--ui-font-scale)); }
     .filters { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); align-items: center; }
     .filters .kind { width: 200px; }
     .filters ui-input { width: 140px; }

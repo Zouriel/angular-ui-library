@@ -220,13 +220,13 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
       font-size: var(--ui-font-size-lg); font-weight: 600; line-height: 1.3; letter-spacing: var(--ui-tracking-tight);
       color: var(--ui-color-text); overflow-wrap: anywhere;
     }
-    .fc[data-size="lg"] .title { font-family: var(--ui-font-display); font-size: 22px; font-weight: 700; }
+    .fc[data-size="lg"] .title { font-family: var(--ui-font-display); font-size: calc(22px * var(--ui-font-scale)); font-weight: 700; }
     .fc[data-size="sm"] .title { font-size: var(--ui-font-size-md); line-height: 1.35; letter-spacing: normal; }
     .desc {
       margin: var(--ui-space-2) 0 0;
       font-size: var(--ui-font-size-md); line-height: 1.5; color: var(--fc-desc, var(--ui-color-text-muted));
     }
-    .fc[data-size="lg"] .desc { font-size: 16px; }
+    .fc[data-size="lg"] .desc { font-size: calc(16px * var(--ui-font-scale)); }
     .fc[data-size="sm"] .desc { margin-top: var(--ui-space-1); font-size: var(--ui-font-size-sm); line-height: 1.4; }
     /* descriptionLines: clamp with an ellipsis. */
     .desc.clamp {

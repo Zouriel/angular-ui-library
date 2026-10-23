@@ -62,6 +62,15 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   held and run once it has, without animating (they did nothing). Toasts take their font from `--ui-toast-font`
   on `ui-toast-host` (default the theme font), as the fields do with `--ui-field-font`. The Flutter twin also
   made a one-row textarea at least 48dp on phones; the web textarea already meets its target rule.
+- **Compact density** (0.45.0): `provideUiConfig({ density: 'comfortable' | 'compact' | 'auto' })`, or
+  `data-density="compact"` / `"auto"` on `<html>` (or any element, for its subtree; `applyUiDensity()` at runtime).
+  Compact makes things smaller, not tighter: `--ui-font-size-sm/md/lg` 12/14/16px (from 13/15/18), the ui-text
+  headings (new tokens `--ui-font-size-h1/h2/h3/h5/h6`) about 10% smaller, `--ui-size-sm/md/lg` 24/26/34px
+  (from 26/30/38), text components size in px scaled by `--ui-font-scale` 0.93, and every icon plus the switch,
+  checkbox and radio marks drawn 10% smaller (`--ui-density-scale` 0.9, a 20px icon at 18). Spacing, radii,
+  `--ui-size-xl` and the 44px touch areas don't change. `auto` is compact below 600px wide and follows resizes.
+  On iOS, compact keeps typed text at 16px so Safari doesn't zoom into fields (comfortable keeps 15px, as before).
+  Default: comfortable, unchanged. `npm run audit:density` checks it in a browser; `npm run audit:ui -- --density compact`.
 - **0.44.3**: `ui-bottom-sheet` with a `[sheet-footer]`: the body's scroll box ends at the footer's top, so nothing
   scrolls under its buttons (frosting alone left text readable in light themes).
 - **0.44.1**: no Angular change. The Flutter twin fixed dialogs opened from above its navigator (a held SOS fab
@@ -230,6 +239,7 @@ export const appConfig = {
 | `glass` | `false` | Default glass surface for components with a `glass` input (card, modal, drawer, popover, menu, window, …). |
 | `radius` | `true` | Default rounded corners for components with a `radius` input. |
 | `animations` | `true` | `false` adds `.ui-no-anim` to `<html>`, which turns every library animation and transition off. |
+| `density` | `'comfortable'` | `'compact'` or `'auto'` (compact below 600px) sets `data-density` on `<html>`: smaller type, controls and icons, same spacing and touch targets (0.45.0). |
 | `defaultFont` | `'var(--ui-font-default)'` | A font-family list; when given, it is written to the `--ui-font-default` token on `<html>`, so every component uses it. |
 
 A component's own input always wins over the config. The core entry point also exports

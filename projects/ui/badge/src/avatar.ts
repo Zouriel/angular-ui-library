@@ -34,7 +34,7 @@ import type { UiButtonSize } from '@zouriel/ui';
     .ui-avatar.square { border-radius: var(--ui-radius); }
     .ui-avatar[data-size="sm"] { width: var(--ui-size-sm); height: var(--ui-size-sm); font-size: 11px; }
     .ui-avatar[data-size="lg"] { width: var(--ui-size-lg); height: var(--ui-size-lg); font-size: var(--ui-font-size-md); }
-    .ui-avatar[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); font-size: 21px; }
+    .ui-avatar[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); font-size: calc(21px * var(--ui-font-scale)); }
     .ui-avatar { box-sizing: border-box; flex: none; }
     img { width: 100%; height: 100%; object-fit: cover; }
   `,

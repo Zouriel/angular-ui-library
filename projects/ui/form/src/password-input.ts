@@ -53,6 +53,10 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
     .toggle { display: grid; place-items: center; flex: none; width: var(--ui-size-sm); height: calc(100% - 4px); max-height: var(--ui-size-sm); padding: 0;
       border: none; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-muted); cursor: pointer; font: inherit;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
+    /* A 24px-tall hit area however low the field (compact md paints the button 20px, 0.45.0); 44px on touch screens. */
+    .toggle { position: relative; }
+    .toggle::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: max(100%, 24px); transform: translateY(-50%); }
+    @media (pointer: coarse) { .toggle::before { height: var(--ui-size-touch); } }
     .toggle:hover:not(:disabled) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .toggle:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .toggle:disabled { cursor: not-allowed; }

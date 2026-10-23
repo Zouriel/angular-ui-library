@@ -166,16 +166,16 @@ interface WorkflowPermissions {
     .wf { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .wf-head { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-3) var(--ui-space-4);
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    h3 { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    h3 { flex: 1; min-width: 0; margin: 0; font-size: calc(14px * var(--ui-font-scale)); font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rows { margin: 0; padding: 0; list-style: none; }
     .row { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 1.4fr); gap: var(--ui-space-4); align-items: start;
       padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .row:first-child { border-top: 0; }
     .row.changed { box-shadow: inset 3px 0 0 var(--ui-color-primary); }
     .what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .label { font-size: 13.5px; font-weight: 600; }
+    .label { font-size: calc(13.5px * var(--ui-font-scale)); font-weight: 600; }
     .detail { font-size: 12px; color: var(--ui-color-text-muted); }
-    .read { font-size: 13px; color: var(--ui-color-text-secondary); }
+    .read { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); }
     .read.empty { color: var(--ui-color-text-muted); }
     .wf-foot { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; padding: var(--ui-space-3) var(--ui-space-4);
       border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }

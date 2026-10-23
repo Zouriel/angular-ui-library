@@ -192,7 +192,7 @@ interface PendingDelete {
     .top { display: flex; align-items: center; gap: var(--ui-space-2) var(--ui-space-3); flex-wrap: wrap; padding: 6px var(--ui-space-3); flex: none;
       background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .title { min-width: 0; max-width: 32ch; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs); background: transparent;
-      color: var(--ui-color-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-align: left; }
+      color: var(--ui-color-text); font: inherit; font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; cursor: pointer; text-align: left; }
     .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Hover only where there is a pointer: a tap on a phone must not leave the pill behind. */
     @media (hover: hover) { .title:hover { background: var(--ui-color-surface-hover); } }
@@ -222,18 +222,18 @@ interface PendingDelete {
        4px of its own (taken back by the margin) so focus rings aren't clipped by its scroller. */
     .sheet-inspector { height: 100%; --fb-inspector-pad: var(--ui-space-1); margin-inline: calc(var(--ui-space-1) * -1); }
     .fab { position: absolute; right: var(--ui-space-4); bottom: var(--ui-space-4); z-index: 3; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 var(--ui-space-4);
-      border: 0; border-radius: 22px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: inherit; font-size: 14px; font-weight: 600;
+      border: 0; border-radius: 22px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font: inherit; font-size: calc(14px * var(--ui-font-scale)); font-weight: 600;
       box-shadow: var(--ui-shadow-2); cursor: pointer; }
     .fab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .fab:active { transform: scale(0.97); }
     .fab { transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; line-height: 1.5; }
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: calc(14px * var(--ui-font-scale)); line-height: 1.5; }
     .confirm p { margin: 0; }
     .confirm ul { margin: 0; padding-left: var(--ui-space-4); }
     .confirm-actions { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: var(--ui-space-2); }
     .ghost { position: fixed; left: 0; top: 0; z-index: var(--ui-z-toast, 1200); display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--ui-space-3);
       border: 1px solid var(--ui-color-primary); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface));
-      color: var(--ui-color-text); font-size: 13px; font-weight: 550; box-shadow: var(--ui-shadow-3); pointer-events: none; white-space: nowrap; will-change: transform; }
+      color: var(--ui-color-text); font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; box-shadow: var(--ui-shadow-3); pointer-events: none; white-space: nowrap; will-change: transform; }
     .drop-line { position: fixed; z-index: var(--ui-z-toast, 1200); border-radius: 2px; background: var(--ui-color-primary); pointer-events: none;
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 22%, transparent); }
     .drop-line.vertical { transform: translateX(-1px); }

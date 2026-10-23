@@ -59,18 +59,18 @@ export type UiFabTone = 'primary' | 'danger';
       display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-2);
       width: 52px; height: 52px; padding: 0; border-radius: 50%;
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
-      border: none; box-shadow: var(--ui-shadow-2); cursor: pointer; font-family: var(--ui-font-default); font-size: 22px;
+      border: none; box-shadow: var(--ui-shadow-2); cursor: pointer; font-family: var(--ui-font-default); font-size: calc(22px * var(--ui-font-scale));
       transition: transform var(--ui-motion-fast) var(--ui-ease-spring), background var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-fab:hover:not(:disabled) { background: var(--ui-color-primary-hover); transform: scale(1.05); }
     .ui-fab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-fab:focus-visible { outline: none; box-shadow: var(--ui-focus-ring), var(--ui-shadow-2); }
     .ui-fab:disabled { opacity: .5; cursor: not-allowed; }
-    .ui-fab[data-size="sm"] { width: 40px; height: 40px; font-size: 18px; }
+    .ui-fab[data-size="sm"] { width: 40px; height: 40px; font-size: calc(18px * var(--ui-font-scale)); }
     /* text: a pill, the icon then the word. */
     .ui-fab[data-extended] { width: auto; padding-inline: var(--ui-space-4); border-radius: var(--ui-radius-pill); }
-    .ui-fab-text { font-size: 16px; font-weight: 700; line-height: 1; letter-spacing: 0.02em; }
-    .ui-fab[data-size="sm"] .ui-fab-text { font-size: 14px; }
+    .ui-fab-text { font-size: calc(16px * var(--ui-font-scale)); font-weight: 700; line-height: 1; letter-spacing: 0.02em; }
+    .ui-fab[data-size="sm"] .ui-fab-text { font-size: calc(14px * var(--ui-font-scale)); }
     /* tone danger: high visibility (SOS). A raised-surface ring and a danger halo outside the fill. */
     .ui-fab[data-tone="danger"] {
       background: var(--ui-color-danger); color: var(--ui-color-danger-contrast);

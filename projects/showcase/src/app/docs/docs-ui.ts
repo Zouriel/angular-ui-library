@@ -148,7 +148,7 @@ export class DocApi {
     /* Each section is the only .sec in its own host, so the first host is what drops the rule. */
     :host(:first-of-type) .sec { border-top: none; }
     /* Sections are the page's second heading level (the page title is the h1) but read at h3 size. */
-    .title ::ng-deep h2 { font-size: 1.375rem; font-weight: 600; line-height: 1.35; letter-spacing: var(--ui-tracking-tight); }
+    .title ::ng-deep h2 { font-size: var(--ui-font-size-h3); font-weight: 600; line-height: 1.35; letter-spacing: var(--ui-tracking-tight); }
     .sec { scroll-margin-top: calc(52px + var(--ui-space-2)); } /* clears the sticky top bar */
     .sel { display: inline-block; margin: 4px 0 var(--ui-space-2); font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm);
       color: var(--ui-color-primary); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);

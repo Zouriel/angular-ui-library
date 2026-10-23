@@ -29,6 +29,32 @@ export interface UiConfig {
    * (see `styles/animations.css`).
    */
   animations: boolean;
+  /**
+   * How big things are drawn (0.45.0). `'comfortable'` (the default) is the library as it always was.
+   * `'compact'` makes things smaller, not tighter: type one step down (14px body), controls 4px lower,
+   * icons and control marks 10% smaller; spacing, radii and touch targets stay. `'auto'` is compact
+   * below 600px wide and comfortable above, following resizes. `provideUiConfig` writes it to
+   * `data-density` on `<html>` (see {@link applyUiDensity}).
+   */
+  density: UiDensity;
+}
+
+/** The library's density: see {@link UiConfig.density}. */
+export type UiDensity = 'comfortable' | 'compact' | 'auto';
+
+/** Below this viewport width (px) `density: 'auto'` is compact (the media query in tokens.css). */
+export const UI_COMPACT_BELOW = 600;
+
+/**
+ * Sets the density on an element (default `<html>`), for the whole app or one subtree: writes
+ * `data-density="compact"` or `"auto"`, and removes the attribute for `'comfortable'`. The tokens in
+ * tokens.css do the rest, so it can change at any time (a settings switch).
+ */
+export function applyUiDensity(density: UiDensity, el?: HTMLElement | null): void {
+  const target = el ?? globalThis.document?.documentElement;
+  if (!target) return;
+  if (density === 'comfortable') target.removeAttribute('data-density');
+  else target.setAttribute('data-density', density);
 }
 
 export const UI_CONFIG = new InjectionToken<UiConfig>('UI_CONFIG', {
@@ -41,6 +67,7 @@ export const defaultUiConfig: UiConfig = {
   radius: true,
   defaultFont: 'var(--ui-font-default)',
   animations: true,
+  density: 'comfortable',
 };
 
 /**
@@ -56,6 +83,8 @@ export function provideUiConfig(config: Partial<UiConfig> = {}): EnvironmentProv
       root.classList.toggle('ui-no-anim', !resolved.animations);
       // Writing the default back would make the token refer to itself, so only an explicit font is set.
       if (resolved.defaultFont !== defaultUiConfig.defaultFont) root.style.setProperty('--ui-font-default', resolved.defaultFont);
+      // Comfortable leaves <html> alone, so an app that sets data-density itself keeps it.
+      if (resolved.density !== 'comfortable') applyUiDensity(resolved.density, root);
     }),
   ]);
 }

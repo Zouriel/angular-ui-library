@@ -5,6 +5,7 @@
  *   npm run audit:ui                          # needs the showcase running (npm start / ng serve showcase)
  *   npm run audit:ui -- --url http://localhost:4310 --themes dark,light --widths 1440,390
  *   npm run audit:ui -- --json audit.json     # full findings as JSON
+ *   npm run audit:ui -- --density compact     # with compact density (or auto)
  *
  * It measures what jsdom can't: rendered text contrast, font family and size, controls that sit in
  * one row at different heights, page-wide horizontal scroll, text that is cut off, small tap targets
@@ -36,6 +37,8 @@ const themes = arg('themes', 'dark,light,goldBlack,lightTeal,darkOrange').split(
 const widths = arg('widths', '1440,390').split(',').map(Number);
 const only = arg('pages', '');
 const jsonOut = arg('json', '');
+// --density compact|auto: audit with data-density on <html> (0.45.0); comfortable (the default) leaves it off.
+const density = arg('density', 'comfortable');
 
 const routesSrc = readFileSync(join(here, '../src/app/app.routes.ts'), 'utf8');
 let routes = [...routesSrc.matchAll(/path: '([^'*]*)'/g)].map((m) => m[1]);
@@ -383,7 +386,10 @@ for (const width of widths) {
   for (const route of routes) {
     for (const theme of themes) {
       await page.goto(`${base}/${route}`, { waitUntil: 'networkidle' });
-      await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+      await page.evaluate(([t, d]) => {
+        document.documentElement.setAttribute('data-theme', t);
+        if (d !== 'comfortable') document.documentElement.setAttribute('data-density', d);
+      }, [theme, density]);
       await page.waitForTimeout(450);
       const found = await page.evaluate(collect);
       pages++;

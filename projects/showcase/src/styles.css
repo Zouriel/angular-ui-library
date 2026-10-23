@@ -27,3 +27,13 @@ html {
     cursor: auto;
   }
 }
+
+/* The shell's density picker (0.45.0), kept here so app.ts stays inside its style budget. */
+app-root .density-picker { width: 136px; min-width: 0; }
+app-root .cmd-icon { display: none; }
+/* Phones: the search button keeps only its icon (still named Search docs), so both pickers fit. */
+@media (max-width: 480px) {
+  app-root .cmd-icon { display: inline-flex; }
+  app-root .cmd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  app-root .theme-picker { width: auto; flex: 0 1 136px; }
+}

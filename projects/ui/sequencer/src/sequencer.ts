@@ -333,7 +333,7 @@ const END_GRIP_PX = 10;
     @media (pointer: coarse) {
       .playhead-knob { width: 18px; height: 18px; margin-left: -9px; }
       .playhead-knob::after, .diamond::after, .grip::after { content: ''; position: absolute; inset: -10px; }
-      .grip { position: relative; padding: 0 6px; font-size: 14px; }
+      .grip { position: relative; padding: 0 6px; font-size: calc(14px * var(--ui-font-scale)); }
       .diamond::before { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
       /* Outside the bar, so a keyframe diamond sitting at 0% or 100% can't cover them; shown on the selected bar. */
       .edge { width: 22px; } .edge.start { left: -22px; } .edge.end { right: -22px; }

@@ -38,9 +38,13 @@ export interface UiSegmentedOption {
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     /* sm: the track is as tall as the other sm controls (26px). Its options paint 22px but their hit
        area reaches over the 1px track padding, so the target stays 24px tall (WCAG 2.5.8). */
+    /* md and lg: the hit area reaches over the 2px track padding too, so a compact md option (20px
+       painted, 0.45.0) is still a 24px target. */
+    .opt { position: relative; }
+    .opt::before { content: ''; position: absolute; left: 0; right: 0; top: -2px; bottom: -2px; }
     .seg[data-size="sm"] { padding: 1px; gap: 1px; }
     .seg[data-size="sm"] .opt { position: relative; height: calc(var(--ui-size-sm) - 4px); min-width: 24px; padding: 0 var(--ui-space-2); }
-    .seg[data-size="sm"] .opt::before { content: ''; position: absolute; left: 0; right: 0; top: -1px; bottom: -1px; }
+    .seg[data-size="sm"] .opt::before { top: -1px; bottom: -1px; }
     .seg[data-size="lg"] .opt { height: calc(var(--ui-size-lg) - 6px); padding: 0 var(--ui-space-4); font-size: var(--ui-font-size-md); }
     .opt:hover:not(:disabled):not(.on) { color: var(--ui-color-text); background: var(--ui-color-surface-hover); }
     .opt.on { --ui-color-icon: currentColor; }

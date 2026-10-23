@@ -32,7 +32,7 @@ import { UI_CONFIG } from '@zouriel/ui';
     .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .icon { flex: none; display: inline-flex; color: var(--ui-color-text-muted); }
     .icon:empty { display: none; }
-    .value { font-family: var(--ui-font-display); font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 700; letter-spacing: var(--ui-tracking-tight); color: var(--ui-color-text); line-height: 1.1; }
+    .value { font-family: var(--ui-font-display); font-variant-numeric: tabular-nums; font-size: calc(1.6rem * var(--ui-font-scale)); font-weight: 700; letter-spacing: var(--ui-tracking-tight); color: var(--ui-color-text); line-height: 1.1; }
     .delta { font-size: var(--ui-font-size-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
     .delta { display: inline-flex; align-items: center; gap: var(--ui-space-1); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

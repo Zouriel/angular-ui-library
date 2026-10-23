@@ -26,7 +26,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       height: var(--ui-size-md); padding: 0 var(--ui-space-4);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
-      font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      font-family: var(--ui-font-default); font-size: calc(14px * var(--ui-font-scale)); font-weight: 500;
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), border-color var(--ui-motion-base) var(--ui-ease-standard),
                   transform var(--ui-motion-fast) var(--ui-ease-standard);
@@ -43,8 +43,8 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
        the pressed highlight while hovering a pressed toggle. */
     .ui-toggle.pressed:hover:not(:disabled) { background: var(--ui-color-primary-hover); border-color: transparent; color: var(--ui-color-primary-contrast); }
     .ui-toggle.no-radius { border-radius: 0; }
-    .ui-toggle[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
-    .ui-toggle[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
+    .ui-toggle[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); padding: 0 var(--ui-space-3); }
+    .ui-toggle[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); padding: 0 var(--ui-space-6); }
     .ui-toggle:disabled { opacity: .5; cursor: not-allowed; }
     .ui-toggle:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     /* Touch: grow the hit area vertically to 44px on coarse pointers only, never sideways

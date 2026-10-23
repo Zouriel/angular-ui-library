@@ -31,7 +31,7 @@ import type { UiSize } from '@zouriel/ui';
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .box {
       display: inline-flex; align-items: center; justify-content: center;
-      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px;
+      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px; zoom: var(--ui-density-scale);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-xs);
       background: var(--ui-color-surface);
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), border-color var(--ui-motion-fast) var(--ui-ease-standard);

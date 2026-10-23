@@ -2,12 +2,18 @@ import { Component, inject } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeProvider, UiThemeService } from '@zouriel/ui/theme';
 import { UiCard } from '@zouriel/ui/card';
-import { UiButton } from '@zouriel/ui/button';
+import { UiButton, UiSegmented } from '@zouriel/ui/button';
+import { UiChip, UiAvatar } from '@zouriel/ui/badge';
+import { UiInput, UiSwitch, UiCheckbox } from '@zouriel/ui/form';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Notification01Icon from '@hugeicons/core-free-icons/Notification01Icon';
+import { ShowcaseDensity } from '../docs/density';
+import { FormsModule } from '@angular/forms';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-foundation',
-  imports: [UiText, UiThemeProvider, UiCard, UiButton, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiThemeProvider, UiCard, UiButton, UiSegmented, UiChip, UiAvatar, UiInput, UiSwitch, UiCheckbox, HugeiconsIconComponent, FormsModule, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Getting started" title="Foundation"
       lead="Design tokens, the config provider, and the theme service. Everything else builds on these.">
@@ -42,10 +48,12 @@ Component tokens (default to a role)
 --ui-media-bg / media-scrim / media-on-scrim / media-danger   --ui-pdf-page-bg   --ui-scroll-progress-track
 --ui-rating-fill"></doc-demo>
         <doc-demo lang="css" code="Fixed scales (same in every theme; darkOrange swaps the fonts)
---ui-size-sm 26px   --ui-size-md 30px   --ui-size-lg 38px   --ui-size-touch 44px
+--ui-size-sm 26px   --ui-size-md 30px   --ui-size-lg 38px   --ui-size-xl 56px   --ui-size-touch 44px
 --ui-space-1 4px   -2 8px   -3 12px   -4 16px   -6 24px   -8 32px   -12 48px   -20 80px
 --ui-radius 7px   --ui-radius-xs 5px   -sm 8px   -lg 18px   -pill 9999px
---ui-font-size-sm 13px   -md 15px   -lg 18px   --ui-tracking-tight -0.02em   -tighter -0.03em
+--ui-font-size-sm 13px   -md 15px   -lg 18px   -h1 2.5rem   -h2 1.875rem   -h3 1.375rem   -h5 1rem   -h6 0.9rem
+--ui-font-scale 1   --ui-density-scale 1   (compact density lowers sizes and scales: see Density)
+--ui-tracking-tight -0.02em   -tighter -0.03em
 --ui-font-default (system-ui stack)   --ui-font-mono (ui-monospace stack)   --ui-font-display (= default)
 --ui-motion-fast 120ms   -base 200ms   -slow 320ms   --ui-scale-press 0.96
 --ui-ease-standard / decelerate / accelerate / spring
@@ -61,6 +69,35 @@ export const appConfig: ApplicationConfig = {
     provideUiConfig({ glass: true, radius: false }),
   ],
 };"></doc-demo>
+      </doc-section>
+
+      <doc-section name="Density" selector="data-density" [api]="densityApi"
+        summary="How big things are drawn (0.45.0). Comfortable, the default, is the library as it always was. Compact makes things smaller, not tighter: body text 14px instead of 15 (small 12, large 16), headings about 10% smaller, controls lower (md 26 and lg 34, 4px less; sm 24, 2px less, so it stays a 24px target with a mouse), icons and the switch, checkbox and radio marks 10% smaller (a 20px icon is drawn at 18). Spacing, corner radii and touch targets do not change: on touch screens every control still has its 44px tap area. Auto is compact below 600px wide and comfortable above, and follows resizes and rotation. Set it once with provideUiConfig({ density }), switch it at runtime with applyUiDensity(), or put data-density on any element for just its subtree. On iPhone and iPad, text typed into fields stays 16px in compact, because Safari zooms the page into any field under 16px; comfortable keeps its 15px. Try it here, or with the Density picker in the top bar.">
+        <doc-demo lang="ts" code="import { provideUiConfig, applyUiDensity } from '@zouriel/ui';
+
+providers: [provideUiConfig({ density: 'auto' })]   // compact on phones
+
+applyUiDensity('compact');                 // runtime: sets data-density on &lt;html&gt;
+applyUiDensity('comfortable');             // removes it
+// or in HTML, for one subtree:  &lt;section data-density=&quot;compact&quot;&gt; … &lt;/section&gt;">
+          <div class="density-demo">
+            <ui-segmented label="Density" [options]="density.options" [value]="density.density()" (valueChange)="density.set($any($event))" />
+            <div class="density-sample">
+              <ui-text variant="h3">Find a nurse</ui-text>
+              <ui-text variant="body">Body text, inputs, chips and buttons follow the density tokens.</ui-text>
+              <ui-input aria-label="Area" placeholder="Search an island" />
+              <div class="density-row">
+                <ui-chip>Home visit</ui-chip><ui-chip>Today</ui-chip>
+                <ui-avatar name="Aisha Rasheed" />
+                <hugeicons-icon aria-hidden="true" [icon]="bell" [size]="20" [strokeWidth]="1.8" />
+              </div>
+              <div class="density-row">
+                <ui-switch [ngModel]="true">Notify me</ui-switch><ui-checkbox [ngModel]="true">Remember</ui-checkbox>
+              </div>
+              <div class="density-row"><ui-button variant="primary">Book</ui-button><ui-button variant="outline">Later</ui-button></div>
+            </div>
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Built-in strings" anchor="built-in-strings" selector="provideUiStrings" [api]="stringsApi"
@@ -134,10 +171,15 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
     .islands { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
     .islands .ui-surface { border-radius: var(--ui-radius-lg); }
     @media (max-width: 640px) { .islands { grid-template-columns: 1fr; } }
+    .density-demo { display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .density-sample { display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 420px; }
+    .density-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
   `,
 })
 export class FoundationPage {
   protected readonly theme = inject(UiThemeService);
+  protected readonly density = inject(ShowcaseDensity);
+  protected readonly bell = Notification01Icon;
   protected readonly colors = ['bg', 'surface', 'surface-raised', 'surface-subtle', 'text', 'text-secondary', 'text-muted', 'border', 'border-strong', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger', 'info', 'selected', 'track'];
   protected readonly tileColors = ['surface', 'text', 'primary', 'secondary', 'success', 'warning', 'danger'];
   protected readonly themes = [
@@ -181,7 +223,14 @@ export class FoundationPage {
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Default rounded corners for components with a radius input.' },
     { name: 'defaultFont', type: 'string', default: "'var(--ui-font-default)'", desc: 'Reserved: accepted, but no component reads it yet. Set --ui-font-default instead.' },
+    { name: 'density', type: "'comfortable' | 'compact' | 'auto'", default: "'comfortable'", desc: 'How big things are drawn (0.45.0); compact and auto are written to data-density on the html element. See Density.' },
     { name: 'animations', type: 'boolean', default: 'true', desc: 'Reserved: accepted, but no component reads it yet. Components already slow or stop motion under prefers-reduced-motion.' },
+  ];
+  protected readonly densityApi: ApiRow[] = [
+    { name: 'data-density', type: "'compact' | 'auto'", default: '— (comfortable)', desc: 'On html (or any element, for its subtree). auto is compact below 600px wide.' },
+    { name: 'applyUiDensity()', type: 'function', default: '—', desc: "applyUiDensity(density: UiDensity, el = document.documentElement): sets or removes data-density at runtime." },
+    { name: 'UI_COMPACT_BELOW', type: 'number', default: '600', desc: 'The width (px) below which auto is compact.' },
+    { name: 'compact values', type: 'tokens', default: '—', desc: '--ui-font-size-sm/md/lg 12/14/16px; -h1 2.25rem, -h2 1.6875rem, -h3 1.25rem, -h5 0.9375rem, -h6 0.8125rem; --ui-size-sm/md/lg 24/26/34px; --ui-font-scale 0.93 (text components size in px); --ui-density-scale 0.9 (icons, switch, checkbox and radio marks). --ui-space-*, radii, --ui-size-touch and --ui-size-xl unchanged.' },
   ];
   protected readonly themeApi: ApiRow[] = [
     { name: 'theme', type: 'WritableSignal<UiTheme>', default: "'dark'", desc: 'Current theme; written to data-theme on the html element.' },

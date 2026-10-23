@@ -18,7 +18,7 @@ import { Component, input } from '@angular/core';
       gap: var(--ui-space-2); padding: var(--ui-space-6) var(--ui-space-4);
       font-family: var(--ui-font-default); line-height: 1.35;
     }
-    .icon { font-size: 32px; line-height: 1; color: var(--ui-color-text-muted); }
+    .icon { font-size: calc(32px * var(--ui-font-scale)); line-height: 1; color: var(--ui-color-text-muted); }
     .icon:empty { display: none; }
     .title { font-size: var(--ui-font-size-md); font-weight: 600; color: var(--ui-color-text); }
     .desc { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 360px; text-wrap: pretty; }

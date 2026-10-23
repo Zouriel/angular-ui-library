@@ -272,9 +272,9 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
   styles: [WF_SHARED_STYLES, `
     :host { display: block; container-type: inline-size; }
     .gs { display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; height: 100%; min-height: 420px; border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius); background: var(--ui-color-bg); color: var(--ui-color-text); font-size: 13.5px; overflow: hidden; }
+      border-radius: var(--ui-radius); background: var(--ui-color-bg); color: var(--ui-color-text); font-size: calc(13.5px * var(--ui-font-scale)); overflow: hidden; }
     .nav { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 2px; padding: var(--ui-space-2); background: var(--ui-color-surface); border-right: 1px solid var(--ui-color-border); }
-    .nav button { height: 30px; padding: 0 10px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+    .nav button { height: 30px; padding: 0 10px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: calc(13px * var(--ui-font-scale)); text-align: left; cursor: pointer; }
     .nav button:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav button.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); color: var(--ui-color-text); font-weight: 600; }
     .nav button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -282,8 +282,8 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .body .wf-error { margin: var(--ui-space-1) 0 0; }
     .conn .full { grid-column: 1 / -1; }
     .body { overflow: auto; padding: var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 760px; }
-    h2 { margin: 0; font-size: 16px; font-weight: 650; }
-    h3 { margin: var(--ui-space-2) 0 0; font-size: 13px; }
+    h2 { margin: 0; font-size: calc(16px * var(--ui-font-scale)); font-weight: 650; }
+    h3 { margin: var(--ui-space-2) 0 0; font-size: calc(13px * var(--ui-font-scale)); }
     .lw { display: block; min-width: 0; }
     /* One form column: every field the full width of the body, at the small control size. */
     .group { display: flex; flex-direction: column; gap: 6px; }
@@ -296,7 +296,7 @@ function withPaused(st: Settings, entity: string, on: boolean): Settings {
     .conn .key { grid-column: 1 / -1; font-size: 12px; color: var(--ui-color-text-secondary); overflow-wrap: anywhere; }
     .conn .key code { font-family: var(--ui-font-mono); }
     .danger { color: var(--ui-color-danger); }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .grow { flex: 1; }
     .retention { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
     .watch { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }

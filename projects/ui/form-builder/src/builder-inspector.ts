@@ -488,10 +488,10 @@ const AUTOCOMPLETE = [
       background: var(--ui-color-surface-hover); color: var(--ui-color-text-secondary); }
     .head-txt { display: flex; flex-direction: column; min-width: 0; }
     .head-kind { font-size: 11px; font-weight: 600; color: var(--ui-color-text-muted); }
-    .head-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .head-name { font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tabs { display: flex; gap: 2px; padding: 0 var(--fb-pad); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); flex: none; }
     .tab { position: relative; display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 var(--ui-space-2); border: 0; background: transparent;
-      color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+      color: var(--ui-color-text-secondary); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     /* The first tab's label lines up with the header and the fields below. */
     .tab:first-child { margin-left: calc(var(--ui-space-2) * -1); }
     .tab:hover { color: var(--ui-color-text); }
@@ -516,7 +516,7 @@ const AUTOCOMPLETE = [
     .sentence { margin: 0; padding: 6px var(--ui-space-2); border-radius: var(--ui-radius-xs); background: color-mix(in srgb, var(--ui-color-primary) 8%, transparent);
       font-size: 12px; line-height: 1.4; color: var(--ui-color-text-secondary); }
     .ref { display: block; width: 100%; padding: 5px var(--ui-space-2); border: 0; border-radius: var(--ui-radius-xs); background: transparent; text-align: left;
-      color: var(--ui-color-text); font: inherit; font-size: 13px; cursor: pointer; }
+      color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .ref span { color: var(--ui-color-text-muted); }
     .ref:hover { background: var(--ui-color-surface-hover); }
     .ref:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }

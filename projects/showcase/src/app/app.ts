@@ -23,6 +23,7 @@ import { UiCommandPalette } from '@zouriel/ui/command-palette';
 import type { UiCommand } from '@zouriel/ui/command-palette';
 import { UiKbd } from '@zouriel/ui/link';
 import { NAV } from './app.routes';
+import { ShowcaseDensity } from './docs/density';
 
 @Component({
   selector: 'app-root',
@@ -60,13 +61,15 @@ import { NAV } from './app.routes';
       <div class="main-col">
         <header class="topbar">
           <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="openNav()"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
-          <ui-button variant="ghost" size="sm" (click)="openSearch()" class="cmd" aria-keyshortcuts="Control+K Meta+K">Search docs <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
+          <ui-button variant="ghost" size="sm" (click)="openSearch()" class="cmd" aria-keyshortcuts="Control+K Meta+K"><hugeicons-icon class="cmd-icon" aria-hidden="true" [icon]="icons.search" [size]="16" [strokeWidth]="1.8" /><span class="cmd-label">Search docs</span> <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
           <span class="grow"></span>
           <!-- The library select, loaded once the page is idle so the form entry point stays out of the first load;
                until then a box of the same size shows the current theme. -->
           @defer (on idle) {
+            <ui-select class="density-picker" size="sm" label="Density" [options]="density.options" [ngModel]="density.density()" (ngModelChange)="density.set($event)" />
             <ui-select class="theme-picker" size="sm" label="Theme" [options]="THEMES" [ngModel]="theme.theme()" (ngModelChange)="theme.set($event)" />
           } @placeholder {
+            <span class="density-picker theme-ph" aria-hidden="true">{{ densityLabel() }}</span>
             <span class="theme-picker theme-ph" aria-hidden="true">{{ themeLabel() }}</span>
           }
         </header>
@@ -159,6 +162,9 @@ export class App {
   protected readonly fullWidth = new Set(['form-studio', 'workflow-studio']);
   protected readonly icons = { menu: Menu01Icon, search: Search01Icon, clear: Cancel01Icon };
   protected readonly theme = inject(UiThemeService);
+  /** Comfortable / compact / auto (0.45.0), from the top bar. */
+  protected readonly density = inject(ShowcaseDensity);
+  protected readonly densityLabel = computed(() => this.density.options.find((o) => o.value === this.density.density())?.label ?? '');
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   /** The sidebar, with real hrefs so pages can be opened in a new tab (a plain click still routes). */

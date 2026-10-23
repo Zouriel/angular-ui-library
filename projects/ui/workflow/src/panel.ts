@@ -285,7 +285,7 @@ const RUNS_POLL_MS = 15_000;
     </ui-modal>
   `,
   styles: [WF_SHARED_STYLES, `
-    :host { display: block; font-size: 13.5px; color: var(--ui-color-text); }
+    :host { display: block; font-size: calc(13.5px * var(--ui-font-scale)); color: var(--ui-color-text); }
     :host([data-layout="vertical"]), :host([data-layout="horizontal"]), :host([data-layout="compact"]) { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .track { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 var(--ui-space-2); padding: 0; list-style: none; }
     .track li { display: flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 11.5px; color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
@@ -304,7 +304,7 @@ const RUNS_POLL_MS = 15_000;
     h3 { margin: var(--ui-space-3) 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .log li { display: flex; flex-direction: column; padding: 4px 0 4px 10px; border-left: 2px solid var(--ui-color-border); }
-    .hw { font-size: 13px; }
+    .hw { font-size: calc(13px * var(--ui-font-scale)); }
     .hm { font-size: 11.5px; color: var(--ui-color-text-muted); }
     .in-drawer { display: flex; flex-direction: column; }
     .stale { margin: 0 0 var(--ui-space-2); }
@@ -326,7 +326,7 @@ const RUNS_POLL_MS = 15_000;
     .stuck { margin-bottom: var(--ui-space-3); }
     .stuck p { margin: 0 0 var(--ui-space-1); }
     .stuck .wf-row { flex-wrap: wrap; margin-top: var(--ui-space-2); }
-    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: 14px; }
+    .dlg { display: flex; flex-direction: column; gap: var(--ui-space-4); font-size: calc(14px * var(--ui-font-scale)); }
     .dlg p { margin: 0; }
     .foot { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     .run-view { display: flex; padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }

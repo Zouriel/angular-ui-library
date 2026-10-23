@@ -60,7 +60,7 @@ export interface UiBottomNavItem {
     /* The bar clips its overflow, so the ring sits inside the item. */
     .item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     /* Flex so a drawn icon sits on the text baseline the same way a glyph did. */
-    .icon { position: relative; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+    .icon { position: relative; display: inline-flex; align-items: center; justify-content: center; font-size: calc(18px * var(--ui-font-scale)); }
     .badge { position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1); box-sizing: border-box;
       background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-radius: var(--ui-radius-pill);
       font-size: 11px; font-weight: 600; line-height: 16px; text-align: center; font-variant-numeric: tabular-nums; }

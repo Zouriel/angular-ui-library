@@ -66,7 +66,7 @@ export class WfBuilderUi {
       color: var(--ui-color-primary-contrast); background: var(--ui-color-primary); }
     .body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
     .kicker { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-color-text-muted); }
-    .title { font-size: 13.5px; font-weight: 600; line-height: 1.3; }
+    .title { font-size: calc(13.5px * var(--ui-font-scale)); font-weight: 600; line-height: 1.3; }
     .sub { font-size: 12px; color: var(--ui-color-text-secondary); }
   `],
 })
@@ -145,7 +145,7 @@ export class WfTriggerCard {
     .card[data-cat="Messages"] { --wf-cat: var(--ui-color-primary); }
     .card[data-cat="Advanced"] { --wf-cat: var(--ui-color-text-secondary); }
     .body { display: flex; flex-direction: column; min-width: 0; }
-    .title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; line-height: 1.3; }
+    .title { display: flex; align-items: center; gap: 6px; font-size: calc(13px * var(--ui-font-scale)); font-weight: 600; line-height: 1.3; }
     .sub { font-size: 12px; line-height: 1.35; color: var(--ui-color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .off-chip { height: 16px; font-size: 11px; }
   `],
@@ -364,7 +364,7 @@ export class WfStepList {
     .search { display: flex; align-items: center; gap: 6px; height: var(--ui-size-md); padding: 0 var(--ui-space-2); border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text-muted); }
     .search:focus-within { border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 25%, transparent); }
-    .search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ui-color-text); font: inherit; font-size: 13px; }
+    .search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); }
     .cats { display: flex; flex-direction: column; gap: var(--ui-space-3); overflow: auto; min-height: 0; padding-bottom: var(--ui-space-2); }
     h3 { margin: 0 0 4px; font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-color-text-muted); }
     .grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
@@ -381,9 +381,9 @@ export class WfStepList {
     .type[data-cat="Data"] { --wf-cat: var(--ui-color-success); }
     .type[data-cat="Advanced"] { --wf-cat: var(--ui-color-text-secondary); }
     .txt { display: flex; flex-direction: column; min-width: 0; }
-    .nm { font-size: 13px; font-weight: 550; }
+    .nm { font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; }
     .ds { font-size: 12px; color: var(--ui-color-text-secondary); line-height: 1.3; }
-    .none { margin: var(--ui-space-4) 0; text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
+    .none { margin: var(--ui-space-4) 0; text-align: center; color: var(--ui-color-text-muted); font-size: calc(13px * var(--ui-font-scale)); }
   `],
 })
 export class WfStepPicker {

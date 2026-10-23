@@ -238,14 +238,14 @@ interface TestRun {
   styles: [FB_SHARED_STYLES, `
     :host { display: block; container: gs / inline-size; font-family: var(--ui-font-default); color: var(--ui-color-text); line-height: 1.35; }
     .sections { display: inline-flex; margin-bottom: var(--ui-space-3); }
-    .intro { margin: 0; font-size: 13px; color: var(--ui-color-text-secondary); }
+    .intro { margin: 0; font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); }
     .pane { min-width: 0; }
     .defaults { display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 560px; }
     .sources { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-4); }
     @container gs (min-width: 760px) { .sources.has-open { grid-template-columns: 280px minmax(0, 1fr); } .back { display: none; } }
     @container gs (max-width: 759px) { .sources.has-open .list { display: none; } }
     .list-head { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; justify-content: space-between; margin-bottom: var(--ui-space-2); }
-    .empty { margin: var(--ui-space-2) 0; padding: var(--ui-space-4); font-size: 13px; text-align: center; color: var(--ui-color-text-muted);
+    .empty { margin: var(--ui-space-2) 0; padding: var(--ui-space-4); font-size: calc(13px * var(--ui-font-scale)); text-align: center; color: var(--ui-color-text-muted);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
     /* The app's own lists and the built-in ones are the same kind of thing, so they share one card style. */
     .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); }
@@ -256,13 +256,13 @@ interface TestRun {
     .row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
     .row.static { cursor: default; }
     .row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .row-main strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row-main strong { font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .row-sub { font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sub-head { margin: var(--ui-space-3) 0 var(--ui-space-1); font-size: 12px; font-weight: 600; color: var(--ui-color-text-secondary); }
     .editor { display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-4);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .ed-head { display: flex; align-items: center; gap: var(--ui-space-2); }
-    .ed-head h3 { flex: 1; min-width: 0; margin: 0; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ed-head h3 { flex: 1; min-width: 0; margin: 0; font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .confirm { display: flex; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; }
     .confirm span { flex: 1; min-width: 200px; }
     .grp { display: flex; flex-direction: column; gap: var(--ui-space-2); padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
@@ -282,9 +282,9 @@ interface TestRun {
     .result { display: flex; flex-direction: column; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius);
       background: color-mix(in srgb, var(--ui-color-success) 8%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-success) 30%, transparent); }
     .result.bad { background: color-mix(in srgb, var(--ui-color-danger) 8%, var(--ui-color-surface)); border-color: color-mix(in srgb, var(--ui-color-danger) 35%, transparent); }
-    .res-msg { margin: 0; font-size: 13px; font-weight: 600; }
+    .res-msg { margin: 0; font-size: calc(13px * var(--ui-font-scale)); font-weight: 600; }
     .req { display: block; }
-    .items { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .items { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--ui-font-scale)); font-variant-numeric: tabular-nums; }
     .items th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ui-color-text-secondary); padding: 4px var(--ui-space-2); border-bottom: 1px solid var(--ui-color-border); }
     .items td { padding: 4px var(--ui-space-2); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); overflow-wrap: anywhere; }
     details summary { cursor: pointer; font-size: 12px; color: var(--ui-color-text-secondary); }

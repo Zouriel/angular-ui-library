@@ -184,7 +184,7 @@ interface PendingDelete {
     @media (hover: hover) { .title:hover { background: var(--ui-color-surface-hover); } }
     .title:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .kind { font-size: 11px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ui-color-text-muted); }
-    .name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .name { font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     :host([data-layout="narrow"]) .views { margin: 0 auto; }
     .tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; margin-left: auto; min-width: 0; }
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 2px; border: 0; border-radius: 12px; cursor: pointer;
@@ -195,7 +195,7 @@ interface PendingDelete {
     .unchecked { color: var(--ui-color-warning); }
     .save-state { font-size: 12px; color: var(--ui-color-text-muted); margin: 0 4px; white-space: nowrap; }
     .tools ui-button + ui-button { margin-left: var(--ui-space-1); }
-    .banner { flex: none; padding: 6px var(--ui-space-3); font-size: 13px; background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
+    .banner { flex: none; padding: 6px var(--ui-space-3); font-size: calc(13px * var(--ui-font-scale)); background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface)); border-bottom: 1px solid var(--ui-color-border); }
     .main { flex: 1; min-height: 0; display: flex; min-width: 0; }
     .view-only { margin: 0 4px; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: var(--ui-color-text-secondary); background: var(--ui-color-surface-hover); }
     .center { flex: 1; min-width: 0; min-height: 0; }
@@ -213,17 +213,17 @@ interface PendingDelete {
     .sheet-inspector { height: 100%; }
     .plist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
     .plist button { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 8px 10px; border: 0; border-left: 3px solid var(--ui-color-danger); border-radius: var(--ui-radius-xs);
-      background: color-mix(in srgb, var(--ui-color-danger) 8%, transparent); color: var(--ui-color-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+      background: color-mix(in srgb, var(--ui-color-danger) 8%, transparent); color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); text-align: left; cursor: pointer; }
     .plist li.warn button { border-left-color: var(--ui-color-warning); background: color-mix(in srgb, var(--ui-color-warning) 10%, transparent); }
     .plist button:hover { background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); }
     .plist li.warn button:hover { background: color-mix(in srgb, var(--ui-color-warning) 16%, transparent); }
     .where { font-size: 11.5px; color: var(--ui-color-text-muted); }
-    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: 14px; line-height: 1.5; }
+    .confirm { display: flex; flex-direction: column; gap: var(--ui-space-2); font-size: calc(14px * var(--ui-font-scale)); line-height: 1.5; }
     .confirm p { margin: 0; }
     .confirm-actions { display: flex; justify-content: flex-end; gap: var(--ui-space-2); width: 100%; }
     .ghost { position: fixed; left: 0; top: 0; z-index: var(--ui-z-toast, 1200); display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--ui-space-3);
       border: 1px solid var(--ui-color-primary); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface));
-      color: var(--ui-color-text); font-size: 13px; font-weight: 550; box-shadow: var(--ui-shadow-3); pointer-events: none; white-space: nowrap; }
+      color: var(--ui-color-text); font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; box-shadow: var(--ui-shadow-3); pointer-events: none; white-space: nowrap; }
     .drop-line { position: fixed; z-index: var(--ui-z-toast, 1200); height: 3px; border-radius: 2px; background: var(--ui-color-primary); pointer-events: none; transform: translateY(-1px);
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 22%, transparent); }
     .drop-line.invalid { background: var(--ui-color-danger); box-shadow: none; }

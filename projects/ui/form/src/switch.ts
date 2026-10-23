@@ -30,7 +30,7 @@ import type { UiSize } from '@zouriel/ui';
     .ui-switch.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .track {
-      position: relative; width: 38px; height: 22px; flex: none;
+      position: relative; width: 38px; height: 22px; flex: none; zoom: var(--ui-density-scale);
       background: var(--ui-switch-track); border-radius: var(--ui-radius-pill);
       transition: background var(--ui-motion-base) var(--ui-ease-standard);
     }

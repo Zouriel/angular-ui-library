@@ -61,7 +61,7 @@ interface PaletteItem {
     .search input {
       width: 100%; height: 30px; padding: 0 var(--ui-space-2) 0 28px; box-sizing: border-box;
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
-      color: var(--ui-color-text); font: inherit; font-size: 13px;
+      color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale));
     }
     .search input:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 28%, transparent); }
     .groups { display: flex; flex-direction: column; gap: var(--ui-space-3); overflow: auto; min-height: 0; padding-bottom: var(--ui-space-2); }
@@ -73,7 +73,7 @@ interface PaletteItem {
     .item {
       display: flex; align-items: center; gap: var(--ui-space-2); width: 100%; min-height: 30px; padding: 3px 6px;
       border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text);
-      font: inherit; font-size: 13px; text-align: left; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none;
+      font: inherit; font-size: calc(13px * var(--ui-font-scale)); text-align: left; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none;
       -webkit-touch-callout: none;
     }
     .item:hover { background: var(--ui-color-surface-hover); }

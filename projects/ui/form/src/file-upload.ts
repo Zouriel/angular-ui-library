@@ -37,7 +37,7 @@ import { injectUiStrings } from '@zouriel/ui';
     .dz:not(.disabled):hover, .dz.over { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 8%, var(--ui-color-surface)); }
     .dz:focus-within { outline: none; box-shadow: var(--ui-focus-ring); }
     .native { position: absolute; width: 0; height: 0; opacity: 0; }
-    .icon { font-size: 22px; color: var(--ui-color-text-muted); }
+    .icon { font-size: calc(22px * var(--ui-font-scale)); color: var(--ui-color-text-muted); }
     .hint { font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
     .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     .hint { overflow-wrap: anywhere; }

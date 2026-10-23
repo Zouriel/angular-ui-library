@@ -126,6 +126,19 @@
   --ui-font-size-sm: 13px;
   --ui-font-size-md: 15px;
   --ui-font-size-lg: 18px;
+  /* Heading sizes of ui-text (h4 is --ui-font-size-lg). In rem, as they always were; compact density
+     makes each about 10% smaller. */
+  --ui-font-size-h1: 2.5rem;
+  --ui-font-size-h2: 1.875rem;
+  --ui-font-size-h3: 1.375rem;
+  --ui-font-size-h5: 1rem;
+  --ui-font-size-h6: 0.9rem;
+
+  /* Density (0.45.0). 1 in comfortable, the default. Compact (see the density block below) lowers
+     them, so text a component sizes in px (calc(14px * var(--ui-font-scale))), every icon
+     (hugeicons-icon zoom) and the switch, checkbox and radio marks shrink with the tokens above. */
+  --ui-font-scale: 1;
+  --ui-density-scale: 1;
 
   /* Tracking — negative letter-spacing at display sizes reads as considered rather than
      default; body/caption sizes stay at 0 (tightening small text hurts legibility). */
@@ -466,6 +479,63 @@
    Without the token, icons follow the text colour as they always have. */
 hugeicons-icon {
   color: var(--ui-color-icon, currentColor);
+  /* Compact density draws every icon 10% smaller (a 20px icon at 18px); 1, no change, otherwise. */
+  zoom: var(--ui-density-scale);
+}
+
+/* ── Density (0.45.0) ──────────────────────────────────────────────────────
+   Compact makes things smaller, not tighter: type one step down, controls 4px lower (sm only 2px,
+   so it keeps the 24px WCAG 2.5.8 minimum target with a mouse too), icons and
+   control marks 10% smaller. Spacing (--ui-space-*), radii and touch targets (--ui-size-touch, the
+   44px hit areas on coarse pointers) do not change. Set data-density="compact" on <html> (or on any
+   element, for its subtree), or data-density="auto" for compact only below 600px wide (it follows
+   resizes and rotation); provideUiConfig({ density }) does it for you. Default: comfortable.
+   The auto block must stay identical to the compact one (style-contract spec). */
+[data-density="compact"] {
+  --ui-font-size-sm: 12px;
+  --ui-font-size-md: 14px;
+  --ui-font-size-lg: 16px;
+  --ui-font-size-h1: 2.25rem;
+  --ui-font-size-h2: 1.6875rem;
+  --ui-font-size-h3: 1.25rem;
+  --ui-font-size-h5: 0.9375rem;
+  --ui-font-size-h6: 0.8125rem;
+  --ui-size-sm: 24px;
+  --ui-size-md: 26px;
+  --ui-size-lg: 34px;
+  --ui-font-scale: 0.93;
+  --ui-density-scale: 0.9;
+}
+@media (max-width: 599.98px) {
+  [data-density="auto"] {
+    --ui-font-size-sm: 12px;
+    --ui-font-size-md: 14px;
+    --ui-font-size-lg: 16px;
+    --ui-font-size-h1: 2.25rem;
+    --ui-font-size-h2: 1.6875rem;
+    --ui-font-size-h3: 1.25rem;
+    --ui-font-size-h5: 0.9375rem;
+    --ui-font-size-h6: 0.8125rem;
+    --ui-size-sm: 24px;
+    --ui-size-md: 26px;
+    --ui-size-lg: 34px;
+    --ui-font-scale: 0.93;
+    --ui-density-scale: 0.9;
+  }
+}
+
+/* iOS Safari zooms the page into any field whose text is under 16px when it gets focus, and doesn't
+   zoom back. Compact field text is 14px, so on iOS (the only browser with -webkit-touch-callout)
+   text typed into fields stays 16px in compact. Comfortable is left as it was (15px). */
+@supports (-webkit-touch-callout: none) {
+  [data-density="compact"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"]), textarea, select) {
+    font-size: 16px !important;
+  }
+  @media (max-width: 599.98px) {
+    [data-density="auto"] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"]), textarea, select) {
+      font-size: 16px !important;
+    }
+  }
 }
 
 [data-theme="dark"] ::selection,

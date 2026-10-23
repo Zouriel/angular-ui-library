@@ -173,7 +173,7 @@ interface DrawnEdge {
     /* Kind, name and meta fit the card's 56px with room for the name's descenders. */
     .kind { font-size: 11px; line-height: 1.2; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ui-color-text-muted); min-height: 0; }
     .kind:empty { display: none; }
-    .name { font-size: 13px; font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .name { font-size: calc(13px * var(--ui-font-scale)); font-weight: 600; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .meta { font-size: 11px; line-height: 1.2; color: var(--ui-color-text-muted); }
     /* Above the cards (z-index 2), or the card under the handle's centre would take the press. */
     .handle { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; padding: 0; border-radius: 50%; cursor: crosshair; touch-action: none; z-index: 3;
@@ -198,7 +198,7 @@ interface DrawnEdge {
     .lhead .name { flex: 1; }
     .louts { list-style: none; margin: 0; padding: 0 10px 8px 18px; display: flex; flex-direction: column; gap: 2px; }
     .lt { display: flex; gap: 8px; align-items: center; width: 100%; min-height: 32px; padding: 4px 8px; border: 0; border-radius: var(--ui-radius-xs); background: transparent;
-      font: inherit; font-size: 13px; color: var(--ui-color-text); text-align: left; cursor: pointer; }
+      font: inherit; font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text); text-align: left; cursor: pointer; }
     .lt:hover { background: var(--ui-color-surface-hover); }
     .lt.on { background: color-mix(in srgb, var(--ui-color-primary) 12%, transparent); }
     .to { color: var(--ui-color-text-muted); }
@@ -509,11 +509,11 @@ export class WfLifecycleCanvas {
     :host { display: flex; flex-direction: column; min-height: 0; background: var(--ui-color-bg); }
     .head { display: flex; align-items: center; gap: var(--ui-space-3); flex-wrap: wrap; padding: 6px var(--ui-space-3); flex: none;
       border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); background: var(--ui-color-surface); }
-    .title { font-size: 13px; font-weight: 650; }
+    .title { font-size: calc(13px * var(--ui-font-scale)); font-weight: 650; }
     .scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-3); }
     .flow { max-width: 720px; margin: 0 auto; }
     .lead { margin: 0 0 4px; text-align: center; }
-    .empty { margin: 0; padding: var(--ui-space-3); text-align: center; color: var(--ui-color-text-muted); font-size: 13px; }
+    .empty { margin: 0; padding: var(--ui-space-3); text-align: center; color: var(--ui-color-text-muted); font-size: calc(13px * var(--ui-font-scale)); }
   `],
 })
 export class WfLifecycleRuns {

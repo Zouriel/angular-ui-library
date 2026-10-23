@@ -28,7 +28,7 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
     :host { display: inline-flex; }
     .ddb { display: inline-flex; align-items: center; gap: var(--ui-space-2); height: var(--ui-size-md); padding: 0 var(--ui-space-4);
       background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: 14px; font-weight: 500;
+      border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: calc(14px * var(--ui-font-scale)); font-weight: 500;
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .ddb:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
@@ -46,8 +46,8 @@ export interface UiDropdownItem { label: string; value: string; disabled?: boole
     .ddb[data-variant="primary"], .ddb[data-variant="secondary"], .ddb[data-variant="destructive"], .mi.danger { --ui-color-icon: currentColor; }
     .ddb[data-variant="outline"] { background: transparent; }
     .ddb[data-variant="ghost"] { background: transparent; border-color: transparent; }
-    .ddb[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
-    .ddb[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
+    .ddb[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); padding: 0 var(--ui-space-3); }
+    .ddb[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); padding: 0 var(--ui-space-6); }
     .ddb { box-sizing: border-box; }
     .caret { flex: none; opacity: .7; }
     @media (pointer: coarse) {

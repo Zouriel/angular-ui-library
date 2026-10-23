@@ -257,7 +257,7 @@ export class WfDurationInput {
     .email { flex-direction: row; align-items: center; gap: 6px; }
     .email ui-input { flex: 1; min-width: 0; }
     .results { margin: 0; padding: 2px; list-style: none; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); max-height: 180px; overflow: auto; }
-    .results button { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+    .results button { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 5px 8px; border: 0; border-radius: var(--ui-radius-xs); background: transparent; color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); text-align: left; cursor: pointer; }
     .results button:hover, .results button:focus-visible { background: var(--ui-color-surface-hover); outline: none; }
     .muted { color: var(--ui-color-text-muted); font-size: 12px; }
   `],
@@ -522,7 +522,7 @@ function asGroup(c: UiWfCondition | undefined): UiWfConditionGroup {
     .rm { grid-row: 1; grid-column: 2; }
     .and { font-size: 12px; color: var(--ui-color-text-muted); }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; }
-    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
+    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .opt input { accent-color: var(--ui-color-primary); margin: 0; }
   `],
 })
@@ -690,7 +690,7 @@ export class WfConditionEditor {
   `,
   styles: [WF_SHARED_STYLES, `
     :host { display: block; }
-    .summary { font-size: 13px; color: var(--ui-color-text-secondary); }
+    .summary { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); }
     .danger { color: var(--ui-color-danger); }
     .builder { height: min(78vh, 900px); display: flex; flex-direction: column; }
     .builder ui-form-builder { flex: 1; }

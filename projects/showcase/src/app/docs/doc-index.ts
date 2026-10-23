@@ -17,6 +17,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'foundation': [
     { name: 'Design tokens', anchor: 'design-tokens' },
     { name: 'provideUiConfig()', anchor: 'provideuiconfig' },
+    { name: 'Density', anchor: 'density' },
     { name: 'Built-in strings', anchor: 'built-in-strings' },
     { name: 'Theme service', anchor: 'theme-service' },
     { name: 'Themes', anchor: 'themes' },

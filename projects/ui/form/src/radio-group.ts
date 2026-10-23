@@ -42,7 +42,7 @@ let radioGroupSeq = 0;
     .opt.disabled { opacity: .5; cursor: not-allowed; }
     .native { position: absolute; opacity: 0; width: 0; height: 0; }
     .dot {
-      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px; border-radius: 50%;
+      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px; border-radius: 50%; zoom: var(--ui-density-scale);
       border: 1px solid var(--ui-control-border); background: var(--ui-color-surface);
       display: inline-flex; align-items: center; justify-content: center;
       transition: border-color var(--ui-motion-fast) var(--ui-ease-standard);

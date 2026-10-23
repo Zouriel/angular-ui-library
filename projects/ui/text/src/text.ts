@@ -62,12 +62,12 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
     .v-h1, .v-h2, .v-h3, .v-h4, .v-h5, .v-h6 { text-wrap: balance; }
     /* Tracking tapers with size, largest heading first — matches the display type scale
        (tighter at the top, back to normal by h3/body so small text stays legible). */
-    .v-h1 { font-size: 2.5rem; font-weight: 700; line-height: 1.1; letter-spacing: var(--ui-tracking-tighter); }
-    .v-h2 { font-size: 1.875rem; font-weight: 700; line-height: 1.18; letter-spacing: var(--ui-tracking-tight); }
-    .v-h3 { font-size: 1.375rem; font-weight: 600; letter-spacing: var(--ui-tracking-tight); }
+    .v-h1 { font-size: var(--ui-font-size-h1); font-weight: 700; line-height: 1.1; letter-spacing: var(--ui-tracking-tighter); }
+    .v-h2 { font-size: var(--ui-font-size-h2); font-weight: 700; line-height: 1.18; letter-spacing: var(--ui-tracking-tight); }
+    .v-h3 { font-size: var(--ui-font-size-h3); font-weight: 600; letter-spacing: var(--ui-tracking-tight); }
     .v-h4 { font-size: var(--ui-font-size-lg); font-weight: 600; }
-    .v-h5 { font-size: 1rem; font-weight: 600; }
-    .v-h6 { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
+    .v-h5 { font-size: var(--ui-font-size-h5); font-weight: 600; }
+    .v-h6 { font-size: var(--ui-font-size-h6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     .v-body { font-size: var(--ui-font-size-md); line-height: 1.45; text-wrap: pretty; }
     .v-caption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .v-label { font-size: var(--ui-font-size-sm); font-weight: 600; }

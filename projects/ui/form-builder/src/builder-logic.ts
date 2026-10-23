@@ -75,11 +75,11 @@ interface RuleEntry {
   styles: [FB_SHARED_STYLES, `
     :host { display: block; overflow: auto; min-height: 0; background: var(--ui-color-bg); }
     .wrap { max-width: 820px; margin: 0 auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12); display: flex; flex-direction: column; gap: var(--ui-space-6); }
-    h3 { margin: 0; font-size: 15px; font-weight: 600; }
+    h3 { margin: 0; font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; }
     .problems ul, .entries { list-style: none; margin: var(--ui-space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
     .problem { display: flex; align-items: flex-start; gap: var(--ui-space-2); width: 100%; padding: var(--ui-space-2); text-align: left;
       border: 1px solid color-mix(in srgb, var(--ui-color-warning) 35%, transparent); border-radius: var(--ui-radius);
-      background: color-mix(in srgb, var(--ui-color-warning) 8%, var(--ui-color-surface)); color: var(--ui-color-text); font: inherit; font-size: 13px; cursor: pointer; }
+      background: color-mix(in srgb, var(--ui-color-warning) 8%, var(--ui-color-surface)); color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .problem.err { border-color: color-mix(in srgb, var(--ui-color-danger) 40%, transparent); background: color-mix(in srgb, var(--ui-color-danger) 8%, var(--ui-color-surface)); }
     .problem hugeicons-icon { flex: none; margin-top: 1px; color: var(--ui-color-warning); }
     .problem.err hugeicons-icon { color: var(--ui-color-danger); }
@@ -91,7 +91,7 @@ interface RuleEntry {
     .search { position: relative; margin-left: auto; display: flex; align-items: center; }
     .search hugeicons-icon { position: absolute; left: 9px; color: var(--ui-color-text-muted); pointer-events: none; }
     .search input { width: 200px; height: 30px; padding: 0 var(--ui-space-2) 0 28px; box-sizing: border-box; border: 1px solid var(--ui-control-border);
-      border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: 13px; }
+      border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; font-size: calc(13px * var(--ui-font-scale)); }
     .search input:focus { outline: none; border-color: var(--ui-color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-color-primary) 28%, transparent); }
     .entry { display: flex; flex-direction: column; gap: 6px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3); text-align: left;
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface);
@@ -99,12 +99,12 @@ interface RuleEntry {
     .entry:hover { border-color: var(--ui-color-border-strong, var(--ui-color-border)); }
     .entry-head { display: flex; align-items: baseline; gap: var(--ui-space-2); min-width: 0; }
     .entry-name, .text, .problem span { min-width: 0; overflow-wrap: anywhere; }
-    .entry-name { font-size: 13px; font-weight: 600; }
+    .entry-name { font-size: calc(13px * var(--ui-font-scale)); font-weight: 600; }
     .entry-where { font-size: 12px; color: var(--ui-color-text-muted); }
     .line { display: flex; align-items: flex-start; gap: var(--ui-space-2); }
     .line .fb-chip { flex: none; margin-top: 1px; }
-    .text { font-size: 13px; line-height: 1.45; color: var(--ui-color-text-secondary); }
-    .empty { padding: var(--ui-space-6) var(--ui-space-4); text-align: center; font-size: 13px; color: var(--ui-color-text-muted);
+    .text { font-size: calc(13px * var(--ui-font-scale)); line-height: 1.45; color: var(--ui-color-text-secondary); }
+    .empty { padding: var(--ui-space-6) var(--ui-space-4); text-align: center; font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-muted);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); line-height: 1.5; }
     @media (max-width: 560px) { .search { margin-left: 0; width: 100%; } .search input { width: 100%; } }
   `],

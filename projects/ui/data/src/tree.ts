@@ -68,7 +68,7 @@ interface NodeInfo { node: UiTreeNode; parent: string | null; }
     .chev:hover { color: var(--ui-color-text); }
     .chev.open { transform: rotate(90deg); }
     .chev.spacer { cursor: inherit; }
-    .icon { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: var(--ui-color-text-muted); }
+    .icon { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: calc(14px * var(--ui-font-scale)); color: var(--ui-color-text-muted); }
     .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   `,
 })

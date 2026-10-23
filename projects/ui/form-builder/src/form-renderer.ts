@@ -219,7 +219,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr { display: flex; flex-direction: column; gap: var(--ui-space-4); }
     .ui-fr-header { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .ui-fr-title, .ui-fr-heading, .ui-fr-legend, .ui-fr-desc, .ui-fr-para, .ui-fr-page-title, .ui-fr-entry-head h4 { overflow-wrap: anywhere; }
-    .ui-fr-title { margin: 0; font-family: var(--ui-font-display); font-size: 20px; font-weight: 600; letter-spacing: var(--ui-tracking-tight, -0.01em); }
+    .ui-fr-title { margin: 0; font-family: var(--ui-font-display); font-size: calc(20px * var(--ui-font-scale)); font-weight: 600; letter-spacing: var(--ui-tracking-tight, -0.01em); }
     .ui-fr-desc { margin: 0; color: var(--ui-color-text-secondary); font-size: var(--ui-font-size-sm); line-height: 1.45; white-space: pre-wrap; }
     .ui-fr-progress { display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .ui-fr-steps { display: flex; gap: 4px; }

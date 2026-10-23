@@ -47,7 +47,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       background: var(--ui-color-surface);
       color: var(--ui-color-text);
       font-family: var(--ui-font-default);
-      font-size: 14px;
+      font-size: calc(14px * var(--ui-font-scale));
       font-weight: 500;
       letter-spacing: var(--ui-tracking-tight);
       cursor: pointer;
@@ -72,9 +72,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       backdrop-filter: blur(var(--ui-glass-blur));
       border-color: var(--ui-glass-border);
     }
-    .ui-btn[data-size="sm"] { height: var(--ui-size-sm); font-size: 13px; padding: 0 var(--ui-space-3); }
-    .ui-btn[data-size="lg"] { height: var(--ui-size-lg); font-size: 15px; padding: 0 var(--ui-space-6); }
-    .ui-btn[data-size="xl"] { height: var(--ui-size-xl); font-size: 17px; font-weight: 600; padding: 0 var(--ui-space-8); gap: var(--ui-space-3); border-radius: var(--ui-radius-lg); }
+    .ui-btn[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); padding: 0 var(--ui-space-3); }
+    .ui-btn[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); padding: 0 var(--ui-space-6); }
+    .ui-btn[data-size="xl"] { height: var(--ui-size-xl); font-size: calc(17px * var(--ui-font-scale)); font-weight: 600; padding: 0 var(--ui-space-8); gap: var(--ui-space-3); border-radius: var(--ui-radius-lg); }
     .ui-btn[data-size="xl"].no-radius { border-radius: 0; }
     .ui-btn[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }

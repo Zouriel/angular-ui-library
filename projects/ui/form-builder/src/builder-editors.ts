@@ -353,13 +353,13 @@ export class FbOptionsEditor {
     .rule, .auto { padding: var(--ui-space-2); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); background: var(--ui-color-surface); }
     .rule.unknown { border-style: dashed; }
     .rule-head { display: flex; align-items: center; gap: 6px; }
-    .rule-name { font-size: 13px; font-weight: 600; }
+    .rule-name { font-size: calc(13px * var(--ui-font-scale)); font-weight: 600; }
     .push { margin-left: auto; }
     .param, .msg, .when { display: flex; flex-direction: column; }
     .toggles { display: flex; flex-direction: column; gap: 6px; }
     .date-param { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-2); }
     .add-check { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 var(--ui-space-3);
-      border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+      border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text-secondary); font: inherit; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .add-check:hover { color: var(--ui-color-text); border-color: var(--ui-color-border-strong, var(--ui-color-primary)); }
     .add-check:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `],

@@ -421,12 +421,12 @@ export const WF_TONE_OPTIONS: WfOption[] = [
     :host { display: block; }
     .lw { display: block; min-width: 0; }
     .grow { flex: 1; min-width: 0; }
-    .small { font-size: 13px; color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
+    .small { font-size: calc(13px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); gap: 8px; cursor: pointer; }
     .path { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
     .outcome { display: grid; grid-template-columns: minmax(0, 1fr) 112px auto; gap: 6px; margin-bottom: 4px; align-items: center; }
     .assign { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) auto; gap: 6px; align-items: center; }
     .multi { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
+    .opt { display: inline-flex; align-items: center; gap: 5px; font-size: calc(13px * var(--ui-font-scale)); cursor: pointer; }
     .opt input { accent-color: var(--ui-color-primary); margin: 0; }
     .method { grid-template-columns: 96px minmax(0, 1fr); }
     @container (max-width: 300px) { .assign { grid-template-columns: 1fr auto; } .assign ui-wf-operand { grid-column: 1 / -1; } }
