@@ -64,6 +64,7 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   made a one-row textarea at least 48dp on phones; the web textarea already meets its target rule.
 - **0.45.1**: a tap on a `ui-swipe-screen`'s back-swipe strip (the 24px leading edge of an `edgeSwipeOnly` screen)
   goes to what is under it, such as the screen's Back arrow; a swipe from it still only swipes back.
+- **0.45.2**: `ui-map` ignores a queued Leaflet `moveend` after its host is removed, including when the map is left during an animated move. Keyboard pin placement also safely stops if the map is no longer ready.
 - **Compact density** (0.45.0): `provideUiConfig({ density: 'comfortable' | 'compact' | 'auto' })`, or
   `data-density="compact"` / `"auto"` on `<html>` (or any element, for its subtree; `applyUiDensity()` at runtime).
   Compact makes things smaller, not tighter: `--ui-font-size-sm/md/lg` 12/14/16px (from 13/15/18), the ui-text
