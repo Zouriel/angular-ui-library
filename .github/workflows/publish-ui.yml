@@ -1,0 +1,76 @@
+name: Publish @zouriel/ui
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: publish-ui-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npx ng build ui
+      - run: npx ng test ui --watch=false
+      - name: Verify Angular package version matches tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          node -e 'const v = require("./dist/ui/package.json").version; if (`v${v}` !== process.env.RELEASE_TAG) { console.error(`Tag ${process.env.RELEASE_TAG} does not match package v${v}`); process.exit(1); }'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-package
+          path: dist/ui
+          if-no-files-found: error
+          retention-days: 1
+      - name: Check out the Flutter twin
+        run: git clone --depth 1 https://github.com/Zouriel/flutter-ui-library.git flutter-ui-library
+      - uses: subosito/flutter-action@1508160852fb97248640997f7cfb38da241df0ba # v2.9.1
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+      - name: Verify Flutter version matches tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        working-directory: flutter-ui-library
+        run: grep -Eq "^version: ${RELEASE_TAG#v}$" packages/zouriel_ui/pubspec.yaml
+      - run: flutter pub get
+        working-directory: flutter-ui-library
+      - run: flutter analyze packages/zouriel_ui
+        working-directory: flutter-ui-library
+      - run: flutter test packages/zouriel_ui/test
+        working-directory: flutter-ui-library
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: '@zouriel'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-package
+          path: dist/ui
+      - name: Publish GitHub package
+        run: npm publish
+        working-directory: dist/ui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
