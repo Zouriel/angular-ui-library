@@ -765,7 +765,10 @@ export class UiMap {
       // Labels pick their side from where the marker is on screen.
       map.on('move zoomend resize', () => this.placeLabels());
       map.on('moveend', () => {
+        // Leaflet can finish a queued moveend after this host has been destroyed.
+        if (this.map !== map) return;
         const c = this.visibleCenter();
+        if (!c) return;
         this.view = { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
         this.zone.run(() => this.centerChanged.emit({ ...this.view! }));
       });
@@ -781,6 +784,7 @@ export class UiMap {
       el.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter' || !this.pinMode() || e.target !== el) return;
         const c = this.visibleCenter();
+        if (!c) return;
         this.zone.run(() => this.pin.set({ lat: c.lat, lng: c.lng }));
       });
       const ro = new ResizeObserver(() => {
@@ -1105,8 +1109,9 @@ export class UiMap {
   }
 
   /** The point in the middle of the part of the map between the insets. */
-  private visibleCenter(): Leaflet.LatLng {
-    const map = this.map!;
+  private visibleCenter(): Leaflet.LatLng | null {
+    const map = this.map;
+    if (!map) return null;
     const c = map.getCenter();
     const { x, y } = this.shift;
     if (!x && !y) return c;
