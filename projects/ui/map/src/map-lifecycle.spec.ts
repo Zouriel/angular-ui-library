@@ -10,11 +10,23 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 let release!: () => void;
 const gate = new Promise<void>((r) => (release = r));
 const created = vi.fn();
+let latestMap: { fire: (event: string) => void } | null = null;
 const chain = (): Record<string, unknown> => ({ addTo: () => chain(), on: () => chain(), remove: () => {}, clearLayers: () => {}, eachLayer: () => {}, getElement: () => null, options: {} });
 const fakeLeaflet = {
   map: (...a: unknown[]) => {
     created(...a);
-    return { ...chain(), getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, getSize: () => ({ x: 0, y: 0 }), invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }) };
+    const listeners = new Map<string, Array<() => void>>();
+    const map: Record<string, unknown> & { fire: (event: string) => void } = {
+      ...chain(),
+      on: (events: string, listener: () => void) => {
+        for (const event of events.split(' ')) listeners.set(event, [...(listeners.get(event) ?? []), listener]);
+        return map;
+      },
+      fire: (event: string) => listeners.get(event)?.forEach((listener) => listener()),
+      getCenter: () => ({ lat: 0, lng: 0 }), getZoom: () => 1, getSize: () => ({ x: 0, y: 0 }), invalidateSize: () => {}, setView: () => {}, createPane: () => ({ style: {} }),
+    };
+    latestMap = map;
+    return map;
   },
   control: { zoom: () => chain(), attribution: () => chain() },
   layerGroup: () => chain(),
@@ -27,7 +39,7 @@ const gatedLoader = () => gate.then(() => fakeLeaflet);
 
 import { UI_MAP_LEAFLET, UiMap } from './map';
 
-@Component({ imports: [UiMap], template: `@if (show()) { <ui-map /> }` })
+@Component({ imports: [UiMap], template: `@if (show()) { <ui-map [pinMode]="true" /> }` })
 class Host {
   show = signal(true);
 }
@@ -65,4 +77,19 @@ describe('ui-map lifecycle', () => {
     expect(created).toHaveBeenCalledTimes(1);
     f.destroy();
   });
+  it('ignores queued Leaflet move events after its map host is destroyed', async () => {
+    globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+    TestBed.configureTestingModule({ providers: [{ provide: UI_MAP_LEAFLET, useValue: () => Promise.resolve(fakeLeaflet) }] });
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    TestBed.inject(ApplicationRef).tick();
+    await new Promise((r) => setTimeout(r, 20));
+    const map = latestMap!;
+    const host = f.nativeElement.querySelector('ui-map') as HTMLElement;
+    expect(map).toBeTruthy();
+    f.destroy();
+    expect(() => map.fire('moveend')).not.toThrow();
+    expect(() => host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))).not.toThrow();
+  });
+
 });
