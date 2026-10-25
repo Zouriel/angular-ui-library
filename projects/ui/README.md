@@ -367,6 +367,12 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
   text-muted and status colours; themes where those don't hold 3:1 against MapTiler's streets-v2 and
   dataviz tiles (in the theme's own brightness) and the casing set their own (the style-contract spec
   checks all 15 themes).
+- Draw-in (0.46.2): a route that appears, or gets new points, grows from its start to its end, casing
+  and line together, ease-out (`uiMapRouteEase`) over `uiMapRouteDrawMs(uiMapRouteLength(points))`
+  (450 ms for 1 km, +150 ms per doubling, within 250..900 ms). The same id and points again never
+  replay it. `animate: false` on a route draws it at once, as do reduced motion and `preview`. A
+  removed route fades out over `UI_MAP_ROUTE_FADE_MS` (150 ms), at once under reduced motion.
+  `uiMapRoutePartial(points, fraction)` is the part shown at each frame.
 - `fitPoints(points, { padding = 24, maxZoom = 17, animate = true })`: every point inside the part
   between the insets less the padding (px, or `{ top, right, bottom, left }`), at a whole zoom up to
   maxZoom; one point is centred there at maxZoom. Animated unless `animate: false` or reduced motion.
@@ -375,7 +381,7 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
   32px), set by the map), two lines before the ellipsis. Zoom buttons: the locate button's surface,
   border and `--ui-shadow-2`, 38px (44px with a 48px hit area on touch).
 
-The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:)])`
+The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:, animate: true)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 
 ## Map search area, swipe screens, SOS fab (0.44.0)

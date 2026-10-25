@@ -182,6 +182,11 @@ export interface UiMapRoute {
   tone?: UiMapRouteTone;
   /** What screen readers hear for the route, e.g. "Route, 1.2 km"; without it the route is not read out. */
   label?: string;
+  /**
+   * Draw it in from start to end when it appears or its points change (0.46.2); true by default.
+   * False draws it at once. Never animated under reduced motion or on a preview.
+   */
+  animate?: boolean;
 }
 
 /** Px of room kept free on each (physical) side by `fitPoints`, on top of the insets. */
@@ -281,6 +286,66 @@ export function uiMapRouteWidth(zoom: number): { line: number; casing: number } 
   return { line: 5 * k, casing: 9 * k };
 }
 
+/** How long a removed route takes to fade out, in ms (0.46.2). */
+export const UI_MAP_ROUTE_FADE_MS = 150;
+
+/** The great-circle distance between two points, in metres (haversine). */
+function metresBetween(a: UiLatLng, b: UiLatLng): number {
+  const r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r;
+  const dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** A route's length along its points, in metres (0.46.2, Flutter `uiMapRouteLength`). */
+export function uiMapRouteLength(points: readonly UiMapPoint[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) total += metresBetween(uiMapPoint(points[i - 1]), uiMapPoint(points[i]));
+  return total;
+}
+
+/**
+ * How long a route of `metres` takes to draw in, in ms (0.46.2, Flutter `uiMapRouteDrawDuration`):
+ * 450 ms for 1 km, 150 ms more each time the length doubles, kept within 250..900 ms, so a
+ * street-length route is quick and a long drive never drags.
+ */
+export function uiMapRouteDrawMs(metres: number): number {
+  const km = Math.max(1e-6, metres / 1000);
+  return Math.round(Math.min(900, Math.max(250, 450 + 150 * Math.log2(km))));
+}
+
+/** The draw-in's ease-out (cubic) for linear progress `t` in 0..1 (0.46.2). */
+export function uiMapRouteEase(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return 1 - (1 - c) ** 3;
+}
+
+/**
+ * The first `fraction` (0..1) of a route by length (0.46.2, Flutter `uiMapRoutePartial`): the points
+ * up to there and one interpolated point where it ends. 0 gives the start point twice (a dot, with
+ * the round caps); 1 (or more) all the points.
+ */
+export function uiMapRoutePartial(points: readonly UiMapPoint[], fraction: number): UiLatLng[] {
+  const ll = points.map(uiMapPoint);
+  if (ll.length < 2 || fraction >= 1) return ll.map((p) => ({ lat: p.lat, lng: p.lng }));
+  const total = uiMapRouteLength(ll);
+  const want = Math.max(0, fraction) * total;
+  const out: UiLatLng[] = [{ lat: ll[0].lat, lng: ll[0].lng }];
+  let done = 0;
+  for (let i = 1; i < ll.length; i++) {
+    const seg = metresBetween(ll[i - 1], ll[i]);
+    if (done + seg >= want) {
+      const k = seg > 0 ? (want - done) / seg : 0;
+      out.push({ lat: ll[i - 1].lat + (ll[i].lat - ll[i - 1].lat) * k, lng: ll[i - 1].lng + (ll[i].lng - ll[i - 1].lng) * k });
+      return out;
+    }
+    done += seg;
+    out.push({ lat: ll[i].lat, lng: ll[i].lng });
+  }
+  return out;
+}
+
 const MAX_LAT = 85.0511287798;
 const unitX = (lng: number) => (lng + 180) / 360;
 const unitY = (lat: number) => {
@@ -352,6 +417,14 @@ const ROUTE_PANE = 'uiMapRoute';
 /** The search area's pane (0.44.0): above the tiles and overlays, below the routes (420). */
 const AREA_PANE = 'uiMapArea';
 
+/** A drawn route's two polylines, the geometry they show, and the draw-in running, if one is. */
+interface RouteLayers {
+  casing: Leaflet.Polyline;
+  line: Leaflet.Polyline;
+  key: string;
+  anim?: { start: number; ms: number; pts: UiLatLng[] };
+}
+
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
 export const UI_MAP_OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 export const UI_MAP_OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -411,6 +484,11 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
  *   joins, 5px over 9px (thinner when zoomed out), above the tiles and below the pulse, dot, markers
  *   and pin. Changing the list redraws only the lines; an empty list removes them. Each route's
  *   `label` is its one name for screen readers ("Route, 1.2 km").
+ *   A route that appears, or gets new points, draws in from its start to its end (0.46.2): the
+ *   casing and line grow along the path together, ease-out over 250..900 ms by length
+ *   (`uiMapRouteDrawMs`), while the map moves as it would (a `fitPoints` straight after runs as
+ *   before). The same points again don't replay it. `animate: false` on a route, reduced motion or
+ *   a preview draw it at once. A removed route fades out over 150 ms (at once under reduced motion).
  * - `fitPoints(points, { padding, maxZoom, animate })` (0.42.0): shows every point (the nurse and the
  *   patient, a route) inside the visible part (between the insets) plus padding, at a whole zoom up
  *   to maxZoom (17); one point is centred there at maxZoom. Animated unless reduced motion. The fit
@@ -576,8 +654,16 @@ export class UiMap {
   private tiles: Leaflet.TileLayer | null = null;
   private pulseMarker: Leaflet.Marker | null = null;
   private userMarker: Leaflet.Marker | null = null;
-  /** Each route's casing and line, by id, so an update moves them instead of rebuilding them. */
-  private routeLayers = new Map<string, { casing: Leaflet.Polyline; line: Leaflet.Polyline }>();
+  /**
+   * Each route's casing and line, by id, so an update moves them instead of rebuilding them; `key` is
+   * the geometry drawn (an update with the same one doesn't replay the draw-in), `anim` the draw-in
+   * running (0.46.2).
+   */
+  private routeLayers = new Map<string, RouteLayers>();
+  /** Removed routes fading out (0.46.2), by id, with the timer that removes them. */
+  private routeLeaving = new Map<string, { layers: RouteLayers; timer: ReturnType<typeof setTimeout> }>();
+  /** The pending animation frame of the routes' draw-in, if one is. */
+  private routeFrame: number | null = null;
   /** What the tile layer was built with (all but the URL, which it can swap in place). */
   private tilesKey = '';
   /** What the pulse marker was built for: rebuilt when its tone or the motion setting changes. */
@@ -857,6 +943,7 @@ export class UiMap {
         this.pulseKey = '';
         this.userMarker = null;
         this.routeLayers.clear();
+        this.stopRouteAnimations();
         this.tiles = null;
         this.tilesKey = '';
         this.fit = null;
@@ -1291,29 +1378,52 @@ export class UiMap {
     if (w > 0) this.host.nativeElement.style.setProperty('--ui-map-label-max', `${Math.max(80, Math.min(320, w - 32))}px`);
   }
 
-  /** Draws `list`: moves, recolours or relabels the routes already drawn, adds new ones, removes the rest. */
+  /**
+   * Draws `list`: moves, recolours or relabels the routes already drawn, adds new ones, removes the
+   * rest. A new route, or new points for one, draws in from its start (0.46.2) unless `animate` is
+   * false, reduced motion is on or the map is a preview; the same points again change nothing. A
+   * removed route fades out over 150 ms (at once under reduced motion).
+   */
   private drawRoutes(list: readonly UiMapRoute[]): void {
     const { L, map } = this;
     if (!L || !map) return;
     const seen = new Set<string>();
+    const still = this.still();
+    let animating = false;
     for (const r of list) {
-      const pts = r.points.map(uiMapPoint).map((p) => [p.lat, p.lng] as [number, number]);
-      if (pts.length < 2 || seen.has(r.id)) continue;
+      const ll = r.points.map(uiMapPoint);
+      if (ll.length < 2 || seen.has(r.id)) continue;
       seen.add(r.id);
+      const key = ll.map((p) => `${p.lat},${p.lng}`).join(';');
+      const animate = r.animate !== false && !still;
+      // Coming back while it fades out: the old lines go now, new ones draw.
+      this.dropLeaving(r.id);
       let layers = this.routeLayers.get(r.id);
+      const shown = (pts: readonly UiLatLng[]) => pts.map((p) => [p.lat, p.lng] as [number, number]);
+      const first = animate ? shown(uiMapRoutePartial(ll, 0)) : shown(ll);
       if (!layers) {
         const { line: lw, casing: cw } = uiMapRouteWidth(map.getZoom());
         const opts = { pane: ROUTE_PANE, interactive: false, lineCap: 'round', lineJoin: 'round', smoothFactor: 1 } as const;
         layers = {
-          casing: L.polyline(pts, { ...opts, weight: cw, className: 'ui-map-route-casing' }).addTo(map),
-          line: L.polyline(pts, { ...opts, weight: lw, className: 'ui-map-route-line' }).addTo(map),
+          casing: L.polyline(first, { ...opts, weight: cw, className: 'ui-map-route-casing' }).addTo(map),
+          line: L.polyline(first, { ...opts, weight: lw, className: 'ui-map-route-line' }).addTo(map),
+          key,
         };
         this.routeLayers.set(r.id, layers);
         layers.casing.getElement()?.setAttribute('aria-hidden', 'true');
-      } else {
-        layers.casing.setLatLngs(pts);
-        layers.line.setLatLngs(pts);
+        if (animate) layers.anim = { start: this.now(), ms: uiMapRouteDrawMs(uiMapRouteLength(ll)), pts: ll };
+      } else if (layers.key !== key) {
+        layers.key = key;
+        layers.casing.setLatLngs(first);
+        layers.line.setLatLngs(first);
+        layers.anim = animate ? { start: this.now(), ms: uiMapRouteDrawMs(uiMapRouteLength(ll)), pts: ll } : undefined;
+      } else if (layers.anim && !animate) {
+        // Same points, but the draw-in is off now (animate: false, reduced motion): finish it at once.
+        layers.anim = undefined;
+        layers.casing.setLatLngs(shown(ll));
+        layers.line.setLatLngs(shown(ll));
       }
+      if (layers.anim) animating = true;
       const el = layers.line.getElement();
       el?.setAttribute('data-tone', r.tone ?? 'primary');
       el?.setAttribute('data-route', r.id);
@@ -1329,10 +1439,88 @@ export class UiMap {
     }
     for (const [id, layers] of this.routeLayers) {
       if (seen.has(id)) continue;
-      layers.casing.remove();
-      layers.line.remove();
       this.routeLayers.delete(id);
+      if (still) {
+        layers.casing.remove();
+        layers.line.remove();
+        continue;
+      }
+      for (const l of [layers.casing, layers.line]) {
+        const el = l.getElement();
+        el?.classList.add('ui-map-route-leaving');
+        el?.removeAttribute('role');
+        el?.removeAttribute('aria-label');
+        el?.setAttribute('aria-hidden', 'true');
+      }
+      this.routeLeaving.set(id, { layers, timer: setTimeout(() => this.dropLeaving(id), UI_MAP_ROUTE_FADE_MS) });
     }
+    if (animating) this.routeTick();
+  }
+
+  /** Removes a fading route's lines now. */
+  private dropLeaving(id: string): void {
+    const leaving = this.routeLeaving.get(id);
+    if (!leaving) return;
+    clearTimeout(leaving.timer);
+    leaving.layers.casing.remove();
+    leaving.layers.line.remove();
+    this.routeLeaving.delete(id);
+  }
+
+  /** The clock the draw-in runs on. */
+  private now(): number {
+    return globalThis.performance?.now() ?? Date.now();
+  }
+
+  /** One frame of the draw-in: each animating route grows to its eased length; asks for the next frame while any runs. */
+  private routeTick(): void {
+    if (this.routeFrame !== null) return;
+    const raf = globalThis.requestAnimationFrame;
+    if (!raf) {
+      // No frames (a server, an odd test host): draw them whole.
+      for (const r of this.routeLayers.values()) this.finishRoute(r);
+      return;
+    }
+    // Outside the Angular zone: a frame per route point change must not run change detection.
+    this.zone.runOutsideAngular(() => {
+      this.routeFrame = raf(() => {
+        this.routeFrame = null;
+        if (!this.map) return;
+        const now = this.now();
+        let more = false;
+        for (const r of this.routeLayers.values()) {
+          const a = r.anim;
+          if (!a) continue;
+          const t = (now - a.start) / a.ms;
+          if (t >= 1) {
+            this.finishRoute(r);
+            continue;
+          }
+          const pts = uiMapRoutePartial(a.pts, uiMapRouteEase(t)).map((p) => [p.lat, p.lng] as [number, number]);
+          r.casing.setLatLngs(pts);
+          r.line.setLatLngs(pts);
+          more = true;
+        }
+        if (more) this.routeTick();
+      });
+    });
+  }
+
+  /** Ends a route's draw-in: the whole route. */
+  private finishRoute(r: RouteLayers): void {
+    if (!r.anim) return;
+    const pts = r.anim.pts.map((p) => [p.lat, p.lng] as [number, number]);
+    r.anim = undefined;
+    r.casing.setLatLngs(pts);
+    r.line.setLatLngs(pts);
+  }
+
+  /** Stops every draw-in and fade (the map is going). */
+  private stopRouteAnimations(): void {
+    if (this.routeFrame !== null) globalThis.cancelAnimationFrame?.(this.routeFrame);
+    this.routeFrame = null;
+    for (const l of this.routeLeaving.values()) clearTimeout(l.timer);
+    this.routeLeaving.clear();
   }
 
   /** The route widths for the current zoom. */

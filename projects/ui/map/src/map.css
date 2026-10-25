@@ -263,3 +263,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-map .ui-map-area-knob { transition: none; }
 }
+
+/* 0.46.2: a removed route fades out (150 ms, UI_MAP_ROUTE_FADE_MS) before its lines go. */
+.ui-map .ui-map-route-leaving { animation: ui-map-route-out 150ms var(--ui-ease-standard) forwards; }
+@keyframes ui-map-route-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-route-leaving { animation: none; opacity: 0; }
+}

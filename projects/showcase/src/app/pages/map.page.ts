@@ -35,6 +35,7 @@ interface UiMapRoute {
   points: UiMapPoint[];
   tone?: 'primary' | 'muted' | 'success' | 'warning' | 'danger'; // default 'primary'
   label?: string;    // its one name for screen readers: "Route, 1.3 km"
+  animate?: boolean; // draw it in from start to end when it appears or changes (0.46.2); default true
 }
 interface UiMapFitOptions {
   padding?: number | { top?: number; right?: number; bottom?: number; left?: number }; // px, default 24
@@ -64,7 +65,8 @@ const ROUTE_CODE = `<ui-map #map fill [insets]="{ top: cardCover(), bottom: shee
 // The moment she accepts: fetch the road route (OSRM GeoJSON is [lng, lat]: swap it) and show it all.
 const r = await api.route(job.id, me);
 this.route.set({ points: r.geometry.map(([lng, lat]) => [lat, lng]), km: (r.distance / 1000).toFixed(1) });
-this.map().fitPoints([me, patient, ...this.route()!.points]); // inside the part between the insets`;
+this.map().fitPoints([me, patient, ...this.route()!.points]); // inside the part between the insets
+// The route draws in from the nurse to the patient (0.46.2); add animate: false to a route to skip it.`;
 
 const TILES_CODE = `<!-- MapTiler raster (256 px): {r} is @2x on high-density screens. Keep the key out of the repo. -->
 <ui-map
@@ -178,7 +180,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
       </doc-section>
 
       <doc-section name="Routes" anchor="routes" selector="ui-map [routes] · fitPoints()" [api]="routeApi"
-        summary="routes draws lines along the road, from OSRM say: each one a line in its tone over a casing, round-capped, 5px over 9px close in and thinner zoomed out. They sit above the tiles and below the pulse, the you-are-here dot, the markers and the pin, so the dots stay on top. A new list redraws the lines on the same map, and an empty one removes them. Each tone is a theme token (--ui-map-route-primary, -muted, -success, -warning, -danger over --ui-map-route-casing) checked at 3:1 against MapTiler's streets-v2 and dataviz tiles in the theme's own brightness. label is the route's one name for screen readers, such as Route, 1.3 km. fitPoints shows every point you give it (the nurse, the patient, the route) inside the part of the map the insets leave visible, with 24px to spare, at a whole zoom no closer than 17; one point is centred there at 17. It animates unless reduced motion. This map uses the tile URLs pasted under Styled tiles, to see a route over your own style. Marker labels now size to their text, up to 320px or the map's width less 32px, and wrap to a second line before the ellipsis; the zoom buttons share the locate button's raised surface and shadow. Near the map's edge a label flips to the other side of its dot rather than run off (0.42.1; in RTL it starts on the left). A fit owns the camera (0.42.1): if the insets change while it animates or after it, say a sheet grows as the route appears, the fit is worked out again for the new insets, until the person or the app moves the map. controls (0.42.1) adds your own round buttons in the locate button's stack and style, above it at the bottom-end of the visible part, and (controlPress) says which was pressed; the one here, Show the whole route, calls fitPoints.">
+        summary="routes draws lines along the road, from OSRM say: each one a line in its tone over a casing, round-capped, 5px over 9px close in and thinner zoomed out. They sit above the tiles and below the pulse, the you-are-here dot, the markers and the pin, so the dots stay on top. A new list redraws the lines on the same map, and an empty one removes them. Each tone is a theme token (--ui-map-route-primary, -muted, -success, -warning, -danger over --ui-map-route-casing) checked at 3:1 against MapTiler's streets-v2 and dataviz tiles in the theme's own brightness. label is the route's one name for screen readers, such as Route, 1.3 km. fitPoints shows every point you give it (the nurse, the patient, the route) inside the part of the map the insets leave visible, with 24px to spare, at a whole zoom no closer than 17; one point is centred there at 17. It animates unless reduced motion. A route draws in (0.46.2): when it appears, or its points change, the casing and line grow together from its start to its end, easing out over 250 to 900 ms by length (uiMapRouteDrawMs: 450 ms for 1 km), while a fitPoints straight after moves the map as before. The same points again (a re-render with the same id and geometry) don't replay it. Set animate: false on a route to draw it at once; under reduced motion, and on a preview, routes are always drawn at once. A removed route fades out over 150 ms. Try Draw it again (a new route id), Remove the route, or the Draw-in switch. This map uses the tile URLs pasted under Styled tiles, to see a route over your own style. Marker labels now size to their text, up to 320px or the map's width less 32px, and wrap to a second line before the ellipsis; the zoom buttons share the locate button's raised surface and shadow. Near the map's edge a label flips to the other side of its dot rather than run off (0.42.1; in RTL it starts on the left). A fit owns the camera (0.42.1): if the insets change while it animates or after it, say a sheet grows as the route appears, the fit is worked out again for the new insets, until the person or the app moves the map. controls (0.42.1) adds your own round buttons in the locate button's stack and style, above it at the bottom-end of the visible part, and (controlPress) says which was pressed; the one here, Show the whole route, calls fitPoints.">
         <doc-demo lang="ts + html" [code]="ROUTE_CODE">
           <div class="map-wrap">
             <ui-map #routeMap [center]="center()" [zoom]="15" [routes]="routes()" [markers]="routeMarkers" [userLocation]="routeStart" locateControl ariaLabel="The way to the patient"
@@ -190,6 +192,8 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
             <ui-button size="sm" variant="outline" (click)="routeMap.fitPoints(routePoints)">Fit the route</ui-button>
             <ui-button size="sm" variant="outline" (click)="routeMap.fitPoints([routeStart])">Fit one point</ui-button>
             <ui-button size="sm" variant="ghost" (click)="showRoute.set(!showRoute())">{{ showRoute() ? 'Remove the route' : 'Show the route' }}</ui-button>
+            <ui-button size="sm" variant="outline" (click)="drawAgain()">Draw it again</ui-button>
+            <ui-segmented label="Draw-in (demo)" size="sm" [options]="drawOptions" [value]="animateRoute() ? 'on' : 'off'" (valueChange)="animateRoute.set($event === 'on')" />
           </div>
         </doc-demo>
       </doc-section>
@@ -393,13 +397,25 @@ export class MapPage {
   protected readonly tone = signal<UiMapRouteTone>('primary');
   protected readonly toneOptions = (['primary', 'muted', 'success', 'warning', 'danger'] as const).map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) }));
   protected readonly showRoute = signal(true);
-  protected readonly routes = computed<UiMapRoute[]>(() => (this.showRoute() ? [{ id: 'to-patient', points: this.routePoints, tone: this.tone(), label: 'Route, 1.3 km' }] : []));
+  /** Bumped by "Draw it again": a new route id, so the old line fades and the new one draws in. */
+  protected readonly drawRun = signal(0);
+  protected readonly animateRoute = signal(true);
+  protected readonly drawOptions = [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }];
+  protected readonly routes = computed<UiMapRoute[]>(() => (this.showRoute() ? [{ id: `to-patient-${this.drawRun()}`, points: this.routePoints, tone: this.tone(), label: 'Route, 1.3 km', animate: this.animateRoute() }] : []));
+  protected drawAgain(): void {
+    this.showRoute.set(true);
+    this.drawRun.update((n) => n + 1);
+  }
   protected readonly routeControls: UiMapControl[] = [{ id: 'fit', icon: CenterFocusIcon, label: 'Show the whole route', tooltip: 'Show the whole route' }];
   protected readonly pageControls: UiMapControl[] = [{ id: 'fit', icon: CenterFocusIcon, label: 'Show all the nurses', tooltip: 'Show all the nurses' }];
   protected readonly routeApi: ApiRow[] = [
     { name: 'routes', type: 'UiMapRoute[]', default: '[]', desc: 'Lines along the road: id, points ([lat, lng] or { lat, lng }), tone, label. Under the pulse, dot, markers and pin; updated in place; [] removes them.' },
     { name: 'UiMapRoute.tone', type: 'UiMapRouteTone', default: "'primary'", desc: "'primary' | 'muted' | 'success' | 'warning' | 'danger': the --ui-map-route-<tone> token over --ui-map-route-casing." },
     { name: 'UiMapRoute.label', type: 'string', default: '—', desc: 'The route\'s one accessible name ("Route, 1.3 km"); without it the line is hidden from screen readers.' },
+    { name: 'UiMapRoute.animate', type: 'boolean', default: 'true', desc: 'Draw it in from start to end when it appears or its points change (0.46.2), ease-out over uiMapRouteDrawMs. False draws it at once; reduced motion and preview always do. The same id and points again never replay it.' },
+    { name: 'uiMapRouteDrawMs(metres)', type: 'function', default: '—', desc: 'The draw-in time for a route length (0.46.2): 450 ms for 1 km, +150 ms per doubling, within 250..900 ms.' },
+    { name: 'uiMapRouteLength(points) / uiMapRoutePartial(points, fraction)', type: 'function', default: '—', desc: 'A route\'s length in metres, and its first fraction by length (0.46.2): what the draw-in shows each frame.' },
+    { name: 'UI_MAP_ROUTE_FADE_MS', type: 'number', default: '150', desc: 'How long a removed route fades out (0.46.2); at once under reduced motion.' },
     { name: 'fitPoints(points, options?)', type: 'method', default: '—', desc: 'Shows every point inside the visible part (between the insets) plus padding (24px), at a whole zoom up to maxZoom (17); one point is centred at maxZoom. Animated unless animate: false or reduced motion. Called before Leaflet has loaded (straight after the map is created), it is held and runs once it has, without animating (0.44.2).' },
     { name: 'uiMapFitView(points, size, area, maxZoom?)', type: 'function', default: '—', desc: 'The view fitPoints moves to (the map\'s own centre and zoom), for tests or a first view.' },
     { name: 'uiMapRouteWidth(zoom)', type: 'function', default: '—', desc: 'The line and casing widths at a zoom: 5 over 9px from zoom 14, down to 60% at zoom 10.' },
