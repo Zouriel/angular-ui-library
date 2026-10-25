@@ -236,6 +236,32 @@ export interface UiStrings {
   mapLabel: string;
   /** Map pin name (Flutter). */
   mapChosenLocation: string;
+  /** The map's compass button, which turns it back to north up (0.47.0). */
+  mapResetNorth: string;
+  /** Navigation view's name (0.47.0). */
+  navLabel: string;
+  /** Distance to the next maneuver (`{distance}`, e.g. "80 m"). */
+  navIn: string;
+  /** Before the maneuver after next. */
+  navThen: string;
+  /** The arrive step's heading when it has no instruction; and before the arrival time for screen readers. */
+  navArrive: string;
+  /** Button that brings the map back to following the person. */
+  navRecenter: string;
+  /** Button that ends navigation. */
+  navEnd: string;
+  /** Time left under an hour (`{min}`). */
+  navMinutes: string;
+  /** Time left in whole hours (`{h}`). */
+  navHours: string;
+  /** Time left over an hour (`{h}`, `{min}`). */
+  navHoursMinutes: string;
+  /** A distance in metres (`{n}`). */
+  navMeters: string;
+  /** A distance in kilometres (`{n}`). */
+  navKilometers: string;
+  /** The bottom bar for screen readers (`{time}` left, `{distance}` left, `{clock}` arrival). */
+  navSummary: string;
   /** Image picker busy name (`{label}`). */
   adding: string;
   /** Calendar: the hint on today. (Flutter) */
@@ -435,6 +461,19 @@ export const defaultUiStrings: UiStrings = {
   mapShowBoth: 'Show both',
   mapLabel: 'Map',
   mapChosenLocation: 'Chosen location',
+  mapResetNorth: 'Reset to north',
+  navLabel: 'Navigation',
+  navIn: 'in {distance}',
+  navThen: 'Then',
+  navArrive: 'Arrive',
+  navRecenter: 'Recenter',
+  navEnd: 'End',
+  navMinutes: '{min} min',
+  navHours: '{h} h',
+  navHoursMinutes: '{h} h {min} min',
+  navMeters: '{n} m',
+  navKilometers: '{n} km',
+  navSummary: '{time} left, {distance}, arrive at {clock}',
   adding: 'Adding {label}',
   today: 'Today',
   notSet: 'Not set',
@@ -601,6 +640,19 @@ export const uiStringsDv: UiStrings = {
   mapShowBoth: 'ދެބައިވެސް ދައްކާ',
   mapLabel: 'މެޕް',
   mapChosenLocation: 'ހޮވި ތަން',
+  mapResetNorth: 'އުތުރު މައްޗަށް ގެންނާ',
+  navLabel: 'މަގު ދެއްކުން',
+  navIn: '{distance} ދުރުން',
+  navThen: 'ދެން',
+  navArrive: 'ވާސިލުވުން',
+  navRecenter: 'މެދަށް ގެންނާ',
+  navEnd: 'ނިންމާ',
+  navMinutes: '{min} މިނެޓު',
+  navHours: '{h} ގަޑިއިރު',
+  navHoursMinutes: '{h} ގަޑިއިރު {min} މިނެޓު',
+  navMeters: '{n} މީޓަރު',
+  navKilometers: '{n} ކިލޯމީޓަރު',
+  navSummary: '{time} ބާކީ، {distance}، {clock} ގައި ވާސިލުވާނެ',
   adding: '{label} އިތުރުކުރަނީ',
   today: 'މިއަދު',
   notSet: 'ކަނޑައަޅާފައެއް ނެތް',

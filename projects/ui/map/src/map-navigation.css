@@ -1,0 +1,79 @@
+/* ui-map-navigation (0.47.0): a full-height map with the next maneuver on top and the time left at the
+   bottom. Logical properties throughout, so right-to-left text mirrors the layout (not the arrows). */
+.ui-map-navigation {
+  isolation: isolate;
+  display: block; position: relative; height: var(--ui-map-height, 100%); min-height: 320px; overflow: hidden;
+  font-family: var(--ui-font-default); color: var(--ui-color-text); background: var(--ui-color-surface-subtle);
+}
+.ui-map-navigation .ui-nav-map { position: absolute; inset: 0; }
+
+.ui-map-navigation .ui-nav-top {
+  position: absolute; z-index: 2; top: var(--ui-space-3); inset-inline: var(--ui-space-3);
+  display: flex; flex-direction: column; align-items: stretch; pointer-events: none;
+}
+.ui-map-navigation .ui-nav-top > * { pointer-events: auto; }
+.ui-map-navigation .ui-nav-banner {
+  display: flex; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4);
+  background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
+  border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-3);
+}
+.ui-map-navigation .ui-nav-maneuver {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: center;
+  width: var(--ui-size-xl); height: var(--ui-size-xl); border-radius: var(--ui-radius);
+}
+.ui-map-navigation .ui-nav-exit {
+  position: absolute; inset-inline-end: calc(-1 * var(--ui-space-1)); bottom: calc(-1 * var(--ui-space-1));
+  min-width: 20px; height: 20px; padding: 0 var(--ui-space-1); box-sizing: border-box; border-radius: var(--ui-radius-pill);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ui-color-primary-contrast); color: var(--ui-color-primary); font-size: 12px; font-weight: 700; line-height: 1;
+}
+.ui-map-navigation .ui-nav-text { display: flex; flex-direction: column; min-width: 0; }
+.ui-map-navigation .ui-nav-distance { font-family: var(--ui-font-display); font-size: var(--ui-font-size-h3); font-weight: 700; line-height: 1.2; }
+.ui-map-navigation .ui-nav-instruction {
+  font-size: var(--ui-font-size-lg); font-weight: 600; line-height: 1.35; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.ui-map-navigation .ui-nav-street {
+  font-size: var(--ui-font-size-md); line-height: 1.35; color: color-mix(in srgb, var(--ui-color-primary-contrast) 88%, var(--ui-color-primary));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* The maneuver after next: a small tab under the banner, at its start. */
+.ui-map-navigation .ui-nav-then {
+  align-self: flex-start; max-width: calc(100% - 2 * var(--ui-space-4)); margin-inline-start: var(--ui-space-4);
+  display: inline-flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-1) var(--ui-space-3);
+  background: var(--ui-color-primary-active); color: var(--ui-color-primary-contrast);
+  border-radius: 0 0 var(--ui-radius) var(--ui-radius); box-shadow: var(--ui-shadow-2); font-size: var(--ui-font-size-sm); line-height: 1.35;
+}
+.ui-map-navigation .ui-nav-then-word { font-weight: 600; }
+.ui-map-navigation .ui-nav-then-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ui-map-navigation .ui-nav-bar {
+  position: absolute; z-index: 2; inset-inline: 0; bottom: 0;
+  display: flex; align-items: center; gap: var(--ui-space-3);
+  padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--ui-color-surface-raised); color: var(--ui-color-text);
+  border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; box-shadow: var(--ui-shadow-3);
+}
+.ui-map-navigation .ui-nav-eta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ui-map-navigation .ui-nav-time { font-family: var(--ui-font-display); font-size: var(--ui-font-size-h3); font-weight: 700; line-height: 1.2; }
+.ui-map-navigation .ui-nav-meta { display: flex; flex-wrap: wrap; gap: var(--ui-space-1); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-md); line-height: 1.35; }
+.ui-map-navigation .ui-nav-end { flex: none; }
+
+.ui-map-navigation .ui-nav-recenter {
+  position: absolute; z-index: 2; inset-inline-start: var(--ui-space-3); bottom: calc(var(--ui-nav-bar-height, 72px) + var(--ui-space-3));
+  display: inline-flex; align-items: center; gap: var(--ui-space-2); min-height: var(--ui-size-touch); padding: 0 var(--ui-space-4); box-sizing: border-box;
+  background: var(--ui-color-surface-raised); color: var(--ui-color-primary); border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-pill); box-shadow: var(--ui-shadow-2);
+  font: inherit; font-size: var(--ui-font-size-md); font-weight: 600; cursor: pointer;
+}
+.ui-map-navigation .ui-nav-recenter:hover { background: var(--ui-color-surface-hover); }
+.ui-map-navigation .ui-nav-recenter:focus-visible { outline: none; box-shadow: var(--ui-shadow-2), var(--ui-focus-ring); }
+
+/* Glass: the banner and bar frosted over the map, the maneuver on its own primary tile. */
+.ui-map-navigation[data-glass] .ui-nav-banner,
+.ui-map-navigation[data-glass] .ui-nav-bar {
+  background: var(--ui-glass-bg); color: var(--ui-color-text); border: 1px solid var(--ui-glass-border);
+  backdrop-filter: blur(var(--ui-glass-blur)); -webkit-backdrop-filter: blur(var(--ui-glass-blur));
+}
+.ui-map-navigation[data-glass] .ui-nav-maneuver { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
+.ui-map-navigation[data-glass] .ui-nav-street { color: var(--ui-color-text-muted); }

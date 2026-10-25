@@ -65,6 +65,11 @@ export interface UiMapInsets {
 export interface UiMapUserLocation extends UiLatLng {
   /** How sure the position is, in metres: drawn as a soft halo of that radius (clamped on screen). */
   accuracy?: number;
+  /**
+   * The direction of travel, degrees clockwise from north (0.47.0): the dot becomes an arrow
+   * pointing that way on the map (it turns with a rotated map). Left out: the round dot.
+   */
+  heading?: number;
 }
 
 /** The smallest and largest the accuracy halo is drawn, in px across. */
@@ -82,9 +87,27 @@ export function uiMapAccuracyPx(accuracy: number | undefined, lat: number, zoom:
   return Math.min(UI_MAP_ACCURACY_MAX, Math.max(UI_MAP_ACCURACY_MIN, Math.round((2 * accuracy) / metresPerPx)));
 }
 
-/** The "you are here" HTML: the halo (when sized) under a dot with a white ring. */
-export function uiMapUserHtml(halo: number): string {
-  return `${halo ? `<span class="ui-map-user-halo" style="width:${halo}px;height:${halo}px;left:${-halo / 2}px;top:${-halo / 2}px"></span>` : ''}<span class="ui-map-user-dot"></span>`;
+/**
+ * The "you are here" HTML: the halo (when sized) under a dot with a white ring; with a `heading`
+ * (0.47.0) a bigger puck with an arrow turned to it instead of the dot.
+ */
+export function uiMapUserHtml(halo: number, heading?: number): string {
+  const h = halo ? `<span class="ui-map-user-halo" style="width:${halo}px;height:${halo}px;left:${-halo / 2}px;top:${-halo / 2}px"></span>` : '';
+  if (heading === undefined || heading === null || !Number.isFinite(heading)) return `${h}<span class="ui-map-user-dot"></span>`;
+  const deg = Math.round((((heading % 360) + 360) % 360) * 10) / 10;
+  return `${h}<span class="ui-map-user-puck" style="transform:rotate(${deg}deg)"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3.5L18.5 19.5L12 15.6L5.5 19.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>`;
+}
+
+/**
+ * The rotation a map with `bearing` (0.47.0) gives a point: where `p`, a point of the unrotated map
+ * (Leaflet's container point), appears on screen when the map is turned about `pivot` so that the
+ * compass direction `bearing` is up. `inverse` goes back, from the screen to the unrotated map.
+ */
+export function uiMapRotatePoint(p: { x: number; y: number }, pivot: { x: number; y: number }, bearing: number, inverse = false): { x: number; y: number } {
+  const a = ((inverse ? bearing : -bearing) * Math.PI) / 180;
+  const dx = p.x - pivot.x;
+  const dy = p.y - pivot.y;
+  return { x: pivot.x + dx * Math.cos(a) - dy * Math.sin(a), y: pivot.y + dx * Math.sin(a) + dy * Math.cos(a) };
 }
 
 /**
@@ -187,6 +210,8 @@ export interface UiMapRoute {
    * False draws it at once. Never animated under reduced motion or on a preview.
    */
   animate?: boolean;
+  /** The line's opacity over its casing, 0..1 (0.47.0); 1 by default. A navigation view draws the way behind at 0.6. */
+  opacity?: number;
 }
 
 /** Px of room kept free on each (physical) side by `fitPoints`, on top of the insets. */
@@ -408,6 +433,33 @@ export function uiMapPulseHtml(still: boolean): string {
   return still ? '<span class="ui-map-pulse-halo"></span>' : '<span class="ui-map-pulse-ring"></span>'.repeat(3);
 }
 
+/** Two-finger rotation (0.47.0): the twist that turns the map, if it comes before the zoom or pan thresholds. */
+export const UI_MAP_ROTATE_THRESHOLD = 15;
+/** A pinch that changes the fingers' distance by this much (10%) first is a zoom: no turning in that gesture. */
+export const UI_MAP_PINCH_ZOOM_THRESHOLD = 0.1;
+/** Fingers whose middle moves this far (px) first are a pan: no turning in that gesture. */
+export const UI_MAP_PINCH_MOVE_THRESHOLD = 30;
+
+/**
+ * Which gesture two fingers make (0.47.0, Flutter's gesture race with the same thresholds): 'rotate'
+ * once they twist `UI_MAP_ROTATE_THRESHOLD` degrees before the pinch passes a 10% zoom or a 30 px pan;
+ * 'pinch' once one of those comes first (and turning is out for that gesture); 'undecided' before.
+ */
+export function uiMapTwoFingerGesture(twistDeg: number, scale: number, movePx: number): 'rotate' | 'pinch' | 'undecided' {
+  if (Math.abs(twistDeg) >= UI_MAP_ROTATE_THRESHOLD) return 'rotate';
+  if (Math.abs(scale - 1) >= UI_MAP_PINCH_ZOOM_THRESHOLD || movePx >= UI_MAP_PINCH_MOVE_THRESHOLD) return 'pinch';
+  return 'undecided';
+}
+
+/** Whether a bearing is away from north (more than half a degree): the compass shows. */
+export function uiMapIsTurned(bearing: number): boolean {
+  const b = ((bearing % 360) + 360) % 360;
+  return Math.min(b, 360 - b) > 0.5;
+}
+
+/** The compass needle (0.47.0): north half in the danger tone, south half muted, turned to north. */
+export const UI_MAP_COMPASS_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path class="ui-map-compass-n" d="M12 3L15.5 12H8.5Z"/><path class="ui-map-compass-s" d="M12 21L8.5 12H15.5Z"/></svg>';
+
 /** The Leaflet pane the pulse is drawn in: above the tiles (200) and overlays (400), below markers (600). */
 const PULSE_PANE = 'uiMapPulse';
 /** The "you are here" dot's pane: above the pulse, below the markers and the pin. */
@@ -613,6 +665,20 @@ export class UiMap {
   area = input<UiMapArea | null>(null);
   /** The radius handle's accessible name; null: the `mapSearchArea` string ("Search area"). */
   areaLabel = input<string | null>(null);
+  /**
+   * The compass direction at the top of the map, degrees clockwise from north (0.47.0): 0 is north
+   * up; a heading turns the map heading-up. The map turns about the middle of the visible part.
+   */
+  bearing = input(0);
+  /** The zoom buttons (0.47.0); false hides them (the wheel, pinch and keys still zoom). */
+  zoomButtons = input(true, { transform: booleanAttribute });
+  /**
+   * The person can turn the map (0.47.0): a two-finger twist (past 15 degrees, before the pinch
+   * zooms or pans), or Alt + drag with a mouse. Shift + drag stays Leaflet's box zoom.
+   */
+  rotatable = input(true, { transform: booleanAttribute });
+  /** A compass button under the zoom buttons while the map is turned from north; it turns it back (0.47.0). */
+  compass = input(true, { transform: booleanAttribute });
 
   readonly markerSelected = output<UiMapMarker>();
   /** A map-background tap (0.43.1); also emitted after that tap moves the pin in `pinMode`. */
@@ -628,6 +694,13 @@ export class UiMap {
   readonly areaChanging = output<number>();
   /** The area's radius in metres when its handle is let go, or after a keyboard step (0.44.0). */
   readonly areaChange = output<number>();
+  /**
+   * The person moved the map themselves (0.47.0): a drag, the wheel, a pinch, a double-click, the
+   * arrow keys or a box zoom; not the zoom buttons, and never a move from the app.
+   */
+  readonly userMove = output<void>();
+  /** The person turned the map, or pressed the compass (0.47.0): the new bearing, when the turn ends. */
+  readonly bearingChange = output<number>();
 
   protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon, expand: ArrowExpand01Icon };
 
@@ -691,6 +764,17 @@ export class UiMap {
   private areaLocal: number | null = null;
   /** The pointer dragging the handle, if one is. */
   private areaPointer: number | null = null;
+  /**
+   * The map's turn (0.47.0): the bearing shown, unwrapped so 359 to 1 turns 2 degrees, not 358; and
+   * the element turned (Leaflet's map pane, moved into it the first time the map turns).
+   */
+  private turn = 0;
+  private rotor: HTMLElement | null = null;
+  /** The compass control (0.47.0). */
+  private compassControl: Leaflet.Control | null = null;
+  /** The arrow puck as drawn (0.47.0): its halo size and heading (unwrapped like the map's turn), to update it in place. */
+  private userKey = '';
+  private puckTurn = 0;
 
   constructor() {
     const browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -767,6 +851,19 @@ export class UiMap {
       this.areaLabel();
       untracked(() => this.drawArea());
     });
+    effect(() => {
+      const b = this.bearing();
+      untracked(() => this.applyBearing(b));
+    });
+    effect(() => {
+      this.zoomButtons();
+      untracked(() => this.applyPreview(this.preview()));
+    });
+    effect(() => {
+      this.compass();
+      this.strings.mapResetNorth;
+      untracked(() => this.updateCompass());
+    });
     // An app's language toggle flips <html dir> at runtime (0.46.0): the zoom buttons, credits,
     // tooltips, insets and label sides follow without rebuilding the map.
     effect(() => {
@@ -785,6 +882,7 @@ export class UiMap {
     if (!this.map) return;
     const rtl = this.rtl();
     this.zoomControl?.setPosition(rtl ? 'topright' : 'topleft');
+    this.compassControl?.setPosition(rtl ? 'topright' : 'topleft');
     this.attributionControl?.setPosition(rtl ? 'bottomleft' : 'bottomright');
     this.tooltipSide.set(rtl ? 'right' : 'left');
     this.applyInsets(this.insets());
@@ -872,15 +970,61 @@ export class UiMap {
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       // The person moves the map (drag, wheel, double click, pinch, keys, box zoom): it is theirs now.
-      map.on('dragstart boxzoomend', () => this.release());
-      el.addEventListener('wheel', () => this.release(), { passive: true });
-      el.addEventListener('dblclick', () => this.release());
+      const moved = () => {
+        this.release();
+        if (!this.preview()) this.zone.run(() => this.userMove.emit());
+      };
+      map.on('dragstart boxzoomend', moved);
+      el.addEventListener('wheel', moved, { passive: true });
+      el.addEventListener('dblclick', moved);
       el.addEventListener('touchstart', (e) => {
-        if (e.touches.length > 1) this.release();
+        if (e.touches.length > 1) moved();
       }, { passive: true });
       el.addEventListener('keydown', (e) => {
-        if (e.target === el && /^(Arrow(Up|Down|Left|Right)|[-+=_])$/.test(e.key)) this.release();
+        if (e.target === el && /^(Arrow(Up|Down|Left|Right)|[-+=_])$/.test(e.key)) moved();
       });
+      // A turned map (0.47.0): pointer positions are turned back into the unrotated map, so taps,
+      // the wheel, pinches and double-clicks land on the point under the finger; and a drag moves
+      // the map the way the finger goes (Leaflet would move it along the unrotated axes).
+      if (typeof map.mouseEventToContainerPoint === 'function') {
+        const toContainer = map.mouseEventToContainerPoint.bind(map);
+        map.mouseEventToContainerPoint = (e: MouseEvent) => {
+          const p = toContainer(e);
+          if (!this.turn) return p;
+          const q = uiMapRotatePoint(p, this.pivot(), this.turn, true);
+          return L.point(q.x, q.y);
+        };
+      }
+      const draggable = (map.dragging as unknown as { _draggable?: Leaflet.Draggable & { _newPos: Leaflet.Point; _startPos: Leaflet.Point } })?._draggable;
+      draggable?.on('predrag', () => {
+        if (!this.turn) return;
+        const d = draggable._newPos.subtract(draggable._startPos);
+        const r = uiMapRotatePoint({ x: d.x, y: d.y }, { x: 0, y: 0 }, this.turn, true);
+        draggable._newPos = draggable._startPos.add(L.point(r.x, r.y));
+      });
+      this.wireRotation(el);
+      // The compass: a Leaflet control in the zoom buttons' corner, so it stacks under them (0.47.0).
+      const Compass = L.Control?.extend?.({
+        onAdd: () => {
+          const box = L.DomUtil.create('div', 'leaflet-bar leaflet-control ui-map-compass-bar');
+          const a = L.DomUtil.create('a', 'ui-map-compass', box) as HTMLAnchorElement;
+          a.href = '#';
+          a.setAttribute('role', 'button');
+          a.innerHTML = UI_MAP_COMPASS_SVG;
+          L.DomEvent.disableClickPropagation(box);
+          L.DomEvent.disableScrollPropagation(box);
+          const reset = (e: Event) => {
+            e.preventDefault();
+            this.resetNorth();
+          };
+          a.addEventListener('click', reset);
+          a.addEventListener('keydown', (e) => {
+            if (e.key === ' ') reset(e);
+          });
+          return box;
+        },
+      });
+      if (Compass) this.compassControl = new Compass({ position: rtl ? 'topright' : 'topleft' }).addTo(map);
       // A fit asked for while Leaflet was mid-zoom runs once it has landed.
       map.on('zoomend moveend', () => {
         if (!this.refitPending) return;
@@ -932,6 +1076,11 @@ export class UiMap {
       }
       this.teardown = () => {
         ro.disconnect();
+        this.stopRouteAnimations();
+        // Leaflet ends a zoom animation on a timer that outlives remove() and then reads the removed
+        // panes: end it now, so the timer finds nothing to do (0.47.0).
+        const z = map as unknown as { _animatingZoom?: boolean; _onZoomTransitionEnd?: () => void };
+        if (z._animatingZoom) z._onZoomTransitionEnd?.();
         map.remove();
         this.map = null;
         this.markerLayer = null;
@@ -942,6 +1091,7 @@ export class UiMap {
         this.pulseMarker = null;
         this.pulseKey = '';
         this.userMarker = null;
+        this.userKey = '';
         this.routeLayers.clear();
         this.stopRouteAnimations();
         this.tiles = null;
@@ -952,6 +1102,8 @@ export class UiMap {
         this.areaLine = null;
         this.areaHandle = null;
         this.areaPointer = null;
+        this.rotor = null;
+        this.compassControl = null;
       };
     });
     this.tooltipSide.set(rtl ? 'right' : 'left');
@@ -966,6 +1118,8 @@ export class UiMap {
     this.drawRoutes(this.routes());
     this.drawArea();
     this.applyPreview(this.preview());
+    this.turn = 0;
+    this.applyBearing(this.bearing());
   }
 
   /**
@@ -984,9 +1138,17 @@ export class UiMap {
     // The area's handle is not on a preview (the circle stays).
     this.drawArea();
     if (zoomControl) {
-      if (on) zoomControl.remove();
-      else if (!(zoomControl as unknown as { _map?: unknown })._map) zoomControl.addTo(map);
+      if (on || !this.zoomButtons()) zoomControl.remove();
+      else if (!(zoomControl as unknown as { _map?: unknown })._map) {
+        zoomControl.addTo(map);
+        // Put the compass back under it.
+        if (this.compassControl) {
+          this.compassControl.remove();
+          this.compassControl.addTo(map);
+        }
+      }
     }
+    this.updateCompass();
     const el = this.host.nativeElement.querySelector('.ui-map-canvas') as HTMLElement | null;
     if (!el) return;
     if (on) {
@@ -1122,6 +1284,7 @@ export class UiMap {
           zIndexOffset: 2000,
           icon: L.divIcon({ className: 'ui-map-area-handle', html: '<span class="ui-map-area-knob"></span><span class="ui-map-area-chip"></span>', iconSize: [48, 48], iconAnchor: [24, 24] }),
         });
+        this.upright(marker);
         this.areaHandle = marker.addTo(map);
         const el = marker.getElement();
         if (el) this.wireAreaHandle(el);
@@ -1285,6 +1448,8 @@ export class UiMap {
     const next = uiMapInsetShift(insets, rtl);
     const old = this.shift;
     this.shift = next;
+    // A turned map turns about the middle of the visible part.
+    if (this.rotor) this.rotor.style.transformOrigin = this.pivotCss();
     const map = this.map;
     if (!map || (old.x === next.x && old.y === next.y)) return;
     // A fit owns the camera: work it out again for the new insets (not a pan at a stale zoom).
@@ -1346,28 +1511,50 @@ export class UiMap {
       return;
     }
     this.tiles?.remove();
-    this.tiles = L.tileLayer(url, { attribution, maxZoom: 19, tileSize, zoomOffset, crossOrigin: true, referrerPolicy }).addTo(map);
+    const tiles = L.tileLayer(url, { attribution, maxZoom: 19, tileSize, zoomOffset, crossOrigin: true, referrerPolicy });
+    this.coverTurned(tiles);
+    this.tiles = tiles.addTo(map);
     this.tilesKey = key;
   }
 
   private drawUser(u: UiMapUserLocation | null): void {
     const { L, map } = this;
     if (!L || !map) return;
+    const halo = u ? uiMapAccuracyPx(u.accuracy, u.lat, map.getZoom()) : 0;
+    const arrow = !!u && u.heading !== undefined && u.heading !== null && Number.isFinite(u.heading);
+    const key = `${halo}|${arrow}`;
+    // The same shape (0.47.0): move it and turn its arrow in place, so the arrow eases with the
+    // map's turn instead of jumping ahead of it.
+    if (u && this.userMarker && key === this.userKey) {
+      this.userMarker.setLatLng([u.lat, u.lng]);
+      if (arrow) this.turnPuck(u.heading!);
+      return;
+    }
     this.userMarker?.remove();
     this.userMarker = null;
+    this.userKey = '';
     if (!u) return;
-    const halo = uiMapAccuracyPx(u.accuracy, u.lat, map.getZoom());
+    if (arrow) this.puckTurn = ((u.heading! % 360) + 360) % 360;
     const marker = L.marker([u.lat, u.lng], {
       pane: USER_PANE,
       // Not a target: its halo can be 240px across, and a tap there still places the pin / is a map tap.
       interactive: false,
       keyboard: false,
-      icon: L.divIcon({ className: 'ui-map-user', html: uiMapUserHtml(halo), iconSize: [0, 0] }),
+      icon: L.divIcon({ className: 'ui-map-user', html: uiMapUserHtml(halo, u.heading), iconSize: [0, 0] }),
     });
     this.userMarker = marker.addTo(map);
+    this.userKey = key;
     const el = marker.getElement();
     el?.setAttribute('role', 'img');
     el?.setAttribute('aria-label', this.strings.mapYourLocation);
+  }
+
+  /** Turns the arrow puck to `heading` the shorter way round. */
+  private turnPuck(heading: number): void {
+    const delta = ((((heading - this.puckTurn) % 360) + 540) % 360) - 180;
+    this.puckTurn += delta;
+    const puck = this.userMarker?.getElement()?.querySelector<HTMLElement>('.ui-map-user-puck');
+    if (puck) puck.style.transform = `rotate(${Math.round(this.puckTurn * 10) / 10}deg)`;
   }
 
   /** The widest a marker label gets: 320px, or the map's width less 32px when that is narrower. */
@@ -1424,9 +1611,11 @@ export class UiMap {
         layers.line.setLatLngs(shown(ll));
       }
       if (layers.anim) animating = true;
-      const el = layers.line.getElement();
+      const el = layers.line.getElement() as SVGElement | undefined;
       el?.setAttribute('data-tone', r.tone ?? 'primary');
       el?.setAttribute('data-route', r.id);
+      // Inline, over the stylesheet's stroke-opacity: 1 (0.47.0).
+      if (el) el.style.strokeOpacity = r.opacity === undefined || r.opacity >= 1 ? '' : String(Math.max(0, r.opacity));
       if (r.label) {
         el?.setAttribute('role', 'img');
         el?.setAttribute('aria-label', r.label);
@@ -1548,6 +1737,7 @@ export class UiMap {
         riseOnHover: true,
       });
       marker.on('click', () => this.zone.run(() => this.markerSelected.emit(m)));
+      this.upright(marker);
       marker.addTo(markerLayer);
       // Its name, whether or not its label is shown (0.43.0: markerLabels can hide it).
       const name = m.ariaLabel ?? m.label;
@@ -1592,7 +1782,9 @@ export class UiMap {
       const el = marker.getElement?.();
       const label = el?.querySelector<HTMLElement>('.ui-map-label');
       if (!el || !label) return;
-      const x = map.latLngToContainerPoint(marker.getLatLng()).x;
+      const c = map.latLngToContainerPoint(marker.getLatLng());
+      // On a turned map, where the marker is on screen.
+      const x = this.turn ? uiMapRotatePoint(c, this.pivot(), this.turn).x : c.x;
       const side = uiMapLabelSide(x, label.offsetWidth, width, rtl);
       if (el.getAttribute('data-side') !== side) el.setAttribute('data-side', side);
     });
@@ -1630,6 +1822,7 @@ export class UiMap {
         this.zone.run(() => this.pin.set({ lat: ll.lat, lng: ll.lng }));
       });
       marker.on('click', () => {});
+      this.upright(marker);
       this.pinMarker = marker.addTo(map);
       if (!draggable) {
         // A fixed location: still named for screen readers, though it takes no input.
@@ -1640,6 +1833,223 @@ export class UiMap {
     } else {
       this.pinMarker.setLatLng([p.lat, p.lng]);
     }
+  }
+
+  /** The point the map turns about: the middle of the visible part, in container px. */
+  private pivot(): { x: number; y: number } {
+    const s = this.map?.getSize();
+    return { x: (s?.x ?? 0) / 2 + this.shift.x, y: (s?.y ?? 0) / 2 + this.shift.y };
+  }
+
+  private pivotCss(): string {
+    const p = this.pivot();
+    return `${p.x}px ${p.y}px`;
+  }
+
+  /**
+   * Turns the map so `bearing` is up (0.47.0). Leaflet 1.9 can't rotate, and the leaflet-rotate
+   * plugin patches Leaflet's prototypes for every map on the page (and needs a global L), so the
+   * map turns here, for this map only: its map pane goes into a wrapper turned with CSS about the
+   * middle of the visible part; pointer positions and drags are turned back (see init); the tiles
+   * and lines cover the turned view's corners; markers, the pin and the area handle are turned back
+   * upright. The controls stay put (they are outside the turned pane). A short turn animation
+   * unless reduced motion or a preview.
+   */
+  private applyBearing(bearing: number, animate = true): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    const target = Number.isFinite(bearing) ? bearing : 0;
+    const delta = ((((target - this.turn) % 360) + 540) % 360) - 180;
+    this.setTurn(Math.abs(delta) < 1e-9 ? this.turn : this.turn + delta, animate);
+  }
+
+  /** Turns the map to `next` degrees (unwrapped) about the middle of the visible part. */
+  private setTurn(next: number, animate: boolean): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    if (next === this.turn && (this.rotor || !next)) return;
+    const was = this.turn;
+    this.turn = Math.abs(((next % 360) + 360) % 360) < 1e-9 ? Math.round(next / 360) * 360 : next;
+    if (!this.rotor) {
+      const pane = map.getPane('mapPane')!;
+      const rotor = document.createElement('div');
+      rotor.className = 'ui-map-rotor';
+      pane.parentNode!.insertBefore(rotor, pane);
+      rotor.appendChild(pane);
+      this.rotor = rotor;
+    }
+    const rotor = this.rotor;
+    rotor.style.transformOrigin = this.pivotCss();
+    rotor.toggleAttribute('data-animate', animate && !this.still() && was !== this.turn);
+    rotor.style.transform = this.turn ? `rotate(${-this.turn}deg)` : '';
+    this.host.nativeElement.toggleAttribute('data-turned', ((this.turn % 360) + 360) % 360 !== 0);
+    // The lines and the area are clipped to what Leaflet thinks is in view: give them the corners.
+    const padded = this.turn ? 1.5 : 0.1;
+    const m = map as unknown as { _renderer?: Leaflet.Renderer; _paneRenderers?: Record<string, Leaflet.Renderer> };
+    for (const r of [m._renderer, ...Object.values(m._paneRenderers ?? {})]) {
+      if (!r) continue;
+      r.options.padding = padded;
+      (r as unknown as { _update?: () => void })._update?.();
+    }
+    if (!(map as unknown as { _animatingZoom?: boolean })._animatingZoom) (this.tiles as unknown as { _update?: () => void } | null)?._update?.();
+    // Upright again for the new turn.
+    for (const marker of [...this.markerById.values(), this.pinMarker, this.areaHandle]) (marker as unknown as { update?: () => void } | null)?.update?.();
+    this.placeLabels();
+    this.updateCompass();
+  }
+
+  /**
+   * Turns the map so `bearing` is up (0.47.0), eased unless reduced motion; for an app that needs
+   * the turn back after the person turned it (a navigation view's Recenter), since `[bearing]` only
+   * acts when it changes.
+   */
+  rotateTo(bearing: number): void {
+    this.applyBearing(bearing, true);
+  }
+
+  /** The bearing shown, degrees clockwise from north in 0..360. */
+  currentBearing(): number {
+    return ((this.turn % 360) + 360) % 360;
+  }
+
+  /** The compass: north up again, and `(bearingChange)` 0. */
+  private resetNorth(): void {
+    this.applyBearing(0, true);
+    this.zone.run(() => this.bearingChange.emit(0));
+  }
+
+  /** The compass shows while the map is turned (and not on a preview); its needle points north. */
+  private updateCompass(): void {
+    const box = (this.compassControl as unknown as { getContainer?: () => HTMLElement | undefined } | null)?.getContainer?.();
+    if (!box) return;
+    box.hidden = !this.compass() || this.preview() || !uiMapIsTurned(this.turn);
+    const a = box.querySelector('a');
+    a?.setAttribute('title', this.strings.mapResetNorth);
+    a?.setAttribute('aria-label', this.strings.mapResetNorth);
+    const svg = box.querySelector<SVGElement>('svg');
+    if (svg) svg.style.transform = `rotate(${-this.turn}deg)`;
+  }
+
+  /**
+   * The person turns the map (0.47.0): two fingers twisting past `UI_MAP_ROTATE_THRESHOLD` before
+   * the pinch zooms or pans (Leaflet's own pinch keeps the point under the fingers in place, so the
+   * map turns about them), or Alt + drag around the middle of the visible part with a mouse.
+   */
+  private wireRotation(el: HTMLElement): void {
+    const angle = (a: { clientX: number; clientY: number }, b: { clientX: number; clientY: number }) => (Math.atan2(b.clientY - a.clientY, b.clientX - a.clientX) * 180) / Math.PI;
+    const diff = (a: number, b: number) => ((((a - b) % 360) + 540) % 360) - 180;
+    let pinch: { angle: number; dist: number; mid: { x: number; y: number }; turn: number; mode: 'rotate' | 'pinch' | 'undecided' } | null = null;
+    const can = () => this.rotatable() && !this.preview() && !!this.map;
+    const finish = () => {
+      if (pinch?.mode === 'rotate') this.zone.run(() => this.bearingChange.emit(this.currentBearing()));
+      pinch = null;
+    };
+    el.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 2 || !can()) {
+        if (e.touches.length !== 2) finish();
+        return;
+      }
+      const [a, b] = [e.touches[0], e.touches[1]];
+      pinch = { angle: angle(a, b), dist: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY), mid: { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }, turn: this.turn, mode: 'undecided' };
+    }, { passive: true });
+    el.addEventListener('touchmove', (e) => {
+      if (!pinch || e.touches.length !== 2) return;
+      const [a, b] = [e.touches[0], e.touches[1]];
+      const twist = diff(angle(a, b), pinch.angle);
+      if (pinch.mode === 'undecided') {
+        const dist = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+        const mid = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+        pinch.mode = uiMapTwoFingerGesture(twist, pinch.dist ? dist / pinch.dist : 1, Math.hypot(mid.x - pinch.mid.x, mid.y - pinch.mid.y));
+        // (The two-finger touch already said userMove.)
+        if (pinch.mode === 'rotate') this.release();
+      }
+      // Fingers turning clockwise turn the map clockwise: north moves clockwise, the bearing goes down.
+      if (pinch.mode === 'rotate') this.setTurn(pinch.turn - twist, false);
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) finish();
+    }, { passive: true });
+    el.addEventListener('touchcancel', finish, { passive: true });
+
+    // Alt + drag with a mouse: the turn follows the pointer around the middle of the visible part.
+    el.addEventListener('pointerdown', (e) => {
+      if (!e.altKey || e.pointerType !== 'mouse' || e.button !== 0 || !can()) return;
+      // Before Leaflet's own drag sees it.
+      e.stopPropagation();
+      e.preventDefault();
+      const box = el.getBoundingClientRect();
+      const p = this.pivot();
+      const around = (ev: { clientX: number; clientY: number }) => (Math.atan2(ev.clientY - box.top - p.y, ev.clientX - box.left - p.x) * 180) / Math.PI;
+      const start = around(e);
+      const turn0 = this.turn;
+      let turned = false;
+      const move = (ev: PointerEvent) => {
+        const d = diff(around(ev), start);
+        if (!turned && Math.abs(d) < 2) return;
+        if (!turned) {
+          turned = true;
+          this.release();
+          this.zone.run(() => this.userMove.emit());
+        }
+        this.setTurn(turn0 - d, false);
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        if (turned) this.zone.run(() => this.bearingChange.emit(this.currentBearing()));
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+    }, { capture: true });
+    // Leaflet starts its drag on mousedown: an Alt press is ours.
+    el.addEventListener('mousedown', (e) => {
+      if (e.altKey && e.button === 0 && can()) e.stopPropagation();
+    }, { capture: true });
+  }
+
+  /** The tiles also load the corners a turned map shows (Leaflet loads only the unturned view). */
+  private coverTurned(tiles: Leaflet.TileLayer): void {
+    const L = this.L!;
+    const layer = tiles as unknown as { _getTiledPixelBounds: (c: Leaflet.LatLng) => Leaflet.Bounds };
+    if (typeof layer._getTiledPixelBounds !== 'function') return;
+    const own = layer._getTiledPixelBounds.bind(layer);
+    layer._getTiledPixelBounds = (center: Leaflet.LatLng) => {
+      const b = own(center);
+      const map = this.map;
+      if (!this.turn || !map || !b.min || !b.max) return b;
+      const size = map.getSize();
+      const p = this.pivot();
+      const corners = [[0, 0], [size.x, 0], [0, size.y], [size.x, size.y]].map(([x, y]) => uiMapRotatePoint({ x, y }, p, this.turn, true));
+      const kx = (b.max.x - b.min.x) / Math.max(1, size.x);
+      const ky = (b.max.y - b.min.y) / Math.max(1, size.y);
+      const xs = corners.map((c) => b.min!.x + c.x * kx);
+      const ys = corners.map((c) => b.min!.y + c.y * ky);
+      return L.bounds([Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]);
+    };
+  }
+
+  /**
+   * Keeps a marker upright on a turned map (0.47.0): its icon is turned back by the bearing about
+   * its anchor (Leaflet places it with a translate; the turn is added after it).
+   */
+  private upright(marker: Leaflet.Marker): void {
+    const m = marker as unknown as { _setPos: (p: Leaflet.Point) => void; _icon?: HTMLElement };
+    if (typeof m._setPos !== 'function') return;
+    const own = m._setPos.bind(marker);
+    m._setPos = (pos: Leaflet.Point) => {
+      own(pos);
+      const el = m._icon;
+      if (!el) return;
+      if (!this.turn) {
+        el.style.removeProperty('transform-origin');
+        return;
+      }
+      const cs = getComputedStyle(el);
+      el.style.transformOrigin = `${-(parseFloat(cs.marginLeft) || 0)}px ${-(parseFloat(cs.marginTop) || 0)}px`;
+      el.style.transform += ` rotate(${this.turn}deg)`;
+    };
   }
 
   /** Dark theme: dim the tiles, or show the dark ones. Re-check when a theme changes anywhere up the tree. */

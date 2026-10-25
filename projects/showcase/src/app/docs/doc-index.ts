@@ -155,6 +155,9 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Selected marker', anchor: 'selected-marker' },
     { name: 'Search area', anchor: 'search-area' },
     { name: 'Map page', anchor: 'map-page' },
+    { name: 'Turning the map', anchor: 'turning' },
+    { name: 'Navigation', anchor: 'navigation' },
+    { name: 'Maneuver icons', anchor: 'maneuver-icons' },
   ],
   'window': [
     { name: 'Window', anchor: 'window' },

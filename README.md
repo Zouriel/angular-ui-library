@@ -80,6 +80,17 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   typing (a chat composer clearing on send) clears the box. `ui-badge` under `:lang(dv)` or `:dir(rtl)` takes the
   font's own line height plus 1px below (20px minimum), so Thaana's marks below the line stay inside the pill; Latin
   badges keep 20px. `npm run audit:rtl -- --font <Faruma.ttf>` measures all three in a browser.
+- **0.47.0**: map navigation mode and turning the map. `ui-map-navigation` (in `@zouriel/ui/map`) is a turn-by-turn
+  view: the map follows the person heading-up, the way behind dimmed, an arrow puck, a banner with the next maneuver's
+  arrow, "in 80 m", the instruction and street, the maneuver after it small, and the time / distance left, arrival
+  time and End. The app feeds the OSRM route, steps (its own localized instructions) and positions; `UiNavTracker`
+  (pure) emits `announce` (start, each new maneuver, 200 m and 30 m before it), `offRoute` (5 s over 40 m off) and
+  `arrived` (20 m). Maneuver icons (`UI_NAV_ICONS`) cover turns, slight / sharp, U-turns, roundabout exits, forks,
+  merges, depart and arrive, never mirrored in RTL. `ui-map` gains `[bearing]`, `rotatable` (two fingers past 15
+  degrees before a 10% zoom or 30 px pan; Alt + drag with a mouse), a compass under the zoom buttons while turned
+  ("Reset to north"), `rotateTo()`, `(bearingChange)`, `(userMove)`, `zoomButtons`, `UiMapUserLocation.heading`
+  (arrow puck) and `UiMapRoute.opacity`; markers, the pin and labels stay upright. Leaflet can't rotate, so the map
+  pane turns with CSS, for that map only. New strings `nav*` and `mapResetNorth` (en + dv).
 - **0.46.2**: map routes draw in. A route that appears in `ui-map` `[routes]`, or gets new points, grows along its
   path from start to end (casing and line together, ease-out, 250..900 ms by length: `uiMapRouteDrawMs`), then sits
   as before; `fitPoints` is unchanged. Re-rendering the same id and points doesn't replay it. `animate: false` on a

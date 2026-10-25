@@ -381,6 +381,18 @@ this.map().fitPoints([me, patient, ...route.points], { padding: 24, maxZoom: 17 
   32px), set by the map), two lines before the ellipsis. Zoom buttons: the locate button's surface,
   border and `--ui-shadow-2`, 38px (44px with a 48px hit area on touch).
 
+Turning the map (0.47.0): `[bearing]` (degrees clockwise from north at the top) turns it about the middle of the
+visible part; `rotatable` (true) lets two fingers turn it once they twist 15 degrees before the pinch zooms 10% or
+pans 30 px (`uiMapTwoFingerGesture`), or Alt + drag with a mouse (Shift + drag stays the box zoom). While turned,
+a compass button (`compass`, true) sits under the zoom buttons; a click eases north up and emits `(bearingChange)`
+0, which also reports the end of every turn. `rotateTo(b)` turns it from code. Markers, the pin and the area handle
+stay upright; routes and dots turn with the map. `userLocation.heading` draws an arrow puck. `zoomButtons` false
+hides the zoom buttons, `(userMove)` says the person moved the map, `UiMapRoute.opacity` dims a line.
+
+Navigation (0.47.0): `<ui-map-navigation [route] [steps] [position] (announce) (offRoute) (arrived) (end)>` with
+`UiNavTracker`, `uiNavFormatDistance` / `uiNavFormatDuration` / `uiNavFormatClock` and the maneuver icons
+(`uiNavIconKind`, `uiNavIcon`, `UI_NAV_ICONS`); see the showcase's Navigation section.
+
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:, animate: true)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 

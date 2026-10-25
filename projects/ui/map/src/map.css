@@ -270,3 +270,28 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-map .ui-map-route-leaving { animation: none; opacity: 0; }
 }
+
+/* 0.47.0: a turned map (bearing). Leaflet's map pane sits in a wrapper turned about the middle of
+   the visible part; the controls are outside it and stay put. */
+.ui-map .ui-map-rotor { position: absolute; inset: 0; }
+.ui-map .ui-map-rotor[data-animate] { transition: transform var(--ui-motion-slow) var(--ui-ease-standard); }
+/* With a heading, the "you are here" dot is a 28px puck with an arrow turned to it. */
+.ui-map .ui-map-user-puck { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; box-sizing: border-box; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ui-map-user-tone); color: var(--ui-color-location-ring); border: 3px solid var(--ui-color-location-ring); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-user-puck svg { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-rotor[data-animate] { transition: none; }
+}
+/* The arrow turns with the map's turn, on the same curve, so it keeps pointing the right way. */
+.ui-map .ui-map-rotor[data-animate] .ui-map-user-puck { transition: transform var(--ui-motion-slow) var(--ui-ease-standard); }
+@media (prefers-reduced-motion: reduce) {
+  .ui-map .ui-map-rotor[data-animate] .ui-map-user-puck { transition: none; }
+}
+
+/* 0.47.0: the compass, under the zoom buttons while the map is turned; its needle points north. */
+.ui-map .ui-map-compass-bar[hidden] { display: none; }
+.ui-map .ui-map-compass { display: flex !important; align-items: center; justify-content: center; }
+.ui-map .ui-map-compass svg { display: block; transition: none; }
+.ui-map .ui-map-compass-n { fill: var(--ui-color-danger); }
+.ui-map .ui-map-compass-s { fill: var(--ui-color-text-muted); }
