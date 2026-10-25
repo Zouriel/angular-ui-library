@@ -7,7 +7,10 @@ import type * as Leaflet from 'leaflet';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { UiStringsService, uiStringsDv } from '@zouriel/ui';
 import { UI_MAP_LEAFLET, UiMap, uiMapRotatePoint, uiMapUserHtml, type UiLatLng } from './map';
-import { UiMapNavigation, uiNavFollowInsets, UI_NAV_FOLLOW_AT } from './map-navigation';
+import { UiMapNavigation, UiNavAction, uiNavFollowInsets, UI_NAV_FOLLOW_AT } from './map-navigation';
+import type { UiMapInsets } from './map';
+import VolumeHighIcon from '@hugeicons/core-free-icons/VolumeHighIcon';
+import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
 import { uiNavDistance, type UiNavEvent, type UiNavPosition, type UiNavState, type UiNavStep } from './navigation';
 
 /*
@@ -68,9 +71,28 @@ const leaflet = async () => {
   return mod;
 };
 
-async function setup(init?: (h: Host) => void) {
+/** 0.47.1: the app's buttons (mute, SOS), a status and insets. */
+@Component({
+  imports: [UiMapNavigation, UiNavAction],
+  template: `<div [attr.dir]="dir()" style="height: 844px">
+    <ui-map-navigation [route]="route()" [steps]="steps" [position]="position()" [status]="status()" [insets]="insets()">
+      <button uiNavAction id="mute" [icon]="muteIcon" label="Mute" [pressed]="muted()" (click)="muted.set(!muted())"></button>
+      <button uiNavAction id="sos" [icon]="sosIcon" label="SOS" tone="danger" (click)="sos = sos + 1"></button>
+    </ui-map-navigation>
+  </div>`,
+})
+class ActionsHost extends Host {
+  status = signal<string | null>(null);
+  insets = signal<UiMapInsets>({});
+  muted = signal(false);
+  sos = 0;
+  muteIcon = VolumeHighIcon;
+  sosIcon = Alert02Icon;
+}
+
+async function setup<T extends Host = Host>(init?: (h: T) => void, cmp: new () => T = Host as unknown as new () => T) {
   TestBed.configureTestingModule({ providers: [{ provide: UI_MAP_LEAFLET, useValue: leaflet }] });
-  const f = TestBed.createComponent(Host);
+  const f = TestBed.createComponent(cmp);
   init?.(f.componentInstance);
   f.detectChanges();
   const root = f.nativeElement as HTMLElement;
@@ -320,5 +342,161 @@ describe('ui-map bearing (0.47.0)', () => {
     expect(uiMapUserHtml(0)).toContain('ui-map-user-dot');
     expect(uiMapUserHtml(0)).not.toContain('puck');
     expect(uiNavDistance(at(0, 0), at(100, 0))).toBeCloseTo(100, 0);
+  });
+});
+
+describe('ui-map-navigation: actions, status, insets, banner icon colour (0.47.1)', () => {
+  it('the app\'s buttons stack at the end side under the banner: 48px round, opaque, in their order', async () => {
+    const { f, host, feed, settle } = await setup<ActionsHost>(undefined, ActionsHost);
+    await feed({ ...along(0), timestamp: 0 });
+    const stack = host.querySelector('.ui-nav-under .ui-nav-actions') as HTMLElement;
+    expect(stack).toBeTruthy();
+    expect(stack.getAttribute('data-count')).toBe('2');
+    const [mute, sos] = [...stack.querySelectorAll('button.ui-nav-action')] as HTMLButtonElement[];
+    expect([mute.id, sos.id]).toEqual(['mute', 'sos']);
+    // Not inside the banner (measured for the follow point) and after it in the reading order.
+    expect(host.querySelector('.ui-nav-top .ui-nav-action')).toBeNull();
+    expect(host.querySelector('.ui-nav-top')!.compareDocumentPosition(stack) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    for (const b of [mute, sos]) {
+      expect(b.getAttribute('type')).toBe('button');
+      expect(b.querySelector('hugeicons-icon')!.getAttribute('aria-hidden')).toBe('true');
+      const c = getComputedStyle(b);
+      expect([c.width, c.height, c.borderRadius, c.position]).toEqual(['48px', '48px', '50%', 'relative']);
+    }
+    expect([mute.getAttribute('aria-label'), mute.getAttribute('title'), sos.getAttribute('aria-label')]).toEqual(['Mute', 'Mute', 'SOS']);
+    expect(getComputedStyle(mute).getPropertyValue('background')).toBe('var(--ui-color-surface-raised)');
+    // The block under the banner: compass column at the start, status in the middle, the stack at the end.
+    const under = getComputedStyle(host.querySelector('.ui-nav-under')!);
+    expect(under.display).toBe('grid');
+    expect(under.gridTemplateColumns).toBe('48px minmax(0, 1fr) 48px');
+    expect(under.top).toBe('calc(var(--ui-nav-top-bottom, 0px) + var(--ui-space-2))');
+    expect(under.pointerEvents).toBe('none');
+    expect(getComputedStyle(stack).gridColumn).toBe('3');
+    expect(getComputedStyle(mute).pointerEvents).toBe('auto');
+    // Clicks reach the app.
+    mute.click();
+    sos.click();
+    await settle();
+    expect(f.componentInstance.muted()).toBe(true);
+    expect(f.componentInstance.sos).toBe(1);
+  });
+
+  it('pressed is a toggle (aria-pressed, the primary fill); danger is the prominent SOS style', async () => {
+    const { f, host, feed, settle } = await setup<ActionsHost>(undefined, ActionsHost);
+    await feed({ ...along(0), timestamp: 0 });
+    const mute = host.querySelector('#mute') as HTMLButtonElement;
+    const sos = host.querySelector('#sos') as HTMLButtonElement;
+    expect(mute.getAttribute('aria-pressed')).toBe('false');
+    expect(sos.hasAttribute('aria-pressed')).toBe(false);
+    f.componentInstance.muted.set(true);
+    await settle();
+    expect(mute.getAttribute('aria-pressed')).toBe('true');
+    expect(getComputedStyle(mute).getPropertyValue('background')).toBe('var(--ui-color-primary)');
+    expect(sos.getAttribute('data-tone')).toBe('danger');
+    expect(mute.getAttribute('data-tone')).toBe('neutral');
+    const c = getComputedStyle(sos);
+    expect(c.getPropertyValue('background')).toBe('var(--ui-color-danger)');
+    expect(c.color).toBe('var(--ui-color-danger-contrast)');
+    expect(c.boxShadow).toContain('0 0 0 3px var(--ui-color-surface-raised)');
+  });
+
+  it('status: a pill under the banner in the middle column, a polite live region, hidden without one', async () => {
+    const { f, host, feed, settle } = await setup<ActionsHost>(undefined, ActionsHost);
+    await feed({ ...along(0), timestamp: 0 });
+    const pill = host.querySelector('.ui-nav-under .ui-nav-status') as HTMLElement;
+    expect(pill.getAttribute('role')).toBe('status');
+    expect(pill.hidden).toBe(true);
+    expect(getComputedStyle(pill).display).toBe('none');
+    f.componentInstance.status.set('Rerouting…');
+    await settle();
+    expect(pill.hidden).toBe(false);
+    expect(pill.textContent!.trim()).toBe('Rerouting…');
+    const c = getComputedStyle(pill);
+    expect(c.display).toBe('flex');
+    expect(c.gridColumn).toBe('2');
+    expect(c.borderRadius).toBe('var(--ui-radius-pill)');
+    expect(c.getPropertyValue('background')).toBe('var(--ui-color-surface-raised)');
+    // Not in the banner, so the follow point doesn't jump when it shows.
+    expect(host.querySelector('.ui-nav-top .ui-nav-status')).toBeNull();
+  });
+
+  it('insets: the banner, stack, Recenter and bar keep inside them; the safe area counts where bigger; the map gets the sides', async () => {
+    const { f, host, feed, settle, mapCmp } = await setup<ActionsHost>((h) => h.insets.set({ top: 56, bottom: 64, start: 72, end: 8 }), ActionsHost);
+    await feed({ ...along(0), timestamp: 0 });
+    await settle();
+    expect(['top', 'bottom', 'start', 'end'].map((k) => host.style.getPropertyValue(`--ui-nav-inset-${k}`))).toEqual(['56px', '64px', '72px', '8px']);
+    const h = getComputedStyle(host);
+    expect(h.getPropertyValue('--ui-nav-edge-top')).toBe('max(var(--ui-nav-inset-top, 0px), env(safe-area-inset-top, 0px))');
+    expect(h.getPropertyValue('--ui-nav-edge-start')).toBe('max(var(--ui-nav-inset-start, 0px), var(--ui-nav-safe-x))');
+    expect(h.getPropertyValue('--ui-nav-safe-x')).toBe('max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))');
+    const top = getComputedStyle(host.querySelector('.ui-nav-top')!);
+    expect(top.top).toBe('calc(var(--ui-nav-edge-top) + var(--ui-space-3))');
+    expect(top.getPropertyValue('inset-inline-start')).toBe('calc(var(--ui-nav-edge-start) + var(--ui-space-3))');
+    expect(top.getPropertyValue('inset-inline-end')).toBe('calc(var(--ui-nav-edge-end) + var(--ui-space-3))');
+    const under = getComputedStyle(host.querySelector('.ui-nav-under')!);
+    expect(under.getPropertyValue('inset-inline-end')).toBe('calc(var(--ui-nav-edge-end) + var(--ui-space-3))');
+    const bar = getComputedStyle(host.querySelector('.ui-nav-bar')!);
+    expect(bar.bottom).toBe('var(--ui-nav-inset-bottom, 0px)');
+    expect(bar.getPropertyValue('inset-inline-start')).toBe('var(--ui-nav-inset-start, 0px)');
+    expect(bar.getPropertyValue('padding-block')).toContain('max(0px, env(safe-area-inset-bottom, 0px) - var(--ui-nav-inset-bottom, 0px))');
+    (f.debugElement.query(By.directive(UiMapNavigation)).componentInstance as UiMapNavigation).following.set(false);
+    await settle();
+    expect(getComputedStyle(host.querySelector('.ui-nav-recenter')!).getPropertyValue('inset-inline-start')).toBe('calc(var(--ui-nav-edge-start) + var(--ui-space-3))');
+    // The compass keeps clear of a side rail: the map's start and end insets are the app's.
+    const mi = mapCmp.insets();
+    expect([mi.start, mi.end]).toEqual([72, 8]);
+    // No insets: zero, and the safe area alone decides.
+    f.componentInstance.insets.set({});
+    await settle();
+    expect(host.style.getPropertyValue('--ui-nav-inset-top')).toBe('0px');
+    expect([mapCmp.insets().start, mapCmp.insets().end]).toEqual([0, 0]);
+  });
+
+  it('new insets move the banner without resizing it: measured again (the stack and follow point follow)', async () => {
+    const { f, host, feed, settle } = await setup<ActionsHost>(undefined, ActionsHost);
+    await feed({ ...along(0), timestamp: 0 });
+    // jsdom has no layout: the banner's place follows the top inset, its size never changes.
+    const top = host.querySelector('.ui-nav-top') as HTMLElement;
+    Object.defineProperty(top, 'offsetHeight', { configurable: true, get: () => 150 });
+    Object.defineProperty(top, 'offsetTop', { configurable: true, get: () => 12 + (f.componentInstance.insets().top ?? 0) });
+    f.componentInstance.insets.set({ top: 1 });
+    await settle();
+    expect(host.style.getPropertyValue('--ui-nav-top-bottom')).toBe('163px');
+    f.componentInstance.insets.set({ top: 48 });
+    await settle();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(host.style.getPropertyValue('--ui-nav-top-bottom')).toBe('210px');
+  });
+
+  it('banner icons take the banner\'s colour over a theme\'s or app\'s icon tint', async () => {
+    const style = document.createElement('style');
+    // A theme tint (maldives sets --ui-color-icon) and an app's own rules on icons.
+    style.textContent = ':root { --ui-color-icon: #9fd8e0; } hugeicons-icon { color: #9fd8e0; } .app hugeicons-icon { color: #9fd8e0; } div hugeicons-icon { color: #9fd8e0; }';
+    document.head.appendChild(style);
+    try {
+      const { f, host, feed } = await setup<ActionsHost>(undefined, ActionsHost);
+      (f.nativeElement as HTMLElement).classList.add('app');
+      await feed({ ...along(0), timestamp: 0 });
+      // currentColor resolves to the element's own colour: the banner's contrast colour, the buttons' ink.
+      const want: [string, string][] = [
+        ['.ui-nav-maneuver hugeicons-icon', 'var(--ui-color-primary-contrast)'], ['.ui-nav-then hugeicons-icon', 'var(--ui-color-primary-contrast)'],
+        ['#mute hugeicons-icon', 'var(--ui-color-text)'], ['#sos hugeicons-icon', 'var(--ui-color-danger-contrast)'],
+      ];
+      for (const [sel, colour] of want) expect(getComputedStyle(host.querySelector(sel)!).color, sel).toBe(colour);
+      for (const sel of ['.ui-nav-banner', '.ui-nav-then', '.ui-nav-action']) {
+        expect(getComputedStyle(host.querySelector(sel)!).getPropertyValue('--ui-color-icon'), sel).toBe('currentColor');
+      }
+      expect(getComputedStyle(host.querySelector('.ui-nav-banner')!).color).toBe('var(--ui-color-primary-contrast)');
+      expect(getComputedStyle(host.querySelector('.ui-nav-maneuver')!).color).not.toContain('icon');
+    } finally {
+      style.remove();
+    }
+  });
+
+  it('RTL: still logical properties only (the stack goes to the start side, the arrows stay)', () => {
+    const c = css();
+    expect(c).not.toMatch(/(^|[\s;{])(left|right|margin-left|margin-right|padding-left|padding-right)\s*:/m);
+    expect(c).toMatch(/\.ui-nav-under \{[^}]*inset-inline-end/);
+    expect(c).not.toMatch(/!important/);
   });
 });

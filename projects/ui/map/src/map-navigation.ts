@@ -1,7 +1,7 @@
 import {
-  Component, DestroyRef, ElementRef, ViewEncapsulation, afterNextRender, booleanAttribute, computed, effect, inject, input, output, signal, untracked, viewChild,
+  Component, DestroyRef, ElementRef, Injector, ViewEncapsulation, afterNextRender, booleanAttribute, computed, contentChildren, effect, inject, input, output, signal, untracked, viewChild,
 } from '@angular/core';
-import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Navigation03Icon from '@hugeicons/core-free-icons/Navigation03Icon';
 import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
 import { UiButton } from '@zouriel/ui/button';
@@ -27,6 +27,41 @@ export function uiNavFollowInsets(height: number, top: number, bottom: number): 
   return { top: Math.max(0, 2 * at - height + bottom), bottom };
 }
 
+/** A navigation action's colour (0.47.1, Flutter `UiNavActionTone`): 'neutral', or 'danger' for SOS. */
+export type UiNavActionTone = 'neutral' | 'danger';
+
+/**
+ * `button[uiNavAction]` — one of the app's own buttons on a navigation view (0.47.1, Flutter
+ * `UiNavAction`): mute, SOS. Put it inside `ui-map-navigation`; it joins the round button stack at
+ * the end side under the banner. A 48px opaque circle with the icon; `label` is its accessible name
+ * (and tooltip). `tone` 'danger' is the prominent SOS style (the danger fill and a raised-surface
+ * ring). `pressed` makes it a toggle (aria-pressed), drawn in the primary fill while on (muted).
+ *
+ * ```html
+ * <button uiNavAction [icon]="muteIcon" label="Mute" [pressed]="muted()" (click)="toggleMute()"></button>
+ * <button uiNavAction [icon]="sosIcon" label="SOS" tone="danger" (click)="sos()"></button>
+ * ```
+ */
+@Component({
+  selector: 'button[uiNavAction]',
+  imports: [HugeiconsIconComponent],
+  host: {
+    class: 'ui-nav-action', type: 'button',
+    '[attr.aria-label]': 'label()', '[attr.title]': 'label()', '[attr.data-tone]': 'tone()', '[attr.aria-pressed]': 'pressed() ?? null',
+  },
+  template: `<hugeicons-icon [icon]="icon()" [size]="22" [strokeWidth]="1.8" aria-hidden="true" />`,
+})
+export class UiNavAction {
+  /** The icon (a hugeicons icon, one file per icon). */
+  icon = input.required<IconSvgObject>();
+  /** The accessible name and tooltip: "Mute", "SOS". */
+  label = input.required<string>();
+  /** 'danger': the prominent SOS style. */
+  tone = input<UiNavActionTone>('neutral');
+  /** A toggle's state (aria-pressed), drawn in the primary fill while true; null: not a toggle. */
+  pressed = input<boolean | null>(null);
+}
+
 /**
  * `ui-map-navigation` — a turn-by-turn view (0.47.0), like a car's navigation: a flat map that
  * follows the person and turns heading-up, the route ahead in the primary tone and the part behind
@@ -45,6 +80,13 @@ export function uiNavFollowInsets(height: number, top: number, bottom: number): 
  *   show Recenter, which follows again heading-up at `zoom`; the compass shows meanwhile (north up). Under reduced motion the map neither glides nor turns smoothly.
  * - In right-to-left text the banner and bar are mirrored; the maneuver arrows are not (left is left).
  * - `glass` (the config's by default) puts the banner and bar on glass.
+ * - Actions (0.47.1): `<button uiNavAction>` children (`UiNavAction`) stack as 48px round buttons at
+ *   the end side under the banner (start in right-to-left text is mirrored), clear of the compass
+ *   (inline start) and Recenter (bottom start). `status` ("Rerouting…") shows as a pill under the
+ *   banner, announced politely.
+ * - `insets` (0.47.1): px the app covers along each edge (`{ top, bottom, start, end }`: an app bar
+ *   with the status bar under it, a bottom navigation); the banner, actions and bar stay inside
+ *   them. The device safe area (notch, status bar, gesture bar) is used wherever it is bigger.
  *
  * Give it a height (it fills it).
  */
@@ -52,9 +94,13 @@ export function uiNavFollowInsets(height: number, top: number, bottom: number): 
   selector: 'ui-map-navigation',
   encapsulation: ViewEncapsulation.None,
   imports: [UiMap, HugeiconsIconComponent, UiButton],
-  host: { class: 'ui-map-navigation', role: 'region', '[attr.aria-label]': 'ariaLabel() ?? strings.navLabel', '[attr.data-glass]': 'glass() || null' },
+  host: {
+    class: 'ui-map-navigation', role: 'region', '[attr.aria-label]': 'ariaLabel() ?? strings.navLabel', '[attr.data-glass]': 'glass() || null',
+    '[style.--ui-nav-inset-top.px]': 'insets().top ?? 0', '[style.--ui-nav-inset-bottom.px]': 'insets().bottom ?? 0',
+    '[style.--ui-nav-inset-start.px]': 'insets().start ?? 0', '[style.--ui-nav-inset-end.px]': 'insets().end ?? 0',
+  },
   template: `<ui-map class="ui-nav-map" fill [center]="startCenter()" [zoom]="zoom()" [routes]="lines()" [userLocation]="puck()" [markers]="destination()"
-      [bearing]="bearing()" [insets]="insets()" [zoomButtons]="false" [compass]="!following()" [ariaLabel]="mapLabel() ?? strings.mapLabel"
+      [bearing]="bearing()" [insets]="mapInsets()" [zoomButtons]="false" [compass]="!following()" [ariaLabel]="mapLabel() ?? strings.mapLabel"
       [tileUrl]="tileUrl()" [tileUrlDark]="tileUrlDark()" [tileSize]="tileSize()" [zoomOffset]="zoomOffset()" [attribution]="attribution()"
       [tileReferrerPolicy]="tileReferrerPolicy()" (userMove)="following.set(false)" />
     <div class="ui-nav-top" #top>
@@ -76,6 +122,10 @@ export function uiNavFollowInsets(height: number, top: number, bottom: number): 
           <span class="ui-nav-then-text">{{ nn.instruction || strings.navArrive }}</span>
         </div>
       }
+    </div>
+    <div class="ui-nav-under">
+      <div class="ui-nav-status" role="status" [hidden]="!status()">{{ status() }}</div>
+      <div class="ui-nav-actions" [attr.data-count]="actions().length"><ng-content select="[uiNavAction]" /></div>
     </div>
     @if (!following()) {
       <button type="button" class="ui-nav-recenter" (click)="recenter()">
@@ -119,6 +169,14 @@ export class UiMapNavigation {
   zoomOffset = input(0);
   attribution = input(UI_MAP_OSM_ATTRIBUTION);
   tileReferrerPolicy = input<Exclude<ReferrerPolicy, ''>>('strict-origin-when-cross-origin');
+  /** A short state under the banner, as a pill ("Rerouting…"), announced politely; null for none (0.47.1). */
+  status = input<string | null>(null);
+  /**
+   * Px the app covers along each edge (0.47.1): an app bar (with the status bar under it) at the top,
+   * a bottom navigation, a side rail. The banner, actions, Recenter and bar stay inside them; the
+   * device's safe area counts wherever it is bigger.
+   */
+  insets = input<UiMapInsets>({});
 
   /** Time to speak (at the start, each new maneuver ahead, and at 200 m and 30 m before it). */
   readonly announce = output<Extract<UiNavEvent, { type: 'announce' }>>();
@@ -134,9 +192,12 @@ export class UiMapNavigation {
   protected readonly strings = injectUiStrings();
   protected readonly recenterIcon = Navigation03Icon;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly map = viewChild.required(UiMap);
   private readonly top = viewChild.required<ElementRef<HTMLElement>>('top');
   private readonly bar = viewChild.required<ElementRef<HTMLElement>>('bar');
+  /** The app's buttons (0.47.1). */
+  protected readonly actions = contentChildren(UiNavAction);
 
   /** Whether the map follows the person (until they move it). */
   readonly following = signal(true);
@@ -154,9 +215,11 @@ export class UiMapNavigation {
     const r = this.route();
     return p ? { lat: p.lat, lng: p.lng } : r.length ? uiMapPoint(r[0]) : { lat: 4.1755, lng: 73.5093 };
   }));
-  protected readonly insets = computed(() => {
+  /** The map's insets: the follow point's top and bottom, and the app's sides (the compass keeps clear of a side rail). */
+  protected readonly mapInsets = computed<UiMapInsets>(() => {
     const s = this.size();
-    return s.height ? uiNavFollowInsets(s.height, s.top, s.bottom) : {};
+    const app = this.insets();
+    return { ...(s.height ? uiNavFollowInsets(s.height, s.top, s.bottom) : {}), start: app.start ?? 0, end: app.end ?? 0 };
   });
   protected readonly lines = computed<UiMapRoute[]>(() => {
     const t = this.tracker();
@@ -247,15 +310,13 @@ export class UiMapNavigation {
       });
     });
     const destroy = inject(DestroyRef);
+    // New insets move the banner without resizing it (no ResizeObserver call): measure again (0.47.1).
+    effect(() => {
+      this.insets();
+      untracked(() => afterNextRender(() => this.measure(), { injector: this.injector }));
+    });
     afterNextRender(() => {
-      const measure = () => {
-        const height = this.host.nativeElement.clientHeight;
-        const top = this.top().nativeElement.offsetHeight + this.top().nativeElement.offsetTop;
-        const bottom = this.bar().nativeElement.offsetHeight;
-        const now = this.size();
-        if (now.height !== height || now.top !== top || now.bottom !== bottom) this.size.set({ height, top, bottom });
-        this.host.nativeElement.style.setProperty('--ui-nav-bar-height', `${bottom}px`);
-      };
+      const measure = () => this.measure();
       measure();
       if (typeof ResizeObserver === 'undefined') return;
       const ro = new ResizeObserver(measure);
@@ -265,6 +326,20 @@ export class UiMapNavigation {
       destroy.onDestroy(() => ro.disconnect());
     });
   }
+
+  /** Measures the banner and bar: the follow point, Recenter's and the button stack's places. */
+  private measure(): void {
+    const height = this.host.nativeElement.clientHeight;
+    const top = this.top().nativeElement.offsetHeight + this.top().nativeElement.offsetTop;
+    // The bar's top from the bottom: its height plus the app's bottom inset (0.47.1).
+    const barEl = this.bar().nativeElement;
+    const bottom = height ? Math.max(barEl.offsetHeight, height - barEl.offsetTop) : barEl.offsetHeight;
+    const now = this.size();
+    if (now.height !== height || now.top !== top || now.bottom !== bottom) this.size.set({ height, top, bottom });
+    this.host.nativeElement.style.setProperty('--ui-nav-bar-height', `${bottom}px`);
+    this.host.nativeElement.style.setProperty('--ui-nav-top-bottom', `${top}px`);
+  }
+
 
   /** Follows the person again at `zoom`, heading-up. */
   recenter(): void {

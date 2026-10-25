@@ -7,7 +7,7 @@ import { UiFab, type UiFabPlacement, type UiFabTone } from './fab';
 
 @Component({
   imports: [UiFab],
-  template: `<ui-fab label="SOS, call for help" [position]="position()" [tone]="tone()" [text]="text()" [aboveOverlays]="above()" [topOffset]="offset()"><span class="icon">!</span></ui-fab>`,
+  template: `<ui-fab label="SOS, call for help" [position]="position()" [tone]="tone()" [text]="text()" [aboveOverlays]="above()" [topOffset]="offset()" [bottomOffset]="bottomOffset()"><span class="icon">!</span></ui-fab>`,
 })
 class Host {
   position = signal<UiFabPlacement>('bottom-right');
@@ -15,6 +15,7 @@ class Host {
   text = signal<string | null>(null);
   above = signal(false);
   offset = signal(0);
+  bottomOffset = signal(0);
 }
 
 function setup() {
@@ -101,5 +102,20 @@ describe('ui-fab (0.44.0)', () => {
     const top = getComputedStyle(btn()).top;
     expect(top).toContain('safe-area-inset-top');
     expect(top).toContain('var(--ui-fab-top-offset, 0px)');
+  });
+
+  it('bottomOffset (0.47.1) lifts a bottom fab above a sheet\'s peek, smoothly; top placements ignore it', () => {
+    const { h, btn, tick } = setup();
+    h.position.set('bottom-end');
+    h.bottomOffset.set(120);
+    tick();
+    expect(btn().style.getPropertyValue('--ui-fab-bottom-offset')).toBe('120px');
+    const s = getComputedStyle(btn());
+    expect(s.bottom).toContain('safe-area-inset-bottom');
+    expect(s.bottom).toContain('var(--ui-fab-bottom-offset, 0px)');
+    expect(s.transition).toContain('bottom var(--ui-motion-base)');
+    h.position.set('top-end');
+    tick();
+    expect(getComputedStyle(btn()).top).not.toContain('bottom-offset');
   });
 });

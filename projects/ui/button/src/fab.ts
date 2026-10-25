@@ -30,6 +30,9 @@ export type UiFabTone = 'primary' | 'danger';
  *   under them.
  * - `topOffset` (0.44.0): px added below the top edge for the top placements, so a top fab sits just
  *   under the app's own top bar rather than over it.
+ * - `bottomOffset` (0.47.1, Flutter `UiFabHost.bottomOffset`): px added above the bottom edge for the
+ *   bottom placements, so a fab floats above a bottom sheet's peek or a bottom navigation; it moves
+ *   smoothly when it changes (a sheet opening).
  * - Hold to activate (0.44.0): add `[hold]="2000"` (ms) with `UiFabHold` from
  *   `@zouriel/ui/hold-button` imported, and listen to `(confirmed)`. A fill in the contrast colour
  *   grows across it from the inline start while it is held; a tap, a quick Enter or Space, or a
@@ -42,7 +45,7 @@ export type UiFabTone = 'primary' | 'danger';
     <button type="button" class="ui-fab" [attr.data-position]="position()" [attr.data-size]="size()" [attr.data-tone]="tone()"
             [attr.data-extended]="text() ? '' : null" [attr.data-above]="aboveOverlays() ? '' : null"
             [attr.aria-label]="label()" [attr.aria-describedby]="holdHint() ? hintId : null" [disabled]="disabled()"
-            [class.filling]="holdFill() !== null" [style.--ui-fab-top-offset.px]="topOffset()">
+            [class.filling]="holdFill() !== null" [style.--ui-fab-top-offset.px]="topOffset()" [style.--ui-fab-bottom-offset.px]="bottomOffset()">
       @if (holdFill() !== null) {
         <span class="fill" aria-hidden="true" [style.width.%]="holdFill()! * 100" [style.transition-duration.ms]="holdFillDuration()"></span>
       }
@@ -60,7 +63,8 @@ export type UiFabTone = 'primary' | 'danger';
       width: 52px; height: 52px; padding: 0; border-radius: 50%;
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
       border: none; box-shadow: var(--ui-shadow-2); cursor: pointer; font-family: var(--ui-font-default); font-size: calc(22px * var(--ui-font-scale));
-      transition: transform var(--ui-motion-fast) var(--ui-ease-spring), background var(--ui-motion-base) var(--ui-ease-standard);
+      transition: transform var(--ui-motion-fast) var(--ui-ease-spring), background var(--ui-motion-base) var(--ui-ease-standard),
+                  bottom var(--ui-motion-base) var(--ui-ease-standard), top var(--ui-motion-base) var(--ui-ease-standard);
     }
     .ui-fab:hover:not(:disabled) { background: var(--ui-color-primary-hover); transform: scale(1.05); }
     .ui-fab:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
@@ -82,7 +86,7 @@ export type UiFabTone = 'primary' | 'danger';
     .ui-fab[data-above] { z-index: calc(var(--ui-z-overlay) + 1); }
     /* Offset from the edge plus the device's safe area (notches, status bar, home indicator). */
     .ui-fab[data-position^="top"] { top: calc(var(--ui-fab-edge) + env(safe-area-inset-top, 0px) + var(--ui-fab-top-offset, 0px)); }
-    .ui-fab[data-position^="bottom"] { bottom: calc(var(--ui-fab-edge) + env(safe-area-inset-bottom, 0px)); }
+    .ui-fab[data-position^="bottom"] { bottom: calc(var(--ui-fab-edge) + env(safe-area-inset-bottom, 0px) + var(--ui-fab-bottom-offset, 0px)); }
     .ui-fab[data-position$="-right"] { right: calc(var(--ui-fab-edge) + env(safe-area-inset-right, 0px)); }
     .ui-fab[data-position$="-left"] { left: calc(var(--ui-fab-edge) + env(safe-area-inset-left, 0px)); }
     /* Logical sides: the larger side safe area, so an RTL page keeps clear of a notch either side. */
@@ -119,6 +123,8 @@ export class UiFab {
   aboveOverlays = input(false, { transform: booleanAttribute });
   /** Px below the top edge (plus the safe area and the 24px gap) for top placements: an app bar's height (0.44.0). */
   topOffset = input(0);
+  /** Px above the bottom edge (plus the safe area and the 24px gap) for bottom placements: a bottom sheet's peek (0.47.1). */
+  bottomOffset = input(0);
 
   /** Set by UiFabHold: the hold fill (0 to 1, null for none) and how long it takes to get there. */
   readonly holdFill = signal<number | null>(null);

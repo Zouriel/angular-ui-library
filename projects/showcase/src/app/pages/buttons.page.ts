@@ -366,7 +366,7 @@ async addBirthday() {   // from a (click)
       </doc-section>
 
       <doc-section name="FAB" selector="ui-fab" [api]="fabApi"
-        summary="Floating action button pinned to a screen corner or centred at the top or bottom (position: fixed), offset from the edge by 24px plus the device safe area, so a top one sits below the status bar and notch, never over them. position takes top-start, top-center, top-end, bottom-start, bottom-center or bottom-end (0.44.0; start and end follow the reading direction), and the older physical corners. label is required (aria-label). Project an icon as content; text adds a visible word beside it and makes it a pill (keep the word in label too). tone danger (0.44.0) is the high-visibility style for an SOS button: the danger colour with a ring in the raised surface colour and a soft danger halo outside it, so it stands off any page or map. aboveOverlays keeps it above bottom sheets, drawers and modal backdrops (the overlay layer plus one), below floating windows and toasts. topOffset adds px below the top edge for a top fab, so it sits under the app's own top bar. hold (0.44.0, with UiFabHold from @zouriel/ui/hold-button) makes it press-and-hold like ui-hold-button: a fill in the contrast colour grows across it while held, letting go early cancels, Space or Enter held works the same, and a tap, a quick key press or a screen reader's activation opens the confirm dialog (confirmTitle, confirmMessage, confirmLabel, destructive); it emits confirmed. The sm size grows to 44px on coarse pointers. The demo frames below are their own containing blocks, so the buttons sit in the frame rather than the window.">
+        summary="Floating action button pinned to a screen corner or centred at the top or bottom (position: fixed), offset from the edge by 24px plus the device safe area, so a top one sits below the status bar and notch, never over them. position takes top-start, top-center, top-end, bottom-start, bottom-center or bottom-end (0.44.0; start and end follow the reading direction), and the older physical corners. label is required (aria-label). Project an icon as content; text adds a visible word beside it and makes it a pill (keep the word in label too). tone danger (0.44.0) is the high-visibility style for an SOS button: the danger colour with a ring in the raised surface colour and a soft danger halo outside it, so it stands off any page or map. aboveOverlays keeps it above bottom sheets, drawers and modal backdrops (the overlay layer plus one), below floating windows and toasts. topOffset adds px below the top edge for a top fab, so it sits under the app's own top bar; bottomOffset (0.47.1) adds px above the bottom edge for a bottom fab, so it floats above a bottom sheet's peek or a bottom navigation, moving smoothly when it changes. hold (0.44.0, with UiFabHold from @zouriel/ui/hold-button) makes it press-and-hold like ui-hold-button: a fill in the contrast colour grows across it while held, letting go early cancels, Space or Enter held works the same, and a tap, a quick key press or a screen reader's activation opens the confirm dialog (confirmTitle, confirmMessage, confirmLabel, destructive); it emits confirmed. The sm size grows to 44px on coarse pointers. The demo frames below are their own containing blocks, so the buttons sit in the frame rather than the window.">
         <doc-demo code="<ui-fab label=&quot;New item&quot; position=&quot;bottom-right&quot; (click)=&quot;create()&quot;>
   <hugeicons-icon [icon]=&quot;Add01Icon&quot; />
 </ui-fab>">
@@ -395,6 +395,18 @@ async addBirthday() {   // from a (click)
             <ui-segmented label="SOS position (demo)" size="sm" [options]="sosOptions" [value]="sosPlace()" (valueChange)="sosPlace.set($any($event))" />
           </div>
         </doc-demo>
+        <doc-demo lang="html" code="<!-- 0.47.1: float above a bottom sheet's peek (its visible height), eased as it changes. -->
+<ui-fab label=&quot;Show my location&quot; position=&quot;bottom-end&quot; [bottomOffset]=&quot;sheetVisibleHeight()&quot;>
+  <hugeicons-icon [icon]=&quot;Location01Icon&quot; aria-hidden=&quot;true&quot; />
+</ui-fab>">
+          <div class="fab-frame fab-phone fab-sheet-frame">
+            <ui-fab label="New item, above the sheet" position="bottom-end" [bottomOffset]="fabPeek()"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="22" [strokeWidth]="1.8" /></ui-fab>
+            <div class="fab-sheet" [style.height.px]="fabPeek()">Bottom sheet ({{ fabPeek() }} px)</div>
+          </div>
+          <div class="row fab-acts">
+            <ui-segmented label="Sheet (demo)" size="sm" [options]="peekOptions" [value]="fabPeek() + ''" (valueChange)="fabPeek.set(+($event ?? 0))" />
+          </div>
+        </doc-demo>
       </doc-section>
     </doc-page>
   `,
@@ -405,6 +417,10 @@ async addBirthday() {   // from a (click)
     /* transform makes this box the containing block for the fixed-position FABs inside it. */
     .fab-frame { position: relative; transform: translateZ(0); height: 160px; padding: var(--ui-space-3); overflow: hidden;
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
+    .fab-sheet-frame { padding: 0; }
+    .fab-sheet { position: absolute; inset-inline: 0; bottom: 0; box-sizing: border-box; padding: var(--ui-space-3) var(--ui-space-4); background: var(--ui-color-surface-raised);
+      border-top: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; box-shadow: var(--ui-shadow-3); color: var(--ui-color-text-muted);
+      font-size: var(--ui-font-size-sm); transition: height var(--ui-motion-base) var(--ui-ease-standard); }
     .fab-phone { height: 240px; max-width: 390px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
     .fab-acts { margin-top: var(--ui-space-3); }
     /* Room above the badges so they don't touch the demo's top edge. */
@@ -418,6 +434,8 @@ export class ButtonsPage {
   protected readonly fabClicks = signal(0);
   protected readonly sosClicks = signal(0);
   protected readonly sosPlace = signal<UiFabPlacement>('top-center');
+  protected readonly fabPeek = signal(72);
+  protected readonly peekOptions = [{ value: '0', label: 'None' }, { value: '72', label: 'Peek' }, { value: '160', label: 'Open' }];
   protected readonly sosOptions = [{ value: 'top-start', label: 'Start' }, { value: 'top-center', label: 'Centre' }, { value: 'top-end', label: 'End' }, { value: 'bottom-center', label: 'Bottom' }];
   protected readonly bold = signal(false);
   protected readonly msg = signal('—');
@@ -563,6 +581,7 @@ export class ButtonsPage {
     { name: 'tone', type: "'primary' | 'danger'", default: "'primary'", desc: 'danger (0.44.0): the high-visibility SOS style, danger fill with a ring and a halo.' },
     { name: 'text', type: 'string | null', default: 'null', desc: 'A visible word beside the icon, making it a pill (0.44.0). Keep it in label too.' },
     { name: 'topOffset', type: 'number', default: '0', desc: 'Px below the top edge for top placements, on top of the 24px gap and the safe area: an app bar\'s height (0.44.0).' },
+    { name: 'bottomOffset', type: 'number', default: '0', desc: 'Px above the bottom edge for bottom placements, on top of the 24px gap and the safe area: a bottom sheet\'s peek or a bottom navigation; eased when it changes (0.47.1, Flutter UiFabHost.bottomOffset).' },
     { name: 'hold', type: 'number | null', default: '—', desc: 'With UiFabHold (@zouriel/ui/hold-button): hold this many ms to activate; a tap opens the confirm dialog. null: a plain fab (0.44.0).' },
     { name: 'holdHint / confirmTitle / confirmMessage / confirmLabel / destructive', type: 'string / boolean', default: 'the strings', desc: 'As on ui-hold-button: the hint read with it and the tap fallback\'s dialog (with UiFabHold).' },
     { name: '(confirmed)', type: 'void', default: '—', desc: 'Held to the end, or confirmed in the dialog (with UiFabHold). Use it instead of (click).' },

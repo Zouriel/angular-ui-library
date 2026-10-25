@@ -13,7 +13,8 @@
     "audit:chat-wrap": "node projects/showcase/audit/chat-bubble-wrap.mjs",
     "audit:map-markers": "node projects/showcase/audit/map-markers.mjs",
     "audit:density": "node projects/showcase/audit/density.mjs",
-    "audit:rtl": "node projects/showcase/audit/rtl.mjs"
+    "audit:rtl": "node projects/showcase/audit/rtl.mjs",
+    "audit:nav": "node projects/showcase/audit/map-nav.mjs"
   },
   "private": true,
   "packageManager": "npm@11.14.1",

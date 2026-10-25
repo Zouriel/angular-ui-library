@@ -12,9 +12,9 @@ import { uiMapPoint, type UiLatLng, type UiMapPoint } from './map';
 
 /** A maneuver, as OSRM gives it (`step.maneuver`): `type` and `modifier` keep OSRM's words. */
 export interface UiNavManeuver {
-  /** 'depart', 'turn', 'continue', 'new name', 'merge', 'on ramp', 'off ramp', 'fork', 'end of road', 'roundabout', 'rotary', 'roundabout turn', 'exit roundabout', 'notification', 'arrive', ... */
+  /** 'depart', 'turn', 'continue', 'new name', 'merge', 'on ramp', 'off ramp', 'fork', 'end of road', 'roundabout', 'rotary', 'roundabout turn', 'exit roundabout', 'notification', 'arrive', ... (snake_case 'end_of_road' works too, 0.47.1) */
   type: string;
-  /** 'uturn', 'sharp right', 'right', 'slight right', 'straight', 'slight left', 'left', 'sharp left'. */
+  /** 'uturn', 'sharp right', 'right', 'slight right', 'straight', 'slight left', 'left', 'sharp left' (or 'sharp_right', 0.47.1). */
   modifier?: string;
   /** Where it happens: `{ lat, lng }` or `[lat, lng]` (OSRM's `location` is [lng, lat]: swap it). */
   location: UiMapPoint;
@@ -398,9 +398,17 @@ export type UiNavIconKind =
 
 type Dir = 'straight' | 'slight-left' | 'slight-right' | 'left' | 'right' | 'sharp-left' | 'sharp-right' | 'uturn';
 
+/**
+ * A maneuver word in OSRM's spaced form (0.47.1, Flutter `uiNavWord`): lower case, with underscores
+ * and hyphens as spaces, so 'sharp_right', 'END_OF_ROAD', 'sharp-right' and 'sharp right' are the same.
+ */
+export function uiNavWord(word: string | null | undefined): string {
+  return (word ?? '').toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function dirOf(modifier: string | undefined): Dir {
-  switch ((modifier ?? '').toLowerCase()) {
-    case 'uturn': return 'uturn';
+  switch (uiNavWord(modifier)) {
+    case 'uturn': case 'u turn': return 'uturn';
     case 'sharp right': return 'sharp-right';
     case 'right': return 'right';
     case 'slight right': return 'slight-right';
@@ -415,12 +423,13 @@ function dirOf(modifier: string | undefined): Dir {
  * Which drawing a maneuver gets (0.47.0, Flutter `uiNavIconKind`): roundabouts and rotaries by
  * their exit's direction, forks and merges by side, ramps as slight turns, depart and arrive their
  * own, everything else by its modifier. A U-turn bends left where traffic keeps right and right
- * where it keeps left. Never mirrored for right-to-left text: left means left.
+ * where it keeps left. Never mirrored for right-to-left text: left means left. Type and modifier may
+ * be OSRM's spaced words ('end of road', 'sharp right') or snake_case ('end_of_road', 'sharp_right'), 0.47.1.
  */
 export function uiNavIconKind(m: Pick<UiNavManeuver, 'type' | 'modifier' | 'drivingSide'>): UiNavIconKind {
-  const type = (m.type ?? '').toLowerCase();
+  const type = uiNavWord(m.type);
   const dir = dirOf(m.modifier);
-  const side = (m.modifier ?? '').includes('left') ? 'left' : 'right';
+  const side = uiNavWord(m.modifier).includes('left') ? 'left' : 'right';
   switch (type) {
     case 'depart': return 'depart';
     case 'arrive': return 'arrive';

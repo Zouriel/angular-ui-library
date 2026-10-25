@@ -393,6 +393,11 @@ Navigation (0.47.0): `<ui-map-navigation [route] [steps] [position] (announce) (
 `UiNavTracker`, `uiNavFormatDistance` / `uiNavFormatDuration` / `uiNavFormatClock` and the maneuver icons
 (`uiNavIconKind`, `uiNavIcon`, `UI_NAV_ICONS`); see the showcase's Navigation section.
 
+0.47.1: the app's buttons as children, `<button uiNavAction [icon]="..." label="SOS" tone="danger">` (`UiNavAction`,
+48px round, stacked at the end side under the banner; `pressed` for a toggle), `[status]="'Rerouting…'"` (a pill
+under the banner) and `[insets]="{ top: appBarHeight }"` (the safe area counts where bigger). Maneuver words may be
+snake_case (`uiNavWord`). `ui-fab [bottomOffset]` lifts a bottom fab above a sheet's peek.
+
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:, animate: true)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 

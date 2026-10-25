@@ -2,7 +2,10 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { injectUiStrings, type UiGlassStrength } from '@zouriel/ui';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { UiMapNavigation, UiNavTracker, UI_NAV_ICONS, uiNavBearing, type UiNavEvent, type UiNavIconKind, type UiNavPosition } from '@zouriel/ui/map';
+import { UiMapNavigation, UiNavAction, UiNavTracker, UI_NAV_ICONS, uiNavBearing, type UiNavEvent, type UiNavIconKind, type UiNavPosition, type UiNavState } from '@zouriel/ui/map';
+import VolumeHighIcon from '@hugeicons/core-free-icons/VolumeHighIcon';
+import VolumeOffIcon from '@hugeicons/core-free-icons/VolumeOffIcon';
+import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
 import { NAV_DEMO_ROUTE, navDemoSteps } from './nav-demo';
 import { UiMap, uiMapFormatRadius, type UiLatLng, type UiMapArea, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import CenterFocusIcon from '@hugeicons/core-free-icons/CenterFocusIcon';
@@ -77,7 +80,12 @@ const TURN_CODE = `<ui-map #map [markers]="places" rotatable (bearingChange)="be
 <button (click)="map.rotateTo(0)">North up</button>`;
 
 const NAV_CODE = `<ui-map-navigation [route]="route()" [steps]="steps()" [position]="position()" destinationLabel="Lily Magu"
-  (announce)="speak($event.step.instruction)" (offRoute)="reroute()" (arrived)="arrive()" (end)="stop()" />
+  [status]="rerouting() ? 'Rerouting…' : null" [insets]="{ top: appBarHeight }"
+  (announce)="speak($event.step.instruction)" (offRoute)="reroute()" (arrived)="arrive()" (end)="stop()">
+  <!-- 0.47.1: the app's own buttons, a 48px round stack at the end side under the banner -->
+  <button uiNavAction [icon]="muted() ? VolumeOffIcon : VolumeHighIcon" [label]="muted() ? 'Unmute' : 'Mute'" [pressed]="muted()" (click)="muted.set(!muted())"></button>
+  <button uiNavAction [icon]="Alert02Icon" label="SOS" tone="danger" (click)="sos()"></button>
+</ui-map-navigation>
 
 // OSRM: /route/v1/driving/{from};{to}?steps=true&geometries=geojson (the app's API in its own language)
 const r = await api.route(job.id, me);
@@ -141,7 +149,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
 
 @Component({
   selector: 'page-map',
-  imports: [DecimalPipe, UiMap, UiMapNavigation, HugeiconsIconComponent, UiFloatingPanel, UiButton, UiSegmented, UiBottomSheet, UiInput, UiFormField, FormsModule, UiSpinner, UiText, DocPage, DocSection, DocDemo],
+  imports: [DecimalPipe, UiMap, UiMapNavigation, UiNavAction, HugeiconsIconComponent, UiFloatingPanel, UiButton, UiSegmented, UiBottomSheet, UiInput, UiFormField, FormsModule, UiSpinner, UiText, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Components" title="Map"
       lead="An OpenStreetMap map from @zouriel/ui/map, on Leaflet 1.9.4. The entry point and Leaflet itself load on first use, so a map never lands in an app's first download. Install leaflet (~1.9.4) next to the library.">
@@ -289,12 +297,18 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
       </doc-section>
 
       <doc-section name="Navigation" anchor="navigation" selector="ui-map-navigation" [api]="navApi" [outputs]="navOut"
-        summary="ui-map-navigation (0.47.0) is a turn-by-turn view, like a car's navigation, for the nurse driving to a patient. The app gives it the route's geometry, its steps (OSRM's steps: maneuver type, modifier, location and exit, distance and duration, and the instruction already in the app's language) and the live position ({ lat, lng, heading, speed, accuracy, timestamp }); the view reads no GPS itself. The map follows the person and turns heading-up (flat, no tilt), the route ahead in the primary tone and the part already driven dimmed, with an arrow for the person. The banner shows the next maneuver: a big arrow for its type (turns, slight and sharp, U-turns, roundabouts with the exit number, forks, merges, depart, arrive), the distance to it (in 80 m), the instruction and the street, with the maneuver after it in a small tab. The bar shows the time and distance left, the arrival time and End. The logic is UiNavTracker, pure and testable: it snaps each position to the route, works out the step, the distance to the next maneuver and what is left, and emits announce at the start, on each new maneuver ahead and at 200 m and 30 m before it (each once, for the app to speak), offRoute after 5 s more than 40 m off the route (reroute: give a new route and steps) and arrived within 20 m of the end. Drag, the wheel or a pinch stop the following and show Recenter. Under reduced motion the map neither glides nor turns smoothly. In right-to-left text the banner and bar mirror; the arrows never do, since left is still left. glass frosts the banner and bar. Leaflet can't rotate, and the leaflet-rotate plugin patches Leaflet for every map on the page, so ui-map turns itself: bearing (0.47.0) turns its map pane with CSS about the middle of the visible part, turns taps and drags back, loads the turned corners' tiles and keeps markers upright. Play the drive below; Wander off leaves the road to show offRoute.">
+        summary="ui-map-navigation (0.47.0) is a turn-by-turn view, like a car's navigation, for the nurse driving to a patient. The app gives it the route's geometry, its steps (OSRM's steps: maneuver type, modifier, location and exit, distance and duration, and the instruction already in the app's language) and the live position ({ lat, lng, heading, speed, accuracy, timestamp }); the view reads no GPS itself. The map follows the person and turns heading-up (flat, no tilt), the route ahead in the primary tone and the part already driven dimmed, with an arrow for the person. The banner shows the next maneuver: a big arrow for its type (turns, slight and sharp, U-turns, roundabouts with the exit number, forks, merges, depart, arrive), the distance to it (in 80 m), the instruction and the street, with the maneuver after it in a small tab. The bar shows the time and distance left, the arrival time and End. The logic is UiNavTracker, pure and testable: it snaps each position to the route, works out the step, the distance to the next maneuver and what is left, and emits announce at the start, on each new maneuver ahead and at 200 m and 30 m before it (each once, for the app to speak), offRoute after 5 s more than 40 m off the route (reroute: give a new route and steps) and arrived within 20 m of the end. Drag, the wheel or a pinch stop the following and show Recenter. Under reduced motion the map neither glides nor turns smoothly. In right-to-left text the banner and bar mirror; the arrows never do, since left is still left. glass frosts the banner and bar. Leaflet can't rotate, and the leaflet-rotate plugin patches Leaflet for every map on the page, so ui-map turns itself: bearing (0.47.0) turns its map pane with CSS about the middle of the visible part, turns taps and drags back, loads the turned corners' tiles and keeps markers upright. 0.47.1: the app's own buttons (button uiNavAction: mute, SOS) stack as 48px round, opaque buttons at the end side under the banner, clear of the compass (the inline start) and Recenter (bottom start); tone danger is the prominent SOS style and pressed makes a toggle. status shows a short state (Rerouting…) as a pill under the banner, announced politely. insets ({ top, bottom, start, end } in px) keep the banner, buttons, Recenter and bar clear of the app's own bars; the device safe area (notch, status bar, gesture bar) counts wherever it is bigger. Maneuver types and modifiers may be OSRM's spaced words or snake_case (sharp_right, end_of_road). Play the drive below; Wander off leaves the road to show offRoute and the Rerouting… status.">
         <doc-demo lang="ts + html" [code]="NAV_CODE">
           <div class="nav-wrap">
             <ui-map-navigation [route]="navRoute()" [steps]="navSteps()" [position]="navPos()" [glass]="navGlass()" destinationLabel="Lily Magu"
               [tileUrl]="tileLight || osm" [tileUrlDark]="tileDark || null" [attribution]="tileLight ? 'Tiles from your URL &copy; OpenStreetMap contributors' : osmAttribution"
-              (announce)="navLog($event)" (offRoute)="navLog($event)" (arrived)="navLog({ type: 'arrived' })" (end)="navStop(true)" />
+              [status]="navStatus()" [insets]="navAppBar() ? { top: 48 } : {}"
+              (announce)="navLog($event)" (offRoute)="navLog($event); navRerouting()" (progress)="navProgress($event)"
+              (arrived)="navLog({ type: 'arrived' })" (end)="navStop(true)">
+              <button uiNavAction [icon]="navMuted() ? volumeOffIcon : volumeIcon" [label]="navMuted() ? 'Unmute' : 'Mute'" [pressed]="navMuted()" (click)="navMuted.set(!navMuted())"></button>
+              <button uiNavAction [icon]="sosIcon" label="SOS" tone="danger" (click)="navEvents.update((l) => ['SOS pressed', ...l].slice(0, 6))"></button>
+            </ui-map-navigation>
+            @if (navAppBar()) { <div class="nav-appbar" aria-hidden="true">App bar (insets.top 48)</div> }
           </div>
           <div class="route-acts">
             <ui-button size="sm" (click)="navPlaying() ? navStop(false) : navPlay()">{{ navPlaying() ? 'Pause' : 'Play' }}</ui-button>
@@ -302,6 +316,7 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
             <ui-button size="sm" variant="outline" (click)="navRestart()">Restart</ui-button>
             <ui-button size="sm" variant="outline" (click)="navWander()">Wander off</ui-button>
             <ui-segmented label="Glass (demo)" size="sm" [options]="drawOptions" [value]="navGlass() ? 'on' : 'off'" (valueChange)="navGlass.set($event === 'on')" />
+            <ui-segmented label="App bar (demo)" size="sm" [options]="drawOptions" [value]="navAppBar() ? 'on' : 'off'" (valueChange)="navAppBar.set($event === 'on')" />
           </div>
           <ol class="nav-log" aria-label="Events (demo)">
             @for (e of navEvents(); track $index) { <li>{{ e }}</li> }
@@ -387,7 +402,9 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
     .preview-wrap { --ui-map-height: 200px; }
     .area-wrap { --ui-map-height: 420px; }
     .route-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
-    .nav-wrap { height: 680px; max-width: 420px; margin-bottom: var(--ui-space-2); border-radius: var(--ui-radius); overflow: hidden; border: 1px solid var(--ui-color-border); }
+    .nav-wrap { position: relative; height: 680px; max-width: 420px; margin-bottom: var(--ui-space-2); border-radius: var(--ui-radius); overflow: hidden; border: 1px solid var(--ui-color-border); }
+    .nav-appbar { position: absolute; z-index: 3; top: 0; inset-inline: 0; height: 48px; box-sizing: border-box; display: flex; align-items: center; padding-inline: var(--ui-space-4);
+      background: var(--ui-color-surface-raised); color: var(--ui-color-text); border-bottom: 1px solid var(--ui-color-border); font-size: var(--ui-font-size-sm); font-weight: 600; }
     .nav-log { margin: var(--ui-space-3) 0 0; padding-inline-start: var(--ui-space-6); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); min-height: 6em; }
     .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--ui-space-2); }
     .icon-cell { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-3); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); color: var(--ui-color-text); }
@@ -425,6 +442,12 @@ export class MapPage {
   protected readonly navSpeed = signal<'1' | '2' | '4' | '8'>('2');
   protected readonly navSpeeds = [{ value: '1', label: '1x' }, { value: '2', label: '2x' }, { value: '4', label: '4x' }, { value: '8', label: '8x' }];
   protected readonly navGlass = signal(false);
+  protected readonly navMuted = signal(false);
+  protected readonly navStatus = signal<string | null>(null);
+  protected readonly navAppBar = signal(false);
+  protected readonly volumeIcon = VolumeHighIcon;
+  protected readonly volumeOffIcon = VolumeOffIcon;
+  protected readonly sosIcon = Alert02Icon;
   protected readonly navEvents = signal<string[]>([]);
   private navAlong = 0;
   private navOff = 0;
@@ -470,9 +493,20 @@ export class MapPage {
     this.navAlong = 0;
     this.navOff = 0;
     this.navEvents.set([]);
+    this.navStatus.set(null);
     // A new route object: a new tracker (as after a reroute).
     this.navRoute.set([...NAV_DEMO_ROUTE]);
     this.navPos.set(null);
+  }
+
+  /** Off the route: the status pill says so until the person is back on it. */
+  protected navRerouting(): void {
+    this.navStatus.set(this.navStrings.locale === 'dv' ? 'އަލުން މަގު ހޯދަނީ…' : 'Rerouting…');
+  }
+
+  /** Back on the route: the Rerouting… status goes (the demo has no real reroute). */
+  protected navProgress(s: UiNavState): void {
+    if (!s.offRoute && s.distanceFromRoute < 40 && this.navStatus()) this.navStatus.set(null);
   }
 
   protected navWander(): void {
@@ -494,6 +528,10 @@ export class MapPage {
     { name: 'formatTime', type: '(ms) => string', default: '24-hour "14:05"', desc: 'Formats the arrival time.' },
     { name: 'glass', type: 'boolean', default: 'config', desc: 'The banner and bar frosted over the map.' },
     { name: 'tileUrl / tileUrlDark / tileSize / zoomOffset / attribution', type: '—', default: 'OSM', desc: 'As on ui-map.' },
+    { name: 'status', type: 'string | null', default: 'null', desc: 'A short state as a pill under the banner (Rerouting…), a polite live region (0.47.1).' },
+    { name: 'insets', type: 'UiMapInsets', default: '{}', desc: 'Px the app covers along each edge, { top, bottom, start, end }: an app bar (with the status bar under it), a bottom navigation, a side rail. The banner, buttons, Recenter and bar stay inside them; the device safe area counts where it is bigger (0.47.1).' },
+    { name: 'button[uiNavAction]', type: 'UiNavAction', default: '—', desc: 'The app\'s own buttons, as children (0.47.1): a 48px round opaque stack at the end side under the banner, clear of the compass and Recenter. Inputs icon (hugeicons), label (accessible name and tooltip), tone (\'neutral\' | \'danger\': the SOS style, danger fill in a raised-surface ring), pressed (a toggle: aria-pressed, the primary fill while on).' },
+    { name: 'uiNavWord(word)', type: 'function', default: '—', desc: 'A maneuver word in OSRM\'s spaced form: \'sharp_right\' and \'END_OF_ROAD\' become \'sharp right\' and \'end of road\'; the icons read either (0.47.1).' },
     { name: 'recenter()', type: 'method', default: '—', desc: 'Follows the person again at zoom, heading-up.' },
     { name: 'UiNavTracker(route, steps, options?)', type: 'class', default: '—', desc: 'The logic: update(position) returns { snapped, display, distanceFromRoute, traveledMeters, stepIndex, next, nextNext, distanceToManeuver, remainingMeters, remainingSeconds, bearing, offRoute, arrived, events }; also split(along) and pointAt(along).' },
     { name: 'uiNavFormatDistance / uiNavFormatDuration / uiNavFormatClock', type: 'function', default: '—', desc: '"80 m", "150 m", "2.4 km"; "3 min", "1 h 5 min"; "14:05". Words from the nav* strings (Dhivehi in uiStringsDv).' },

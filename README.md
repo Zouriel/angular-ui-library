@@ -80,6 +80,16 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   typing (a chat composer clearing on send) clears the box. `ui-badge` under `:lang(dv)` or `:dir(rtl)` takes the
   font's own line height plus 1px below (20px minimum), so Thaana's marks below the line stay inside the pill; Latin
   badges keep 20px. `npm run audit:rtl -- --font <Faruma.ttf>` measures all three in a browser.
+- **0.47.1**: navigation view gaps found by the Dhirumi apps. `ui-map-navigation`: the app's own buttons as children
+  (`<button uiNavAction [icon] label tone pressed>`, `UiNavAction`: 48px round opaque buttons stacked at the end
+  side under the banner, clear of the compass and Recenter; `tone="danger"` is the SOS style, `pressed` a toggle),
+  `[status]` (a pill under the banner, a polite live region: "Rerouting…") and `[insets]` (`{ top, bottom, start,
+  end }`: the banner, buttons, Recenter and bar stay clear of the app's own bars; the safe area counts where bigger).
+  The banner's maneuver arrow (and the tab, Recenter and action icons) keep the banner's contrast colour over a theme
+  or app icon tint (it read faint on the primary banner); 4.5:1 or more in every theme, plain and glass. Maneuver
+  types and modifiers may be snake_case (`sharp_right`, `end_of_road`) as well as OSRM's words (`uiNavWord`).
+  `ui-fab` `bottomOffset` floats a bottom fab above a sheet's peek (eased). `npm run audit:nav` measures it all in a
+  browser.
 - **0.47.0**: map navigation mode and turning the map. `ui-map-navigation` (in `@zouriel/ui/map`) is a turn-by-turn
   view: the map follows the person heading-up, the way behind dimmed, an arrow puck, a banner with the next maneuver's
   arrow, "in 80 m", the instruction and street, the maneuver after it small, and the time / distance left, arrival

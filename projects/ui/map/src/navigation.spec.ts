@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultUiStrings, uiStringsDv } from '@zouriel/ui';
 import type { UiLatLng } from './map';
 import {
-  UI_NAV_ICONS, UiNavTracker, uiNavBearing, uiNavDistance, uiNavFormatClock, uiNavFormatDistance, uiNavFormatDuration, uiNavIconKind,
+  UI_NAV_ICONS, UiNavTracker, uiNavBearing, uiNavDistance, uiNavFormatClock, uiNavFormatDistance, uiNavFormatDuration, uiNavIconKind, uiNavWord,
   type UiNavEvent, type UiNavPosition, type UiNavStep,
 } from './navigation';
 
@@ -223,5 +223,47 @@ describe('maneuver icons (0.47.0)', () => {
     for (const [l, r] of [['left', 'right'], ['slight-left', 'slight-right'], ['sharp-left', 'sharp-right'], ['uturn-left', 'uturn-right']] as const) {
       expect(ds(r).map(norm), r).toEqual(ds(l).map(mirror).map(norm));
     }
+  });
+});
+
+describe('maneuver words: OSRM spaced and snake_case (0.47.1)', () => {
+  it('uiNavWord puts every spelling in OSRM\'s spaced form', () => {
+    expect(['sharp_right', 'SHARP_RIGHT', 'sharp-right', 'sharp right', ' sharp  right ', 'sharp__right'].map(uiNavWord)).toEqual(Array(6).fill('sharp right'));
+    expect([uiNavWord('end_of_road'), uiNavWord('exit_roundabout'), uiNavWord(undefined), uiNavWord(null), uiNavWord('u_turn')]).toEqual(['end of road', 'exit roundabout', '', '', 'u turn']);
+  });
+
+  it('every type and modifier picks the same drawing in either form', () => {
+    const types = ['depart', 'arrive', 'turn', 'continue', 'new name', 'merge', 'on ramp', 'off ramp', 'fork', 'end of road', 'roundabout', 'rotary', 'roundabout turn', 'exit roundabout', 'exit rotary', 'notification'];
+    const mods = [undefined, 'uturn', 'sharp right', 'right', 'slight right', 'straight', 'slight left', 'left', 'sharp left'];
+    const snake = (w?: string) => w?.replace(/ /g, '_');
+    let checked = 0;
+    for (const type of types) {
+      for (const modifier of mods) {
+        for (const drivingSide of ['left', 'right'] as const) {
+          const spaced = uiNavIconKind({ type, modifier, drivingSide });
+          expect(uiNavIconKind({ type: snake(type)!, modifier: snake(modifier), drivingSide }), `${type}/${modifier}`).toBe(spaced);
+          expect(uiNavIconKind({ type: snake(type)!.toUpperCase(), modifier: snake(modifier)?.toUpperCase(), drivingSide }), `${type}/${modifier} upper`).toBe(spaced);
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBe(types.length * mods.length * 2);
+    // The ones that differ from 'straight' only when the words are read: snake_case used to fall through.
+    const k = (type: string, modifier?: string) => uiNavIconKind({ type, modifier });
+    expect([k('turn', 'sharp_right'), k('turn', 'slight_left'), k('end_of_road', 'left'), k('roundabout', 'sharp_left'), k('exit_roundabout', 'slight_right'),
+      k('on_ramp', 'slight_right'), k('off_ramp', 'left'), k('roundabout_turn', 'right'), k('fork', 'slight_left'), k('turn', 'u_turn')]).toEqual(
+      ['sharp-right', 'slight-left', 'left', 'roundabout-sharp-left', 'roundabout-slight-right', 'slight-right', 'slight-left', 'roundabout-right', 'fork-left', 'uturn-left'],
+    );
+  });
+
+  it('the tracker gives the same drive with snake_case steps', () => {
+    const snakeSteps = STEPS.map((x) => ({ ...x, maneuver: { ...x.maneuver, type: x.maneuver.type.replace(/ /g, '_'), modifier: x.maneuver.modifier?.replace(/ /g, '_') } }));
+    snakeSteps[1] = { ...snakeSteps[1], maneuver: { ...snakeSteps[1].maneuver, type: 'end_of_road', modifier: 'sharp_right' } };
+    const spaced = STEPS.map((x, i) => (i === 1 ? { ...x, maneuver: { ...x.maneuver, type: 'end of road', modifier: 'sharp right' } } : x));
+    const a = drive(new UiNavTracker(ROUTE, spaced));
+    const b = drive(new UiNavTracker(ROUTE, snakeSteps));
+    const strip = (r: typeof a) => r.map(({ state }) => ({ ...state, next: state.next?.instruction, nextNext: state.nextNext?.instruction, events: state.events.map((e) => [e.type, 'stepIndex' in e ? e.stepIndex : null]) }));
+    expect(strip(b)).toEqual(strip(a));
+    expect(uiNavIconKind(b[0].state.next!.maneuver)).toBe('sharp-right');
   });
 });
