@@ -1,4 +1,4 @@
-import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
@@ -12,6 +12,7 @@ import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
   template: `
     <div class="wrap" [class.no-radius]="!radius()" [class.invalid]="invalid()" [attr.data-size]="size()">
       <input
+        #pwField
         class="ui-pw"
         [attr.type]="reveal() ? 'text' : 'password'"
         [attr.placeholder]="placeholder()"
@@ -84,7 +85,14 @@ export class UiPasswordInput implements ControlValueAccessor {
   private onChange: (v: string) => void = () => {};
   protected onTouched: () => void = () => {};
 
-  writeValue(v: string): void { this.value.set(v ?? ''); }
+  /** The model goes into the native control at once when they differ (0.46.1): the [value] binding alone
+   *  skipped a '' written straight after typing (it matched the last value it had written). */
+  writeValue(v: string): void {
+    this.value.set(v ?? '');
+    const el = this.nativeField()?.nativeElement;
+    if (el && el.value !== this.value()) el.value = this.value();
+  }
+  private readonly nativeField = viewChild<ElementRef<HTMLInputElement>>('pwField');
   registerOnChange(fn: (v: string) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }

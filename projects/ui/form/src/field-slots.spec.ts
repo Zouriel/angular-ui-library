@@ -95,11 +95,13 @@ describe('text field slots', () => {
     expect(el.querySelector('ui-input input')!.getAttribute('dir')).toBe('rtl');
     f.componentInstance.dir.set('auto');
     f.detectChanges();
-    expect(textarea.getAttribute('dir')).toBe('auto');
+    // Empty: no dir on the native field, so the placeholder follows the page (0.46.1).
+    expect(textarea.hasAttribute('dir')).toBe(false);
     expect(frame.hasAttribute('dir')).toBe(false);
     textarea.value = 'ދިވެހި';
     textarea.dispatchEvent(new Event('input'));
     f.detectChanges();
+    expect(textarea.getAttribute('dir')).toBe('auto');
     expect(frame.getAttribute('dir')).toBe('rtl');
     textarea.value = 'hello ދިވެހި';
     textarea.dispatchEvent(new Event('input'));

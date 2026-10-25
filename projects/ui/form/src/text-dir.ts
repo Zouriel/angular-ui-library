@@ -24,5 +24,15 @@ export function uiResolvedDir(dir: UiTextDir | null | undefined, text: string): 
   return dir ?? null;
 }
 
+/**
+ * The `dir` a field puts on its native control (0.46.1): `auto` only once it holds text. An empty
+ * `dir="auto"` control resolves to LTR in Chromium, so a placeholder in an RTL page (Thaana) would sit on
+ * the left; with no attribute it inherits the page direction and the placeholder sits at the start.
+ */
+export function uiNativeDir(dir: UiTextDir | null | undefined, text: string): UiTextDir | null {
+  if (dir === 'auto' && !text) return null;
+  return dir ?? null;
+}
+
 /** Elements inside a field's slot that take their own clicks (anything else focuses the field). */
 export const UI_SLOT_INTERACTIVE = 'button, a[href], input, select, textarea, label, [tabindex], [contenteditable], [role=button]';

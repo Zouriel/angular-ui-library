@@ -1,7 +1,7 @@
-import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, afterRenderEffect, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
-import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
+import { UI_SLOT_INTERACTIVE, uiNativeDir, uiResolvedDir, type UiTextDir } from './text-dir';
 
 /**
  * `ui-input` — single-line text field. Implements ControlValueAccessor so it
@@ -17,8 +17,9 @@ import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
  */
 @Component({
   selector: 'ui-input',
-  // The label belongs on the inner field, not on this wrapper.
-  host: { '[attr.aria-label]': 'null' },
+  // The label belongs on the inner field, not on this wrapper. So does dir (0.46.1): a static
+  // dir="auto" left on the wrapper resolved the empty field to LTR before the inner control saw it.
+  host: { '[attr.aria-label]': 'null', '[attr.dir]': 'null' },
   template: `
     <div class="frame" [attr.data-size]="size()" [class.disabled]="disabled()" [attr.dir]="frameDir()">
     <span #lead class="slot lead" (pointerdown)="slotDown($event)"><ng-content select="[input-leading]" /></span>
@@ -34,10 +35,9 @@ import { UI_SLOT_INTERACTIVE, uiResolvedDir, type UiTextDir } from './text-dir';
       [attr.name]="name()"
       [attr.aria-label]="ariaLabel() ?? staticLabel"
       [attr.aria-invalid]="invalid() || null"
-      [attr.dir]="dir() ?? null"
+      [attr.dir]="nativeDir()"
       [style.padding-inline-start]="leadW() ? 'calc(' + leadW() + 'px + var(--ui-space-1) + var(--ui-space-2))' : null"
       [style.padding-inline-end]="trailW() ? 'calc(' + trailW() + 'px + var(--ui-space-1) + var(--ui-space-2))' : null"
-      [value]="value()"
       [disabled]="disabled()"
       (input)="handleInput($event)"
       (blur)="onTouched()" />
@@ -98,13 +98,23 @@ export class UiInput implements ControlValueAccessor {
   dir = input<UiTextDir | null>(null);
 
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
+  /** The same control, null before the view exists (writeValue can come first). */
+  private readonly fieldRef = viewChild<ElementRef<HTMLInputElement>>('field');
   private readonly lead = viewChild.required<ElementRef<HTMLElement>>('lead');
   private readonly trail = viewChild.required<ElementRef<HTMLElement>>('trail');
   protected readonly leadW = signal(0);
   protected readonly trailW = signal(0);
   protected readonly frameDir = computed(() => uiResolvedDir(this.dir(), this.value()));
+  /** The native control's `dir`: `auto` only once there is text (0.46.1). Empty, Chromium resolves `auto`
+   *  to LTR and a Thaana placeholder sits on the left of an RTL page; inheriting keeps it at the start. */
+  protected readonly nativeDir = computed(() => uiNativeDir(this.dir(), this.value()));
 
   constructor() {
+    // Every value change reaches the native control after render (the first render too).
+    afterRenderEffect(() => {
+      this.value();
+      this.syncNative();
+    });
     const destroy = inject(DestroyRef);
     afterNextRender(() => {
       if (typeof ResizeObserver === 'undefined') return;
@@ -140,7 +150,20 @@ export class UiInput implements ControlValueAccessor {
   private onChange: (v: string) => void = () => {};
   protected onTouched: () => void = () => {};
 
-  writeValue(v: string): void { this.value.set(v ?? ''); }
+  /** Writes the model into the native control right away when they differ (0.46.1): the template
+   *  binding compared against the last value it wrote, so '' set straight after typing (a chat
+   *  composer clearing on send) could equal it and leave the typed text in the box. */
+  writeValue(v: string): void {
+    this.value.set(v ?? '');
+    this.syncNative();
+  }
+
+  /** The native control takes the model's value whenever the two differ (compared with what the
+   *  control holds, not with the last value written). */
+  private syncNative(): void {
+    const el = this.fieldRef()?.nativeElement;
+    if (el && el.value !== this.value()) el.value = this.value();
+  }
   registerOnChange(fn: (v: string) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
   setDisabledState(d: boolean): void { this.disabled.set(d); }

@@ -694,3 +694,7 @@ text direction multiply their travel by `--ui-inline-sign` (1, or -1 under `dir=
 Thaana text draws in the app's font: put it first in `--ui-font-default` (and `--ui-font-display`), e.g.
 `Faruma, 'Poppins', system-ui, sans-serif`. Every component draws with those tokens (the Google button keeps
 Google's Roboto first and falls back to them).
+
+Since 0.46.1 a `ui-badge` under `:lang(dv)` or `:dir(rtl)` grows to fit Thaana's marks below the line (the
+font's own line height plus 1px, 20px minimum); give a Thaana badge in an English page `lang="dv"`. A text field
+with `dir="auto"` keeps `dir` off its native control while empty, so its placeholder follows the page.

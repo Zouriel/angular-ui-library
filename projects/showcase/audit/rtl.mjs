@@ -7,6 +7,8 @@
  * arrows and Dhivehi names, the map's zoom buttons, locate button and credits (also after flipping the
  * direction at runtime, without a reload), a live switch of the built-in words, and that Thaana in
  * buttons, inputs, tabs, chips, toasts and dialogs draws in the app font (a test font named Faruma).
+ * 0.46.1: an empty dir=auto field follows the page (placeholder at the start), and Thaana's marks stay inside
+ * badge and chip pills (ink measured from a 4x screenshot; pass --font with Faruma for the real face).
  *
  *   npm run audit:rtl -- --dist <showcase build output>      (serves the build itself)
  *   npm run audit:rtl -- --url http://localhost:4310
@@ -158,6 +160,24 @@ for (const lang of ['en', 'dv']) {
     check(`${tag}: select chevron at the inline end`, sel && (rtl ? sel.start < sel.end : sel.end < sel.start), sel && `from left ${sel.start.toFixed(0)}, from right ${sel.end.toFixed(0)}`);
     const otp = await page.evaluate(() => { const c = [...document.querySelectorAll('ui-otp-input .cell')]; return c.length > 1 ? c[0].getBoundingClientRect().left < c[1].getBoundingClientRect().left : null; });
     check(`${tag}: OTP boxes run left to right`, otp === true);
+    // 0.46.1: an empty dir="auto" field follows the page, so its placeholder sits at the start; once it has
+    // text it follows the text. (Chromium resolves an empty dir="auto" control to LTR.)
+    const auto = page.locator('.slot-demos ui-textarea textarea').first();
+    if (await auto.count()) {
+      const d0 = await auto.evaluate((el) => getComputedStyle(el).direction);
+      check(`${tag}: empty dir=auto field follows the page (placeholder at the start)`, d0 === (rtl ? 'rtl' : 'ltr'), d0);
+      await auto.fill('hello');
+      await page.waitForTimeout(150);
+      const d1 = await auto.evaluate((el) => getComputedStyle(el).direction);
+      await auto.fill('ދިވެހި');
+      await page.waitForTimeout(150);
+      const d2 = await auto.evaluate((el) => getComputedStyle(el).direction);
+      check(`${tag}: dir=auto field follows the text once typed in`, d1 === 'ltr' && d2 === 'rtl', `${d1} / ${d2}`);
+      await auto.fill('');
+      await page.waitForTimeout(150);
+      const d3 = await auto.evaluate((el) => getComputedStyle(el).direction);
+      check(`${tag}: cleared dir=auto field follows the page again`, d3 === (rtl ? 'rtl' : 'ltr'), d3);
+    } else check(`${tag}: dir=auto textarea demo found`, false);
     const ph = await page.evaluate(() => document.querySelector('ui-search-input input')?.getAttribute('placeholder'));
     if (rtl) check(`${tag}: default search placeholder in Dhivehi`, ph === 'ހޯދާ…' || (ph && !/^Search/.test(ph)), ph);
 
@@ -225,6 +245,67 @@ for (const lang of ['en', 'dv']) {
     else console.log(`note ${tag}: no back-swipe strip in view on /layout (checked in unit tests)`);
     await ctx.close();
   }
+}
+
+// ---- Thaana marks stay inside pills (0.46.1) ------------------------------------------------------
+// Renders the /data Thaana row (lang="dv") with the app font (--font, e.g. Faruma, as an app loads it:
+// Thaana range only, 110% size), paints the text black on white, and finds the ink's top and bottom
+// rows in a 4x screenshot: each must stay at least 1px inside the pill's border. Latin badges must
+// keep their height in RTL (within 2px of LTR).
+if (!fontPath) console.log('note: Thaana pill check uses a local Thaana face; pass --font <Faruma.ttf> for the real one');
+{
+  const heights = {};
+  for (const lang of ['en', 'dv']) {
+    const ctx = await browser.newContext({ viewport: { width: W, height: 844 }, deviceScaleFactor: 4, reducedMotion: 'reduce' });
+    if (fontPath) {
+      const font = readFileSync(fontPath);
+      await ctx.route('**/__audit-font.ttf', (r) => r.fulfill({ body: font, contentType: 'font/ttf' }));
+    }
+    const page = await ctx.newPage();
+    await page.goto(`${base}/data?lang=${lang}`, { waitUntil: 'networkidle' });
+    await page.addStyleTag({ content: `@font-face { font-family: 'AuditPill'; src: ${fontPath ? "url('/__audit-font.ttf')" : 'local("Noto Sans Thaana"), local("MV Faruma"), local("Faruma")'}; unicode-range: U+0780-07BF; size-adjust: 110%; }
+      .thaana-pills { background: #fff !important; padding-block: 12px !important; }
+      .thaana-pills .ui-badge, .thaana-pills .ui-chip { color: #000 !important; background: #fff !important; border-color: #f00 !important; }` });
+    await page.evaluate(() => {
+      const root = document.documentElement;
+      root.style.setProperty('--ui-font-default', `'AuditPill', ${getComputedStyle(root).getPropertyValue('--ui-font-default')}`);
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(300);
+    heights[lang] = await page.evaluate(() => [...document.querySelectorAll('ui-badge .ui-badge:not(.dot)')].filter((b) => !b.closest('.thaana-pills')).slice(0, 3).map((b) => b.getBoundingClientRect().height));
+    const pills = page.locator('.thaana-pills :is(.ui-badge, .ui-chip)');
+    const n = await pills.count();
+    if (!n) { check(`${lang}: Thaana pill demo found on /data`, false); await ctx.close(); continue; }
+    for (let i = 0; i < n; i++) {
+      const pill = pills.nth(i);
+      await pill.scrollIntoViewIfNeeded();
+      const box = await pill.boundingBox();
+      const pad = 8;
+      const buf = await page.screenshot({ clip: { x: box.x, y: box.y - pad, width: box.width, height: box.height + 2 * pad } });
+      const [top, bot] = await page.evaluate(async (b64) => {
+        const img = new Image();
+        img.src = 'data:image/png;base64,' + b64;
+        await img.decode();
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, c.width, c.height).data;
+        let t = Infinity, b = -Infinity;
+        for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+          const k = (y * c.width + x) * 4;
+          if (d[k] < 110 && d[k + 1] < 110 && d[k + 2] < 110) { t = Math.min(t, y); b = Math.max(b, y); }
+        }
+        return [t, b];
+      }, buf.toString('base64'));
+      const kind = await pill.evaluate((el) => el.className.includes('ui-chip') ? 'chip' : 'badge');
+      const gapTop = top / 4 - pad - 1, gapBottom = box.height - 1 - ((bot + 1) / 4 - pad);
+      check(`${lang}: Thaana ${kind} ${i + 1}: marks inside the pill`, Number.isFinite(top) && gapTop >= 1 && gapBottom >= 1, `h=${box.height.toFixed(1)} gap top ${gapTop.toFixed(2)} bottom ${gapBottom.toFixed(2)}`);
+    }
+    await ctx.close();
+  }
+  const d = heights.en.map((h, i) => Math.abs(h - (heights.dv[i] ?? h)));
+  check('Latin badges keep their height in RTL (within 2px)', heights.en.length && d.every((x) => x <= 2), `LTR ${heights.en.join(',')} RTL ${heights.dv.join(',')}`);
 }
 
 // ---- Thaana draws in the app font ----------------------------------------------------------------

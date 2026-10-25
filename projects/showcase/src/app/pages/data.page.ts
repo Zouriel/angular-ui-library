@@ -255,7 +255,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
+        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
 <ui-badge tone=&quot;danger&quot; [dot]=&quot;true&quot; role=&quot;img&quot; aria-label=&quot;Offline&quot; />
 <ui-chip tone=&quot;primary&quot; [removable]=&quot;true&quot; label=&quot;angular&quot; (remove)=&quot;drop('angular')&quot;>angular</ui-chip>
@@ -266,6 +266,11 @@ nodes: UiTreeNode[] = [
           <div class="row">
             <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge><ui-badge tone="success">success</ui-badge>
             <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
+          </div>
+          <!-- 0.46.1: Thaana's marks below the line stay inside the pill (lang="dv" or a right-to-left page). -->
+          <div class="row thaana-pills" lang="dv" dir="rtl">
+            <ui-badge tone="success">މިހާރު ހުޅުވާލާފައި</ui-badge><ui-badge tone="warning">ދުވަސް ޓީއްގައި ކުރީ</ui-badge><ui-badge>ބުރާސްފަތި</ui-badge>
+            <ui-chip tone="primary">ޑޮކްޓަރު</ui-chip><ui-chip>ފާމަސީ ހުޅުވިފައި</ui-chip>
           </div>
           <div class="row">
             @for (t of tags(); track t) {

@@ -73,6 +73,13 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   never the browser default. Breaking-ish: the toast host defaults to `bottom-end` (same as before in LTR), inputs
   that defaulted to English text now default to `undefined`, and an `en-GB` app's calendars start on Monday.
   Showcase: an RTL · ދިވެހި switch in the top bar mirrors every page; `npm run audit:rtl` measures it in a browser.
+- **0.46.1**: three RTL fixes from the Dhirumi web app. An empty `dir="auto"` `ui-input` / `ui-textarea` leaves `dir`
+  off its native control (and its wrapper), so the placeholder follows the page and sits at the start of an RTL page
+  (Chromium resolved the empty field to LTR); once there is text it is `auto` again. Text fields (input, textarea,
+  search, password) write a model value into the native control whenever the two differ, so `''` set straight after
+  typing (a chat composer clearing on send) clears the box. `ui-badge` under `:lang(dv)` or `:dir(rtl)` takes the
+  font's own line height plus 1px below (20px minimum), so Thaana's marks below the line stay inside the pill; Latin
+  badges keep 20px. `npm run audit:rtl -- --font <Faruma.ttf>` measures all three in a browser.
 - **Compact density** (0.45.0): `provideUiConfig({ density: 'comfortable' | 'compact' | 'auto' })`, or
   `data-density="compact"` / `"auto"` on `<html>` (or any element, for its subtree; `applyUiDensity()` at runtime).
   Compact makes things smaller, not tighter: `--ui-font-size-sm/md/lg` 12/14/16px (from 13/15/18), the ui-text

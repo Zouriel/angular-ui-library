@@ -16,7 +16,16 @@ import type { UiStatus } from '@zouriel/ui';
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border);
     }
-    .ui-badge.dot { width: 8px; height: 8px; padding: 0; }
+    /* Thaana (0.46.1): its marks below the line hang lower than Latin descenders and spilled out of the
+       16px line and the fixed height. In a Dhivehi or right-to-left context the pill takes the font's own
+       line height (the Thaana fallback's metrics count once it draws) and 1px more below, growing only as
+       far as the text needs; Latin keeps 20px (compact: 20px, from 18px). Set lang="dv" on a Thaana badge in
+       an English page to get the same. */
+    .ui-badge:is(:lang(dv), :dir(rtl)) {
+      height: auto; min-height: calc(20px * var(--ui-density-scale));
+      line-height: normal; padding-block: 0 1px;
+    }
+    .ui-badge.dot { width: 8px; height: 8px; min-height: 0; padding: 0; }
     .ui-badge { --ui-color-icon: currentColor; }
     .ui-badge[data-tone="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: var(--ui-color-success-contrast); border-color: transparent; }
