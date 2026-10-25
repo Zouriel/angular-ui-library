@@ -72,10 +72,19 @@
   grid-column: 2; justify-self: center; max-width: 100%; box-sizing: border-box; pointer-events: auto;
   padding: var(--ui-space-1) var(--ui-space-3); min-height: 32px; display: flex; align-items: center;
   background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border);
-  border-radius: var(--ui-radius-pill); box-shadow: var(--ui-shadow-2);
-  font-size: var(--ui-font-size-md); font-weight: 600; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-radius: var(--ui-radius-lg); box-shadow: var(--ui-shadow-2);
+  font-size: var(--ui-font-size-md); font-weight: 600; line-height: 1.35;
+}
+/* 0.47.2: up to two lines, then an ellipsis after a whole word (the component fits the words; the clamp is the
+   fallback). Words wrap whole; only a word longer than the line breaks. One line is still a pill: the radius
+   is more than half its 32px. The block under the banner is outside the measured banner, so a taller pill
+   moves neither the banner, the buttons nor the map's follow point. */
+.ui-map-navigation .ui-nav-status-text {
+  min-width: 0; text-align: center; overflow-wrap: break-word; word-break: normal;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 .ui-map-navigation .ui-nav-status[hidden] { display: none; }
+.ui-map-navigation .ui-nav-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ui-map-navigation .ui-nav-actions { grid-column: 3; grid-row: 1; display: flex; flex-direction: column; gap: var(--ui-space-3); }
 .ui-map-navigation .ui-nav-action {
   pointer-events: auto; position: relative; box-sizing: border-box; flex: none;
@@ -97,6 +106,23 @@
 }
 .ui-map-navigation .ui-nav-action[data-tone="danger"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
 .ui-map-navigation .ui-nav-action[data-tone="danger"]:focus-visible { box-shadow: 0 0 0 3px var(--ui-color-surface-raised), var(--ui-focus-ring), var(--ui-shadow-2); }
+/* 0.47.2: press and hold. A ring in the button's ink fills clockwise round its edge while it is held (from
+   the top, the same way in right-to-left text, like a clock); letting go empties it. Under reduced motion
+   (data-still) the ring doesn't fill: it shows whole and steady while held. No text selection or callout on
+   a long press. */
+.ui-map-navigation .ui-nav-action[data-hold] { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.ui-map-navigation .ui-nav-hold-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; overflow: visible; }
+.ui-map-navigation .ui-nav-hold-ring circle { fill: none; stroke: currentColor; stroke-width: 3; }
+.ui-map-navigation .ui-nav-hold-track { opacity: 0; transition: opacity var(--ui-motion-fast) var(--ui-ease-standard); }
+.ui-map-navigation .ui-nav-action[data-holding] .ui-nav-hold-track { opacity: 0.3; }
+.ui-map-navigation .ui-nav-hold-arc { opacity: 0; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition-property: stroke-dashoffset; transition-timing-function: linear; }
+.ui-map-navigation .ui-nav-action[data-holding] .ui-nav-hold-arc { opacity: 1; }
+/* The tap fallback's confirm dialog is created beside the button; its modal renders on <body>, so its host
+   takes no room (and no gap) in the stack. */
+.ui-map-navigation .ui-nav-actions > ui-confirm-dialog { display: contents; }
+.ui-map-navigation .ui-nav-action[data-still] .ui-nav-hold-arc { display: none; }
+.ui-map-navigation .ui-nav-action[data-still][data-holding] .ui-nav-hold-track { opacity: 1; transition: none; }
+.ui-map-navigation .ui-nav-action[data-hold] hugeicons-icon { position: relative; }
 .ui-map-navigation .ui-nav-then-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .ui-map-navigation .ui-nav-bar {

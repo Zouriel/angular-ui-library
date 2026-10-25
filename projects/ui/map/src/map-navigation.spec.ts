@@ -4,14 +4,14 @@ import { By } from '@angular/platform-browser';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type * as Leaflet from 'leaflet';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiStringsService, uiStringsDv } from '@zouriel/ui';
 import { UI_MAP_LEAFLET, UiMap, uiMapRotatePoint, uiMapUserHtml, type UiLatLng } from './map';
 import { UiMapNavigation, UiNavAction, uiNavFollowInsets, UI_NAV_FOLLOW_AT } from './map-navigation';
 import type { UiMapInsets } from './map';
 import VolumeHighIcon from '@hugeicons/core-free-icons/VolumeHighIcon';
 import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
-import { uiNavDistance, type UiNavEvent, type UiNavPosition, type UiNavState, type UiNavStep } from './navigation';
+import { uiNavDistance, uiNavFitWords, type UiNavEvent, type UiNavPosition, type UiNavState, type UiNavStep } from './navigation';
 
 /*
  * 0.47.0: ui-map-navigation and the map's turn (bearing), on the real Leaflet (jsdom: no layout,
@@ -410,11 +410,11 @@ describe('ui-map-navigation: actions, status, insets, banner icon colour (0.47.1
     f.componentInstance.status.set('Rerouting…');
     await settle();
     expect(pill.hidden).toBe(false);
-    expect(pill.textContent!.trim()).toBe('Rerouting…');
+    expect(pill.querySelector('.ui-nav-sr')!.textContent!.trim()).toBe('Rerouting…');
     const c = getComputedStyle(pill);
     expect(c.display).toBe('flex');
     expect(c.gridColumn).toBe('2');
-    expect(c.borderRadius).toBe('var(--ui-radius-pill)');
+    expect(c.borderRadius).toBe('var(--ui-radius-lg)');
     expect(c.getPropertyValue('background')).toBe('var(--ui-color-surface-raised)');
     // Not in the banner, so the follow point doesn't jump when it shows.
     expect(host.querySelector('.ui-nav-top .ui-nav-status')).toBeNull();
@@ -498,5 +498,262 @@ describe('ui-map-navigation: actions, status, insets, banner icon colour (0.47.1
     expect(c).not.toMatch(/(^|[\s;{])(left|right|margin-left|margin-right|padding-left|padding-right)\s*:/m);
     expect(c).toMatch(/\.ui-nav-under \{[^}]*inset-inline-end/);
     expect(c).not.toMatch(/!important/);
+  });
+});
+
+/** 0.47.2: a holding SOS (with and without the app's tap fallback) next to a plain mute button. */
+@Component({
+  imports: [UiMapNavigation, UiNavAction],
+  template: `<div [attr.dir]="dir()" style="height: 844px">
+    <ui-map-navigation [route]="route()" [steps]="steps" [position]="position()" [status]="status()">
+      <button uiNavAction id="mute" [icon]="muteIcon" label="Mute" (click)="mutes = mutes + 1"></button>
+      <button uiNavAction id="sos" [icon]="sosIcon" label="SOS" tone="danger" [hold]="hold()" [holdMs]="holdMs()" [onTap]="tapFallback() ? onTap : null"
+        confirmTitle="Send an SOS?" confirmLabel="Send SOS" [destructive]="true" (confirmed)="sos = sos + 1"></button>
+    </ui-map-navigation>
+  </div>`,
+})
+class HoldHost extends Host {
+  status = signal<string | null>(null);
+  hold = signal(true);
+  holdMs = signal<number | null>(null);
+  tapFallback = signal(true);
+  sos = 0;
+  taps = 0;
+  mutes = 0;
+  muteIcon = VolumeHighIcon;
+  sosIcon = Alert02Icon;
+  onTap = () => {
+    this.taps++;
+  };
+}
+
+describe('ui-map-navigation: holding actions and the status pill (0.47.2)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('.ui-layer').forEach((l) => l.remove());
+    document.body.style.overflow = '';
+  });
+
+  async function holdSetup(init?: (h: HoldHost) => void) {
+    const s = await setup<HoldHost>(init, HoldHost);
+    await s.feed({ ...along(0), timestamp: 0 });
+    document.body.appendChild(s.f.nativeElement);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance', 'Date'] });
+    const btn = s.host.querySelector('#sos') as HTMLButtonElement;
+    Object.defineProperty(btn, 'getBoundingClientRect', { configurable: true, value: () => ({ left: 300, right: 348, top: 200, bottom: 248, width: 48, height: 48, x: 300, y: 200 }) });
+    const ptr = (type: string, x = 324, y = 224) => {
+      btn.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, button: 0, pointerId: 1, clientX: x, clientY: y }));
+      s.f.detectChanges();
+    };
+    const key = (type: string, k = ' ', target: HTMLElement = btn) => {
+      const e = new KeyboardEvent(type, { key: k, bubbles: true, cancelable: true });
+      target.dispatchEvent(e);
+      s.f.detectChanges();
+      return e;
+    };
+    const wait = (ms: number) => {
+      vi.advanceTimersByTime(ms);
+      s.f.detectChanges();
+    };
+    const live = () => btn.querySelector('.ui-nav-hold-live')?.textContent?.trim() ?? null;
+    const arc = () => btn.querySelector('.ui-nav-hold-arc') as SVGCircleElement | null;
+    const dialog = () => document.querySelector('[role=alertdialog], [role=dialog]');
+    return { ...s, h: s.f.componentInstance, btn, ptr, key, wait, live, arc, dialog };
+  }
+
+  it('fires only when held to the end (2 s by default), the ring filling over the hold; the click after is swallowed', async () => {
+    const { h, btn, ptr, wait, arc, dialog } = await holdSetup();
+    expect(btn.hasAttribute('data-hold')).toBe(true);
+    expect(arc()).toBeTruthy();
+    expect(btn.querySelector('.ui-nav-hold-ring')!.getAttribute('aria-hidden')).toBe('true');
+    expect(arc()!.style.strokeDashoffset).toBe('100');
+    ptr('pointerdown');
+    expect(btn.hasAttribute('data-holding')).toBe(true);
+    expect(arc()!.style.strokeDashoffset).toBe('0');
+    expect(arc()!.style.transitionDuration).toBe('2000ms');
+    wait(1990);
+    expect(h.sos).toBe(0);
+    wait(20);
+    expect(h.sos).toBe(1);
+    ptr('pointerup');
+    btn.click();
+    wait(500);
+    expect([h.sos, h.taps]).toEqual([1, 0]);
+    expect(dialog()).toBeNull();
+    expect(btn.hasAttribute('data-holding')).toBe(false);
+    expect(arc()!.style.strokeDashoffset).toBe('100');
+  });
+
+  it('let go early: cancelled, nothing fires, "Hold cancelled" is read; progress is read at each quarter', async () => {
+    const { h, btn, ptr, wait, live } = await holdSetup();
+    ptr('pointerdown');
+    wait(450);
+    expect(live()).toBe('');
+    wait(100);
+    expect(live()).toBe('Holding, 25%');
+    wait(500);
+    expect(live()).toBe('Holding, 50%');
+    ptr('pointerup');
+    btn.click();
+    wait(3000);
+    expect([h.sos, h.taps]).toEqual([0, 0]);
+    expect(live()).toBe('Hold cancelled');
+    expect(btn.hasAttribute('data-holding')).toBe(false);
+  });
+
+  it('sliding off the button cancels the hold (the pointer is captured, so no pointerleave comes)', async () => {
+    const { h, btn, ptr, wait } = await holdSetup();
+    ptr('pointerdown');
+    wait(500);
+    ptr('pointermove', 330, 230);
+    wait(100);
+    expect(btn.hasAttribute('data-holding')).toBe(true);
+    ptr('pointermove', 360, 230);
+    expect(btn.hasAttribute('data-holding')).toBe(false);
+    wait(3000);
+    ptr('pointerup', 360, 230);
+    btn.click();
+    wait(100);
+    expect([h.sos, h.taps]).toEqual([0, 0]);
+  });
+
+  it('a tap, a quick key press or a screen reader\'s activation calls onTap; without one, the confirm dialog confirms', async () => {
+    const { f, h, btn, ptr, key, wait, dialog } = await holdSetup();
+    ptr('pointerdown');
+    wait(100);
+    ptr('pointerup');
+    btn.click();
+    expect([h.sos, h.taps]).toEqual([0, 1]);
+    key('keydown', 'Enter');
+    wait(50);
+    key('keyup', 'Enter');
+    expect(h.taps).toBe(2);
+    btn.click(); // no press before it: assistive activation
+    expect(h.taps).toBe(3);
+    expect(dialog()).toBeNull();
+    h.tapFallback.set(false);
+    f.detectChanges();
+    btn.click();
+    wait(400);
+    expect(h.taps).toBe(3);
+    expect(dialog()?.textContent).toContain('Send an SOS?');
+    const confirm = [...document.querySelectorAll('.ui-layer button')].find((b) => b.textContent?.trim() === 'Send SOS') as HTMLButtonElement;
+    confirm.click();
+    wait(400);
+    expect(h.sos).toBe(1);
+    // The dialog's host takes no room in the stack.
+    expect(getComputedStyle(btn.parentElement!.querySelector('ui-confirm-dialog')!).display).toBe('contents');
+  });
+
+  it('keyboard: Space or Enter held to the end fires; the key never clicks a holding button at once', async () => {
+    const { h, key, wait } = await holdSetup();
+    const down = key('keydown', ' ');
+    expect(down.defaultPrevented).toBe(true);
+    wait(2010);
+    expect(h.sos).toBe(1);
+    key('keyup', ' ');
+    expect(h.taps).toBe(0);
+  });
+
+  it('holdMs sets the time; reduced motion still needs the whole hold, with a steady ring', async () => {
+    const { h, btn, ptr, wait, arc } = await holdSetup((x) => x.holdMs.set(3000));
+    reduce = true;
+    ptr('pointerdown');
+    expect(btn.hasAttribute('data-still')).toBe(true);
+    expect(arc()!.style.transitionDuration).toBe('0ms');
+    wait(2500);
+    expect(h.sos).toBe(0);
+    wait(510);
+    expect(h.sos).toBe(1);
+    const c = css();
+    expect(c).toMatch(/\.ui-nav-action\[data-still\] \.ui-nav-hold-arc \{ display: none; \}/);
+    expect(c).toMatch(/\.ui-nav-action\[data-still\]\[data-holding\] \.ui-nav-hold-track \{ opacity: 1;/);
+  });
+
+  it('described by the hold hint; a plain action has no ring, no hint, and Enter / clicks work as a button\'s', async () => {
+    const { f, h, btn, host, key } = await holdSetup();
+    const hint = btn.getAttribute('aria-describedby')!;
+    expect(document.getElementById(hint)?.textContent?.trim()).toBe('Press and hold to confirm');
+    expect(btn.querySelector('.ui-nav-hold-live')!.getAttribute('aria-live')).toBe('polite');
+    const mute = host.querySelector('#mute') as HTMLButtonElement;
+    expect(mute.querySelector('svg.ui-nav-hold-ring')).toBeNull();
+    expect(mute.hasAttribute('aria-describedby')).toBe(false);
+    expect(mute.hasAttribute('data-hold')).toBe(false);
+    expect(key('keydown', 'Enter', mute).defaultPrevented).toBe(false);
+    mute.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 2 }));
+    mute.click();
+    expect(h.mutes).toBe(1);
+    // hold off again: a plain button.
+    h.hold.set(false);
+    f.detectChanges();
+    expect(btn.hasAttribute('data-hold')).toBe(false);
+    expect(btn.querySelector('svg.ui-nav-hold-ring')).toBeNull();
+  });
+
+  it('status: up to two lines, ending on a whole word with an ellipsis; screen readers hear it all', async () => {
+    const { f, host, settle } = await setup<HoldHost>(undefined, HoldHost);
+    const pill = host.querySelector('.ui-nav-status') as HTMLElement;
+    const shown = pill.querySelector('.ui-nav-status-text') as HTMLElement;
+    expect(shown.getAttribute('aria-hidden')).toBe('true');
+    // jsdom has no layout: 20 characters a line, 2 lines.
+    Object.defineProperty(shown, 'clientHeight', { configurable: true, get: () => Math.min(2, Math.ceil((shown.textContent ?? '').length / 20)) * 19 });
+    Object.defineProperty(shown, 'scrollHeight', { configurable: true, get: () => Math.ceil((shown.textContent ?? '').length / 20) * 19 });
+    const long = 'Rerouting around the closed road near the harbour, please wait';
+    f.componentInstance.status.set(long);
+    await settle();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(pill.querySelector('.ui-nav-sr')!.textContent).toBe(long);
+    const text = shown.textContent!;
+    expect(text.endsWith('…')).toBe(true);
+    expect(text.length).toBeLessThanOrEqual(40);
+    expect(long.startsWith(text.slice(0, -1))).toBe(true);
+    expect(long[text.length - 1]).toBe(' ');
+    f.componentInstance.status.set('Rerouting…');
+    await settle();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(shown.textContent).toBe('Rerouting…');
+    const c = getComputedStyle(shown);
+    expect(c.getPropertyValue('-webkit-line-clamp')).toBe('2');
+    expect(c.overflowWrap).toBe('break-word');
+    expect(getComputedStyle(pill).borderRadius).toBe('var(--ui-radius-lg)');
+    expect(getComputedStyle(pill).whiteSpace).not.toBe('nowrap');
+  });
+});
+
+describe('uiNavFitWords (0.47.2)', () => {
+  const lines = (perLine: number, max = 2) => (s: string) => {
+    // Greedy word wrap: whole words, a word longer than the line takes lines of its own.
+    let n = 1;
+    let used = 0;
+    for (const w of s.split(' ')) {
+      const need = used ? used + 1 + w.length : w.length;
+      if (need <= perLine) used = need;
+      else {
+        n += used ? 1 : 0;
+        used = w.length;
+        n += Math.max(0, Math.ceil(w.length / perLine) - 1);
+      }
+    }
+    return n <= max;
+  };
+  it('the whole text when it fits; else whole words and an ellipsis, the most that fit', () => {
+    expect(uiNavFitWords('Rerouting…', lines(20))).toBe('Rerouting…');
+    expect(uiNavFitWords('  Rerouting   now ', lines(20))).toBe('Rerouting now');
+    const out = uiNavFitWords('Rerouting around the closed road near the harbour', lines(20));
+    expect(out).toBe('Rerouting around the closed road near…');
+    expect(lines(20)(out)).toBe(true);
+  });
+  it('drops a comma or colon before the ellipsis; Thaana words cut the same way', () => {
+    expect(uiNavFitWords('Rerouting, closed road, harbour ahead, please wait for it', lines(12))).toBe('Rerouting, closed road…');
+    const dv = 'އަލުން މަގު ހޯދަނީ، ބަނދަރު ކައިރީގައި މަގު ބަންދުކޮށްފައި';
+    const cut = uiNavFitWords(dv, lines(16));
+    expect(cut.endsWith('…')).toBe(true);
+    expect(dv.startsWith(cut.slice(0, -1))).toBe(true);
+    expect(cut.slice(-2, -1)).not.toBe('،');
+    expect([' ', '،']).toContain(dv[cut.length - 1]);
+  });
+  it('a first word longer than the space: the text as it is (the pill\'s own clamp cuts it)', () => {
+    expect(uiNavFitWords('Supercalifragilisticexpialidocious', () => false)).toBe('Supercalifragilisticexpialidocious');
+    expect(uiNavFitWords('', () => false)).toBe('');
   });
 });

@@ -1,13 +1,15 @@
 import {
-  Component, DestroyRef, ElementRef, Injector, ViewEncapsulation, afterNextRender, booleanAttribute, computed, contentChildren, effect, inject, input, output, signal, untracked, viewChild,
+  Component, ComponentRef, DestroyRef, ElementRef, Injector, ViewContainerRef, ViewEncapsulation, afterNextRender, booleanAttribute, computed, contentChildren, effect, inject, input, output, signal, untracked, viewChild,
 } from '@angular/core';
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Navigation03Icon from '@hugeicons/core-free-icons/Navigation03Icon';
-import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import { UiButton } from '@zouriel/ui/button';
+import { UiConfirmDialog } from '@zouriel/ui/dialog';
+import { UiHoldPress, UI_HOLD_TAP_MS } from '@zouriel/ui/hold-button';
 import { UiMap, UI_MAP_OSM_ATTRIBUTION, UI_MAP_OSM_TILES, uiMapPoint, type UiLatLng, type UiMapInsets, type UiMapMarker, type UiMapPoint, type UiMapRoute, type UiMapUserLocation } from './map';
 import {
-  UiNavTracker, uiNavFormatClock, uiNavFormatDistance, uiNavFormatDuration, uiNavIcon, uiNavIconKind,
+  UiNavTracker, uiNavFitWords, uiNavFormatClock, uiNavFormatDistance, uiNavFormatDuration, uiNavIcon, uiNavIconKind,
   type UiNavEvent, type UiNavOptions, type UiNavPosition, type UiNavState, type UiNavStep,
 } from './navigation';
 
@@ -30,6 +32,11 @@ export function uiNavFollowInsets(height: number, top: number, bottom: number): 
 /** A navigation action's colour (0.47.1, Flutter `UiNavActionTone`): 'neutral', or 'danger' for SOS. */
 export type UiNavActionTone = 'neutral' | 'danger';
 
+/** How long a holding navigation action is held by default, in ms (0.47.2): the Dhirumi SOS hold. */
+export const UI_NAV_HOLD_MS = 2000;
+
+let navHoldSeq = 0;
+
 /**
  * `button[uiNavAction]` — one of the app's own buttons on a navigation view (0.47.1, Flutter
  * `UiNavAction`): mute, SOS. Put it inside `ui-map-navigation`; it joins the round button stack at
@@ -39,8 +46,20 @@ export type UiNavActionTone = 'neutral' | 'danger';
  *
  * ```html
  * <button uiNavAction [icon]="muteIcon" label="Mute" [pressed]="muted()" (click)="toggleMute()"></button>
- * <button uiNavAction [icon]="sosIcon" label="SOS" tone="danger" (click)="sos()"></button>
+ * <button uiNavAction [icon]="sosIcon" label="SOS" tone="danger" hold [onTap]="openSosSheet" (confirmed)="sos()"></button>
  * ```
+ *
+ * Press and hold (0.47.2, off by default): `hold` (2 s) or `[holdMs]="3000"` makes it fire only when
+ * held to the end, the way `ui-hold-button` and a holding `ui-fab` do (the same press logic,
+ * `UiHoldPress`): a ring fills around the button while it is held; letting go, or sliding off it,
+ * cancels. Space or Enter held works the same. Listen to `(confirmed)`, not `(click)` (a click still
+ * fires on every press). The button is described by `holdHint` ("Press and hold to confirm"), and a
+ * polite live region reads the hold's progress ("Holding, 50%") and a hold let go early ("Hold
+ * cancelled"). Under reduced motion the hold is still needed, but the ring doesn't animate: it shows
+ * whole and steady while held. A tap (shorter than 300ms), a quick Enter or Space, or a screen
+ * reader's activation calls `onTap` when the app gives one (an SOS's confirm sheet), or opens the
+ * library's confirm dialog (`confirmTitle`, `confirmMessage`, `confirmLabel`, `destructive`), which
+ * confirms the same way.
  */
 @Component({
   selector: 'button[uiNavAction]',
@@ -48,10 +67,36 @@ export type UiNavActionTone = 'neutral' | 'danger';
   host: {
     class: 'ui-nav-action', type: 'button',
     '[attr.aria-label]': 'label()', '[attr.title]': 'label()', '[attr.data-tone]': 'tone()', '[attr.aria-pressed]': 'pressed() ?? null',
+    '[attr.data-hold]': 'holding() !== null ? "" : null', '[attr.data-holding]': 'held() ? "" : null', '[attr.data-still]': 'still() ? "" : null',
+    '[attr.aria-describedby]': 'holding() !== null ? hintId : null',
+    '(pointerdown)': 'holding() !== null ? press.down($event) : null',
+    '(pointerup)': 'holding() !== null ? press.up(true) : null',
+    '(pointercancel)': 'holding() !== null ? press.up(false) : null',
+    '(pointerleave)': 'holding() !== null ? press.up(false) : null',
+    '(pointermove)': 'holding() !== null ? moved($event) : null',
+    '(keydown)': 'holding() !== null ? press.keyDown($event) : null',
+    '(keyup)': 'holding() !== null ? press.keyUp($event) : null',
+    '(blur)': 'holding() !== null ? press.abort() : null',
+    '(click)': 'holding() !== null ? press.clicked($event) : null',
+    '(contextmenu)': 'holding() !== null ? $event.preventDefault() : null',
   },
-  template: `<hugeicons-icon [icon]="icon()" [size]="22" [strokeWidth]="1.8" aria-hidden="true" />`,
+  template: `@if (holding() !== null) {
+      <svg class="ui-nav-hold-ring" viewBox="0 0 48 48" aria-hidden="true">
+        <circle class="ui-nav-hold-track" cx="24" cy="24" r="21" />
+        <circle class="ui-nav-hold-arc" cx="24" cy="24" r="21" pathLength="100"
+          [style.stroke-dashoffset]="100 - progress() * 100" [style.transition-duration.ms]="still() ? 0 : progressMs()" />
+      </svg>
+    }
+    <hugeicons-icon [icon]="icon()" [size]="22" [strokeWidth]="1.8" aria-hidden="true" />
+    @if (holding() !== null) {
+      <span class="ui-nav-sr" [id]="hintId">{{ holdHint() ?? strings.holdHint }}</span>
+      <span class="ui-nav-sr ui-nav-hold-live" aria-live="polite">{{ spoken() }}</span>
+    }`,
 })
 export class UiNavAction {
+  protected readonly strings = injectUiStrings();
+  private readonly el = inject<ElementRef<HTMLButtonElement>>(ElementRef);
+  private readonly vcr = inject(ViewContainerRef);
   /** The icon (a hugeicons icon, one file per icon). */
   icon = input.required<IconSvgObject>();
   /** The accessible name and tooltip: "Mute", "SOS". */
@@ -60,6 +105,132 @@ export class UiNavAction {
   tone = input<UiNavActionTone>('neutral');
   /** A toggle's state (aria-pressed), drawn in the primary fill while true; null: not a toggle. */
   pressed = input<boolean | null>(null);
+  /** Press and hold to fire, `UI_NAV_HOLD_MS` (2 s) long (0.47.2); off by default. */
+  hold = input(false, { transform: booleanAttribute });
+  /** Press and hold this long, in ms, to fire (0.47.2; implies `hold`); null: `hold` decides. */
+  holdMs = input<number | null>(null);
+  /** What holding does, read with the button; defaults to the built-in holdHint string. */
+  holdHint = input<string | undefined>(undefined);
+  /** A holding button's tap (and a screen reader's activation): called instead of the confirm dialog (0.47.2). */
+  onTap = input<(() => void) | null>(null);
+  /** The tap fallback's dialog, when there is no `onTap`. */
+  confirmTitle = input<string | undefined>(undefined);
+  confirmMessage = input('');
+  confirmLabel = input<string | undefined>(undefined);
+  /** Style the dialog's confirm button as destructive. */
+  destructive = input(false);
+  /** A holding button: held to the end, or confirmed in the dialog (0.47.2). */
+  readonly confirmed = output<void>();
+
+  /** How long to hold, in ms; null: an ordinary button. */
+  readonly holding = computed(() => this.holdMs() ?? (this.hold() ? UI_NAV_HOLD_MS : null));
+  protected readonly hintId = `ui-nav-hold-hint-${navHoldSeq++}`;
+  /** The ring, 0 to 1, and how long it takes to get there. */
+  protected readonly progress = signal(0);
+  protected readonly progressMs = signal(0);
+  /** A hold is under way (the ring filling). */
+  protected readonly held = signal(false);
+  /** Reduced motion (read when a hold starts): the ring shows whole and steady instead of filling. */
+  protected readonly still = signal(false);
+  /** The live region's words: the hold's progress, or that it was let go. */
+  protected readonly spoken = signal('');
+
+  private startedAt = 0;
+  private finished = false;
+  private ticker: ReturnType<typeof setInterval> | null = null;
+  private said = 0;
+  private dialog: ComponentRef<UiConfirmDialog> | null = null;
+
+  protected readonly press = new UiHoldPress({
+    hold: () => this.holding() ?? 0,
+    disabled: () => this.el.nativeElement.disabled,
+    fill: (p, ms) => this.fill(p, ms),
+    openConfirm: () => this.tapped(),
+    fire: () => {
+      this.finished = true;
+      this.stopTicker();
+      this.confirmed.emit();
+    },
+  });
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.press.destroy();
+      this.stopTicker();
+      this.dialog?.destroy();
+    });
+    effect(() => {
+      if (this.holding() !== null) return;
+      untracked(() => this.press.abort());
+    });
+  }
+
+  /** The pointer slid off the button (captured, so no pointerleave comes): the hold is cancelled. */
+  protected moved(e: PointerEvent): void {
+    if (!this.press.pressing) return;
+    const r = this.el.nativeElement.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) this.press.up(false);
+  }
+
+  private fill(p: number, ms: number): void {
+    if (p > 0) {
+      // A hold starts: reduced motion is read now, so a change in the settings counts from the next press.
+      this.still.set(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+      this.startedAt = performance.now();
+      this.finished = false;
+      this.said = 0;
+      this.spoken.set('');
+      this.held.set(true);
+      this.stopTicker();
+      this.ticker = setInterval(() => this.tick(ms), 100);
+    } else if (this.held()) {
+      this.stopTicker();
+      // Let go before the end after a real try (not a tap, which opens the fallback instead).
+      if (!this.finished && performance.now() - this.startedAt >= UI_HOLD_TAP_MS) this.spoken.set(this.strings.holdCancelled);
+      this.held.set(false);
+    }
+    this.progressMs.set(ms);
+    this.progress.set(p);
+  }
+
+  /** Reads the progress out at each quarter (25, 50, 75 %). */
+  private tick(total: number): void {
+    const q = Math.min(3, Math.floor(((performance.now() - this.startedAt) / Math.max(1, total)) * 4));
+    if (q <= this.said) return;
+    this.said = q;
+    this.spoken.set(uiFormatString(this.strings.holdProgress, { percent: q * 25 }));
+  }
+
+  private stopTicker(): void {
+    if (this.ticker) clearInterval(this.ticker);
+    this.ticker = null;
+  }
+
+  /** A tap, a quick key press or an assistive activation: the app's onTap, else the confirm dialog. */
+  private tapped(): void {
+    const tap = this.onTap();
+    if (tap) {
+      tap();
+      return;
+    }
+    if (!this.dialog) {
+      // Beside the button (the modal itself renders on its own layer at the end of <body>).
+      const ref = this.vcr.createComponent(UiConfirmDialog);
+      ref.instance.confirm.subscribe(() => this.confirmed.emit());
+      ref.instance.open.subscribe((open) => {
+        if (!open) ref.setInput('open', false);
+      });
+      this.dialog = ref;
+    }
+    const d = this.dialog;
+    d.setInput('title', this.confirmTitle() ?? this.strings.confirmTitle);
+    d.setInput('message', this.confirmMessage());
+    d.setInput('confirmLabel', this.confirmLabel() ?? this.strings.confirm);
+    d.setInput('cancelLabel', this.strings.cancel);
+    d.setInput('destructive', this.destructive());
+    d.setInput('open', true);
+  }
 }
 
 /**
@@ -83,7 +254,9 @@ export class UiNavAction {
  * - Actions (0.47.1): `<button uiNavAction>` children (`UiNavAction`) stack as 48px round buttons at
  *   the end side under the banner (start in right-to-left text is mirrored), clear of the compass
  *   (inline start) and Recenter (bottom start). `status` ("Rerouting…") shows as a pill under the
- *   banner, announced politely.
+ *   banner, announced politely. It wraps to two lines, then ends on a whole word with an ellipsis (0.47.2,
+ *   `uiNavFitWords`; screen readers hear the whole text); being outside the measured banner, a taller
+ *   pill moves neither the banner, the buttons nor the map. Actions can be held to fire (0.47.2, `hold`).
  * - `insets` (0.47.1): px the app covers along each edge (`{ top, bottom, start, end }`: an app bar
  *   with the status bar under it, a bottom navigation); the banner, actions and bar stay inside
  *   them. The device safe area (notch, status bar, gesture bar) is used wherever it is bigger.
@@ -123,8 +296,8 @@ export class UiNavAction {
         </div>
       }
     </div>
-    <div class="ui-nav-under">
-      <div class="ui-nav-status" role="status" [hidden]="!status()">{{ status() }}</div>
+    <div class="ui-nav-under" #under>
+      <div class="ui-nav-status" role="status" [hidden]="!status()"><span class="ui-nav-status-text" aria-hidden="true" #statusText></span><span class="ui-nav-sr">{{ status() }}</span></div>
       <div class="ui-nav-actions" [attr.data-count]="actions().length"><ng-content select="[uiNavAction]" /></div>
     </div>
     @if (!following()) {
@@ -169,7 +342,7 @@ export class UiMapNavigation {
   zoomOffset = input(0);
   attribution = input(UI_MAP_OSM_ATTRIBUTION);
   tileReferrerPolicy = input<Exclude<ReferrerPolicy, ''>>('strict-origin-when-cross-origin');
-  /** A short state under the banner, as a pill ("Rerouting…"), announced politely; null for none (0.47.1). */
+  /** A short state under the banner, as a pill ("Rerouting…"), announced politely; null for none (0.47.1). Two lines at most, then whole words and an ellipsis (0.47.2). */
   status = input<string | null>(null);
   /**
    * Px the app covers along each edge (0.47.1): an app bar (with the status bar under it) at the top,
@@ -196,6 +369,8 @@ export class UiMapNavigation {
   private readonly map = viewChild.required(UiMap);
   private readonly top = viewChild.required<ElementRef<HTMLElement>>('top');
   private readonly bar = viewChild.required<ElementRef<HTMLElement>>('bar');
+  private readonly under = viewChild.required<ElementRef<HTMLElement>>('under');
+  private readonly statusText = viewChild.required<ElementRef<HTMLElement>>('statusText');
   /** The app's buttons (0.47.1). */
   protected readonly actions = contentChildren(UiNavAction);
 
@@ -315,15 +490,28 @@ export class UiMapNavigation {
       this.insets();
       untracked(() => afterNextRender(() => this.measure(), { injector: this.injector }));
     });
+    // The status pill's words (0.47.2): fitted to two lines when it changes, the view's width changes or a
+    // font arrives (Faruma's Thaana is wider than the fallback).
+    effect(() => {
+      this.status();
+      untracked(() => afterNextRender(() => this.fitStatus(), { injector: this.injector }));
+    });
     afterNextRender(() => {
       const measure = () => this.measure();
       measure();
+      (globalThis.document as Document | undefined)?.fonts?.ready.then(() => this.fitStatus()).catch(() => undefined);
       if (typeof ResizeObserver === 'undefined') return;
       const ro = new ResizeObserver(measure);
       ro.observe(this.host.nativeElement);
       ro.observe(this.top().nativeElement);
       ro.observe(this.bar().nativeElement);
-      destroy.onDestroy(() => ro.disconnect());
+      // The block under the banner sizes with the view, never with the pill's text: no loop.
+      const fit = new ResizeObserver(() => this.fitStatus());
+      fit.observe(this.under().nativeElement);
+      destroy.onDestroy(() => {
+        ro.disconnect();
+        fit.disconnect();
+      });
     });
   }
 
@@ -340,6 +528,23 @@ export class UiMapNavigation {
     this.host.nativeElement.style.setProperty('--ui-nav-top-bottom', `${top}px`);
   }
 
+
+  /**
+   * Fits the status into the pill's two lines (0.47.2): the whole text when it fits, else whole words and an
+   * ellipsis (uiNavFitWords), measured in the pill itself (line-clamped, so a taller text scrolls). The full
+   * text is what screen readers hear. Without layout (hidden, or no CSS) the text is left whole.
+   */
+  private fitStatus(): void {
+    const el = this.statusText().nativeElement;
+    const text = this.status() ?? '';
+    el.textContent = text;
+    if (!text || !el.clientHeight) return;
+    const fits = (candidate: string) => {
+      el.textContent = candidate;
+      return el.scrollHeight <= el.clientHeight + 1;
+    };
+    el.textContent = uiNavFitWords(text, fits);
+  }
 
   /** Follows the person again at `zoom`, heading-up. */
   recenter(): void {

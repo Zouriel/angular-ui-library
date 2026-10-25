@@ -8,6 +8,9 @@
  * it; that the banner's maneuver arrow (and the action icons) keep their element's colour over an app's icon
  * tint, with a contrast of at least 4.5:1 on the banner in every theme (light and dark, plain and glass); and
  * that a ui-fab with bottomOffset floats above a bottom sheet's peek and follows it when it opens.
+ * 0.47.2: the Long status pill is two lines ending on a whole word with an ellipsis, clear of the compass column
+ * and the buttons, moving nothing; the holding SOS fires only after 2 s (mouse and Space), a tap calls onTap,
+ * sliding off cancels, the progress is read out, and under reduced motion the ring is whole and steady.
  *
  *   npm run audit:nav -- --dist <showcase build output>      (serves the build itself)
  *   npm run audit:nav -- --url http://localhost:4310
@@ -157,7 +160,7 @@ for (const lang of ['en', 'dv']) {
 
   // insets: the App bar (48px) over the top; the banner moves under it.
   const before = p.banner && { y: p.banner.y - p.nav.y };
-  await page.locator('doc-section[anchor="navigation"] ui-segmented').nth(2).getByRole('radio', { name: 'On', exact: true }).click();
+  await page.locator('doc-section[anchor="navigation"] ui-segmented').nth(3).getByRole('radio', { name: 'On', exact: true }).click();
   await page.waitForTimeout(500);
   p = await parts(page);
   check(`${tag} app bar: drawn`, !!p.appbar, fmt(p.appbar));
@@ -166,6 +169,107 @@ for (const lang of ['en', 'dv']) {
   check(`${tag} app bar: the banner moved down by the inset`, before && p.banner && Math.abs(after - before.y - 48) < 1.5, `${before?.y.toFixed(0)} -> ${after?.toFixed(0)} (in the view)`);
   layoutChecks(`${tag} app bar`, p, rtl);
   if (shots) await page.locator('.nav-wrap').screenshot({ path: join(shots, `angular-nav-${lang}-appbar.png`) });
+  await ctx.close();
+}
+
+// ---- 0.47.2: the status pill wraps to two lines and ends on a whole word; nothing else moves ----------------------
+for (const lang of ['en', 'dv']) {
+  const rtl = lang === 'dv';
+  const tag = `${rtl ? 'RTL' : 'LTR'} long status`;
+  const { ctx, page } = await open('map', lang, '#navigation');
+  await prepare(page);
+  const before = await parts(page);
+  await page.locator('doc-section[anchor="navigation"] ui-segmented').nth(2).getByRole('radio', { name: 'On', exact: true }).click();
+  await page.waitForTimeout(500);
+  const p = await parts(page);
+  const t = await page.evaluate(() => {
+    const pill = document.querySelector('ui-map-navigation .ui-nav-status');
+    const shown = pill.querySelector('.ui-nav-status-text');
+    const lh = parseFloat(getComputedStyle(shown).lineHeight);
+    return { shown: shown.textContent, full: pill.querySelector('.ui-nav-sr').textContent, h: shown.getBoundingClientRect().height, lh, scroll: shown.scrollHeight, client: shown.clientHeight };
+  });
+  check(`${tag}: two lines`, t.h > 1.5 * t.lh && t.h <= 2 * t.lh + 1, `${t.h.toFixed(1)}px, line ${t.lh.toFixed(1)}px`);
+  check(`${tag}: nothing hidden past the clamp (the words were fitted)`, t.scroll <= t.client + 1, `scroll ${t.scroll} client ${t.client}`);
+  const kept = t.shown.slice(0, -1);
+  check(`${tag}: ends with an ellipsis after a whole word`, t.shown.endsWith('…') && t.full.startsWith(kept) && [' ', ',', '،'].includes(t.full[kept.length]), JSON.stringify(t.shown));
+  check(`${tag}: screen readers get the whole text`, t.full.length > t.shown.length, `${t.full.length} chars`);
+  for (const k of ['banner', 'compass', 'recenter', 'bar']) if (p[k]) check(`${tag}: status clear of the ${k}`, !overlap(p.status, p[k]), `${fmt(p.status)} / ${fmt(p[k])}`);
+  for (const [i, a] of p.actions.entries()) check(`${tag}: status clear of button ${i + 1}`, !overlap(p.status, a), `${fmt(p.status)} / ${fmt(a)}`);
+  check(`${tag}: status clear of the compass column`, rtl ? p.nav.r - p.status.r >= 12 + 48 + 12 - 0.5 : p.status.x - p.nav.x >= 12 + 48 + 12 - 0.5, fmt(p.status));
+  check(`${tag}: the banner didn't move`, fmt(p.banner) === fmt(before.banner), `${fmt(before.banner)} -> ${fmt(p.banner)}`);
+  check(`${tag}: the buttons didn't move`, p.actions.map(fmt).join() === before.actions.map(fmt).join(), `${before.actions.map(fmt).join(' | ')} -> ${p.actions.map(fmt).join(' | ')}`);
+  check(`${tag}: the pill grew`, p.status.h > before.status.h + 10, `${before.status.h.toFixed(0)} -> ${p.status.h.toFixed(0)}`);
+  if (shots) await page.locator('.nav-wrap').screenshot({ path: join(shots, `angular-nav-${lang}-long-status.png`) });
+  await ctx.close();
+}
+
+// ---- 0.47.2: the holding SOS: hold 2 s to fire, a tap is the app's fallback, sliding off cancels -----------------
+for (const reduced of [true, false]) {
+  const tag = `SOS hold${reduced ? ' (reduced motion)' : ''}`;
+  const ctx = await browser.newContext({ viewport: { width: W, height: 844 }, reducedMotion: reduced ? 'reduce' : 'no-preference' });
+  await ctx.route(/tile|\.png(\?|$)/, (r) => (r.request().resourceType() === 'image' ? r.fulfill({ body: PNG, contentType: 'image/png' }) : r.continue()));
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => check(`${tag}: no page error`, false, e.message));
+  await page.goto(`${base}/map?lang=en#navigation`, { waitUntil: 'load' });
+  await page.waitForSelector('ui-map-navigation .ui-nav-banner', { timeout: 20000 });
+  await page.evaluate(() => document.querySelector('ui-map-navigation').scrollIntoView({ block: 'center' }));
+  await page.waitForTimeout(300);
+  const log = () => page.evaluate(() => [...document.querySelectorAll('.nav-log li')].map((li) => li.textContent.trim()));
+  const sos = page.locator('ui-map-navigation .ui-nav-action[data-tone="danger"]');
+  const st = () => sos.evaluate((b) => {
+    const arc = b.querySelector('.ui-nav-hold-arc');
+    const track = b.querySelector('.ui-nav-hold-track');
+    return { holding: b.hasAttribute('data-holding'), still: b.hasAttribute('data-still'), arc: arc && getComputedStyle(arc).display, offset: arc && parseFloat(getComputedStyle(arc).strokeDashoffset), track: track && getComputedStyle(track).opacity, live: b.querySelector('.ui-nav-hold-live')?.textContent.trim(), hint: document.getElementById(b.getAttribute('aria-describedby') ?? '')?.textContent.trim() };
+  });
+  check(`${tag}: described by the hold hint`, (await st()).hint === 'Press and hold to confirm', (await st()).hint);
+  await sos.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  const box = await sos.boundingBox();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  // A tap: the app's fallback.
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(200);
+  check(`${tag}: a tap calls onTap, sends nothing`, (await log())[0]?.startsWith('SOS tapped') && !(await log()).some((l) => l.startsWith('SOS held')), (await log())[0]);
+  // Held to the end.
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.waitForTimeout(1000);
+  const mid = await st();
+  check(`${tag}: holding after 1 s, nothing sent yet`, mid.holding && !(await log()).some((l) => l.startsWith('SOS held')), JSON.stringify(mid));
+  if (reduced) check(`${tag}: no animated arc, the whole ring steady`, mid.still && mid.arc === 'none' && mid.track === '1', JSON.stringify(mid));
+  else check(`${tag}: the arc is about half way round`, !mid.still && mid.arc !== 'none' && mid.offset > 30 && mid.offset < 70, JSON.stringify(mid));
+  check(`${tag}: the progress is read out`, /^Holding, (25|50)%$/.test(mid.live ?? ''), mid.live);
+  await page.waitForTimeout(1150);
+  check(`${tag}: sent when held to the end`, (await log())[0] === 'SOS held: sent', (await log())[0]);
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  check(`${tag}: the release after it is no tap`, (await log())[0] === 'SOS held: sent', (await log())[0]);
+  // Slid off: cancelled.
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.waitForTimeout(600);
+  await page.mouse.move(cx - 80, cy, { steps: 4 });
+  await page.waitForTimeout(100);
+  const off = await st();
+  check(`${tag}: sliding off cancels`, !off.holding && off.live === 'Hold cancelled', JSON.stringify(off));
+  await page.waitForTimeout(2000);
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  check(`${tag}: nothing sent after sliding off`, (await log()).filter((l) => l === 'SOS held: sent').length === 1, (await log()).join(' | '));
+  // Keyboard: Space held.
+  await sos.focus();
+  await page.keyboard.down(' ');
+  await page.waitForTimeout(2150);
+  await page.keyboard.up(' ');
+  await page.waitForTimeout(200);
+  check(`${tag}: Space held to the end sends`, (await log()).filter((l) => l === 'SOS held: sent').length === 2, (await log()).join(' | '));
+  if (shots && !reduced) {
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    await page.waitForTimeout(1000);
+    await page.locator('.nav-wrap').screenshot({ path: join(shots, 'angular-nav-sos-half-held.png') });
+    await page.mouse.up();
+  }
   await ctx.close();
 }
 

@@ -487,3 +487,26 @@ export const UI_NAV_ICONS: Record<UiNavIconKind, IconSvgObject> = {
 export function uiNavIcon(m: Pick<UiNavManeuver, 'type' | 'modifier' | 'drivingSide'>): IconSvgObject {
   return UI_NAV_ICONS[uiNavIconKind(m)];
 }
+
+/**
+ * The status pill's text cut to whole words (0.47.2, Flutter `uiNavFitWords`): `text` when it `fits`;
+ * otherwise the most words from its start that fit with an ellipsis after them, so the pill's second
+ * line ends on a word, never in the middle of one (a trailing comma or colon before the ellipsis goes).
+ * When not even the first word fits, `text` (the pill's own ellipsis cuts that one word). Whitespace
+ * runs become single spaces. `fits` is the caller's measure: two lines in the pill's width.
+ */
+export function uiNavFitWords(text: string, fits: (candidate: string) => boolean): string {
+  const t = text.trim().replace(/\s+/g, ' ');
+  if (!t || fits(t)) return t;
+  const words = t.split(' ');
+  const cut = (n: number) => `${words.slice(0, n).join(' ').replace(/[\s,،;:.\-–—]+$/u, '')}…`;
+  // lo: the most words known to fit (0: none yet); never all of them, which didn't fit.
+  let lo = 0;
+  let hi = words.length - 1;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (fits(cut(mid))) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo ? cut(lo) : t;
+}

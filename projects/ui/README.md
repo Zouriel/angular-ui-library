@@ -398,6 +398,11 @@ Navigation (0.47.0): `<ui-map-navigation [route] [steps] [position] (announce) (
 under the banner) and `[insets]="{ top: appBarHeight }"` (the safe area counts where bigger). Maneuver words may be
 snake_case (`uiNavWord`). `ui-fab [bottomOffset]` lifts a bottom fab above a sheet's peek.
 
+0.47.2: `<button uiNavAction ... hold [onTap]="openSosSheet" (confirmed)="sos()">` fires only when held for 2 s
+(`[holdMs]` to change it): a ring fills round the button, letting go or sliding off cancels, Space / Enter held
+works, the progress is read out; a tap calls `onTap` (or opens the confirm dialog). Listen to `(confirmed)`, not
+`(click)`. `[status]` wraps to two lines, then ends on a whole word with an ellipsis (`uiNavFitWords`).
+
 The Flutter twin: `UiMap(routes: [UiMapRoute(id:, points:, tone: UiMapRouteTone.primary, semanticLabel:, animate: true)])`
 and `UiMapState.fitPoints(points, padding: EdgeInsets?, maxZoom:, animate:)`.
 

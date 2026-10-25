@@ -90,6 +90,17 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   types and modifiers may be snake_case (`sharp_right`, `end_of_road`) as well as OSRM's words (`uiNavWord`).
   `ui-fab` `bottomOffset` floats a bottom fab above a sheet's peek (eased). `npm run audit:nav` measures it all in a
   browser.
+- **0.47.2**: navigation action hold and status wrapping. `button[uiNavAction]` takes `hold` (2 s, `UI_NAV_HOLD_MS`) or
+  `[holdMs]`: it fires `(confirmed)` only when held to the end, on the library's hold logic (`UiHoldPress`, as
+  `ui-hold-button` and a holding `ui-fab`). A ring in the button's ink fills clockwise round its edge; letting go or
+  sliding off cancels; Space or Enter held works; it is described by `holdHint` and a polite live region reads the
+  progress ("Holding, 50%") and an early release ("Hold cancelled"; new strings `holdProgress`, `holdCancelled`, in
+  English and Dhivehi). Under reduced motion the hold is still needed and the ring shows whole and steady. A tap or a
+  screen reader's activation calls `[onTap]` (the SOS confirm sheet) or, without one, the confirm dialog
+  (`confirmTitle`, `confirmMessage`, `confirmLabel`, `destructive`). The status pill wraps to two lines and then ends
+  on a whole word with an ellipsis (`uiNavFitWords`; screen readers get the whole text), between the compass column
+  and the buttons, in LTR and RTL; it is outside the measured banner, so a taller pill moves neither the banner, the
+  buttons nor the map. `npm run audit:nav` checks both in a browser (LTR / RTL, reduced motion on and off).
 - **0.47.0**: map navigation mode and turning the map. `ui-map-navigation` (in `@zouriel/ui/map`) is a turn-by-turn
   view: the map follows the person heading-up, the way behind dimmed, an arrow puck, a banner with the next maneuver's
   arrow, "in 80 m", the instruction and street, the maneuver after it small, and the time / distance left, arrival

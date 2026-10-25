@@ -262,6 +262,10 @@ export interface UiStrings {
   navKilometers: string;
   /** The bottom bar for screen readers (`{time}` left, `{distance}` left, `{clock}` arrival). */
   navSummary: string;
+  /** Read out while a hold button is held (`{percent}`: 25, 50, 75), 0.47.2. */
+  holdProgress: string;
+  /** Read out when a hold is let go before it completes (0.47.2). */
+  holdCancelled: string;
   /** Image picker busy name (`{label}`). */
   adding: string;
   /** Calendar: the hint on today. (Flutter) */
@@ -474,6 +478,8 @@ export const defaultUiStrings: UiStrings = {
   navMeters: '{n} m',
   navKilometers: '{n} km',
   navSummary: '{time} left, {distance}, arrive at {clock}',
+  holdProgress: 'Holding, {percent}%',
+  holdCancelled: 'Hold cancelled',
   adding: 'Adding {label}',
   today: 'Today',
   notSet: 'Not set',
@@ -653,6 +659,8 @@ export const uiStringsDv: UiStrings = {
   navMeters: '{n} މީޓަރު',
   navKilometers: '{n} ކިލޯމީޓަރު',
   navSummary: '{time} ބާކީ، {distance}، {clock} ގައި ވާސިލުވާނެ',
+  holdProgress: 'ހިފަހައްޓަނީ، {percent}%',
+  holdCancelled: 'ހިފެހެއްޓުން ހުއްޓުނު',
   adding: '{label} އިތުރުކުރަނީ',
   today: 'މިއަދު',
   notSet: 'ކަނޑައަޅާފައެއް ނެތް',
