@@ -146,6 +146,7 @@ export class OverviewPage {
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Default for the radius input (rounded corners) of the components that have one.' },
     { name: 'animations', type: 'boolean', default: 'true', desc: 'false adds the ui-no-anim class to <html>, which turns off every library animation and transition.' },
     { name: 'defaultFont', type: 'string', default: "'var(--ui-font-default)'", desc: 'A font-family list. When given, it is written to the --ui-font-default token on <html>, so every component uses it.' },
+    { name: 'chatMineSide', type: "UiChatBubbleSide: 'end' | 'right'", default: "'end'", desc: "Where ui-chat-bubble puts your own messages when it has no mineSide of its own: 'end' is the inline end (left in RTL), 'right' keeps them on the right in both directions." },
     { name: 'provideUiConfig(config)', type: '(Partial<UiConfig>) => EnvironmentProviders', default: '—', desc: 'Provides UI_CONFIG with the given keys merged over defaultUiConfig.' },
     { name: 'UI_CONFIG', type: 'InjectionToken<UiConfig>', default: 'defaultUiConfig', desc: 'The resolved config. Provided in root, so it works without provideUiConfig().' },
     { name: 'injectUiConfig()', type: '() => UiConfig', default: '—', desc: 'Reads UI_CONFIG, falling back to defaultUiConfig. Call it in an injection context.' },
@@ -157,6 +158,8 @@ export class OverviewPage {
   radius: boolean;
   defaultFont: string;
   animations: boolean;
+  density: 'comfortable' | 'compact' | 'auto';
+  chatMineSide: 'end' | 'right';
 }`;
 
   protected readonly typesShape = `type UiSize = 'sm' | 'md' | 'lg';

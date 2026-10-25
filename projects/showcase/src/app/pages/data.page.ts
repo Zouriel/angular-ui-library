@@ -302,7 +302,7 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Chat bubble" anchor="chat-bubble" selector="ui-chat-bubble" [api]="bubbleApi"
-        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves: each takes the whole row whatever the column aligns (start, end, center, stretch), so text wraps at 80% of it, between words; a long URL breaks only where it would overflow.">
+        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap, unless mineSide is right (0.46.3), which keeps yours on the right in both directions. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves: each takes the whole row whatever the column aligns (start, end, center, stretch), so text wraps at 80% of it, between words; a long URL breaks only where it would overflow.">
         <doc-demo code="<ui-chat-bubble meta=&quot;09:40&quot;>Hello, I'm on my way to you.</ui-chat-bubble>
 <ui-chat-bubble [mine]=&quot;true&quot; meta=&quot;09:41 · Read&quot;>Thank you! The gate code is 2468.</ui-chat-bubble>">
           <div class="chat">
@@ -313,6 +313,21 @@ nodes: UiTreeNode[] = [
           <div class="chat" dir="rtl">
             <ui-chat-bubble meta="09:40">އައްސަލާމު ޢަލައިކުމް</ui-chat-bubble>
             <ui-chat-bubble [mine]="true" meta="09:41">ޝުކުރިއްޔާ</ui-chat-bubble>
+          </div>
+        </doc-demo>
+        <doc-demo code="<ui-chat-bubble [mine]=&quot;true&quot; mineSide=&quot;right&quot; meta=&quot;09:41&quot;>ޝުކުރިއްޔާ</ui-chat-bubble>
+
+// or once for the app
+provideUiConfig({ chatMineSide: 'right' })">
+          <div class="row fc-controls">
+            <ui-segmented size="sm" label="Your messages" [options]="bubbleSides" [value]="bubbleSide()" (valueChange)="bubbleSide.set($any($event))" />
+            <ui-segmented size="sm" label="Direction" [options]="fcDirs" [value]="bubbleDir()" (valueChange)="bubbleDir.set($any($event))" />
+          </div>
+          <div class="chat chat-side" [attr.dir]="bubbleDir()">
+            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:40">އައްސަލާމު ޢަލައިކުމް، ދަނޑިވަޅެއް ބޭނުންތަ؟</ui-chat-bubble>
+            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41">ޝުކުރިއްޔާ، މެންދުރު ފަހުން</ui-chat-bubble>
+            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41">Is 3 pm okay?</ui-chat-bubble>
+            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:42">Yes, see you at 3.</ui-chat-bubble>
           </div>
         </doc-demo>
       </doc-section>
@@ -370,6 +385,9 @@ export class DataPage {
   protected readonly fcSize = signal<UiFeatureSize>('md');
   protected readonly fcDir = signal<'ltr' | 'rtl'>('ltr');
   protected readonly fcDirs = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
+  protected readonly bubbleSides = [{ value: 'end', label: 'Inline end' }, { value: 'right', label: 'Right' }];
+  protected readonly bubbleSide = signal<'end' | 'right'>('right');
+  protected readonly bubbleDir = signal<'ltr' | 'rtl'>('rtl');
   protected readonly fcLast = signal('');
   protected readonly fcMint = { surface: '#E1F4EF', accent: '#4B8791' };
   protected readonly fcBlue = { surface: '#E5F0FA', accent: '#4B8791' };
@@ -584,7 +602,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'layout', type: "'stacked' | 'row'", default: "'row'", desc: 'Term beside (row) or above (stacked) its detail.' },
   ];
   protected readonly bubbleApi: ApiRow[] = [
-    { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end, primary colour.' },
+    { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end (or right, see mineSide), primary colour.' },
+    { name: 'mineSide', type: "UiChatBubbleSide: 'end' | 'right'", default: 'UiConfig.chatMineSide (end)', desc: "Where your own messages sit. 'end': the inline end, so the left in RTL. 'right': always the right, theirs always the left, in LTR and RTL; the tucked corners and meta line follow, laid out as in LTR, and the text takes its own direction (dir=auto: Thaana right to left, Latin left to right). Set it app-wide with provideUiConfig({ chatMineSide: 'right' })." },
     { name: 'meta', type: 'string', default: '—', desc: 'A small line under the text: the time, read status.' },
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Names the message (e.g. "You, 09:41") when the text alone does not say who sent it.' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The message; line breaks are kept.' },

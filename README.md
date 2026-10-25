@@ -84,6 +84,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   path from start to end (casing and line together, ease-out, 250..900 ms by length: `uiMapRouteDrawMs`), then sits
   as before; `fitPoints` is unchanged. Re-rendering the same id and points doesn't replay it. `animate: false` on a
   route, reduced motion or `preview` draw it at once. A removed route fades out over 150 ms.
+- **0.46.3**: chat bubble side. `<ui-chat-bubble [mine]="true" mineSide="right">` keeps your own messages on the
+  right and the other side's on the left in LTR and RTL alike (the chat-app habit), with the tucked corners and meta
+  line laid out as in LTR; the text takes its own direction (`dir="auto"`: Thaana right to left, Latin left to
+  right). `provideUiConfig({ chatMineSide: 'right' })` sets it app-wide. The default, `'end'` (the inline end, so the
+  left in RTL), is unchanged. `npm run audit:rtl` measures it.
 - **Compact density** (0.45.0): `provideUiConfig({ density: 'comfortable' | 'compact' | 'auto' })`, or
   `data-density="compact"` / `"auto"` on `<html>` (or any element, for its subtree; `applyUiDensity()` at runtime).
   Compact makes things smaller, not tighter: `--ui-font-size-sm/md/lg` 12/14/16px (from 13/15/18), the ui-text

@@ -37,7 +37,16 @@ export interface UiConfig {
    * `data-density` on `<html>` (see {@link applyUiDensity}).
    */
   density: UiDensity;
+  /**
+   * Where `ui-chat-bubble` puts your own (`mine`) messages when it has no `mineSide` of its own
+   * (0.46.3). `'end'` (the default) is the inline end, so they move to the left in RTL; `'right'`
+   * keeps them on the right and the other side's on the left in both directions (the chat-app habit).
+   */
+  chatMineSide: UiChatBubbleSide;
 }
+
+/** Where `ui-chat-bubble` puts your own messages: see {@link UiConfig.chatMineSide}. */
+export type UiChatBubbleSide = 'end' | 'right';
 
 /** The library's density: see {@link UiConfig.density}. */
 export type UiDensity = 'comfortable' | 'compact' | 'auto';
@@ -68,6 +77,7 @@ export const defaultUiConfig: UiConfig = {
   defaultFont: 'var(--ui-font-default)',
   animations: true,
   density: 'comfortable',
+  chatMineSide: 'end',
 };
 
 /**

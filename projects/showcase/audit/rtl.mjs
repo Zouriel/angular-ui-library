@@ -128,6 +128,33 @@ for (const lang of ['en', 'dv']) {
     });
     check(`${tag}: chat bubble (mine) at the inline end`, m && (rtl ? m.left < 1 && m.right > 1 : m.right < 1 && m.left > 1), m && `left gap ${m.left.toFixed(0)} right gap ${m.right.toFixed(0)}`);
     check(`${tag}: chat bubble tail (tucked corner) at the inline end`, m && (rtl ? parseFloat(m.bl) < parseFloat(m.br) : parseFloat(m.br) < parseFloat(m.bl)), m && `${m.bl} / ${m.br}`);
+    // 0.46.3 mineSide="right" (the second demo, which starts on Right): yours on the physical right and theirs on
+    // the left whatever the page direction, tails on the outer bottom corners, meta right-aligned, and each text
+    // in its own direction (Thaana rtl, Latin ltr). The demo has its own LTR/RTL switch; it follows the page here.
+    const sides = await page.evaluate((dir) => {
+      const box = document.querySelector('.chat-side');
+      if (!box) return null;
+      box.setAttribute('dir', dir);
+      return [...box.querySelectorAll('ui-chat-bubble')].map((host) => {
+        const b = host.querySelector('.bubble'), t = host.querySelector('.text'), meta = host.querySelector('.meta');
+        const r = b.getBoundingClientRect(), h = host.getBoundingClientRect(), c = getComputedStyle(b);
+        const mr = meta.getBoundingClientRect(), mt = document.createRange();
+        mt.selectNodeContents(meta);
+        const ink = mt.getBoundingClientRect();
+        return { mine: host.classList.contains('mine'), text: t.textContent.trim(), left: r.left - h.left, right: h.right - r.right,
+          bl: parseFloat(c.borderBottomLeftRadius), br: parseFloat(c.borderBottomRightRadius), textDir: getComputedStyle(t).direction,
+          metaGap: mr.right - ink.right };
+      });
+    }, rtl ? 'rtl' : 'ltr');
+    check(`${tag}: mineSide right demo found`, sides && sides.length >= 4 && sides.some((s) => s.mine) && sides.some((s) => !s.mine));
+    for (const s of sides ?? []) {
+      const who = `${s.mine ? 'mine' : 'theirs'} "${s.text.slice(0, 12)}"`;
+      check(`${tag}: right mode, ${who} on the ${s.mine ? 'right' : 'left'}`, s.mine ? s.right < 1 && s.left > 1 : s.left < 1 && s.right > 1, `left gap ${s.left.toFixed(0)} right gap ${s.right.toFixed(0)}`);
+      check(`${tag}: right mode, ${who} tucked corner at the bottom ${s.mine ? 'right' : 'left'}`, s.mine ? s.br < s.bl : s.bl < s.br, `${s.bl} / ${s.br}`);
+      const thaana = /[\u0780-\u07BF]/.test(s.text);
+      check(`${tag}: right mode, ${who} text in its own direction`, s.textDir === (thaana ? 'rtl' : 'ltr'), s.textDir);
+      check(`${tag}: right mode, ${who} meta at the bubble's right`, s.metaGap < 1, `gap ${s.metaGap.toFixed(1)}`);
+    }
     await ctx.close();
   }
   {

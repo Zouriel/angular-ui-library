@@ -520,6 +520,18 @@ Before, such a parent shrank the bubble to its own text, the 80% resolved agains
 (`overflow-wrap: break-word`); a word too long for 80% of the row (a URL) breaks only where it would
 overflow. No app change is needed; app-side workarounds (stretching the column) can go.
 
+**Yours on the right in both directions (0.46.3).** By default your own messages sit at the inline
+end, so the left in RTL. `mineSide="right"` keeps them on the right and the other side's on the left
+in LTR and RTL; the tucked corners and the meta line follow, laid out as in LTR, and the text takes its
+own direction (`dir="auto"`: Thaana right to left, Latin left to right). Set it once for the app:
+
+```ts
+provideUiConfig({ chatMineSide: 'right' });            // or per bubble: mineSide="right" | "end"
+```
+
+The Flutter twin: `UiChatBubble(mineSide: UiChatBubbleSide.right)` and
+`UiConfig(chatMineSide: UiChatBubbleSide.right)`.
+
 ## Map tiles, my location and the "you are here" dot (`ui-map`, 0.40)
 
 ```html
@@ -677,7 +689,7 @@ Every component mirrors under `dir="rtl"` (0.46.0): logical insets, paddings, bo
 `bottom-end`) slide in from that edge; chevrons that mean back and forward point the other way (play, check,
 search and logos don't); arrow keys in tabs, segmented, rating, choice grid, tree, menubar, splitter, gallery
 and the date picker move the way the row reads; the switch turns on toward the inline end; the chat bubble's
-own messages sit at the inline end with the tucked corner mirrored; the slider fills from the right; the
+own messages sit at the inline end with the tucked corner mirrored (`mineSide="right"` keeps them on the right); the slider fills from the right; the
 indeterminate progress bar, skeleton shine and marquee run right to left. The map itself doesn't mirror: the
 zoom buttons sit at the inline start, the locate and app buttons and the credits at the inline end, and a
 label starts on the dot's inline end. An OTP code, code blocks and the code viewer stay left to right.
