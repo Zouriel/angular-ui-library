@@ -1,6 +1,6 @@
-import { Component, ElementRef, forwardRef, input, model, signal, viewChildren } from '@angular/core';
+import { Component, ElementRef, forwardRef, input, model, signal, viewChildren, computed } from '@angular/core';
 import { NG_VALUE_ACCESSOR, type ControlValueAccessor } from '@angular/forms';
-import type { UiSize } from '@zouriel/ui';
+import { type UiSize, uiLogicalKey, injectUiStrings } from '@zouriel/ui';
 import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 export interface UiSegmentedOption {
@@ -20,7 +20,7 @@ export interface UiSegmentedOption {
   selector: 'ui-segmented',
   imports: [UiScrollFade],
   template: `
-    <div class="seg" uiScrollFade role="radiogroup" [attr.aria-label]="label()" [attr.data-size]="size()">
+    <div class="seg" uiScrollFade role="radiogroup" [attr.aria-label]="labelText()" [attr.data-size]="size()">
       @for (o of options(); track o.value; let i = $index) {
         <button #opt type="button" role="radio" class="opt" [class.on]="o.value === value()"
           [attr.aria-checked]="o.value === value()" [attr.aria-label]="o.glyph ? o.label : null" [attr.title]="o.glyph ? o.label : null"
@@ -56,9 +56,12 @@ export interface UiSegmentedOption {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSegmented), multi: true }],
 })
 export class UiSegmented implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   options = input<readonly UiSegmentedOption[]>([]);
   value = model<string | null>(null);
-  label = input('Options');
+  /** Default: the built-in `options` (Options), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.options);
   size = input<UiSize>('md');
 
   private readonly buttons = viewChildren<ElementRef<HTMLButtonElement>>('opt');
@@ -78,7 +81,8 @@ export class UiSegmented implements ControlValueAccessor {
 
   protected onKey(e: KeyboardEvent, index: number): void {
     const opts = this.options();
-    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    const key = uiLogicalKey(e);
+    const step = key === 'ArrowRight' || key === 'ArrowDown' ? 1 : key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 0;
     if (!step) return;
     e.preventDefault();
     for (let i = 1; i <= opts.length; i++) {

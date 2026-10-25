@@ -14,6 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { clampOffset, isSwipe, resist } from './gestures';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** One thing in the lightbox: a photograph or a clip. */
 export interface UiMediaItem {
@@ -161,7 +162,7 @@ function fmt(seconds: number): string {
             <!-- The one control that is not chrome: a paused clip should say so in the middle of
                  itself, not in a bar that has faded out. -->
             @if (isVideo() && !playing() && !loading()) {
-              <button type="button" class="play" aria-label="Play" (click)="togglePlay()">
+              <button type="button" class="play" [attr.aria-label]="strings.play" (click)="togglePlay()">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
               </button>
             }
@@ -207,7 +208,7 @@ function fmt(seconds: number): string {
                   </button>
                 }
               }
-              <button type="button" class="ic ic--x" aria-label="Close" (click)="close()">
+              <button type="button" class="ic ic--x" [attr.aria-label]="strings.close" (click)="close()">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
@@ -221,7 +222,7 @@ function fmt(seconds: number): string {
             <button
               type="button"
               class="edge edge--prev"
-              aria-label="Previous"
+              [attr.aria-label]="strings.previous"
               [disabled]="!hasPrevious()"
               (click)="step(-1)"
             >
@@ -230,7 +231,7 @@ function fmt(seconds: number): string {
             <button
               type="button"
               class="edge edge--next"
-              aria-label="Next"
+              [attr.aria-label]="strings.next"
               [disabled]="!hasNext()"
               (click)="step(1)"
             >
@@ -244,7 +245,7 @@ function fmt(seconds: number): string {
                 <button
                   type="button"
                   class="ic"
-                  [attr.aria-label]="playing() ? 'Pause' : 'Play'"
+                  [attr.aria-label]="playing() ? strings.pause : strings.play"
                   (click)="togglePlay()"
                 >
                   @if (playing()) {
@@ -272,7 +273,7 @@ function fmt(seconds: number): string {
                     [max]="duration() || 0"
                     step="0.05"
                     [value]="time()"
-                    aria-label="Seek"
+                    [attr.aria-label]="strings.seek"
                     (input)="seekTo($event)"
                   />
                 </div>
@@ -303,11 +304,11 @@ function fmt(seconds: number): string {
                   max="1"
                   step="0.05"
                   [value]="muted() ? 0 : volume()"
-                  aria-label="Volume"
+                  [attr.aria-label]="strings.volume"
                   (input)="setVolume($event)"
                 />
 
-                <button type="button" class="ic ic--rate" aria-label="Playback speed" (click)="cycleRate()">
+                <button type="button" class="ic ic--rate" [attr.aria-label]="strings.playbackSpeed" (click)="cycleRate()">
                   <!-- The widest rate, hidden, holds the width so stepping rates never moves the controls. -->
                   <span class="rate-w"><span>{{ rate() }}×</span><span aria-hidden="true">0.5×</span></span>
                 </button>
@@ -326,7 +327,7 @@ function fmt(seconds: number): string {
             }
 
             @if (items().length > 1) {
-              <div #strip class="strip" aria-label="Everything in this set">
+              <div #strip class="strip" [attr.aria-label]="strings.mediaSet">
                 @for (thing of items(); track $index) {
                   <button
                     type="button"
@@ -518,6 +519,7 @@ function fmt(seconds: number): string {
   `,
 })
 export class UiMediaLightbox {
+  protected readonly strings = injectUiStrings();
   /** Everything the lightbox can show, in the order the host wants it stepped through. */
   items = input<readonly UiMediaItem[]>([]);
 

@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, computed, effect, input, model, signal } from '@angular/core';
+import { injectUiStrings, uiFormatString, uiIsRtl } from '@zouriel/ui';
 
 export interface UiCarouselSlide {
   image: string;
@@ -35,7 +36,7 @@ const INTENT_PX = 8;
       <div
         class="track"
         [class.dragging]="drag() !== null"
-        [style.transform]="'translateX(calc(' + (-index() * 100) + '% + ' + (drag() ?? 0) + 'px))'"
+        [style.transform]="'translateX(calc(' + (-index() * 100) + '% * var(--ui-inline-sign, 1) + ' + (drag() ?? 0) + 'px))'"
       >
         @for (s of slides(); track $index) {
           <div class="slide">
@@ -47,13 +48,13 @@ const INTENT_PX = 8;
       <ng-content />
       @if (slides().length > 1) {
         @if (arrows()) {
-          <button type="button" class="arrow prev" aria-label="Previous slide" (click)="prev()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button type="button" class="arrow next" aria-label="Next slide" (click)="next()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="arrow prev" [attr.aria-label]="strings.previousSlide" (click)="prev()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="arrow next" [attr.aria-label]="strings.nextSlide" (click)="next()"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         }
         @if (dots()) {
           <div class="dots">
             @for (s of slides(); track $index) {
-              <button type="button" class="dot" [class.active]="$index === index()" [attr.aria-label]="'Go to slide ' + ($index + 1)" (click)="index.set($index)"></button>
+              <button type="button" class="dot" [class.active]="$index === index()" [attr.aria-label]="format(strings.goToSlide, { n: $index + 1 })" (click)="index.set($index)"></button>
             }
           </div>
         }
@@ -67,7 +68,7 @@ const INTENT_PX = 8;
     .track.dragging { transition: none; }
     .slide { position: relative; flex: 0 0 100%; display: flex; }
     .slide img { width: 100%; height: auto; align-self: stretch; max-height: 360px; object-fit: cover; display: block; user-select: none; -webkit-user-drag: none; }
-    .caption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--ui-space-6) var(--ui-space-3) var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
+    .caption { position: absolute; inset-inline: 0; bottom: 0; padding: var(--ui-space-6) var(--ui-space-3) var(--ui-space-3); background: linear-gradient(transparent, color-mix(in srgb, var(--ui-media-scrim) 60%, transparent));
       color: var(--ui-media-on-scrim); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     /* Room under the text for the row of dots, so a caption never runs beneath them. */
@@ -79,10 +80,12 @@ const INTENT_PX = 8;
     .arrow:hover { background: color-mix(in srgb, var(--ui-media-scrim) 65%, transparent); }
     .arrow:active { transform: translateY(-50%) scale(var(--ui-scale-press)); }
     .arrow:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
-    .prev { left: var(--ui-space-2); } .next { right: var(--ui-space-2); }
+    /* Previous at the inline start, next at the end; the chevrons point that way (mirrored in RTL). */
+    .prev { inset-inline-start: var(--ui-space-2); } .next { inset-inline-end: var(--ui-space-2); }
+    .arrow:dir(rtl) svg { transform: scaleX(-1); }
     /* Fingers swipe; the arrows are for a mouse. */
     @media (hover: none) { .arrow { display: none; } }
-    .dots { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; }
+    .dots { position: absolute; bottom: 0; inset-inline: 0; display: flex; justify-content: center; }
     /* The button is a 24px square (WCAG 2.5.8 target size); the visible dot is an 8px circle drawn inside it. */
     .dot { width: 24px; height: 24px; display: grid; place-items: center; border: none; background: none; cursor: pointer; padding: 0; }
     @media (pointer: coarse) { .dot { height: var(--ui-size-touch); } }
@@ -96,6 +99,8 @@ const INTENT_PX = 8;
   `,
 })
 export class UiCarousel implements OnInit, OnDestroy {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   slides = input<UiCarouselSlide[]>([]);
   /** Autoplay interval in ms; 0 disables. */
   autoplay = input(0);
@@ -114,7 +119,7 @@ export class UiCarousel implements OnInit, OnDestroy {
   protected readonly drag = signal<number | null>(null);
   private timer?: ReturnType<typeof setInterval>;
 
-  private start: { id: number; x: number; y: number; at: number; width: number } | null = null;
+  private start: { id: number; x: number; y: number; at: number; width: number; rtl: boolean } | null = null;
   /** Decided once the finger has moved enough: sideways is ours, anything else is the page's. */
   private sideways: boolean | null = null;
 
@@ -147,7 +152,8 @@ export class UiCarousel implements OnInit, OnDestroy {
     if (event.touches.length > 1) { this.reset(); return; }
     const t = event.changedTouches[0];
     const width = (event.currentTarget as HTMLElement).clientWidth || 1;
-    this.start = { id: t.identifier, x: t.clientX, y: t.clientY, at: event.timeStamp, width };
+    // In RTL the next slide lies to the left, so a swipe to the right moves forward.
+    this.start = { id: t.identifier, x: t.clientX, y: t.clientY, at: event.timeStamp, width, rtl: uiIsRtl(event.currentTarget as Element) };
     this.sideways = null;
   }
 
@@ -166,7 +172,8 @@ export class UiCarousel implements OnInit, OnDestroy {
     if (!this.sideways) return;
     if (event.cancelable) event.preventDefault();
     // Resistance past either end, so the edge is felt rather than hit.
-    const atEdge = (dx > 0 && this.index() === 0) || (dx < 0 && this.index() === this.slides().length - 1);
+    const fwd = start.rtl ? dx : -dx; // > 0: toward the next slide
+    const atEdge = (fwd < 0 && this.index() === 0) || (fwd > 0 && this.index() === this.slides().length - 1);
     this.drag.set(atEdge ? dx / 3 : dx);
   }
 
@@ -178,8 +185,9 @@ export class UiCarousel implements OnInit, OnDestroy {
       const speed = Math.abs(dx) / Math.max(1, event.timeStamp - start.at);
       const turn = Math.abs(dx) > start.width * TURN_SHARE || speed > FLICK_SPEED;
       const last = this.slides().length - 1;
-      if (turn && dx < 0 && this.index() < last) this.index.update((i) => i + 1);
-      else if (turn && dx > 0 && this.index() > 0) this.index.update((i) => i - 1);
+      const fwd = start.rtl ? dx : -dx;
+      if (turn && fwd > 0 && this.index() < last) this.index.update((i) => i + 1);
+      else if (turn && fwd < 0 && this.index() > 0) this.index.update((i) => i - 1);
     }
     this.reset();
   }

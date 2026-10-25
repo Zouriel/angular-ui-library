@@ -33,7 +33,7 @@ let panelSeq = 0;
     .head { display: flex; align-items: center; gap: var(--ui-space-2); min-height: var(--ui-size-lg); padding: 0 var(--ui-space-2) 0 0; }
     .toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--ui-space-2); height: var(--ui-size-lg); padding: 0 var(--ui-space-3);
       border: 0; background: none; color: var(--ui-color-text); font: 600 12px/1 var(--ui-font-default); letter-spacing: .04em;
-      text-transform: uppercase; cursor: pointer; text-align: left;
+      text-transform: uppercase; cursor: pointer; text-align: start;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     .toggle:not(.static):hover { background: var(--ui-color-surface-hover); }
     .toggle.static { cursor: default; }

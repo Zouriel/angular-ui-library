@@ -1,11 +1,12 @@
 import { Component, computed, effect, input, signal } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-text-viewer` — displays plain text from a `content` string or a fetched `src` URL. */
 @Component({
   selector: 'ui-text-viewer',
   template: `
     <div class="tv">
-      @if (loading()) { <div class="msg" role="status">Loading…</div> }
+      @if (loading()) { <div class="msg" role="status">{{ strings.loading }}</div> }
       @else if (error()) { <div class="msg err">{{ error() }}</div> }
       @else { <pre class="text">{{ text() }}</pre> }
     </div>
@@ -20,6 +21,7 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   `,
 })
 export class UiTextViewer {
+  protected readonly strings = injectUiStrings();
   src = input<string>();
   content = input<string>();
   protected readonly fetched = signal<string | null>(null);

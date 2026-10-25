@@ -8,6 +8,7 @@ import MusicNote02Icon from '@hugeicons/core-free-icons/MusicNote02Icon';
 import Pdf01Icon from '@hugeicons/core-free-icons/Pdf01Icon';
 import SourceCodeIcon from '@hugeicons/core-free-icons/SourceCodeIcon';
 import Video02Icon from '@hugeicons/core-free-icons/Video02Icon';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiFileNode {
   name: string;
@@ -25,7 +26,7 @@ export interface UiFileNode {
   imports: [HugeiconsIconComponent],
   template: `
     <div class="fx">
-      <nav class="crumbs" aria-label="Path">
+      <nav class="crumbs" [attr.aria-label]="strings.path">
         <button type="button" class="crumb" [attr.aria-current]="trail().length ? null : 'location'" (click)="goTo(-1)">{{ root().name || 'root' }}</button>
         @for (seg of trail(); track $index) {
           <span class="sep" aria-hidden="true">/</span>
@@ -75,6 +76,7 @@ export interface UiFileNode {
   `,
 })
 export class UiFileExplorer {
+  protected readonly strings = injectUiStrings();
   root = input.required<UiFileNode>();
   open = output<UiFileNode>();
   private readonly path = signal<UiFileNode[]>([]);

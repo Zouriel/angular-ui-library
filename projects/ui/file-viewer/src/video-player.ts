@@ -3,6 +3,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import FullScreenIcon from '@hugeicons/core-free-icons/FullScreenIcon';
 import PauseIcon from '@hugeicons/core-free-icons/PauseIcon';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
+import { injectUiStrings } from '@zouriel/ui';
 
 function fmt(s: number): string {
   if (!isFinite(s)) return '0:00';
@@ -22,16 +23,16 @@ function fmt(s: number): string {
              (loadedmetadata)="duration.set(video.duration)"
              (play)="playing.set(true)" (pause)="playing.set(false)"><ng-content select="track" /></video>
       <div class="controls">
-        <button type="button" class="ic" (click)="toggle()" [attr.aria-label]="playing() ? 'Pause' : 'Play'"><hugeicons-icon [icon]="playing() ? pauseIcon : playIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+        <button type="button" class="ic" (click)="toggle()" [attr.aria-label]="playing() ? strings.pause : strings.play"><hugeicons-icon [icon]="playing() ? pauseIcon : playIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
         <span class="t">{{ fmt(time()) }}</span>
         <input class="seek" type="range" min="0" [max]="duration() || 0" step="0.1" [value]="time()"
-               aria-label="Seek" (input)="seek($event)" />
+               [attr.aria-label]="strings.seek" (input)="seek($event)" />
         <span class="t">{{ fmt(duration()) }}</span>
-        <input class="vol" type="range" min="0" max="1" step="0.05" [value]="volume()" aria-label="Volume" (input)="setVol($event)" />
-        <select class="rate" aria-label="Playback speed" (change)="setRate($event)">
+        <input class="vol" type="range" min="0" max="1" step="0.05" [value]="volume()" [attr.aria-label]="strings.volume" (input)="setVol($event)" />
+        <select class="rate" [attr.aria-label]="strings.playbackSpeed" (change)="setRate($event)">
           @for (r of rates; track r) { <option [value]="r" [selected]="r === 1">{{ r }}×</option> }
         </select>
-        <button type="button" class="ic" (click)="fullscreen()" aria-label="Fullscreen"><hugeicons-icon [icon]="fullIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+        <button type="button" class="ic" (click)="fullscreen()" [attr.aria-label]="strings.fullscreen"><hugeicons-icon [icon]="fullIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
       </div>
     </div>
   `,
@@ -74,6 +75,7 @@ function fmt(s: number): string {
   `,
 })
 export class UiVideoPlayer {
+  protected readonly strings = injectUiStrings();
   src = input.required<string>();
   poster = input<string>();
   protected readonly video = viewChild.required<ElementRef<HTMLVideoElement>>('video');

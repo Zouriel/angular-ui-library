@@ -54,7 +54,7 @@ export interface UiSelectOption {
     .wrap { position: relative; }
     .ui-select {
       width: 100%; box-sizing: border-box; appearance: none;
-      height: var(--ui-size-md); padding: 0 calc(var(--ui-space-3) + 12px + var(--ui-space-2)) 0 var(--ui-space-3);
+      height: var(--ui-size-md); padding-block: 0; padding-inline: var(--ui-space-3) calc(var(--ui-space-3) + 12px + var(--ui-space-2));
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); cursor: pointer;
@@ -68,7 +68,7 @@ export interface UiSelectOption {
     .ui-select[aria-invalid="true"] { border-color: var(--ui-color-danger); }
     .ui-select[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
     .wrap:has(.ui-select:disabled) .chevron { opacity: .5; }
-    .chevron { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted); }
+    .chevron { position: absolute; inset-inline-end: var(--ui-space-3); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ui-color-text-muted); }
     /*
      * The popup list is painted by the platform, not by this stylesheet, so it has to be told the
      * theme's colours outright. "color: initial" put black text in it, which on a dark theme is

@@ -1,7 +1,7 @@
 import {
   Component, ElementRef, NgZone, OnDestroy, OnInit, computed, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
 import { UiDockSide, UiWindowBounds, UiWindowManager } from './window-manager';
 
 /** How much of the title bar (in px, horizontally) a drag always leaves on screen. */
@@ -46,7 +46,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
           <!-- Minimized, the first control brings the window back (it keeps a maximized size). -->
           <button type="button" class="ctl" [attr.aria-label]="minimized() ? 'Restore' : 'Minimize'" (pointerdown)="$event.stopPropagation()" (click)="minimized() ? unminimize() : minimize()">@if (minimized()) {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM3.5 6.5h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>} @else {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 8h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>}</button>
           <button type="button" class="ctl" [attr.aria-label]="maximized() ? 'Restore' : 'Maximize'" (pointerdown)="$event.stopPropagation()" (click)="toggleMax()">@if (maximized()) {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3.5 6.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1zM6 3.5h5.5a1 1 0 0 1 1 1V10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>} @else {<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 3.5h7a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>}</button>
-          <button type="button" class="ctl close" aria-label="Close" (pointerdown)="$event.stopPropagation()" (click)="close()"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button type="button" class="ctl close" [attr.aria-label]="strings.close" (pointerdown)="$event.stopPropagation()" (click)="close()"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
       </header>
       @if (!minimized()) {
@@ -112,6 +112,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
   `,
 })
 export class UiWindow implements OnInit, OnDestroy {
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   private mgr = inject(UiWindowManager);
   private zone = inject(NgZone);

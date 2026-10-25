@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
+import { UI_CONFIG, type UiStatus, injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /** `ui-chip` — compact, optionally-removable tag/token. */
 @Component({
@@ -8,7 +8,7 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
     <span class="ui-chip" [attr.data-tone]="tone()" [class.no-radius]="!radius()">
       <ng-content />
       @if (removable()) {
-        <button class="x" type="button" [attr.aria-label]="'Remove ' + (label() || 'chip')" (click)="remove.emit()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="x" type="button" [attr.aria-label]="format(strings.remove, { label: label() || '' }).trim()" (click)="remove.emit()"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       }
     </span>
   `,
@@ -54,6 +54,8 @@ import { UI_CONFIG, type UiStatus } from '@zouriel/ui';
   `,
 })
 export class UiChip {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   private config = inject(UI_CONFIG);
   tone = input<UiStatus>('neutral');
   removable = input(false);

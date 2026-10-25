@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
 import ViewOffIcon from '@hugeicons/core-free-icons/ViewOffIcon';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
 
 /** `ui-password-input` — password field with show/hide toggle (CVA). */
 @Component({
@@ -23,7 +23,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
         (input)="handleInput($event)"
         (blur)="onTouched()" />
       <button type="button" class="toggle"
-              [attr.aria-label]="reveal() ? 'Hide password' : 'Show password'"
+              [attr.aria-label]="reveal() ? strings.hidePassword : strings.showPassword"
               [disabled]="disabled()" (click)="reveal.set(!reveal())">
         <!-- A drawn icon, not an emoji: 🙈 is a monkey on most platforms and a crossed-out eye on
              none of them, and emoji render in the vendor's own colours regardless of the theme. -->
@@ -33,7 +33,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .wrap { display: flex; align-items: center; box-sizing: border-box; height: var(--ui-size-md); padding-right: 2px; border: 1px solid var(--ui-control-border);
+    .wrap { display: flex; align-items: center; box-sizing: border-box; height: var(--ui-size-md); padding-inline-end: 2px; border: 1px solid var(--ui-control-border);
       border-radius: var(--ui-radius); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
@@ -64,6 +64,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiPasswordInput), multi: true }],
 })
 export class UiPasswordInput implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   protected readonly viewIcon = ViewIcon;
   protected readonly viewOffIcon = ViewOffIcon;
 

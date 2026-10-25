@@ -28,6 +28,9 @@ import { Component, input } from '@angular/core';
     :host(.circle) { border-radius: 50%; }
     :host(.text) { height: 0.85em; border-radius: var(--ui-radius-xs); }
     @keyframes ui-skeleton-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+    /* The shine sweeps the way text reads: right to left in RTL. */
+    :host(:dir(rtl)) { animation-name: ui-skeleton-shimmer-rtl; }
+    @keyframes ui-skeleton-shimmer-rtl { 0% { background-position: 0 0; } 100% { background-position: 100% 0; } }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
   `,
 })

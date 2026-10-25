@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, computed, inject, input, model, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
+import { uiLogicalKey } from '@zouriel/ui';
 
 export interface UiTreeNode {
   label: string;
@@ -31,7 +32,7 @@ interface NodeInfo { node: UiTreeNode; parent: string | null; }
              [attr.aria-label]="n.label" [attr.aria-level]="depth + 1" [attr.aria-setsize]="count" [attr.aria-posinset]="i + 1"
              [attr.aria-expanded]="hasKids(n) ? isOpen(n) : null" [attr.aria-selected]="n.value === selected()">
           <div class="row" [class.selected]="n.value === selected()"
-               [style.padding-left]="'calc(var(--ui-space-2) + ' + depth * 16 + 'px)'" (click)="choose(n)">
+               [style.padding-inline-start]="'calc(var(--ui-space-2) + ' + depth * 16 + 'px)'" (click)="choose(n)">
             @if (hasKids(n)) {
               <span class="chev" aria-hidden="true" [class.open]="isOpen(n)" (click)="toggle(n, $event)"><svg viewBox="0 0 12 12" width="12" height="12"><path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             } @else { <span class="chev spacer" aria-hidden="true"></span> }
@@ -67,6 +68,9 @@ interface NodeInfo { node: UiTreeNode; parent: string | null; }
       border-radius: var(--ui-radius-xs); transition: transform var(--ui-motion-fast) var(--ui-ease-standard); transform: rotate(0deg); }
     .chev:hover { color: var(--ui-color-text); }
     .chev.open { transform: rotate(90deg); }
+    /* Closed, the chevron points into the row: left in RTL; open it points down either way. */
+    .chev:dir(rtl) { transform: scaleX(-1); }
+    .chev.open:dir(rtl) { transform: rotate(90deg); }
     .chev.spacer { cursor: inherit; }
     .icon { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: calc(14px * var(--ui-font-scale)); color: var(--ui-color-text-muted); }
     .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -145,7 +149,8 @@ export class UiTree {
     const vis = this.visible();
     const at = vis.indexOf(value);
     let handled = true;
-    switch (e.key) {
+    // ArrowRight opens and ArrowLeft closes in LTR; mirrored in RTL.
+    switch (uiLogicalKey(e)) {
       case 'ArrowDown': this.focusValue(vis[Math.min(vis.length - 1, at + 1)]); break;
       case 'ArrowUp': this.focusValue(vis[Math.max(0, at - 1)]); break;
       case 'Home': this.focusValue(vis[0]); break;

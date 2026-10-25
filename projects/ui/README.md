@@ -610,32 +610,87 @@ MIT
 
 ## Built-in strings
 
-The library's own words (names of icon-only buttons, default labels) are English. Replace them with
-`provideUiStrings({ … })` (partial; the rest stay English): `close` (modal, drawer, bottom sheet),
-`dismiss` (toast, alert, hint), `clear` (combobox), `clearAll` (multi-select), `clearSearch` (search
-input), `previousPage` / `nextPage` (pagination), `previousMonth` / `nextMonth` (calendar, date range
-picker), `chooseDate` (date picker), `moreActions` (split button; also its `menuLabel` input),
-`uploadLabel` / `uploadHint` (file upload; also its `label` / `hint` inputs), `holdHint`, `confirmTitle`,
-`confirm`, `cancel` (hold button), `zoomIn` / `zoomOut` / `placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` / `mapOpen` / `mapSearchArea` / `mapRadiusMeters` / `mapRadiusKilometers` (map), `googleSignIn` /
-`googleSignUp` / `googleContinue` / `googleSignInShort` (Google button, and the sign-in fallback),
-`sidebarToggle` / `sidebarClose` / `sidebarLabel` (sidebar layout). Flutter has the same
-keys in `UiConfig(strings: UiStrings(...))`.
+The library's own words (names of icon-only buttons, default labels and placeholders, date names) are
+English by default. Since 0.46.0 every component reads them live:
 
-Still English only (0.34.0), to move to `UiStrings` next:
+```ts
+import { provideUiStrings, uiStringsDv, UiStringsService } from '@zouriel/ui';
 
-| Component | Words |
-| --- | --- |
-| canvas viewport, transform box | Zoom in, Zoom out, Fit to view (and their tooltips), Rotate |
-| command palette | Command palette |
-| file viewer: audio, video, image viewer, lightbox, explorer | Seek, Volume, Playback speed, Fullscreen, Play, Previous/Next (image), Zoom in/out, Reset view, Image controls, Clip controls, Image, Close, Everything in this set, Path |
-| color picker | Pick color, Hex color |
-| OTP input | One-time code |
-| intro loader | Loading… |
-| splitter | Resize panes |
-| carousel, gallery | Previous/Next slide, Previous, Next, Close, Image viewer |
-| anchor nav, breadcrumbs | On this page, Breadcrumb |
-| PDF viewer | Previous/Next page, Zoom in/out, Fit page, Page controls, Page N of M |
-| sequencer | Playhead, Drag to reorder |
-| table | Actions, Select all rows, Select row N |
-| window | Close |
-| form builder, workflow | their editors' interface text (many strings; separate work) |
+providers: [provideUiStrings(uiStringsDv)]       // the complete Dhivehi set
+// or partial: provideUiStrings({ close: 'ބަންދުކުރޭ' }) — the rest stay English
+
+inject(UiStringsService).set(uiStringsDv);     // switch at runtime, no reload
+inject(UiStringsService).set({});              // back to English
+inject(UiStringsService).patch({ close: '…' }); // change a few, keep the rest
+```
+
+The keys (same in Flutter's `UiStrings`, which has `UiStrings.dv`): `close`, `dismiss`, `clear`, `clearAll`,
+`clearSearch`, `previousPage` / `nextPage`, `previousMonth` / `nextMonth`, `chooseDate`, `moreActions`,
+`uploadLabel` / `uploadHint`, `holdHint`, `confirmTitle`, `confirm`, `cancel`, the map's `zoomIn` / `zoomOut` /
+`placePinAtCentre` / `mapLocate` / `mapLocationOff` / `mapYourLocation` / `mapOpen` / `mapSearchArea` /
+`mapRadiusMeters` / `mapRadiusKilometers` / `mapShowBoth` / `mapLabel` / `mapChosenLocation`, the Google
+wordings, the sidebar's `sidebarToggle` / `sidebarClose` / `sidebarLabel`, and (0.46.0) `loading`, `previous`,
+`next`, `previousSlide`, `nextSlide`, `goToSlide`, `carousel`, `imageViewer`, `previousImage`, `nextImage`,
+`resetView`, `fit`, `fitPage`, `fitToView`, `doubleTapToZoom`, `play`, `pause`, `seek`, `volume`,
+`playbackSpeed`, `fullscreen`, `video`, `mediaSet`, `path`, `open`, `previewUnavailable`, `emptyFolder`,
+`loadingPdf`, `pageControls`, `page`, `pageOf`, `pagination`, `resizePanes`, `resize`, `breadcrumb`,
+`showMore`, `onThisPage`, `otpLabel`, `otpDigit`, `remove`, `showPassword`, `hidePassword`, `pickColor`,
+`hexColor`, `hue`, `commandPalette`, `commandPlaceholder`, `noResults`, `searchPlaceholder`,
+`selectPlaceholder`, `datePlaceholder`, `chooseTime`, `previousYear` / `nextYear` / `previousYears` /
+`nextYears`, `monthsOf`, `yearsRange`, `dateRange`, `emptyHeading`, `noData`, `empty`, `selectAll`,
+`selectAllRows`, `selectRow`, `actions`, `options`, `tabs`, `progress`, `rating`, `meterWarn`, `meterDanger`,
+`decrease`, `increase`, `addTag`, `menu`, `showMenu`, `move`, `dragHint`, `rotate`, `playhead`,
+`dragToReorder`, `adding`, `today`, `notSet`, `chooseMonth`, `chooseYear`, `opensCalendar`, `opensTimePicker`,
+`hours`, `minutes`, `seconds`, `cut`, `copy`, `paste`, `delete`, `lookUp`, `searchWeb`, `share`, `scanText`,
+`fieldRequired`, `thisField`, `sheetSmaller`, `sheetLarger`, `navigationOpen`, `currentStep`, `upcoming`, `openImage`,
+`image`, `meter`, `chosenFiles`, `slider`. A few are used by only one library (the doc comment on each key says which);
+both define all of them. `{n}`, `{total}`, `{label}`, `{start}`, `{end}` are filled in
+(`uiFormatString(template, params)`).
+
+Date names: `locale` ('' = the app's `LOCALE_ID`; never the browser default), `months`, `monthsShort`,
+`weekdays`, `weekdaysShort` (Sunday first), `firstDayOfWeek` (null = the locale's first day, Sunday when it
+says nothing), `dateFormat`, `dateFormatShort`, `monthYearFormat` (`{d} {month} {y}`). Empty arrays and
+formats take everything from Intl; `uiStringsDv` carries Dhivehi names, since Intl has no `dv` data, and starts
+the week on Sunday (the Maldivian work week). An `en-GB` app's calendars now start on Monday.
+
+A component's own input for a word wins (a `placeholder`, `ui-file-upload` `label` / `hint`,
+`ui-split-button` `menuLabel`, `ui-confirm-dialog` `title`). Inputs that used to default to English text
+(`placeholder`, `label`, `heading`, `selectAllLabel`, the meter's `warnText` / `dangerText`, …) now default to
+`undefined` and fall back to the built-in word.
+
+Still English (0.46.0): the form builder's and workflow editor's interface text (many strings; separate
+work), and a few rarely used names: the window's Minimize / Maximize / Restore, the media lightbox's Mute /
+Unmute / Full screen / Exit full screen / Media viewer / Item N, the image viewer's Image controls /
+Clip controls, the sequencer's keyframe, lock and hide names, the transform box's Selected element, the
+anchor picker's and choice grid's default group names (Point, Choices) and the tree table's Name heading.
+
+## Right to left and Dhivehi
+
+Every component mirrors under `dir="rtl"` (0.46.0): logical insets, paddings, borders and corners;
+`ui-drawer side="start" | "end"` and `ui-toast-host position="…-start" | "…-end"` (the default is now
+`bottom-end`) slide in from that edge; chevrons that mean back and forward point the other way (play, check,
+search and logos don't); arrow keys in tabs, segmented, rating, choice grid, tree, menubar, splitter, gallery
+and the date picker move the way the row reads; the switch turns on toward the inline end; the chat bubble's
+own messages sit at the inline end with the tucked corner mirrored; the slider fills from the right; the
+indeterminate progress bar, skeleton shine and marquee run right to left. The map itself doesn't mirror: the
+zoom buttons sit at the inline start, the locate and app buttons and the credits at the inline end, and a
+label starts on the dot's inline end. An OTP code, code blocks and the code viewer stay left to right.
+
+An app's language toggle:
+
+```ts
+const dir = inject(UiDirectionService);
+const strings = inject(UiStringsService);
+dir.set('rtl', 'dv');          // <html dir="rtl" lang="dv">; the CDK Directionality is kept in step
+strings.set(uiStringsDv);
+```
+
+`UiDirectionService` also follows `<html dir>` when the app sets it itself; what a script places (map
+controls, CDK overlays such as the date picker) moves at once, the rest through CSS. Slides that follow the
+text direction multiply their travel by `--ui-inline-sign` (1, or -1 under `dir="rtl"`, from animations.css);
+`UI_ANIM.slideFromStart` / `slideFromEnd` are the logical enter/leave classes. Helpers: `uiIsRtl(el)`,
+`uiLogicalKey(event)`.
+
+Thaana text draws in the app's font: put it first in `--ui-font-default` (and `--ui-font-display`), e.g.
+`Faruma, 'Poppins', system-ui, sans-serif`. Every component draws with those tokens (the Google button keeps
+Google's Roboto first and falls back to them).

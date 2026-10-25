@@ -3,7 +3,8 @@ import { Component, computed, input, signal } from '@angular/core';
 export interface UiTreeTableColumn {
   key: string;
   header: string;
-  align?: 'left' | 'right' | 'center';
+  /** `start` (the default) / `end` follow the text direction (0.46.0); left / right stay put. */
+  align?: 'start' | 'end' | 'left' | 'right' | 'center';
 }
 export interface UiTreeTableRow {
   label: string;
@@ -23,13 +24,13 @@ interface FlatRow { row: UiTreeTableRow; depth: number; }
         <thead>
           <tr>
             <th scope="col">{{ firstHeader() }}</th>
-            @for (col of columns(); track col.key) { <th scope="col" [attr.data-align]="col.align || 'left'">{{ col.header }}</th> }
+            @for (col of columns(); track col.key) { <th scope="col" [attr.data-align]="col.align || 'start'">{{ col.header }}</th> }
           </tr>
         </thead>
         <tbody>
           @for (f of visible(); track f.row.value) {
             <tr>
-              <td [style.padding-left]="'calc(var(--ui-space-3) + ' + f.depth * 16 + 'px)'">
+              <td [style.padding-inline-start]="'calc(var(--ui-space-3) + ' + f.depth * 16 + 'px)'">
                 <span class="first">
                 @if (f.row.children?.length) {
                   <button type="button" class="chev" [class.open]="expanded().has(f.row.value)" (click)="toggle(f.row)"
@@ -39,7 +40,7 @@ interface FlatRow { row: UiTreeTableRow; depth: number; }
                 <span class="label">{{ f.row.label }}</span>
                 </span>
               </td>
-              @for (col of columns(); track col.key) { <td [attr.data-align]="col.align || 'left'">{{ f.row.data?.[col.key] }}</td> }
+              @for (col of columns(); track col.key) { <td [attr.data-align]="col.align || 'start'">{{ f.row.data?.[col.key] }}</td> }
             </tr>
           }
         </tbody>
@@ -51,8 +52,10 @@ interface FlatRow { row: UiTreeTableRow; depth: number; }
     .wrap { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: auto; }
     .tt { width: 100%; border-collapse: collapse; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       color: var(--ui-color-text); font-variant-numeric: tabular-nums; }
-    th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: left; }
+    th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: start; }
+    th[data-align="left"], td[data-align="left"] { text-align: left; }
     th[data-align="right"], td[data-align="right"] { text-align: right; }
+    th[data-align="end"], td[data-align="end"] { text-align: end; }
     th[data-align="center"], td[data-align="center"] { text-align: center; }
     thead th { background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; }
     .first { display: flex; align-items: center; gap: var(--ui-space-1); min-width: 0; }

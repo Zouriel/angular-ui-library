@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, input, computed } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-empty-state` — placeholder for empty content. Slots: `[empty-icon]`, `[empty-actions]`. */
 @Component({
@@ -6,7 +7,7 @@ import { Component, input } from '@angular/core';
   template: `
     <div class="ui-empty">
       <div class="icon"><ng-content select="[empty-icon]" /></div>
-      <div class="title">{{ heading() }}</div>
+      <div class="title">{{ headingText() }}</div>
       @if (description()) { <div class="desc">{{ description() }}</div> }
       <div class="actions"><ng-content select="[empty-actions]" /></div>
     </div>
@@ -30,6 +31,9 @@ import { Component, input } from '@angular/core';
   `,
 })
 export class UiEmptyState {
-  heading = input('Nothing here yet');
+  protected readonly strings = injectUiStrings();
+  /** Default: the built-in `emptyHeading` (Nothing here yet), which follows the app's language. */
+  heading = input<string | undefined>(undefined);
+  protected readonly headingText = computed(() => this.heading() ?? this.strings.emptyHeading);
   description = input<string>();
 }

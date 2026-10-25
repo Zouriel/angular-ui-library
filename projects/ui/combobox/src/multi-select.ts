@@ -1,7 +1,7 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, ElementRef, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import type { UiComboboxOption } from './combobox';
 
 let nextId = 0;
@@ -22,9 +22,9 @@ let nextId = 0;
       @for (v of value(); track v) {
         <!-- A disabled control has nothing to remove, so its chips carry no x (as the clear button hides). -->
         <span class="chip" [class.static]="disabled()"><span class="chip-text" [attr.title]="labelOf(v)">{{ labelOf(v) }}</span>@if (!disabled()) {<button type="button" class="x" tabindex="-1"
-          [attr.aria-label]="'Remove ' + labelOf(v)" (click)="toggle(v, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>}</span>
+          [attr.aria-label]="format(strings.remove, { label: labelOf(v) })" (click)="toggle(v, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>}</span>
       }
-      <input #entry class="entry" [attr.placeholder]="value().length ? '' : placeholder()"
+      <input #entry class="entry" [attr.placeholder]="value().length ? '' : placeholderText()"
              role="combobox" aria-autocomplete="list" [attr.aria-label]="label() || null" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
              [attr.aria-activedescendant]="open() && filtered().length ? listId + '-' + activeIndex() : null"
              [attr.aria-invalid]="invalid() || null"
@@ -116,10 +116,13 @@ let nextId = 0;
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiMultiSelect), multi: true }],
 })
 export class UiMultiSelect implements ControlValueAccessor {
+  protected readonly format = uiFormatString;
   protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
-  placeholder = input('Select…');
+  /** Default: the built-in `selectPlaceholder` (Select…), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.selectPlaceholder);
   /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
   label = input<string>();
   invalid = input(false);

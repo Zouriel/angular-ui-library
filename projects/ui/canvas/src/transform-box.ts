@@ -1,4 +1,5 @@
 import { Component, ElementRef, NgZone, OnDestroy, computed, inject, input, output } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** A box in stage units, rotated about its centre. */
 export interface UiBox {
@@ -76,7 +77,7 @@ const HANDLES: Handle[] = [
     }
     @if (rotatable() && !disabled()) {
       <span class="stem" aria-hidden="true"></span>
-      <span class="rotate" title="Rotate" (pointerdown)="start($event, 'rotate')"></span>
+      <span class="rotate" [attr.title]="strings.rotate" (pointerdown)="start($event, 'rotate')"></span>
     }
     @if (showSize()) {
       <span class="size" [style.transform]="'rotate(' + -box().rotate + 'deg)'">{{ sizeText() }}</span>
@@ -116,6 +117,7 @@ const HANDLES: Handle[] = [
   `,
 })
 export class UiTransformBox implements OnDestroy {
+  protected readonly strings = injectUiStrings();
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly zone = inject(NgZone);
 

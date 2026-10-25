@@ -8,6 +8,7 @@ import { UiInput, UiSwitch, UiCheckbox } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Notification01Icon from '@hugeicons/core-free-icons/Notification01Icon';
 import { ShowcaseDensity } from '../docs/density';
+import { ShowcaseLanguageService } from '../docs/language';
 import { FormsModule } from '@angular/forms';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -101,12 +102,32 @@ applyUiDensity('comfortable');             // removes it
       </doc-section>
 
       <doc-section name="Built-in strings" anchor="built-in-strings" selector="provideUiStrings" [api]="stringsApi"
-        summary="The library's own words: the names of icon-only buttons (Close, Dismiss, Clear, Previous page…) and a few default labels (the file upload's Click to upload). English by default; give your app's language once with provideUiStrings, partly or whole, and the rest stay English. Components with their own input for a word (ui-file-upload label and hint, ui-split-button menuLabel) use that first. The words not yet covered are listed in the library README under Built-in strings.">
-        <doc-demo lang="ts" code="import { provideUiStrings } from '@zouriel/ui';
+        summary="The library's own words: the names of icon-only buttons (Close, Dismiss, Clear, Previous page…), default labels and placeholders (Search…, Select a date, Nothing here yet) and the date picker's month and day names. English by default. Give your app's language with provideUiStrings, partly or whole (the rest stay English), or the complete Dhivehi set uiStringsDv. Switch at runtime with UiStringsService.set(): every component reads the words live, so a language toggle needs no reload. Components with their own input for a word (a placeholder, ui-file-upload label and hint, ui-split-button menuLabel) use that first. The form builder's and workflow editor's interface text is still English (README, Built-in strings).">
+        <doc-demo lang="ts" code="import { provideUiStrings, uiStringsDv, UiStringsService } from '@zouriel/ui';
 
-providers: [
-  provideUiStrings({ close: 'ބަންދުކުރޭ', dismiss: 'ފޮރުވާ', previousPage: 'ކުރީ ޞަފްޙާ', nextPage: 'ދެން ޞަފްޙާ' }),
-]"></doc-demo>
+providers: [provideUiStrings(uiStringsDv)]          // start in Dhivehi
+// or a few words:  provideUiStrings({ close: 'ބަންދުކުރޭ', previousPage: 'ކުރީ ޞަފްޙާ' })
+
+inject(UiStringsService).set(uiStringsDv);        // switch at runtime
+inject(UiStringsService).set({});                 // back to English
+uiFormatString(strings.remove, { label: 'Tea' })  // fills {placeholders}"></doc-demo>
+      </doc-section>
+
+      <doc-section name="Right to left and Dhivehi" anchor="rtl" selector="UiDirectionService" [api]="rtlApi"
+        summary="Every component mirrors under dir=&quot;rtl&quot; (0.46.0): logical insets and paddings, drawers and toasts on the start or end side slide in from there, chevrons that mean back and forward point the other way (play, check, search and logos don't), arrow keys move the way a row reads, the chat bubble's own messages sit at the inline end, the switch turns on toward the end. The map itself doesn't mirror; its zoom buttons move to the inline start, the locate and app buttons and the credits to the end. A one-time code stays left to right. An app with a language toggle calls UiDirectionService.set('rtl', 'dv') with UiStringsService.set(uiStringsDv): the direction-dependent parts that a script places (map controls, CDK overlays) follow without a reload. Thaana draws in the app's font: put it first in --ui-font-default (Faruma, then the theme's font for Latin). Try it with the RTL · ދިވެހި switch in the top bar, which mirrors every page.">
+        <doc-demo lang="ts" code="import { UiDirectionService, UiStringsService, uiStringsDv } from '@zouriel/ui';
+
+const dir = inject(UiDirectionService);
+const strings = inject(UiStringsService);
+function setLanguage(lang: 'en' | 'dv') {
+  dir.set(lang === 'dv' ? 'rtl' : 'ltr', lang);     // &lt;html dir lang&gt;, CDK Directionality kept in step
+  strings.set(lang === 'dv' ? uiStringsDv : {});
+}
+// styles.css:  :root { --ui-font-default: Faruma, 'Poppins', system-ui, sans-serif; }">
+          <div class="density-demo">
+            <ui-segmented label="Language" [options]="languages" [value]="language.language()" (valueChange)="language.set($any($event))" />
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Theme service" selector="UiThemeService" [api]="themeApi"
@@ -218,6 +239,24 @@ export class FoundationPage {
     { name: 'mapSearchArea / mapRadiusMeters / mapRadiusKilometers', type: 'string', default: "'Search area' / '{n} m' / '{n} km'", desc: 'Map: the search area\'s radius handle and the radius in words (0.44.0); {n} is the number.' },
     { name: 'googleSignIn / googleSignUp / googleContinue / googleSignInShort', type: 'string', default: "'Sign in with Google' / 'Sign up with Google' / 'Continue with Google' / 'Sign in'", desc: 'Google button (Google\'s approved wordings only).' },
     { name: 'sidebarToggle / sidebarClose / sidebarLabel', type: 'string', default: "'Toggle navigation' / 'Close navigation' / 'Navigation'", desc: 'Sidebar layout: menu button, the drawer\'s close button, the drawer\'s name.' },
+    { name: 'loading, previous, next, previousSlide, nextSlide, goToSlide, carousel, imageViewer, previousImage, nextImage, resetView, fit, fitPage, fitToView, play, pause, seek, volume, playbackSpeed, fullscreen, mediaSet, path, loadingPdf, pageControls, page, pageOf', type: 'string', default: "'Loading…', 'Previous', …", desc: 'Media, gallery, carousel, file and PDF viewers (0.46.0). {n}, {total} are numbers.' },
+    { name: 'searchPlaceholder, selectPlaceholder, datePlaceholder, commandPlaceholder, addTag, empty, emptyHeading, noData, noResults', type: 'string', default: "'Search…', 'Select…', 'Select a date', …", desc: 'Default placeholders and empty texts; a component\'s own input wins (0.46.0).' },
+    { name: 'remove, decrease, increase, adding, otpLabel, otpDigit, showPassword, hidePassword, pickColor, hexColor, selectAll, selectAllRows, selectRow, actions, options, tabs, progress, rating, pagination, meterWarn, meterDanger, resize, resizePanes, breadcrumb, onThisPage, commandPalette, rotate, playhead, dragToReorder, mapShowBoth', type: 'string', default: "'Remove {label}', …", desc: 'Names of controls across the library (0.46.0); {label}, {n} are filled in.' },
+    { name: 'previousYear, nextYear, previousYears, nextYears, monthsOf, yearsRange, dateRange, chooseTime', type: 'string', default: "'Previous year', …", desc: 'Date picker views (0.46.0).' },
+    { name: 'openImage, image, meter, slider; today, notSet, chooseMonth, chooseYear, opensCalendar, opensTimePicker, hours, minutes, seconds, cut, copy, paste, delete, lookUp, searchWeb, share, scanText, fieldRequired, thisField, sheetSmaller, sheetLarger, navigationOpen, currentStep, upcoming, chosenFiles, doubleTapToZoom, video, open, previewUnavailable, emptyFolder, hue, menu, showMenu, move, dragHint, mapLabel, mapChosenLocation', type: 'string', default: "'Open image', …", desc: 'The first four name web controls; the rest are used by the Flutter twin (its pickers, text selection menu, timeline, sheet grip), defined here too so both libraries share one key set (0.46.0).' },
+    { name: 'locale, months, monthsShort, weekdays, weekdaysShort, firstDayOfWeek, dateFormat, dateFormatShort, monthYearFormat', type: 'string / string[] / number | null', default: "'' / [] / null", desc: 'Date names (0.46.0): empty takes them from Intl in locale or the app\'s LOCALE_ID (never the browser default); the grids start on firstDayOfWeek (else the locale\'s first day).' },
+  ];
+  protected readonly languages = [{ value: 'en', label: 'English' }, { value: 'dv', label: 'ދިވެހި (RTL)' }];
+  protected readonly language = inject(ShowcaseLanguageService);
+  protected readonly rtlApi: ApiRow[] = [
+    { name: 'UiDirectionService', type: 'service', default: '—', desc: "dir() / rtl() signals, set(dir, lang?) writes <html dir lang>; follows the attribute when the app sets it itself and keeps the CDK Directionality in step." },
+    { name: 'uiIsRtl(el)', type: 'function', default: '—', desc: 'Whether an element is laid out right to left (nearest dir attribute, else its computed direction).' },
+    { name: 'uiLogicalKey(event)', type: 'function', default: '—', desc: 'The key with ArrowLeft / ArrowRight swapped under RTL, for handlers written for LTR.' },
+    { name: 'UiStringsService', type: 'service', default: '—', desc: 'strings() signal; set(partial) over English, patch(partial) over the current words.' },
+    { name: 'uiStringsDv', type: 'UiStrings', default: '—', desc: 'The complete Dhivehi set, with month and day names (Sunday first), firstDayOfWeek 0 and dateFormat {d} {month} {y}.' },
+    { name: 'drawer side', type: "'start' | 'end'", default: '—', desc: 'Start is the left in LTR and the right in RTL; left and right stay put.' },
+    { name: 'toast host position', type: "'top-start' | 'top-end' | 'bottom-start' | 'bottom-end'", default: "'bottom-end'", desc: 'Logical corners; the default is the bottom right in LTR, the bottom left in RTL.' },
+    { name: '--ui-inline-sign', type: 'number', default: '1 (-1 under dir="rtl")', desc: 'Multiplies horizontal travel in slides that follow the text direction (animations.css).' },
   ];
   protected readonly configApi: ApiRow[] = [
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Default glass surface for card, stat-card, modal, drawer, popover, menu, context menu, command palette, navbar, bottom nav and window.' },

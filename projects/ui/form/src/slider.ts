@@ -1,5 +1,6 @@
 import { Component, computed, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-slider` — themed range slider (CVA). */
 @Component({
@@ -12,7 +13,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         [value]="value()"
         [disabled]="disabled()"
         [style.--ui-fill.%]="fillPct()"
-        [attr.aria-label]="label()"
+        [attr.aria-label]="label() ?? strings.slider"
         (input)="handleInput($event)"
         (blur)="onTouched()" />
       @if (showValue()) { <span class="val" [style.min-width.ch]="valueWidth()">{{ value() }}</span> }
@@ -23,6 +24,8 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     .ui-slider { display: flex; align-items: center; gap: var(--ui-space-3); }
     input[type=range] { flex: 1; appearance: none; height: 6px; border-radius: var(--ui-radius-pill); outline: none; cursor: pointer;
       background: linear-gradient(to right, var(--ui-color-primary) var(--ui-fill, 0%), var(--ui-color-track) var(--ui-fill, 0%)); }
+    /* An RTL range runs from the right (min) to the left, so the filled part starts at the right. */
+    input[type=range]:dir(rtl) { background: linear-gradient(to left, var(--ui-color-primary) var(--ui-fill, 0%), var(--ui-color-track) var(--ui-fill, 0%)); }
     input[type=range]:disabled { opacity: .5; cursor: not-allowed; }
     input[type=range]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%;
       background: var(--ui-slider-thumb); border: 1px solid var(--ui-slider-thumb-border); box-shadow: var(--ui-shadow-1); cursor: pointer; }
@@ -30,7 +33,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     input[type=range]:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-slider:has(input:disabled) .val { opacity: .5; }
     /* min-width (in ch of the mono font) comes from valueWidth(). */
-    .val { text-align: right; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
+    .val { text-align: end; font-family: var(--ui-font-mono); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiSlider), multi: true }],
 })
@@ -38,7 +41,9 @@ export class UiSlider implements ControlValueAccessor {
   min = input(0);
   max = input(100);
   step = input(1);
-  label = input('Slider');
+  /** Default: the built-in `slider` (Slider), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly strings = injectUiStrings();
   showValue = input(true);
 
   protected readonly value = signal(0);

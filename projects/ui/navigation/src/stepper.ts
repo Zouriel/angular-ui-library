@@ -100,7 +100,7 @@ export class UiStepBody {
     :host([data-orientation="vertical"]) .step { position: relative; align-items: flex-start; gap: var(--ui-space-3); padding-bottom: var(--ui-space-4); min-width: 0; }
     :host([data-orientation="vertical"]) .step:last-child { padding-bottom: 0; }
     :host([data-orientation="vertical"]) .text { flex: 1; padding-top: 3px; }
-    :host([data-orientation="vertical"]) .bar { position: absolute; left: 11.5px; top: 28px; bottom: 4px; width: 1px; height: auto; min-width: 0; margin: 0; }
+    :host([data-orientation="vertical"]) .bar { position: absolute; inset-inline-start: 11.5px; top: 28px; bottom: 4px; width: 1px; height: auto; min-width: 0; margin: 0; }
     .body { margin-top: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
 
     /* Dots: a compact strip of 10px dots. Finished steps take the tone, the active one too with a
@@ -114,11 +114,11 @@ export class UiStepBody {
     :host([data-variant="dots"]) .step.active .marker { box-shadow: 0 0 0 2px var(--ui-color-surface), 0 0 0 4px var(--ui-step-tone); }
     /* 6px between a line and a dot; beside the current dot 10px, so its 4px ring keeps the same 6px. */
     :host([data-variant="dots"]) .bar { flex: none; width: 8px; min-width: 8px; margin: 0 6px; }
-    :host([data-variant="dots"]) .step.active .bar { margin-left: 10px; }
-    :host([data-variant="dots"]) .step:has(+ .step.active) .bar { margin-right: 10px; }
+    :host([data-variant="dots"]) .step.active .bar { margin-inline-start: 10px; }
+    :host([data-variant="dots"]) .step:has(+ .step.active) .bar { margin-inline-end: 10px; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step { padding-bottom: 20px; align-items: center; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step:last-child { padding-bottom: 0; }
-    :host([data-variant="dots"][data-orientation="vertical"]) .bar { left: 4.5px; top: 16px; bottom: 6px; width: 1px; min-width: 0; margin: 0; }
+    :host([data-variant="dots"][data-orientation="vertical"]) .bar { inset-inline-start: 4.5px; top: 16px; bottom: 6px; width: 1px; min-width: 0; margin: 0; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step.active .bar,
     :host([data-variant="dots"][data-orientation="vertical"]) .step:has(+ .step.active) .bar { margin: 0; }
     :host([data-variant="dots"][data-orientation="vertical"]) .step.active .bar { top: 20px; }

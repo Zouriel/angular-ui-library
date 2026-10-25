@@ -1,6 +1,6 @@
 import { Component, forwardRef, inject, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
 
 /** `ui-color-picker` — native color well + hex field + preset swatches (CVA; value is hex). */
 @Component({
@@ -8,9 +8,9 @@ import { UI_CONFIG } from '@zouriel/ui';
   template: `
     <div class="cp" [class.no-radius]="!radius()">
       <label class="well" [style.background]="value()">
-        <input type="color" [value]="value()" [disabled]="disabled()" (input)="set($any($event.target).value)" aria-label="Pick color" />
+        <input type="color" [value]="value()" [disabled]="disabled()" (input)="set($any($event.target).value)" [attr.aria-label]="strings.pickColor" />
       </label>
-      <input class="hex" [value]="value()" [disabled]="disabled()" (input)="typeHex($any($event.target).value)" (blur)="leaveHex($event)" aria-label="Hex color" />
+      <input class="hex" [value]="value()" [disabled]="disabled()" (input)="typeHex($any($event.target).value)" (blur)="leaveHex($event)" [attr.aria-label]="strings.hexColor" />
       <div class="swatches">
         @for (c of swatches(); track c) {
           <button type="button" class="sw" [attr.aria-label]="c" [attr.aria-pressed]="c.toLowerCase() === (value() || '').toLowerCase()" [disabled]="disabled()" (click)="set(c)"><span class="dot" [style.background]="c"></span></button>
@@ -48,6 +48,7 @@ import { UI_CONFIG } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiColorPicker), multi: true }],
 })
 export class UiColorPicker implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   radius = input<boolean>(this.config.radius);
   swatches = input<string[]>(['#1b3d59', '#6a97c0', '#b3d5f1', '#f3eed8', '#2e6b50', '#a83a3f']);

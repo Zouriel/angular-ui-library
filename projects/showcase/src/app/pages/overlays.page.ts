@@ -158,7 +158,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         [shapes]="TOAST">
         <doc-demo lang="ts" code="import { UiToastService, UiToastHost } from '@zouriel/ui/dialog';
 
-// once, in the root component's template: <ui-toast-host position=&quot;bottom-right&quot; />
+// once, in the root component's template: <ui-toast-host position=&quot;bottom-end&quot; />
 toast = inject(UiToastService);
 this.toast.success('Saved', 'Done');
 this.toast.show({ message: 'Hi', duration: 0 });
@@ -236,12 +236,12 @@ onKey(e: KeyboardEvent) {
       <ui-text variant="body">Traps focus, locks scroll, closes on Esc / backdrop.</ui-text>
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
     </ui-modal>
-    <ui-drawer [(open)]="drawer" side="right" title="Drawer"><ui-text variant="body">A right-anchored sheet.</ui-text></ui-drawer>
+    <ui-drawer [(open)]="drawer" side="end" title="Drawer"><ui-text variant="body">An end-anchored sheet: the right in LTR, the left in RTL.</ui-text></ui-drawer>
     <ui-drawer [(open)]="formDrawer" side="bottom" title="Why cancel?">
       <ui-form-field label="Reason"><ui-input placeholder="The customer asked me to" [(ngModel)]="cancelReason" /></ui-form-field>
       <div drawer-footer><ui-button [block]="true" (click)="formDrawer.set(false)">Cancel the job</ui-button></div>
     </ui-drawer>
-    <ui-drawer [(open)]="chatsDrawer" side="left" title="Chats">
+    <ui-drawer [(open)]="chatsDrawer" side="start" title="Chats">
       <ui-button drawer-header [block]="true" (click)="chatsDrawer.set(false)">New chat</ui-button>
       @for (c of chatRows; track c) { <button type="button" class="chat-row" (click)="chatsDrawer.set(false)">Conversation {{ c }}</button> }
       <div drawer-footer class="chat-foot">
@@ -322,7 +322,8 @@ interface UiSnackbarAction {
 // What service.current() holds: the options with the duration filled in, plus the id.
 interface UiSnack { id: number; message: string; title?: string; action?: UiSnackbarAction; duration: number }`;
   protected readonly TOAST = `type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
-type UiToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
+type UiToastPosition = 'top-end' | 'top-start' | 'top-center' | 'bottom-end' | 'bottom-start' | 'bottom-center'
+  | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';   // -start / -end follow the text direction (0.46.0)
 interface UiToastOptions {
   message: string;
   title?: string;
@@ -354,7 +355,7 @@ interface UiToastAction {
   <div drawer-footer><ui-button [block]="true">Cancel the job</ui-button></div>
 </ui-drawer>`;
   protected readonly chatRows = Array.from({ length: 40 }, (_, i) => i + 1);
-  protected readonly chatsDrawerCode = `<ui-drawer [(open)]="open" side="left" title="Chats">
+  protected readonly chatsDrawerCode = `<ui-drawer [(open)]="open" side="start" title="Chats">
   <ui-button drawer-header [block]="true">New chat</ui-button>
   @for (c of chats; track c.id) { <button class="chat">{{ c.title }}</button> }   <!-- only this scrolls -->
   <div drawer-footer>
@@ -421,7 +422,7 @@ interface UiToastAction {
   ];
   protected readonly drawerApi: ApiRow[] = [
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the drawer is showing.' },
-    { name: 'side', type: "UiDrawerSide: 'left' | 'right' | 'top' | 'bottom'", default: "'right'", desc: 'Edge it slides in from.' },
+    { name: 'side', type: "UiDrawerSide: 'start' | 'end' | 'left' | 'right' | 'top' | 'bottom'", default: "'right'", desc: 'Edge it slides in from. start / end follow the text direction (0.46.0): start is the right in RTL.' },
     { name: 'title', type: 'string', default: 'undefined', desc: 'Header title, also the accessible name. Without it there is no header or close button.' },
     { name: 'closeOnBackdrop', type: 'boolean', default: 'true', desc: 'Click backdrop to close.' },
     { name: 'closeOnEscape', type: 'boolean', default: 'true', desc: 'Esc to close.' },
@@ -477,7 +478,7 @@ interface UiToastAction {
     { name: 'coverChange', type: 'number', default: '—', desc: 'Px of the screen it takes from the bottom once settled, including what it rests on (offset or keyboard).' },
   ];
   protected readonly toastApi: ApiRow[] = [
-    { name: 'host: position', type: 'UiToastPosition', default: "'bottom-right'", desc: 'Where ui-toast-host stacks toasts: a corner, or centred on the top or bottom edge. Toasts slide in from that side.' },
+    { name: 'host: position', type: 'UiToastPosition', default: "'bottom-end'", desc: 'Where ui-toast-host stacks toasts: a corner, or centred on the top or bottom edge. Toasts slide in from that side. -start / -end follow the text direction (0.46.0; the default was bottom-right, the same in LTR).' },
     { name: '--ui-toast-font', type: 'CSS custom property', default: 'var(--ui-font-default)', desc: "Set on ui-toast-host to draw the toasts' title, message and action in an app font, e.g. style=\"--ui-toast-font: Faruma, 'Noto Sans Thaana'\" so a Dhivehi name never shows as boxes (0.44.2)." },
     { name: 'service.show(opts)', type: '(UiToastOptions) => number', default: '—', desc: 'Enqueue; returns id.' },
     { name: 'service.info / success / warning / danger', type: '(message: string, title?: string) => number', default: '—', desc: 'Shorthands for show() with a tone.' },

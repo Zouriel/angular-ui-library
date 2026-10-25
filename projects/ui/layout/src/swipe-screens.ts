@@ -1,6 +1,7 @@
 import {
   Component, DestroyRef, ElementRef, booleanAttribute, computed, contentChildren, effect, inject, input, model, signal, untracked,
 } from '@angular/core';
+import { UiDirectionService } from '@zouriel/ui';
 
 /** A drag released faster than this (px per second) moves one screen that way, however short. */
 export const UI_SWIPE_FLING_VELOCITY = 400;
@@ -172,10 +173,16 @@ export class UiSwipeScreens {
     return `translateX(${(rtl ? 1 : -1) * p * 100}%)`;
   });
 
-  /** The reading direction, re-read when the screens change (and on every drag). */
+  /** The reading direction, re-read when the screens change, on every drag, and when the page's
+   *  direction flips at runtime (0.46.0). */
   private readonly rtlNow = signal(false);
+  private readonly direction = inject(UiDirectionService);
 
   constructor() {
+    effect(() => {
+      this.direction.dir();
+      untracked(() => this.rtlNow.set(this.readRtl()));
+    });
     effect(() => {
       const list = this.screens();
       const drag = this.dragPos();

@@ -50,7 +50,7 @@ export class UiList {
       display: flex; align-items: center; gap: var(--ui-space-3); width: 100%;
       padding: var(--ui-space-2) var(--ui-space-4); box-sizing: border-box;
       color: var(--ui-color-text); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
-      text-align: left; background: transparent;
+      text-align: start; background: transparent;
     }
     .ui-list-item.interactive {
       border: none; cursor: pointer;

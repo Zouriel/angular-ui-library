@@ -8,6 +8,7 @@ import { UiVideoPlayer } from './video-player';
 import { UiAudioPlayer } from './audio-player';
 import { UiTextViewer } from './text-viewer';
 import { UiCodeViewer } from './code-viewer';
+import { injectUiStrings } from '@zouriel/ui';
 
 type FileType = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'code' | 'unknown';
 
@@ -41,7 +42,7 @@ const EXT: Record<string, FileType> = {
           @defer (on immediate) {
             <ui-pdf-viewer [src]="src()" />
           } @placeholder {
-            <div class="fallback"><span class="big"><hugeicons-icon [icon]="pdfIcon" [size]="40" [strokeWidth]="1.6" /></span><span>Loading PDF viewer…</span></div>
+            <div class="fallback"><span class="big"><hugeicons-icon [icon]="pdfIcon" [size]="40" [strokeWidth]="1.6" /></span><span>{{ strings.loadingPdf }}</span></div>
           }
         }
         @default {
@@ -71,6 +72,7 @@ const EXT: Record<string, FileType> = {
   `,
 })
 export class UiFileViewer {
+  protected readonly strings = injectUiStrings();
   protected readonly pdfIcon = Pdf01Icon;
   protected readonly fileIcon = File01Icon;
 

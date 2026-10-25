@@ -1,4 +1,5 @@
 import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from '@angular/core';
+import { injectUiStrings, uiIsRtl, uiLogicalKey } from '@zouriel/ui';
 
 /**
  * `ui-splitter` — two resizable panes with a draggable divider. Project two
@@ -12,7 +13,7 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
   template: `
     <div class="sp" [class.vertical]="orientation() === 'vertical'" #root>
       <div class="pane" [style.flex-basis.%]="ratio()"><ng-content select="[split-a]" /></div>
-      <div class="gutter" role="separator" tabindex="0" aria-label="Resize panes"
+      <div class="gutter" role="separator" tabindex="0" [attr.aria-label]="strings.resizePanes"
            [attr.aria-orientation]="orientation() === 'vertical' ? 'horizontal' : 'vertical'" [attr.aria-valuenow]="round(ratio())" aria-valuemin="10" aria-valuemax="90"
            (pointerdown)="start($event)"
            (keydown)="onKey($event)"></div>
@@ -36,6 +37,7 @@ import { Component, NgZone, OnDestroy, ElementRef, inject, input, signal } from 
   `,
 })
 export class UiSplitter implements OnDestroy {
+  protected readonly strings = injectUiStrings();
   private root = inject<ElementRef<HTMLElement>>(ElementRef);
   private zone = inject(NgZone);
   orientation = input<'horizontal' | 'vertical'>('horizontal');
@@ -62,7 +64,8 @@ export class UiSplitter implements OnDestroy {
     const rect = el.getBoundingClientRect();
     const pct = this.orientation() === 'vertical'
       ? ((e.clientY - rect.top) / rect.height) * 100
-      : ((e.clientX - rect.left) / rect.width) * 100;
+      // Side by side in RTL the first pane is on the right, so its size is measured from there.
+      : ((uiIsRtl(el) ? rect.right - e.clientX : e.clientX - rect.left) / rect.width) * 100;
     this.zone.run(() => this.ratio.set(Math.min(90, Math.max(10, pct))));
   }
   private end(): void {
@@ -74,8 +77,10 @@ export class UiSplitter implements OnDestroy {
   protected round(v: number): number { return Math.round(v); }
   protected onKey(e: KeyboardEvent): void {
     const step = 2;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); this.ratio.update((r) => Math.max(10, r - step)); }
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); this.ratio.update((r) => Math.min(90, r + step)); }
+    // Toward the first pane shrinks it: left in LTR, right in RTL.
+    const key = uiLogicalKey(e);
+    if (key === 'ArrowLeft' || key === 'ArrowUp') { e.preventDefault(); this.ratio.update((r) => Math.max(10, r - step)); }
+    else if (key === 'ArrowRight' || key === 'ArrowDown') { e.preventDefault(); this.ratio.update((r) => Math.min(90, r + step)); }
   }
   ngOnDestroy(): void { this.end(); }
 }

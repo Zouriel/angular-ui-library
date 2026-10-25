@@ -19,7 +19,8 @@ import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
           <span aria-live="polite">{{ state() === 'copied' ? 'Copied' : state() === 'failed' ? 'Copy failed' : 'Copy' }}</span>
         </button>
       </div>
-      <pre class="code" uiScrollFade><code>{{ code() }}</code></pre>
+      <!-- Code reads left to right in every language (0.46.0): an RTL page mirrors the header, not the code. -->
+      <pre class="code" dir="ltr" uiScrollFade><code>{{ code() }}</code></pre>
     </div>
   `,
   styles: `

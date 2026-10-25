@@ -5,7 +5,11 @@ import { injectUiStrings } from '@zouriel/ui';
 
 export type UiToastTone = 'info' | 'success' | 'warning' | 'danger';
 
-export type UiToastPosition = 'top-right' | 'top-left' | 'top-center' | 'bottom-right' | 'bottom-left' | 'bottom-center';
+/** Where toasts stack. `-start` / `-end` (0.46.0) follow the text direction (the end is the right in LTR, the left
+ *  under `dir="rtl"`); `-left` / `-right` stay put. */
+export type UiToastPosition =
+  | 'top-end' | 'top-start' | 'top-center' | 'bottom-end' | 'bottom-start' | 'bottom-center'
+  | 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 export interface UiToastOptions {
   message: string;
@@ -153,6 +157,10 @@ export class UiToastService {
     .host[data-position="top-left"]     { top: 0; left: 0; }
     .host[data-position="bottom-right"] { bottom: 0; right: 0; }
     .host[data-position="bottom-left"]  { bottom: 0; left: 0; }
+    .host[data-position="top-end"]      { top: 0; inset-inline-end: 0; }
+    .host[data-position="top-start"]    { top: 0; inset-inline-start: 0; }
+    .host[data-position="bottom-end"]   { bottom: 0; inset-inline-end: 0; }
+    .host[data-position="bottom-start"] { bottom: 0; inset-inline-start: 0; }
     .host[data-position$="center"] { left: 50%; transform: translateX(-50%); }
     .host[data-position="top-center"]    { top: 0; }
     .host[data-position="bottom-center"] { bottom: 0; }
@@ -164,15 +172,15 @@ export class UiToastService {
       display: flex; align-items: flex-start; gap: var(--ui-space-2);
       padding: var(--ui-space-2) var(--ui-space-3);
       background: var(--ui-color-surface-raised); color: var(--ui-color-text);
-      border: 1px solid var(--ui-color-border); border-left-width: 3px;
+      border: 1px solid var(--ui-color-border); border-inline-start-width: 3px;
       border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2);
       font-family: var(--ui-toast-font, var(--ui-font-default)); font-size: var(--ui-font-size-sm); line-height: 1.35;
     }
     .toast { --ui-color-icon: currentColor; }
-    .toast[data-tone="info"]    { border-left-color: var(--ui-color-info); }
-    .toast[data-tone="success"] { border-left-color: var(--ui-color-success); }
-    .toast[data-tone="warning"] { border-left-color: var(--ui-color-warning); }
-    .toast[data-tone="danger"]  { border-left-color: var(--ui-color-danger); }
+    .toast[data-tone="info"]    { border-inline-start-color: var(--ui-color-info); }
+    .toast[data-tone="success"] { border-inline-start-color: var(--ui-color-success); }
+    .toast[data-tone="warning"] { border-inline-start-color: var(--ui-color-warning); }
+    .toast[data-tone="danger"]  { border-inline-start-color: var(--ui-color-danger); }
     /* Icon box is one line tall so the glyph centres on the first line of text. */
     .icon { flex: none; display: inline-flex; align-items: center; height: 1.35em; color: var(--ui-color-info); }
     .toast[data-tone="success"] .icon { color: var(--ui-color-success); }
@@ -209,7 +217,8 @@ export class UiToastService {
 export class UiToastHost {
   protected readonly strings = injectUiStrings();
   protected readonly toasts = inject(UiToastService);
-  position = input<UiToastPosition>('bottom-right');
+  /** Default `bottom-end` (0.46.0; the bottom right in LTR as before, the bottom left in RTL). */
+  position = input<UiToastPosition>('bottom-end');
 
   private readonly snacks = inject(UiSnackbarService);
   private readonly box = viewChild<ElementRef<HTMLElement>>('box');
@@ -238,6 +247,8 @@ export class UiToastHost {
   protected readonly motion = computed(() => {
     const pos = this.position();
     if (pos.endsWith('left')) return { enter: 'ui-slide-right-enter', leave: 'ui-slide-right-leave' };
+    if (pos.endsWith('-start')) return { enter: 'ui-slide-from-start-enter', leave: 'ui-slide-from-start-leave' };
+    if (pos.endsWith('-end')) return { enter: 'ui-slide-from-end-enter', leave: 'ui-slide-from-end-leave' };
     if (pos === 'top-center') return { enter: 'ui-slide-down-enter', leave: 'ui-slide-down-leave' };
     if (pos === 'bottom-center') return { enter: 'ui-slide-up-enter', leave: 'ui-slide-up-leave' };
     return { enter: 'ui-slide-left-enter', leave: 'ui-slide-left-leave' };

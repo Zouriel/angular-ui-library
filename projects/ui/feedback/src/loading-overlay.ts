@@ -1,4 +1,5 @@
-import { Component, input } from '@angular/core';
+import { Component, input, computed } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-loading-overlay` — covers its positioned parent with a dimmed, blurred
@@ -9,9 +10,9 @@ import { Component, input } from '@angular/core';
   selector: 'ui-loading-overlay',
   template: `
     @if (loading()) {
-      <div class="veil" role="status" [attr.aria-label]="label()" animate.enter="ui-fade-enter" animate.leave="ui-fade-leave">
+      <div class="veil" role="status" [attr.aria-label]="labelText()" animate.enter="ui-fade-enter" animate.leave="ui-fade-leave">
         <span class="spin" aria-hidden="true"></span>
-        @if (label()) { <span class="lbl">{{ label() }}</span> }
+        @if (labelText()) { <span class="lbl">{{ labelText() }}</span> }
       </div>
     }
   `,
@@ -32,6 +33,9 @@ import { Component, input } from '@angular/core';
   `,
 })
 export class UiLoadingOverlay {
+  protected readonly strings = injectUiStrings();
   loading = input(false);
-  label = input('Loading…');
+  /** Default: the built-in `loading` (Loading…), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.loading);
 }

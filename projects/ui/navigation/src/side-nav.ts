@@ -1,7 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, input, model, output } from '@angular/core';
+import { Component, input, model, output, computed } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiSideNavItem {
   label: string;
@@ -33,7 +34,7 @@ export interface UiSideNavGroup {
   selector: 'ui-side-nav',
   imports: [NgTemplateOutlet, HugeiconsIconComponent],
   template: `
-    <nav class="ui-side-nav" [attr.aria-label]="label()">
+    <nav class="ui-side-nav" [attr.aria-label]="labelText()">
       @for (group of groups(); track $index) {
         <div class="group">
           @if (group.label) { <div class="group-label">{{ group.label }}</div> }
@@ -110,9 +111,12 @@ export interface UiSideNavGroup {
   `,
 })
 export class UiSideNav {
+  protected readonly strings = injectUiStrings();
   groups = input<UiSideNavGroup[]>([]);
   active = model<string>('');
-  label = input('Sidebar');
+  /** Default: the built-in `sidebarLabel` (Sidebar), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.sidebarLabel);
   navigate = output<UiSideNavItem>();
 
   /** A HugeIcons icon is an array of [tag, attributes] pairs; a text icon is a string. */

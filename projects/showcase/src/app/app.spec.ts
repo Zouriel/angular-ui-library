@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './app';
 import { NAV } from './app.routes';
+import { UiStringsService } from '@zouriel/ui';
 
 describe('App shell', () => {
   beforeEach(async () => {
@@ -26,5 +27,24 @@ describe('App shell', () => {
     await fixture.whenStable();
     const labels = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.sidebar .item .label')].map((e) => e.textContent?.trim());
     expect(labels).toEqual(NAV.flatMap((g) => g.items.map((i) => i.label)));
+  });
+
+  it('the RTL · ދިވެހި switch flips the page right to left with Dhivehi words, live, and back', async () => {
+    try { localStorage?.removeItem('ui-showcase-language'); } catch { /* none */ }
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    const toggle = el.querySelector('.lang-toggle button') as HTMLButtonElement;
+    expect(document.documentElement.getAttribute('dir')).toBe('ltr');
+    toggle.click();
+    await fixture.whenStable();
+    expect(document.documentElement.getAttribute('dir')).toBe('rtl');
+    expect(document.documentElement.getAttribute('lang')).toBe('dv');
+    expect(TestBed.inject(UiStringsService).strings().close).toBe('ބަންދުކުރޭ');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    toggle.click();
+    await fixture.whenStable();
+    expect(document.documentElement.getAttribute('dir')).toBe('ltr');
+    expect(TestBed.inject(UiStringsService).strings().close).toBe('Close');
   });
 });

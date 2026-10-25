@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import type { UiStatus } from '@zouriel/ui';
+import { type UiStatus, injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-progress-bar` — determinate or indeterminate progress.
@@ -15,7 +15,7 @@ import type { UiStatus } from '@zouriel/ui';
       [attr.aria-valuenow]="indeterminate() ? null : pct()"
       [attr.aria-valuemin]="indeterminate() ? null : 0"
       [attr.aria-valuemax]="indeterminate() ? null : 100"
-      [attr.aria-label]="label()">
+      [attr.aria-label]="labelText()">
       <div class="fill" [class.indeterminate]="indeterminate()" [style.width.%]="indeterminate() ? null : pct()"></div>
     </div>
   `,
@@ -42,16 +42,20 @@ import type { UiStatus } from '@zouriel/ui';
     }
     /* transform, not margin: stays on the compositor. 250% of the 40% bar = the track's full width. */
     @keyframes ui-progress-indeterminate {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(250%); }
+      /* Runs toward the inline end: left to right, right to left under dir="rtl". */
+      0% { transform: translateX(calc(-100% * var(--ui-inline-sign, 1))); }
+      100% { transform: translateX(calc(250% * var(--ui-inline-sign, 1))); }
     }
     @media (prefers-reduced-motion: reduce) { .fill.indeterminate { animation-duration: 2.4s; } }
   `,
 })
 export class UiProgressBar {
+  protected readonly strings = injectUiStrings();
   value = input<number | null>(null);
   tone = input<UiStatus>('primary');
-  label = input('Progress');
+  /** Default: the built-in `progress` (Progress), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.progress);
 
   protected readonly indeterminate = computed(() => this.value() === null || this.value() === undefined);
   protected readonly pct = computed(() => Math.max(0, Math.min(100, this.value() ?? 0)));

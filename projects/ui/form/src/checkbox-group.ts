@@ -1,5 +1,6 @@
 import { Component, computed, forwardRef, input, signal } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiCheckboxOption {
   label: string;
@@ -29,7 +30,7 @@ export interface UiCheckboxOption {
             <svg viewBox="0 0 16 16" class="tick"><path d="M3 8.5l3 3 7-7" /></svg>
             <span class="dash"></span>
           </span>
-          <span class="text">{{ selectAllLabel() }}</span>
+          <span class="text">{{ selectAllLabelText() }}</span>
         </label>
       }
       @for (opt of options(); track opt.value) {
@@ -64,7 +65,7 @@ export interface UiCheckboxOption {
     /* Master row: set apart from the options it governs. */
     .opt.all { font-weight: 600; }
     .grp:not(.row) .opt.all { padding-bottom: var(--ui-space-2); border-bottom: 1px solid var(--ui-color-border); }
-    .grp.row .opt.all { padding-right: var(--ui-space-4); border-right: 1px solid var(--ui-color-border); }
+    .grp.row .opt.all { padding-inline-end: var(--ui-space-4); border-inline-end: 1px solid var(--ui-color-border); }
     .dash { display: none; width: 9px; height: 2px; border-radius: 1px; background: var(--ui-color-primary-contrast); }
     /* Partial selection reads as a dash, not a tick — "some" must not look like "all". */
     .native:indeterminate + .box { background: var(--ui-color-primary); border-color: var(--ui-color-primary); }
@@ -74,12 +75,15 @@ export interface UiCheckboxOption {
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiCheckboxGroup), multi: true }],
 })
 export class UiCheckboxGroup implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   options = input<UiCheckboxOption[]>([]);
   label = input<string>();
   orientation = input<'vertical' | 'horizontal'>('vertical');
   /** Show a master checkbox that ticks/clears every enabled option. */
   selectAll = input(false);
-  selectAllLabel = input('Select all');
+  /** Default: the built-in `selectAll` (Select all), which follows the app's language. */
+  selectAllLabel = input<string | undefined>(undefined);
+  protected readonly selectAllLabelText = computed(() => this.selectAllLabel() ?? this.strings.selectAll);
 
   protected readonly selected = signal<Set<string>>(new Set());
   protected readonly disabled = signal(false);

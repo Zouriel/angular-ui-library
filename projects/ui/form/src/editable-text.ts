@@ -1,7 +1,8 @@
-import { Component, ElementRef, effect, forwardRef, input, signal, untracked, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, forwardRef, input, signal, untracked, viewChild, computed } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-editable-text` — click-to-edit inline text (CVA). Enter commits, Escape cancels. */
 @Component({
@@ -14,7 +15,7 @@ import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
              (keydown.enter)="commit()" (keydown.escape)="cancel()" (blur)="commit()" />
     } @else {
       <button type="button" class="view" [disabled]="disabled()" (click)="edit()">
-        <span [class.placeholder]="!value()">{{ value() || placeholder() }}</span>
+        <span [class.placeholder]="!value()">{{ value() || placeholderText() }}</span>
         <span class="pencil" aria-hidden="true">
           <hugeicons-icon [icon]="editIcon" [size]="13" [strokeWidth]="1.8" />
         </span>
@@ -41,9 +42,12 @@ import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiEditableText), multi: true }],
 })
 export class UiEditableText implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   /** Drawn, not ✎ — a glyph is whatever the reader's font has, and inherits no colour. */
   protected readonly editIcon = Edit02Icon;
-  placeholder = input('Empty');
+  /** Default: the built-in `empty` (Empty), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.empty);
   private inp = viewChild<ElementRef<HTMLInputElement>>('inp');
 
   protected readonly value = signal('');

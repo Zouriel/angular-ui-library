@@ -1,5 +1,6 @@
-import { Component, ElementRef, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, forwardRef, inject, input, signal, computed } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { uiLogicalKey, injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-rating` — star rating (CVA). A radio group: one tab stop, arrow keys (and Home/End) move the
@@ -8,7 +9,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 @Component({
   selector: 'ui-rating',
   template: `
-    <div class="ui-rating" role="radiogroup" [attr.aria-label]="label()">
+    <div class="ui-rating" role="radiogroup" [attr.aria-label]="labelText()">
       @for (i of stars(); track i) {
         <button
           type="button"
@@ -44,9 +45,12 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiRating), multi: true }],
 })
 export class UiRating implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   max = input(5);
-  label = input('Rating');
+  /** Default: the built-in `rating` (Rating), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.rating);
 
   protected readonly value = signal(0);
   protected readonly hover = signal(0);
@@ -65,9 +69,10 @@ export class UiRating implements ControlValueAccessor {
 
   protected onKey(e: KeyboardEvent, i: number): void {
     const max = this.max();
-    const next = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? Math.min(max, i + 1)
-      : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? Math.max(1, i - 1)
-      : e.key === 'Home' ? 1 : e.key === 'End' ? max : 0;
+    const key = uiLogicalKey(e);
+    const next = key === 'ArrowRight' || key === 'ArrowUp' ? Math.min(max, i + 1)
+      : key === 'ArrowLeft' || key === 'ArrowDown' ? Math.max(1, i - 1)
+      : key === 'Home' ? 1 : key === 'End' ? max : 0;
     if (!next) return;
     e.preventDefault();
     if (next !== this.value()) {

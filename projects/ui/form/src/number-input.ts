@@ -1,6 +1,6 @@
 import { Component, Directive, ElementRef, contentChild, effect, forwardRef, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG, type UiSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /**
  * An icon to show in place of a `ui-number-input`'s text label: `<svg uiNumberLabel …/>` inside the input.
@@ -36,8 +36,8 @@ export class UiNumberLabel {}
       @if (suffix()) { <span class="suffix" aria-hidden="true">{{ suffix() }}</span> }
       @if (steppers()) {
       <div class="steppers">
-        <button type="button" tabindex="-1" [attr.aria-label]="'Decrease ' + (ariaLabel() || label() || 'value')" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button type="button" tabindex="-1" [attr.aria-label]="'Increase ' + (ariaLabel() || label() || 'value')" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" [attr.aria-label]="format(strings.decrease, { label: ariaLabel() || label() || '' }).trim()" [disabled]="disabled()" (click)="bump(-step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" tabindex="-1" [attr.aria-label]="format(strings.increase, { label: ariaLabel() || label() || '' }).trim()" [disabled]="disabled()" (click)="bump(step())"><svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 7.5l3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
       }
     </div>
@@ -68,21 +68,23 @@ export class UiNumberLabel {}
     .scrub { display: flex; align-items: center; padding: 0 0 0 var(--ui-space-2); color: var(--ui-color-text-muted); cursor: ew-resize;
       font-size: var(--ui-font-size-sm); font-weight: 500; user-select: none; touch-action: none; min-width: 1.2em; }
     .scrub:hover, .scrub.active { color: var(--ui-color-primary); }
-    .suffix { display: flex; align-items: center; padding-right: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
+    .suffix { display: flex; align-items: center; padding-inline-end: var(--ui-space-2); color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
     .wrap[data-size="sm"] .ui-number { padding: 0 var(--ui-space-2); }
     /* Side by side, not stacked: two stacked buttons in a 30px field are 14px tall each, under the
        24x24 minimum target size (WCAG 2.5.8). Each one is 24px wide and the field's full height. */
-    .steppers { display: flex; border-left: 1px solid var(--ui-color-border); }
+    .steppers { display: flex; border-inline-start: 1px solid var(--ui-color-border); }
     .steppers button { width: 24px; min-height: 24px; border: none; background: transparent; color: var(--ui-color-text-muted); cursor: pointer; padding: 0; display: grid; place-items: center; font: inherit;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard), color var(--ui-motion-fast) var(--ui-ease-standard); }
     .steppers button:disabled { cursor: not-allowed; }
-    .steppers button:first-child { border-right: 1px solid var(--ui-color-border); }
+    .steppers button:first-child { border-inline-end: 1px solid var(--ui-color-border); }
     .steppers button:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .steppers button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiNumberInput), multi: true }],
 })
 export class UiNumberInput implements ControlValueAccessor {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   private config = inject(UI_CONFIG);
   protected readonly labelIcon = contentChild(UiNumberLabel);
   min = input<number>();

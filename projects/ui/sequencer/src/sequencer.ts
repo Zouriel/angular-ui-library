@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   Component, ElementRef, NgZone, OnDestroy, afterNextRender, computed, inject, input, model, output, signal, viewChild,
 } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiSequencerKeyframe {
   id: string;
@@ -119,7 +120,7 @@ const END_GRIP_PX = 10;
                 (pointerdown)="startPageEnd($event)" (keydown)="onEndKey($event)"><span aria-hidden="true"></span></span>
             }
             <span class="playhead-knob" [style.left.%]="pct(playhead())" role="slider" tabindex="0"
-              aria-label="Playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
+              [attr.aria-label]="strings.playhead" [attr.aria-valuemin]="0" [attr.aria-valuemax]="length()" [attr.aria-valuenow]="round(playhead())"
               (keydown)="onPlayheadKey($event)"></span>
           </div>
         </div>
@@ -131,7 +132,7 @@ const END_GRIP_PX = 10;
             [class.drop-before]="dropIndex() === i" [style.padding-left]="'calc(var(--ui-space-2) + ' + (row.depth ?? 0) * 16 + 'px)'"
             (click)="selectRow(row.id)">
             @if (reorderable()) {
-              <span class="grip" title="Drag to reorder" (pointerdown)="startReorder($event, row, i)" aria-hidden="true"><svg viewBox="0 0 12 16" width="10" height="14" aria-hidden="true"><path d="M4 4h0M8 4h0M4 8h0M8 8h0M4 12h0M8 12h0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+              <span class="grip" [attr.title]="strings.dragToReorder" (pointerdown)="startReorder($event, row, i)" aria-hidden="true"><svg viewBox="0 0 12 16" width="10" height="14" aria-hidden="true"><path d="M4 4h0M8 4h0M4 8h0M8 8h0M4 12h0M8 12h0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
             }
             @if (row.kind) { <span class="kind">{{ row.kind }}</span> }
             <span class="name" [title]="row.label">{{ row.label }}</span>
@@ -344,6 +345,7 @@ const END_GRIP_PX = 10;
   `,
 })
 export class UiSequencer implements OnDestroy {
+  protected readonly strings = injectUiStrings();
   private readonly zone = inject(NgZone);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly ruler = viewChild<ElementRef<HTMLElement>>('ruler');

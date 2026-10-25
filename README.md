@@ -65,6 +65,14 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 - **0.45.1**: a tap on a `ui-swipe-screen`'s back-swipe strip (the 24px leading edge of an `edgeSwipeOnly` screen)
   goes to what is under it, such as the screen's Back arrow; a swipe from it still only swipes back.
 - **0.45.2**: `ui-map` ignores a queued Leaflet `moveend` after its host is removed, including when the map is left during an animated move. Keyboard pin placement also safely stops if the map is no longer ready.
+- **Right to left and Dhivehi** (0.46.0): every component mirrors under `dir="rtl"` (logical insets, start/end
+  drawers and toast corners, mirrored chevrons and slides, arrow keys that follow the row, map controls that move
+  with a runtime direction change); `UiDirectionService.set('rtl', 'dv')` flips the page and keeps the CDK in step.
+  All the library's words are built-in strings, switchable live with `UiStringsService.set(uiStringsDv)` (a complete
+  Dhivehi set with month and day names); date names and the first weekday come from the strings or `LOCALE_ID`,
+  never the browser default. Breaking-ish: the toast host defaults to `bottom-end` (same as before in LTR), inputs
+  that defaulted to English text now default to `undefined`, and an `en-GB` app's calendars start on Monday.
+  Showcase: an RTL · ދިވެހި switch in the top bar mirrors every page; `npm run audit:rtl` measures it in a browser.
 - **Compact density** (0.45.0): `provideUiConfig({ density: 'comfortable' | 'compact' | 'auto' })`, or
   `data-density="compact"` / `"auto"` on `<html>` (or any element, for its subtree; `applyUiDensity()` at runtime).
   Compact makes things smaller, not tighter: `--ui-font-size-sm/md/lg` 12/14/16px (from 13/15/18), the ui-text
@@ -305,6 +313,7 @@ ng test ui --watch=false                    # unit tests, plus the style contrac
 node projects/ui/styles/contrast-check.mjs  # Winter dark/light contrast table
 npm run audit:ui -- --url http://localhost:4200
 npm run audit:chat-wrap -- --url http://localhost:4310   # or --dist <showcase build>
+npm run audit:rtl -- --dist <showcase build>             # RTL / Dhivehi, measured (0.46.0)
 ```
 
 `audit:ui` opens every showcase page in Chromium, in several themes at desktop and phone width,
@@ -318,7 +327,9 @@ and reports what only a browser can measure. Errors cover:
 Warnings cover cut-off text and small tap targets. `audit:chat-wrap` puts the showcase's chat
 bubbles in every common parent (flex columns aligned start/end/center/stretch, a row, a grid; LTR
 and RTL) at 390px and fails if a short word wraps, a bubble leaves its side of the row, or a
-200-character URL escapes 80% of the row. Run `npx playwright-core install chromium`
+200-character URL escapes 80% of the row. `audit:rtl` loads the showcase at 390px in English and with the
+RTL · ދިވެހި switch on and measures drawers, toasts, the chat bubble, switch, alert, select, date picker, map
+controls (also after a runtime flip), the OTP order and that Thaana draws in `--ui-font-default`. Run `npx playwright-core install chromium`
 once, or point `CHROME_PATH` at a Chrome.
 
 ## License

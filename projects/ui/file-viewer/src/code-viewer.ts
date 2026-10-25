@@ -1,4 +1,5 @@
 import { Component, computed, effect, input, signal } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /** `ui-code-viewer` — monospace source view with line numbers (content or fetched src). */
 @Component({
@@ -6,10 +7,11 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   template: `
     <div class="cv">
       <div class="bar"><span class="lang">{{ language() }}</span></div>
-      @if (loading()) { <div class="msg" role="status">Loading…</div> }
+      @if (loading()) { <div class="msg" role="status">{{ strings.loading }}</div> }
       @else if (error()) { <div class="msg err">{{ error() }}</div> }
       @else {
-        <div class="body">
+        <!-- Code and its line numbers read left to right on an RTL page too (0.46.0). -->
+        <div class="body" dir="ltr">
           <div class="gutter" aria-hidden="true">@for (n of lineNumbers(); track n) { <span>{{ n }}</span> }</div>
           <pre class="code"><code>{{ text() }}</code></pre>
         </div>
@@ -33,6 +35,7 @@ import { Component, computed, effect, input, signal } from '@angular/core';
   `,
 })
 export class UiCodeViewer {
+  protected readonly strings = injectUiStrings();
   src = input<string>();
   content = input<string>();
   language = input('text');

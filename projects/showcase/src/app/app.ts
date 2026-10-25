@@ -11,7 +11,7 @@ import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeService } from '@zouriel/ui/theme';
-import { UiButton, UiIconButton } from '@zouriel/ui/button';
+import { UiButton, UiIconButton, UiToggleButton } from '@zouriel/ui/button';
 import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
 import { UiSelect } from '@zouriel/ui/form';
 // Used only inside @defer blocks below (UiSelect and FormsModule too), so each loads in its own chunk instead of the initial bundle.
@@ -24,11 +24,12 @@ import type { UiCommand } from '@zouriel/ui/command-palette';
 import { UiKbd } from '@zouriel/ui/link';
 import { NAV } from './app.routes';
 import { ShowcaseDensity } from './docs/density';
+import { ShowcaseLanguageService } from './docs/language';
 
 @Component({
   selector: 'app-root',
   imports: [
-    HugeiconsIconComponent, FormsModule, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiSideNav, UiSelect, UiDrawer,
+    HugeiconsIconComponent, FormsModule, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiToggleButton, UiSideNav, UiSelect, UiDrawer,
     UiScrollProgress, UiCursor, UiGrain, UiWaveFooter, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
@@ -63,6 +64,9 @@ import { ShowcaseDensity } from './docs/density';
           <ui-icon-button class="menu-btn" label="Menu" variant="ghost" (click)="openNav()"><hugeicons-icon aria-hidden="true" [icon]="icons.menu" [size]="18" [strokeWidth]="1.8" /></ui-icon-button>
           <ui-button variant="ghost" size="sm" (click)="openSearch()" class="cmd" aria-keyshortcuts="Control+K Meta+K"><hugeicons-icon class="cmd-icon" aria-hidden="true" [icon]="icons.search" [size]="16" [strokeWidth]="1.8" /><span class="cmd-label">Search docs</span> <ui-kbd class="hint">{{ shortcut }}</ui-kbd></ui-button>
           <span class="grow"></span>
+          <!-- 0.46.0: every page mirrored right to left with the library's Dhivehi words, switched live. -->
+          <ui-toggle-button class="lang-toggle" size="sm" [pressed]="language.language() === 'dv'" (pressedChange)="language.set($event ? 'dv' : 'en')"
+            ariaLabel="Right to left and Dhivehi"><span class="lang-x">RTL · </span><span lang="dv">ދިވެހި</span></ui-toggle-button>
           <!-- The library select, loaded once the page is idle so the form entry point stays out of the first load;
                until then a box of the same size shows the current theme. -->
           @defer (on idle) {
@@ -79,7 +83,7 @@ import { ShowcaseDensity } from './docs/density';
 
     <!-- Mobile sidebar: loaded the first time the menu is opened (and fetched early when idle). -->
     @defer (when navWanted(); prefetch on idle) {
-      <ui-drawer [(open)]="navOpen" side="left" title="UI Library">
+      <ui-drawer [(open)]="navOpen" side="start" title="UI Library">
         <ui-side-nav label="Documentation" [groups]="nav" [active]="active()" (navigate)="go($event.value)" />
       </ui-drawer>
     }
@@ -93,38 +97,32 @@ import { ShowcaseDensity } from './docs/density';
       <ui-scroll-progress />
       @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
       @if (seaTheme()) { <ui-wave-footer class="page-waves" [layers]="3" [height]="96" [opacity]="0.35" /> }
-      <ui-toast-host position="bottom-right" />
+      <ui-toast-host position="bottom-end" />
       <ui-snackbar-host />
     }
   `,
   styles: `
     :host { display: block; }
-    /* Hidden until focused: the first Tab on any page offers a jump past the sidebar. */
-    .skip { position: fixed; top: var(--ui-space-2); left: var(--ui-space-2); z-index: var(--ui-z-overlay);
-      padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius);
-      background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font-family: var(--ui-font-default);
-      font-size: var(--ui-font-size-sm); font-weight: 600; text-decoration: none; transform: translateY(-200%); }
-    .skip:focus-visible { transform: none; outline: none; box-shadow: var(--ui-focus-ring); }
     .content:focus { outline: none; }
     /* Fixed along the window's bottom edge, behind the page (the canvas background still shows under it). */
     .page-waves { position: fixed; z-index: -1; }
-    .hint { margin-left: var(--ui-space-1); }
+    .hint { margin-inline-start: var(--ui-space-1); }
     .shell { display: flex; min-height: 100vh; }
     .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none; box-sizing: border-box;
       display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-4);
-      border-right: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
+      border-inline-end: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
     .brand { display: flex; align-items: center; gap: var(--ui-space-2); text-decoration: none; color: var(--ui-color-text); }
     .logo { display: block; flex: none; width: 24px; height: 24px; border-radius: 6px; }
     .filter { position: relative; display: flex; align-items: center; }
-    .filter-icon { position: absolute; left: var(--ui-space-3); color: var(--ui-color-text-muted); pointer-events: none; }
-    .filter input { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-3) 0 calc(var(--ui-space-3) + 16px + var(--ui-space-2));
+    .filter-icon { position: absolute; inset-inline-start: var(--ui-space-3); color: var(--ui-color-text-muted); pointer-events: none; }
+    .filter input { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0; padding-inline: calc(var(--ui-space-3) + 16px + var(--ui-space-2)) var(--ui-space-3);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface); color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .filter input::placeholder { color: var(--ui-color-text-muted); }
     .filter input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
-    .filter:has(.filter-clear) input { padding-right: calc(var(--ui-space-1) + 22px + var(--ui-space-1)); }
-    .filter-clear { position: absolute; right: var(--ui-space-1); display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
+    .filter:has(.filter-clear) input { padding-inline-end: calc(var(--ui-space-1) + 22px + var(--ui-space-1)); }
+    .filter-clear { position: absolute; inset-inline-end: var(--ui-space-1); display: grid; place-items: center; width: 22px; height: 22px; padding: 0;
       border: none; border-radius: var(--ui-radius-pill); background: transparent; color: var(--ui-color-text-muted); cursor: pointer; }
     .filter-clear:hover { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .filter-clear:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -164,6 +162,8 @@ export class App {
   protected readonly theme = inject(UiThemeService);
   /** Comfortable / compact / auto (0.45.0), from the top bar. */
   protected readonly density = inject(ShowcaseDensity);
+  /** RTL / Dhivehi (0.46.0), from the top bar. */
+  protected readonly language = inject(ShowcaseLanguageService);
   protected readonly densityLabel = computed(() => this.density.options.find((o) => o.value === this.density.density())?.label ?? '');
   private readonly router = inject(Router);
   private readonly location = inject(Location);

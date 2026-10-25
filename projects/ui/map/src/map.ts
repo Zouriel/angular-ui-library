@@ -7,7 +7,7 @@ import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
 import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
-import { defaultUiStrings, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings } from '@zouriel/ui';
+import { defaultUiStrings, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings, UiDirectionService } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
 /**
@@ -206,7 +206,8 @@ export interface UiMapFitOptions {
  * An app's own button on the map (0.42.1, Flutter `UiMapControl`), drawn in the same stack and style
  * as the "Show my location" button: round, raised, at the bottom-end of the visible part, above the
  * locate button; 48px targets on touch. Pressing it emits `(controlPress)` with the control.
- * For "Show both": `{ id: 'fit', icon: CenterFocusIcon, label: 'Show both' }` and
+ * For "Show both": `{ id: 'fit', icon: CenterFocusIcon, label: strings.mapShowBoth }` (the built-in word, so it
+ * follows the app's language; recompute the array when the language changes) and
  * `(controlPress)="map.fitPoints([me, patient])"`.
  */
 export interface UiMapControl {
@@ -455,7 +456,7 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
       <button type="button" class="ui-map-locate" [attr.data-state]="locating() ? 'locating' : locateOff() ? 'off' : null"
         [attr.aria-label]="strings.mapLocate" [attr.aria-busy]="locating() ? 'true' : null"
         [attr.aria-description]="locateOff() ? strings.mapLocationOff : null"
-        [uiTooltip]="locateOff() ? strings.mapLocationOff : ''" uiTooltipPosition="left" (click)="onLocate()">
+        [uiTooltip]="locateOff() ? strings.mapLocationOff : ''" [uiTooltipPosition]="tooltipSide()" (click)="onLocate()">
         @if (locating()) {
           <span class="ui-map-locate-spin" aria-hidden="true"></span>
         } @else {
@@ -568,6 +569,9 @@ export class UiMap {
   private markerById = new Map<string, Leaflet.Marker>();
   /** The zoom buttons, taken off a preview and put back after. */
   private zoomControl: Leaflet.Control.Zoom | null = null;
+  /** The OSM credits, moved to the other corner when the text direction flips. */
+  private attributionControl: Leaflet.Control.Attribution | null = null;
+  private readonly direction = inject(UiDirectionService);
   private pinMarker: Leaflet.Marker | null = null;
   private tiles: Leaflet.TileLayer | null = null;
   private pulseMarker: Leaflet.Marker | null = null;
@@ -677,6 +681,39 @@ export class UiMap {
       this.areaLabel();
       untracked(() => this.drawArea());
     });
+    // An app's language toggle flips <html dir> at runtime (0.46.0): the zoom buttons, credits,
+    // tooltips, insets and label sides follow without rebuilding the map.
+    effect(() => {
+      this.direction.dir();
+      untracked(() => this.applyDirection());
+    });
+    effect(() => {
+      const zoomIn = this.strings.zoomIn;
+      const zoomOut = this.strings.zoomOut;
+      untracked(() => this.applyZoomTitles(zoomIn, zoomOut));
+    });
+  }
+
+  /** Puts the direction-dependent parts where the current direction wants them. */
+  private applyDirection(): void {
+    if (!this.map) return;
+    const rtl = this.rtl();
+    this.zoomControl?.setPosition(rtl ? 'topright' : 'topleft');
+    this.attributionControl?.setPosition(rtl ? 'bottomleft' : 'bottomright');
+    this.tooltipSide.set(rtl ? 'right' : 'left');
+    this.applyInsets(this.insets());
+    this.placeLabels();
+  }
+
+  /** The zoom buttons' names, in the current language. */
+  private applyZoomTitles(zoomIn: string, zoomOut: string): void {
+    const box = this.zoomControl?.getContainer?.();
+    if (!box) return;
+    for (const [sel, text] of [['.leaflet-control-zoom-in', zoomIn], ['.leaflet-control-zoom-out', zoomOut]] as const) {
+      const a = box.querySelector(sel);
+      a?.setAttribute('title', text);
+      a?.setAttribute('aria-label', text);
+    }
   }
 
   /** No animation on a preview (a picture) or under reduced motion. */
@@ -730,7 +767,9 @@ export class UiMap {
       el.setAttribute('aria-label', this.ariaLabel());
       if (this.pinMode()) el.setAttribute('aria-description', this.strings.placePinAtCentre + ' (Enter)');
       // English credits: laid out LTR in any page direction (map.css isolates them too).
-      L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map).getContainer?.()?.setAttribute('dir', 'ltr');
+      const credits = L.control.attribution({ position: rtl ? 'bottomleft' : 'bottomright', prefix: false }).addTo(map);
+      credits.getContainer?.()?.setAttribute('dir', 'ltr');
+      this.attributionControl = credits;
       // The pulse's own pane: geo-anchored like a marker, under the markers, never hit.
       const pane = map.createPane(PULSE_PANE);
       pane.style.zIndex = '450';
@@ -812,6 +851,7 @@ export class UiMap {
         this.markerLayer = null;
         this.markerById.clear();
         this.zoomControl = null;
+        this.attributionControl = null;
         this.pinMarker = null;
         this.pulseMarker = null;
         this.pulseKey = '';

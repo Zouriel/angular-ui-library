@@ -30,7 +30,8 @@ export type UiSectionLabelVariant = 'auto' | 'bracket' | 'eyebrow';
     .bar { width: 16px; height: 2px; border-radius: var(--ui-radius-pill); background: var(--ui-section-label-bracket); }
     .br, .dot { display: none; }
     .idx { color: var(--ui-color-primary); font-variant-numeric: tabular-nums; }
-    .rule { height: 1px; width: 3rem; margin-left: var(--ui-space-1); background: linear-gradient(90deg, var(--ui-color-border), transparent); }
+    .rule { height: 1px; width: 3rem; margin-inline-start: var(--ui-space-1); background: linear-gradient(90deg, var(--ui-color-border), transparent); }
+    .rule:dir(rtl) { background: linear-gradient(270deg, var(--ui-color-border), transparent); }
 
     /* Bracket: the editorial mono marker, [ 00 · INDEX ]. (auto takes it under Dark Orange.) */
     .sl.bracket, :host-context([data-theme="darkOrange"]) .sl.auto {

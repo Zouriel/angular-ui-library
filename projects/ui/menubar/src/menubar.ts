@@ -1,5 +1,6 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, ElementRef, inject, output, input, signal } from '@angular/core';
+import { uiLogicalKey } from '@zouriel/ui';
 
 export interface UiMenubarItem { label: string; value: string; disabled?: boolean; }
 export interface UiMenubarMenu { label: string; items: UiMenubarItem[]; }
@@ -84,9 +85,10 @@ export class UiMenubar {
 
   protected onTopKey(e: KeyboardEvent, i: number): void {
     const count = this.menus().length;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const key = uiLogicalKey(e); // the next menu is to the left in RTL
+    if (key === 'ArrowRight' || key === 'ArrowLeft') {
       e.preventDefault();
-      const next = (i + (e.key === 'ArrowRight' ? 1 : -1) + count) % count;
+      const next = (i + (key === 'ArrowRight' ? 1 : -1) + count) % count;
       this.topButtons()[next]?.focus();
       if (this.openIndex() !== null) this.openIndex.set(next);
     } else if (e.key === 'ArrowDown') {
@@ -100,10 +102,11 @@ export class UiMenubar {
   protected onPanelKey(e: KeyboardEvent, i: number): void {
     if (e.key === 'Escape') { e.preventDefault(); this.closeTo(i); return; }
     if (e.key === 'Tab') { this.closeTo(i); return; }
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const key = uiLogicalKey(e);
+    if (key === 'ArrowRight' || key === 'ArrowLeft') {
       e.preventDefault();
       const count = this.menus().length;
-      const next = (i + (e.key === 'ArrowRight' ? 1 : -1) + count) % count;
+      const next = (i + (key === 'ArrowRight' ? 1 : -1) + count) % count;
       this.topButtons()[next]?.focus();
       this.openIndex.set(next);
       return;

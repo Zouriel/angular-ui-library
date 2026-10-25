@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import { UiScrollFade } from '@zouriel/ui/behaviors';
 
 export interface UiColumn<T = Record<string, unknown>> {
@@ -52,7 +52,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
             @if (selectable()) {
               <th class="sel" scope="col">
                 <input type="checkbox" [checked]="allSelected()" [indeterminate]="someSelected()"
-                       aria-label="Select all rows" (change)="toggleAll($event)" />
+                       [attr.aria-label]="strings.selectAllRows" (change)="toggleAll($event)" />
               </th>
             }
             @for (col of columns(); track col.key) {
@@ -78,7 +78,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
                    position sits wherever the (often very wide) table puts it, and the whole PAGE
                    grows to contain it. On a phone that reads as a narrow content column beside a
                    full-width fixed bar — a table quietly resizing the document it lives in. -->
-              <th class="acts" scope="col" aria-label="Actions"></th>
+              <th class="acts" scope="col" [attr.aria-label]="strings.actions"></th>
             }
           </tr>
         </thead>
@@ -88,7 +88,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
               @if (selectable()) {
                 <td class="sel">
                   <input type="checkbox" [checked]="current().has(row)"
-                         [attr.aria-label]="'Select row ' + ($index + 1)" (change)="toggleRow(row)" />
+                         [attr.aria-label]="format(strings.selectRow, { n: $index + 1 })" (change)="toggleRow(row)" />
                 </td>
               }
               @for (col of columns(); track col.key) {
@@ -164,6 +164,8 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
   `,
 })
 export class UiTable<T extends Record<string, unknown> = Record<string, unknown>> {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   private config = inject(UI_CONFIG);
   columns = input<UiColumn<T>[]>([]);
   data = input<T[]>([]);

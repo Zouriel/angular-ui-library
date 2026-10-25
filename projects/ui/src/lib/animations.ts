@@ -17,6 +17,9 @@ export const UI_ANIM = {
   slideDown: { enter: 'ui-slide-down-enter', leave: 'ui-slide-down-leave' },
   slideLeft: { enter: 'ui-slide-left-enter', leave: 'ui-slide-left-leave' },
   slideRight: { enter: 'ui-slide-right-enter', leave: 'ui-slide-right-leave' },
+  /** In from / out to the inline start or end edge: mirrors under dir="rtl" (0.46.0). */
+  slideFromStart: { enter: 'ui-slide-from-start-enter', leave: 'ui-slide-from-start-leave' },
+  slideFromEnd: { enter: 'ui-slide-from-end-enter', leave: 'ui-slide-from-end-leave' },
   sheet: { enter: 'ui-sheet-enter', leave: 'ui-sheet-leave' },
   backdrop: { enter: 'ui-backdrop-enter', leave: 'ui-backdrop-leave' },
   window: { enter: 'ui-window-open-enter', leave: 'ui-window-close-leave', dock: 'ui-window-dock' },

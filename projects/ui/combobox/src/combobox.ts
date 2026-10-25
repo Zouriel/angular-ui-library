@@ -34,7 +34,7 @@ export interface UiComboboxOption {
         aria-autocomplete="list"
         [attr.aria-controls]="listId"
         [attr.aria-activedescendant]="open() && filtered().length ? listId + '-' + activeIndex() : null"
-        [attr.placeholder]="placeholder()"
+        [attr.placeholder]="placeholderText()"
         [style.font-family]="selectedFont()"
         [value]="query()"
         [disabled]="disabled()"
@@ -119,7 +119,9 @@ export class UiCombobox implements ControlValueAccessor {
   protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   options = input<UiComboboxOption[]>([]);
-  placeholder = input('Search…');
+  /** Default: the built-in `searchPlaceholder` (Search…), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.searchPlaceholder);
   /** Draw each option, and the chosen value, in the font it names (for font pickers). */
   fontPreview = input(false);
   /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */

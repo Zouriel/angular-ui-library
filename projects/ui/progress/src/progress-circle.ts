@@ -1,5 +1,5 @@
 import { Component, computed, input } from '@angular/core';
-import type { UiStatus } from '@zouriel/ui';
+import { type UiStatus, injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-progress-circle` — the round sibling of ui-progress-bar: determinate when `value` (0–100) is
@@ -11,7 +11,7 @@ import type { UiStatus } from '@zouriel/ui';
   selector: 'ui-progress-circle',
   host: { '[style.--ui-pc-size]': "size() + 'px'" },
   template: `
-    <span class="ring" role="progressbar" [attr.aria-label]="label()"
+    <span class="ring" role="progressbar" [attr.aria-label]="labelText()"
           [attr.aria-valuenow]="pct()" [attr.aria-valuemin]="pct() === null ? null : 0" [attr.aria-valuemax]="pct() === null ? null : 100"
           [attr.data-tone]="tone()" [class.spin]="pct() === null">
       <svg [attr.viewBox]="'0 0 ' + size() + ' ' + size()" aria-hidden="true">
@@ -42,6 +42,7 @@ import type { UiStatus } from '@zouriel/ui';
   `,
 })
 export class UiProgressCircle {
+  protected readonly strings = injectUiStrings();
   /** 0–100, or null for an indeterminate turning arc. */
   value = input<number | null>(null);
   /** Diameter in px. */
@@ -49,7 +50,9 @@ export class UiProgressCircle {
   strokeWidth = input(4);
   tone = input<UiStatus>('primary');
   /** Accessible name. */
-  label = input('Progress');
+  /** Default: the built-in `progress` (Progress), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.progress);
   /** Write the percentage in the middle (when nothing is projected there). */
   showValue = input(false);
 

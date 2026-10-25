@@ -6,8 +6,8 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import Calendar01Icon from '@hugeicons/core-free-icons/Calendar01Icon';
-import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
-import { formatIsoDate, isoMonth, MONTHS, MONTHS_SHORT, WEEKDAYS } from './date-names';
+import { UI_CONFIG, type UiSize, injectUiStrings, uiFormatString, uiIsRtl } from '@zouriel/ui';
+import { injectUiDateNames, isoMonth, uiLeadingBlanks } from './date-names';
 
 interface DayCell { day: number; iso: string; label: string; today: boolean; disabled: boolean; }
 
@@ -38,7 +38,7 @@ function iso(y: number, m: number, d: number): string {
         readonly
         aria-haspopup="dialog"
         [attr.aria-expanded]="open()"
-        [attr.placeholder]="placeholder()"
+        [attr.placeholder]="placeholderText()"
         [value]="display()"
         [disabled]="disabled()"
         (click)="toggle()"
@@ -74,7 +74,7 @@ function iso(y: number, m: number, d: number): string {
 
         @if (mode() === 'days') {
           <div class="weekdays">
-            @for (w of weekdays; track w) { <span class="wd">{{ w }}</span> }
+            @for (w of names().gridWeekdays; track $index) { <span class="wd" [attr.title]="names().gridWeekdaysLong[$index]">{{ w }}</span> }
           </div>
           <div class="grid">
             @for (blank of leading(); track $index) { <span class="cell empty"></span> }
@@ -95,8 +95,8 @@ function iso(y: number, m: number, d: number): string {
             }
           </div>
         } @else if (mode() === 'months') {
-          <div class="mgrid" role="group" [attr.aria-label]="'Months of ' + view()[0]">
-            @for (mo of months; track mo.index) {
+          <div class="mgrid" role="group" [attr.aria-label]="format(strings.monthsOf, { n: view()[0] })">
+            @for (mo of months(); track mo.index) {
               <button
                 type="button"
                 class="mcell"
@@ -110,7 +110,7 @@ function iso(y: number, m: number, d: number): string {
             }
           </div>
         } @else {
-          <div class="mgrid" role="group" [attr.aria-label]="'Years ' + yearRange()">
+          <div class="mgrid" role="group" [attr.aria-label]="format(strings.yearsRange, { n: yearRange() })">
             @for (yr of years(); track yr) {
               <button
                 type="button"
@@ -131,7 +131,7 @@ function iso(y: number, m: number, d: number): string {
     :host { display: block; }
     .wrap { position: relative; }
     .ui-date { width: 100%; box-sizing: border-box; height: var(--ui-size-md);
-      padding: 0 calc(var(--ui-space-3) + 16px + var(--ui-space-2)) 0 var(--ui-space-3); cursor: pointer;
+      padding-block: 0; padding-inline: var(--ui-space-3) calc(var(--ui-space-3) + 16px + var(--ui-space-2)); cursor: pointer;
       background: var(--ui-color-surface); color: var(--ui-color-text);
       border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
@@ -145,7 +145,7 @@ function iso(y: number, m: number, d: number): string {
     .wrap[data-size="lg"] .ui-date { height: var(--ui-size-lg); font-size: var(--ui-font-size-lg); }
     /* Flex so the drawn icon centres in the box the glyph used to sit in; currentColor so it
        follows the field's own text colour rather than the vendor's emoji palette. */
-    .cal { position: absolute; right: var(--ui-space-3); top: 50%; transform: translateY(-50%);
+    .cal { position: absolute; inset-inline-end: var(--ui-space-3); top: 50%; transform: translateY(-50%);
       pointer-events: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
     .cal-panel { padding: var(--ui-space-3); line-height: 1.35;
       background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius);
@@ -165,6 +165,8 @@ function iso(y: number, m: number, d: number): string {
     .nav:hover { background: var(--ui-color-elevated-hover); color: var(--ui-color-text); }
     .nav:active { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Previous / next arrows point the way the calendar reads: mirrored in RTL. */
+    .nav:dir(rtl) hugeicons-icon { transform: scaleX(-1); }
     .mgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-1); }
     .mcell { border: none; background: transparent; color: var(--ui-color-text); font: inherit;
       font-size: var(--ui-font-size-sm); padding: var(--ui-space-2) 0; border-radius: var(--ui-radius-xs); cursor: pointer;
@@ -197,7 +199,12 @@ export class UiDatePicker implements ControlValueAccessor {
   protected readonly prevIcon = ArrowLeft01Icon;
   protected readonly nextIcon = ArrowRight01Icon;
   private config = inject(UI_CONFIG);
-  placeholder = input('Select a date');
+  /** Default: the built-in `datePlaceholder` ("Select a date"). */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.datePlaceholder);
+  /** Month and day names, first weekday (0.46.0): built-in strings, then `LOCALE_ID`. */
+  protected readonly names = injectUiDateNames();
+  protected readonly format = uiFormatString;
   size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
   /** Earliest selectable day, as ISO `YYYY-MM-DD`. Days before it are shown but cannot be picked. */
@@ -212,8 +219,7 @@ export class UiDatePicker implements ControlValueAccessor {
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
   private readonly injector = inject(Injector);
   protected readonly disabled = signal(false);
-  protected readonly weekdays = WEEKDAYS;
-  protected readonly months = MONTHS_SHORT.map((short, index) => ({ index, short, long: MONTHS[index] }));
+  protected readonly months = computed(() => this.names().monthsShort.map((short, index) => ({ index, short, long: this.names().months[index] })));
   /** The month (0-11) holding the month grid's single tab stop. */
   protected readonly gridMonth = signal(0);
   /** The year holding the year grid's single tab stop; it also decides which 12-year page shows. */
@@ -234,9 +240,9 @@ export class UiDatePicker implements ControlValueAccessor {
   protected readonly display = computed(() => {
     const v = this.value();
     if (!v) return '';
-    return formatIsoDate(v);
+    return this.names().formatIso(v);
   });
-  protected readonly monthName = computed(() => MONTHS[this.view()[1]]);
+  protected readonly monthName = computed(() => this.names().months[this.view()[1]]);
   // Start year of the current 12-year page shown in the year grid.
   private readonly yearPageStart = computed(() => Math.floor(this.gridYear() / 12) * 12);
   protected readonly years = computed(() => {
@@ -245,12 +251,12 @@ export class UiDatePicker implements ControlValueAccessor {
   });
   protected readonly yearRange = computed(() => `${this.yearPageStart()} – ${this.yearPageStart() + 11}`);
   protected readonly prevLabel = computed(() =>
-    this.mode() === 'days' ? 'Previous month' : this.mode() === 'months' ? 'Previous year' : 'Previous years');
+    this.mode() === 'days' ? this.strings.previousMonth : this.mode() === 'months' ? this.strings.previousYear : this.strings.previousYears);
   protected readonly nextLabel = computed(() =>
-    this.mode() === 'days' ? 'Next month' : this.mode() === 'months' ? 'Next year' : 'Next years');
+    this.mode() === 'days' ? this.strings.nextMonth : this.mode() === 'months' ? this.strings.nextYear : this.strings.nextYears);
   protected readonly leading = computed(() => {
     const [y, m] = this.view();
-    return Array.from({ length: new Date(y, m, 1).getDay() });
+    return Array.from({ length: uiLeadingBlanks(y, m, this.names().firstDay) });
   });
   protected readonly days = computed<DayCell[]>(() => {
     const [y, m] = this.view();
@@ -263,7 +269,7 @@ export class UiDatePicker implements ControlValueAccessor {
       const min = this.min();
       const max = this.max();
       const disabled = (!!min && cellIso < min) || (!!max && cellIso > max);
-      return { day: d, iso: cellIso, label: formatIsoDate(cellIso), today: cellIso === todayIso, disabled };
+      return { day: d, iso: cellIso, label: this.names().formatIso(cellIso), today: cellIso === todayIso, disabled };
     });
   });
 
@@ -345,8 +351,10 @@ export class UiDatePicker implements ControlValueAccessor {
     const [y, m, d] = isoDate.split('-').map(Number);
     const at = (yy: number, mm: number, dd: number) => { const t = new Date(yy, mm, dd); return iso(t.getFullYear(), t.getMonth(), t.getDate()); };
     const daysIn = new Date(y, m, 0).getDate();
+    // Left and right move the way the grid reads: in RTL the next day is to the left.
+    const fwd = uiIsRtl(e.target as Element) ? -1 : 1;
     const moves: Record<string, () => string> = {
-      ArrowLeft: () => at(y, m - 1, d - 1), ArrowRight: () => at(y, m - 1, d + 1),
+      ArrowLeft: () => at(y, m - 1, d - fwd), ArrowRight: () => at(y, m - 1, d + fwd),
       ArrowUp: () => at(y, m - 1, d - 7), ArrowDown: () => at(y, m - 1, d + 7),
       Home: () => at(y, m - 1, 1), End: () => at(y, m - 1, daysIn),
       PageUp: () => at(y, m - 2, Math.min(d, new Date(y, m - 1, 0).getDate())),
@@ -398,7 +406,8 @@ export class UiDatePicker implements ControlValueAccessor {
 
   /** Month grid keys: 3 columns within the year shown; PageUp/PageDown change the year. */
   protected onMonthKey(e: KeyboardEvent, monthIndex: number): void {
-    const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3 };
+    const fwd = uiIsRtl(e.target as Element) ? -1 : 1;
+    const moves: Record<string, number> = { ArrowLeft: -fwd, ArrowRight: fwd, ArrowUp: -3, ArrowDown: 3 };
     let next: number;
     // A move off the grid (e.g. Up from the first row) stays put rather than jumping sideways.
     if (e.key in moves) { const n = monthIndex + moves[e.key]; next = n < 0 || n > 11 ? monthIndex : n; }
@@ -418,7 +427,8 @@ export class UiDatePicker implements ControlValueAccessor {
   /** Year grid keys: 3 columns; moving past either end of the page turns the page. */
   protected onYearKey(e: KeyboardEvent, year: number): void {
     const start = this.yearPageStart();
-    const moves: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -3, ArrowDown: 3, PageUp: -12, PageDown: 12 };
+    const fwd = uiIsRtl(e.target as Element) ? -1 : 1;
+    const moves: Record<string, number> = { ArrowLeft: -fwd, ArrowRight: fwd, ArrowUp: -3, ArrowDown: 3, PageUp: -12, PageDown: 12 };
     let next: number;
     if (e.key in moves) next = year + moves[e.key];
     else if (e.key === 'Home') next = start;

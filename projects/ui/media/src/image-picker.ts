@@ -2,6 +2,7 @@ import { Component, DestroyRef, ElementRef, afterNextRender, effect, inject, inp
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Image01Icon from '@hugeicons/core-free-icons/Image01Icon';
 import { UiSpinner } from '@zouriel/ui/spinner';
+import { injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 export interface UiImagePickerItem {
   id: string;
@@ -43,14 +44,14 @@ export interface UiImagePickerItem {
             }
             @if (item.badge) { <span class="badge">{{ item.badge }}</span> }
             @if (item.disabled && item.hint) { <span class="reason" aria-hidden="true">{{ item.hint }}</span> }
-            @if (busyId() === item.id) { <span class="veil"><ui-spinner size="sm" [label]="'Adding ' + item.label" /></span> }
+            @if (busyId() === item.id) { <span class="veil"><ui-spinner size="sm" [label]="format(strings.adding, { label: item.label })" /></span> }
           </button>
           @if (captions()) { <span class="caption" aria-hidden="true">{{ item.label }}</span> }
         </div>
       }
     </div>
     @if (loading()) {
-      <div class="status"><ui-spinner size="sm" label="Loading…" /></div>
+      <div class="status"><ui-spinner size="sm" [label]="strings.loading" /></div>
     } @else if (!items().length && emptyText()) {
       <p class="status empty">{{ emptyText() }}</p>
     }
@@ -76,7 +77,7 @@ export interface UiImagePickerItem {
        touch): the art dims, the reason sits on a strip along the bottom at full strength. */
     .tile.has-reason { opacity: 1; }
     .tile.has-reason img, .tile.has-reason .fallback { opacity: .45; }
-    .reason { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px var(--ui-space-1);
+    .reason { position: absolute; inset-inline: 0; bottom: 0; padding: 2px var(--ui-space-1);
       background: color-mix(in srgb, var(--ui-color-surface-raised) 88%, transparent); color: var(--ui-color-text);
       font-family: var(--ui-font-default); font-size: 11px; font-weight: 500; line-height: 16px; text-align: center;
       display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
@@ -84,7 +85,7 @@ export interface UiImagePickerItem {
     .fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--ui-space-1); height: 100%;
       color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); line-height: 1.2; text-align: center; overflow: hidden; }
     .fallback span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .badge { position: absolute; top: var(--ui-space-1); right: var(--ui-space-1); padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill);
+    .badge { position: absolute; top: var(--ui-space-1); inset-inline-end: var(--ui-space-1); padding: 0 var(--ui-space-1); border-radius: var(--ui-radius-pill);
       background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
       font-family: var(--ui-font-default); font-size: 11px; font-weight: 600; line-height: 16px; }
     .veil { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -96,6 +97,8 @@ export interface UiImagePickerItem {
   `,
 })
 export class UiImagePicker {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   private readonly destroyRef = inject(DestroyRef);
 
   items = input<UiImagePickerItem[]>([]);

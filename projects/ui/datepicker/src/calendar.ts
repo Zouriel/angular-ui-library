@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
-import { formatIsoDate, isoMonth, monthYear, WEEKDAYS } from './date-names';
+import { injectUiDateNames, isoMonth, uiLeadingBlanks } from './date-names';
 import { injectUiStrings } from '@zouriel/ui';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -19,7 +19,7 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
         <span class="month">{{ heading() }}</span>
         <button type="button" class="nav" [attr.aria-label]="strings.nextMonth" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
       </div>
-      <div class="weekdays">@for (w of weekdays; track w) { <span>{{ w }}</span> }</div>
+      <div class="weekdays">@for (w of names().gridWeekdays; track $index) { <span [attr.title]="names().gridWeekdaysLong[$index]">{{ w }}</span> }</div>
       <div class="grid">
         @for (b of leading(); track $index) { <span class="cell empty"></span> }
         @for (c of days(); track c.iso) {
@@ -42,6 +42,8 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
     .nav:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Previous / next arrows point the way the calendar reads: mirrored in RTL. */
+    .nav:dir(rtl) hugeicons-icon { transform: scaleX(-1); }
     .nav:disabled { opacity: .5; cursor: not-allowed; }
     /* 32px days, columns touching (a range band runs unbroken), 2px between weeks: as in Flutter. */
     .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px 0; }
@@ -60,7 +62,8 @@ const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(
 })
 export class UiCalendar implements ControlValueAccessor {
   protected readonly strings = injectUiStrings();
-  protected readonly weekdays = WEEKDAYS;
+  /** Month and day names, first weekday (0.46.0): built-in strings, then `LOCALE_ID`. */
+  protected readonly names = injectUiDateNames();
   protected readonly prevIcon = ArrowLeft01Icon;
   protected readonly nextIcon = ArrowRight01Icon;
   /** Earliest selectable day, as ISO `YYYY-MM-DD`. */
@@ -72,8 +75,8 @@ export class UiCalendar implements ControlValueAccessor {
   protected readonly disabled = signal(false);
   protected readonly view = signal<[number, number]>([new Date().getFullYear(), new Date().getMonth()]);
 
-  protected readonly heading = computed(() => monthYear(this.view()[0], this.view()[1]));
-  protected readonly leading = computed(() => Array.from({ length: new Date(this.view()[0], this.view()[1], 1).getDay() }));
+  protected readonly heading = computed(() => this.names().monthYear(this.view()[0], this.view()[1]));
+  protected readonly leading = computed(() => Array.from({ length: uiLeadingBlanks(this.view()[0], this.view()[1], this.names().firstDay) }));
   protected readonly days = computed(() => {
     const [y, m] = this.view();
     const count = new Date(y, m + 1, 0).getDate();
@@ -83,7 +86,7 @@ export class UiCalendar implements ControlValueAccessor {
     const max = this.max();
     return Array.from({ length: count }, (_, i) => {
       const cellIso = iso(y, m, i + 1);
-      return { day: i + 1, iso: cellIso, label: formatIsoDate(cellIso), today: cellIso === todayIso, blocked: (!!min && cellIso < min) || (!!max && cellIso > max) };
+      return { day: i + 1, iso: cellIso, label: this.names().formatIso(cellIso), today: cellIso === todayIso, blocked: (!!min && cellIso < min) || (!!max && cellIso > max) };
     });
   });
 

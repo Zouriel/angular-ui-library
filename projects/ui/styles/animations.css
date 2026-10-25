@@ -14,6 +14,12 @@
  * works on any element to switch motion off for one subtree.
  */
 
+/* Inline direction sign (0.46.0): 1 in LTR, -1 under dir="rtl". Slides that follow the text
+   direction (drawer start/end, toast start/end, ui-slide-from-start/end, carousels, shimmer) multiply
+   their horizontal travel by it, so they mirror at once when an app flips <html dir> at runtime. */
+:root, [dir="ltr"] { --ui-inline-sign: 1; }
+[dir="rtl"] { --ui-inline-sign: -1; }
+
 /* ---- Keyframes ------------------------------------------------------- */
 @keyframes ui-fade-in    { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ui-fade-out   { from { opacity: 1; } to { opacity: 0; } }
@@ -30,6 +36,11 @@
 @keyframes ui-slide-down-out  { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
 @keyframes ui-slide-left-out  { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(8px); } }
 @keyframes ui-slide-right-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-8px); } }
+/* Logical slides (0.46.0): in from / out to the inline start or end edge. */
+@keyframes ui-slide-from-start-in  { from { opacity: 0; transform: translateX(calc(-8px * var(--ui-inline-sign, 1))); } to { opacity: 1; transform: translateX(0); } }
+@keyframes ui-slide-from-end-in    { from { opacity: 0; transform: translateX(calc(8px * var(--ui-inline-sign, 1))); }  to { opacity: 1; transform: translateX(0); } }
+@keyframes ui-slide-from-start-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(calc(-8px * var(--ui-inline-sign, 1))); } }
+@keyframes ui-slide-from-end-out   { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(calc(8px * var(--ui-inline-sign, 1))); } }
 
 /* Full-distance slides for drawers/sheets — set --ui-slide-from per edge */
 @keyframes ui-sheet-in  { from { transform: var(--ui-slide-from, translateX(-100%)); } to { transform: translateX(0); } }
@@ -57,6 +68,10 @@
 .ui-slide-down-leave  { animation: ui-slide-down-out  var(--ui-motion-fast) var(--ui-ease-accelerate) both; }
 .ui-slide-left-leave  { animation: ui-slide-left-out  var(--ui-motion-fast) var(--ui-ease-accelerate) both; }
 .ui-slide-right-leave { animation: ui-slide-right-out var(--ui-motion-fast) var(--ui-ease-accelerate) both; }
+.ui-slide-from-start-enter { animation: ui-slide-from-start-in  var(--ui-motion-base) var(--ui-ease-decelerate) both; }
+.ui-slide-from-end-enter   { animation: ui-slide-from-end-in    var(--ui-motion-base) var(--ui-ease-decelerate) both; }
+.ui-slide-from-start-leave { animation: ui-slide-from-start-out var(--ui-motion-fast) var(--ui-ease-accelerate) both; }
+.ui-slide-from-end-leave   { animation: ui-slide-from-end-out   var(--ui-motion-fast) var(--ui-ease-accelerate) both; }
 
 .ui-sheet-enter  { animation: ui-sheet-in  var(--ui-motion-slow) var(--ui-ease-decelerate) both; }
 .ui-sheet-leave  { animation: ui-sheet-out var(--ui-motion-base) var(--ui-ease-accelerate) both; }
@@ -70,7 +85,7 @@
 /* Something on its way out must not catch clicks meant for what's underneath
    (a closing modal's backdrop otherwise swallows the next click). */
 .ui-fade-leave, .ui-scale-leave, .ui-slide-up-leave, .ui-slide-down-leave, .ui-slide-left-leave,
-.ui-slide-right-leave, .ui-sheet-leave, .ui-backdrop-leave, .ui-window-close-leave { pointer-events: none; }
+.ui-slide-right-leave, .ui-slide-from-start-leave, .ui-slide-from-end-leave, .ui-sheet-leave, .ui-backdrop-leave, .ui-window-close-leave { pointer-events: none; }
 .ui-window-dock { animation: ui-window-dock var(--ui-motion-base) var(--ui-ease-decelerate) both; }
 
 /* ---- Slide transitions (uiSlideTransition / uiSlideRouteTransition) ----------------------------
@@ -111,7 +126,7 @@ html[data-ui-slide="out-right"]::view-transition-new(ui-slide) { animation: ui-v
    overshoots. A full-screen sheet sliding in is the movement most likely to bother people. */
 @media (prefers-reduced-motion: reduce) {
   .ui-scale-enter, .ui-slide-up-enter, .ui-slide-down-enter, .ui-slide-left-enter, .ui-slide-right-enter,
-  .ui-sheet-enter, .ui-window-open-enter { animation-name: ui-fade-in; animation-timing-function: var(--ui-ease-decelerate); }
+  .ui-slide-from-start-enter, .ui-slide-from-end-enter, .ui-sheet-enter, .ui-window-open-enter { animation-name: ui-fade-in; animation-timing-function: var(--ui-ease-decelerate); }
   .ui-scale-leave, .ui-slide-up-leave, .ui-slide-down-leave, .ui-slide-left-leave, .ui-slide-right-leave,
-  .ui-sheet-leave, .ui-window-close-leave { animation-name: ui-fade-out; }
+  .ui-slide-from-start-leave, .ui-slide-from-end-leave, .ui-sheet-leave, .ui-window-close-leave { animation-name: ui-fade-out; }
 }

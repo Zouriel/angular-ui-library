@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-meter` — a measurement against a budget, e.g. file size against a limit. Unlike a progress bar
@@ -13,9 +14,9 @@ import { Component, computed, input } from '@angular/core';
       <span class="value" [attr.data-tone]="tone()">{{ valueText() || value() + ' / ' + max() }}@if (statusText()) { <span class="status"> · {{ statusText() }}</span> }</span>
     </div>
     <div class="track" role="meter" [attr.aria-valuenow]="value()" [attr.aria-valuemin]="0" [attr.aria-valuemax]="max()"
-      [attr.aria-valuetext]="(valueText() || value()) + (statusText() ? ', ' + statusText() : '')" [attr.aria-label]="label() || 'Meter'">
+      [attr.aria-valuetext]="(valueText() || value()) + (statusText() ? ', ' + statusText() : '')" [attr.aria-label]="label() || strings.meter">
       <div class="fill" [attr.data-tone]="tone()" [style.width.%]="pct()"></div>
-      @if (warnAt() !== null) { <span class="tick" [style.left.%]="tickPct(warnAt()!)"></span> }
+      @if (warnAt() !== null) { <span class="tick" [style.inset-inline-start.%]="tickPct(warnAt()!)"></span> }
     </div>
   `,
   styles: `
@@ -30,7 +31,7 @@ import { Component, computed, input } from '@angular/core';
     .fill { height: 100%; border-radius: inherit; background: var(--ui-color-success); transition: width var(--ui-motion-base) var(--ui-ease-standard); }
     .fill[data-tone="warning"] { background: var(--ui-color-warning); }
     .fill[data-tone="danger"] { background: var(--ui-color-danger); }
-    .tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ui-color-surface); opacity: .8; }
+    .tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-inline-start: -1px; background: var(--ui-color-surface); opacity: .8; }
   `,
 })
 export class UiMeter {
@@ -43,8 +44,10 @@ export class UiMeter {
   label = input('');
   /** How the value is written, e.g. "212 KB of 800 KB". */
   valueText = input('');
-  warnText = input('Getting large');
-  dangerText = input('Over the limit');
+  /** Default: the built-in `meterWarn` / `meterDanger`, which follow the app's language. */
+  warnText = input<string | undefined>(undefined);
+  dangerText = input<string | undefined>(undefined);
+  protected readonly strings = injectUiStrings();
 
   protected readonly pct = computed(() => Math.max(0, Math.min(100, (this.value() / (this.max() || 1)) * 100)));
   protected tickPct(at: number): number { return Math.max(0, Math.min(100, (at / (this.max() || 1)) * 100)); }
@@ -55,5 +58,5 @@ export class UiMeter {
     return warn !== null && this.value() > warn ? 'warning' : 'success';
   });
   protected readonly statusText = computed(() =>
-    this.tone() === 'danger' ? this.dangerText() : this.tone() === 'warning' ? this.warnText() : '');
+    this.tone() === 'danger' ? (this.dangerText() ?? this.strings.meterDanger) : this.tone() === 'warning' ? (this.warnText() ?? this.strings.meterWarn) : '');
 }

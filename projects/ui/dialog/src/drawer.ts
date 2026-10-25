@@ -5,7 +5,9 @@ import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui'
 import { UiScrollFade } from '@zouriel/ui/behaviors';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
-export type UiDrawerSide = 'left' | 'right' | 'top' | 'bottom';
+/** Where a drawer sits. `start` / `end` (0.46.0) follow the text direction: start is the left in LTR and the
+ *  right in RTL (`<html dir="rtl">`), and the drawer slides in from there; left and right stay put. */
+export type UiDrawerSide = 'left' | 'right' | 'start' | 'end' | 'top' | 'bottom';
 
 let drawerSeq = 0;
 
@@ -88,6 +90,9 @@ let drawerSeq = 0;
     .focus-start { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; outline: none; }
     .panel[data-side="left"]   { top: 0; left: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0 var(--ui-radius-lg) var(--ui-radius-lg) 0; }
     .panel[data-side="right"]  { top: 0; right: 0; bottom: 0; width: min(360px, 90vw); border-radius: var(--ui-radius-lg) 0 0 var(--ui-radius-lg); }
+    .panel[data-side="start"]  { top: 0; inset-inline-start: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0; border-start-end-radius: var(--ui-radius-lg); border-end-end-radius: var(--ui-radius-lg); }
+    .panel[data-side="end"]    { top: 0; inset-inline-end: 0; bottom: 0; width: min(360px, 90vw); border-radius: 0; border-start-start-radius: var(--ui-radius-lg); border-end-start-radius: var(--ui-radius-lg); }
+    .panel.no-radius:is([data-side="start"], [data-side="end"]) { border-radius: 0; }
     .panel[data-side="top"]    { top: 0; left: 0; right: 0; height: min(320px, 80dvh); padding-top: env(safe-area-inset-top); box-sizing: border-box; border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg); }
     /* On the keyboard while it's up: the drawer sets how far its top edge is from the layout viewport's
        bottom and the visible height (see the class docs). */
@@ -106,7 +111,7 @@ let drawerSeq = 0;
     .dh:empty, .df:empty { display: none; }
     /* Left and right drawers run the full height: the footer keeps clear of the home indicator
        (a bottom drawer already pads the whole panel). */
-    .panel[data-side="left"] .df, .panel[data-side="right"] .df { padding-bottom: calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px)); }
+    .panel:is([data-side="left"], [data-side="right"], [data-side="start"], [data-side="end"]) .df { padding-bottom: calc(var(--ui-space-3) + env(safe-area-inset-bottom, 0px)); }
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
@@ -151,6 +156,9 @@ export class UiDrawer {
     switch (this.side()) {
       case 'left': return 'translateX(-100%)';
       case 'right': return 'translateX(100%)';
+      // --ui-inline-sign is -1 under dir="rtl" (animations.css), so these follow a runtime direction change too.
+      case 'start': return 'translateX(calc(-100% * var(--ui-inline-sign, 1)))';
+      case 'end': return 'translateX(calc(100% * var(--ui-inline-sign, 1)))';
       case 'top': return 'translateY(-100%)';
       case 'bottom': return 'translateY(100%)';
     }

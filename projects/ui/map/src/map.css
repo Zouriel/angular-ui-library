@@ -43,6 +43,8 @@
   background: color-mix(in srgb, var(--ui-color-surface-raised) 85%, transparent); color: var(--ui-color-text-muted);
   font-size: 11px; padding: 2px var(--ui-space-1); border-radius: var(--ui-radius-xs) 0 0 0;
 }
+/* In RTL the credits sit in the bottom-left corner: the rounded corner faces into the map there. */
+.ui-map .leaflet-left .leaflet-control-attribution { border-radius: 0 var(--ui-radius-xs) 0 0; }
 .ui-map .leaflet-control-attribution a { color: var(--ui-color-primary); }
 
 /* Markers: a tone dot with an optional label pill beside it, anchored on the dot. */

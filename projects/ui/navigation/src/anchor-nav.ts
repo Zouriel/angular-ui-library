@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Component, NgZone, OnDestroy, OnInit, inject, input, signal } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiAnchorItem {
   id: string;
@@ -13,7 +14,7 @@ export interface UiAnchorItem {
 @Component({
   selector: 'ui-anchor-nav',
   template: `
-    <nav class="an" aria-label="On this page">
+    <nav class="an" [attr.aria-label]="strings.onThisPage">
       <ul>
         @for (item of items(); track item.id) {
           <li>
@@ -25,18 +26,19 @@ export interface UiAnchorItem {
   `,
   styles: `
     :host { display: block; }
-    ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid var(--ui-color-border); }
-    .link { display: block; width: 100%; text-align: left; padding: var(--ui-space-1) var(--ui-space-3);
-      background: none; border: none; border-left: 2px solid transparent; margin-left: -1px; cursor: pointer;
+    ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; border-inline-start: 1px solid var(--ui-color-border); }
+    .link { display: block; width: 100%; text-align: start; padding: var(--ui-space-1) var(--ui-space-3);
+      background: none; border: none; border-inline-start: 2px solid transparent; margin-inline-start: -1px; cursor: pointer;
       font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-text-muted);
       transition: color var(--ui-motion-fast) var(--ui-ease-standard); }
     .link:hover { color: var(--ui-color-text); }
     @media (pointer: coarse) { .link { min-height: var(--ui-size-touch); } }
-    .link.active { color: var(--ui-color-primary); border-left-color: var(--ui-color-primary); }
+    .link.active { color: var(--ui-color-primary); border-inline-start-color: var(--ui-color-primary); }
     .link:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
   `,
 })
 export class UiAnchorNav implements OnInit, OnDestroy {
+  protected readonly strings = injectUiStrings();
   private doc = inject(DOCUMENT);
   private zone = inject(NgZone);
   items = input<UiAnchorItem[]>([]);

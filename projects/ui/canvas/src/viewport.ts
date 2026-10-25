@@ -3,6 +3,7 @@ import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import FullScreenIcon from '@hugeicons/core-free-icons/FullScreenIcon';
 import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
+import { injectUiStrings } from '@zouriel/ui';
 
 export interface UiViewportView {
   /** Screen pixels the world is shifted by. */
@@ -51,10 +52,10 @@ export interface UiMinimapItem {
     </div>
     @if (controls()) {
       <div class="controls" data-viewport-no-pan>
-        <button type="button" (click)="zoomBy(1 / 1.2)" aria-label="Zoom out" title="Zoom out (−)"><hugeicons-icon aria-hidden="true" [icon]="icons.out" [size]="15" [strokeWidth]="1.8" /></button>
+        <button type="button" (click)="zoomBy(1 / 1.2)" [attr.aria-label]="strings.zoomOut" [attr.title]="strings.zoomOut + ' (−)'"><hugeicons-icon aria-hidden="true" [icon]="icons.out" [size]="15" [strokeWidth]="1.8" /></button>
         <span class="pct">{{ pct() }}%</span>
-        <button type="button" (click)="zoomBy(1.2)" aria-label="Zoom in" title="Zoom in (+)"><hugeicons-icon aria-hidden="true" [icon]="icons.in" [size]="15" [strokeWidth]="1.8" /></button>
-        <button type="button" (click)="fit(true)" aria-label="Fit to view" title="Fit to view (0)"><hugeicons-icon aria-hidden="true" [icon]="icons.fit" [size]="15" [strokeWidth]="1.8" /></button>
+        <button type="button" (click)="zoomBy(1.2)" [attr.aria-label]="strings.zoomIn" [attr.title]="strings.zoomIn + ' (+)'"><hugeicons-icon aria-hidden="true" [icon]="icons.in" [size]="15" [strokeWidth]="1.8" /></button>
+        <button type="button" (click)="fit(true)" [attr.aria-label]="strings.fitToView" [attr.title]="strings.fitToView + ' (0)'"><hugeicons-icon aria-hidden="true" [icon]="icons.fit" [size]="15" [strokeWidth]="1.8" /></button>
       </div>
     }
     @if (minimap() && minimapItems().length && roomy()) {
@@ -91,6 +92,7 @@ export interface UiMinimapItem {
   `,
 })
 export class UiCanvasViewport {
+  protected readonly strings = injectUiStrings();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly contentWidth = input(800);
   readonly contentHeight = input(600);

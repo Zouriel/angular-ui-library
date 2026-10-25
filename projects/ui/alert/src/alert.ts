@@ -34,7 +34,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .ui-alert {
       display: flex; gap: var(--ui-space-2); align-items: flex-start;
       padding: var(--ui-space-2) var(--ui-space-3);
-      border: 1px solid var(--ui-color-border); border-left-width: 3px;
+      border: 1px solid var(--ui-color-border); border-inline-start-width: 3px;
       border-radius: var(--ui-radius);
       background: var(--ui-color-surface);
       color: var(--ui-color-text); font-family: var(--ui-font-default);
@@ -50,10 +50,10 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .title { display: block; margin-bottom: 2px; letter-spacing: var(--ui-tracking-tight); }
     .body { color: var(--ui-color-text-muted); }
     .ui-alert { --ui-color-icon: currentColor; }
-    .ui-alert[data-tone="info"]    { border-left-color: var(--ui-color-info); }
-    .ui-alert[data-tone="success"] { border-left-color: var(--ui-color-success); }
-    .ui-alert[data-tone="warning"] { border-left-color: var(--ui-color-warning); }
-    .ui-alert[data-tone="danger"]  { border-left-color: var(--ui-color-danger); }
+    .ui-alert[data-tone="info"]    { border-inline-start-color: var(--ui-color-info); }
+    .ui-alert[data-tone="success"] { border-inline-start-color: var(--ui-color-success); }
+    .ui-alert[data-tone="warning"] { border-inline-start-color: var(--ui-color-warning); }
+    .ui-alert[data-tone="danger"]  { border-inline-start-color: var(--ui-color-danger); }
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;

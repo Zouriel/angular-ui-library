@@ -1,5 +1,6 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { Component, ElementRef, computed, input, signal, viewChild } from '@angular/core';
+import { injectUiStrings, uiIsRtl } from '@zouriel/ui';
 
 export interface UiGalleryImage {
   src: string;
@@ -17,19 +18,19 @@ export interface UiGalleryImage {
   template: `
     <div class="grid" [style.--ui-gallery-min]="minThumb()">
       @for (img of images(); track $index) {
-        <button type="button" class="thumb" (click)="openAt($index)" [attr.aria-label]="img.alt || 'Open image'">
+        <button type="button" class="thumb" (click)="openAt($index)" [attr.aria-label]="img.alt || strings.openImage">
           <img [src]="img.thumb || img.src" [alt]="img.alt || ''" loading="lazy" />
         </button>
       }
     </div>
     @if (lightbox() >= 0) {
-      <div #lb class="lb" (click)="close()" (keydown.escape)="close()" (keydown.arrowleft)="step(-1, $event)" (keydown.arrowright)="step(1, $event)"
-           tabindex="-1" role="dialog" aria-modal="true" aria-label="Image viewer" cdkTrapFocus
+      <div #lb class="lb" (click)="close()" (keydown.escape)="close()" (keydown.arrowleft)="arrow(-1, $event)" (keydown.arrowright)="arrow(1, $event)"
+           tabindex="-1" role="dialog" aria-modal="true" [attr.aria-label]="strings.imageViewer" cdkTrapFocus
            animate.enter="ui-fade-enter" animate.leave="ui-fade-leave">
         <img [src]="current()?.src" [alt]="current()?.alt || ''" (click)="$event.stopPropagation()" />
-        <button type="button" class="nav prev" aria-label="Previous" (click)="step(-1, $event)"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button type="button" class="nav next" aria-label="Next" (click)="step(1, $event)"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button type="button" class="x" aria-label="Close" (click)="close()"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button type="button" class="nav prev" [attr.aria-label]="strings.previous" (click)="step(-1, $event)"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M7.5 2.5L4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="nav next" [attr.aria-label]="strings.next" (click)="step(1, $event)"><svg viewBox="0 0 12 12" width="20" height="20" aria-hidden="true"><path d="M4.5 2.5L8 6l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="x" [attr.aria-label]="strings.close" (click)="close()"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       </div>
     }
   `,
@@ -48,8 +49,10 @@ export interface UiGalleryImage {
     .nav, .x { position: absolute; border: none; background: color-mix(in srgb, var(--ui-media-on-scrim) 12%, transparent); color: var(--ui-media-on-scrim); cursor: pointer; border-radius: 50%; font: inherit; padding: 0;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     .nav { top: 50%; transform: translateY(-50%); width: var(--ui-size-touch); height: var(--ui-size-touch); display: flex; align-items: center; justify-content: center; }
-    .prev { left: var(--ui-space-4); } .next { right: var(--ui-space-4); }
-    .x { top: var(--ui-space-4); right: var(--ui-space-4); width: var(--ui-size-touch); height: var(--ui-size-touch); display: flex; align-items: center; justify-content: center; }
+    /* Previous at the inline start, next and close at the end; chevrons mirrored in RTL. */
+    .prev { inset-inline-start: var(--ui-space-4); } .next { inset-inline-end: var(--ui-space-4); }
+    .nav:dir(rtl) svg { transform: scaleX(-1); }
+    .x { top: var(--ui-space-4); inset-inline-end: var(--ui-space-4); width: var(--ui-size-touch); height: var(--ui-size-touch); display: flex; align-items: center; justify-content: center; }
     .nav:hover, .x:hover { background: color-mix(in srgb, var(--ui-media-on-scrim) 25%, transparent); }
     .nav:active { transform: translateY(-50%) scale(var(--ui-scale-press)); }
     .x:active { transform: scale(var(--ui-scale-press)); }
@@ -57,6 +60,7 @@ export interface UiGalleryImage {
   `,
 })
 export class UiGallery {
+  protected readonly strings = injectUiStrings();
   images = input<UiGalleryImage[]>([]);
   minThumb = input('120px');
   protected readonly lightbox = signal(-1);
@@ -76,6 +80,10 @@ export class UiGallery {
     this.lightbox.set(-1);
     this.opener?.focus();
     this.opener = null;
+  }
+  /** Arrow keys step the way the viewer reads: in RTL the left arrow goes to the next image. */
+  protected arrow(physical: -1 | 1, e: Event): void {
+    this.step(uiIsRtl(e.currentTarget as Element) ? -physical : physical, e);
   }
   protected step(d: number, e: Event): void {
     e.stopPropagation();

@@ -1,4 +1,5 @@
 import { Component, OnInit, input, model, output, signal } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-intro-loader` — full-screen intro veil that wipes away after `duration`
@@ -8,7 +9,7 @@ import { Component, OnInit, input, model, output, signal } from '@angular/core';
   selector: 'ui-intro-loader',
   template: `
     @if (open()) {
-      <div class="veil" [class.leaving]="leaving()" role="status" aria-label="Loading…" aria-live="polite">
+      <div class="veil" [class.leaving]="leaving()" role="status" [attr.aria-label]="strings.loading" aria-live="polite">
         <div class="inner">
           <ng-content />
           <div class="track"><div class="fill"></div></div>
@@ -34,6 +35,7 @@ import { Component, OnInit, input, model, output, signal } from '@angular/core';
   host: { '[style.--ui-intro-dur]': '(hold() ?? duration()) + "ms"' },
 })
 export class UiIntroLoader implements OnInit {
+  protected readonly strings = injectUiStrings();
   open = model(true);
   duration = input(1400);
   done = output<void>();

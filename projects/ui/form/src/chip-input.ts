@@ -1,6 +1,6 @@
-import { Component, ElementRef, forwardRef, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, forwardRef, inject, input, signal, viewChild, computed } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /** `ui-chip-input` — tokenized text entry (CVA; value is string[]). Enter adds, Backspace removes. */
 @Component({
@@ -9,9 +9,9 @@ import { UI_CONFIG } from '@zouriel/ui';
     <div class="ci" [class.no-radius]="!radius()" [class.invalid]="invalid()" (click)="focusInput()">
       @for (chip of chips(); track $index) {
         <!-- Disabled: nothing can be removed, so the chips carry no x. -->
-        <span class="chip" [class.static]="disabled()"><span class="chip-text" [attr.title]="chip">{{ chip }}</span>@if (!disabled()) {<button type="button" class="x" tabindex="-1" [attr.aria-label]="'Remove ' + chip" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>}</span>
+        <span class="chip" [class.static]="disabled()"><span class="chip-text" [attr.title]="chip">{{ chip }}</span>@if (!disabled()) {<button type="button" class="x" tabindex="-1" [attr.aria-label]="format(strings.remove, { label: chip })" (click)="removeAt($index, $event)"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>}</span>
       }
-      <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholder()" [attr.aria-label]="label() || null"
+      <input #inp class="entry" [attr.placeholder]="chips().length ? '' : placeholderText()" [attr.aria-label]="label() || null"
              [attr.aria-invalid]="invalid() || null"
              [disabled]="disabled()" (keydown)="onKey($event)" (blur)="onTouched()" />
     </div>
@@ -32,7 +32,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       background: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface)); border: 1px solid color-mix(in srgb, var(--ui-color-primary) 45%, transparent);
       border-radius: var(--ui-radius-pill); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .chip-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .chip.static { padding-right: var(--ui-space-2); }
+    .chip.static { padding-inline-end: var(--ui-space-2); }
     /* A 24x22 hit box filling the chip's height (no spill above or below it) around the same 16px
        circle: padding outside the painted background, and negative margins keep the chip compact. */
     .x { display: grid; place-items: center; flex: none; box-sizing: border-box; width: 24px; height: 22px; margin: -1px -4px;
@@ -49,8 +49,12 @@ import { UI_CONFIG } from '@zouriel/ui';
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiChipInput), multi: true }],
 })
 export class UiChipInput implements ControlValueAccessor {
+  protected readonly format = uiFormatString;
+  protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
-  placeholder = input('Add tag…');
+  /** Default: the built-in `addTag` (Add tag…), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.addTag);
   /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
   label = input<string>();
   invalid = input(false);

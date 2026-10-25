@@ -37,3 +37,15 @@ app-root .cmd-icon { display: none; }
   app-root .cmd-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   app-root .theme-picker { width: auto; flex: 0 1 136px; }
 }
+
+/* The top bar's RTL · ދިވެހި switch keeps only its Thaana word on a phone (the shell's own styles are at their budget). */
+@media (max-width: 900px) { .lang-toggle .lang-x { display: none; } }
+
+/* The shell's skip link (moved here from app.ts, whose own styles are at their budget). */
+/* Hidden until focused: the first Tab on any page offers a jump past the sidebar. */
+app-root .skip { position: fixed; top: var(--ui-space-2); inset-inline-start: var(--ui-space-2); z-index: var(--ui-z-overlay);
+  padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius);
+  background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); font-family: var(--ui-font-default);
+  font-size: var(--ui-font-size-sm); font-weight: 600; text-decoration: none; transform: translateY(-200%); }
+app-root .skip:focus-visible { transform: none; outline: none; box-shadow: var(--ui-focus-ring); }
+

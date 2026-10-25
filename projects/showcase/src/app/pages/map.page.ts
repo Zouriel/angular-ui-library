@@ -59,7 +59,7 @@ interface UiMapControl {  // 0.42.1: your own round button, in the locate button
 
 const ROUTE_CODE = `<ui-map #map fill [insets]="{ top: cardCover(), bottom: sheetCover() }" [userLocation]="me()"
   [markers]="[patient]" [routes]="route() ? [{ id: 'to-patient', points: route()!.points, label: 'Route, ' + route()!.km + ' km' }] : []"
-  [controls]="[{ id: 'fit', icon: CenterFocusIcon, label: 'Show both', tooltip: 'Show both' }]" (controlPress)="map.fitPoints([me(), patient])" />
+  [controls]="[{ id: 'fit', icon: CenterFocusIcon, label: strings.mapShowBoth, tooltip: strings.mapShowBoth }]" (controlPress)="map.fitPoints([me(), patient])" />
 
 // The moment she accepts: fetch the road route (OSRM GeoJSON is [lng, lat]: swap it) and show it all.
 const r = await api.route(job.id, me);

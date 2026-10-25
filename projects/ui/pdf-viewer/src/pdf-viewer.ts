@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import {
   Component, DestroyRef, ElementRef, InjectionToken, afterNextRender, booleanAttribute, effect, inject, input, signal, viewChild,
 } from '@angular/core';
+import { injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /**
  * How ui-pdf-viewer loads pdf.js: `import('pdfjs-dist')` by default. Provide another loader to test
@@ -26,16 +27,16 @@ export const UI_PDFJS = new InjectionToken<() => Promise<unknown>>('UI_PDFJS', {
   imports: [DecimalPipe],
   template: `
     <div class="pv" [class.fill]="fill()">
-      <div class="bar" [class.overlay]="fill()" role="group" aria-label="Page controls">
-        <button type="button" (click)="prev()" [disabled]="page() <= 1" aria-label="Previous page"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="pg" [attr.aria-label]="pages() ? 'Page ' + page() + ' of ' + pages() : null">{{ page() }} / {{ pages() || '—' }}</span>
-        <button type="button" (click)="next()" [disabled]="page() >= pages()" aria-label="Next page"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="bar" [class.overlay]="fill()" role="group" [attr.aria-label]="strings.pageControls">
+        <button type="button" (click)="prev()" [disabled]="page() <= 1" [attr.aria-label]="strings.previousPage"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="pg" [attr.aria-label]="pages() ? format(strings.pageOf, { n: page(), total: pages() }) : null">{{ page() }} / {{ pages() || '—' }}</span>
+        <button type="button" (click)="next()" [disabled]="page() >= pages()" [attr.aria-label]="strings.nextPage"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <span class="spacer"></span>
-        <button type="button" (click)="zoomBy(-0.2)" [disabled]="zoom() <= minScale" aria-label="Zoom out"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" (click)="zoomBy(-0.2)" [disabled]="zoom() <= minScale" [attr.aria-label]="strings.zoomOut"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
-        <button type="button" (click)="zoomBy(0.2)" [disabled]="zoom() >= maxScale" aria-label="Zoom in"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" (click)="zoomBy(0.2)" [disabled]="zoom() >= maxScale" [attr.aria-label]="strings.zoomIn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         @if (fill()) {
-          <button type="button" class="fit" (click)="fit()" aria-label="Fit page">Fit</button>
+          <button type="button" class="fit" (click)="fit()" [attr.aria-label]="strings.fitPage">{{ strings.fit }}</button>
         }
       </div>
       <div class="stage">
@@ -43,9 +44,9 @@ export const UI_PDFJS = new InjectionToken<() => Promise<unknown>>('UI_PDFJS', {
              (touchstart)="onTouch($event)" (touchmove)="onTouch($event)"
              (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)">
           @if (error()) { <div class="msg err">{{ error() }}</div> }
-          @else if (loading()) { <div class="msg" role="status">Loading PDF…</div> }
+          @else if (loading()) { <div class="msg" role="status">{{ strings.loading }}</div> }
           <canvas #canvas [class.hidden]="loading() || error()" [style.transform]="pinch() === 1 ? null : 'scale(' + pinch() + ')'"
-                  role="img" [attr.aria-label]="pages() ? 'Page ' + page() : null"></canvas>
+                  role="img" [attr.aria-label]="pages() ? format(strings.page, { n: page() }) : null"></canvas>
         </div>
       </div>
     </div>
@@ -107,6 +108,8 @@ export const UI_PDFJS = new InjectionToken<() => Promise<unknown>>('UI_PDFJS', {
   `,
 })
 export class UiPdfViewer {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   src = input.required<string>();
   workerSrc = input<string>();
 

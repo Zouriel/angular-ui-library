@@ -1,4 +1,5 @@
-import { Component, NgZone, OnDestroy, inject, input, model, output } from '@angular/core';
+import { Component, NgZone, OnDestroy, inject, input, model, output, computed } from '@angular/core';
+import { injectUiStrings } from '@zouriel/ui';
 
 /**
  * `ui-resize-handle` — a draggable edge that sets the size of the panel next to it. Put it on the
@@ -18,7 +19,7 @@ import { Component, NgZone, OnDestroy, inject, input, model, output } from '@ang
     '[attr.aria-valuenow]': 'size()',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'max()',
-    '[attr.aria-label]': 'label()',
+    '[attr.aria-label]': 'labelText()',
     '[attr.data-edge]': 'edge()',
     '(pointerdown)': 'start($event)',
     '(dblclick)': 'cycle()',
@@ -38,6 +39,7 @@ import { Component, NgZone, OnDestroy, inject, input, model, output } from '@ang
   `,
 })
 export class UiResizeHandle implements OnDestroy {
+  protected readonly strings = injectUiStrings();
   private readonly zone = inject(NgZone);
 
   size = model(240);
@@ -46,7 +48,9 @@ export class UiResizeHandle implements OnDestroy {
   snaps = input<readonly number[]>([]);
   /** Where the handle sits on the panel it resizes. */
   edge = input<'top' | 'bottom' | 'left' | 'right'>('top');
-  label = input('Resize');
+  /** Default: the built-in `resize` (Resize), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.resize);
   /** Distance, in px, within which a release settles on a snap. */
   snapDistance = input(28);
 

@@ -1,8 +1,9 @@
 import {
-  Component, ElementRef, contentChildren, effect, inject, input, model, signal,
+  Component, ElementRef, contentChildren, effect, inject, input, model, signal, computed,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
+import { uiLogicalKey, injectUiStrings } from '@zouriel/ui';
 
 let tabSeq = 0;
 
@@ -48,7 +49,7 @@ export class UiTab {
   selector: 'ui-tabs',
   imports: [HugeiconsIconComponent],
   template: `
-    <div class="tablist" role="tablist" [attr.aria-label]="label()">
+    <div class="tablist" role="tablist" [attr.aria-label]="labelText()">
       @for (tab of tabs(); track tab.tabId; let i = $index) {
         <button
           type="button"
@@ -123,9 +124,12 @@ export class UiTab {
   `,
 })
 export class UiTabs {
+  protected readonly strings = injectUiStrings();
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   selectedIndex = model(0);
-  label = input<string>('Tabs');
+  /** Default: the built-in `tabs` (Tabs), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.tabs);
   readonly tabs = contentChildren(UiTab);
 
   constructor() {
@@ -158,14 +162,16 @@ export class UiTabs {
   protected onKeydown(e: KeyboardEvent, i: number): void {
     const count = this.tabs().length;
     let next = i;
-    if (e.key === 'ArrowRight') next = (i + 1) % count;
-    else if (e.key === 'ArrowLeft') next = (i - 1 + count) % count;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = count - 1;
+    // Right and left follow the row: in RTL the next tab is to the left.
+    const key = uiLogicalKey(e);
+    if (key === 'ArrowRight') next = (i + 1) % count;
+    else if (key === 'ArrowLeft') next = (i - 1 + count) % count;
+    else if (key === 'Home') next = 0;
+    else if (key === 'End') next = count - 1;
     else return;
     e.preventDefault();
     // Disabled tabs can't take focus, so step past them in the direction of travel.
-    const step = e.key === 'ArrowLeft' || e.key === 'End' ? -1 : 1;
+    const step = key === 'ArrowLeft' || key === 'End' ? -1 : 1;
     const tabs = this.tabs();
     for (let n = 0; n < count && tabs[next]?.disabled(); n++) next = (next + step + count) % count;
     if (tabs[next]?.disabled()) return;

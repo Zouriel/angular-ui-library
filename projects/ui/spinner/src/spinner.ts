@@ -1,10 +1,10 @@
-import { Component, input } from '@angular/core';
-import type { UiSize } from '@zouriel/ui';
+import { Component, computed, input } from '@angular/core';
+import { type UiSize, injectUiStrings } from '@zouriel/ui';
 
 /** `ui-spinner` — indeterminate activity indicator. */
 @Component({
   selector: 'ui-spinner',
-  template: `<span class="ui-spinner" [attr.data-size]="size()" role="status" [attr.aria-label]="label()"></span>`,
+  template: `<span class="ui-spinner" [attr.data-size]="size()" role="status" [attr.aria-label]="labelText()"></span>`,
   styles: `
     :host { display: inline-flex; }
     .ui-spinner {
@@ -22,5 +22,8 @@ import type { UiSize } from '@zouriel/ui';
 })
 export class UiSpinner {
   size = input<UiSize>('md');
-  label = input('Loading');
+  protected readonly strings = injectUiStrings();
+  /** Default: the built-in `loading` (Loading…), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.loading);
 }

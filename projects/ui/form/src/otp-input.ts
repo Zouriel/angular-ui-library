@@ -1,5 +1,6 @@
 import { Component, ElementRef, effect, forwardRef, inject, input, signal, untracked } from '@angular/core';
 import { AbstractControl, ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, ValidationErrors, Validator } from '@angular/forms';
+import { injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /** The character an empty cell takes in the value when a later cell is filled. */
 const OTP_HOLE = ' ';
@@ -18,7 +19,8 @@ const OTP_HOLE = ' ';
 @Component({
   selector: 'ui-otp-input',
   template: `
-    <div class="ui-otp" role="group" aria-label="One-time code">
+    <!-- A code reads left to right in every language: the boxes stay in that order under dir="rtl". -->
+    <div class="ui-otp" role="group" dir="ltr" [attr.aria-label]="strings.otpLabel">
       @for (i of slots(); track i) {
         <input
           class="cell"
@@ -28,7 +30,7 @@ const OTP_HOLE = ' ';
           [value]="chars()[i] || ''"
           [disabled]="disabled()"
           [attr.aria-invalid]="invalid() || null"
-          [attr.aria-label]="'Digit ' + (i + 1)"
+          [attr.aria-label]="format(strings.otpDigit, { n: i + 1 })"
           (input)="onInput($event, i)"
           (keydown)="onKeydown($event, i)"
           (paste)="onPaste($event, i)"
@@ -58,6 +60,8 @@ const OTP_HOLE = ' ';
   ],
 })
 export class UiOtpInput implements ControlValueAccessor, Validator {
+  protected readonly strings = injectUiStrings();
+  protected readonly format = uiFormatString;
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   length = input(6);
   numeric = input(true);

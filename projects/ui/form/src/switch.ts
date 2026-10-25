@@ -35,16 +35,17 @@ import type { UiSize } from '@zouriel/ui';
       transition: background var(--ui-motion-base) var(--ui-ease-standard);
     }
     .thumb {
-      position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+      position: absolute; top: 2px; inset-inline-start: 2px; width: 18px; height: 18px;
       background: var(--ui-switch-thumb); border-radius: 50%; box-shadow: var(--ui-shadow-1);
       transition: transform var(--ui-motion-base) var(--ui-ease-spring);
     }
     .native:checked + .track { background: var(--ui-switch-track-checked); }
     .native:checked + .track .thumb { background: var(--ui-switch-thumb-checked); }
-    .native:checked + .track .thumb { transform: translateX(16px); }
+    /* On moves the thumb to the inline end: the right in LTR, the left in RTL. */
+    .native:checked + .track .thumb { transform: translateX(calc(16px * var(--ui-inline-sign, 1))); }
     [data-size="sm"] .track { width: 30px; height: 18px; }
     [data-size="sm"] .thumb { width: 14px; height: 14px; }
-    [data-size="sm"] .native:checked + .track .thumb { transform: translateX(12px); }
+    [data-size="sm"] .native:checked + .track .thumb { transform: translateX(calc(12px * var(--ui-inline-sign, 1))); }
     .native:focus-visible + .track { box-shadow: var(--ui-focus-ring); }
     @media (prefers-reduced-motion: reduce) { .thumb { transition-timing-function: var(--ui-ease-standard); } }
   `,

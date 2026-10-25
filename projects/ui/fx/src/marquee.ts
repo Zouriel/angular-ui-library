@@ -33,6 +33,9 @@ import { Component, input } from '@angular/core';
     .m-item:nth-child(even) .txt { color: var(--ui-color-text-muted); }
     .star { color: var(--ui-color-primary); font-size: 0.7em; }
     @keyframes ui-marquee { from { transform: translateX(0); } to { transform: translateX(calc(-100% - var(--gap, 3rem))); } }
+    /* RTL text runs the other way: the row drifts toward the inline start, rightwards. */
+    .track:dir(rtl) { animation-name: ui-marquee-rtl; }
+    @keyframes ui-marquee-rtl { from { transform: translateX(0); } to { transform: translateX(calc(100% + var(--gap, 3rem))); } }
     @media (prefers-reduced-motion: reduce) { .track { animation: none; } }
   `,
 })

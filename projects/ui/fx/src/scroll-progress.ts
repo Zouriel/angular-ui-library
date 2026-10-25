@@ -11,6 +11,8 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, PLATFORM_ID, i
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
       box-shadow: var(--ui-glow-amber, 0 0 12px color-mix(in srgb, var(--ui-color-primary) 60%, transparent));
       transform-origin: left center; will-change: transform; }
+    /* Fills from the inline start: from the right in RTL. */
+    .bar:dir(rtl) { transform-origin: right center; }
   `,
 })
 export class UiScrollProgress implements AfterViewInit, OnDestroy {

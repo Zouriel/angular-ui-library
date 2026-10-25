@@ -7,8 +7,8 @@ import { Component, input } from '@angular/core';
   styles: `
     :host { display: inline-flex; }
     .ui-btn-group { display: inline-flex; }
-    .ui-btn-group ::ng-deep ui-button:not(:first-child) .ui-btn { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -1px; }
-    .ui-btn-group ::ng-deep ui-button:not(:last-child) .ui-btn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+    .ui-btn-group ::ng-deep ui-button:not(:first-child) .ui-btn { border-start-start-radius: 0; border-end-start-radius: 0; margin-inline-start: -1px; }
+    .ui-btn-group ::ng-deep ui-button:not(:last-child) .ui-btn { border-start-end-radius: 0; border-end-end-radius: 0; }
     .ui-btn-group ::ng-deep ui-button .ui-btn:hover { z-index: 1; }
     /* Above both neighbours so the -1px overlap doesn't cut the focus ring. */
     .ui-btn-group ::ng-deep ui-button .ui-btn:focus-visible { z-index: 2; }

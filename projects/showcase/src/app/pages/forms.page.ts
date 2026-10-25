@@ -54,7 +54,7 @@ const TOKEN = `interface UiTokenRun {
 
 lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
           <ui-switch [ngModel]="locked()" (ngModelChange)="lock($event)">Disable every control</ui-switch>
-          <pre class="json">{{ formJson() }}</pre>
+          <pre class="json" dir="ltr">{{ formJson() }}</pre>
         </doc-demo>
       </doc-section>
 
@@ -250,21 +250,21 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
       </doc-section>
 
       <doc-section name="Date picker" selector="ui-date-picker" [api]="dateApi"
-        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids, which focus the month or year in view and keep one tab stop: arrow keys move (Up/Down by a row of three), Home/End go to the first and last cell, PageUp/PageDown change the year (month grid) or the page of 12 years (year grid), Enter or Space picks. min/max limit which days can be picked. Names come from the browser locale (Intl); weeks start on Sunday.">
+        summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids, which focus the month or year in view and keep one tab stop: arrow keys move (Up/Down by a row of three), Home/End go to the first and last cell, PageUp/PageDown change the year (month grid) or the page of 12 years (year grid), Enter or Space picks. min/max limit which days can be picked. Month and day names come from the built-in strings (Dhivehi in uiStringsDv) or Intl in the app's LOCALE_ID, and the weeks start on the locale's first day (Sunday in en-US and in uiStringsDv); in RTL the grid, the arrows and the arrow keys read right to left (0.46.0).">
         <doc-demo code="<ui-date-picker formControlName=&quot;date&quot; />">
           <ui-date-picker formControlName="date" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Calendar" selector="ui-calendar" [api]="calendarApi"
-        summary="Inline month calendar. Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date); it opens on the month of its value. Each day is a button named with its full date; the chosen day is aria-pressed and today is aria-current. Names come from the browser locale (Intl); weeks start on Sunday.">
+        summary="Inline month calendar. Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date); it opens on the month of its value. Each day is a button named with its full date; the chosen day is aria-pressed and today is aria-current. Month and day names come from the built-in strings (Dhivehi in uiStringsDv) or Intl in the app's LOCALE_ID, and the weeks start on the locale's first day (Sunday in en-US and in uiStringsDv); in RTL the grid, the arrows and the arrow keys read right to left (0.46.0).">
         <doc-demo code="<ui-calendar formControlName=&quot;date2&quot; />">
           <ui-calendar formControlName="date2" />
         </doc-demo>
       </doc-section>
 
       <doc-section name="Date range picker" selector="ui-date-range-picker"
-        summary="Inline range selection; no inputs beyond the form control. Click a start day, then an end day (an earlier end swaps them); a third click starts a new range. While choosing the end, hovering previews the band. Value type: UiDateRange (ISO days); it opens on the month the range starts in. Names come from the browser locale."
+        summary="Inline range selection; no inputs beyond the form control. Click a start day, then an end day (an earlier end swaps them); a third click starts a new range. While choosing the end, hovering previews the band. Value type: UiDateRange (ISO days); it opens on the month the range starts in. Month and day names come from the built-in strings (Dhivehi in uiStringsDv) or Intl in the app's LOCALE_ID, and the weeks start on the locale's first day (Sunday in en-US and in uiStringsDv); in RTL the grid, the arrows and the arrow keys read right to left (0.46.0)."
         [shapes]="'type UiDateRange = { start: string | null; end: string | null };'">
         <doc-demo code="<ui-date-range-picker formControlName=&quot;range&quot; />">
           <ui-date-range-picker formControlName="range" />
@@ -304,7 +304,7 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
             <ui-button size="sm" variant="outline" (mousedown)="$event.preventDefault()" (click)="msg.insertToken('event.date')">Insert date</ui-button>
             <span class="muted">last chip clicked: {{ tokenClicked() }}</span>
           </div>
-          <pre class="json">{{ runsJson(runs) }}</pre>
+          <pre class="json" dir="ltr">{{ runsJson(runs) }}</pre>
         </doc-demo>
       </doc-section>
     </doc-page>

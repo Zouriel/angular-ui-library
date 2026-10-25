@@ -35,7 +35,7 @@ const FIELD = 'input:not([type="hidden"]):not([type="button"]):not([type="submit
     .ui-field { display: flex; flex-direction: column; gap: var(--ui-space-1); line-height: 1.35; }
     .field-label { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .lbl { font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); font-weight: 600; color: var(--ui-color-text); }
-    .req { color: var(--ui-color-danger); margin-left: 2px; }
+    .req { color: var(--ui-color-danger); margin-inline-start: 2px; }
     .hint { font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .error { font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); color: var(--ui-color-danger); }
   `,

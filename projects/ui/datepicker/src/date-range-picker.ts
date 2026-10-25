@@ -3,7 +3,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowLeft01Icon from '@hugeicons/core-free-icons/ArrowLeft01Icon';
 import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
-import { formatIsoDate, isoMonth, monthYear, WEEKDAYS } from './date-names';
+import { injectUiDateNames, isoMonth, uiLeadingBlanks } from './date-names';
 import { injectUiStrings } from '@zouriel/ui';
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -21,7 +21,7 @@ export type UiDateRange = { start: string | null; end: string | null };
         <span class="month">{{ heading() }}</span>
         <button type="button" class="nav" [attr.aria-label]="strings.nextMonth" [disabled]="disabled()" (click)="shift(1)"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" /></button>
       </div>
-      <div class="weekdays">@for (w of weekdays; track w) { <span>{{ w }}</span> }</div>
+      <div class="weekdays">@for (w of names().gridWeekdays; track $index) { <span [attr.title]="names().gridWeekdaysLong[$index]">{{ w }}</span> }</div>
       <div class="grid" [class.ranged]="ranged()" (mouseleave)="hover.set(null)">
         @for (b of leading(); track $index) { <span class="cell empty"></span> }
         @for (c of days(); track c.iso) {
@@ -30,7 +30,7 @@ export type UiDateRange = { start: string | null; end: string | null };
                   [attr.aria-label]="c.label" [attr.aria-pressed]="c.iso === range().start || c.iso === range().end || inRange(c.iso)" (click)="pick(c.iso)" (mouseenter)="hover.set(c.iso)">{{ c.day }}</button>
         }
       </div>
-      <div class="foot">{{ range().start ? fmt(range().start!) : '—' }} → {{ range().end ? fmt(range().end!) : '—' }}</div>
+      <div class="foot">{{ range().start ? fmt(range().start!) : '—' }} <span class="to" aria-hidden="true">→</span> {{ range().end ? fmt(range().end!) : '—' }}</div>
     </div>
   `,
   styles: `
@@ -46,6 +46,8 @@ export type UiDateRange = { start: string | null; end: string | null };
     .nav:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-text); }
     .nav:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .nav:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    /* Previous / next arrows point the way the calendar reads: mirrored in RTL. */
+    .nav:dir(rtl) hugeicons-icon { transform: scaleX(-1); }
     .nav:disabled { opacity: .5; cursor: not-allowed; }
     /* 32px days, columns touching (a range band runs unbroken), 2px between weeks: as in Flutter. */
     .weekdays, .grid { display: grid; grid-template-columns: repeat(7, 32px); gap: 2px 0; }
@@ -59,15 +61,18 @@ export type UiDateRange = { start: string | null; end: string | null };
     .cell:disabled:not(.empty) { opacity: .5; cursor: not-allowed; }
     .cell.inrange { background: var(--ui-color-selected); border-radius: 0; }
     .cell.start, .cell.end { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
-    .grid.ranged .cell.start:not(.end) { border-radius: var(--ui-radius-xs) 0 0 var(--ui-radius-xs); }
-    .grid.ranged .cell.end:not(.start) { border-radius: 0 var(--ui-radius-xs) var(--ui-radius-xs) 0; }
+    /* Logical corners: the band runs from the start day toward the inline end (leftwards in RTL). */
+    .grid.ranged .cell.start:not(.end) { border-radius: 0; border-start-start-radius: var(--ui-radius-xs); border-end-start-radius: var(--ui-radius-xs); }
+    .grid.ranged .cell.end:not(.start) { border-radius: 0; border-start-end-radius: var(--ui-radius-xs); border-end-end-radius: var(--ui-radius-xs); }
+    .to { display: inline-block; }
+    .to:dir(rtl) { transform: scaleX(-1); }
     .foot { margin-top: var(--ui-space-2); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); font-variant-numeric: tabular-nums; }
   `,
   providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => UiDateRangePicker), multi: true }],
 })
 export class UiDateRangePicker implements ControlValueAccessor {
   protected readonly strings = injectUiStrings();
-  protected readonly weekdays = WEEKDAYS;
+  protected readonly names = injectUiDateNames();
   protected readonly prevIcon = ArrowLeft01Icon;
   protected readonly nextIcon = ArrowRight01Icon;
   protected readonly range = signal<UiDateRange>({ start: null, end: null });
@@ -81,13 +86,13 @@ export class UiDateRangePicker implements ControlValueAccessor {
     const h = this.hover();
     return !!start && (!!end || (!!h && h > start));
   });
-  protected fmt(isoDate: string): string { return formatIsoDate(isoDate, true); }
-  protected readonly heading = computed(() => monthYear(this.view()[0], this.view()[1]));
-  protected readonly leading = computed(() => Array.from({ length: new Date(this.view()[0], this.view()[1], 1).getDay() }));
+  protected fmt(isoDate: string): string { return this.names().formatIso(isoDate, true); }
+  protected readonly heading = computed(() => this.names().monthYear(this.view()[0], this.view()[1]));
+  protected readonly leading = computed(() => Array.from({ length: uiLeadingBlanks(this.view()[0], this.view()[1], this.names().firstDay) }));
   protected readonly days = computed(() => {
     const [y, m] = this.view();
     const count = new Date(y, m + 1, 0).getDate();
-    return Array.from({ length: count }, (_, i) => ({ day: i + 1, iso: iso(y, m, i + 1), label: formatIsoDate(iso(y, m, i + 1)) }));
+    return Array.from({ length: count }, (_, i) => ({ day: i + 1, iso: iso(y, m, i + 1), label: this.names().formatIso(iso(y, m, i + 1)) }));
   });
 
   private onChange: (v: UiDateRange) => void = () => {};

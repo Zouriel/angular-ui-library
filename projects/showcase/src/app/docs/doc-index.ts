@@ -19,6 +19,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'provideUiConfig()', anchor: 'provideuiconfig' },
     { name: 'Density', anchor: 'density' },
     { name: 'Built-in strings', anchor: 'built-in-strings' },
+    { name: 'Right to left and Dhivehi', anchor: 'rtl' },
     { name: 'Theme service', anchor: 'theme-service' },
     { name: 'Themes', anchor: 'themes' },
     { name: 'Scoped theme', anchor: 'scoped-theme' },

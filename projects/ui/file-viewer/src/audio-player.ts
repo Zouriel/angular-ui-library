@@ -2,6 +2,7 @@ import { Component, ElementRef, input, signal, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import PauseIcon from '@hugeicons/core-free-icons/PauseIcon';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
+import { injectUiStrings } from '@zouriel/ui';
 
 function fmt(s: number): string {
   if (!isFinite(s)) return '0:00';
@@ -17,10 +18,10 @@ function fmt(s: number): string {
       <audio #audio [src]="src()" (timeupdate)="time.set(audio.currentTime)"
              (loadedmetadata)="duration.set(audio.duration)"
              (play)="playing.set(true)" (pause)="playing.set(false)" (ended)="playing.set(false)"></audio>
-      <button type="button" class="play" (click)="toggle()" [attr.aria-label]="playing() ? 'Pause' : 'Play'"><hugeicons-icon [icon]="playing() ? pauseIcon : playIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+      <button type="button" class="play" (click)="toggle()" [attr.aria-label]="playing() ? strings.pause : strings.play"><hugeicons-icon [icon]="playing() ? pauseIcon : playIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
       @if (title()) { <span class="title">{{ title() }}</span> }
       <span class="t">{{ fmt(time()) }}</span>
-      <input class="seek" type="range" min="0" [max]="duration() || 0" step="0.1" [value]="time()" aria-label="Seek" (input)="seek($event)" />
+      <input class="seek" type="range" min="0" [max]="duration() || 0" step="0.1" [value]="time()" [attr.aria-label]="strings.seek" (input)="seek($event)" />
       <span class="t">{{ fmt(duration()) }}</span>
     </div>
   `,
@@ -52,6 +53,7 @@ function fmt(s: number): string {
   `,
 })
 export class UiAudioPlayer {
+  protected readonly strings = injectUiStrings();
   src = input.required<string>();
   title = input<string>();
   protected readonly audio = viewChild.required<ElementRef<HTMLAudioElement>>('audio');

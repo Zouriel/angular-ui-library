@@ -1,6 +1,7 @@
 import { Component, ElementRef, TemplateRef, computed, contentChild, forwardRef, inject, input, model, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { uiLogicalKey } from '@zouriel/ui';
 
 export interface UiChoice {
   value: string;
@@ -61,7 +62,7 @@ export interface UiChoiceTileContext {
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface); color: var(--ui-color-text);
       font-family: var(--ui-font-default); text-align: center; cursor: pointer;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .tile.compact { text-align: left; }
+    .tile.compact { text-align: start; }
     .tile:hover:not(:disabled) { border-color: color-mix(in srgb, var(--ui-color-primary) 50%, var(--ui-color-border)); background: var(--ui-color-surface-hover); }
     .tile:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .tile:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -122,8 +123,9 @@ export class UiChoiceGrid implements ControlValueAccessor {
     const order = this.sections().flatMap((s) => s.items).filter((o) => !o.disabled);
     const i = order.indexOf(item);
     let next = -1;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = Math.min(order.length - 1, i + 1);
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = Math.max(0, i - 1);
+    const key = uiLogicalKey(e);
+    if (key === 'ArrowRight' || key === 'ArrowDown') next = Math.min(order.length - 1, i + 1);
+    else if (key === 'ArrowLeft' || key === 'ArrowUp') next = Math.max(0, i - 1);
     else if (e.key === 'Home') next = 0;
     else if (e.key === 'End') next = order.length - 1;
     if (next < 0) return;

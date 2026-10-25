@@ -33,8 +33,8 @@ import type { UiButtonVariant } from './button';
     button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); z-index: 1; }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    .main { padding: 0 var(--ui-space-4); border-radius: var(--ui-radius) 0 0 var(--ui-radius); }
-    .caret { padding: 0 var(--ui-space-2); border-left: none; border-radius: 0 var(--ui-radius) var(--ui-radius) 0; }
+    .main { padding: 0 var(--ui-space-4); border-radius: 0; border-start-start-radius: var(--ui-radius); border-end-start-radius: var(--ui-radius); }
+    .caret { padding: 0 var(--ui-space-2); border-inline-start: none; border-radius: 0; border-start-end-radius: var(--ui-radius); border-end-end-radius: var(--ui-radius); }
     .split.no-radius .main, .split.no-radius .caret { border-radius: 0; }
     button[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     button[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }
@@ -48,7 +48,7 @@ import type { UiButtonVariant } from './button';
     button[data-variant="ghost"] { background: transparent; border-color: transparent; }
     /* Filled variants have a transparent border, so the two halves need their own divider. */
     .caret[data-variant="primary"], .caret[data-variant="secondary"], .caret[data-variant="destructive"] {
-      border-left: 1px solid color-mix(in srgb, currentColor 28%, transparent); }
+      border-inline-start: 1px solid color-mix(in srgb, currentColor 28%, transparent); }
     .chev { flex: none; }
     button[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); }
     button[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); }

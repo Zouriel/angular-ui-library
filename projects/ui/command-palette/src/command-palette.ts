@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
-import { UI_ANIM, UI_CONFIG, uiLeaveHidden } from '@zouriel/ui';
+import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 
 export interface UiCommand {
   label: string;
@@ -41,9 +41,9 @@ let paletteSeq = 0;
       <div #layer class="ui-layer">
       <div class="cp-backdrop" (click)="open.set(false)" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)"></div>
       <div class="cp-wrap" (keydown)="onKey($event)">
-        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" aria-label="Command palette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
+        <div class="cp" [class.glass]="glass()" [class.no-radius]="!radius()" role="dialog" aria-modal="true" [attr.aria-label]="strings.commandPalette" cdkTrapFocus [cdkTrapFocusAutoCapture]="true"
              animate.enter="ui-scale-enter" animate.leave="ui-scale-leave">
-          <input #input class="cp-input" [value]="query()" [attr.placeholder]="placeholder()"
+          <input #input class="cp-input" [value]="query()" [attr.placeholder]="placeholderText()"
                  (input)="onInput($event)" role="combobox" aria-expanded="true" [attr.aria-controls]="listId"
                  aria-autocomplete="list" [attr.aria-activedescendant]="filtered().length ? optionId(active()) : null" />
           <ul #list class="cp-list" [id]="listId" role="listbox">
@@ -101,13 +101,16 @@ let paletteSeq = 0;
   `,
 })
 export class UiCommandPalette {
+  protected readonly strings = injectUiStrings();
   /** Fades the backdrop out and keeps it at 0 until the panel's longer leave ends (no flash back). */
   protected readonly backdropLeave = uiLeaveHidden(UI_ANIM.backdrop.leave);
 
   private config = inject(UI_CONFIG);
   open = model(false);
   commands = input<UiCommand[]>([]);
-  placeholder = input('Type a command or search…');
+  /** Default: the built-in `commandPlaceholder` (Type a command or search…), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.commandPlaceholder);
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
   run = output<UiCommand>();

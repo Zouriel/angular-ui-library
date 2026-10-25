@@ -6,6 +6,7 @@ import ArrowRight01Icon from '@hugeicons/core-free-icons/ArrowRight01Icon';
 import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
 import { clampOffset, fitContain, isSwipe, resist } from './gestures';
+import { injectUiStrings } from '@zouriel/ui';
 
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 6;
@@ -34,7 +35,7 @@ const MAX_ZOOM = 6;
     <div class="iv" [class.fill]="fill()">
       <div #stage class="stage" [class.panning]="pannable()"
            [attr.role]="focusable() ? 'group' : null"
-           [attr.aria-label]="focusable() ? (alt() || 'Image') : null"
+           [attr.aria-label]="focusable() ? (alt() || strings.image) : null"
            (wheel)="onWheel($event)"
            (pointerdown)="onDown($event)" (pointermove)="onMove($event)"
            (pointerup)="onUp($event)" (pointercancel)="onUp($event)"
@@ -55,17 +56,17 @@ const MAX_ZOOM = 6;
       <div class="bar" [class.overlay]="fill()" role="group" [attr.aria-label]="isVideo() ? 'Clip controls' : 'Image controls'">
         @if (navigable()) {
           <button type="button" class="step" (click)="previous.emit()"
-                  [disabled]="!hasPrevious()" aria-label="Previous image"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+                  [disabled]="!hasPrevious()" [attr.aria-label]="strings.previousImage"><hugeicons-icon [icon]="prevIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
         }
         @if (!isVideo()) {
-          <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" aria-label="Zoom out"><hugeicons-icon [icon]="minusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+          <button type="button" (click)="zoomBy(-0.25)" [disabled]="zoom() <= min" [attr.aria-label]="strings.zoomOut"><hugeicons-icon [icon]="minusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
           <span class="pct">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
-          <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" aria-label="Zoom in"><hugeicons-icon [icon]="plusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
-          <button type="button" class="fit" (click)="reset()" aria-label="Reset view">Fit</button>
+          <button type="button" (click)="zoomBy(0.25)" [disabled]="zoom() >= max" [attr.aria-label]="strings.zoomIn"><hugeicons-icon [icon]="plusIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+          <button type="button" class="fit" (click)="reset()" [attr.aria-label]="strings.resetView">{{ strings.fit }}</button>
         }
         @if (navigable()) {
           <button type="button" class="step" (click)="next.emit()"
-                  [disabled]="!hasNext()" aria-label="Next image"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
+                  [disabled]="!hasNext()" [attr.aria-label]="strings.nextImage"><hugeicons-icon [icon]="nextIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" /></button>
         }
       </div>
     </div>
@@ -151,6 +152,7 @@ const MAX_ZOOM = 6;
   `,
 })
 export class UiImageViewer {
+  protected readonly strings = injectUiStrings();
   src = input.required<string>();
   alt = input('');
 

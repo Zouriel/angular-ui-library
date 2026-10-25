@@ -1,4 +1,4 @@
-import { Component, forwardRef, inject, input, signal } from '@angular/core';
+import { Component, forwardRef, inject, input, signal, computed } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
@@ -19,7 +19,7 @@ import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
         type="search"
         role="searchbox"
         [attr.aria-label]="label() || null"
-        [attr.placeholder]="placeholder()"
+        [attr.placeholder]="placeholderText()"
         [value]="value()"
         [disabled]="disabled()"
         (input)="handleInput($event)"
@@ -43,7 +43,7 @@ import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
     .ui-search::-webkit-search-cancel-button { display: none; }
     .ui-search::placeholder { color: var(--ui-color-text-muted); }
     .ui-search:disabled { cursor: not-allowed; }
-    .wrap[data-size="sm"] { height: var(--ui-size-sm); padding-left: var(--ui-space-2); }
+    .wrap[data-size="sm"] { height: var(--ui-size-sm); padding-inline-start: var(--ui-space-2); }
     .wrap[data-size="sm"] .ui-search { font-size: var(--ui-font-size-sm); }
     .wrap[data-size="lg"] { height: var(--ui-size-lg); }
     .wrap[data-size="lg"] .ui-search { font-size: var(--ui-font-size-lg); }
@@ -60,7 +60,9 @@ export class UiSearchInput implements ControlValueAccessor {
   protected readonly searchIcon = Search01Icon;
 
   private config = inject(UI_CONFIG);
-  placeholder = input('Search…');
+  /** Default: the built-in `searchPlaceholder` (Search…), which follows the app's language. */
+  placeholder = input<string | undefined>(undefined);
+  protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.searchPlaceholder);
   /** Accessible name for the text field, when no ui-form-field label names it (e.g. a toolbar search). */
   label = input<string>();
   size = input<UiSize>('md');

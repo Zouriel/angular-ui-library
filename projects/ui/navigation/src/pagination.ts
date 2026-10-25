@@ -1,11 +1,11 @@
 import { Component, computed, input, model } from '@angular/core';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiStrings, uiFormatString } from '@zouriel/ui';
 
 /** `ui-pagination` — page navigation with truncation and prev/next. */
 @Component({
   selector: 'ui-pagination',
   template: `
-    <nav class="ui-pagination" [attr.aria-label]="label()">
+    <nav class="ui-pagination" [attr.aria-label]="labelText()">
       <button type="button" class="pg" [disabled]="page() <= 1" [attr.aria-label]="strings.previousPage" (click)="go(page() - 1)"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M7.5 3l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       @for (item of items(); track $index) {
         @if (item === -1) {
@@ -16,7 +16,7 @@ import { injectUiStrings } from '@zouriel/ui';
             class="pg"
             [class.active]="item === page()"
             [attr.aria-current]="item === page() ? 'page' : null"
-            [attr.aria-label]="'Page ' + item"
+            [attr.aria-label]="format(strings.page, { n: item })"
             (click)="go(item)">
             {{ item }}
           </button>
@@ -38,6 +38,8 @@ import { injectUiStrings } from '@zouriel/ui';
     }
     .pg:hover:not(:disabled):not(.active) { background: var(--ui-color-surface-hover); }
     .pg.active { --ui-color-icon: currentColor; }
+    /* Previous / next chevrons point the way the row reads: mirrored in RTL. */
+    .pg:dir(rtl) svg { transform: scaleX(-1); }
     .pg.active { background: var(--ui-color-selected); color: var(--ui-color-text); border-color: var(--ui-color-border-focus); font-weight: 600; }
     .pg:disabled { opacity: .5; cursor: not-allowed; }
     @media (pointer: coarse) { .pg { min-width: var(--ui-size-touch); height: var(--ui-size-touch); } }
@@ -46,12 +48,15 @@ import { injectUiStrings } from '@zouriel/ui';
   `,
 })
 export class UiPagination {
+  protected readonly format = uiFormatString;
   protected readonly strings = injectUiStrings();
   page = model(1);
   total = input(1);
   /** Sibling pages to show around current. */
   siblings = input(1);
-  label = input('Pagination');
+  /** Default: the built-in `pagination` (Pagination), which follows the app's language. */
+  label = input<string | undefined>(undefined);
+  protected readonly labelText = computed(() => this.label() ?? this.strings.pagination);
 
   protected readonly items = computed<number[]>(() => {
     const total = this.total();
