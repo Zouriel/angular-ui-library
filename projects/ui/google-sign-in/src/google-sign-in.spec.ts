@@ -2,7 +2,7 @@ import { ApplicationRef, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { UiGoogleButtonShape, UiGoogleButtonTheme } from './google-brand';
 import {
   UI_GOOGLE_GSI_SRC, UI_GOOGLE_IDENTITY, UiGoogleSignIn, uiLoadGoogleIdentity,
@@ -109,6 +109,94 @@ describe('ui-google-sign-in', () => {
     expect(g.render.length).toBeGreaterThan(before);
     expect(g.render.at(-1)!.theme).toBe('outline');
     expect(el.querySelectorAll('.fake-gis')).toHaveLength(1); // the old button was cleared first
+  });
+
+  describe('width', () => {
+    /** A ResizeObserver that the test drives: report(el, width) calls every observer watching el. */
+    const observers: { cb: ResizeObserverCallback; targets: Element[] }[] = [];
+    const real = globalThis.ResizeObserver;
+    const report = (target: Element, width: number) => {
+      for (const o of observers.filter((x) => x.targets.includes(target))) {
+        o.cb([{ target, contentRect: { width, height: 40 } } as unknown as ResizeObserverEntry], o as unknown as ResizeObserver);
+      }
+    };
+    beforeEach(() => {
+      observers.length = 0;
+      globalThis.ResizeObserver = class {
+        private o = { cb: null as unknown as ResizeObserverCallback, targets: [] as Element[] };
+        constructor(cb: ResizeObserverCallback) {
+          this.o.cb = cb;
+          observers.push(this.o);
+        }
+        observe(t: Element) { this.o.targets.push(t); }
+        unobserve() {}
+        disconnect() { this.o.targets.length = 0; }
+      } as unknown as typeof ResizeObserver;
+    });
+    afterEach(() => {
+      globalThis.ResizeObserver = real;
+    });
+
+    it('a host that was hidden (0 wide) when the button rendered renders it again at its width once it shows', async () => {
+      const g = fakeGis();
+      const { f, el } = await make(() => Promise.resolve(g.id));
+      // jsdom has no layout: the host measured 0, as behind a location gate, so GIS sized itself.
+      expect(g.render.at(-1)!.width).toBeUndefined();
+      const host = el.querySelector('ui-google-sign-in')!;
+      report(host, 358);
+      f.detectChanges();
+      TestBed.tick();
+      expect(g.render.at(-1)!.width).toBe(358);
+      // Hidden again (0): the last real width stays.
+      const count = g.render.length;
+      report(host, 0);
+      f.detectChanges();
+      TestBed.tick();
+      expect(g.render).toHaveLength(count);
+    });
+
+    it('in a host wider than 400 the button is 400 and centred, and widening further renders nothing new', async () => {
+      const g = fakeGis();
+      const { f, el } = await make(() => Promise.resolve(g.id));
+      const host = el.querySelector('ui-google-sign-in')!;
+      report(host, 608);
+      f.detectChanges();
+      TestBed.tick();
+      expect(g.render.at(-1)!.width).toBe(400);
+      const count = g.render.length;
+      report(host, 900);
+      f.detectChanges();
+      TestBed.tick();
+      expect(g.render).toHaveLength(count);
+      expect((el.querySelector('.gis') as HTMLElement).style.width).toBe('400px');
+      const src = readFileSync(join(process.cwd(), 'projects/ui/google-sign-in/src/google-sign-in.ts'), 'utf8');
+      const rule = (sel: string) => src.slice(src.indexOf(`    ${sel} {`), src.indexOf('}', src.indexOf(`    ${sel} {`)));
+      expect(rule(':host')).not.toContain('max-width');
+      expect(rule('.slot')).toContain('margin-inline: auto;');
+      expect(rule('.gis')).toContain('justify-content: center;');
+    });
+
+    it("keeps the skeleton in the button's place until GIS's iframe has a width", async () => {
+      const g = fakeGis();
+      let frame: HTMLIFrameElement | null = null;
+      const id: UiGoogleIdentity = {
+        ...g.id,
+        renderButton: (parent, o) => {
+          g.render.push(o);
+          frame = document.createElement('iframe');
+          parent.appendChild(frame);
+        },
+      };
+      const { f, el } = await make(() => Promise.resolve(id));
+      const gis = el.querySelector('.gis') as HTMLElement;
+      expect(gis.classList).toContain('skeleton');
+      report(frame!, 0);
+      f.detectChanges();
+      expect(gis.classList).toContain('skeleton');
+      report(frame!, 378);
+      f.detectChanges();
+      expect(gis.classList).not.toContain('skeleton');
+    });
   });
 
   it('shows a 40px skeleton while the script loads', async () => {

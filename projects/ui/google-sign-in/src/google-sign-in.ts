@@ -125,13 +125,23 @@ const GIS_MAX_WIDTH = 400;
 /** GIS's smallest button width. */
 const GIS_MIN_WIDTH = 200;
 
+/** A width in px as GIS takes it: whole pixels within its 200–400 range. */
+export function uiGoogleButtonWidth(px: number): number {
+  return Math.max(GIS_MIN_WIDTH, Math.min(GIS_MAX_WIDTH, Math.round(px)));
+}
+
 /**
  * `ui-google-sign-in` — Google's own "Sign in with Google" button (Google Identity Services), for
  * getting a Google ID token in the browser without a client secret. Emits the token as
  * `(credential)`; send it to your API, which verifies it against the same client ID.
  *
  * Loads the GIS script once on first use (shows a skeleton of the button's height meanwhile), then
- * `initialize`s with `ux_mode: 'popup'` and FedCM and renders the button. `theme` 'auto' is
+ * `initialize`s with `ux_mode: 'popup'` and FedCM and renders the button. Without `width` the button
+ * follows the host's width (GIS allows 200–400px): it is measured with a ResizeObserver, so a host that
+ * was hidden or not laid out yet when the button first rendered (behind a gate, in a closed panel) gets
+ * the full width once it shows, and the button sits centred in a host wider than 400px. GIS draws its
+ * button in an iframe that is 0px wide until Google's page loads; the skeleton stays under it until
+ * then, so the button doesn't pop in narrow and stretch. `theme` 'auto' is
  * 'filled_black' on a dark library theme and 'outline' otherwise, and re-renders when the theme
  * changes; GIS has no neutral theme, so 'neutral' renders as 'outline'. If the script can't load
  * (blocked, offline) it shows a disabled drawn button with the library's words and emits `(failed)`.
@@ -144,18 +154,20 @@ const GIS_MIN_WIDTH = 200;
   host: { class: 'ui-google-sign-in', '[attr.data-state]': 'state()' },
   template: `
     @if (state() === 'loading') {
-      <div class="skeleton" aria-hidden="true" [class.pill]="shape() === 'pill'" [style.width.px]="width() ?? null"></div>
+      <div class="slot skeleton" aria-hidden="true" [class.pill]="shape() === 'pill'" [style.width.px]="width() ?? null"></div>
     }
     @if (state() === 'failed') {
-      <ui-google-button [text]="fallbackText()" [theme]="theme()" [shape]="shape()" [disabled]="true" />
+      <div class="slot"><ui-google-button [text]="fallbackText()" [theme]="theme()" [shape]="shape()" [disabled]="true" [expand]="true" /></div>
     }
-    <div class="gis" #gis [hidden]="state() !== 'ready'"></div>
+    <div class="slot gis" #gis [hidden]="state() !== 'ready'" [class.skeleton]="painting()" [class.pill]="shape() === 'pill'"
+      [style.width.px]="options().width ?? null"></div>
   `,
   styles: `
-    :host { display: block; max-width: 400px; min-height: 40px; }
+    /* The host takes its container's width; the button (at most GIS's 400px) is centred in it. */
+    :host { display: block; min-height: 40px; }
+    .slot { width: 100%; max-width: 400px; margin-inline: auto; }
     .skeleton {
       height: 40px;
-      max-width: 100%;
       border-radius: 4px;
       background: linear-gradient(90deg, var(--ui-skeleton-base) 25%, var(--ui-skeleton-highlight) 37%, var(--ui-skeleton-base) 63%);
       background-size: 400% 100%;
@@ -164,7 +176,7 @@ const GIS_MIN_WIDTH = 200;
     .skeleton.pill { border-radius: 20px; }
     @keyframes ui-gsi-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
     @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
-    .gis { min-height: 40px; }
+    .gis { min-height: 40px; display: flex; justify-content: center; }
     .gis[hidden] { display: none; }
   `,
 })
@@ -188,6 +200,8 @@ export class UiGoogleSignIn {
   readonly failed = output<{ message: string }>();
 
   protected readonly state = signal<'loading' | 'ready' | 'failed'>('loading');
+  /** GIS's iframe is still 0px wide (Google's page hasn't loaded): the skeleton shows in its place. */
+  protected readonly painting = signal(false);
   private readonly dark = signal(false);
   private readonly gisRef = viewChild<ElementRef<HTMLElement>>('gis');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -195,6 +209,9 @@ export class UiGoogleSignIn {
   private readonly zone = inject(NgZone);
   private id: UiGoogleIdentity | null = null;
   private destroyed = false;
+  private resize?: ResizeObserver;
+  private frame?: ResizeObserver;
+  private paintTimer?: ReturnType<typeof setTimeout>;
 
   /** The drawn fallback's wording for the GIS text. */
   protected readonly fallbackText = computed<UiGoogleButtonText>(() => {
@@ -219,12 +236,15 @@ export class UiGoogleSignIn {
       logo_alignment: 'left',
     };
     const w = this.width() ?? this.fill();
-    if (w) o.width = Math.max(GIS_MIN_WIDTH, Math.min(GIS_MAX_WIDTH, Math.round(w)));
+    if (w) o.width = uiGoogleButtonWidth(w);
     const locale = this.locale();
     if (locale) o.locale = locale;
     return o;
   });
-  /** The host's width when no `width` is given (0: let GIS size itself). */
+  /**
+   * The host's width when no `width` is given (0: not laid out yet, GIS sizes itself), clamped to
+   * GIS's range so a host wider than 400px doesn't render the button again on every resize.
+   */
   private readonly fill = signal(0);
 
   constructor() {
@@ -235,12 +255,18 @@ export class UiGoogleSignIn {
     destroy.onDestroy(() => {
       this.destroyed = true;
       this.id = null;
+      this.resize?.disconnect();
+      this.stopPainting();
       const el = this.gisRef()?.nativeElement;
       if (el) el.replaceChildren();
     });
     afterNextRender(() => {
       if (!browser || this.destroyed) return;
-      this.fill.set(this.host.clientWidth);
+      this.measure(this.host.clientWidth);
+      if (typeof ResizeObserver !== 'undefined') {
+        this.resize = new ResizeObserver(([entry]) => this.zone.run(() => this.measure(entry.contentRect.width)));
+        this.resize.observe(this.host);
+      }
       uiGoogleObserveTheme(this.host, destroy, (d) => this.dark.set(d));
       void this.start();
     });
@@ -287,11 +313,40 @@ export class UiGoogleSignIn {
     this.id!.initialize(config);
   }
 
+  /** A new host width: kept only when it changes the button (0, hidden, keeps the last real width). */
+  private measure(px: number): void {
+    if (px > 0) this.fill.set(uiGoogleButtonWidth(px));
+  }
+
   private render(options: UiGoogleButtonOptions): void {
     const el = this.gisRef()?.nativeElement;
     if (!el) return;
     el.replaceChildren();
     this.id!.renderButton(el, options);
+    this.watchPaint(el);
+  }
+
+  /**
+   * GIS's iframe starts 0px wide and takes the button's width once Google's page has loaded; until
+   * then the skeleton shows in the button's place. Given up after 3s (a blocked frame stays as GIS left it).
+   */
+  private watchPaint(el: HTMLElement): void {
+    this.stopPainting();
+    const frame = el.querySelector('iframe');
+    if (!frame || frame.getBoundingClientRect().width > 0 || typeof ResizeObserver === 'undefined') return;
+    this.painting.set(true);
+    this.frame = new ResizeObserver(([entry]) => {
+      if (entry.contentRect.width > 0) this.zone.run(() => this.stopPainting());
+    });
+    this.frame.observe(frame);
+    this.paintTimer = setTimeout(() => this.zone.run(() => this.stopPainting()), 3000);
+  }
+
+  private stopPainting(): void {
+    this.frame?.disconnect();
+    this.frame = undefined;
+    clearTimeout(this.paintTimer);
+    this.painting.set(false);
   }
 
   private fail(e: unknown): void {
