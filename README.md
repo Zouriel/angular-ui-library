@@ -90,6 +90,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   types and modifiers may be snake_case (`sharp_right`, `end_of_road`) as well as OSRM's words (`uiNavWord`).
   `ui-fab` `bottomOffset` floats a bottom fab above a sheet's peek (eased). `npm run audit:nav` measures it all in a
   browser.
+- **0.47.3**: `ui-google-sign-in` follows its host's width: it measures again whenever the host resizes (it used to
+  measure once, so a page that loaded hidden, such as behind a location gate, kept Google's narrowest 219px button),
+  centres the button up to Google's 400px limit, and keeps its skeleton until Google's frame has drawn, so it no
+  longer pops from 0 to full width. The bottom sheet needed no change here: since 0.44.2 its body's scroll box ends
+  at the footer's top, so a focused field scrolls clear of the footer natively (Flutter gained the same in 0.47.3).
 - **0.47.2**: navigation action hold and status wrapping. `button[uiNavAction]` takes `hold` (2 s, `UI_NAV_HOLD_MS`) or
   `[holdMs]`: it fires `(confirmed)` only when held to the end, on the library's hold logic (`UiHoldPress`, as
   `ui-hold-button` and a holding `ui-fab`). A ring in the button's ink fills clockwise round its edge; letting go or
