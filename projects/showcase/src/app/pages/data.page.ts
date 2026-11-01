@@ -255,9 +255,11 @@ nodes: UiTreeNode[] = [
       </doc-section>
 
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
+        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot; tier makes it a premium tier's metal, gold or platinum, the same in every theme. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
 <ui-badge tone=&quot;danger&quot; [dot]=&quot;true&quot; role=&quot;img&quot; aria-label=&quot;Offline&quot; />
+<ui-badge tier=&quot;gold&quot;>Gold pass</ui-badge>
+<ui-badge tier=&quot;platinum&quot;>Platinum pass</ui-badge>
 <ui-chip tone=&quot;primary&quot; [removable]=&quot;true&quot; label=&quot;angular&quot; (remove)=&quot;drop('angular')&quot;>angular</ui-chip>
 <ui-avatar-group style=&quot;--ui-avatar-ring: var(--ui-color-surface)&quot;>
   <ui-avatar name=&quot;Ada Lovelace&quot; />
@@ -266,6 +268,11 @@ nodes: UiTreeNode[] = [
           <div class="row">
             <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge><ui-badge tone="success">success</ui-badge>
             <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
+          </div>
+          <!-- 0.47.8: premium tiers, the same metal in every theme. -->
+          <div class="row">
+            <ui-badge tier="gold">Gold pass</ui-badge><ui-badge tier="platinum">Platinum pass</ui-badge>
+            <ui-badge tier="gold" [dot]="true" role="img" aria-label="Gold" /><ui-badge tier="platinum" [dot]="true" role="img" aria-label="Platinum" />
           </div>
           <!-- 0.46.1: Thaana's marks below the line stay inside the pill (lang="dv" or a right-to-left page). -->
           <div class="row thaana-pills" lang="dv" dir="rtl">
@@ -581,6 +588,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   ];
   protected readonly badgeApi: ApiRow[] = [
     { name: 'badge: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
+    { name: 'badge: tier', type: "'gold' | 'platinum' | null", default: 'null', desc: 'A premium tier: warm gold or cool platinum, the same in every theme (AA in all of them; a darker edge keeps it visible on a white page). Wins over tone.' },
     { name: 'badge: dot', type: 'boolean', default: 'false', desc: 'Bare 8px status dot. It has no text, so give the host role="img" and an aria-label.' },
     { name: 'chip: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
     { name: 'chip: removable', type: 'boolean', default: 'false', desc: 'Show a remove button.' },

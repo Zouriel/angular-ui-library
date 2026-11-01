@@ -706,3 +706,80 @@ describe('see-through glass', () => {
     expect(fails).toEqual([]);
   });
 });
+
+/* ── Premium tier metals on ui-badge (0.47.8) ─────────────────────────────────────────────────────── */
+
+describe('badge tier metals', () => {
+  const blocks: Record<string, Record<string, string>> = {};
+  for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+    const text = withoutComments(readFileSync(join(root, file), 'utf8'));
+    for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+      for (const sel of m[1].split(',').map((s) => s.trim())) blocks[sel] = { ...blocks[sel], ...decls };
+    }
+  }
+  const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+  const names = Object.keys(blocks).filter((k) => /^\[data-theme="[\w-]+"\]$/.test(k));
+  const tiers = ['gold', 'platinum'] as const;
+
+  function reader(vars: Record<string, string>) {
+    const get = (k: string, depth = 0): Rgba | null => {
+      const v = vars[k] ?? '';
+      const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+      return ref && depth < 8 ? get(ref[1], depth + 1) : parseColor(v);
+    };
+    return get;
+  }
+
+  it('sees every theme', () => {
+    expect(names.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it('holds AA for the text on every stop of the sheen, in every theme', () => {
+    const fails: string[] = [];
+    for (const sel of names) {
+      const vars = { ...base, ...blocks[sel] };
+      const get = reader(vars);
+      for (const tier of tiers) {
+        const stops = [...(vars[`--ui-gradient-tier-${tier}`] ?? '').matchAll(/var\((--ui-[\w-]+)\)/g)].map((m) => m[1]);
+        if (stops.length < 2) fails.push(`${sel}: ${tier} has no sheen`);
+        for (const stop of stops) {
+          const r = contrast(get(`--ui-tier-${tier}-contrast`)!, get(stop)!);
+          if (r < 4.5) fails.push(`${sel}: ${tier} text on ${stop} is ${r.toFixed(2)}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('keeps the pill visible on every page: its edge or its fill at 3:1', () => {
+    const fails: string[] = [];
+    let checked = 0;
+    for (const sel of names) {
+      const get = reader({ ...base, ...blocks[sel] });
+      const bg = get('--ui-color-bg');
+      if (!bg) { fails.push(`${sel}: no readable page colour`); continue; }
+      for (const tier of tiers) {
+        for (const g of ['--ui-color-bg', '--ui-color-surface', '--ui-color-surface-raised']) {
+          const raw = get(g);
+          if (!raw) continue; // a colour-mix() surface; bg is always checked
+          const ground = over(raw, bg);
+          checked++;
+          const best = Math.max(contrast(get(`--ui-tier-${tier}-border`)!, ground), contrast(get(`--ui-tier-${tier}`)!, ground));
+          if (best < 3) fails.push(`${sel}: ${tier} on ${g} is ${best.toFixed(2)}:1`);
+        }
+      }
+    }
+    expect(checked).toBeGreaterThanOrEqual(names.length * tiers.length);
+    expect(fails).toEqual([]);
+  });
+
+  it('reads as the metal: gold warm, platinum cool and light, and they differ', () => {
+    const get = reader(base);
+    const gold = get('--ui-tier-gold')!;
+    const platinum = get('--ui-tier-platinum')!;
+    expect(gold[0] - gold[2]).toBeGreaterThan(120);
+    expect(platinum[2]).toBeGreaterThan(platinum[0]);
+    expect(lum(platinum)).toBeGreaterThan(0.5);
+  });
+});

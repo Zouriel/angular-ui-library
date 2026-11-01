@@ -8,6 +8,8 @@ export type UiButtonSize = UiSize | 'xl';
 
 /** Status/tone scale shared by badges, chips, progress, etc. */
 export type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
+/** A premium tier on `ui-badge`: not a status, so it stays out of UiStatus and everything that switches on it. */
+export type UiBadgeTier = 'gold' | 'platinum';
 
 /**
  * How see-through a glass bottom sheet or floating panel is (0.41.3). `'clear'`: for a map in the

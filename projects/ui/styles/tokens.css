@@ -286,6 +286,21 @@
   --ui-map-route-success: var(--ui-color-success);
   --ui-map-route-warning: var(--ui-color-warning);
   --ui-map-route-danger: var(--ui-color-danger);
+
+  /* Premium tiers on ui-badge (`tier`, 0.47.8). A metal is the same metal on any page, so these stay
+     the same in every theme: dark text on a light metal holds AA by itself, the sheen is horizontal so
+     Flutter draws it identically, and the darker edge keeps the pill visible on a white page (the fill
+     does that on a dark page or a poster). style-contract.spec checks all of this in every theme. */
+  --ui-tier-gold: #d9a520;
+  --ui-tier-gold-light: #f2d272;
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-gold-contrast: #2b1e00;
+  --ui-gradient-tier-gold: linear-gradient(90deg, var(--ui-tier-gold) 0%, var(--ui-tier-gold-light) 50%, var(--ui-tier-gold) 100%);
+  --ui-tier-platinum: #cdd4dd;
+  --ui-tier-platinum-light: #eef1f5;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-platinum-contrast: #1f2933;
+  --ui-gradient-tier-platinum: linear-gradient(90deg, var(--ui-tier-platinum) 0%, var(--ui-tier-platinum-light) 50%, var(--ui-tier-platinum) 100%);
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
