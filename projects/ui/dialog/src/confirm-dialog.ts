@@ -24,8 +24,9 @@ import { injectUiStrings } from '@zouriel/ui';
   styles: `
     .msg { margin: 0; color: var(--ui-color-text-muted); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; }
     /* Normal confirm: right-aligned, 8px apart. Destructive: Cancel far-left, the action far-right.
+       Labels too long for one line stack the buttons.
        No :host here: the modal renders in an overlay on <body>, outside this host element. */
-    .actions { display: flex; flex: 1 1 auto; justify-content: flex-end; gap: var(--ui-space-2); }
+    .actions { display: flex; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; gap: var(--ui-space-2); }
     .actions.destructive { justify-content: space-between; }
   `,
 })

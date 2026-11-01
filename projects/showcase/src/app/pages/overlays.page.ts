@@ -118,10 +118,11 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Confirm dialog" selector="ui-confirm-dialog" [api]="confirmApi" [outputs]="confirmOut"
-        summary="Confirm/cancel prompt built on a small ui-modal, so it traps and returns focus the same way. Bind [(open)]; listen to (confirm) and (cancel). (cancel) fires only for the Cancel button: Escape, the backdrop and the close button just set open to false. Normally both buttons sit right-aligned; with destructive the confirm button turns red and Cancel moves to the far left, away from it.">
+        summary="Confirm/cancel prompt built on a small ui-modal, so it traps and returns focus the same way. Bind [(open)]; listen to (confirm) and (cancel). (cancel) fires only for the Cancel button: Escape, the backdrop and the close button just set open to false. Normally both buttons sit right-aligned; with destructive the confirm button turns red and Cancel moves to the far left, away from it. Labels too long for one line stack the buttons.">
         <doc-demo code="<ui-confirm-dialog [(open)]=&quot;open&quot; title=&quot;Delete?&quot; message=&quot;…&quot;
   confirmLabel=&quot;Delete&quot; [destructive]=&quot;true&quot; (confirm)=&quot;remove()&quot; />">
           <ui-button variant="destructive" (click)="confirm.set(true)">Delete…</ui-button>
+          <ui-button variant="outline" (click)="confirmLong.set(true)">Long labels</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -250,6 +251,7 @@ onKey(e: KeyboardEvent) {
       </div>
     </ui-drawer>
     <ui-confirm-dialog [(open)]="confirm" title="Delete item?" message="This cannot be undone." confirmLabel="Delete" [destructive]="true" (confirm)="toast.warning('Deleted')" />
+    <ui-confirm-dialog [(open)]="confirmLong" title="Delete this event?" message="On a phone the buttons stack." confirmLabel="Delete this event for good" cancelLabel="Keep this event for now" [destructive]="true" />
   `,
   styles: `
     .sheet-foot { display: flex; }
@@ -364,6 +366,7 @@ interface UiToastAction {
   </div>
 </ui-drawer>`;
   protected readonly confirm = signal(false);
+  protected readonly confirmLong = signal(false);
   protected readonly menuItems: UiMenuItem[] = [
     { label: 'Edit', value: 'edit' }, { label: 'Duplicate', value: 'dup' }, { label: 'Delete', value: 'del', danger: true },
   ];
