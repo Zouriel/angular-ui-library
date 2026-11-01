@@ -161,4 +161,11 @@ describe('UiMediaLightbox', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.sheet')).toBeNull();
   });
+
+  it('keeps the page one column wide, so a long thumbnail strip scrolls and can not push the photo off screen', () => {
+    // jsdom has no layout, so this reads the rule itself; the real measurement was taken in a browser with
+    // 322 items, where without it the photo sat about 9,800px to the right of the screen.
+    const css = (UiMediaLightbox as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('');
+    expect(css.replace(/\s+/g, ' ')).toMatch(/\.sheet[^}]*grid-template-columns: ?minmax\(0, ?1fr\)/);
+  });
 });

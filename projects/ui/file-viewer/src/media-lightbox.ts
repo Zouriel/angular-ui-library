@@ -368,7 +368,7 @@ function fmt(seconds: number): string {
     /* --lb-drag is how far a dismissing drag has come, --lb-veil how much of the dark is left. Both
        are set from the gesture so the whole sheet moves and fades as one thing. */
     .sheet { position: relative; width: 100%; height: 100%; overflow: hidden;
-      display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'top' 'stage' 'bottom';
+      display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'top' 'stage' 'bottom';
       background: color-mix(in srgb, var(--ui-media-scrim) calc(92% * var(--lb-veil, 1)), transparent);
       transform: translateY(var(--lb-drag, 0px)) scale(calc(1 - 0.06 * (1 - var(--lb-veil, 1))));
       transform-origin: 50% 40%; }
