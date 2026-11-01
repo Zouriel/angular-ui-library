@@ -90,6 +90,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   types and modifiers may be snake_case (`sharp_right`, `end_of_road`) as well as OSRM's words (`uiNavWord`).
   `ui-fab` `bottomOffset` floats a bottom fab above a sheet's peek (eased). `npm run audit:nav` measures it all in a
   browser.
+- **0.47.6**: `uiPinch` (in `@zouriel/ui/behaviors`) reports a two-finger pinch as steps, for a photo grid that
+  changes its column count: `(uiPinchIn)` at 0.8 times the baseline distance, `(uiPinchOut)` at 1.25 times, then the
+  current distance is the new baseline. It cancels `touchmove` only while two fingers are on the host, so the page
+  doesn't zoom and one finger still scrolls. `[uiPinchDisabled]` turns it off.
 - **0.47.3**: `ui-google-sign-in` follows its host's width: it measures again whenever the host resizes (it used to
   measure once, so a page that loaded hidden, such as behind a location gate, kept Google's narrowest 219px button),
   centres the button up to Google's 400px limit, and keeps its skeleton until Google's frame has drawn, so it no

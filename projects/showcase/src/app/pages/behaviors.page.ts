@@ -1,13 +1,13 @@
 import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
-import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition, type UiSize2D, type UiSlideFrom } from '@zouriel/ui/behaviors';
+import { UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiPinch, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition, type UiSize2D, type UiSlideFrom } from '@zouriel/ui/behaviors';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-behaviors',
   imports: [
-    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition,
+    UiButton, UiBadge, UiCopyToClipboard, UiRipple, UiInfiniteScroll, UiIntersect, UiResizeObserver, UiPinch, UiScrollFade, UiSwipe, UiVirtualList, UiSlideTransition,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -82,6 +82,22 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
         </doc-demo>
       </doc-section>
 
+      <doc-section name="pinch" selector="[uiPinch]" [api]="pinchApi" [outputs]="pinchOut"
+        summary="Reports a two-finger pinch as steps, not a scale, for a photo grid that changes its column count. The distance between the fingers is the baseline: at 1.25 times it uiPinchOut fires, at 0.8 times it uiPinchIn fires, and the current distance becomes the new baseline, so one long pinch can take several steps. A third finger is ignored. While two fingers are on the host it cancels touchmove so the page does not zoom; one finger is never cancelled, so the page still scrolls and an enclosing uiSwipe still works.">
+        <doc-demo code="<div uiPinch (uiPinchIn)=&quot;columns.set(columns() + 1)&quot; (uiPinchOut)=&quot;columns.set(columns() - 1)&quot;>…</div>">
+          <div class="pinch-demo">
+            <div class="pinch-bar">
+              <span class="plain">{{ pinchColumns() }} {{ pinchColumns() === 1 ? 'column' : 'columns' }}. Pinch with two fingers on a touch screen.</span>
+              <ui-button size="sm" variant="outline" [disabled]="pinchColumns() === 2" (click)="pinchBy(-1)">Fewer</ui-button>
+              <ui-button size="sm" variant="outline" [disabled]="pinchColumns() === 6" (click)="pinchBy(1)">More</ui-button>
+            </div>
+            <div class="pinch-grid" uiPinch [style.--pinch-columns]="pinchColumns()" (uiPinchIn)="pinchBy(1)" (uiPinchOut)="pinchBy(-1)">
+              @for (n of pinchTiles; track n) { <div class="pinch-tile">{{ n }}</div> }
+            </div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="intersect" selector="[uiIntersect]" [api]="intersectApi" [outputs]="intersectOut"
         summary="Emits true when the host enters the viewport and false when it leaves (the first report can be false if it starts out of view). With uiIntersectOnce it stops observing after the first true. The root margin is read once, on init.">
         <doc-demo code="<div (uiIntersect)=&quot;onVisible($event)&quot; [uiIntersectOnce]=&quot;true&quot;>…</div>">
@@ -153,6 +169,11 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
     .ln { display: flex; align-items: center; height: var(--ui-size-md); box-sizing: border-box; padding: 0 var(--ui-space-3); font-size: var(--ui-font-size-sm); }
     .ln + .ln { border-top: 1px solid var(--ui-color-border); }
     .ln.muted { color: var(--ui-color-text-muted); }
+    .pinch-demo { display: grid; gap: var(--ui-space-2); max-width: 420px; }
+    .pinch-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }
+    .pinch-bar .plain { flex: 1 1 100%; }
+    .pinch-grid { display: grid; grid-template-columns: repeat(var(--pinch-columns), minmax(0, 1fr)); gap: var(--ui-space-1); }
+    .pinch-tile { display: grid; place-items: center; aspect-ratio: 1; border-radius: var(--ui-radius); border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .swipe { display: grid; gap: var(--ui-space-1); place-content: center; text-align: center; height: 140px; border: 1px dashed var(--ui-color-border-strong);
       padding: 0 var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle); user-select: none; cursor: grab; }
     .swipe strong { font-size: var(--ui-font-size-lg); }
@@ -181,6 +202,18 @@ export class BehaviorsPage {
     { name: 'isSwipe(dx, dy, ms, width)', type: 'function', default: '', desc: 'Whether a finished drag was a swipe.' },
     { name: 'resist(dx, width, blocked)', type: 'function', default: '', desc: 'How far to follow a drag, with a rubber-band when there is nothing that way.' },
     { name: 'SWIPE_FRACTION / SWIPE_MIN / SWIPE_MAX / FLICK_DISTANCE / FLICK_SPEED / RUBBER_BAND', type: 'number', default: '0.2 / 32 / 72 / 24 / 0.4 / 0.25', desc: 'The shared thresholds.' },
+  ];
+  protected readonly pinchColumns = signal(3);
+  protected readonly pinchTiles = Array.from({ length: 12 }, (_, i) => i + 1);
+  protected pinchBy(step: number): void {
+    this.pinchColumns.set(Math.min(6, Math.max(2, this.pinchColumns() + step)));
+  }
+  protected readonly pinchApi: ApiRow[] = [
+    { name: 'uiPinchDisabled', type: 'boolean', default: 'false', desc: 'Stop reacting: nothing fires and nothing is cancelled.' },
+  ];
+  protected readonly pinchOut: ApiRow[] = [
+    { name: 'uiPinchIn', type: 'void', default: '—', desc: 'The fingers moved together, to 0.8 times the baseline (a gallery shows more columns).' },
+    { name: 'uiPinchOut', type: 'void', default: '—', desc: 'The fingers moved apart, to 1.25 times the baseline (a gallery shows fewer columns).' },
   ];
   protected readonly swipeOut: ApiRow[] = [
     { name: 'uiSwipeLeft', type: 'void', default: '—', desc: 'Finger moved right-to-left (go forward).' },

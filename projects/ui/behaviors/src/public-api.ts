@@ -6,5 +6,6 @@ export * from './resize-observer';
 export * from './virtual-list';
 export * from './gestures';
 export * from './swipe';
+export * from './pinch';
 export * from './scroll-fade';
 export * from './slide-transition';

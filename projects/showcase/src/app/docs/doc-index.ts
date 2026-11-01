@@ -241,6 +241,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'slideTransition', anchor: 'slide-transition' },
     { name: 'ripple', anchor: 'ripple' },
     { name: 'swipe', anchor: 'swipe' },
+    { name: 'pinch', anchor: 'pinch' },
     { name: 'intersect', anchor: 'intersect' },
     { name: 'infiniteScroll', anchor: 'infinitescroll' },
     { name: 'scrollFade', anchor: 'scrollfade' },
