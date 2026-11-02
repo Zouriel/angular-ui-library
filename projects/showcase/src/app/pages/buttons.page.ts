@@ -18,7 +18,7 @@ import {
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
 import {
-  UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn,
+  UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton,
   type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -128,7 +128,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -210,6 +210,38 @@ type UiGoogleButtonShape = 'rectangular' | 'pill';"
             </div>
             <ui-google-button [expand]="true" text="continueWith" />
             <ui-text variant="caption">Pressed {{ googlePresses() }} times</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Apple button" anchor="apple-button" selector="ui-apple-button" [api]="appleButtonApi" [outputs]="appleButtonOut"
+        shapes="// from @zouriel/ui/google-sign-in
+type UiAppleButtonText = 'signIn' | 'continueWith' | 'signUp';
+type UiAppleButtonTheme = 'auto' | 'black' | 'white' | 'whiteOutline';
+type UiAppleButtonShape = 'rectangular' | 'pill';"
+        summary="The Sign in with Apple button drawn to Apple's Human Interface Guidelines: the Apple logo and the words centred together (also when expanded), Apple's black (white words), white (black words, no border) and white with a 1px black outline, the same in every theme. 40px high like the Google button, so the two line up; 6px corners or pill; 16px each side; the system font (-apple-system, SF Pro, then Segoe UI or Roboto) Medium 17/20; logo, 6px, words, and the logo first in reading order in RTL too. auto (the default) is white on a dark theme and black otherwise, and follows theme changes. It is a plain button that emits (pressed): the app runs its own Sign in with Apple flow. loading swaps the logo for a spinner of the same size, aria-busy and not clickable. The words come from the library strings (appleSignIn, appleContinue, appleSignUp). The Flutter twin is UiAppleSignInButton. From @zouriel/ui/google-sign-in.">
+        <doc-demo lang="ts + html" code="import { UiAppleButton } from '@zouriel/ui/google-sign-in';
+
+<ui-apple-button [loading]=&quot;busy()&quot; (pressed)=&quot;startAppleSignIn()&quot; />
+<ui-apple-button theme=&quot;whiteOutline&quot; shape=&quot;pill&quot; text=&quot;continueWith&quot; />
+<ui-apple-button text=&quot;continueWith&quot; [expand]=&quot;true&quot; />">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 400px">
+            <div class="row items-center">
+              <ui-apple-button [loading]="appleBusy()" (pressed)="fakeApple()" />
+              <ui-apple-button theme="black" text="continueWith" />
+            </div>
+            <div class="row items-center">
+              <ui-apple-button theme="white" text="signUp" />
+              <ui-apple-button theme="whiteOutline" />
+            </div>
+            <div class="row items-center">
+              <ui-apple-button theme="whiteOutline" shape="pill" text="continueWith" />
+              <ui-apple-button [loading]="true" />
+              <ui-apple-button [disabled]="true" />
+            </div>
+            <ui-apple-button [expand]="true" text="continueWith" />
+            <ui-google-button [expand]="true" text="continueWith" />
+            <ui-text variant="caption">Pressed {{ applePresses() }} times</ui-text>
           </div>
         </doc-demo>
       </doc-section>
@@ -446,6 +478,15 @@ export class ButtonsPage {
   protected readonly held = signal(0);
   protected readonly googleBusy = signal(false);
   protected readonly googlePresses = signal(0);
+  protected readonly appleBusy = signal(false);
+  protected readonly applePresses = signal(0);
+  protected fakeApple(): void {
+    this.appleBusy.set(true);
+    setTimeout(() => {
+      this.appleBusy.set(false);
+      this.applePresses.update((n) => n + 1);
+    }, 1000);
+  }
   protected readonly gsiToken = signal<string | null>(null);
   protected readonly gsiError = signal<string | null>(null);
   protected fakeGoogle(): void {
@@ -465,6 +506,16 @@ export class ButtonsPage {
     { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
   ];
   protected readonly googleButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
+  protected readonly appleButtonApi: ApiRow[] = [
+    { name: 'text', type: 'UiAppleButtonText', default: "'signIn'", desc: "'signIn' (Sign in with Apple), 'continueWith' (Continue with Apple), 'signUp' (Sign up with Apple)." },
+    { name: 'theme', type: 'UiAppleButtonTheme', default: "'auto'", desc: "Apple's 'black', 'white' or 'whiteOutline'; 'auto' is white on a dark library theme, black otherwise." },
+    { name: 'shape', type: 'UiAppleButtonShape', default: "'rectangular'", desc: "'rectangular' (6px corners) or 'pill'." },
+    { name: 'loading', type: 'boolean', default: 'false', desc: 'Spinner the size of the logo in its place, same width, aria-busy, not clickable.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
+    { name: 'expand', type: 'boolean', default: 'false', desc: 'Full width; the logo and words stay centred together.' },
+    { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
+  ];
+  protected readonly appleButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
   protected readonly gsiApi: ApiRow[] = [
     { name: 'clientId', type: 'string (required)', default: '—', desc: 'Your OAuth web client ID.' },
     { name: 'text', type: "'signin_with' | 'signup_with' | 'continue_with' | 'signin'", default: "'signin_with'", desc: "GIS's wording." },

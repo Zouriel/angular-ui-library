@@ -61,6 +61,11 @@ export interface UiStrings {
   googleSignUp: string;
   googleContinue: string;
   googleSignInShort: string;
+  /** Sign in with Apple button: Apple's approved wordings (Human Interface Guidelines, "Sign in with
+   *  Apple"); a translation must keep the meaning. */
+  appleSignIn: string;
+  appleSignUp: string;
+  appleContinue: string;
   /** Sidebar layout: the menu (burger) button, the drawer's close button (shown to keyboard and
    *  screen-reader users), and the drawer's name. */
   sidebarToggle: string;
@@ -377,6 +382,9 @@ export const defaultUiStrings: UiStrings = {
   googleSignUp: 'Sign up with Google',
   googleContinue: 'Continue with Google',
   googleSignInShort: 'Sign in',
+  appleSignIn: 'Sign in with Apple',
+  appleSignUp: 'Sign up with Apple',
+  appleContinue: 'Continue with Apple',
   sidebarToggle: 'Toggle navigation',
   sidebarClose: 'Close navigation',
   sidebarLabel: 'Navigation',
@@ -558,6 +566,9 @@ export const uiStringsDv: UiStrings = {
   googleSignUp: 'ގޫގުލްއިން ސައިން އަޕް ކުރޭ',
   googleContinue: 'ގޫގުލްއިން ކުރިއަށް',
   googleSignInShort: 'ސައިން އިން',
+  appleSignIn: 'އެޕަލްއިން ސައިން އިން ކުރޭ',
+  appleSignUp: 'އެޕަލްއިން ސައިން އަޕް ކުރޭ',
+  appleContinue: 'އެޕަލްއިން ކުރިއަށް',
   sidebarToggle: 'މެނޫ',
   sidebarClose: 'މެނޫ ބަންދުކުރޭ',
   sidebarLabel: 'ނެވިގޭޝަން',

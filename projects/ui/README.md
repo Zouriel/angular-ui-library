@@ -76,7 +76,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `chat-bubble` | chat bubble (also re-exported from `data`) |
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, route lines, fit-to-points, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
-| `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button) and `UiGoogleAuthorization` (an access token for more scopes); see below |
+| `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button), `ui-apple-button` (Sign in with Apple, drawn to Apple's HIG) and `UiGoogleAuthorization` (an access token for more scopes); see below |
 | `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
@@ -132,6 +132,17 @@ import { UiGoogleSignIn } from '@zouriel/ui/google-sign-in';
   the library font (`--ui-font-default`).
 - Flutter: `UiGoogleSignInButton` draws the same button; the app pairs it with the `google_sign_in`
   package (`authenticate()` → `idToken`, with `serverClientId` = this web client ID).
+- `ui-apple-button` is the Sign in with Apple button drawn to Apple's Human Interface Guidelines:
+  the Apple logo and the words centred together (also when `expand`ed), Apple's colours fixed in
+  every theme (`black`: black with white; `white`: white with black, no border; `whiteOutline`:
+  white with black and a 1px black border), 40px high like `ui-google-button` so the two line up,
+  6px corners or `pill`, the system font (`-apple-system`, SF Pro, then Segoe UI / Roboto) Medium
+  17/20. Inputs: `text` (`'signIn' | 'continueWith' | 'signUp'`), `theme` (`'auto' | 'black' |
+  'white' | 'whiteOutline'`; auto is white on a dark library theme, black otherwise, the same
+  detection as the Google button), `shape`, `loading` (a spinner the size of the logo, aria-busy,
+  not clickable), `disabled`, `expand`, `ariaLabel`; output `(pressed)`. Words from
+  `provideUiStrings` (`appleSignIn`, `appleContinue`, `appleSignUp`). It only draws the button: the
+  app runs its own Sign in with Apple flow. Flutter: `UiAppleSignInButton`.
 
 ### Asking for more Google data
 

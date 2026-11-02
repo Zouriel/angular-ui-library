@@ -115,7 +115,8 @@ describe('style contract', () => {
     // effects whose colours are documented, overridable inputs.
     // Also Google's brand colours on the drawn sign-in button, fixed by
     // https://developers.google.com/identity/branding-guidelines whatever the theme.
-    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/, /^google-sign-in\/src\/google-button\.ts$/];
+    // And Apple's black/white on the drawn Sign in with Apple button, fixed by Apple's HIG.
+    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/, /^google-sign-in\/src\/google-button\.ts$/, /^google-sign-in\/src\/apple-button\.ts$/];
     const bad: string[] = [];
     for (const { file, text } of css) {
       if (allowed.some((r) => r.test(file))) continue;

@@ -35,6 +35,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   Identity Services' own button and emits the ID token; `ui-google-button` is the same button drawn
   to Google's branding guidelines, for apps with their own OAuth flow (and the twin of Flutter's
   `UiGoogleSignInButton`).
+- **Sign in with Apple** (`@zouriel/ui/google-sign-in`, next release): `ui-apple-button` draws Apple's
+  button to the Human Interface Guidelines (black, white, white with outline; 40px, lined up with
+  `ui-google-button`), a plain button for the app's own Sign in with Apple flow (the twin of
+  Flutter's `UiAppleSignInButton`).
 - **App shell, feature card, Google authorization** (0.37): `ui-sidebar-layout` puts the sidebar on
   the start side (right in RTL), takes its words from `provideUiStrings`, and with `[bar]="false"`
   and `fill` becomes a full-height chat-style shell driven by the app's own top bar (`compact()`,
