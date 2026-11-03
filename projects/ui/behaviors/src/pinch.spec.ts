@@ -20,6 +20,7 @@ import { UiSwipe } from './swipe';
         [uiPinchDisabled]="off()"
         (uiPinchIn)="went.push('in')"
         (uiPinchOut)="went.push('out')"
+        (uiPinchStep)="steps.push($event)"
       >
         <p id="a">a</p>
         <p id="b">b</p>
@@ -30,6 +31,7 @@ import { UiSwipe } from './swipe';
 class Host {
   readonly off = signal(false);
   readonly went: string[] = [];
+  readonly steps: { apart: boolean; x: number; y: number }[] = [];
 }
 
 /** A finger: its id, where it landed and its horizontal position. */
@@ -92,6 +94,42 @@ describe('UiPinch', () => {
     expect(host.went).toEqual([]);
     move(b, 125);
     expect(host.went).toEqual(['out']);
+  });
+
+  it('takes pinch-zoom from the browser on the host only, and gives it back when disabled', () => {
+    // The browser decides at the first touch; a scroll already under way makes moves uncancellable.
+    expect(el('host').style.touchAction).toBe('pan-x pan-y');
+    host.off.set(true);
+    fixture.detectChanges();
+    expect(el('host').style.touchAction).toBe('');
+    expect(el('outside').style.touchAction).toBe('');
+  });
+
+  it("cancels Safari's own pinch gesture events on the host, with a non-passive listener", () => {
+    for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      el('a').dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(true);
+    }
+    const outside = new Event('gesturestart', { bubbles: true, cancelable: true });
+    el('outside').dispatchEvent(outside);
+    expect(outside.defaultPrevented).toBe(false);
+    host.off.set(true);
+    fixture.detectChanges();
+    const off = new Event('gesturestart', { bubbles: true, cancelable: true });
+    el('a').dispatchEvent(off);
+    expect(off.defaultPrevented).toBe(false);
+  });
+
+  it('reports each step with its direction and the point between the fingers', () => {
+    const [, b] = pinch();
+    move(b, 125);
+    move(b, 100);
+    expect(host.steps).toEqual([
+      { apart: true, x: 62.5, y: 300 },
+      { apart: false, x: 50, y: 300 },
+    ]);
+    expect(host.went).toEqual(['out', 'in']);
   });
 
   it('steps in at exactly 0.8x the baseline, and not before', () => {

@@ -155,6 +155,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Scrim', anchor: 'scrim' },
     { name: 'Selectable', anchor: 'selectable' },
     { name: 'Selection bar', anchor: 'selection-bar' },
+    { name: 'Masonry grid', anchor: 'masonry-grid' },
     { name: 'Task progress', anchor: 'task-progress' },
     { name: 'Image picker', anchor: 'image-picker' },
   ],

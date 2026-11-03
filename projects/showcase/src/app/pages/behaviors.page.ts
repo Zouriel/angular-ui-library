@@ -83,7 +83,7 @@ el.style.translate = resist(dx, stageWidth, atEnd) + 'px 0';  // rubber-band at 
       </doc-section>
 
       <doc-section name="pinch" selector="[uiPinch]" [api]="pinchApi" [outputs]="pinchOut"
-        summary="Reports a two-finger pinch as steps, not a scale, for a photo grid that changes its column count. The distance between the fingers is the baseline: at 1.25 times it uiPinchOut fires, at 0.8 times it uiPinchIn fires, and the current distance becomes the new baseline, so one long pinch can take several steps. A third finger is ignored. While two fingers are on the host it cancels touchmove so the page does not zoom; one finger is never cancelled, so the page still scrolls and an enclosing uiSwipe still works.">
+        summary="Reports a two-finger pinch as steps, not a scale, for a photo grid that changes its column count. The distance between the fingers is the baseline: at 1.25 times it uiPinchOut fires, at 0.8 times it uiPinchIn fires, and the current distance becomes the new baseline, so one long pinch can take several steps. A third finger is ignored. The host gets touch-action: pan-x pan-y (the browser decides at the first touch whether a pinch may zoom, and a scroll already under way makes later moves uncancellable), cancels Safari's gesture events, and cancels touchmove while two fingers are on it, so a pinch on it never zooms the page; one finger still scrolls, an enclosing uiSwipe still works, and a pinch elsewhere on the page still zooms it. uiPinchStep reports each step with its direction and the point between the fingers. For a photo grid, ui-masonry-grid (Media) has this built in, animated.">
         <doc-demo code="<div uiPinch (uiPinchIn)=&quot;columns.set(columns() + 1)&quot; (uiPinchOut)=&quot;columns.set(columns() - 1)&quot;>…</div>">
           <div class="pinch-demo">
             <div class="pinch-bar">
@@ -214,6 +214,7 @@ export class BehaviorsPage {
   protected readonly pinchOut: ApiRow[] = [
     { name: 'uiPinchIn', type: 'void', default: '—', desc: 'The fingers moved together, to 0.8 times the baseline (a gallery shows more columns).' },
     { name: 'uiPinchOut', type: 'void', default: '—', desc: 'The fingers moved apart, to 1.25 times the baseline (a gallery shows fewer columns).' },
+    { name: 'uiPinchStep', type: 'UiPinchStep { apart: boolean; x: number; y: number }', default: '—', desc: 'Every step, just before the two above: its direction and the point between the fingers (client coordinates).' },
   ];
   protected readonly swipeOut: ApiRow[] = [
     { name: 'uiSwipeLeft', type: 'void', default: '—', desc: 'Finger moved right-to-left (go forward).' },

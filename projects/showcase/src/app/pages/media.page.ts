@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
@@ -14,7 +14,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiTaskProgressDialog, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiTaskProgressDialog, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -25,6 +25,8 @@ function grad(a: string, b: string): string {
     .pt-line { display: block; font-size: var(--ui-font-size-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
     .sel-top { min-height: 56px; display: flex; align-items: center; margin-bottom: var(--ui-space-2); }
+    .mg-buttons { display: flex; gap: var(--ui-space-2); margin-bottom: var(--ui-space-3); flex-wrap: wrap; }
+    .mg-tile { display: grid; place-items: center; border-radius: var(--ui-radius-sm, 6px); color: #fff; font-weight: 600; font-size: var(--ui-font-size-sm); }
     .sel-top ui-selection-bar { flex: 1; min-width: 0; background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .sel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-1); }
     @container (min-width: 544px) { .sel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -120,6 +122,24 @@ function grad(a: string, b: string): string {
       <doc-section name="Selection bar" selector="ui-selection-bar" [api]="selectionBarApi" [outputs]="selectionBarOut"
         summary="The bar shown while selecting: Cancel (an X) at the start, &quot;12 selected&quot;, a Select all toggle that reads Clear once count reaches total (canSelectAll / canClear false hide a side), then the actions. Actions are disabled while nothing is selected or when enabled is false; danger draws the destructive style. When the labels don't all fit (a 360px phone with three actions) the toggle and the actions with an icon become icon buttons that keep their label as their accessible name and tooltip, and if &quot;12 selected&quot; still doesn't fit the number shows alone, so nothing overflows at 320px. Count changes are announced politely. The demo is in Selectable above."
         [shapes]="'interface UiSelectionAction { id: string; label: string; icon?: IconSvgObject; danger?: boolean; enabled?: boolean; }'"></doc-section>
+
+      <doc-section name="Masonry grid" selector="ui-masonry-grid" [api]="masonryApi" [outputs]="masonryOut"
+        summary="A photo grid of columns of different heights, each picture in its own shape (ratios: height / width), like a phone's gallery. A two-finger pinch changes [(columns)] (apart: fewer, bigger; together: more), between minColumns and maxColumns. Every change animates: each tile on screen moves and grows or shrinks from where it was to its new place (duration, ease-out), and a second pinch mid-way carries on from where the tiles are. After a pinch the page scrolls so the picture under the fingers stays under them. Tiles off screen just take their new place, so a big album costs no more than one screenful. Reduced motion or animations off make it instant. keyOf keeps tiles' identity (so pictures don't reload). Pinch the demo on a phone, or use the buttons.">
+        <doc-demo code="<ui-masonry-grid [ratios]=&quot;ratios&quot; [(columns)]=&quot;columns&quot; [keyOf]=&quot;keyOf&quot;>
+  <ng-template uiMasonryTile let-i><img [src]=&quot;photos[i].thumb&quot; alt=&quot;&quot; /></ng-template>
+</ui-masonry-grid>">
+          <div class="mg-buttons">
+            @for (n of [1, 2, 3, 4, 5]; track n) {
+              <ui-button size="sm" [variant]="masonryColumns() === n ? 'primary' : 'outline'" (click)="masonryColumns.set(n)">{{ n }}</ui-button>
+            }
+          </div>
+          <div>
+            <ui-masonry-grid [ratios]="masonryRatios" [(columns)]="masonryColumns">
+              <ng-template uiMasonryTile let-i><div class="mg-tile" [style.background]="masonryColours[i % masonryColours.length]">{{ i + 1 }}</div></ng-template>
+            </ui-masonry-grid>
+          </div>
+        </doc-demo>
+      </doc-section>
 
       <doc-section name="Task progress" selector="ui-task-progress" [api]="taskApi" [outputs]="taskOut"
         summary="Progress for a job over many files: the title, &quot;12 of 40&quot;, a detail line (the file in hand) and a bar that fills as files finish (it sweeps while total is 0). Cancel sets stopping (two-way) and emits (cancel); the button then reads Stopping, busy, until the job closes it. ui-task-progress-dialog shows it in a small modal ([(open)], the same inputs): the backdrop doesn't close it, Escape cancels like the button, and it closes only when the job sets open to false.">
@@ -288,6 +308,20 @@ export class MediaPage {
     { name: 'tap', type: 'void', default: '—', desc: 'A click, tap, Enter or Space (open, or toggle while selecting).' },
     { name: 'longPress', type: 'void', default: '—', desc: 'Held 500ms without moving 10px or scrolling; the context-menu key or Shift+F10.' },
   ];
+  protected readonly masonryColumns = signal(3);
+  protected readonly masonryRatios = Array.from({ length: 60 }, (_, i) => [1, 1.5, 0.66, 1.25, 0.8][(i * 7) % 5]);
+  protected readonly masonryColours = ['#3d5afe', '#e5484d', '#2faa6e', '#d9a521', '#8a8f98', '#5b2a86'];
+  protected readonly masonryApi: ApiRow[] = [
+    { name: 'ratios', type: 'number[]', default: '[]', desc: "Each item's height / width; its length is the number of tiles. Bad values count as square." },
+    { name: 'columns', type: 'number (model)', default: '2', desc: 'Columns shown, two-way: a pinch changes it, and any change animates.' },
+    { name: 'gap', type: 'number', default: '4', desc: 'Space between tiles, px.' },
+    { name: 'minColumns / maxColumns', type: 'number', default: '1 / 5', desc: 'How far a pinch can go.' },
+    { name: 'pinchable', type: 'boolean', default: 'true', desc: 'Let a two-finger pinch change the count.' },
+    { name: 'duration', type: 'number', default: '280', desc: 'How long the change between sizes takes, ms (ease-out).' },
+    { name: 'keyOf', type: '(index) => unknown', default: 'index', desc: 'A stable identity per item, so tiles survive a change of order.' },
+    { name: '<ng-template uiMasonryTile>', type: 'slot', default: '—', desc: 'One tile, filling its box; context: the index ($implicit).' },
+  ];
+  protected readonly masonryOut: ApiRow[] = [{ name: 'columnsChange', type: 'number', default: '—', desc: 'The new column count after a pinch.' }];
   protected readonly selectionBarApi: ApiRow[] = [
     { name: 'count', type: 'number', default: '0', desc: 'How many are selected.' },
     { name: 'total', type: 'number | null', default: 'null', desc: 'Everything there is; at count == total the toggle reads Clear.' },

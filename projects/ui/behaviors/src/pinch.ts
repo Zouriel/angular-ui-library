@@ -7,6 +7,15 @@ const PINCH_IN = 0.8;
 
 /** The move listener must be able to cancel, or the browser zooms the page under the pinch. */
 const BLOCKING: AddEventListenerOptions = { passive: false };
+/** Safari's own pinch events. */
+const GESTURES = ['gesturestart', 'gesturechange', 'gestureend'] as const;
+
+/** One pinch step: which way, and where (the point between the two fingers, in client coordinates). */
+export interface UiPinchStep {
+  apart: boolean;
+  x: number;
+  y: number;
+}
 
 /**
  * `uiPinch`: a two-finger pinch reported as steps, not as a scale. For a photo grid that changes its
@@ -30,7 +39,14 @@ const BLOCKING: AddEventListenerOptions = { passive: false };
  * down. An attached element's events then arrive twice, which is harmless: the second look finds
  * nothing changed.</p>
  */
-@Directive({ selector: '[uiPinch]' })
+@Directive({
+  selector: '[uiPinch]',
+  // The browser decides at the first touch whether a pinch may zoom the page, before any script can
+  // say no: a touchmove arriving after a scroll has begun can no longer be cancelled, and the page
+  // zooms instead. pan-x pan-y keeps one-finger scrolling and swipes, and takes pinch-zoom away from
+  // the browser on this element only, so a pinch elsewhere on the page still zooms it.
+  host: { '[style.touch-action]': "disabled() ? null : 'pan-x pan-y'" },
+})
 export class UiPinch {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
@@ -41,6 +57,11 @@ export class UiPinch {
   readonly pinchIn = output<void>({ alias: 'uiPinchIn' });
   /** The fingers moved apart. */
   readonly pinchOut = output<void>({ alias: 'uiPinchOut' });
+  /** Every step, with its direction and the point between the fingers; fires just before the two above. */
+  readonly pinchStep = output<UiPinchStep>({ alias: 'uiPinchStep' });
+
+  /** The point between the two measured fingers, as of the last move. */
+  private focal = { x: 0, y: 0 };
 
   /** Fingers that landed on the host, oldest first, with the element each landed on. */
   private readonly fingers = new Map<number, EventTarget>();
@@ -76,11 +97,17 @@ export class UiPinch {
       this.baseline = distance;
     } else if (distance >= this.baseline * PINCH_OUT) {
       this.baseline = distance;
+      this.pinchStep.emit({ apart: true, ...this.focal });
       this.pinchOut.emit();
     } else if (distance <= this.baseline * PINCH_IN) {
       this.baseline = distance;
+      this.pinchStep.emit({ apart: false, ...this.focal });
       this.pinchIn.emit();
     }
+  };
+
+  private readonly onGesture = (event: Event): void => {
+    if (!this.disabled() && event.cancelable) event.preventDefault();
   };
 
   private readonly onEnd = (event: TouchEvent): void => {
@@ -91,7 +118,10 @@ export class UiPinch {
     if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
     this.host.addEventListener('touchstart', this.onStart as EventListener, { passive: true });
     this.listen(this.host);
+    // Safari (iPhone) zooms on its own gesture events, which touch-action alone doesn't stop there.
+    for (const type of GESTURES) this.host.addEventListener(type, this.onGesture, BLOCKING);
     inject(DestroyRef).onDestroy(() => {
+      for (const type of GESTURES) this.host.removeEventListener(type, this.onGesture);
       this.host.removeEventListener('touchstart', this.onStart as EventListener);
       this.unlisten(this.host);
       this.reset();
@@ -119,6 +149,7 @@ export class UiPinch {
     }
     const [a, b] = ids.map((id) => live.find((t) => t.identifier === id)!);
     const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    this.focal = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
     if (pair !== this.pair) {
       this.pair = pair;
       this.baseline = distance;
