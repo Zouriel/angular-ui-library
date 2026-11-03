@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  afterRenderEffect,
   computed,
   effect,
   inject,
@@ -13,6 +14,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import { clampOffset, isSwipe, resist } from './gestures';
 import { injectUiStrings } from '@zouriel/ui';
 
@@ -39,6 +41,10 @@ export interface UiMediaAction {
   label: string;
   /** Destructive actions are set apart and drawn in red. */
   tone?: 'default' | 'danger';
+  /** A HugeIcons icon (0.53.0). When the labelled pills don't fit the top bar, an action with an icon
+   *  shrinks to an icon button (its label stays its name and tooltip); one without keeps its label, and
+   *  moves to the More menu first when even that doesn't fit. */
+  icon?: IconSvgObject;
   /** Offered only for the items it applies to — someone else's photograph is not yours to remove. */
   when?: (item: UiMediaItem, index: number) => boolean;
   /** Renders an anchor instead of a button. */
@@ -92,6 +98,7 @@ function fmt(seconds: number): string {
 @Component({
   selector: 'ui-media-lightbox',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [HugeiconsIconComponent],
   template: `
     <dialog
       #dlg
@@ -100,6 +107,7 @@ function fmt(seconds: number): string {
       (cancel)="onCancel($event)"
       (close)="open.set(false)"
       (keydown)="onKey($event)"
+      (pointerdown)="onDialogPointer($event)"
     >
       @if (open() && current(); as item) {
         <div
@@ -168,7 +176,7 @@ function fmt(seconds: number): string {
             }
           </div>
 
-          <header class="bar bar--top">
+          <header class="bar bar--top" #topBar>
             <div class="meta">
               @if (item.caption || label(); as line) {
                 <span class="meta__line">{{ line }}</span>
@@ -178,18 +186,33 @@ function fmt(seconds: number): string {
               }
             </div>
 
-            <div class="acts">
+            <div class="acts" #acts [attr.data-fit]="fit()">
               @if (zoomed()) {
                 <button type="button" class="chip" (click)="resetView()">
                   {{ zoomPercent() }}% · Fit
                 </button>
               }
               <ng-content select="[lightbox-actions]" />
-              @for (action of visibleActions(); track action.id) {
-                @if (action.href) {
+              @for (action of shownActions(); track action.id) {
+                @if (fit() !== 'labelled' && action.icon) {
+                  <!-- Icon only: the label is its name, and its tooltip (a title: the dialog is in the top
+                       layer, where an overlay tooltip would sit underneath it). -->
+                  @if (action.href) {
+                    <a class="ic act-ic" [class.act--danger]="action.tone === 'danger'" [attr.data-id]="action.id"
+                      [attr.aria-label]="action.label" [title]="action.label"
+                      [href]="action.href(item, index())" [attr.download]="action.download ? action.download(item, index()) : null"
+                      target="_blank" rel="noopener" (click)="fire(action)"><hugeicons-icon [icon]="action.icon" [size]="19" [strokeWidth]="1.9" /></a>
+                  } @else {
+                    <button type="button" class="ic act-ic" [class.act--danger]="action.tone === 'danger'" [attr.data-id]="action.id"
+                      [attr.aria-label]="action.label" [title]="action.label" (click)="fire(action)">
+                      <hugeicons-icon [icon]="action.icon" [size]="19" [strokeWidth]="1.9" />
+                    </button>
+                  }
+                } @else if (action.href) {
                   <a
                     class="act"
                     [class.act--danger]="action.tone === 'danger'"
+                    [attr.data-id]="action.id"
                     [href]="action.href(item, index())"
                     [attr.download]="action.download ? action.download(item, index()) : null"
                     target="_blank"
@@ -202,17 +225,44 @@ function fmt(seconds: number): string {
                     type="button"
                     class="act"
                     [class.act--danger]="action.tone === 'danger'"
+                    [attr.data-id]="action.id"
                     (click)="fire(action)"
                   >
                     {{ action.label }}
                   </button>
                 }
               }
+              @if (menuActions().length) {
+                <span class="more">
+                  <button #moreBtn type="button" class="ic" [attr.aria-label]="strings.moreActions" [title]="strings.moreActions"
+                    aria-haspopup="menu" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3" /></svg>
+                  </button>
+                  @if (menuOpen()) {
+                    <div class="menu" role="menu" #menu [attr.aria-label]="strings.moreActions" (keydown)="onMenuKey($event)">
+                      @for (action of menuActions(); track action.id) {
+                        @if (action.href) {
+                          <a role="menuitem" class="menu__item" [class.menu__item--danger]="action.tone === 'danger'" [attr.data-id]="action.id"
+                            [href]="action.href(item, index())" [attr.download]="action.download ? action.download(item, index()) : null"
+                            target="_blank" rel="noopener" (click)="chooseFromMenu(action)">{{ action.label }}</a>
+                        } @else {
+                          <button type="button" role="menuitem" class="menu__item" [class.menu__item--danger]="action.tone === 'danger'"
+                            [attr.data-id]="action.id" (click)="chooseFromMenu(action)">{{ action.label }}</button>
+                        }
+                      }
+                    </div>
+                  }
+                </span>
+              }
               <button type="button" class="ic ic--x" [attr.aria-label]="strings.close" (click)="close()">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
+            </div>
+            <!-- Every action as a labelled pill, laid out unseen to learn whether they fit. -->
+            <div class="measure" #measure aria-hidden="true" inert>
+              @for (action of visibleActions(); track action.id) { <span class="m-act">{{ action.label }}</span> }
             </div>
           </header>
 
@@ -426,9 +476,26 @@ function fmt(seconds: number): string {
     .meta__count { font-size: 12px; color: color-mix(in srgb, var(--ui-media-on-scrim) 66%, transparent); font-variant-numeric: tabular-nums; }
 
     .acts { display: flex; align-items: center; gap: var(--ui-space-2, 8px); flex: none; }
+    .measure { position: absolute; top: 0; left: 0; width: max-content; height: 0; overflow: hidden; visibility: hidden;
+      pointer-events: none; display: flex; gap: var(--ui-space-2, 8px); }
+    .act-ic hugeicons-icon { display: inline-flex; }
+    .more { position: relative; display: inline-flex; }
+    /* An open menu reaches down over the picture: above the edge arrows. */
+    .bar--top:has(.menu) { z-index: 4; }
+    .menu { position: absolute; top: calc(100% + var(--ui-space-1, 4px)); inset-inline-end: 0; z-index: 3; min-width: 180px;
+      display: flex; flex-direction: column; padding: var(--ui-space-1, 4px); box-sizing: border-box;
+      background: var(--ui-color-surface-raised); color: var(--ui-color-text); border: 1px solid var(--ui-color-border);
+      border-radius: var(--ui-radius, 8px); box-shadow: var(--ui-shadow-2); font-size: var(--ui-font-size-sm, 13px); line-height: 1.35; }
+    .menu__item { display: flex; align-items: center; min-height: 40px; padding: var(--ui-space-2, 8px) var(--ui-space-3, 12px);
+      border: 0; border-radius: var(--ui-radius-xs, 4px); background: transparent; color: inherit; font: inherit; text-align: start;
+      text-decoration: none; cursor: pointer; white-space: nowrap; }
+    .menu__item:hover, .menu__item:focus-visible { background: var(--ui-color-elevated-hover); outline: none; }
+    .menu__item:focus-visible { box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
+    .menu__item--danger { color: var(--ui-color-danger); }
+    .menu__item--danger:hover, .menu__item--danger:focus-visible { background: color-mix(in srgb, var(--ui-color-danger) 12%, transparent); }
 
     /* One glass treatment for everything that floats over the picture. */
-    .act, .ic, .chip, .edge {
+    .act, .m-act, .ic, .chip, .edge {
       box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-1, 4px);
       border: 1px solid color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); background: color-mix(in srgb, var(--ui-media-on-scrim) 10%, transparent);
       backdrop-filter: blur(14px); color: var(--ui-media-on-scrim); cursor: pointer; text-decoration: none;
@@ -436,7 +503,7 @@ function fmt(seconds: number): string {
       transition: background var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease),
         transform var(--ui-motion-fast, 120ms) var(--ui-ease-standard, ease),
         opacity var(--ui-motion-base, 200ms) var(--ui-ease-standard, ease); }
-    .act, .chip { height: var(--ui-size-lg, 38px); padding: 0 var(--ui-space-4, 16px); border-radius: var(--ui-radius-pill, 9999px); }
+    .act, .m-act, .chip { height: var(--ui-size-lg, 38px); padding: 0 var(--ui-space-4, 16px); border-radius: var(--ui-radius-pill, 9999px); }
     .ic { width: 38px; height: 38px; border-radius: 50%; padding: 0; }
     .ic--rate { width: auto; padding: 0 var(--ui-space-3, 12px); border-radius: var(--ui-radius-pill, 9999px);
       font-variant-numeric: tabular-nums; }
@@ -607,6 +674,118 @@ export class UiMediaLightbox {
     return this.actions().filter((a) => !a.when || a.when(item, at));
   });
 
+  /** How the top bar's actions fit (0.53.0): every label; icon buttons; or the first few and a More menu. */
+  readonly fit = signal<'labelled' | 'icons' | 'menu'>('labelled');
+  /** How many actions sit in the bar; the rest are in the More menu. */
+  private readonly shownCount = signal(Number.POSITIVE_INFINITY);
+  protected readonly shownActions = computed(() => this.visibleActions().slice(0, this.shownCount()));
+  protected readonly menuActions = computed(() => this.visibleActions().slice(this.shownCount()));
+  protected readonly menuOpen = signal(false);
+  private readonly topBar = viewChild<ElementRef<HTMLElement>>('topBar');
+  private readonly actsEl = viewChild<ElementRef<HTMLElement>>('acts');
+  private readonly measureEl = viewChild<ElementRef<HTMLElement>>('measure');
+  private readonly moreBtn = viewChild<ElementRef<HTMLButtonElement>>('moreBtn');
+  private readonly menuEl = viewChild<ElementRef<HTMLElement>>('menu');
+
+  /** What the caption and "12 of 40" keep at least. */
+  static readonly META_MIN = 72;
+  /** A round button. */
+  static readonly ICON = 38;
+
+  /**
+   * Fits the actions to the top bar: the same sums as Flutter's. Runs when the bar resizes and when
+   * the actions, the item or the zoom chip change.
+   */
+  fitActions(): void {
+    const bar = this.topBar()?.nativeElement;
+    const acts = this.actsEl()?.nativeElement;
+    const measure = this.measureEl()?.nativeElement;
+    if (!bar || !acts || !measure) return;
+    const cs = getComputedStyle(bar);
+    const width = bar.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    if (width <= 0) return;
+    const gap = parseFloat(getComputedStyle(acts).columnGap) || 8;
+    const icon = UiMediaLightbox.ICON;
+    const item = this.current();
+    const hasMeta = !!(item?.caption || this.label()) || this.items().length > 1;
+    const room = width - (hasMeta ? UiMediaLightbox.META_MIN + 12 : 0);
+    const actions = this.visibleActions();
+    const pills = Array.from(measure.children, (e) => (e as HTMLElement).offsetWidth);
+    // The close button, the zoom chip and anything projected stay as they are.
+    let fixed = icon;
+    for (const el of Array.from(acts.children) as HTMLElement[]) {
+      if (el.classList.contains('chip') || !(el.matches('.act, .act-ic, .more, .ic--x'))) fixed += el.offsetWidth + gap;
+    }
+    const row = (ws: readonly number[]) => ws.reduce((sum, w) => sum + w + gap, 0);
+    const compact = actions.map((a, i) => (a.icon ? icon : pills[i] ?? 0));
+    let fit: 'labelled' | 'icons' | 'menu' = 'labelled';
+    let shown = actions.length;
+    if (fixed + row(pills) > room) {
+      fit = 'icons';
+      if (fixed + row(compact) > room) {
+        fit = 'menu';
+        shown = 0;
+        for (let k = actions.length - 1; k > 0; k--) {
+          if (fixed + row(compact.slice(0, k)) + icon + gap <= room) {
+            shown = k;
+            break;
+          }
+        }
+      }
+    }
+    this.fit.set(fit);
+    this.shownCount.set(fit === 'menu' ? shown : Number.POSITIVE_INFINITY);
+    if (fit !== 'menu') this.menuOpen.set(false);
+  }
+
+  protected toggleMenu(): void {
+    this.menuOpen.update((v) => !v);
+    // Once the menu is drawn (after this change detection), its first item takes focus.
+    if (this.menuOpen()) setTimeout(() => this.menuItems()[0]?.focus());
+  }
+
+  private menuItems(): HTMLElement[] {
+    return Array.from(this.menuEl()?.nativeElement.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+  }
+
+  protected chooseFromMenu(action: UiMediaAction): void {
+    this.menuOpen.set(false);
+    this.fire(action);
+    this.moreBtn()?.nativeElement.focus();
+  }
+
+  /** Arrows move, Home/End jump, Escape closes back to the More button, Tab closes. */
+  protected onMenuKey(event: KeyboardEvent): void {
+    const items = this.menuItems();
+    const at = items.indexOf(event.target as HTMLElement);
+    const move = (to: number) => items[(to + items.length) % items.length]?.focus();
+    switch (event.key) {
+      case 'ArrowDown': move(at + 1); break;
+      case 'ArrowUp': move(at - 1); break;
+      case 'Home': move(0); break;
+      case 'End': move(items.length - 1); break;
+      case 'Escape':
+        this.menuOpen.set(false);
+        this.moreBtn()?.nativeElement.focus();
+        break;
+      case 'Tab':
+        this.menuOpen.set(false);
+        return;
+      default:
+        return;
+    }
+    // Ours, not the lightbox's: arrows don't step the photos, Escape doesn't close the viewer.
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  /** A press anywhere outside the open menu closes it. */
+  protected onDialogPointer(event: PointerEvent): void {
+    if (!this.menuOpen()) return;
+    const more = this.moreBtn()?.nativeElement.parentElement;
+    if (more && !more.contains(event.target as Node)) this.menuOpen.set(false);
+  }
+
   /** Live pointers, by id. Two of them is a pinch rather than a drag. */
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private pinchFrom = 0;
@@ -618,6 +797,24 @@ export class UiMediaLightbox {
 
   constructor() {
     const destroy = inject(DestroyRef);
+    // Re-fit the actions when what is in the bar changes, and whenever the bar is resized.
+    afterRenderEffect(() => {
+      this.visibleActions();
+      this.zoomed();
+      this.open();
+      this.fitActions();
+    });
+    if (typeof ResizeObserver !== 'undefined') {
+      let ro: ResizeObserver | null = null;
+      afterRenderEffect(() => {
+        const bar = this.topBar()?.nativeElement;
+        ro?.disconnect();
+        if (!bar) return;
+        ro = new ResizeObserver(() => this.fitActions());
+        ro.observe(bar);
+      });
+      destroy.onDestroy(() => ro?.disconnect());
+    }
     // Rendered on a server there is no document to listen to, and nothing to listen for.
     const browser = typeof document !== 'undefined';
     if (browser) document.addEventListener('fullscreenchange', this.onFullscreen);
@@ -680,6 +877,12 @@ export class UiMediaLightbox {
   /** Escape reaches the dialog itself, so it is answered here rather than by the browser closing it. */
   protected onCancel(event: Event): void {
     event.preventDefault();
+    // Escape with the More menu open (focus anywhere) closes the menu, not the viewer.
+    if (this.menuOpen()) {
+      this.menuOpen.set(false);
+      this.moreBtn()?.nativeElement.focus();
+      return;
+    }
     this.close();
   }
 

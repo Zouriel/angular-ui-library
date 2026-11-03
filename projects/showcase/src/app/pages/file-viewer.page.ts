@@ -16,6 +16,10 @@ import {
 import { UiButton, UiSegmented, type UiSegmentedOption } from '@zouriel/ui/button';
 import { UiPdfViewer } from '@zouriel/ui/pdf-viewer';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
+import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
+import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
+import Image01Icon from '@hugeicons/core-free-icons/Image01Icon';
+import Share08Icon from '@hugeicons/core-free-icons/Share08Icon';
 
 const sampleImg = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%233d5afe"/><stop offset="1" stop-color="%232faa6e"/></linearGradient></defs><rect width="640" height="360" fill="url(%23g)"/><text x="50%" y="50%" fill="white" font-family="sans-serif" font-size="28" text-anchor="middle" dominant-baseline="middle">Sample</text></svg>`);
@@ -75,7 +79,7 @@ export class Preview {
 
 const NODE = "interface UiFileNode {\n  name: string;\n  type: 'file' | 'dir';\n  url?: string;     // file URL, used when opening it into a viewer\n  kind?: string;    // MIME or extension hint\n  children?: UiFileNode[];\n}";
 
-const ITEM = "interface UiMediaItem {\n  src: string;            // full-size image, or the playable video\n  thumb?: string;         // filmstrip tile, and a clip's poster\n  kind?: 'image' | 'video';   // default 'image'\n  alt?: string;\n  caption?: string;       // the line the chrome shows\n}\n\ninterface UiMediaAction {\n  id: string;\n  label: string;\n  tone?: 'default' | 'danger';\n  when?: (item: UiMediaItem, index: number) => boolean;    // hide where it does not apply\n  href?: (item: UiMediaItem, index: number) => string;     // renders an anchor instead\n  download?: (item: UiMediaItem, index: number) => string; // the anchor's download name\n}";
+const ITEM = "interface UiMediaItem {\n  src: string;            // full-size image, or the playable video\n  thumb?: string;         // filmstrip tile, and a clip's poster\n  kind?: 'image' | 'video';   // default 'image'\n  alt?: string;\n  caption?: string;       // the line the chrome shows\n}\n\ninterface UiMediaAction {\n  id: string;\n  label: string;\n  tone?: 'default' | 'danger';\n  icon?: IconSvgObject;   // a HugeIcons icon: lets it shrink to an icon button\n  when?: (item: UiMediaItem, index: number) => boolean;    // hide where it does not apply\n  href?: (item: UiMediaItem, index: number) => string;     // renders an anchor instead\n  download?: (item: UiMediaItem, index: number) => string; // the anchor's download name\n}";
 
 @Component({
   selector: 'page-file-viewer',
@@ -140,7 +144,7 @@ const ITEM = "interface UiMediaItem {\n  src: string;            // full-size im
       </doc-section>
 
       <doc-section name="Media lightbox" selector="ui-media-lightbox" [api]="lbApi" [outputs]="lbOut" [shapes]="ITEM"
-        summary="Full-screen gallery over everything else: a native dialog in the top layer, so no ancestor's overflow, transform or z-index can clip it. Photographs zoom (pinch, wheel, double-tap) and pan; clips get themed controls, a filmstrip, swipe between items, drag-down to dismiss, and chrome that fades away while a clip plays. The host owns the list: items says what there is, index says where you are, and both are two-way. Keys: Left/Right step (Shift seeks a clip), Space or k plays, j/l seek 10s, m mutes, f toggles fullscreen, 0 resets the zoom, Esc closes. Extra top-bar controls can be projected with the lightbox-actions attribute.">
+        summary="Full-screen gallery over everything else: a native dialog in the top layer, so no ancestor's overflow, transform or z-index can clip it. Photographs zoom (pinch, wheel, double-tap) and pan; clips get themed controls, a filmstrip, swipe between items, drag-down to dismiss, and chrome that fades away while a clip plays. The host owns the list: items says what there is, index says where you are, and both are two-way. Keys: Left/Right step (Shift seeks a clip), Space or k plays, j/l seek 10s, m mutes, f toggles fullscreen, 0 resets the zoom, Esc closes. Extra top-bar controls can be projected with the lightbox-actions attribute. The top bar never overflows: actions are labelled pills when they fit beside the caption and close button, icon buttons (named and titled by their label, danger still red) when they don't, and the last ones move into a More menu when even the icons don't fit; try it at phone width.">
         <doc-demo code="<ui-media-lightbox [items]=&quot;photos&quot; [(index)]=&quot;at&quot; [(open)]=&quot;open&quot;
   label=&quot;Photos from the night&quot; [actions]=&quot;actions&quot; (action)=&quot;on($event)&quot; />">
           <ui-button variant="primary" (click)="lightbox.set(true)">Open the lightbox</ui-button>
@@ -255,8 +259,10 @@ export class FileViewerPage {
   protected readonly shot = signal(0);
   protected readonly shots: UiMediaItem[] = SLIDES.map((src, i) => ({ src, thumb: src, alt: `Slide ${i + 1}`, caption: `${['First', 'Second', 'Third'][i]} of three` }));
   protected readonly lbActions: UiMediaAction[] = [
-    { id: 'save', label: 'Download', href: (item) => item.src, download: () => 'sample.svg' },
-    { id: 'remove', label: 'Remove', tone: 'danger', when: (_item, index) => index > 0 },
+    { id: 'save', label: 'Save', icon: Download04Icon, href: (item) => item.src, download: () => 'sample.svg' },
+    { id: 'share', label: 'Share', icon: Share08Icon },
+    { id: 'original', label: 'Download original', icon: Image01Icon, href: (item) => item.src, download: () => 'original.svg' },
+    { id: 'remove', label: 'Remove', icon: Delete02Icon, tone: 'danger', when: (_item, index) => index > 0 },
   ];
 
   protected readonly fvApi: ApiRow[] = [
@@ -285,7 +291,7 @@ export class FileViewerPage {
     { name: 'index', type: 'number', default: '0', desc: 'Two-way (`[(index)]`). Which item is shown; swipes, keys and the filmstrip move it.' },
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the lightbox is up; Escape and the close button set it false.' },
     { name: 'label', type: 'string', default: "''", desc: 'Name of the set, shown when an item has no caption.' },
-    { name: 'actions', type: 'readonly UiMediaAction[]', default: '[]', desc: 'Buttons in the top bar; href makes one a link, when hides it for some items.' },
+    { name: 'actions', type: 'readonly UiMediaAction[]', default: '[]', desc: 'Buttons in the top bar; href makes one a link, when hides it for some items, icon lets it shrink to an icon button. Labelled, icon-only or in a More menu by the room there is.' },
     { name: '[lightbox-actions]', type: 'slot', default: '—', desc: 'Extra controls projected into the top bar.' },
   ];
   protected readonly lbOut: ApiRow[] = [
