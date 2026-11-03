@@ -1,7 +1,8 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
-import { UiPosterView, UiScrim } from './poster-view';
+import { UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
+import { UiPosterView } from './poster-view';
+import { UiScrim } from './scrim';
 
 @Component({
   imports: [UiPosterGrid],
@@ -14,6 +15,22 @@ class GridHost {
     { label: 'Birthday', mark: { tone: 'primary', label: 'New' } },
   ]);
   picked = signal(-1);
+}
+
+@Component({
+  imports: [UiPosterGrid, UiPosterDetails],
+  template: `
+    <ui-poster-grid [posters]="posters" [handleClicks]="true" (select)="picked.push($event)">
+      <ng-template uiPosterDetails let-p let-i="index"><b class="t">{{ p.label }}</b><span class="n">#{{ i }}</span></ng-template>
+    </ui-poster-grid>
+  `,
+})
+class DetailsHost {
+  posters: UiPoster[] = [
+    { src: 'a.png', label: 'Aisha and Ali', href: '/dashboard/1', mark: { tone: 'primary', label: 'New' } },
+    { src: null, label: 'Eid party' },
+  ];
+  picked: number[] = [];
 }
 
 @Component({
@@ -93,6 +110,47 @@ describe('ui-poster-grid', () => {
   });
 });
 
+describe('ui-poster-grid with details', () => {
+  it('draws each poster\'s details on its own tile, over a compact scrim at the bottom', async () => {
+    const fx = TestBed.createComponent(DetailsHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    const el = fx.nativeElement as HTMLElement;
+    const tiles = el.querySelectorAll<HTMLElement>('.tile');
+    expect(tiles.length).toBe(2);
+    expect(tiles[0].querySelector('ui-scrim.details.compact .t')!.textContent).toBe('Aisha and Ali');
+    expect(tiles[1].querySelector('ui-scrim .n')!.textContent).toBe('#1');
+    // The words name the tile now, with the dot's meaning read after them; no label hides them.
+    expect(tiles[0].getAttribute('aria-label')).toBeNull();
+    expect(tiles[0].querySelector('ui-scrim .sr')!.textContent).toBe('New');
+  });
+
+  it('makes a poster with an href a link, and leaves a plain click to select', async () => {
+    const fx = TestBed.createComponent(DetailsHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    const el = fx.nativeElement as HTMLElement;
+    const link = el.querySelector<HTMLAnchorElement>('a.tile')!;
+    expect(link.getAttribute('href')).toBe('/dashboard/1');
+    expect(el.querySelectorAll('button.tile').length).toBe(1);
+    const plain = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    link.dispatchEvent(plain);
+    expect(plain.defaultPrevented).toBe(true);
+    expect(fx.componentInstance.picked).toEqual([0]);
+    // A new-tab click is the browser's.
+    const ctrl = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+    link.dispatchEvent(ctrl);
+    expect(ctrl.defaultPrevented).toBe(false);
+    expect(fx.componentInstance.picked).toEqual([0]);
+  });
+
+  it('fades a compact scrim to 60% within space8, before its words', () => {
+    const css = ((UiScrim as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
+    expect(css).toMatch(/\.compact[^{]*\{[^}]*--ui-scrim-lead:\s*var\(--ui-space-8\)/);
+    expect(css).toMatch(/padding:\s*var\(--ui-scrim-lead\)/);
+  });
+});
+
 describe('ui-poster-view', () => {
   it('opens as a focus-trapped dialog with the projected details on a scrim, and Escape returns focus', async () => {
     const fx = TestBed.createComponent(ViewHost);
@@ -140,9 +198,10 @@ describe('ui-poster-view', () => {
   it('fades the scrim to at least 60% before the content and 88% at the bottom', () => {
     const css = ((UiScrim as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
     expect(css).toMatch(/transparent 0/);
-    expect(css).toMatch(/var\(--ui-media-scrim\) 60%, transparent\) var\(--ui-space-12\)/);
+    expect(css).toMatch(/var\(--ui-media-scrim\) 60%, transparent\) var\(--ui-scrim-lead\)/);
+    expect(css).toMatch(/--ui-scrim-lead:\s*var\(--ui-space-12\)/);
     expect(css).toMatch(/var\(--ui-media-scrim\) 88%, transparent\) 100%/);
-    expect(css).toMatch(/padding:\s*var\(--ui-space-12\)/);
+    
     expect(css).toMatch(/color:\s*var\(--ui-media-on-scrim\)/);
   });
 });

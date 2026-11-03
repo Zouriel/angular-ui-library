@@ -2,27 +2,7 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { Component, ElementRef, computed, effect, input, model, output, signal, untracked, viewChild } from '@angular/core';
 import { injectUiStrings } from '@zouriel/ui';
 import { uiPosterFallback } from './poster-grid';
-
-/**
- * `ui-scrim`: a see-through layer that fades from clear at its top to the media scrim colour at its
- * bottom, with text in the on-scrim colour. Lay it over a picture to put words on it: the fade has
- * reached 60% before the content starts and 88% at the bottom, so on-scrim text keeps at least 4.5:1
- * over any picture, white included.
- */
-@Component({
-  selector: 'ui-scrim',
-  template: `<div class="body"><ng-content /></div>`,
-  styles: `
-    :host { display: block; color: var(--ui-media-on-scrim);
-      background: linear-gradient(to bottom,
-        transparent 0,
-        color-mix(in srgb, var(--ui-media-scrim) 60%, transparent) var(--ui-space-12),
-        color-mix(in srgb, var(--ui-media-scrim) 88%, transparent) 100%);
-      padding: var(--ui-space-12) var(--ui-space-4) var(--ui-space-4); }
-    .body { max-width: 40rem; margin-inline: auto; display: flex; flex-direction: column; gap: var(--ui-space-2); }
-  `,
-})
-export class UiScrim {}
+import { UiScrim } from './scrim';
 
 /**
  * `ui-poster-view`: one picture full-size, with the content you project laid over its bottom on a

@@ -4,3 +4,4 @@ export * from './device-frame';
 export * from './image-picker';
 export * from './poster-grid';
 export * from './poster-view';
+export * from './scrim';
