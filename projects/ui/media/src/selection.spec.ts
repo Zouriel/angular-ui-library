@@ -108,6 +108,49 @@ describe('ui-selectable', () => {
     expect(host.longs).toEqual([1]);
   });
 
+  it('a second finger going down anywhere (a pinch) cancels the hold, and a hold cannot start mid-pinch', async () => {
+    const { el, host } = await make();
+    const touches = (type: string, n: number, target: EventTarget = document.body) => {
+      const ev = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(ev, 'touches', { value: Array.from({ length: n }, (_, i) => ({ identifier: i })) });
+      target.dispatchEvent(ev);
+    };
+    // One finger on this tile, then a second on another tile 100ms later; both held well past 500ms.
+    touches('touchstart', 1, el);
+    ptr(el, 'pointerdown');
+    vi.advanceTimersByTime(100);
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 2, isPrimary: false, pointerType: 'touch', clientX: 200, clientY: 200 }));
+    vi.advanceTimersByTime(1000);
+    expect(host.longs, 'the second pointer cancels it').toEqual([]);
+    touches('touchend', 0);
+    ptr(el, 'pointerup');
+
+    // The same when only the touch stream shows the second finger.
+    touches('touchstart', 1, el);
+    ptr(el, 'pointerdown');
+    vi.advanceTimersByTime(100);
+    touches('touchstart', 2);
+    vi.advanceTimersByTime(1000);
+    expect(host.longs, 'two fingers in the touch stream cancel it').toEqual([]);
+    touches('touchend', 0);
+    ptr(el, 'pointerup');
+
+    // The second finger landed first: no hold starts.
+    touches('touchstart', 1);
+    touches('touchstart', 2, el);
+    ptr(el, 'pointerdown');
+    vi.advanceTimersByTime(1000);
+    expect(host.longs).toEqual([]);
+    touches('touchend', 0);
+    ptr(el, 'pointerup');
+
+    // One finger alone is still a long press.
+    touches('touchstart', 1, el);
+    ptr(el, 'pointerdown');
+    vi.advanceTimersByTime(UI_LONG_PRESS_MS + 1);
+    expect(host.longs).toEqual([1]);
+  });
+
   it("suppresses the phone's own long-press menu and treats it as the long press", async () => {
     const { el, host } = await make();
     ptr(el, 'pointerdown');

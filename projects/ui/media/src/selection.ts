@@ -117,19 +117,56 @@ export class UiSelectable {
   /** A long press fired for the current press: its click is swallowed. */
   private fired = false;
   private readonly onScroll = () => this.stop();
+  /** Any other finger going down anywhere (a pinch starting) cancels a pending long press. */
+  private readonly onOtherPointer = (e: PointerEvent) => {
+    if (this.start && e.pointerId !== this.start.id) this.stop();
+  };
+  private readonly onTouches = (e: TouchEvent) => {
+    if (this.start && e.touches.length > 1) this.stop();
+  };
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.stop());
+    if (this.browser) {
+      for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) {
+        this.doc.addEventListener(type, this.countTouches, { capture: true, passive: true });
+      }
+    }
+    inject(DestroyRef).onDestroy(() => {
+      this.stop();
+      if (this.browser) {
+        for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) {
+          this.doc.removeEventListener(type, this.countTouches, { capture: true });
+        }
+      }
+    });
   }
 
   protected onDown(e: PointerEvent): void {
     if (e.button !== 0 || !e.isPrimary) return;
     this.stop();
+    // A second finger already on the screen: this is a pinch, not a long press.
+    if (this.otherTouches(e)) return;
     this.fired = false;
     this.start = { x: e.clientX, y: e.clientY, id: e.pointerId, touch: e.pointerType !== 'mouse' };
     this.timer = setTimeout(() => this.fire(), UI_LONG_PRESS_MS);
-    if (this.browser) this.doc.addEventListener('scroll', this.onScroll, { capture: true, passive: true });
+    if (this.browser) {
+      this.doc.addEventListener('scroll', this.onScroll, { capture: true, passive: true });
+      this.doc.addEventListener('pointerdown', this.onOtherPointer, { capture: true, passive: true });
+      this.doc.addEventListener('touchstart', this.onTouches, { capture: true, passive: true });
+    }
   }
+
+  /** Fingers down besides this one, from the touches the browser is tracking. */
+  private otherTouches(e: PointerEvent): boolean {
+    if (e.pointerType !== 'touch') return false;
+    return this.activeTouches > 1;
+  }
+
+  /** How many fingers are on the screen, kept from touch events on the document. */
+  private activeTouches = 0;
+  private readonly countTouches = (e: TouchEvent) => {
+    this.activeTouches = e.touches.length;
+  };
 
   protected onMove(e: PointerEvent): void {
     const s = this.start;
@@ -142,7 +179,11 @@ export class UiSelectable {
     if (this.timer !== null) clearTimeout(this.timer);
     this.timer = null;
     this.start = null;
-    if (this.browser) this.doc.removeEventListener('scroll', this.onScroll, { capture: true });
+    if (this.browser) {
+      this.doc.removeEventListener('scroll', this.onScroll, { capture: true });
+      this.doc.removeEventListener('pointerdown', this.onOtherPointer, { capture: true });
+      this.doc.removeEventListener('touchstart', this.onTouches, { capture: true });
+    }
   }
 
   private fire(): void {
