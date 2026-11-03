@@ -301,6 +301,13 @@
   --ui-tier-platinum-border: #76818e;
   --ui-tier-platinum-contrast: #1f2933;
   --ui-gradient-tier-platinum: linear-gradient(90deg, var(--ui-tier-platinum) 0%, var(--ui-tier-platinum-light) 50%, var(--ui-tier-platinum) 100%);
+  /* Premium (plan cards and tier buttons): a deep violet metal with white text, AA on both stops. Its edge is the lighter
+     violet so the pill and the button keep a 3:1 rim on dark pages; on light pages the fill does that. */
+  --ui-tier-premium: #4a2fb0;
+  --ui-tier-premium-light: #6e52d9;
+  --ui-tier-premium-border: #8c74e8;
+  --ui-tier-premium-contrast: #ffffff;
+  --ui-gradient-tier-premium: linear-gradient(90deg, var(--ui-tier-premium) 0%, var(--ui-tier-premium-light) 50%, var(--ui-tier-premium) 100%);
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's

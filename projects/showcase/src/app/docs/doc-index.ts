@@ -141,6 +141,12 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Timeline', anchor: 'timeline' },
     { name: 'Code block', anchor: 'code-block' },
   ],
+  'plans': [
+    { name: 'Plan cards', anchor: 'plan-cards' },
+    { name: 'Premium', anchor: 'premium' },
+    { name: 'Compare plans', anchor: 'compare-plans' },
+    { name: 'Tier buttons', anchor: 'tier-buttons' },
+  ],
   'media': [
     { name: 'Carousel', anchor: 'carousel' },
     { name: 'Gallery', anchor: 'gallery' },

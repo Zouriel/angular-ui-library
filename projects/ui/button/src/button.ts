@@ -1,5 +1,5 @@
 import { Component, HostAttributeToken, computed, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
+import { UI_CONFIG, type UiSize, type UiButtonSize, type UiTier } from '@zouriel/ui';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
 
@@ -16,7 +16,8 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       [class.no-radius]="!radius()"
       [class.block]="block()"
       [attr.type]="type()"
-      [attr.data-variant]="variant()"
+      [attr.data-variant]="tier() ? null : variant()"
+      [attr.data-tier]="tier()"
       [attr.data-size]="size()"
       [attr.aria-label]="name()"
       [attr.aria-describedby]="ariaDescribedby() ?? null"
@@ -123,6 +124,36 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     }
     .ui-btn[data-variant="brand"]:focus-visible:not(:disabled) { box-shadow: var(--ui-focus-ring); }
     .ui-btn[data-variant="brand"].no-radius { border-radius: 0; }
+    /* A plan tier's metal (tier, wins over variant): the sheen, its contrast label and its edge. Hover
+       washes the light stop over it (brighter), press the base (darker); every point between the two
+       stops holds AA, so neither state can lose it. The focus ring is the tier's edge colour. */
+    .ui-btn[data-tier="gold"] { --_tier: var(--ui-tier-gold); --_tier-light: var(--ui-tier-gold-light); --_tier-edge: var(--ui-tier-gold-border); --_tier-on: var(--ui-tier-gold-contrast); --_tier-sheen: var(--ui-gradient-tier-gold); }
+    .ui-btn[data-tier="platinum"] { --_tier: var(--ui-tier-platinum); --_tier-light: var(--ui-tier-platinum-light); --_tier-edge: var(--ui-tier-platinum-border); --_tier-on: var(--ui-tier-platinum-contrast); --_tier-sheen: var(--ui-gradient-tier-platinum); }
+    .ui-btn[data-tier="premium"] { --_tier: var(--ui-tier-premium); --_tier-light: var(--ui-tier-premium-light); --_tier-edge: var(--ui-tier-premium-border); --_tier-on: var(--ui-tier-premium-contrast); --_tier-sheen: var(--ui-gradient-tier-premium); }
+    .ui-btn[data-tier] {
+      --_tier-hover: color-mix(in srgb, var(--_tier-light) 35%, transparent);
+      --_tier-press: color-mix(in srgb, var(--_tier) 45%, transparent);
+      background: var(--_tier-sheen); color: var(--_tier-on); border-color: var(--_tier-edge); font-weight: 600;
+    }
+    .ui-btn[data-tier]:hover:not(:disabled) { background: linear-gradient(var(--_tier-hover), var(--_tier-hover)), var(--_tier-sheen); }
+    .ui-btn[data-tier]:active:not(:disabled) { background: linear-gradient(var(--_tier-press), var(--_tier-press)), var(--_tier-sheen); }
+    .ui-btn[data-tier]:focus-visible:not(:disabled) { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--_tier-edge); }
+    /* Platinum: a soft band of light crosses the metal once as the pointer arrives (it waits off the
+       start edge, sweeps to past the end on hover and jumps back unseen on leave). */
+    .ui-btn[data-tier="platinum"] {
+      --_tier-band: linear-gradient(105deg, transparent 40%, color-mix(in srgb, var(--ui-tier-platinum-light) 85%, transparent) 50%, transparent 60%);
+      background: var(--_tier-band) 100% 0 / 250% 100% no-repeat, var(--_tier-sheen);
+      transition: border-color var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard),
+                  opacity var(--ui-motion-base) var(--ui-ease-standard);
+    }
+    .ui-btn[data-tier="platinum"]:hover:not(:disabled) {
+      background: var(--_tier-band) 0% 0 / 250% 100% no-repeat, linear-gradient(var(--_tier-hover), var(--_tier-hover)), var(--_tier-sheen);
+      transition: background-position calc(var(--ui-motion-slow) * 2) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .ui-btn[data-tier="platinum"]:active:not(:disabled) { background: linear-gradient(var(--_tier-press), var(--_tier-press)), var(--_tier-sheen); }
+    @media (prefers-reduced-motion: reduce) {
+      .ui-btn[data-tier="platinum"]:hover:not(:disabled) { background: linear-gradient(var(--_tier-hover), var(--_tier-hover)), var(--_tier-sheen); transition: none; }
+    }
     .spin {
       width: 1em; height: 1em; border-radius: 50%;
       border: 2px solid currentColor; border-right-color: transparent;
@@ -165,6 +196,9 @@ export class UiButton {
   /** How long the fill takes to reach a new value, in ms. */
   fillDuration = input(0);
   variant = input<UiButtonVariant>('primary');
+  /** A plan tier's metal: gold, platinum or premium (sheen, contrast label, edge, its own focus ring;
+   *  platinum catches a sweep of light on hover). Wins over `variant`; null for none. */
+  tier = input<UiTier | null>(null);
   /** `xl` (56px) is for the one big action on a phone screen. */
   size = input<UiButtonSize>('md');
   type = input<'button' | 'submit' | 'reset'>('button');

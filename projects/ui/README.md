@@ -85,6 +85,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
+| `plans` | plan card, plan grid, plan comparison table (pricing pages; see below) |
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
 | `data` | tree, tree table, timeline, description list, code block |
@@ -654,6 +655,37 @@ locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))`
 
 The Flutter twin: `UiFeatureCard(badgeTone:, colors: UiFeatureCardColors.tryParse(surface: '#E1F4EF',
 accent: '#4B8791'), enter: true, enterDelay: Duration(milliseconds: 90))`.
+
+## Plans and tier metals (`@zouriel/ui/plans`, next release)
+
+Pricing pages, with the plan tiers as library tokens: gold, platinum and the new premium (a deep
+violet with white text: `--ui-tier-premium`, `-light`, `-border`, `-contrast`,
+`--ui-gradient-tier-premium`), the same in every theme and AA on every stop. `UiTier` (from
+`@zouriel/ui`) names them anywhere; `UiBadgeTier` gains `'premium'`.
+
+```html
+<ui-plan-grid>
+  <ui-plan-card name="Gold pass" tier="gold" price="MVR 499" period="per event" note="about $32"
+    [features]="['25 GB of photos', 'Guest camera']" highlight="Most popular">
+    <ui-button plan-action tier="gold" [block]="true">Get Gold</ui-button>
+    <span plan-fineprint>One payment, no subscription</span>
+  </ui-plan-card>
+</ui-plan-grid>
+<ui-plan-compare [plans]="plans" [rows]="rows" highlight="gold" caption="Compare passes" />
+```
+
+- `ui-button [tier]`: the metal's sheen, contrast label and edge; wins over `variant`. Hover brightens
+  toward the light stop, press darkens toward the base (AA either way), focus rings in the tier edge;
+  platinum catches a sweep of light on hover (none with reduced motion).
+- `ui-plan-card`: `name`, `price`, `period`, `note`, `tagline`, `features`, `tier` (a strip of the metal
+  along the top and a metal dot; the body stays on the surface), `highlight` (one label on the top edge,
+  stronger border), `current` + `currentLabel`, `radius`; slots `[plan-action]` and `[plan-fineprint]`.
+  A group named by the plan; the price is read as one phrase.
+- `ui-plan-grid`: one column under 600px, two under 912px, at most three; equal-height cards with the
+  actions at the bottom (give every card in a row the same slots so the buttons line up).
+- `ui-plan-compare`: `plans` (`{ key, name, tier? }`), `rows` (`{ label, values }`, `true` a check
+  read "Included", `false`/`null` a dash read "Not included", strings as text), `highlight`, `caption`,
+  `includedLabel`, `notIncludedLabel`. Scrolls sideways inside itself on a phone, the feature column pinned.
 
 ## License
 

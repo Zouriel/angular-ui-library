@@ -33,11 +33,12 @@ import type { UiBadgeTier, UiStatus } from '@zouriel/ui';
     .ui-badge[data-tone="danger"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
     .ui-badge[data-tone="gold"] { background: var(--ui-gradient-tier-gold); color: var(--ui-tier-gold-contrast); border-color: var(--ui-tier-gold-border); }
     .ui-badge[data-tone="platinum"] { background: var(--ui-gradient-tier-platinum); color: var(--ui-tier-platinum-contrast); border-color: var(--ui-tier-platinum-border); }
+    .ui-badge[data-tone="premium"] { background: var(--ui-gradient-tier-premium); color: var(--ui-tier-premium-contrast); border-color: var(--ui-tier-premium-border); }
   `,
 })
 export class UiBadge {
   tone = input<UiStatus>('neutral');
-  /** A premium tier's metal: gold or platinum, the same in every theme. Wins over `tone`. */
+  /** A plan tier's metal: gold, platinum or premium (violet), the same in every theme. Wins over `tone`. */
   tier = input<UiBadgeTier | null>(null);
   /** Render as a bare status dot (no content). */
   dot = input(false);

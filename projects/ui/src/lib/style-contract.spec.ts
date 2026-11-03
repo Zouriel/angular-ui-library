@@ -721,7 +721,7 @@ describe('badge tier metals', () => {
   }
   const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
   const names = Object.keys(blocks).filter((k) => /^\[data-theme="[\w-]+"\]$/.test(k));
-  const tiers = ['gold', 'platinum'] as const;
+  const tiers = ['gold', 'platinum', 'premium'] as const;
 
   function reader(vars: Record<string, string>) {
     const get = (k: string, depth = 0): Rgba | null => {
@@ -782,5 +782,37 @@ describe('badge tier metals', () => {
     expect(gold[0] - gold[2]).toBeGreaterThan(120);
     expect(platinum[2]).toBeGreaterThan(platinum[0]);
     expect(lum(platinum)).toBeGreaterThan(0.5);
+  });
+
+  it('reads premium as violet, with white text, darker than the other metals', () => {
+    const get = reader(base);
+    const premium = get('--ui-tier-premium')!;
+    expect(premium[2]).toBeGreaterThan(premium[0]);
+    expect(premium[0]).toBeGreaterThan(premium[1]);
+    expect(lum(premium)).toBeLessThan(lum(get('--ui-tier-gold')!));
+    expect(contrast(get('--ui-tier-premium-contrast')!, [255, 255, 255, 1])).toBeLessThan(1.05);
+  });
+
+  it('keeps hover and pressed on the line between the two stops, so the label never drops below AA', () => {
+    // ui-button [tier] washes the light stop over the sheen on hover and the base on press. Every
+    // channel moving the same way from base to light makes each wash's luminance sit between the two.
+    const get = reader(base);
+    for (const tier of tiers) {
+      const [a, b] = [get(`--ui-tier-${tier}`)!, get(`--ui-tier-${tier}-light`)!];
+      for (let i = 0; i < 3; i++) expect(b[i], `${tier} channel ${i}`).toBeGreaterThanOrEqual(a[i]);
+    }
+  });
+
+  it('draws a tier focus ring in its edge colour at 3:1 on every page', () => {
+    const fails: string[] = [];
+    for (const sel of names) {
+      const get = reader({ ...base, ...blocks[sel] });
+      const bg = get('--ui-color-bg')!;
+      for (const tier of tiers) {
+        const r = contrast(get(`--ui-tier-${tier}-border`)!, bg);
+        if (r < 3) fails.push(`${sel}: ${tier} ring is ${r.toFixed(2)}:1 on the page`);
+      }
+    }
+    expect(fails).toEqual([]);
   });
 });

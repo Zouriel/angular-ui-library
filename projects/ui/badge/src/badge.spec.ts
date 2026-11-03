@@ -23,10 +23,11 @@ describe('UiBadge tier', () => {
     expect(pill({ tier: 'gold' }).getAttribute('data-tone')).toBe('gold');
     expect(pill({ tier: 'platinum', tone: 'success' }).getAttribute('data-tone')).toBe('platinum');
     expect(pill({ tier: null, tone: 'danger' }).getAttribute('data-tone')).toBe('danger');
+    expect(pill({ tier: 'premium', tone: 'warning' }).getAttribute('data-tone')).toBe('premium');
   });
 
   it('takes each metal from its own tokens', () => {
-    for (const tier of ['gold', 'platinum']) {
+    for (const tier of ['gold', 'platinum', 'premium']) {
       const r = rule(tier);
       expect(r).toContain(`var(--ui-gradient-tier-${tier})`);
       expect(r).toContain(`var(--ui-tier-${tier}-contrast)`);

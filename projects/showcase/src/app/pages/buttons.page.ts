@@ -547,6 +547,7 @@ export class ButtonsPage {
   protected readonly buttonApi: ApiRow[] = [
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style.' },
+    { name: 'tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: "A plan tier's metal: its sheen, contrast label, edge and focus ring; platinum catches a sweep of light on hover. Wins over variant. See Plans." },
     { name: 'size', type: BUTTON_SIZE, default: "'md'", desc: 'Control height & font size; xl is 56px.' },
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },

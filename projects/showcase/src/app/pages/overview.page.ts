@@ -194,6 +194,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Feedback & status', route: 'feedback', entries: '/alert, /progress, /spinner, /skeleton, /feedback', items: ['alert', 'progress-bar', 'progress-circle', 'meter', 'spinner', 'skeleton', 'empty-state', 'result', 'loading-overlay'] },
     { title: 'Navigation', route: 'navigation', entries: '/navigation, /menubar, /tabs', items: ['navbar', 'side-nav', 'bottom-nav', 'menubar', 'breadcrumbs', 'pagination', 'stepper', 'anchor-nav', 'tabs'] },
     { title: 'Data display', route: 'data', entries: '/table, /list, /data, /chat-bubble, /accordion, /card, /badge', items: ['table', 'list', 'tree', 'tree-table', 'timeline', 'chat-bubble', 'description-list', 'code-block', 'accordion', 'card', 'stat-card', 'feature-card', 'badge', 'chip', 'avatar', 'avatar-group'] },
+    { title: 'Plans', route: 'plans', entries: '/plans, /button', items: ['plan-card', 'plan-grid', 'plan-compare', 'button tier'] },
     { title: 'Media', route: 'media', entries: '/media', items: ['carousel', 'gallery', 'image-picker'] },
     { title: 'Map', route: 'map', entries: '/map (lazy, needs leaflet)', items: ['map'] },
     { title: 'Window system', route: 'window', entries: '/window', items: ['window', 'UiWindowManager', 'uiDraggable', 'uiResizable'] },

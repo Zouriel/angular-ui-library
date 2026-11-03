@@ -141,6 +141,8 @@ function checks(theme) {
     ['--ui-tier-gold-light', '--ui-tier-gold-contrast'],
     ['--ui-tier-platinum', '--ui-tier-platinum-contrast'],
     ['--ui-tier-platinum-light', '--ui-tier-platinum-contrast'],
+    ['--ui-tier-premium', '--ui-tier-premium-contrast'],
+    ['--ui-tier-premium-light', '--ui-tier-premium-contrast'],
   ]) add('Button & badge labels', T(on), T(fill), TEXT);
   const [g0, g1] = gradientStops(theme, '--ui-gradient-brand');
   const brandText = color(theme, '--ui-color-primary-contrast');
