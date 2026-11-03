@@ -69,9 +69,9 @@ export function uiPosterFallback(colors?: string[] | null): string {
     .tile:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     img, .fallback { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     img { object-fit: cover; }
-    /* A ring in the scrim's colour keeps the dot visible on any picture, light or dark. */
+    /* A light ring, then a faint dark edge: the dot shows on any picture, dark posters included. */
     .dot { position: absolute; top: var(--ui-space-2); inset-inline-end: var(--ui-space-2); width: 10px; height: 10px; border-radius: 50%;
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent); }
+      box-shadow: 0 0 0 2px var(--ui-media-on-scrim), 0 0 0 3px color-mix(in srgb, var(--ui-media-scrim) 35%, transparent); }
     .dot--primary { background: var(--ui-color-primary); }
     .dot--warning { background: var(--ui-color-warning); }
     .dot--neutral { background: var(--ui-media-on-scrim); }

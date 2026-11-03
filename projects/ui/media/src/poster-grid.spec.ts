@@ -81,6 +81,11 @@ describe('ui-poster-grid', () => {
     }
   });
 
+  it('rings the dot in the on-scrim colour so it shows on dark posters', () => {
+    const css = ((UiPosterGrid as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
+    expect(css).toMatch(/\.dot(\[[^\]]*\])?\s*\{[^}]*box-shadow:\s*0 0 0 2px var\(--ui-media-on-scrim\)/);
+  });
+
   it('builds the fallback from one colour, several, or the theme', () => {
     expect(uiPosterFallback(['#111', '#222'])).toBe('linear-gradient(160deg, #111, #222)');
     expect(uiPosterFallback(['#111'])).toContain('#111');
