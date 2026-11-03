@@ -656,7 +656,7 @@ locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))`
 The Flutter twin: `UiFeatureCard(badgeTone:, colors: UiFeatureCardColors.tryParse(surface: '#E1F4EF',
 accent: '#4B8791'), enter: true, enterDelay: Duration(milliseconds: 90))`.
 
-## Plans and tier metals (`@zouriel/ui/plans`, next release)
+## Plans and tier metals (`@zouriel/ui/plans`, 0.52.0)
 
 Pricing pages, with the plan tiers as library tokens: gold, platinum and the new premium (a deep
 violet with white text: `--ui-tier-premium`, `-light`, `-border`, `-contrast`,

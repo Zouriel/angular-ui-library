@@ -39,7 +39,7 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   button to the Human Interface Guidelines (black, white, white with outline; 40px, lined up with
   `ui-google-button`), a plain button for the app's own Sign in with Apple flow (the twin of
   Flutter's `UiAppleSignInButton`).
-- **Plans** (`@zouriel/ui/plans`, next release): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
+- **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).
 - **App shell, feature card, Google authorization** (0.37): `ui-sidebar-layout` puts the sidebar on
