@@ -1,6 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster } from '@zouriel/ui/media';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
+import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
+import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
+import Share08Icon from '@hugeicons/core-free-icons/Share08Icon';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 function grad(a: string, b: string): string {
@@ -10,7 +14,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiTaskProgressDialog, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -19,7 +23,14 @@ function grad(a: string, b: string): string {
     .pv-meta { margin: 0; opacity: 0.9; }
     .pt-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pt-line { display: block; font-size: var(--ui-font-size-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .pv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }`,
+    .pv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }
+    .sel-top { min-height: 56px; display: flex; align-items: center; margin-bottom: var(--ui-space-2); }
+    .sel-top ui-selection-bar { flex: 1; min-width: 0; background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
+    .sel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-1); }
+    @container (min-width: 544px) { .sel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .sel-wrap { container-type: inline-size; }
+    .sel-grid ui-selectable { aspect-ratio: 1; }
+    .sel-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }`,
   template: `
     <doc-page eyebrow="Components" title="Media"
       lead="Image components from @zouriel/ui/media: a carousel, a thumbnail gallery with a lightbox, and a picker for choosing an image. ui-device-frame, the phone frame from the same entry point, is documented on the Design tools page.">
@@ -74,6 +85,47 @@ function grad(a: string, b: string): string {
             <img [src]="scrimPicture" alt="White to sky blue gradient" />
             <ui-scrim><p class="pv-title">Aisha and Ali</p><p class="pv-meta">Over a white picture, still readable.</p></ui-scrim>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Selectable" selector="ui-selectable" [api]="selectableApi" [outputs]="selectableOut"
+        summary="Wraps one grid tile for long-press multi-select, like a phone gallery. A click, tap, Enter or Space emits (tap): the app opens the tile, or toggles it while selecting. Holding a finger or mouse down for 500ms emits (longPress) (with a short vibration where the browser allows it); moving more than 10px or any scroll cancels it, so a finger that scrolls never selects, and the click after a long press is swallowed. The phone's own long-press menu and callout are suppressed. From the keyboard, the context-menu key or Shift+F10 is the long press. While selecting, a round mark sits in the top corner: an empty ring over a small scrim, or filled with the primary colour and a check, readable on white and black pictures; a selected tile shrinks a little with a primary outline and tint. It is a button named by its label, and a checkbox while selecting. In the demo: press and hold a photo, tap more, then Save to gallery for a fake job.">
+        <doc-demo code="<ui-selectable [label]=&quot;'Photo ' + (i + 1)&quot; [selected]=&quot;picked.has(i)&quot; [selecting]=&quot;picked.size > 0&quot;
+  (tap)=&quot;picked.size ? toggle(i) : open(i)&quot; (longPress)=&quot;toggle(i)&quot;>
+  <img [src]=&quot;photo.src&quot; alt=&quot;&quot; />
+</ui-selectable>">
+          <div class="sel-wrap">
+            <div class="sel-top">
+              @if (selPicked().size) {
+                <ui-selection-bar [count]="selPicked().size" [total]="photos.length" [actions]="selActions"
+                  (selectAll)="selectAllPhotos()" (clear)="clearPhotos()" (cancel)="clearPhotos()" (action)="act($event)" />
+              } @else {
+                <p class="note" style="margin: 0">{{ selNote() }}</p>
+              }
+            </div>
+            <div class="sel-grid">
+              @for (p of photos; track $index) {
+                <ui-selectable [label]="'Photo ' + ($index + 1)" [selected]="selPicked().has($index)" [selecting]="selPicked().size > 0"
+                  (tap)="selPicked().size ? togglePhoto($index) : selNote.set('Opened photo ' + ($index + 1) + '.')" (longPress)="togglePhoto($index)">
+                  <img [src]="p" alt="" />
+                </ui-selectable>
+              }
+            </div>
+          </div>
+          <ui-task-progress-dialog [(open)]="jobOpen" [title]="jobTitle()" [done]="jobDone()" [total]="jobTotal()" [detail]="jobDetail()"
+            [(stopping)]="jobStopping" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Selection bar" selector="ui-selection-bar" [api]="selectionBarApi" [outputs]="selectionBarOut"
+        summary="The bar shown while selecting: Cancel (an X) at the start, &quot;12 selected&quot;, a Select all toggle that reads Clear once count reaches total (canSelectAll / canClear false hide a side), then the actions. Actions are disabled while nothing is selected or when enabled is false; danger draws the destructive style. When the labels don't all fit (a 360px phone with three actions) the toggle and the actions with an icon become icon buttons that keep their label as their accessible name and tooltip, and if &quot;12 selected&quot; still doesn't fit the number shows alone, so nothing overflows at 320px. Count changes are announced politely. The demo is in Selectable above."
+        [shapes]="'interface UiSelectionAction { id: string; label: string; icon?: IconSvgObject; danger?: boolean; enabled?: boolean; }'"></doc-section>
+
+      <doc-section name="Task progress" selector="ui-task-progress" [api]="taskApi" [outputs]="taskOut"
+        summary="Progress for a job over many files: the title, &quot;12 of 40&quot;, a detail line (the file in hand) and a bar that fills as files finish (it sweeps while total is 0). Cancel sets stopping (two-way) and emits (cancel); the button then reads Stopping, busy, until the job closes it. ui-task-progress-dialog shows it in a small modal ([(open)], the same inputs): the backdrop doesn't close it, Escape cancels like the button, and it closes only when the job sets open to false.">
+        <doc-demo code="<ui-task-progress-dialog [(open)]=&quot;saving&quot; title=&quot;Saving photos&quot; [done]=&quot;done&quot; [total]=&quot;40&quot; [detail]=&quot;file&quot;
+  [(stopping)]=&quot;stopping&quot; (cancel)=&quot;stopAfterThisFile()&quot; />">
+          <ui-button (click)="runJob('Saving photos', 40)">Save 40 photos</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -175,6 +227,90 @@ export class MediaPage {
     { name: 'arrows', type: 'boolean', default: 'true', desc: 'Built-in arrows (shown only where there is a mouse).' },
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'Laid over the slides, e.g. a title or counter.' },
   ];
+  // Selectable demo: twelve photos, a selection bar, and a fake many-file job.
+  protected readonly photos = Array.from({ length: 12 }, (_, i) => grad(['#3d5afe', '#2faa6e', '#8a8f98', '#7a4fa0', '#b34a3c', '#1f6f8b'][i % 6], ['#e5484d', '#d9a521', '#3d5afe', '#66c2a5', '#f2e1c2', '#99d8e2'][i % 6]));
+  protected readonly selPicked = signal<ReadonlySet<number>>(new Set());
+  protected readonly selNote = signal('Press and hold a photo to start selecting.');
+  protected readonly selActions: UiSelectionAction[] = [
+    { id: 'share', label: 'Share', icon: Share08Icon },
+    { id: 'save', label: 'Save to gallery', icon: Download04Icon },
+    { id: 'delete', label: 'Delete', icon: Delete02Icon, danger: true },
+  ];
+  protected togglePhoto(i: number): void {
+    const next = new Set(this.selPicked());
+    if (next.has(i)) next.delete(i);
+    else next.add(i);
+    this.selPicked.set(next);
+  }
+  protected selectAllPhotos(): void {
+    this.selPicked.set(new Set(this.photos.map((_, i) => i)));
+  }
+  protected clearPhotos(): void {
+    this.selPicked.set(new Set());
+  }
+  protected async act(id: string): Promise<void> {
+    const n = this.selPicked().size;
+    if (id === 'save') await this.runJob(`Saving ${n} photos`, n);
+    this.selNote.set(id === 'share' ? `Shared ${n} photos.` : id === 'save' ? `Saved ${n} photos.` : `Deleted ${n} photos (not really).`);
+    this.clearPhotos();
+  }
+  protected readonly jobOpen = signal(false);
+  protected readonly jobTitle = signal('');
+  protected readonly jobDone = signal(0);
+  protected readonly jobTotal = signal(0);
+  protected readonly jobDetail = signal<string | null>(null);
+  protected readonly jobStopping = signal(false);
+  /** One "file" every 120ms until done or cancelled; stopping takes a moment, as finishing the file in hand would. */
+  protected async runJob(title: string, count: number): Promise<void> {
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    this.jobTitle.set(title);
+    this.jobTotal.set(count);
+    this.jobDone.set(0);
+    this.jobStopping.set(false);
+    this.jobOpen.set(true);
+    for (let i = 0; i < count && !this.jobStopping(); i++) {
+      this.jobDetail.set(`IMG_${1000 + i}.jpg`);
+      await wait(120);
+      this.jobDone.set(i + 1);
+    }
+    if (this.jobStopping()) await wait(600);
+    this.jobOpen.set(false);
+    this.jobStopping.set(false);
+  }
+  protected readonly selectableApi: ApiRow[] = [
+    { name: 'selected', type: 'boolean', default: 'false', desc: 'Whether this tile is selected.' },
+    { name: 'selecting', type: 'boolean', default: 'false', desc: 'Selection mode: the marks show.' },
+    { name: 'label', type: 'string | null', default: 'null', desc: "The tile's accessible name." },
+    { name: 'borderRadius', type: 'string | null', default: 'null', desc: "The tile's corners (any CSS radius); the theme's radius when null." },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'The tile (a picture).' },
+  ];
+  protected readonly selectableOut: ApiRow[] = [
+    { name: 'tap', type: 'void', default: '—', desc: 'A click, tap, Enter or Space (open, or toggle while selecting).' },
+    { name: 'longPress', type: 'void', default: '—', desc: 'Held 500ms without moving 10px or scrolling; the context-menu key or Shift+F10.' },
+  ];
+  protected readonly selectionBarApi: ApiRow[] = [
+    { name: 'count', type: 'number', default: '0', desc: 'How many are selected.' },
+    { name: 'total', type: 'number | null', default: 'null', desc: 'Everything there is; at count == total the toggle reads Clear.' },
+    { name: 'actions', type: 'UiSelectionAction[]', default: '[]', desc: 'The buttons at the end.' },
+    { name: 'canSelectAll', type: 'boolean', default: 'true', desc: 'Show Select all.' },
+    { name: 'canClear', type: 'boolean', default: 'true', desc: 'Show Clear once everything is selected.' },
+  ];
+  protected readonly selectionBarOut: ApiRow[] = [
+    { name: 'cancel', type: 'void', default: '—', desc: 'The X: leave selecting.' },
+    { name: 'selectAll', type: 'void', default: '—', desc: 'Select all pressed.' },
+    { name: 'clear', type: 'void', default: '—', desc: 'Clear pressed.' },
+    { name: 'action', type: 'string', default: '—', desc: 'The id of the action pressed.' },
+  ];
+  protected readonly taskApi: ApiRow[] = [
+    { name: 'title', type: 'string', default: '(required)', desc: 'What the job is; also names the bar and the dialog.' },
+    { name: 'done', type: 'number', default: '0', desc: 'How many are finished.' },
+    { name: 'total', type: 'number', default: '0', desc: 'How many there are; 0 sweeps the bar.' },
+    { name: 'detail', type: 'string | null', default: 'null', desc: 'A line under the count, e.g. the file in hand.' },
+    { name: 'cancelLabel', type: 'string', default: "strings.cancel", desc: 'The Cancel button.' },
+    { name: 'stopping', type: 'boolean', default: 'false', desc: 'Two-way (`[(stopping)]`). Set by Cancel; shows Stopping until closed.' },
+    { name: 'open', type: 'boolean', default: 'false', desc: 'ui-task-progress-dialog only. Two-way (`[(open)]`); the job sets it false to close.' },
+  ];
+  protected readonly taskOut: ApiRow[] = [{ name: 'cancel', type: 'void', default: '—', desc: 'Cancel pressed (or Escape in the dialog).' }];
   protected readonly galleryApi: ApiRow[] = [
     { name: 'images', type: 'UiGalleryImage[]', default: '[]', desc: 'Images: the full src, an optional smaller thumb, and alt.' },
     { name: 'minThumb', type: 'string', default: "'120px'", desc: 'Min thumbnail width.' },

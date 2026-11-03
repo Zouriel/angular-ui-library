@@ -81,7 +81,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
 | `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |
-| `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts |
+| `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts, task progress (+ dialog) |
 | `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
@@ -694,7 +694,8 @@ wordings, the sidebar's `sidebarToggle` / `sidebarClose` / `sidebarLabel`, and (
 `dragToReorder`, `adding`, `today`, `notSet`, `chooseMonth`, `chooseYear`, `opensCalendar`, `opensTimePicker`,
 `hours`, `minutes`, `seconds`, `cut`, `copy`, `paste`, `delete`, `lookUp`, `searchWeb`, `share`, `scanText`,
 `fieldRequired`, `thisField`, `sheetSmaller`, `sheetLarger`, `navigationOpen`, `currentStep`, `upcoming`, `openImage`,
-`image`, `meter`, `chosenFiles`, `slider`. A few are used by only one library (the doc comment on each key says which);
+`image`, `meter`, `chosenFiles`, `slider`, `selectionCount`, `clearSelection`, `cancelSelection`, `taskCount`,
+`taskStopping`. A few are used by only one library (the doc comment on each key says which);
 both define all of them. `{n}`, `{total}`, `{label}`, `{start}`, `{end}` are filled in
 (`uiFormatString(template, params)`).
 

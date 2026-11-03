@@ -5,3 +5,4 @@ export * from './image-picker';
 export * from './poster-grid';
 export * from './poster-view';
 export * from './scrim';
+export * from './selection';

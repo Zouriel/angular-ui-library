@@ -331,6 +331,16 @@ export interface UiStrings {
   chosenFiles: string;
   /** Slider default name. */
   slider: string;
+  /** Selection bar (0.51.0): how many are selected (`{n}`). */
+  selectionCount: string;
+  /** Selection bar: the toggle that unselects everything (it reads Select all until all are selected). */
+  clearSelection: string;
+  /** Selection bar: the X that leaves selecting. */
+  cancelSelection: string;
+  /** Task progress (0.51.0): how far a many-file job is. */
+  taskCount: string;
+  /** Task progress: the Cancel button once pressed, until the job closes it. */
+  taskStopping: string;
 
   /** Date names and formats (0.46.0) for the calendar, date picker and date range picker. `locale` is
    *  the locale Intl formats with; '' uses the app's `LOCALE_ID`. */
@@ -518,6 +528,11 @@ export const defaultUiStrings: UiStrings = {
   meter: 'Meter',
   chosenFiles: 'Chosen files',
   slider: 'Slider',
+  selectionCount: '{n} selected',
+  clearSelection: 'Clear',
+  cancelSelection: 'Cancel selection',
+  taskCount: '{done} of {total}',
+  taskStopping: 'Stopping…',
   locale: '',
   months: [],
   monthsShort: [],
@@ -702,6 +717,11 @@ export const uiStringsDv: UiStrings = {
   meter: 'މީޓަރު',
   chosenFiles: 'ހޮވި ފައިލްތައް',
   slider: 'ސްލައިޑަރު',
+  selectionCount: '{n} ހޮވިފައި',
+  clearSelection: 'ހޮވުން ފޮހެލާ',
+  cancelSelection: 'ހޮވުން ހުއްޓާލާ',
+  taskCount: '{total} އިން {done}',
+  taskStopping: 'ހުއްޓުވަނީ…',
   locale: 'dv',
   months: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],
   monthsShort: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],

@@ -147,6 +147,9 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Poster grid', anchor: 'poster-grid' },
     { name: 'Poster view', anchor: 'poster-view' },
     { name: 'Scrim', anchor: 'scrim' },
+    { name: 'Selectable', anchor: 'selectable' },
+    { name: 'Selection bar', anchor: 'selection-bar' },
+    { name: 'Task progress', anchor: 'task-progress' },
     { name: 'Image picker', anchor: 'image-picker' },
   ],
   'map': [

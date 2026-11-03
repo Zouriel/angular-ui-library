@@ -4,3 +4,4 @@ export * from './toast';
 export * from './snackbar';
 export * from './confirm-dialog';
 export * from './bottom-sheet';
+export * from './task-progress';
