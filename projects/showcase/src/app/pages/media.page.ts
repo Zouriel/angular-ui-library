@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
-import { UiCarousel, UiGallery, UiImagePicker, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem } from '@zouriel/ui/media';
+import { UiButton } from '@zouriel/ui/button';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterGrid, UiPosterView, UiScrim, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster } from '@zouriel/ui/media';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 function grad(a: string, b: string): string {
@@ -9,8 +10,14 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiCarousel, UiGallery, UiImagePicker, DocPage, DocSection, DocDemo],
-  styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }`,
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterGrid, UiPosterView, UiScrim, DocPage, DocSection, DocDemo],
+  styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
+    .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .scrim-demo ui-scrim { position: absolute; inset-inline: 0; bottom: 0; }
+    .pv-title { margin: 0; font-size: var(--ui-font-size-lg); font-weight: 600; }
+    .pv-meta { margin: 0; opacity: 0.9; }
+    .pv-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-2); margin-top: var(--ui-space-2); }`,
   template: `
     <doc-page eyebrow="Components" title="Media"
       lead="Image components from @zouriel/ui/media: a carousel, a thumbnail gallery with a lightbox, and a picker for choosing an image. ui-device-frame, the phone frame from the same entry point, is documented on the Design tools page.">
@@ -29,6 +36,39 @@ function grad(a: string, b: string): string {
         [shapes]="'interface UiGalleryImage { src: string; thumb?: string; alt?: string; }'">
         <doc-demo code="<ui-gallery [images]=&quot;images&quot; minThumb=&quot;90px&quot; />">
           <ui-gallery [images]="images" minThumb="90px" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Poster grid" selector="ui-poster-grid" [api]="posterGridApi" [outputs]="posterGridOut"
+        summary="Pictures and nothing else: every tile is the same shape (ratio), with 2 columns on a phone, 3 from 544px, 4 from 992px and 5 from 1280px of the grid's own width (a container query, so it fits a sidebar too). A tile carries no text; its label is its accessible name. Without a picture, or when it fails to load, a tile shows a gradient of its colors (or the theme's primary and accent). The only signal on a tile is a small dot (mark), whose label screen readers hear with the name. Pair it with ui-poster-view to show the details."
+        [shapes]="posterShapes">
+        <doc-demo code="<ui-poster-grid [posters]=&quot;posters&quot; focus=&quot;top&quot; (select)=&quot;show($event)&quot; />
+<ui-poster-view [(open)]=&quot;open&quot; [src]=&quot;picked.src&quot; [label]=&quot;picked.label&quot;>
+  <h3>Aisha and Ali</h3> <p>Sat 12 December · Malé</p>
+  <ui-button>Open invitation</ui-button>
+</ui-poster-view>">
+          <ui-poster-grid [posters]="posters" focus="top" (select)="show($event)" />
+          <ui-poster-view [(open)]="viewOpen" [src]="current().src" [label]="current().label" [colors]="current().colors">
+            <p class="pv-title">{{ current().label }}</p>
+            <p class="pv-meta">Saturday 12 December, 7 pm · Malé</p>
+            <div class="pv-actions">
+              <ui-button (click)="viewOpen.set(false)">Open invitation</ui-button>
+              <ui-button variant="outline" (click)="viewOpen.set(false)">Photos</ui-button>
+            </div>
+          </ui-poster-view>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Poster view" selector="ui-poster-view" [api]="posterViewApi" [outputs]="posterViewOut"
+        summary="One picture full-size, shown whole over a blurred copy of itself, with whatever you project laid over its bottom on a ui-scrim: the details and the buttons. A modal dialog: Tab stays inside, Esc or the close button closes it, focus returns to what opened it. The demo is in Poster grid above."></doc-section>
+
+      <doc-section name="Scrim" selector="ui-scrim"
+        summary="A see-through layer that fades from clear at its top to the media scrim colour at its bottom, for putting words on a picture. The fade reaches 60% before the content starts and 88% at the bottom, so its on-scrim text keeps at least 4.5:1 over any picture, white included.">
+        <doc-demo code="<div class=&quot;picture&quot;> <img ... /> <ui-scrim> <h3>Title</h3> <p>Details</p> </ui-scrim> </div>">
+          <div class="scrim-demo">
+            <img [src]="scrimPicture" alt="White to sky blue gradient" />
+            <ui-scrim><p class="pv-title">Aisha and Ali</p><p class="pv-meta">Over a white picture, still readable.</p></ui-scrim>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -54,6 +94,37 @@ export class MediaPage {
     { src: grad('#8a8f98', '#3d5afe'), alt: 'Grey to blue gradient' }, { src: grad('#2faa6e', '#e5484d'), alt: 'Green to red gradient' },
   ];
   protected readonly slide = signal(0);
+  protected readonly posters: UiPoster[] = [
+    { src: grad('#3d5afe', '#e5484d'), label: 'Aisha and Ali', mark: { tone: 'primary', label: 'New' } },
+    { src: grad('#2faa6e', '#d9a521'), label: 'Eid get-together' },
+    { src: null, label: 'Hawwa turns 30', colors: ['#5b2a86', '#e5484d'], mark: { tone: 'warning', label: 'Not finished' } },
+    { src: grad('#8a8f98', '#3d5afe'), label: 'Graduation' },
+    { src: null, label: 'Office dinner' },
+    { src: grad('#d9a521', '#3d5afe'), label: 'Housewarming' },
+  ];
+  protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; colors?: string[]; mark?: UiPosterMark | null; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
+  protected readonly viewOpen = signal(false);
+  protected readonly picked = signal(0);
+  protected readonly current = () => this.posters[this.picked()];
+  protected readonly scrimPicture = grad('#ffffff', '#cfe8ff');
+  protected show(i: number): void {
+    this.picked.set(i);
+    this.viewOpen.set(true);
+  }
+  protected readonly posterGridApi: ApiRow[] = [
+    { name: 'posters', type: 'UiPoster[]', default: '[]', desc: 'The tiles: picture, accessible label, fallback colours, optional dot.' },
+    { name: 'ratio', type: 'number', default: '0.75', desc: 'Width / height of every tile.' },
+    { name: 'focus', type: "'top' | 'center'", default: "'center'", desc: "Which part of a picture survives the crop; 'top' keeps a poster's heading." },
+  ];
+  protected readonly posterGridOut: ApiRow[] = [{ name: 'select', type: 'number', default: '—', desc: 'The index of the tile that was activated.' }];
+  protected readonly posterViewApi: ApiRow[] = [
+    { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the view is showing.' },
+    { name: 'src', type: 'string | null', default: 'null', desc: 'The picture.' },
+    { name: 'label', type: 'string', default: "''", desc: "The dialog's accessible name and the picture's alt text." },
+    { name: 'colors', type: 'string[] | null', default: 'null', desc: 'Fallback gradient when there is no picture, as on ui-poster-grid.' },
+    { name: '<ng-content>', type: 'slot', default: '—', desc: 'Details and buttons, laid over the bottom of the picture on a ui-scrim.' },
+  ];
+  protected readonly posterViewOut: ApiRow[] = [{ name: 'closed', type: 'void', default: '—', desc: 'Closed by Esc or the close button.' }];
   protected readonly pickerItems = signal<UiImagePickerItem[]>(this.page(0));
   protected readonly busy = signal<string | null>(null);
 

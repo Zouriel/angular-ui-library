@@ -144,6 +144,9 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'media': [
     { name: 'Carousel', anchor: 'carousel' },
     { name: 'Gallery', anchor: 'gallery' },
+    { name: 'Poster grid', anchor: 'poster-grid' },
+    { name: 'Poster view', anchor: 'poster-view' },
+    { name: 'Scrim', anchor: 'scrim' },
     { name: 'Image picker', anchor: 'image-picker' },
   ],
   'map': [
