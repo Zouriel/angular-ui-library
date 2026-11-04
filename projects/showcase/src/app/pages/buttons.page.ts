@@ -310,7 +310,7 @@ type UiMessengerApp = 'whatsapp' | 'viber' | 'telegram';"
               }
               <ui-messenger-button app="viber" size="sm" />
             </div>
-            <span class="muted">Press a button: it ticks with the time (hover, or long-press on touch, shows it). Row 3: equal widths (expand, compact=&quot;auto&quot;). Row 4: size=&quot;sm&quot;, 32px to look at, 44px to tap.</span>
+            <span class="muted">Press a button: it ticks with the time (hover, or long-press on touch, shows it). Row 3: equal widths (expand, compact=&quot;auto&quot;). Row 4: size=&quot;sm&quot;, 28px to look at, 44px to tap.</span>
           </div>
         </doc-demo>
       </doc-section>
@@ -624,7 +624,7 @@ export class ButtonsPage {
     { name: 'tickLabel', type: 'string', default: '—', desc: "What the tick means ('Opened in WhatsApp · 3:14 pm'): tooltip, and part of the accessible name (default 'Opened')." },
     { name: 'ariaLabel', type: 'string', default: 'the label', desc: "Accessible name ('Send to Aisha on WhatsApp')." },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
-    { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: "'md': 44px. 'sm': 32px to look at (logo 18, Telegram 23; tick 14px) with an invisible 44px tap area." },
+    { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: "'md': 44px. 'sm': 28px to look at, like a small icon button (logo 16, Telegram 20; tick 12px), with an invisible 44px tap area." },
   ];
   protected readonly messengerOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
   protected readonly switchApp = signal<UiMessengerApp>('whatsapp');

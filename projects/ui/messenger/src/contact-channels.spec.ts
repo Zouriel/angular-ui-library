@@ -75,11 +75,13 @@ describe('ui-contact-channels', () => {
       'Send to Aisha on Viber',
       'Send to Aisha on Telegram',
     ]);
-    // Small (32px, 44px to tap), the logos alone, not stretched: left-aligned with equal 12px gaps.
+    // Small (28px, 44px to tap), the logos alone, not stretched: left-aligned with equal 8px gaps.
     expect(buttons.every((b) => b.dataset['size'] === 'sm' && b.classList.contains('icon-only'))).toBe(true);
     expect(qa('.apps ui-messenger-button').some((b) => b.classList.contains('expand'))).toBe(false);
     expect(rule('.apps')).toMatch(/display: flex/);
-    expect(rule('.apps')).toMatch(/gap: var\(--ui-space-3\)/);
+    expect(rule('.apps')).toMatch(/justify-content: flex-start/);
+    expect(rule('.apps')).toMatch(/gap: var\(--ui-space-2\)/);
+    expect(rule('.apps')).toMatch(/padding-top: 4px/);
     expect(rule('.apps')).not.toMatch(/grid-template-columns/);
   });
 

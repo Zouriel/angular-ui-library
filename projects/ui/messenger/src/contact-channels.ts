@@ -37,7 +37,8 @@ export interface UiMessengerChannel {
  * bounced (with `emailError` under the row), Send when not sent, a spinner while `emailBusy`.
  *
  * The messenger buttons start at the value column's edge, under the number: since 0.58.0 small
- * (32px to look at, 44px to tap) and icon-only, the official logos alone, 12px apart, so the whole
+ * (28px to look at, like the library's small icon buttons, 44px to tap) and icon-only, the official
+ * logos alone, 8px apart, so the whole
  * block stays compact; each names itself ("Send to Aisha on WhatsApp") and keeps its own tick.
  * Each can be ticked on its own. The component only reports presses: the app sends and sets ticks.
  * Twin of Flutter's `UiContactChannels`.
@@ -105,9 +106,11 @@ export interface UiMessengerChannel {
     .tick { display: inline-flex; align-items: center; justify-content: center; width: var(--ui-size-touch); height: 32px; color: var(--ui-color-success); }
     .tick hugeicons-icon { display: block; line-height: 0; }
     .err { grid-column: 2 / -1; margin-top: calc(var(--ui-space-1) * -1); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-danger); overflow-wrap: anywhere; }
-    /* Under the number, from the value column's edge: the logos alone on 32px buttons, 12px apart, so
-       their 44px tap areas tile without overlapping; 6px above for the tick badges. */
-    .apps { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--ui-space-3); padding-top: 6px; min-width: 0; }
+    /* Under the number, from the value column's edge: the logos alone on small 28px buttons, 8px
+       apart, never stretched; 4px above for the tick badges. Each tap area is 44px tall and reaches
+       half way across the gaps beside it (28 + 8 wide), so neighbours split the gap evenly. */
+    .apps ui-messenger-button { --ui-messenger-hit-width: calc(28px + var(--ui-space-2)); }
+    .apps { grid-column: 2 / -1; display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: var(--ui-space-2); padding-top: 4px; min-width: 0; }
   `,
 })
 export class UiContactChannels {

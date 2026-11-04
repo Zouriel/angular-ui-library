@@ -155,7 +155,7 @@ describe('ui-messenger-button', () => {
     expect(base).toMatch(/padding: 0 var\(--ui-space-3\)/);
     expect(base).toMatch(/border-radius: var\(--ui-radius\)/);
     // The logo box: 22 (Telegram 28) on md, 18 (Telegram 23) on sm.
-    expect(APPS.map((a) => UI_MESSENGER_BRANDS[a].logoSizeSm)).toEqual([18, 18, 23]);
+    expect(APPS.map((a) => UI_MESSENGER_BRANDS[a].logoSizeSm)).toEqual([16, 16, 20]);
     expect(rule('.ui-mbtn:focus-visible')).toMatch(/box-shadow: var\(--ui-focus-ring\)/);
     // No app-specific geometry: only colours differ.
     expect([...rules.map.keys()].some((k) => k.includes('data-app'))).toBe(false);
@@ -246,7 +246,7 @@ describe('ui-messenger-button size sm', () => {
     presses: UiMessengerApp[] = [];
   }
 
-  it('is 32px to look at with an invisible 44px hit area, a smaller logo and badge, and the same name', () => {
+  it('is 28px to look at with an invisible 44px hit area, a 16px logo (Telegram 20), a 12px badge, and the same name', () => {
     const f = TestBed.createComponent(SmHost);
     f.detectChanges();
     const el = f.nativeElement as HTMLElement;
@@ -261,14 +261,15 @@ describe('ui-messenger-button size sm', () => {
       b.click();
     }
     expect(f.componentInstance.presses).toEqual(APPS);
-    expect(rule('.ui-mbtn[data-size=sm]')).toMatch(/height: 32px/);
-    expect(rule('.ui-mbtn[data-size=sm].icon-only')).toMatch(/width: 32px/);
+    expect(rule('.ui-mbtn[data-size=sm]')).toMatch(/height: 28px; min-width: 28px/);
+    expect(rule('.ui-mbtn[data-size=sm].icon-only')).toMatch(/width: 28px/);
+    expect(APPS.map((a) => UI_MESSENGER_BRANDS[a].logoSizeSm)).toEqual([16, 16, 20]);
     // The hit area: centred, at least 44x44, transparent (no background), part of the button.
     const hit = rule('.ui-mbtn[data-size=sm]::before');
-    expect(hit).toMatch(/width: max\(100%, var\(--ui-size-touch\)\); height: var\(--ui-size-touch\)/);
+    expect(hit).toMatch(/width: max\(100%, var\(--ui-messenger-hit-width, var\(--ui-size-touch\)\)\); height: var\(--ui-size-touch\)/);
     expect(hit).toMatch(/transform: translate\(-50%, -50%\)/);
     expect(hit).not.toMatch(/background/);
-    expect(rule('.ui-mbtn[data-size=sm] .tick')).toMatch(/top: -5px; inset-inline-end: -5px; width: 14px; height: 14px/);
+    expect(rule('.ui-mbtn[data-size=sm] .tick')).toMatch(/top: -4px; inset-inline-end: -4px; width: 12px; height: 12px/);
   });
 
   it('never hides an app by itself: all three render whatever the browser says it is', () => {

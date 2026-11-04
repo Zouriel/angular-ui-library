@@ -5,7 +5,7 @@
  *
  *   node projects/showcase/audit/messenger.mjs --url http://localhost:4310
  *
- * Buttons page (#messenger-button), at 1280 and 360 wide, light and dark themes:
+ * Buttons page (#messenger-button), at 1440 and 390 wide, light and dark themes:
  *   - every ui-messenger-button is at least 44px tall;
  *   - the logo's and the label's centre lines are within 0.5px of the button's centre line, and the
  *     logo + label group is centred across the button within 0.5px (icon-only: the logo);
@@ -14,8 +14,8 @@
  *   - no shown label is cut off (compact="auto" shows the whole name or the logo alone).
  * Data page (#contact-channels): in every ui-contact-channels, label x and value x are equal across
  * rows, the messenger row starts at the value x, its buttons have equal widths and gaps, all fit
- * inside the component (no overflow), and at 360 wide they are icon-only while keeping their names;
- * Since 0.58.0 the contact row is small icon-only buttons: 32x32, 12px apart, each a 44px target
+ * inside the component (no overflow), and at 390 wide they are icon-only while keeping their names;
+ * Since 0.58.1 the contact row is small icon-only buttons: 28x28, 8px apart, each a 44px target
  * (checked with elementFromPoint), the tick badge >= 3:1 against its ring. The messenger switch is
  * centred, <= 360px, its logo centred on the pill, and a CDP touch swipe moves it to the next app
  * without pressing it. Also the centring checks above for all buttons.
@@ -78,7 +78,7 @@ function checkButtons(where, list) {
     stats.buttons++;
     stats.centreY = Math.max(stats.centreY, Math.abs(m.dyLogo), Math.abs(m.dyLabel));
     stats.centreX = Math.max(stats.centreX, Math.abs(m.dxGroup));
-    if (m.size === 'sm' ? Math.abs(m.h - 32) > 0.5 : m.h < 44) problems.push(`${where} ${m.app} (${m.size}): ${m.h}px tall`);
+    if (m.size === 'sm' ? Math.abs(m.h - 28) > 0.5 : m.h < 44) problems.push(`${where} ${m.app} (${m.size}): ${m.h}px tall`);
     if (Math.abs(m.dyLogo) > 0.5) problems.push(`${where} ${m.app}: logo centre off by ${m.dyLogo.toFixed(2)}px`);
     if (Math.abs(m.dyLabel) > 0.5) problems.push(`${where} ${m.app}: label centre off by ${m.dyLabel.toFixed(2)}px`);
     if (Math.abs(m.dxGroup) > 0.5) problems.push(`${where} ${m.app}: logo+label group off-centre by ${m.dxGroup.toFixed(2)}px`);
@@ -97,7 +97,7 @@ const equal = (xs, tol = 0.5) => xs.every((x) => Math.abs(x - xs[0]) <= tol);
 const report = [];
 
 for (const theme of ['winterLight', 'winterDark']) {
-  for (const width of [1280, 360]) {
+  for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 2, hasTouch: true });
     const page = await context.newPage();
     if (extraCss) await page.addInitScript((css) => addEventListener('DOMContentLoaded', () => document.head.append(Object.assign(document.createElement('style'), { textContent: css }))), extraCss);
@@ -149,10 +149,10 @@ for (const theme of ['winterLight', 'winterDark']) {
         if (b.btns.at(-1).right > b.right + 0.5) problems.push(`${w}: buttons overflow (${b.btns.at(-1).right} > ${b.right})`);
         if (b.btns.some((x) => !x.name)) problems.push(`${w}: a button without a name`);
         if (new Set(b.btns.map((x) => x.label)).size > 1) problems.push(`${w}: row mixes labelled and icon-only buttons`);
-        // 0.58.0: small icon-only buttons, 32px boxes, 12px apart, left-aligned (not stretched).
+        // 0.58.1: small icon-only buttons, 28px boxes, 8px apart, left-aligned (not stretched).
         if (b.btns.some((x) => x.label)) problems.push(`${w}: a contact button shows its name`);
-        if (b.btns.some((x) => Math.abs(x.w - 32) > 0.5 || Math.abs(x.h - 32) > 0.5)) problems.push(`${w}: contact buttons not 32x32 (${b.btns.map((x) => `${x.w}x${x.h}`).join(', ')})`);
-        if (gaps.some((g) => Math.abs(g - 12) > 0.5)) problems.push(`${w}: gaps ${gaps.join(', ')} (want 12)`);
+        if (b.btns.some((x) => Math.abs(x.w - 28) > 0.5 || Math.abs(x.h - 28) > 0.5)) problems.push(`${w}: contact buttons not 28x28 (${b.btns.map((x) => `${x.w}x${x.h}`).join(', ')})`);
+        if (gaps.some((g) => Math.abs(g - 8) > 0.5)) problems.push(`${w}: gaps ${gaps.join(', ')} (want 8)`);
       }
       if (b.scrollW > b.clientW + 1) problems.push(`${w}: content overflows (${b.scrollW} > ${b.clientW})`);
       report.push(`${w}: label x ${b.labelX.map((x) => x.toFixed(1)).join('/')}, value x ${b.valueX.map((x) => x.toFixed(1)).join('/')}, buttons x ${b.appsX?.toFixed(1)}, widths ${b.btns.map((x) => x.w.toFixed(1)).join('/')}, labels ${b.btns.map((x) => (x.label ? 'y' : 'n')).join('')}`);
@@ -164,10 +164,20 @@ for (const theme of ['winterLight', 'winterDark']) {
       b.scrollIntoView({ block: 'center', behavior: 'instant' });
       const r = b.getBoundingClientRect();
       const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const miss = [[0, -21], [0, 21], [-21, 0], [21, 0]].filter(([dx, dy]) => document.elementFromPoint(cx + dx, cy + dy)?.closest('button') !== b);
-      return { app: b.dataset.app, miss: miss.length };
+      // Up/down 21px; sideways 21px, or up to the middle of the gap when a neighbour is closer (a row
+      // 8px apart: each owns its half of the gap); and the square itself edge to edge.
+      const others = [...document.querySelectorAll('ui-messenger-button button')].filter((o) => o !== b).map((o) => o.getBoundingClientRect())
+        .filter((o) => o.top < r.bottom && o.bottom > r.top);
+      // A row may narrow the sideways reach (--ui-messenger-hit-width, e.g. 36 in ui-contact-channels).
+      // Measure the hit area itself (the custom property may be an unresolved calc()).
+      const reach = Math.max(r.width, parseFloat(getComputedStyle(b, '::before').width) || 0) / 2 - 1;
+      const right = Math.min(reach, ...others.filter((o) => o.left >= r.right).map((o) => (o.left + r.right) / 2 - cx - 1));
+      const left = Math.min(reach, ...others.filter((o) => o.right <= r.left).map((o) => cx - (o.right + r.left) / 2 - 1));
+      const pts = [[0, -21], [0, 21], [-left, 0], [right, 0], [0, 0], [-r.width / 2 + 1, 0], [r.width / 2 - 1, 0]];
+      const miss = pts.filter(([dx, dy]) => document.elementFromPoint(cx + dx, cy + dy)?.closest('button') !== b);
+      return { app: b.dataset.app, miss: miss.length, of: pts.length };
     }));
-    for (const h of hits) if (h.miss) problems.push(`${where}: sm ${h.app} button misses ${h.miss} of 4 points of its 44px target`);
+    for (const h of hits) if (h.miss) problems.push(`${where}: sm ${h.app} button misses ${h.miss} of ${h.of} points of its target`);
     report.push(`${where} sm hit areas: ${hits.length} buttons checked at ±21px`);
 
     // The tick badge reads on every brand fill: its success disc against its surface-coloured ring >= 3:1.

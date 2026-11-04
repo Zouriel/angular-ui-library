@@ -6,7 +6,7 @@ import { UiTooltip } from '@zouriel/ui/overlay';
 import { UI_MESSENGER_BRANDS, type UiMessengerApp } from './messenger-brand';
 import { UiMessengerLogo } from './messenger-logo';
 
-/** 'md': 44px tall (the 0.57.0 button). 'sm': 32px to look at, still a 44px target (an invisible hit area). */
+/** 'md': 44px tall (the 0.57.0 button). 'sm': 28px to look at (0.58.1), still a 44px target (an invisible hit area). */
 export type UiMessengerSize = 'sm' | 'md';
 
 /**
@@ -51,7 +51,7 @@ export type UiMessengerSize = 'sm' | 'md';
       <ui-messenger-logo class="logo-box" [app]="app()" [size]="logoPx()" />
       <span #label class="label">{{ text() }}</span>
       @if (ticked()) {
-        <span class="tick" aria-hidden="true"><hugeicons-icon [icon]="tickIcon" [size]="size() === 'sm' ? 10 : 12" [strokeWidth]="2.5" /></span>
+        <span class="tick" aria-hidden="true"><hugeicons-icon [icon]="tickIcon" [size]="size() === 'sm' ? 8 : 12" [strokeWidth]="2.5" /></span>
       }
     </button>
   `,
@@ -110,13 +110,14 @@ export type UiMessengerSize = 'sm' | 'md';
     .ui-mbtn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-mbtn:disabled { opacity: 0.5; cursor: not-allowed; }
     .logo-box { position: relative; z-index: 1; }
-    /* sm: 32px to look at, 13px words; the target stays 44x44 through an invisible hit area centred on it. */
-    .ui-mbtn[data-size="sm"] { height: 32px; min-width: 32px; padding: 0 10px; gap: 6px; font-size: var(--ui-font-size-sm); line-height: 18px; }
-    .ui-mbtn[data-size="sm"].icon-only { padding: 0; width: 32px; }
+    /* sm: a small icon button, 28px to look at in every theme (between --ui-size-sm and --ui-size-md),
+       13px words; the target stays 44x44 through an invisible hit area centred on it. */
+    .ui-mbtn[data-size="sm"] { height: 28px; min-width: 28px; padding: 0 8px; gap: 6px; font-size: var(--ui-font-size-sm); line-height: 18px; }
+    .ui-mbtn[data-size="sm"].icon-only { padding: 0; width: 28px; }
     .ui-mbtn[data-size="sm"].icon-only.expand { width: 100%; }
     .ui-mbtn[data-size="sm"]::before {
       content: ''; position: absolute; left: 50%; top: 50%;
-      width: max(100%, var(--ui-size-touch)); height: var(--ui-size-touch); transform: translate(-50%, -50%);
+      width: max(100%, var(--ui-messenger-hit-width, var(--ui-size-touch))); height: var(--ui-size-touch); transform: translate(-50%, -50%);
     }
     .ui-mbtn { -webkit-touch-callout: none; }
     .label { position: relative; z-index: 1; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -142,7 +143,7 @@ export type UiMessengerSize = 'sm' | 'md';
       box-shadow: 0 0 0 2px var(--ui-color-surface);
       pointer-events: none;
     }
-    .ui-mbtn[data-size="sm"] .tick { top: -5px; inset-inline-end: -5px; width: 14px; height: 14px; }
+    .ui-mbtn[data-size="sm"] .tick { top: -4px; inset-inline-end: -4px; width: 12px; height: 12px; }
     .tick hugeicons-icon { display: block; line-height: 0; }
     @media (prefers-reduced-motion: reduce) { .ui-mbtn, .ui-mbtn::after { transition: none; } }
   `,
@@ -163,7 +164,7 @@ export class UiMessengerButton {
   /** The accessible name ("Send to Aisha on WhatsApp"); default the label. */
   ariaLabel = input<string>();
   disabled = input(false);
-  /** 'md' (44px) or 'sm' (32px to look at, 44px to tap). */
+  /** 'md' (44px) or 'sm' (28px to look at, 44px to tap). */
   size = input<UiMessengerSize>('md');
 
   readonly pressed = output<void>();
@@ -188,7 +189,7 @@ export class UiMessengerButton {
         const label = host.querySelector<HTMLElement>('.label');
         if (!this.expand() || !label) return;
         // padding 12 + logo + gap 8 + the words' full width (also while hidden) + padding 12.
-        this.needWidth.set(this.size() === 'sm' ? 20 + this.logoPx() + 6 + label.scrollWidth : 24 + this.logoPx() + 8 + label.scrollWidth);
+        this.needWidth.set(this.size() === 'sm' ? 16 + this.logoPx() + 6 + label.scrollWidth : 24 + this.logoPx() + 8 + label.scrollWidth);
         this.hostWidth.set(host.getBoundingClientRect().width);
       };
       const ro = new ResizeObserver(measure);
