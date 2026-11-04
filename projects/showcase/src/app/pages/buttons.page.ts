@@ -251,8 +251,8 @@ type UiAppleButtonShape = 'rectangular' | 'pill';"
 type UiSocialProvider = 'apple' | 'google';
 type UiSocialButtonText = 'signIn' | 'continueWith' | 'signUp';
 type UiSocialButtonStyle = 'auto' | 'dark' | 'light';
-type UiSocialButtonShape = 'rectangular' | 'pill';"
-        summary="Sign in with Apple and Sign in with Google as one matching pair: the same height (40px), 4px corners (or pill), the same 1px stroke, the same font (the system font, else Roboto) Medium 17/20 (Apple's 43% of the height), and the same 44px logo slot at the start with an equal one at the end, so a stack of them lines up exactly and the words centre on one line. Apple's logo is Apple's own left-aligned artwork (Apple Design Resources, Medium) at the button's full height, in black or white only; Google's is the standard multicolour G at its 20px size, 12px from the edge. dark is Apple's black button and Google's dark one; light is Apple's white button and Google's light one; auto (the default) is dark on a light library theme and light on a dark one, and follows theme changes. Use the same text on every button in a stack. A plain button that emits (pressed); loading swaps the logo for a spinner (aria-busy, not clickable). The Flutter twin is UiSocialSignInButton. From @zouriel/ui/google-sign-in.">
+type UiSocialButtonShape = 'rounded' | 'rectangular' | 'pill';"
+        summary="Sign in with Apple and Sign in with Google as one matching pair: the same height (40px), the theme's button corners (--ui-radius, like ui-button; or 4px rectangular, or pill), the same 1px stroke, the same font (the system font, else Roboto) Medium 17/20 (Apple's 43% of the height), and the same 44px logo slot at the start with an equal one at the end, so a stack of them lines up exactly and the words centre on one line. Apple's logo is Apple's own left-aligned artwork (Apple Design Resources, Medium) at the button's full height, in black or white only; Google's is the standard multicolour G at its 20px size, 12px from the edge. light is Apple's white button with an outline and Google's light one; dark is Apple's black button and Google's dark one; auto (the default) is light on every theme (white reads well on light and dark backgrounds). Use the same text on every button in a stack. A plain button that emits (pressed); loading swaps the logo for a spinner (aria-busy, not clickable). The Flutter twin is UiSocialSignInButton. From @zouriel/ui/google-sign-in.">
         <doc-demo lang="ts + html" code="import { UiSocialButton } from '@zouriel/ui/google-sign-in';
 
 <ui-social-button provider=&quot;apple&quot; text=&quot;continueWith&quot; [expand]=&quot;true&quot; (pressed)=&quot;apple()&quot; />
@@ -549,8 +549,8 @@ export class ButtonsPage {
   protected readonly socialButtonApi: ApiRow[] = [
     { name: 'provider', type: 'UiSocialProvider (required)', default: '—', desc: "'apple' or 'google'." },
     { name: 'text', type: 'UiSocialButtonText', default: "'signIn'", desc: "'signIn', 'continueWith' or 'signUp' (… with Apple / … with Google); use one for the whole stack." },
-    { name: 'buttonStyle', type: 'UiSocialButtonStyle', default: "'auto'", desc: "'dark' (Apple black, Google dark), 'light' (Apple white, Google light); 'auto' is dark on a light theme and light on a dark one." },
-    { name: 'shape', type: 'UiSocialButtonShape', default: "'rectangular'", desc: "'rectangular' (4px corners) or 'pill'." },
+    { name: 'buttonStyle', type: 'UiSocialButtonStyle', default: "'auto'", desc: "'light' (Apple white with outline, Google light), 'dark' (Apple black, Google dark); 'auto' is 'light' on every theme." },
+    { name: 'shape', type: 'UiSocialButtonShape', default: "'rounded'", desc: "'rounded' (the theme's --ui-radius, like ui-button), 'rectangular' (4px) or 'pill'." },
     { name: 'loading', type: 'boolean', default: 'false', desc: 'Spinner in place of the logo, same size, aria-busy, not clickable.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
     { name: 'expand', type: 'boolean', default: 'false', desc: 'Full width; the logo stays at the start, the words centre.' },

@@ -134,11 +134,11 @@ import { UiGoogleSignIn } from '@zouriel/ui/google-sign-in';
 - Flutter: `UiGoogleSignInButton` draws the same button; the app pairs it with the `google_sign_in`
   package (`authenticate()` → `idToken`, with `serverClientId` = this web client ID).
 - `ui-social-button` (0.55.0) draws Sign in with Apple and Sign in with Google as one matching pair:
-  `provider` (`'apple' | 'google'`), the same 40px height, 4px corners (or `pill`), 1px stroke,
+  `provider` (`'apple' | 'google'`), the same 40px height, the theme's button corners (`shape: 'rounded'`, 0.56.0 default; or 4px `rectangular`, or `pill`), 1px stroke,
   system font / Roboto Medium 17/20 and a 44px logo slot at each end, so a stack lines up exactly.
   Apple's own left-aligned logo artwork (Apple Design Resources, Medium) at the full height, black or
-  white; Google's standard "G" at 20px. `buttonStyle`: `'dark'` (Apple black, Google dark), `'light'`
-  (Apple white, Google light, both outlined), `'auto'` (dark on a light theme, light on a dark one).
+  white; Google's standard "G" at 20px. `buttonStyle`: `'light'` (Apple white with
+  outline, Google light), `'dark'` (Apple black, Google dark), `'auto'` (0.56.0: `'light'` on every theme).
   Prefer it to the two single-provider buttons whenever both providers are shown.
 - `ui-apple-button` is the Sign in with Apple button drawn to Apple's Human Interface Guidelines:
   the Apple logo and the words centred together (also when `expand`ed), Apple's colours fixed in

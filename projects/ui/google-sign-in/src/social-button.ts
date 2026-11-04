@@ -1,20 +1,23 @@
-import { isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { injectUiStrings } from '@zouriel/ui';
-import { uiGoogleObserveTheme } from './google-brand';
 
 /** Which sign-in the button is for. */
 export type UiSocialProvider = 'apple' | 'google';
 /** The words: the same wording for every provider, so a stack of buttons reads alike. */
 export type UiSocialButtonText = 'signIn' | 'continueWith' | 'signUp';
 /**
- * 'dark': Apple's black button and Google's dark one. 'light': Apple's white button and Google's
- * light one, both outlined. 'auto': dark on a light library theme and light on a dark one (Apple:
- * black on light backgrounds, white on dark ones), following theme changes.
+ * 'light': Apple's white button with an outline and Google's light one. 'dark': Apple's black button
+ * and Google's dark one. 'auto' (0.56.0) is 'light' on every theme: white buttons read well on light
+ * and dark backgrounds alike (Apple: white with an outline on light backgrounds, white on dark ones;
+ * Google's light style is allowed on any background).
  */
 export type UiSocialButtonStyle = 'auto' | 'dark' | 'light';
-/** 4px corners (Google's rectangular shape) or fully rounded (Google's pill). */
-export type UiSocialButtonShape = 'rectangular' | 'pill';
+/**
+ * 'rounded' (0.56.0, the default): the theme's button corners (`--ui-radius`, as on `ui-button`), so
+ * the pair matches the app's own buttons (Apple: match the corner radius of your other buttons).
+ * 'rectangular': 4px (Google's rectangular shape). 'pill': fully rounded (Google's pill).
+ */
+export type UiSocialButtonShape = 'rounded' | 'rectangular' | 'pill';
 
 /**
  * Apple's "Sign in with Apple - Left Aligned - Medium" logo artwork from Apple Design Resources
@@ -27,7 +30,7 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
 
 /**
  * `ui-social-button` — "Sign in with Apple" and "Sign in with Google" as one matching pair: the same
- * height (40), corners, font (the system font, else Roboto; 17/20 Medium, Apple's 43% of the
+ * height (40), corners (the theme's button radius by default), font (the system font, else Roboto; 17/20 Medium, Apple's 43% of the
  * height), padding and logo slot, so a stack of them lines up exactly. Each provider keeps its own
  * brand rules:
  *
@@ -100,7 +103,7 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
       vertical-align: middle;
     }
     :host(.expand) { display: flex; width: 100%; }
-    /* 40px high, 4px corners; a 44px logo slot at each end (the stroke sits inside the box). */
+    /* 40px high, the theme's button corners; a 44px logo slot at each end (the stroke sits inside the box). */
     .ui-sbtn {
       --s-fill: var(--ui-social-apple-dark-fill);
       --s-stroke: var(--ui-social-dark-stroke);
@@ -115,7 +118,7 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
       margin: 0;
       padding: 0;
       border: 1px solid var(--s-stroke);
-      border-radius: 4px;
+      border-radius: var(--ui-radius);
       background: var(--s-fill);
       color: var(--s-text);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Segoe UI", system-ui, sans-serif, var(--ui-font-default);
@@ -130,6 +133,7 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
     .ui-sbtn[data-provider="apple"][data-look="light"] { --s-fill: var(--ui-social-apple-light-fill); --s-stroke: var(--ui-social-light-stroke); --s-text: var(--ui-social-apple-light-text); }
     .ui-sbtn[data-provider="google"][data-look="dark"] { --s-fill: var(--ui-social-google-dark-fill); --s-stroke: var(--ui-social-dark-stroke); --s-text: var(--ui-social-google-dark-text); }
     .ui-sbtn[data-provider="google"][data-look="light"] { --s-fill: var(--ui-social-google-light-fill); --s-stroke: var(--ui-social-light-stroke); --s-text: var(--ui-social-google-light-text); }
+    .ui-sbtn[data-shape="rectangular"] { border-radius: 4px; }
     .ui-sbtn[data-shape="pill"] { border-radius: 20px; }
     .ui-sbtn.expand { width: 100%; }
     /* State layer in the button's own text colour (8% hover, 12% press). */
@@ -175,9 +179,10 @@ export class UiSocialButton {
   provider = input.required<UiSocialProvider>();
   /** Which wording; use the same one for every button in a stack. */
   text = input<UiSocialButtonText>('signIn');
-  /** 'auto' is dark on a light library theme and light on a dark one, and follows theme changes. */
+  /** 'auto' is 'light' (white, outlined) on every theme. */
   buttonStyle = input<UiSocialButtonStyle>('auto');
-  shape = input<UiSocialButtonShape>('rectangular');
+  /** 'rounded' follows the theme's button corners. */
+  shape = input<UiSocialButtonShape>('rounded');
   /** Waiting for sign-in: a spinner in place of the logo, the same size, aria-busy, not clickable. */
   loading = input(false);
   disabled = input(false);
@@ -190,12 +195,9 @@ export class UiSocialButton {
 
   protected readonly appleLogo = UI_APPLE_LOGO_LEFT_MEDIUM_PATH;
   private readonly strings = injectUiStrings();
-  /** The library theme at the button is dark (for 'auto'). */
-  private readonly dark = signal(false);
-
   protected readonly look = computed(() => {
     const s = this.buttonStyle();
-    return s === 'auto' ? (this.dark() ? 'light' : 'dark') : s;
+    return s === 'auto' ? 'light' : s;
   });
 
   protected readonly words = computed(() => {
@@ -208,15 +210,4 @@ export class UiSocialButton {
     }
   });
 
-  constructor() {
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-    const destroy = inject(DestroyRef);
-    const browser = isPlatformBrowser(inject(PLATFORM_ID));
-    let destroyed = false;
-    destroy.onDestroy(() => (destroyed = true));
-    afterNextRender(() => {
-      if (!browser || destroyed) return;
-      uiGoogleObserveTheme(host, destroy, (d) => this.dark.set(d));
-    });
-  }
 }

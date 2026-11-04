@@ -1,4 +1,4 @@
-import { ApplicationRef, Component, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it } from 'vitest';
 import { provideUiStrings } from '@zouriel/ui';
@@ -10,6 +10,9 @@ import {
   type UiSocialButtonText,
   type UiSocialProvider,
 } from './social-button';
+
+@Component({ imports: [UiSocialButton], template: `<ui-social-button provider="google" />` })
+class DefaultsHost {}
 
 @Component({
   imports: [UiSocialButton],
@@ -110,7 +113,7 @@ describe('ui-social-button', () => {
     for (const sel of scoped) expect(rule(sel), sel).not.toMatch(geometry);
     const base = rule('.ui-sbtn');
     expect(base).toMatch(/height: 40px/);
-    expect(base).toMatch(/border-radius: 4px/);
+    expect(base).toMatch(/border-radius: var\(--ui-radius\)/);
     expect(base).toMatch(/font-size: 17px/);
     expect(base).toMatch(/font-weight: 500/);
     expect(base).toMatch(/line-height: 20px/);
@@ -140,19 +143,28 @@ describe('ui-social-button', () => {
     expect(rule('.ui-sbtn[data-provider=google][data-look=light]')).toMatch(/--s-fill: var\(--ui-social-google-light-fill\)/);
   });
 
-  it('auto is dark on a light theme and light on a dark one, and follows theme changes', async () => {
-    document.documentElement.setAttribute('data-theme', 'light');
-    const { f, h, button } = make();
-    h.look.set('auto');
-    TestBed.inject(ApplicationRef).tick();
+  it('auto is white (light) for both on light and dark themes', async () => {
+    for (const theme of ['winterLight', 'light', 'winterDark', 'maldives-dark']) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const { f, h, button } = make();
+      h.look.set('auto');
+      f.detectChanges();
+      await new Promise((r) => setTimeout(r, 10));
+      f.detectChanges();
+      expect(button('a').getAttribute('data-look'), theme).toBe('light');
+      expect(button('g').getAttribute('data-look'), theme).toBe('light');
+      f.destroy();
+    }
+  });
+
+  it('defaults to the theme button corners (rounded), like ui-button', () => {
+    const f = TestBed.createComponent(DefaultsHost);
     f.detectChanges();
-    expect(button('a').getAttribute('data-look')).toBe('dark');
-    expect(button('g').getAttribute('data-look')).toBe('dark');
-    document.documentElement.setAttribute('data-theme', 'maldives-dark');
-    await new Promise((r) => setTimeout(r, 30));
-    f.detectChanges();
-    expect(button('a').getAttribute('data-look')).toBe('light');
-    expect(button('g').getAttribute('data-look')).toBe('light');
+    const b = (f.nativeElement as HTMLElement).querySelector('button.ui-sbtn')!;
+    expect(b.getAttribute('data-shape')).toBe('rounded');
+    expect(b.getAttribute('data-look')).toBe('light');
+    expect(rule('.ui-sbtn')).toMatch(/border-radius: var\(--ui-radius\)/);
+    expect(rule('.ui-sbtn[data-shape=rectangular]')).toMatch(/border-radius: 4px/);
   });
 
   it('emits pressed; disabled and loading block it; loading swaps the logo for a spinner', () => {
