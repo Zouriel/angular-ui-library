@@ -132,6 +132,7 @@ for (const theme of ['winterLight', 'winterDark']) {
           labelX: xs('.lbl'), valueX: xs('.val'),
           appsX: apps ? apps.getBoundingClientRect().left : null,
           scrollW: cc.scrollWidth, clientW: cc.clientWidth,
+          compact: cc.classList.contains('compact'),
           btns, statusW: status?.width ?? null,
         };
       }),
@@ -154,10 +155,62 @@ for (const theme of ['winterLight', 'winterDark']) {
         if (b.btns.some((x) => Math.abs(x.w - 28) > 0.5 || Math.abs(x.h - 28) > 0.5)) problems.push(`${w}: contact buttons not 28x28 (${b.btns.map((x) => `${x.w}x${x.h}`).join(', ')})`);
         if (gaps.some((g) => Math.abs(g - 8) > 0.5)) problems.push(`${w}: gaps ${gaps.join(', ')} (want 8)`);
       }
-      if (b.scrollW > b.clientW + 1) problems.push(`${w}: content overflows (${b.scrollW} > ${b.clientW})`);
+      // compact: the last button's tick badge may overhang the end edge by its 4px offset, nothing more.
+      if (b.scrollW > b.clientW + (b.compact ? 4 : 0) + 1) problems.push(`${w}: content overflows (${b.scrollW} > ${b.clientW})`);
       report.push(`${w}: label x ${b.labelX.map((x) => x.toFixed(1)).join('/')}, value x ${b.valueX.map((x) => x.toFixed(1)).join('/')}, buttons x ${b.appsX?.toFixed(1)}, widths ${b.btns.map((x) => x.w.toFixed(1)).join('/')}, labels ${b.btns.map((x) => (x.label ? 'y' : 'n')).join('')}`);
     });
     checkButtons(`${where} contact`, await measureButtons(page, 'ui-contact-channels'));
+
+    // compact (0.59.0): one line per contact; tick within 12px of the email text; buttons on the number
+    // line, at the block's end; email+number block <= 76px tall; a narrow block wraps the buttons under
+    // the number from its text start. Text ends are measured with a Range (the text, not its box).
+    const compact = await page.evaluate(() => [...document.querySelectorAll('[data-demo^="compact"] ui-contact-channels')].map((cc) => {
+      const demo = cc.closest('[data-demo]').dataset.demo;
+      const block = cc.getBoundingClientRect();
+      const textEnd = (el) => {
+        const node = [...el.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim());
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rs = [...range.getClientRects()];
+        return Math.min(el.getBoundingClientRect().right, Math.max(...rs.map((x) => x.right)));
+      };
+      const emailV = cc.querySelector('.line[data-row="email"] .v');
+      const st = cc.querySelector('.line[data-row="email"] .st')?.firstElementChild;
+      const numV = cc.querySelector('.line[data-row="number"] .v');
+      const btns = [...cc.querySelectorAll('.capps ui-messenger-button button')].map((b) => b.getBoundingClientRect());
+      const nr = numV?.getBoundingClientRect();
+      const lines = [...cc.querySelectorAll('.line')].map((l) => {
+        const kids = [...l.querySelectorAll('.ico, .v, .st > *')].map((k) => k.getBoundingClientRect()).filter((k) => k.height);
+        return Math.max(...kids.map((k) => Math.abs(k.top + k.height / 2 - (kids[0].top + kids[0].height / 2))));
+      });
+      return {
+        demo, w: block.width, h: block.height,
+        stGap: emailV && st ? st.getBoundingClientRect().left - textEnd(emailV) : null,
+        btnDy: btns.length && nr ? Math.max(...btns.map((b) => Math.abs(b.top + b.height / 2 - (nr.top + nr.height / 2)))) : null,
+        btnEnd: btns.length ? block.right - Math.max(...btns.map((b) => b.right)) : null,
+        btnStart: btns.length && nr ? Math.min(...btns.map((b) => b.left)) - nr.left : null,
+        wrapped: !!cc.querySelector('.rest.wrapped'),
+        lineSkew: Math.max(0, ...lines),
+        boxes: btns.map((b) => `${b.width}x${b.height}`).join(' '),
+      };
+    }));
+    for (const c of compact) {
+      const w = `${where} ${c.demo} (${c.w.toFixed(0)}px)`;
+      if (c.stGap !== null && (c.stGap < 0 || c.stGap > 12)) problems.push(`${w}: email state ${c.stGap.toFixed(1)}px from the text`);
+      if (c.lineSkew > 0.5) problems.push(`${w}: a line's items not centred on each other (${c.lineSkew.toFixed(2)}px)`);
+      if (c.demo === 'compact-wrap') {
+        if (!c.wrapped) problems.push(`${w}: buttons didn't wrap at ${c.w}px`);
+        else if (Math.abs(c.btnStart) > 0.5) problems.push(`${w}: wrapped buttons start ${c.btnStart}px from the number's text start`);
+      } else if (c.btnDy !== null) {
+        if (c.wrapped) problems.push(`${w}: buttons wrapped although the line is ${c.w}px wide`);
+        if (c.btnDy > 0.5) problems.push(`${w}: buttons ${c.btnDy.toFixed(2)}px off the number line`);
+        if (Math.abs(c.btnEnd) > 0.5) problems.push(`${w}: buttons ${c.btnEnd.toFixed(2)}px from the block's end`);
+        if (c.stGap !== null && c.demo !== 'compact-failed' && c.h > 76) problems.push(`${w}: email + number block ${c.h}px tall`);
+        if (c.w > 351) problems.push(`${w}: wider than its 350px phone card allows`);
+      }
+      report.push(`${w}: height ${c.h.toFixed(1)}, email state gap ${c.stGap?.toFixed(1) ?? '-'}, buttons dy ${c.btnDy?.toFixed(2) ?? '-'} end ${c.btnEnd?.toFixed(2) ?? '-'}${c.wrapped ? `, wrapped at text start +${c.btnStart.toFixed(2)}` : ''}, boxes ${c.boxes}`);
+    }
+    if (compact.length !== 4) problems.push(`${where}: found ${compact.length} compact demos`);
 
     // Every small button is a 44x44 target: points 21px from its centre in each direction still hit it.
     const hits = await page.evaluate(() => [...document.querySelectorAll('ui-messenger-button button[data-size="sm"]')].map((b) => {

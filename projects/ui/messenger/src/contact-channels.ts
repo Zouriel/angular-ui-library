@@ -1,4 +1,7 @@
-import { Component, computed, input, output } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import Mail01Icon from '@hugeicons/core-free-icons/Mail01Icon';
+import SmartPhone01Icon from '@hugeicons/core-free-icons/SmartPhone01Icon';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { injectUiStrings } from '@zouriel/ui';
@@ -12,6 +15,9 @@ let nextId = 0;
 
 /** Where the guest's email stands. 'sent'/'delivered' tick; 'failed'/'bounced' offer Retry; 'none'/'skipped' offer Send. */
 export type UiEmailStatus = 'none' | 'skipped' | 'sent' | 'delivered' | 'failed' | 'bounced';
+
+/** How `ui-contact-channels` lays its contacts out. */
+export type UiContactLayout = 'columns' | 'compact';
 
 /** One messenger button under the number. */
 export interface UiMessengerChannel {
@@ -45,26 +51,58 @@ export interface UiMessengerChannel {
  */
 @Component({
   selector: 'ui-contact-channels',
-  imports: [HugeiconsIconComponent, UiButton, UiTooltip, UiSpinner, UiMessengerButton],
-  host: { class: 'ui-contact-channels' },
+  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiButton, UiTooltip, UiSpinner, UiMessengerButton],
+  host: { class: 'ui-contact-channels', '[class.compact]': "layout() === 'compact'" },
   template: `
-    <div class="cc">
-      @if (email()) {
-        <span class="lbl" data-row="email">{{ emailLabel() ?? strings.contactEmail }}</span>
-        <span class="val" data-row="email" [attr.title]="email()">{{ email() }}</span>
-        <span class="status" data-row="email">
+    <ng-template #emailState>
           @if (emailBusy()) {
             <ui-spinner size="sm" />
           } @else if (emailSent()) {
-            <span class="tick" role="img" [attr.aria-label]="emailTickLabel() || strings.contactEmailSent" [uiTooltip]="emailTickLabel() ?? ''">
-              <hugeicons-icon [icon]="tickIcon" [size]="20" [strokeWidth]="2" aria-hidden="true" />
+            <span class="tick" [class.small]="layout() === 'compact'" role="img" [attr.aria-label]="emailTickLabel() || strings.contactEmailSent" [uiTooltip]="emailTickLabel() ?? ''">
+              <hugeicons-icon [icon]="tickIcon" [size]="layout() === 'compact' ? 16 : 20" [strokeWidth]="2" aria-hidden="true" />
             </span>
           } @else if (emailFailed()) {
             <ui-button size="sm" variant="outline" [ariaDescribedby]="emailError() ? errorId : undefined" (click)="emailRetry.emit()">{{ strings.contactRetry }}</ui-button>
           } @else {
             <ui-button size="sm" variant="outline" (click)="emailSend.emit()">{{ strings.contactSend }}</ui-button>
           }
-        </span>
+    </ng-template>
+    <ng-template #appButtons>
+      @for (m of shown(); track m.app) {
+        <ui-messenger-button [app]="m.app" size="sm" [compact]="true" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
+          [ariaLabel]="m.ariaLabel" (pressed)="messengerPress.emit(m.app)" />
+      }
+    </ng-template>
+    @if (layout() === 'compact') {
+      <div class="cmp">
+        @if (email()) {
+          <div class="line" data-row="email">
+            <hugeicons-icon class="ico" [icon]="mailIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" />
+            <span class="v" [attr.title]="email()"><span class="vh">{{ emailLabel() ?? strings.contactEmail }}: </span>{{ email() }}</span>
+            <span class="st"><ng-container [ngTemplateOutlet]="emailState" /></span>
+          </div>
+          @if (emailFailed() && emailError()) {
+            <span class="cerr" [id]="errorId">{{ emailError() }}</span>
+          }
+        }
+        @if (phone()) {
+          <div class="line num" data-row="number">
+            <hugeicons-icon class="ico" [icon]="phoneIcon" [size]="16" [strokeWidth]="1.8" aria-hidden="true" />
+            <div #rest class="rest" [class.wrapped]="wrapped()">
+              <span #num class="v" [attr.title]="phone()"><span class="vh">{{ numberLabel() ?? strings.contactNumber }}: </span>{{ phone() }}</span>
+              @if (shown().length) {
+                <div #capps class="capps"><ng-container [ngTemplateOutlet]="appButtons" /></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+    <div class="cc">
+      @if (email()) {
+        <span class="lbl" data-row="email">{{ emailLabel() ?? strings.contactEmail }}</span>
+        <span class="val" data-row="email" [attr.title]="email()">{{ email() }}</span>
+        <span class="status" data-row="email"><ng-container [ngTemplateOutlet]="emailState" /></span>
         @if (emailFailed() && emailError()) {
           <span class="err" [id]="errorId">{{ emailError() }}</span>
         }
@@ -73,15 +111,11 @@ export interface UiMessengerChannel {
         <span class="lbl" data-row="number">{{ numberLabel() ?? strings.contactNumber }}</span>
         <span class="val wide" data-row="number" [attr.title]="phone()">{{ phone() }}</span>
         @if (shown().length) {
-          <div class="apps">
-            @for (m of shown(); track m.app) {
-              <ui-messenger-button [app]="m.app" size="sm" [compact]="true" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
-                [ariaLabel]="m.ariaLabel" (pressed)="messengerPress.emit(m.app)" />
-            }
-          </div>
+          <div class="apps"><ng-container [ngTemplateOutlet]="appButtons" /></div>
         }
       }
     </div>
+    }
   `,
   styles: `
     :host { display: block; min-width: 0; }
@@ -110,6 +144,28 @@ export interface UiMessengerChannel {
        apart, never stretched; 4px above for the tick badges. Each tap area is 44px tall and reaches
        half way across the gaps beside it (28 + 8 wide), so neighbours split the gap evenly. */
     .apps ui-messenger-button { --ui-messenger-hit-width: calc(28px + var(--ui-space-2)); }
+    /* compact (0.59.0): one line per contact, no label column. Icon, value, and the state right after
+       the value; the messenger buttons at the end of the number line, or under the value (from its
+       text start) when the line is too narrow for both (measured). */
+    /* compact fills its container's width and never widens it: a long address or number is
+       ellipsised, not allowed to push a card (or a grid track) wider than the screen. */
+    :host(.compact) { contain: inline-size; }
+    .cmp { display: flex; flex-direction: column; gap: var(--ui-space-2); font-family: var(--ui-font-default); line-height: 20px; }
+    .line { display: flex; align-items: center; gap: var(--ui-space-2); min-height: 28px; min-width: 0; }
+    .ico { flex: none; display: block; line-height: 0; color: var(--ui-color-text-muted); }
+    .v { position: relative; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
+    .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .st { flex: none; display: flex; align-items: center; }
+    .tick.small { width: auto; height: 28px; }
+    .cerr { margin-top: calc(var(--ui-space-1) - var(--ui-space-2)); padding-inline-start: calc(16px + var(--ui-space-2)); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-danger); overflow-wrap: anywhere; }
+    .rest { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--ui-space-2); }
+    .capps { flex: none; display: flex; align-items: center; gap: var(--ui-space-2); margin-inline-start: auto; }
+    .capps ui-messenger-button { --ui-messenger-hit-width: calc(28px + var(--ui-space-2)); }
+    .rest.wrapped { flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); }
+    .rest.wrapped .v { max-width: 100%; line-height: 28px; }
+    .rest.wrapped .capps { margin-inline-start: 0; }
+    .line.num:has(.rest.wrapped) { align-items: flex-start; }
+    .line.num:has(.rest.wrapped) .ico { margin-top: 6px; }
     .apps { grid-column: 2 / -1; display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: var(--ui-space-2); padding-top: 4px; min-width: 0; }
   `,
 })
@@ -130,6 +186,12 @@ export class UiContactChannels {
   /** Row labels; default the library strings ("Email", "Number"). */
   emailLabel = input<string>();
   numberLabel = input<string>();
+  /**
+   * 'columns' (default): label, value and status columns, the messenger buttons on their own row.
+   * 'compact' (0.59.0, for a phone card): one line per contact, an icon instead of the label, the
+   * state right after the value, the messenger buttons at the end of the number line.
+   */
+  layout = input<UiContactLayout>('columns');
 
   readonly emailSend = output<void>();
   readonly emailRetry = output<void>();
@@ -141,4 +203,40 @@ export class UiContactChannels {
   protected readonly emailSent = computed(() => ['sent', 'delivered'].includes(this.emailStatus()));
   protected readonly emailFailed = computed(() => ['failed', 'bounced'].includes(this.emailStatus()));
   protected readonly shown = computed(() => this.messengers().filter((m) => !m.hidden));
+  protected readonly mailIcon = Mail01Icon;
+  protected readonly phoneIcon = SmartPhone01Icon;
+  /** compact: the number and its buttons don't fit on one line, so the buttons go under the number. */
+  protected readonly wrapped = signal(false);
+
+  constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const destroy = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      const measure = () => {
+        const rest = host.querySelector<HTMLElement>('.rest');
+        const num = rest?.querySelector<HTMLElement>('.v');
+        const apps = rest?.querySelector<HTMLElement>('.capps');
+        if (!rest || !num || !apps) return this.wrapped.set(false);
+        // The number's full width (scrollWidth also counts what an ellipsis hides) + gap + the buttons.
+        const need = num.scrollWidth + 8 + apps.getBoundingClientRect().width;
+        this.wrapped.set(rest.getBoundingClientRect().width + 0.5 < need);
+      };
+      const ro = new ResizeObserver(measure);
+      ro.observe(host);
+      const mo = new MutationObserver(() => {
+        ro.disconnect();
+        ro.observe(host);
+        for (const el of host.querySelectorAll('.rest, .rest .v, .capps')) ro.observe(el);
+        measure();
+      });
+      mo.observe(host, { childList: true, subtree: true, characterData: true });
+      for (const el of host.querySelectorAll('.rest, .rest .v, .capps')) ro.observe(el);
+      measure();
+      destroy.onDestroy(() => {
+        ro.disconnect();
+        mo.disconnect();
+      });
+    });
+  }
 }

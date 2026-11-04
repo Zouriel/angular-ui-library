@@ -90,7 +90,7 @@ actions: UiRowAction<Row>[] = [
         shapes="// from @zouriel/ui/messenger
 type UiEmailStatus = 'none' | 'skipped' | 'sent' | 'delivered' | 'failed' | 'bounced';
 interface UiMessengerChannel { app: UiMessengerApp; ticked?: boolean; tickLabel?: string; ariaLabel?: string; hidden?: boolean }"
-        summary="One person's ways to be reached, in columns that line up: an Email row (label, address, status), a Number row, and under the number a row of ui-messenger-buttons. Every row shares three columns: labels (at least 64px), values (the rest; long values end in an ellipsis with the full text as the title) and status (at least 44px, content at the end), so ticks line up from card to card. The email's status: a success tick when sent or delivered (emailTickLabel is its tooltip and name), Retry with the error under the row when it failed or bounced, Send when not sent, a spinner while emailBusy. The messenger buttons start at the value column's edge: small 28px squares like the library's small icon buttons (44px to tap), the official logos alone, 8px apart and never stretched, each ticked on its own with the time in its tooltip (long-press on touch) and its name. The component reports presses; the app sends and sets the ticks. Rows without a value are left out. The Flutter twin is UiContactChannels.">
+        summary="One person's ways to be reached, in columns that line up: an Email row (label, address, status), a Number row, and under the number a row of ui-messenger-buttons. Every row shares three columns: labels (at least 64px), values (the rest; long values end in an ellipsis with the full text as the title) and status (at least 44px, content at the end), so ticks line up from card to card. The email's status: a success tick when sent or delivered (emailTickLabel is its tooltip and name), Retry with the error under the row when it failed or bounced, Send when not sent, a spinner while emailBusy. The messenger buttons start at the value column's edge: small 28px squares like the library's small icon buttons (44px to tap), the official logos alone, 8px apart and never stretched, each ticked on its own with the time in its tooltip (long-press on touch) and its name. The component reports presses; the app sends and sets the ticks. Rows without a value are left out. layout='compact' (for a phone card) drops the label column: one line per contact with a small mail or phone icon, the value, and its state immediately after it (tick, Send/Retry), the messenger buttons at the end of the number line, wrapping under the number only when the width really doesn't fit (measured); 8px gaps, 28px lines, no padding of its own. The Flutter twin is UiContactChannels.">
         <doc-demo lang="ts + html" code="import { UiContactChannels } from '@zouriel/ui/messenger';
 
 <ui-contact-channels [email]=&quot;guest.email&quot; emailStatus=&quot;sent&quot; emailTickLabel=&quot;Emailed 4 Nov, 7:02 pm&quot;
@@ -114,6 +114,29 @@ channels = computed<UiMessengerChannel[]>(() => [
                 emailError="The address doesn't exist (bounced)." emailTickLabel="Emailed just now"
                 phone="+44 7700 900123" [messengers]="hassanChannels" (emailRetry)="retryHassan()" (messengerPress)="openChannel($event)" />
             </ui-card>
+            <ui-text variant="label">layout="compact": a guest card on a phone</ui-text>
+            <div class="cc-phone">
+              <ui-card class="cc-compact" padding="sm" data-demo="compact-sent">
+                <ui-text variant="label">Chloe Both</ui-text>
+                <ui-contact-channels layout="compact" email="chloe@example.com" emailStatus="sent" emailTickLabel="Emailed 4 Nov, 7:02 pm"
+                  phone="+1 202 555 0123" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+              </ui-card>
+              <ui-card class="cc-compact" padding="sm" data-demo="compact-failed">
+                <ui-text variant="label">Hassan Ali</ui-text>
+                <ui-contact-channels layout="compact" email="hassan@example" emailStatus="bounced" emailError="The address doesn't exist (bounced)."
+                  phone="+44 7700 900123" [messengers]="hassanChannels" />
+              </ui-card>
+              <ui-card class="cc-compact" padding="sm" data-demo="compact-send">
+                <ui-text variant="label">Aisha Ibrahim (not sent yet)</ui-text>
+                <ui-contact-channels layout="compact" email="aisha.ibrahim.longaddress@example.com" emailStatus="none" phone="+960 777 1234" [messengers]="guestChannels()" />
+              </ui-card>
+              <div class="cc-tiny">
+                <ui-card class="cc-compact" padding="sm" data-demo="compact-wrap">
+                  <ui-text variant="label">At 220px: the buttons wrap under the number</ui-text>
+                  <ui-contact-channels layout="compact" phone="+960 777 1234" [messengers]="guestChannels()" />
+                </ui-card>
+              </div>
+            </div>
             <div class="cc-narrow">
               <ui-card>
                 <ui-text variant="label">At 320px</ui-text>
@@ -432,6 +455,8 @@ events: UiTimelineItem[] = [
     .cc-demos { display: grid; gap: var(--ui-space-4); max-width: 560px; }
     .cc-demos ui-card ui-text { display: block; margin-bottom: var(--ui-space-2); }
     .cc-narrow { max-width: 320px; }
+    .cc-phone { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-2); max-width: 350px; }
+    .cc-tiny { max-width: 220px; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
@@ -658,7 +683,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'emailBusy', type: 'boolean', default: 'false', desc: 'A spinner in the status cell.' },
     { name: 'phone', type: 'string | null', default: '—', desc: 'The number as the app formats it; no Number row or buttons without one.' },
     { name: 'messengers', type: 'UiMessengerChannel[]', default: '[]', desc: 'The buttons under the number, in order; hidden ones are left out.' },
-    { name: 'emailLabel · numberLabel', type: 'string', default: "'Email' · 'Number'", desc: 'Row labels (library strings by default).' },
+    { name: 'emailLabel · numberLabel', type: 'string', default: "'Email' · 'Number'", desc: 'Row labels (library strings by default); in compact, read to screen readers before the value.' },
+    { name: 'layout', type: "'columns' | 'compact'", default: "'columns'", desc: "'columns': label, value and status columns, buttons on their own row. 'compact' (for a phone card): one line per contact, a mail/phone icon instead of the label, the state right after the value, the messenger buttons at the end of the number line (under the number, from its text start, only when the line is too narrow)." },
   ];
   protected readonly contactOut: ApiRow[] = [
     { name: 'emailSend', type: 'void', default: '—', desc: 'Send pressed.' },

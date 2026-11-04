@@ -159,3 +159,85 @@ describe('ui-contact-channels', () => {
     expect(q('.status ui-button')!.textContent!.trim()).toBe('Again');
   });
 });
+
+describe('ui-contact-channels layout="compact"', () => {
+  @Component({
+    imports: [UiContactChannels],
+    template: `
+      <ui-contact-channels layout="compact" [email]="email()" [emailStatus]="status()" emailTickLabel="Emailed 4 Nov, 7:02 pm"
+        [emailError]="error()" phone="+960 777 1234" [messengers]="messengers"
+        (emailSend)="log.push('send')" (emailRetry)="log.push('retry')" (messengerPress)="log.push($event)" />`,
+  })
+  class CompactHost {
+    email = signal<string | null>('aisha@example.com');
+    status = signal<UiEmailStatus>('sent');
+    error = signal<string | undefined>(undefined);
+    messengers: UiMessengerChannel[] = [
+      { app: 'whatsapp', ticked: true, tickLabel: 'Opened 3:14 pm', ariaLabel: 'Send to Aisha on WhatsApp' },
+      { app: 'viber', ariaLabel: 'Send to Aisha on Viber' },
+      { app: 'telegram', ariaLabel: 'Send to Aisha on Telegram' },
+    ];
+    log: string[] = [];
+  }
+
+  function make() {
+    const f = TestBed.createComponent(CompactHost);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    return { f, h: f.componentInstance, el, q: (s: string) => el.querySelector(s) as HTMLElement | null };
+  }
+
+  it('has no label column: an icon, the value (named for screen readers), and the state right after it', () => {
+    const { el, q } = make();
+    expect(q('.cc')).toBeNull();
+    expect(q('.lbl')).toBeNull();
+    const email = q('.line[data-row="email"]')!;
+    expect([...email.children].map((c) => c.classList[0])).toEqual(['ico', 'v', 'st']);
+    expect(email.querySelector('.v')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Email: aisha@example.com');
+    expect(email.querySelector('.v .vh')!.textContent!.trim()).toBe('Email:');
+    expect(email.querySelector('.st .tick')!.getAttribute('aria-label')).toBe('Emailed 4 Nov, 7:02 pm');
+    const num = q('.line[data-row="number"]')!;
+    expect(num.querySelector('.v')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('Number: +960 777 1234');
+    // The buttons are on the number line, after the value.
+    expect([...num.querySelectorAll('.rest > *')].map((c) => c.classList[0])).toEqual(['v', 'capps']);
+    expect([...el.querySelectorAll('.capps ui-messenger-button button')].map((b) => (b as HTMLElement).dataset['size'])).toEqual(['sm', 'sm', 'sm']);
+  });
+
+  it('shows Send, Retry (with the error under the value) and the spinner in the same place, and emits', () => {
+    const { f, h, q } = make();
+    h.status.set('failed');
+    h.error.set('Mailbox full');
+    f.detectChanges();
+    const retry = q('.line[data-row="email"] .st ui-button button') as HTMLButtonElement;
+    expect(retry.textContent!.trim()).toBe('Retry');
+    expect(q('.cerr')!.textContent!.trim()).toBe('Mailbox full');
+    expect(retry.getAttribute('aria-describedby')).toBe(q('.cerr')!.id);
+    retry.click();
+    h.status.set('none');
+    f.detectChanges();
+    (q('.line[data-row="email"] .st ui-button button') as HTMLButtonElement).click();
+    for (const b of [...(f.nativeElement as HTMLElement).querySelectorAll('.capps ui-messenger-button button')] as HTMLElement[]) b.click();
+    expect(h.log).toEqual(['retry', 'send', 'whatsapp', 'viber', 'telegram']);
+  });
+
+  it('lays out tight: 8px gaps, 28px lines, buttons pushed to the end, a measured wrap under the value', () => {
+    const css = ((UiContactChannels as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n').replace(/\s+/g, ' ');
+    expect(css).toMatch(/\.cmp\[_ngcontent-[^\]]*\] \{ display: flex; flex-direction: column; gap: var\(--ui-space-2\)/);
+    expect(css).toMatch(/\.line\[_ngcontent-[^\]]*\] \{ display: flex; align-items: center; gap: var\(--ui-space-2\); min-height: 28px/);
+    expect(css).toMatch(/\.capps\[_ngcontent-[^\]]*\] \{[^}]*margin-inline-start: auto/);
+    expect(css).toMatch(/\.rest\.wrapped\[_ngcontent-[^\]]*\] \{ flex-direction: column; align-items: flex-start/);
+    expect(css).toMatch(/\.rest\.wrapped[^{]*\.capps[^{]*\{ margin-inline-start: 0/);
+    expect(css).not.toMatch(/\.cmp[^{]*\{[^}]*padding/);
+  });
+
+  it('leaves the columns layout as it was', () => {
+    @Component({ imports: [UiContactChannels], template: `<ui-contact-channels email="a@b.c" phone="+1 202 555 0123" />` })
+    class Plain {}
+    const f = TestBed.createComponent(Plain);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('.cc')).not.toBeNull();
+    expect(el.querySelector('.cmp')).toBeNull();
+    expect([...el.querySelectorAll('.lbl')].map((e) => e.textContent!.trim())).toEqual(['Email', 'Number']);
+  });
+});
