@@ -87,6 +87,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
 | `badge` | badge, chip, avatar, avatar group |
 | `plans` | plan card, plan grid, plan comparison table (pricing pages; see below) |
+| `filter` | `ui-filter` (one Filter button that opens a panel of sections: a bottom sheet on phones, a popover wider), `ui-filter-chips` (the filters that are on, removable, with Clear all) and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer` (see below) |
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
 | `data` | tree, tree table, timeline, description list, code block |
@@ -694,6 +695,33 @@ violet with white text: `--ui-tier-premium`, `-light`, `-border`, `-contrast`,
 - `ui-plan-compare`: `plans` (`{ key, name, tier? }`), `rows` (`{ label, values }`, `true` a check
   read "Included", `false`/`null` a dash read "Not included", strings as text), `highlight`, `caption`,
   `includedLabel`, `notIncludedLabel`. Scrolls sideways inside itself on a phone, the feature column pinned.
+
+## Filters that can grow (`@zouriel/ui/filter`, 0.59.0)
+
+A toolbar gets one Filter button however many filters there are; each filter is a section of its panel.
+
+```html
+<ui-filter [sections]="sections" [(value)]="filter" [resultCount]="shown().length" />
+<ui-filter-chips [sections]="sections" [(value)]="filter" />
+```
+
+```ts
+sections: UiFilterSection[] = [
+  { id: 'who', title: 'Uploaded by', multiple: true, allLabel: 'Everyone', allCount: 40,
+    options: [{ id: 'aisha', label: 'Aisha', count: 12 }, /* ... */] },
+  { id: 'kind', title: 'Type', options: [{ id: 'photo', label: 'Photos' }, { id: 'video', label: 'Videos' }] },
+];
+filter = signal<UiFilterValue>({});   // { who: ['aisha'], kind: ['video'] }; missing or [] = everything
+shown = computed(() => { const v = uiFilterPrune(this.sections, this.filter()); /* filter your items with v */ });
+```
+
+- Under `narrowAt` (600px) the panel is a modal bottom sheet with Clear all and Show N pinned at its
+  foot; wider, a 340px popover under the button. Every tap changes `value` at once.
+- `multiple` sections are checkboxes (any chosen option passes), others radios; each has an "all" row
+  first. From `searchAt` options (8) a section gets a search field.
+- `uiFilterPrune` drops choices the sections no longer offer, so a stale one never empties the page.
+  `uiFilterCount`, `uiActiveFilters`, `uiFilterToggle`, `uiFilterSet`, `uiFilterRemove` are the helpers.
+- Strings: `filter`, `filterOn`, `filterClearAll`, `filterShow`, `filterDone`, `filterAll`.
 
 ## License
 

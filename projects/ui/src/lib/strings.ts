@@ -362,6 +362,18 @@ export interface UiStrings {
   taskCount: string;
   /** Task progress: the Cancel button once pressed, until the job closes it. */
   taskStopping: string;
+  /** Filter (0.59.0): the filter button and the panel's title. */
+  filter: string;
+  /** Filter: added to the button's name while filters are on (`{n}` of them): "Filter, 2 on". */
+  filterOn: string;
+  /** Filter: the panel's and the chips' button that turns every filter off. */
+  filterClearAll: string;
+  /** Filter: the panel's close button when the app gives a result count (`{n}`). */
+  filterShow: string;
+  /** Filter: the panel's close button without a result count. */
+  filterDone: string;
+  /** Filter: a section's "everything" row when the section gives no allLabel. */
+  filterAll: string;
 
   /** Date names and formats (0.46.0) for the calendar, date picker and date range picker. `locale` is
    *  the locale Intl formats with; '' uses the app's `LOCALE_ID`. */
@@ -568,6 +580,12 @@ export const defaultUiStrings: UiStrings = {
   cancelSelection: 'Cancel selection',
   taskCount: '{done} of {total}',
   taskStopping: 'Stopping…',
+  filter: 'Filter',
+  filterOn: '{n} on',
+  filterClearAll: 'Clear all',
+  filterShow: 'Show {n}',
+  filterDone: 'Done',
+  filterAll: 'All',
   locale: '',
   months: [],
   monthsShort: [],
@@ -771,6 +789,12 @@ export const uiStringsDv: UiStrings = {
   cancelSelection: 'ހޮވުން ހުއްޓާލާ',
   taskCount: '{total} އިން {done}',
   taskStopping: 'ހުއްޓުވަނީ…',
+  filter: 'ފިލްޓަރ',
+  filterOn: '{n} ހިންގާފައި',
+  filterClearAll: 'ހުރިހާ ފޮހެލާ',
+  filterShow: '{n} ދައްކާ',
+  filterDone: 'ނިމުނީ',
+  filterAll: 'ހުރިހާ',
   locale: 'dv',
   months: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],
   monthsShort: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],

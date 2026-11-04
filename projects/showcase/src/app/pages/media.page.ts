@@ -1,7 +1,8 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
+import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
 import Share08Icon from '@hugeicons/core-free-icons/Share08Icon';
@@ -14,7 +15,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiTaskProgressDialog, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -27,6 +28,11 @@ function grad(a: string, b: string): string {
     .sel-top { min-height: 56px; display: flex; align-items: center; margin-bottom: var(--ui-space-2); }
     .mg-buttons { display: flex; gap: var(--ui-space-2); margin-bottom: var(--ui-space-3); flex-wrap: wrap; }
     .mg-tile { display: grid; place-items: center; border-radius: var(--ui-radius-sm, 6px); color: #fff; font-weight: 600; font-size: var(--ui-font-size-sm); }
+    .flt-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-2); }
+    .flt-note { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
+    .flt-chips { margin-bottom: var(--ui-space-2); }
+    .flt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; }
+    .flt-tile { aspect-ratio: 1; border-radius: var(--ui-radius-sm); display: grid; place-items: center; color: #fff; font: 600 12px var(--ui-font-default); text-align: center; padding: 4px; }
     .sel-top ui-selection-bar { flex: 1; min-width: 0; background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
     .sel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-1); }
     @container (min-width: 544px) { .sel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -122,6 +128,24 @@ function grad(a: string, b: string): string {
       <doc-section name="Selection bar" selector="ui-selection-bar" [api]="selectionBarApi" [outputs]="selectionBarOut"
         summary="The bar shown while selecting: Cancel (an X) at the start, &quot;12 selected&quot;, a Select all toggle that reads Clear once count reaches total (canSelectAll / canClear false hide a side), then the actions. Actions are disabled while nothing is selected or when enabled is false; danger draws the destructive style. When the labels don't all fit (a 360px phone with three actions) the toggle and the actions with an icon become icon buttons that keep their label as their accessible name and tooltip, and if &quot;12 selected&quot; still doesn't fit the number shows alone, so nothing overflows at 320px. Count changes are announced politely. The demo is in Selectable above."
         [shapes]="'interface UiSelectionAction { id: string; label: string; icon?: IconSvgObject; danger?: boolean; enabled?: boolean; }'"></doc-section>
+
+      <doc-section name="Filter" selector="ui-filter" [api]="filterApi"
+        summary="One compact Filter button for a toolbar, however many filters there are: a filter icon, the words and, while filters are on, a count bubble (read as &quot;Filter, 2 on&quot;). It opens a panel of sections. On a screen under narrowAt (600px) the panel is a modal bottom sheet with its footer pinned; wider, a 340px popover under the button whose body scrolls between its title and footer. Each section is a titled group: its &quot;all&quot; row (allLabel, e.g. Everyone) first, then its options with counts; multiple sections have checkboxes (any chosen option passes), the others radios, and from searchAt options (8) a search field narrows the rows. Rows are 44px tall. Every tap changes [(value)] at once so the page behind updates; the footer's Show N (resultCount) or Done closes it, Clear all turns everything off. Escape and a tap outside close it too, focus goes back to the button. To add a filter, add a section: the toolbar keeps its one button. ui-filter-chips shows the filters that are on as removable chips with Clear all, for under the toolbar; uiFilterPrune drops choices the sections no longer offer, so a stale choice never empties the page. ui-filter-button, ui-filter-panel and ui-filter-footer are the parts, for your own container."
+        [shapes]="'interface UiFilterOption { id: string; label: string; count?: number | null; }\ninterface UiFilterSection { id: string; title: string; options: UiFilterOption[]; multiple?: boolean; allLabel?: string; allCount?: number | null; searchAt?: number; }\ntype UiFilterValue = Record<string, string[]>;  // section id -> chosen option ids; missing or [] = everything\nuiFilterCount(value) · uiActiveFilters(sections, value) · uiFilterPrune(sections, value) · uiFilterToggle(section, value, id) · uiFilterSet(value, section, ids) · uiFilterRemove(value, section, id)'">
+        <doc-demo code="<ui-filter [sections]=&quot;sections&quot; [(value)]=&quot;filter&quot; [resultCount]=&quot;shown().length&quot; />
+<ui-filter-chips [sections]=&quot;sections&quot; [(value)]=&quot;filter&quot; />">
+          <div class="flt-bar">
+            <ui-filter [sections]="fltSections()" [(value)]="fltValue" [resultCount]="fltShown().length" />
+            <span class="flt-note">{{ fltShown().length }} of {{ fltItems.length }}</span>
+          </div>
+          <ui-filter-chips class="flt-chips" [sections]="fltSections()" [(value)]="fltValue" />
+          <div class="flt-grid">
+            @for (it of fltShown(); track it.n) {
+              <div class="flt-tile" [style.background]="masonryColours[it.n % masonryColours.length]">{{ it.who }}{{ it.video ? ' (video)' : '' }}</div>
+            }
+          </div>
+        </doc-demo>
+      </doc-section>
 
       <doc-section name="Masonry grid" selector="ui-masonry-grid" [api]="masonryApi" [outputs]="masonryOut"
         summary="A photo grid of columns of different heights, each picture in its own shape (ratios: height / width), like a phone's gallery. A two-finger pinch changes [(columns)] (apart: fewer, bigger; together: more), between minColumns and maxColumns. Every change animates: each tile on screen moves and grows or shrinks from where it was to its new place (duration, ease-out), and a second pinch mid-way carries on from where the tiles are. After a pinch the page scrolls so the picture under the fingers stays under them. Tiles off screen just take their new place, so a big album costs no more than one screenful. Reduced motion or animations off make it instant. keyOf keeps tiles' identity (so pictures don't reload). Pinch the demo on a phone, or use the buttons.">
@@ -322,6 +346,39 @@ export class MediaPage {
     { name: '<ng-template uiMasonryTile>', type: 'slot', default: '—', desc: 'One tile, filling its box; context: the index ($implicit).' },
   ];
   protected readonly masonryOut: ApiRow[] = [{ name: 'columnsChange', type: 'number', default: '—', desc: 'The new column count after a pinch.' }];
+  protected readonly fltItems = Array.from({ length: 30 }, (_, n) => ({
+    n, who: ['Aisha', 'Ali', 'Mariyam', 'Hassan', 'Shaina', 'Ibrahim', 'Fathimath', 'Ahmed', 'Zara', 'Moosa'][(n * 7) % (n < 12 ? 3 : 10)], video: n % 5 === 0,
+  }));
+  protected readonly fltValue = signal<UiFilterValue>({});
+  protected readonly fltSections = computed<UiFilterSection[]>(() => {
+    const counts = new Map<string, number>();
+    for (const it of this.fltItems) counts.set(it.who, (counts.get(it.who) ?? 0) + 1);
+    const videos = this.fltItems.filter((it) => it.video).length;
+    return [
+      { id: 'who', title: 'Uploaded by', multiple: true, allLabel: 'Everyone', allCount: this.fltItems.length,
+        options: [...counts].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ id: name, label: name, count })) },
+      { id: 'kind', title: 'Type', allLabel: 'Photos and videos',
+        options: [{ id: 'photo', label: 'Photos', count: this.fltItems.length - videos }, { id: 'video', label: 'Videos', count: videos }] },
+    ];
+  });
+  protected readonly fltShown = computed(() => {
+    const v = uiFilterPrune(this.fltSections(), this.fltValue());
+    return this.fltItems.filter((it) => (!v['who'] || v['who'].includes(it.who)) && (!v['kind'] || v['kind'].includes(it.video ? 'video' : 'photo')));
+  });
+  protected readonly filterApi: ApiRow[] = [
+    { name: 'sections', type: 'UiFilterSection[]', default: '[]', desc: 'The panel, top to bottom. Add one to add a filter.' },
+    { name: 'value', type: 'UiFilterValue (model)', default: '{}', desc: 'Chosen option ids by section id, two-way; changes on every tap.' },
+    { name: 'resultCount', type: 'number | null', default: 'null', desc: 'How many pass: the footer reads Show N; null: Done.' },
+    { name: 'label / title', type: 'string', default: "'' (Filter)", desc: "The button's words / the panel's title (default the label)." },
+    { name: 'size', type: "'sm' | 'md'", default: "'sm'", desc: 'The button size (44px to the touch either way).' },
+    { name: 'narrowAt', type: 'number', default: '600', desc: 'Below this width (px) the panel is a bottom sheet, else a popover.' },
+    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Whether the panel is open.' },
+    { name: 'disabled · glass · radius', type: 'boolean', default: 'false · UiConfig', desc: 'The button off; the popover see-through; square corners.' },
+    { name: 'ui-filter-chips: sections, value (model), label', type: '', default: '', desc: 'The filters that are on as chips (× turns one off) and Clear all; nothing while none is on.' },
+    { name: 'ui-filter-button: count, label, size, disabled', type: '', default: '', desc: 'Only the button, for your own panel.' },
+    { name: 'ui-filter-panel: sections, value (model)', type: '', default: '', desc: 'Only the sections, for your own container.' },
+    { name: 'ui-filter-footer: count, resultCount → clearAll, done', type: '', default: '', desc: 'Only the footer.' },
+  ];
   protected readonly selectionBarApi: ApiRow[] = [
     { name: 'count', type: 'number', default: '0', desc: 'How many are selected.' },
     { name: 'total', type: 'number | null', default: 'null', desc: 'Everything there is; at count == total the toggle reads Clear.' },
