@@ -160,6 +160,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Poster view', anchor: 'poster-view' },
     { name: 'Scrim', anchor: 'scrim' },
     { name: 'Selectable', anchor: 'selectable' },
+    { name: 'Likes', anchor: 'likes' },
     { name: 'Selection bar', anchor: 'selection-bar' },
     { name: 'Filter', anchor: 'filter' },
     { name: 'Masonry grid', anchor: 'masonry-grid' },

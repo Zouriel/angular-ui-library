@@ -14,6 +14,9 @@ import { UiTooltip } from '@zouriel/ui/overlay';
 export const UI_LONG_PRESS_MS = 500;
 /** How far it may move before the press stops counting as a long press (px). */
 export const UI_LONG_PRESS_SLOP = 10;
+/** How long a tap waits for a second one when `doubleTapEnabled` is on, and how far apart they may land. */
+export const UI_DOUBLE_TAP_MS = 280;
+export const UI_DOUBLE_TAP_SLOP = 24;
 
 /**
  * `ui-selectable`: wraps one grid tile (a photo) for long-press multi-select, like a phone gallery.
@@ -109,6 +112,14 @@ export class UiSelectable {
   readonly tap = output<void>();
   /** Press and hold (start selecting); also the context-menu key and Shift+F10. */
   readonly longPress = output<void>();
+  /**
+   * Listen for double taps (like a photo). While on, and not selecting, a tap waits
+   * UI_DOUBLE_TAP_MS for a second one before `tap` fires; two taps close together emit `doubleTap`
+   * instead, with the point relative to the tile. Keyboard and selecting taps never wait.
+   */
+  readonly doubleTapEnabled = input(false);
+  readonly doubleTap = output<{ x: number; y: number }>();
+  private pendingTap: { timer: ReturnType<typeof setTimeout>; x: number; y: number } | null = null;
 
   private readonly doc = inject(DOCUMENT);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -133,6 +144,7 @@ export class UiSelectable {
     }
     inject(DestroyRef).onDestroy(() => {
       this.stop();
+      this.clearPendingTap();
       if (this.browser) {
         for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) {
           this.doc.removeEventListener(type, this.countTouches, { capture: true });
@@ -189,6 +201,7 @@ export class UiSelectable {
   private fire(): void {
     this.timer = null;
     this.fired = true;
+    this.clearPendingTap();
     // A short buzz where the browser allows it (Android); silently nothing elsewhere.
     try {
       (this.doc.defaultView?.navigator as Navigator | undefined)?.vibrate?.(10);
@@ -205,7 +218,36 @@ export class UiSelectable {
       e.stopPropagation();
       return;
     }
-    this.tap.emit();
+    if (!this.doubleTapEnabled() || this.selecting()) {
+      this.tap.emit();
+      return;
+    }
+    const box = (e.currentTarget as HTMLElement | null)?.getBoundingClientRect();
+    const x = e.clientX - (box?.left ?? 0);
+    const y = e.clientY - (box?.top ?? 0);
+    const prev = this.pendingTap;
+    if (prev && Math.hypot(x - prev.x, y - prev.y) <= UI_DOUBLE_TAP_SLOP) {
+      this.clearPendingTap();
+      this.doubleTap.emit({ x, y });
+      return;
+    }
+    // A tap somewhere else first lets the earlier one through, then waits for its own second tap.
+    if (prev) {
+      this.clearPendingTap();
+      this.tap.emit();
+    }
+    this.pendingTap = {
+      x, y,
+      timer: setTimeout(() => {
+        this.pendingTap = null;
+        this.tap.emit();
+      }, UI_DOUBLE_TAP_MS),
+    };
+  }
+
+  private clearPendingTap(): void {
+    if (this.pendingTap) clearTimeout(this.pendingTap.timer);
+    this.pendingTap = null;
   }
 
   protected onContextMenu(e: MouseEvent): void {

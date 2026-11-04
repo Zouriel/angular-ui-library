@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
 import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
@@ -15,7 +15,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -38,6 +38,13 @@ function grad(a: string, b: string): string {
     @container (min-width: 544px) { .sel-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     .sel-wrap { container-type: inline-size; }
     .sel-grid ui-selectable { aspect-ratio: 1; }
+    .like-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-1); max-width: 420px; }
+    .like-grid ui-selectable { aspect-ratio: 1; }
+    .like-grid img, .like-view img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .like-corner { position: absolute; left: var(--ui-space-1); bottom: var(--ui-space-1); }
+    .like-view { position: relative; max-width: 420px; aspect-ratio: 4 / 3; border-radius: var(--ui-radius); overflow: hidden; margin-top: var(--ui-space-4); }
+    .like-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: flex-end; padding: var(--ui-space-2);
+      background: linear-gradient(to top, color-mix(in srgb, var(--ui-media-scrim) 70%, transparent), transparent); }
     .sel-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }`,
   template: `
     <doc-page eyebrow="Components" title="Media"
@@ -122,6 +129,37 @@ function grad(a: string, b: string): string {
           </div>
           <ui-task-progress-dialog [(open)]="jobOpen" [title]="jobTitle()" [done]="jobDone()" [total]="jobTotal()" [detail]="jobDetail()"
             [(stopping)]="jobStopping" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Likes" selector="ui-like-count" [api]="likeApi" [outputs]="likeOut"
+        summary="Hearts on photos. ui-like-count is the small heart and number in a tile's corner: a dark see-through pill readable on any picture, nothing at all at 0, the heart filled when you liked it, big numbers shortened (1.2k), read out as &quot;Liked, 12 likes&quot;. It never takes a tap. Liking is a double tap: give ui-selectable [doubleTapEnabled] and it emits (doubleTap) with the point, while a single tap waits 280ms for a second one before (tap) fires (never while selecting, never from the keyboard). ui-heart-burst sits over the media and play(x, y) pops a big heart there (a fade only with reduced motion). ui-like-button is the viewer's heart toggle with its count beside it (tone=&quot;surface&quot; on an ordinary background); it emits (likedChange) and pops when liked. Double tap a tile, or the big photo, or use its heart.">
+        <doc-demo code="<ui-selectable [doubleTapEnabled]=&quot;true&quot; (tap)=&quot;open(i)&quot; (doubleTap)=&quot;like(i); burst.play($event.x, $event.y)&quot;>
+  <img [src]=&quot;photo.src&quot; alt=&quot;&quot; />
+  <ui-heart-burst #burst />
+  <ui-like-count class=&quot;corner&quot; [count]=&quot;photo.likes&quot; [liked]=&quot;photo.liked&quot; />
+</ui-selectable>
+<ui-like-button [liked]=&quot;photo.liked&quot; [count]=&quot;photo.likes&quot; (likedChange)=&quot;setLiked(i, $event)&quot; />">
+          <div class="like-grid">
+            @for (p of photos.slice(0, 6); track $index) {
+              <ui-selectable [label]="'Photo ' + ($index + 1)" [doubleTapEnabled]="true"
+                (tap)="likeOpen.set($index)" (doubleTap)="setLiked($index, !likes()[$index].liked); burst.play($event.x, $event.y)">
+                <img [src]="p" alt="" />
+                <ui-heart-burst #burst />
+                <ui-like-count class="like-corner" [count]="likes()[$index].count" [liked]="likes()[$index].liked" />
+              </ui-selectable>
+            }
+          </div>
+          <div class="like-view">
+            <ui-selectable [label]="'Photo ' + (likeOpen() + 1) + ', large'" [doubleTapEnabled]="true"
+              (doubleTap)="setLiked(likeOpen(), !likes()[likeOpen()].liked); big.play($event.x, $event.y)">
+              <img [src]="photos[likeOpen()]" alt="" />
+              <ui-heart-burst #big />
+            </ui-selectable>
+            <div class="like-bar">
+              <ui-like-button [liked]="likes()[likeOpen()].liked" [count]="likes()[likeOpen()].count" (likedChange)="setLiked(likeOpen(), $event)" />
+            </div>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -331,6 +369,26 @@ export class MediaPage {
   protected readonly selectableOut: ApiRow[] = [
     { name: 'tap', type: 'void', default: '—', desc: 'A click, tap, Enter or Space (open, or toggle while selecting).' },
     { name: 'longPress', type: 'void', default: '—', desc: 'Held 500ms without moving 10px or scrolling; the context-menu key or Shift+F10.' },
+    { name: 'doubleTap', type: '{ x: number; y: number }', default: '—', desc: 'With doubleTapEnabled: two taps close together (see Likes).' },
+  ];
+  protected readonly likeOpen = signal(0);
+  protected readonly likes = signal([0, 3, 1250, 0, 12, 1].map((count) => ({ count, liked: false })));
+  protected setLiked(i: number, liked: boolean): void {
+    this.likes.update((all) => all.map((l, j) => (j !== i || l.liked === liked ? l : { liked, count: l.count + (liked ? 1 : -1) })));
+  }
+  protected readonly likeApi: ApiRow[] = [
+    { name: 'ui-like-count [count]', type: 'number', default: '0', desc: 'Hearts on the item. Nothing shows at 0 unless liked.' },
+    { name: 'ui-like-count [liked]', type: 'boolean', default: 'false', desc: 'You liked it: the heart is filled.' },
+    { name: 'ui-like-count [size]', type: "'sm' | 'md'", default: "'sm'", desc: 'sm for grid tiles, md for larger cards.' },
+    { name: 'ui-heart-burst play(x?, y?)', type: 'method', default: '—', desc: 'Pops a heart at a point inside its box (the centre without one).' },
+    { name: 'ui-heart-burst [size]', type: 'number', default: '88', desc: "The heart's size in px." },
+    { name: 'ui-like-button [liked] / [count] / [disabled]', type: 'boolean / number / boolean', default: 'false / 0 / false', desc: 'State shown; the count hides at 0.' },
+    { name: 'ui-like-button [tone]', type: "'media' | 'surface'", default: "'media'", desc: 'White over media, or text colour on a normal background.' },
+    { name: 'ui-selectable [doubleTapEnabled]', type: 'boolean', default: 'false', desc: 'Listen for double taps; a single tap then waits 280ms.' },
+  ];
+  protected readonly likeOut: ApiRow[] = [
+    { name: 'ui-like-button (likedChange)', type: 'boolean', default: '—', desc: 'The new state; the count is yours to update.' },
+    { name: 'ui-selectable (doubleTap)', type: '{ x, y }', default: '—', desc: 'Two taps within 280ms and 24px, with the point relative to the tile.' },
   ];
   protected readonly masonryColumns = signal(3);
   protected readonly masonryRatios = Array.from({ length: 60 }, (_, i) => [1, 1.5, 0.66, 1.25, 0.8][(i * 7) % 5]);

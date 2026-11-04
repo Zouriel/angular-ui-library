@@ -7,3 +7,4 @@ export * from './poster-view';
 export * from './scrim';
 export * from './selection';
 export * from './masonry-grid';
+export * from './like';
