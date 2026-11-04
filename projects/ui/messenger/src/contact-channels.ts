@@ -144,7 +144,7 @@ export interface UiMessengerChannel {
        apart, never stretched; 4px above for the tick badges. Each tap area is 44px tall and reaches
        half way across the gaps beside it (28 + 8 wide), so neighbours split the gap evenly. */
     .apps ui-messenger-button { --ui-messenger-hit-width: calc(28px + var(--ui-space-2)); }
-    /* compact (0.59.0): one line per contact, no label column. Icon, value, and the state right after
+    /* compact (0.60.0): one line per contact, no label column. Icon, value, and the state right after
        the value; the messenger buttons at the end of the number line, or under the value (from its
        text start) when the line is too narrow for both (measured). */
     /* compact fills its container's width and never widens it: a long address or number is
@@ -188,7 +188,7 @@ export class UiContactChannels {
   numberLabel = input<string>();
   /**
    * 'columns' (default): label, value and status columns, the messenger buttons on their own row.
-   * 'compact' (0.59.0, for a phone card): one line per contact, an icon instead of the label, the
+   * 'compact' (0.60.0, for a phone card): one line per contact, an icon instead of the label, the
    * state right after the value, the messenger buttons at the end of the number line.
    */
   layout = input<UiContactLayout>('columns');

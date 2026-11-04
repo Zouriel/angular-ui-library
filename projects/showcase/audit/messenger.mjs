@@ -161,7 +161,7 @@ for (const theme of ['winterLight', 'winterDark']) {
     });
     checkButtons(`${where} contact`, await measureButtons(page, 'ui-contact-channels'));
 
-    // compact (0.59.0): one line per contact; tick within 12px of the email text; buttons on the number
+    // compact (0.60.0): one line per contact; tick within 12px of the email text; buttons on the number
     // line, at the block's end; email+number block <= 76px tall; a narrow block wraps the buttons under
     // the number from its text start. Text ends are measured with a Range (the text, not its box).
     const compact = await page.evaluate(() => [...document.querySelectorAll('[data-demo^="compact"] ui-contact-channels')].map((cc) => {
