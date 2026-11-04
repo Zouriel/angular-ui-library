@@ -292,6 +292,9 @@ function fmt(seconds: number): string {
           }
 
           <footer class="bar bar--bottom">
+            <!-- 0.63.1: the app's own controls for the item on screen (a like button), at the start of the
+                 bottom bar, where they never take room from the top bar's actions. -->
+            <div class="extra"><ng-content select="[lightbox-bottom]" /></div>
             @if (isVideo()) {
               <div class="vc">
                 <button
@@ -468,6 +471,8 @@ function fmt(seconds: number): string {
     .sheet--bare .bar { opacity: 0; pointer-events: none; }
     .sheet--bare .bar--top { transform: translateY(-8px); }
     .sheet--bare .bar--bottom { transform: translateY(8px); }
+    .extra { display: flex; align-items: center; gap: var(--ui-space-2); }
+    .extra:empty { display: none; }
     .sheet--bare .edge { opacity: 0; pointer-events: none; }
     .sheet--bare .stage { cursor: none; }
 

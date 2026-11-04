@@ -44,4 +44,10 @@ describe('UiMediaLightbox double tap', () => {
     fixture.detectChanges();
     expect(stage().querySelector('ui-heart-burst .burst')).not.toBeNull();
   });
+  it('has a bottom slot that is not drawn while empty', () => {
+    const extra = fixture.nativeElement.querySelector('.bar--bottom .extra') as HTMLElement;
+    expect(extra).not.toBeNull();
+    const styles = (UiMediaLightbox as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('');
+    expect(styles).toMatch(/\.extra[^{,]*:empty[^{,]*\{\s*display:\s*none/);
+  });
 });

@@ -385,7 +385,7 @@ export class MediaPage {
     { name: 'ui-like-button [liked] / [count] / [disabled]', type: 'boolean / number / boolean', default: 'false / 0 / false', desc: 'State shown; the count hides at 0.' },
     { name: 'ui-like-button [tone]', type: "'media' | 'surface'", default: "'media'", desc: 'White over media, or text colour on a normal background.' },
     { name: 'ui-selectable [doubleTapEnabled]', type: 'boolean', default: 'false', desc: 'Listen for double taps; a single tap then waits 280ms.' },
-    { name: 'ui-media-lightbox [doubleTap] / (doubleTapped) / playHeart(x, y)', type: "'zoom' | 'emit'", default: "'zoom'", desc: 'emit: a double tap reports the item and point instead of zooming; playHeart pops the heart there. Put ui-like-button in [lightbox-actions].' },
+    { name: 'ui-media-lightbox [doubleTap] / (doubleTapped) / playHeart(x, y)', type: "'zoom' | 'emit'", default: "'zoom'", desc: 'emit: a double tap reports the item and point instead of zooming; playHeart pops the heart there. Put ui-like-button in the [lightbox-bottom] slot (0.63.1), the start of the bottom bar.' },
   ];
   protected readonly likeOut: ApiRow[] = [
     { name: 'ui-like-button (likedChange)', type: 'boolean', default: '—', desc: 'The new state; the count is yours to update.' },
