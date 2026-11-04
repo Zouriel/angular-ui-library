@@ -50,14 +50,23 @@ let drawerSeq = 0;
         [style.--ui-drawer-keyboard.px]="side() === 'bottom' && keyboard() ? keyboardEdge() : null"
         [style.--ui-drawer-room.px]="side() === 'bottom' && keyboard() ? visible() : null"
         [class.on-keyboard]="side() === 'bottom' && keyboard() > 0"
+        [class.fit-content]="fit() === 'content'"
+        (touchstart)="dragStart($event)"
+        (touchmove)="dragMove($event)"
+        (touchend)="dragEnd()"
+        (touchcancel)="dragEnd()"
         role="dialog"
         [attr.aria-modal]="modal() ? 'true' : null"
         (pointerenter)="panelEnter.emit()"
         (pointerleave)="panelLeave.emit()"
         [attr.aria-labelledby]="title() ? labelId : null"
+        [attr.aria-label]="title() ? null : ariaLabel() || null"
         (keydown.escape)="onEscape()"
         animate.enter="ui-sheet-enter"
         animate.leave="ui-sheet-leave">
+        @if (handle() && side() === 'bottom') {
+          <div class="grip" aria-hidden="true"><span class="pill"></span></div>
+        }
         @if (title()) {
           <header class="hd">
             <span [id]="labelId" class="title">{{ title() }}</span>
@@ -98,6 +107,13 @@ let drawerSeq = 0;
        bottom and the visible height (see the class docs). */
     .panel[data-side="bottom"] { bottom: var(--ui-drawer-keyboard, 0px); left: 0; right: 0; height: min(320px, calc(var(--ui-drawer-room, 100dvh) * 0.8)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; }
     .panel[data-side="bottom"].on-keyboard { padding-bottom: 0; }
+    /* fit="content" (0.61.0): as tall as the title bar, header, body and footer, up to 90% of the room
+       (above the keyboard while it's up); the body scrolls past that. */
+    .panel[data-side="bottom"].fit-content { height: auto; max-height: calc(var(--ui-drawer-room, 100dvh) * 0.9); }
+    .panel[data-side="top"].fit-content { height: auto; max-height: 90dvh; }
+    .panel.dragging { transition: none; }
+    .grip { flex: none; display: flex; justify-content: center; padding: var(--ui-space-2) 0 var(--ui-space-1); touch-action: none; }
+    .pill { width: 36px; height: 4px; border-radius: var(--ui-radius-pill); background: var(--ui-color-border-strong); }
     .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
     .title { min-width: 0; overflow-wrap: anywhere; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     .bd { padding: var(--ui-space-3) var(--ui-space-4); overflow: auto; overscroll-behavior: contain; flex: 1; min-height: 0; }
@@ -150,6 +166,17 @@ export class UiDrawer {
   readonly panelLeave = output<void>();
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
+  /**
+   * A drag-handle pill (36x4, 8px from the top) at the top of a bottom drawer (0.61.0), hidden from
+   * screen readers. With it a bottom drawer also follows a finger: a swipe down closes it when let go
+   * past half way or flicked (from the handle and title, or from the body while it is scrolled to its top).
+   */
+  handle = input(false);
+  /** `fixed` (default: up to 320px tall) or `content` (0.61.0): a top or bottom drawer as tall as its
+   *  content, up to 90% of the room; the body scrolls only past that. Side drawers ignore it. */
+  fit = input<'fixed' | 'content'>('fixed');
+  /** The accessible name when there is no `title` (an action sheet). */
+  ariaLabel = input<string>();
   protected readonly labelId = `ui-drawer-${drawerSeq++}`;
 
   protected readonly slideFrom = computed(() => {
@@ -234,6 +261,43 @@ export class UiDrawer {
         this.locked = false;
       }
     });
+  }
+
+  /** Swipe down to close a bottom drawer with a handle (touch events: a swipe is never a pointer drag). */
+  private drag: { y: number; t: number; dy: number; on: boolean; el: HTMLElement } | null = null;
+  protected dragStart(e: TouchEvent): void {
+    if (!this.handle() || this.side() !== 'bottom' || e.touches.length !== 1) return;
+    const el = e.currentTarget as HTMLElement;
+    const bd = el.querySelector('.bd');
+    if (bd && bd.contains(e.target as Node) && bd.scrollTop > 0) return;
+    this.drag = { y: e.touches[0].clientY, t: performance.now(), dy: 0, on: false, el };
+  }
+  protected dragMove(e: TouchEvent): void {
+    const d = this.drag;
+    if (!d) return;
+    d.dy = e.touches[0].clientY - d.y;
+    if (!d.on) {
+      if (d.dy < -8) { this.drag = null; return; } // an upward move scrolls the body
+      if (d.dy <= 8) return;
+      d.on = true;
+      d.el.classList.add('dragging');
+    }
+    if (e.cancelable) e.preventDefault();
+    d.el.style.transform = `translateY(${Math.max(0, d.dy)}px)`;
+  }
+  protected dragEnd(): void {
+    const d = this.drag;
+    this.drag = null;
+    if (!d?.on) return;
+    const v = d.dy / Math.max(1, performance.now() - d.t); // px per ms
+    d.el.classList.remove('dragging');
+    if (d.dy > d.el.offsetHeight / 2 || v > 0.5) {
+      this.open.set(false);
+    } else {
+      d.el.style.transition = 'transform var(--ui-motion-base) var(--ui-ease-standard)';
+      d.el.style.transform = '';
+      setTimeout(() => (d.el.style.transition = ''), 300);
+    }
   }
 
   protected onBackdrop(): void { if (this.closeOnBackdrop()) this.open.set(false); }

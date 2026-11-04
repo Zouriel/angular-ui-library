@@ -102,6 +102,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Context menu', anchor: 'context-menu' },
     { name: 'Modal', anchor: 'modal' },
     { name: 'Drawer', anchor: 'drawer' },
+    { name: 'Action sheet', anchor: 'action-sheet' },
     { name: 'Confirm dialog', anchor: 'confirm-dialog' },
     { name: 'Backdrop', anchor: 'backdrop' },
     { name: 'Bottom sheet', anchor: 'bottom-sheet' },

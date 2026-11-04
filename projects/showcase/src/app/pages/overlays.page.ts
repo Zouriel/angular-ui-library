@@ -7,12 +7,14 @@ import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
 import Moon02Icon from '@hugeicons/core-free-icons/Moon02Icon';
 import Mic01Icon from '@hugeicons/core-free-icons/Mic01Icon';
+import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
+import SentIcon from '@hugeicons/core-free-icons/SentIcon';
 import { UiText } from '@zouriel/ui/text';
 import { FormsModule } from '@angular/forms';
 import { UiFormField, UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, type UiMenuItem, type UiHintCloseReason, type UiHintPlacement } from '@zouriel/ui/overlay';
-import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService } from '@zouriel/ui/dialog';
+import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService, UiActionSheet } from '@zouriel/ui/dialog';
 import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -114,6 +116,17 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         </doc-demo>
         <doc-demo [code]="formDrawerCode">
           <ui-button variant="outline" class="open-form-drawer" (click)="formDrawer.set(true)">Bottom drawer with fields</ui-button>
+        </doc-demo>
+        <doc-demo [code]="fitDrawerCode">
+          <ui-button variant="outline" class="open-fit-drawer" (click)="fitDrawer.set(true)">Edit guest (fits content)</ui-button>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Action sheet" selector="UiActionSheet · ui-action-sheet" [api]="sheetActionApi" [shapes]="ACTION"
+        summary="A compact list of actions in a bottom drawer with a drag handle, as tall as its content (up to 90% of the screen, then the rows scroll). An optional title (a guest's name) and a muted message sit above full-width 48px rows with a 20px icon. Danger rows are red, icon too, and always come after the others. open() resolves with the chosen action's value; the backdrop, a swipe down, Escape and Cancel resolve undefined. Focus starts on the first action and the arrow keys move between rows. (0.61.0)">
+        <doc-demo [code]="actionSheetCode">
+          <ui-button class="open-action-sheet" (click)="openActions()">Guest actions</ui-button>
+          <ui-text variant="caption">Chose: {{ sheetChoice() }}</ui-text>
         </doc-demo>
       </doc-section>
 
@@ -242,6 +255,11 @@ onKey(e: KeyboardEvent) {
       <ui-form-field label="Reason"><ui-input placeholder="The customer asked me to" [(ngModel)]="cancelReason" /></ui-form-field>
       <div drawer-footer><ui-button [block]="true" (click)="formDrawer.set(false)">Cancel the job</ui-button></div>
     </ui-drawer>
+    <ui-drawer [(open)]="fitDrawer" side="bottom" title="Edit guest" [handle]="true" fit="content">
+      <ui-form-field label="Name"><ui-input value="Aminath Hassan" /></ui-form-field>
+      <ui-form-field label="Phone"><ui-input value="+960 777 1234" /></ui-form-field>
+      <div drawer-footer class="fit-footer"><ui-button variant="outline" (click)="fitDrawer.set(false)">Cancel</ui-button><ui-button (click)="fitDrawer.set(false)">Save</ui-button></div>
+    </ui-drawer>
     <ui-drawer [(open)]="chatsDrawer" side="start" title="Chats">
       <ui-button drawer-header [block]="true" (click)="chatsDrawer.set(false)">New chat</ui-button>
       @for (c of chatRows; track c) { <button type="button" class="chat-row" (click)="chatsDrawer.set(false)">Conversation {{ c }}</button> }
@@ -255,6 +273,8 @@ onKey(e: KeyboardEvent) {
   `,
   styles: `
     .sheet-foot { display: flex; }
+    .fit-footer { display: flex; justify-content: flex-end; gap: var(--ui-space-2); }
+    ui-form-field + ui-form-field { display: block; margin-top: var(--ui-space-3); }
     .chat-row { display: block; width: 100%; box-sizing: border-box; min-height: var(--ui-size-touch); padding: 0 var(--ui-space-2);
       text-align: start; background: none; border: none; border-radius: var(--ui-radius); color: var(--ui-color-text); font: inherit; cursor: pointer; }
     .chat-row:hover { background: var(--ui-color-surface-hover); }
@@ -276,6 +296,40 @@ onKey(e: KeyboardEvent) {
 })
 export class OverlaysPage {
   protected readonly toast = inject(UiToastService);
+  private readonly actionSheet = inject(UiActionSheet);
+  protected readonly fitDrawer = signal(false);
+  protected readonly sheetChoice = signal('nothing yet');
+  protected async openActions(): Promise<void> {
+    const v = await this.actionSheet.open<string>({
+      title: 'Aminath Hassan', message: 'Invited 3 Nov', cancelLabel: '',
+      actions: [
+        { label: 'Remove', value: 'remove', icon: Delete02Icon, danger: true },
+        { label: 'Edit', value: 'edit', icon: Edit02Icon },
+        { label: 'Resend', value: 'resend', icon: SentIcon },
+      ],
+    });
+    this.sheetChoice.set(v ?? 'closed');
+  }
+  protected readonly ACTION = "interface UiActionSheetAction<T> {\n  label: string;\n  value: T;\n  icon?: IconSvgObject;  // 20px\n  danger?: boolean;      // red, placed after the others\n  disabled?: boolean;\n}";
+  protected readonly actionSheetCode = `const action = await inject(UiActionSheet).open<string>({
+  title: guest.name,
+  cancelLabel: '', // '' = the built-in Cancel
+  actions: [
+    { label: 'Edit', value: 'edit', icon: Edit02Icon },
+    { label: 'Resend', value: 'resend', icon: SentIcon },
+    { label: 'Remove', value: 'remove', icon: Delete02Icon, danger: true },
+  ],
+}); // undefined when dismissed`;
+  protected readonly sheetActionApi: ApiRow[] = [
+    { name: 'open(options)', type: 'Promise<T | undefined>', default: '—', desc: 'Opens the sheet; resolves with the chosen value, undefined when dismissed.' },
+    { name: 'title / message', type: 'string', default: 'undefined', desc: 'Above the rows; the title also names the sheet.' },
+    { name: 'actions', type: 'UiActionSheetAction<T>[]', default: '—', desc: 'Rows. Danger rows are placed after the others, keeping their order.' },
+    { name: 'cancelLabel', type: 'string', default: 'undefined', desc: "A Cancel button at the end; '' for the built-in cancel string; omitted for none." },
+  ];
+  protected readonly fitDrawerCode = `<ui-drawer [(open)]="open" side="bottom" title="Edit guest" [handle]="true" fit="content">
+  <ui-form-field label="Name"><ui-input [(ngModel)]="name" /></ui-form-field>
+  <div drawer-footer><ui-button variant="outline">Cancel</ui-button><ui-button>Save</ui-button></div>
+</ui-drawer>`;
   protected readonly backdrop = signal(false);
   protected readonly backdropApi: ApiRow[] = [
     { name: 'blur', type: 'boolean', default: 'false', desc: 'Blur what is behind it as well as dimming it.' },
@@ -432,6 +486,9 @@ interface UiToastAction {
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'modal', type: 'boolean', default: 'true', desc: 'False: no backdrop, scroll lock or focus trap, so the page stays usable (a hover peek).' },
+    { name: 'handle', type: 'boolean', default: 'false', desc: 'Bottom drawers: a drag-handle pill (36x4, 8px from the top), hidden from screen readers; on touch a swipe down closes the drawer. (0.61.0)' },
+    { name: 'fit', type: "'fixed' | 'content'", default: "'fixed'", desc: 'Top and bottom drawers: content makes it as tall as its title bar, header, body and footer, up to 90% of the room above the keyboard; the body scrolls past that. (0.61.0)' },
+    { name: 'ariaLabel', type: 'string', default: 'undefined', desc: 'Accessible name when there is no title. (0.61.0)' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Body; the only part that scrolls, when it is taller than the drawer.' },
     { name: '[drawer-header]', type: 'slot', default: '—', desc: 'Fixed above the body, under the title bar (a New chat button). Hairline under it while the body is scrolled down. (0.41)' },
     { name: '[drawer-footer]', type: 'slot', default: '—', desc: 'Fixed at the bottom, clear of the home indicator (account, settings). Hairline over it while more of the body is below. (0.41)' },
