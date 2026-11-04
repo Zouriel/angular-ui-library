@@ -17,6 +17,7 @@ import {
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import { clampOffset, isSwipe, resist } from './gestures';
 import { injectUiStrings } from '@zouriel/ui';
+import { UiHeartBurst } from '@zouriel/ui/media';
 
 /** One thing in the lightbox: a photograph or a clip. */
 export interface UiMediaItem {
@@ -98,7 +99,7 @@ function fmt(seconds: number): string {
 @Component({
   selector: 'ui-media-lightbox',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, UiHeartBurst],
   template: `
     <dialog
       #dlg
@@ -127,7 +128,7 @@ function fmt(seconds: number): string {
             (pointerup)="onUp($event)"
             (pointercancel)="onUp($event)"
             (wheel)="onWheel($event)"
-            (dblclick)="toggleZoom()"
+            (dblclick)="onDoubleClick($event)"
           >
             @if (isVideo()) {
               <video
@@ -174,6 +175,7 @@ function fmt(seconds: number): string {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
               </button>
             }
+            <ui-heart-burst />
           </div>
 
           <header class="bar bar--top" #topBar>
@@ -613,6 +615,31 @@ export class UiMediaLightbox {
 
   private readonly dlg = viewChild<ElementRef<HTMLDialogElement>>('dlg');
   private readonly stage = viewChild<ElementRef<HTMLElement>>('stage');
+  private readonly heart = viewChild(UiHeartBurst);
+
+  /**
+   * What a double tap (double click) on the picture does (0.63.0). `'zoom'` (default) zooms a photo in
+   * and out; `'emit'` leaves zoom to pinch and the wheel and emits `(doubleTapped)` with the item and
+   * the point on the stage, for liking. `playHeart()` then pops a heart there if the app wants one.
+   */
+  doubleTap = input<'zoom' | 'emit'>('zoom');
+  doubleTapped = output<{ item: UiMediaItem; index: number; x: number; y: number }>();
+
+  /** Pops a heart over the picture at a point on the stage (from `(doubleTapped)`), or its centre. */
+  playHeart(x?: number, y?: number): void {
+    this.heart()?.play(x, y);
+  }
+
+  protected onDoubleClick(e: MouseEvent): void {
+    if (this.doubleTap() !== 'emit') {
+      this.toggleZoom();
+      return;
+    }
+    const item = this.items()[this.index()];
+    if (!item) return;
+    const box = this.stage()?.nativeElement.getBoundingClientRect();
+    this.doubleTapped.emit({ item, index: this.index(), x: e.clientX - (box?.left ?? 0), y: e.clientY - (box?.top ?? 0) });
+  }
   private readonly img = viewChild<ElementRef<HTMLImageElement>>('img');
   private readonly clip = viewChild<ElementRef<HTMLVideoElement>>('clip');
   private readonly strip = viewChild<ElementRef<HTMLElement>>('strip');
