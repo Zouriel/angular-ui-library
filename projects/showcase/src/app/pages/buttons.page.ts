@@ -18,7 +18,7 @@ import {
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
 import {
-  UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton,
+  UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton, UiSocialButton,
   type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -128,7 +128,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -242,6 +242,36 @@ type UiAppleButtonShape = 'rectangular' | 'pill';"
             <ui-apple-button [expand]="true" text="continueWith" />
             <ui-google-button [expand]="true" text="continueWith" />
             <ui-text variant="caption">Pressed {{ applePresses() }} times</ui-text>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Social sign-in buttons" anchor="social-button" selector="ui-social-button" [api]="socialButtonApi" [outputs]="socialButtonOut"
+        shapes="// from @zouriel/ui/google-sign-in
+type UiSocialProvider = 'apple' | 'google';
+type UiSocialButtonText = 'signIn' | 'continueWith' | 'signUp';
+type UiSocialButtonStyle = 'auto' | 'dark' | 'light';
+type UiSocialButtonShape = 'rectangular' | 'pill';"
+        summary="Sign in with Apple and Sign in with Google as one matching pair: the same height (40px), 4px corners (or pill), the same 1px stroke, the same font (the system font, else Roboto) Medium 17/20 (Apple's 43% of the height), and the same 44px logo slot at the start with an equal one at the end, so a stack of them lines up exactly and the words centre on one line. Apple's logo is Apple's own left-aligned artwork (Apple Design Resources, Medium) at the button's full height, in black or white only; Google's is the standard multicolour G at its 20px size, 12px from the edge. dark is Apple's black button and Google's dark one; light is Apple's white button and Google's light one; auto (the default) is dark on a light library theme and light on a dark one, and follows theme changes. Use the same text on every button in a stack. A plain button that emits (pressed); loading swaps the logo for a spinner (aria-busy, not clickable). The Flutter twin is UiSocialSignInButton. From @zouriel/ui/google-sign-in.">
+        <doc-demo lang="ts + html" code="import { UiSocialButton } from '@zouriel/ui/google-sign-in';
+
+<ui-social-button provider=&quot;apple&quot; text=&quot;continueWith&quot; [expand]=&quot;true&quot; (pressed)=&quot;apple()&quot; />
+<ui-social-button provider=&quot;google&quot; text=&quot;continueWith&quot; [expand]=&quot;true&quot; (pressed)=&quot;google()&quot; />">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 400px">
+            <ui-social-button provider="apple" text="continueWith" [expand]="true" [loading]="appleBusy()" (pressed)="fakeApple()" />
+            <ui-social-button provider="google" text="continueWith" [expand]="true" [loading]="googleBusy()" (pressed)="fakeGoogle()" />
+            <div class="row items-center">
+              <ui-social-button provider="apple" buttonStyle="dark" />
+              <ui-social-button provider="google" buttonStyle="dark" />
+            </div>
+            <div class="row items-center">
+              <ui-social-button provider="apple" buttonStyle="light" text="signUp" />
+              <ui-social-button provider="google" buttonStyle="light" text="signUp" />
+            </div>
+            <div class="row items-center">
+              <ui-social-button provider="apple" shape="pill" />
+              <ui-social-button provider="google" shape="pill" [disabled]="true" />
+            </div>
           </div>
         </doc-demo>
       </doc-section>
@@ -516,6 +546,17 @@ export class ButtonsPage {
     { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
   ];
   protected readonly appleButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
+  protected readonly socialButtonApi: ApiRow[] = [
+    { name: 'provider', type: 'UiSocialProvider (required)', default: '—', desc: "'apple' or 'google'." },
+    { name: 'text', type: 'UiSocialButtonText', default: "'signIn'", desc: "'signIn', 'continueWith' or 'signUp' (… with Apple / … with Google); use one for the whole stack." },
+    { name: 'buttonStyle', type: 'UiSocialButtonStyle', default: "'auto'", desc: "'dark' (Apple black, Google dark), 'light' (Apple white, Google light); 'auto' is dark on a light theme and light on a dark one." },
+    { name: 'shape', type: 'UiSocialButtonShape', default: "'rectangular'", desc: "'rectangular' (4px corners) or 'pill'." },
+    { name: 'loading', type: 'boolean', default: 'false', desc: 'Spinner in place of the logo, same size, aria-busy, not clickable.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
+    { name: 'expand', type: 'boolean', default: 'false', desc: 'Full width; the logo stays at the start, the words centre.' },
+    { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
+  ];
+  protected readonly socialButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
   protected readonly gsiApi: ApiRow[] = [
     { name: 'clientId', type: 'string (required)', default: '—', desc: 'Your OAuth web client ID.' },
     { name: 'text', type: "'signin_with' | 'signup_with' | 'continue_with' | 'signin'", default: "'signin_with'", desc: "GIS's wording." },
