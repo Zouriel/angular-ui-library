@@ -59,7 +59,7 @@ export const UI_MESSENGER_SWIPE_MIN = 40;
         <button type="button" class="dot" role="radio" [attr.data-app]="a" [attr.aria-checked]="a === value()"
           [attr.aria-label]="nameOf(a)" [tabIndex]="a === value() ? 0 : -1" (click)="choose(a, 0)">
           <span class="disc" [style.background]="'linear-gradient(' + fillOf(a)[0] + ', ' + fillOf(a)[1] + ')'">
-            <ui-messenger-logo [app]="a" [size]="a === 'telegram' ? 20 : 13" />
+            <ui-messenger-logo [app]="a" [size]="a === 'telegram' ? 20 : 16" />
           </span>
         </button>
       }
