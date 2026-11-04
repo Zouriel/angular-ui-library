@@ -61,6 +61,15 @@ describe('ui-selectable double tap', () => {
     expect(f.componentInstance.log).toEqual(['tap']);
   });
 
+  it('a press held right after a tap becomes a long press, and the waiting tap is dropped', () => {
+    const { f, tile } = make();
+    click(tile);
+    vi.advanceTimersByTime(50);
+    tile.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, isPrimary: true, pointerId: 7, clientX: 10, clientY: 10 }));
+    vi.advanceTimersByTime(600);
+    expect(f.componentInstance.log).toEqual([]);
+  });
+
   it('taps far apart are two single taps', () => {
     const { f, tile } = make();
     click(tile, 10, 10);

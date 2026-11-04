@@ -119,7 +119,8 @@ export class UiSelectable {
    */
   readonly doubleTapEnabled = input(false);
   readonly doubleTap = output<{ x: number; y: number }>();
-  private pendingTap: { timer: ReturnType<typeof setTimeout>; x: number; y: number } | null = null;
+  /** A tap waiting for a second one; `held` once another press began inside the window (it then waits for that press to end). */
+  private pendingTap: { timer: ReturnType<typeof setTimeout> | null; x: number; y: number; held?: boolean } | null = null;
 
   private readonly doc = inject(DOCUMENT);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -156,6 +157,14 @@ export class UiSelectable {
   protected onDown(e: PointerEvent): void {
     if (e.button !== 0 || !e.isPrimary) return;
     this.stop();
+    // A press inside the double-tap window holds the waiting tap until it ends: a second tap, a long
+    // press (which drops it) or a drag (which drops it too). A press after a dropped one starts afresh.
+    if (this.pendingTap?.held) this.clearPendingTap();
+    else if (this.pendingTap?.timer) {
+      clearTimeout(this.pendingTap.timer);
+      this.pendingTap.timer = null;
+      this.pendingTap.held = true;
+    }
     // A second finger already on the screen: this is a pinch, not a long press.
     if (this.otherTouches(e)) return;
     this.fired = false;
@@ -246,7 +255,7 @@ export class UiSelectable {
   }
 
   private clearPendingTap(): void {
-    if (this.pendingTap) clearTimeout(this.pendingTap.timer);
+    if (this.pendingTap?.timer) clearTimeout(this.pendingTap.timer);
     this.pendingTap = null;
   }
 
