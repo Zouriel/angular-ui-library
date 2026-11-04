@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, viewChildren } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { injectUiStrings } from '@zouriel/ui';
@@ -37,7 +37,8 @@ export interface UiMessengerChannel {
  * bounced (with `emailError` under the row), Send when not sent, a spinner while `emailBusy`.
  *
  * The messenger buttons start at the value column's edge, under the number, in equal widths with
- * equal gaps; each shows its name when there is room and its logo alone when there isn't (a phone).
+ * equal gaps; all show their names when every name fits in full, and their logos alone otherwise
+ * (a phone), never a mix or a cut-off name.
  * Each can be ticked on its own. The component only reports presses: the app sends and sets ticks.
  * Twin of Flutter's `UiContactChannels`.
  */
@@ -73,7 +74,7 @@ export interface UiMessengerChannel {
         @if (shown().length) {
           <div class="apps" [style.grid-template-columns]="'repeat(' + shown().length + ', minmax(0, 1fr))'">
             @for (m of shown(); track m.app) {
-              <ui-messenger-button [app]="m.app" [expand]="true" compact="auto" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
+              <ui-messenger-button [app]="m.app" [expand]="true" [compact]="rowCompact()" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
                 [ariaLabel]="m.ariaLabel" (pressed)="messengerPress.emit(m.app)" />
             }
           </div>
@@ -136,4 +137,7 @@ export class UiContactChannels {
   protected readonly emailSent = computed(() => ['sent', 'delivered'].includes(this.emailStatus()));
   protected readonly emailFailed = computed(() => ['failed', 'bounced'].includes(this.emailStatus()));
   protected readonly shown = computed(() => this.messengers().filter((m) => !m.hidden));
+  private readonly buttons = viewChildren(UiMessengerButton);
+  /** The row goes icon-only together as soon as one name doesn't fit, so it never mixes the two. */
+  protected readonly rowCompact = computed(() => !this.buttons().every((b) => b.labelFits()));
 }

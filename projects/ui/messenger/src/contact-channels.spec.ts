@@ -76,9 +76,10 @@ describe('ui-contact-channels', () => {
       'Send to Aisha on Telegram',
     ]);
     expect(q('.apps')!.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
-    // Expanded, and icon-only by themselves when narrow.
+    // Expanded; the row decides icon-only for all of them together.
     expect(qa('.apps ui-messenger-button').every((b) => b.classList.contains('expand'))).toBe(true);
-    expect(buttons.every((b) => b.classList.contains('auto'))).toBe(true);
+    // All the same: the row never mixes labels and logos (widths are measured; the browser audit checks them).
+    expect(new Set(buttons.map((b) => b.classList.contains('icon-only'))).size).toBe(1);
   });
 
   it('ticks a sent or delivered email, named by its tick label', () => {

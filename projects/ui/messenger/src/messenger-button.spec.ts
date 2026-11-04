@@ -208,19 +208,18 @@ describe('ui-messenger-button', () => {
     expect(h.presses()).toEqual([]);
   });
 
-  it('compact draws the logo alone; auto does so below 120px wide (a container query on the expanded host)', () => {
+  it('compact draws the logo alone, keeping the name; the words stay measurable (visually hidden, not removed)', () => {
     const { f, h, btn } = make();
     h.compact.set(true);
     f.detectChanges();
     expect(btn('viber').classList).toContain('icon-only');
     expect(btn('viber').getAttribute('aria-label')).toBe('Viber');
-    expect(rule('.ui-mbtn.icon-only .label')).toMatch(/display: none/);
+    expect(rule('.ui-mbtn.icon-only .label')).toMatch(/position: absolute; width: 1px; height: 1px; overflow: hidden/);
+    expect(rule('.ui-mbtn.icon-only .label')).not.toMatch(/display: none/);
+    // auto: decided by measuring (a ResizeObserver; the browser audit checks it), so not icon-only up front.
     h.compact.set('auto');
     f.detectChanges();
-    expect(btn('viber').classList).toContain('auto');
     expect(btn('viber').classList).not.toContain('icon-only');
-    expect(rules.css).toMatch(/@container \(max-width: 119.98px\)/);
-    expect(rule('.expand:host')).toMatch(/container-type: inline-size/);
   });
 
   it('uses its custom label', () => {

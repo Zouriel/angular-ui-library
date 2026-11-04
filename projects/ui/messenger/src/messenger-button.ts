@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { injectUiStrings } from '@zouriel/ui';
@@ -20,7 +20,8 @@ let nextId = 0;
  * `tickLabel` ("Opened in WhatsApp · 3:14 pm") shows as a tooltip and is added to the accessible name.
  *
  * `compact` draws the logo alone (44x44, the name stays the accessible name); `'auto'` does so only
- * when the button is narrower than 120px, for equal-width rows (`expand`) that must fit a phone.
+ * when the words would not fit in full (measured), for equal-width rows (`expand`) that must fit a
+ * phone: a button shows its whole name or its logo, never a cut-off name.
  * A plain `<button>` that emits `(pressed)`: the app opens the link itself. Twin of Flutter's
  * `UiMessengerButton`.
  */
@@ -34,8 +35,7 @@ let nextId = 0;
       class="ui-mbtn"
       [attr.data-app]="app()"
       [class.expand]="expand()"
-      [class.icon-only]="compact() === true"
-      [class.auto]="compact() === 'auto'"
+      [class.icon-only]="iconOnly()"
       [class.ticked]="ticked()"
       [style.--m-top]="brand().fill[0]"
       [style.--m-bottom]="brand().fill[1]"
@@ -60,7 +60,7 @@ let nextId = 0;
           <path [attr.d]="p.d" fill="#FFFFFF" [attr.fill-rule]="p.evenOdd ? 'evenodd' : null" />
         }
       </svg>
-      <span class="label">{{ text() }}</span>
+      <span #label class="label">{{ text() }}</span>
       @if (ticked()) {
         <span class="tick" aria-hidden="true"><hugeicons-icon [icon]="tickIcon" [size]="12" [strokeWidth]="2.5" /></span>
       }
@@ -76,8 +76,7 @@ let nextId = 0;
       max-width: 100%;
       vertical-align: middle;
     }
-    /* Expanded, the host is a size container: compact="auto" asks it how wide the button is. */
-    :host(.expand) { display: flex; width: 100%; container-type: inline-size; }
+    :host(.expand) { display: flex; width: 100%; }
     .ui-mbtn {
       position: relative;
       box-sizing: border-box;
@@ -124,11 +123,9 @@ let nextId = 0;
     .logo { position: relative; z-index: 1; flex: none; display: block; width: var(--m-logo); height: var(--m-logo); }
     .label { position: relative; z-index: 1; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .ui-mbtn.icon-only { padding: 0; }
-    .ui-mbtn.icon-only .label { display: none; }
-    @container (max-width: 119.98px) {
-      .ui-mbtn.auto { padding: 0; }
-      .ui-mbtn.auto .label { display: none; }
-    }
+    /* Icon-only keeps the words in the DOM, out of sight and out of layout, so compact="auto" can
+       still measure their natural width. The button's aria-label names it either way. */
+    .ui-mbtn.icon-only .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); text-overflow: clip; }
     /* The tick: an 18px success disc centred 3px inside the top-right corner, ringed in the surface
        colour so it reads on the fill and on the page. Decorative (the name carries it), never hit. */
     .tick {
@@ -156,7 +153,7 @@ export class UiMessengerButton {
   app = input.required<UiMessengerApp>();
   /** The visible words; default the app's name. */
   label = input<string>();
-  /** `true`: the logo alone. `'auto'`: the logo alone while the button is narrower than 120px (use with `expand`). */
+  /** `true`: the logo alone. `'auto'`: the logo alone while the words would not fit in full (use with `expand`). */
   compact = input<boolean | 'auto'>(false);
   /** Fill the width (logo and words stay centred). */
   expand = input(false);
@@ -169,6 +166,37 @@ export class UiMessengerButton {
   disabled = input(false);
 
   readonly pressed = output<void>();
+
+  private readonly hostWidth = signal(0);
+  private readonly needWidth = signal(0);
+  /**
+   * Whether the whole name fits beside the logo at the button's current width (measured for expanded
+   * buttons; true otherwise). A row of buttons can use it to go icon-only together, as
+   * ui-contact-channels does.
+   */
+  readonly labelFits = computed(() => !this.expand() || !this.needWidth() || this.hostWidth() + 0.5 >= this.needWidth());
+  protected readonly iconOnly = computed(() => this.compact() === true || (this.compact() === 'auto' && !this.labelFits()));
+
+  constructor() {
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    const destroy = inject(DestroyRef);
+    afterNextRender(() => {
+      if (typeof ResizeObserver === 'undefined') return;
+      const measure = () => {
+        // Only an expanded button: a hugging one's width follows its own content.
+        const label = host.querySelector<HTMLElement>('.label');
+        if (!this.expand() || !label) return;
+        // padding 12 + logo + gap 8 + the words' full width (also while hidden) + padding 12.
+        this.needWidth.set(24 + this.brand().logoSize + 8 + label.scrollWidth);
+        this.hostWidth.set(host.getBoundingClientRect().width);
+      };
+      const ro = new ResizeObserver(measure);
+      ro.observe(host);
+      ro.observe(host.querySelector('.label')!);
+      measure();
+      destroy.onDestroy(() => ro.disconnect());
+    });
+  }
 
   private readonly strings = injectUiStrings();
   protected readonly tickIcon = Tick02Icon;

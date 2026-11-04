@@ -10,7 +10,8 @@
  *   - the logo's and the label's centre lines are within 0.5px of the button's centre line, and the
  *     logo + label group is centred across the button within 0.5px (icon-only: the logo);
  *   - the tick badge sits at the same offset from the top-right corner on every ticked button;
- *   - the expanded row's buttons have equal widths.
+ *   - the expanded row's buttons have equal widths;
+ *   - no shown label is cut off (compact="auto" shows the whole name or the logo alone).
  * Data page (#contact-channels): in every ui-contact-channels, label x and value x are equal across
  * rows, the messenger row starts at the value x, its buttons have equal widths and gaps, all fit
  * inside the component (no overflow), and at 360 wide they are icon-only while keeping their names;
@@ -42,7 +43,8 @@ const measureButtons = (page, root) =>
       if (!br.width) continue;
       const logo = b.querySelector('.logo').getBoundingClientRect();
       const labelEl = b.querySelector('.label');
-      const shown = getComputedStyle(labelEl).display !== 'none';
+      const shown = !b.classList.contains('icon-only');
+      const cut = shown && labelEl.scrollWidth > labelEl.clientWidth + 0.5;
       const label = labelEl.getBoundingClientRect();
       const tick = b.querySelector('.tick')?.getBoundingClientRect();
       const left = logo.left;
@@ -55,6 +57,7 @@ const measureButtons = (page, root) =>
         x: br.left,
         right: br.right,
         labelShown: shown,
+        cut,
         dyLogo: logo.top + logo.height / 2 - (br.top + br.height / 2),
         dyLabel: shown ? label.top + label.height / 2 - (br.top + br.height / 2) : 0,
         dxGroup: (left + right) / 2 - (br.left + br.width / 2),
@@ -76,6 +79,7 @@ function checkButtons(where, list) {
     if (Math.abs(m.dyLabel) > 0.5) problems.push(`${where} ${m.app}: label centre off by ${m.dyLabel.toFixed(2)}px`);
     if (Math.abs(m.dxGroup) > 0.5) problems.push(`${where} ${m.app}: logo+label group off-centre by ${m.dxGroup.toFixed(2)}px`);
     if (!m.name) problems.push(`${where} ${m.app}: no accessible name`);
+    if (m.cut) problems.push(`${where} ${m.app}: label cut off (ellipsis)`);
     if (m.tick) ticks.add(`${m.tick.dx.toFixed(2)},${m.tick.dy.toFixed(2)},${m.tick.w}`);
   }
   if (ticks.size > 1) problems.push(`${where}: tick badges at different offsets ${[...ticks].join(' | ')}`);
@@ -113,7 +117,7 @@ for (const theme of ['winterLight', 'winterDark']) {
         const apps = cc.querySelector('.apps');
         const btns = [...cc.querySelectorAll('.apps ui-messenger-button button')].map((b) => {
           const br = b.getBoundingClientRect();
-          return { x: br.left, right: br.right, w: br.width, label: getComputedStyle(b.querySelector('.label')).display !== 'none', name: b.getAttribute('aria-label') };
+          return { x: br.left, right: br.right, w: br.width, label: !b.classList.contains('icon-only'), name: b.getAttribute('aria-label') };
         });
         const status = cc.querySelector('.status')?.getBoundingClientRect();
         return {
@@ -137,6 +141,7 @@ for (const theme of ['winterLight', 'winterDark']) {
         if (Math.abs(b.btns[0].x - b.valueX[0]) > 0.5) problems.push(`${w}: first button at ${b.btns[0].x}`);
         if (b.btns.at(-1).right > b.right + 0.5) problems.push(`${w}: buttons overflow (${b.btns.at(-1).right} > ${b.right})`);
         if (b.btns.some((x) => !x.name)) problems.push(`${w}: a button without a name`);
+        if (new Set(b.btns.map((x) => x.label)).size > 1) problems.push(`${w}: row mixes labelled and icon-only buttons`);
         if (width === 360 && b.btns.some((x) => x.label)) problems.push(`${w}: labels shown at 360`);
         if (width === 1280 && b.w > 400 && b.btns.some((x) => !x.label)) problems.push(`${w}: icon-only with room for labels`);
       }
