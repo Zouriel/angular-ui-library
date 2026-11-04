@@ -116,7 +116,7 @@ describe('style contract', () => {
     // Also Google's brand colours on the drawn sign-in button, fixed by
     // https://developers.google.com/identity/branding-guidelines whatever the theme.
     // And Apple's black/white on the drawn Sign in with Apple button, fixed by Apple's HIG.
-    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/, /^google-sign-in\/src\/google-button\.ts$/, /^google-sign-in\/src\/apple-button\.ts$/, /^google-sign-in\/src\/social-button\.ts$/, /^messenger\/src\/messenger-brand\.ts$/, /^messenger\/src\/messenger-button\.ts$/];
+    const allowed = [/^media\/src\/device-frame\.ts$/, /^fx\//, /^file-viewer\/src\/media-lightbox\.ts$/, /^google-sign-in\/src\/google-button\.ts$/, /^google-sign-in\/src\/apple-button\.ts$/, /^google-sign-in\/src\/social-button\.ts$/, /^messenger\/src\/messenger-brand\.ts$/, /^messenger\/src\/messenger-button\.ts$/, /^messenger\/src\/messenger-switch\.ts$/];
     const bad: string[] = [];
     for (const { file, text } of css) {
       if (allowed.some((r) => r.test(file))) continue;

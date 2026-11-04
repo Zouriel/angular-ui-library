@@ -154,7 +154,8 @@ describe('ui-messenger-button', () => {
     expect(base).toMatch(/gap: var\(--ui-space-2\)/);
     expect(base).toMatch(/padding: 0 var\(--ui-space-3\)/);
     expect(base).toMatch(/border-radius: var\(--ui-radius\)/);
-    expect(rule('.logo')).toMatch(/width: var\(--m-logo\); height: var\(--m-logo\)/);
+    // The logo box: 22 (Telegram 28) on md, 18 (Telegram 23) on sm.
+    expect(APPS.map((a) => UI_MESSENGER_BRANDS[a].logoSizeSm)).toEqual([18, 18, 23]);
     expect(rule('.ui-mbtn:focus-visible')).toMatch(/box-shadow: var\(--ui-focus-ring\)/);
     // No app-specific geometry: only colours differ.
     expect([...rules.map.keys()].some((k) => k.includes('data-app'))).toBe(false);
@@ -228,5 +229,61 @@ describe('ui-messenger-button', () => {
     f.detectChanges();
     expect(btn('telegram').querySelector('.label')!.textContent!.trim()).toBe('Send');
     expect(btn('telegram').getAttribute('aria-label')).toBe('Send');
+  });
+});
+
+describe('ui-messenger-button size sm', () => {
+  @Component({
+    imports: [UiMessengerButton],
+    template: `
+      @for (a of apps; track a) {
+        <ui-messenger-button [class]="a" [app]="a" size="sm" [compact]="true" [ticked]="true" tickLabel="Opened 3:14 pm"
+          [ariaLabel]="'Send to Aisha on ' + a" (pressed)="presses.push(a)" />
+      }`,
+  })
+  class SmHost {
+    apps = APPS;
+    presses: UiMessengerApp[] = [];
+  }
+
+  it('is 32px to look at with an invisible 44px hit area, a smaller logo and badge, and the same name', () => {
+    const f = TestBed.createComponent(SmHost);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    for (const a of APPS) {
+      const b = el.querySelector(`ui-messenger-button.${a} button`) as HTMLButtonElement;
+      expect(b.dataset['size']).toBe('sm');
+      expect(b.classList).toContain('icon-only');
+      expect(b.style.getPropertyValue('--m-logo')).toBe(`${UI_MESSENGER_BRANDS[a].logoSizeSm}px`);
+      expect(b.querySelector('ui-messenger-logo')!.getAttribute('style')).toContain(`width: ${UI_MESSENGER_BRANDS[a].logoSizeSm}px`);
+      expect(b.getAttribute('aria-label')).toBe(`Send to Aisha on ${a}, Opened 3:14 pm`);
+      expect(b.querySelector('.tick hugeicons-icon')).not.toBeNull();
+      b.click();
+    }
+    expect(f.componentInstance.presses).toEqual(APPS);
+    expect(rule('.ui-mbtn[data-size=sm]')).toMatch(/height: 32px/);
+    expect(rule('.ui-mbtn[data-size=sm].icon-only')).toMatch(/width: 32px/);
+    // The hit area: centred, at least 44x44, transparent (no background), part of the button.
+    const hit = rule('.ui-mbtn[data-size=sm]::before');
+    expect(hit).toMatch(/width: max\(100%, var\(--ui-size-touch\)\); height: var\(--ui-size-touch\)/);
+    expect(hit).toMatch(/transform: translate\(-50%, -50%\)/);
+    expect(hit).not.toMatch(/background/);
+    expect(rule('.ui-mbtn[data-size=sm] .tick')).toMatch(/top: -5px; inset-inline-end: -5px; width: 14px; height: 14px/);
+  });
+
+  it('never hides an app by itself: all three render whatever the browser says it is', () => {
+    const ua = Object.getOwnPropertyDescriptor(Navigator.prototype, 'userAgent');
+    try {
+      for (const fake of ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 'Mozilla/5.0 (X11; Linux x86_64)']) {
+        Object.defineProperty(Navigator.prototype, 'userAgent', { configurable: true, get: () => fake });
+        const f = TestBed.createComponent(SmHost);
+        f.detectChanges();
+        const shown = [...(f.nativeElement as HTMLElement).querySelectorAll('ui-messenger-button button')].map((b) => (b as HTMLElement).dataset['app']);
+        expect(shown, fake).toEqual(APPS);
+        f.destroy();
+      }
+    } finally {
+      if (ua) Object.defineProperty(Navigator.prototype, 'userAgent', ua);
+    }
   });
 });

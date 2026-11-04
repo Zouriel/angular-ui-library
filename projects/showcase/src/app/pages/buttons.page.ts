@@ -21,7 +21,7 @@ import {
   UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton, UiSocialButton,
   type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
-import { UiMessengerButton, type UiMessengerApp } from '@zouriel/ui/messenger';
+import { UiMessengerButton, UiMessengerSwitch, type UiMessengerApp } from '@zouriel/ui/messenger';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
@@ -129,7 +129,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, UiMessengerSwitch, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -303,8 +303,25 @@ type UiMessengerApp = 'whatsapp' | 'viber' | 'telegram';"
                 <ui-messenger-button [app]="a" [expand]="true" compact="auto" [ticked]="!!msgTicks()[a]" [tickLabel]="msgTicks()[a]" (pressed)="tickMessenger(a)" />
               }
             </div>
-            <span class="muted">Press a button: it ticks with the time. The last row is three equal widths (expand, compact=&quot;auto&quot;).</span>
+            <div class="row items-center sm-row">
+              @for (a of messengerApps; track a) {
+                <ui-messenger-button [app]="a" size="sm" [compact]="true" [ticked]="!!msgTicks()[a]" [tickLabel]="msgTicks()[a]"
+                  [ariaLabel]="'Send to Aisha on ' + a" (pressed)="tickMessenger(a)" />
+              }
+              <ui-messenger-button app="viber" size="sm" />
+            </div>
+            <span class="muted">Press a button: it ticks with the time (hover, or long-press on touch, shows it). Row 3: equal widths (expand, compact=&quot;auto&quot;). Row 4: size=&quot;sm&quot;, 32px to look at, 44px to tap.</span>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Messenger switch" anchor="messenger-switch" selector="ui-messenger-switch" [api]="switchApi" [outputs]="switchOut"
+        summary="A Send next button that is also a channel switch: the chosen app's logo and brand colour on a pill with the words (default Send next on WhatsApp) and a second line (e.g. Next: Aisha). Change channel by swiping the pill sideways on touch (finger to the left for the next app), with the chevrons, with the arrow keys (Home/End for first/last), or by tapping one of the small logos under it, which show the choice (a radio group). Tapping the pill emits (pressed) with the app. disabled turns off the pill only, so the host can still switch to a channel with people left. Centred, at most 360px wide; the new channel slides in from its side (not with reduced motion). The Flutter twin is UiMessengerSwitch.">
+        <doc-demo lang="ts + html" code="import { UiMessengerSwitch } from '@zouriel/ui/messenger';
+
+<ui-messenger-switch [(value)]=&quot;channel&quot; sublabel=&quot;Next: Aisha&quot; (pressed)=&quot;sendNext($event)&quot; />">
+          <ui-messenger-switch [(value)]="switchApp" sublabel="Next: Aisha" (pressed)="switchPressed($event)" />
+          <span class="muted switch-out">value: {{ switchApp() }} · pressed: {{ switchLog() }}</span>
         </doc-demo>
       </doc-section>
 
@@ -507,6 +524,7 @@ async addBirthday() {   // from a (click)
   styles: `
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
+    .switch-out { display: block; text-align: center; margin-top: var(--ui-space-3); }
     .msg-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-2); padding-top: 6px; }
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
     /* transform makes this box the containing block for the fixed-position FABs inside it. */
@@ -606,8 +624,26 @@ export class ButtonsPage {
     { name: 'tickLabel', type: 'string', default: '—', desc: "What the tick means ('Opened in WhatsApp · 3:14 pm'): tooltip, and part of the accessible name (default 'Opened')." },
     { name: 'ariaLabel', type: 'string', default: 'the label', desc: "Accessible name ('Send to Aisha on WhatsApp')." },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
+    { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: "'md': 44px. 'sm': 32px to look at (logo 18, Telegram 23; tick 14px) with an invisible 44px tap area." },
   ];
   protected readonly messengerOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
+  protected readonly switchApp = signal<UiMessengerApp>('whatsapp');
+  protected readonly switchLog = signal('—');
+  private switchCount = 0;
+  protected switchPressed(a: UiMessengerApp): void {
+    this.switchLog.set(`${++this.switchCount}× (last: ${a})`);
+  }
+  protected readonly switchApi: ApiRow[] = [
+    { name: 'apps', type: 'UiMessengerApp[]', default: "['whatsapp', 'viber', 'telegram']", desc: 'The channels, in order.' },
+    { name: 'value', type: 'UiMessengerApp (model)', default: "'whatsapp'", desc: 'The chosen channel; [(value)].' },
+    { name: 'label', type: 'string', default: "'Send next on <app>'", desc: 'The words on the pill.' },
+    { name: 'sublabel', type: 'string', default: '—', desc: "Second line, e.g. 'Next: Aisha'." },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Turns off the pill; switching still works.' },
+  ];
+  protected readonly switchOut: ApiRow[] = [
+    { name: 'pressed', type: 'UiMessengerApp', default: '—', desc: 'The pill was tapped (or Enter/Space): send on this channel.' },
+    { name: 'valueChange', type: 'UiMessengerApp', default: '—', desc: 'Swipe, chevron, key or dot changed the channel.' },
+  ];
   protected readonly gsiApi: ApiRow[] = [
     { name: 'clientId', type: 'string (required)', default: '—', desc: 'Your OAuth web client ID.' },
     { name: 'text', type: "'signin_with' | 'signup_with' | 'continue_with' | 'signin'", default: "'signin_with'", desc: "GIS's wording." },

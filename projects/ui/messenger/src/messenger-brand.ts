@@ -29,6 +29,8 @@ export interface UiMessengerBrand {
    * Telegram, whose plane fills only about half of its disc, so the planes read as large as the glyphs.
    */
   logoSize: number;
+  /** The logo's size on a small (32px) button: 18, Telegram 23 (the same ratio). */
+  logoSizeSm: number;
   /** The official logo: its viewBox size, an optional gradient disc behind (Telegram), then the white paths. */
   logo: {
     width: number;
@@ -50,6 +52,7 @@ export const UI_MESSENGER_BRANDS: Readonly<Record<UiMessengerApp, UiMessengerBra
     fill: ['#25D366', '#25D366'],
     ink: '#0A2E1A',
     logoSize: 22,
+    logoSizeSm: 18,
     logo: {
       width: 720,
       height: 720,
@@ -70,6 +73,7 @@ export const UI_MESSENGER_BRANDS: Readonly<Record<UiMessengerApp, UiMessengerBra
     fill: ['#7360F2', '#7360F2'],
     ink: '#000000',
     logoSize: 22,
+    logoSizeSm: 18,
     logo: {
       width: 132,
       height: 141,
@@ -96,6 +100,7 @@ export const UI_MESSENGER_BRANDS: Readonly<Record<UiMessengerApp, UiMessengerBra
     fill: ['#2AABEE', '#229ED9'],
     ink: '#0B1F2E',
     logoSize: 28,
+    logoSizeSm: 23,
     logo: {
       width: 1000,
       height: 1000,

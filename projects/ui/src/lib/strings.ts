@@ -75,6 +75,13 @@ export interface UiStrings {
   contactEmailSent: string;
   /** Messenger button (ui-messenger-button): added to the name of a ticked button that has no tickLabel. */
   messengerOpened: string;
+  /** Messenger switch (ui-messenger-switch): the default words ({app} is the app's name), the dots'
+   *  group name, the chevrons' names, and the hint read with the pill. */
+  messengerSendNext: string;
+  messengerChannel: string;
+  messengerPrevChannel: string;
+  messengerNextChannel: string;
+  messengerSwitchHint: string;
   /** Phone input (ui-phone-input): the country button's name ("Country: Maldives +960"), the country
    *  search field's placeholder, and the number field's default name. */
   phoneCountry: string;
@@ -415,6 +422,11 @@ export const defaultUiStrings: UiStrings = {
   contactRetry: 'Retry',
   contactEmailSent: 'Sent',
   messengerOpened: 'Opened',
+  messengerSendNext: 'Send next on {app}',
+  messengerChannel: 'Channel',
+  messengerPrevChannel: 'Previous channel',
+  messengerNextChannel: 'Next channel',
+  messengerSwitchHint: 'Swipe or use the arrow keys to change channel',
   phoneCountry: 'Country',
   phoneSearch: 'Search countries',
   phoneNumber: 'Phone number',
@@ -613,6 +625,11 @@ export const uiStringsDv: UiStrings = {
   contactRetry: 'އަލުން ފޮނުވާ',
   contactEmailSent: 'ފޮނުވިއްޖެ',
   messengerOpened: 'ހުޅުވިއްޖެ',
+  messengerSendNext: '{app} ގައި ދެން ފޮނުވާ',
+  messengerChannel: 'ޗެނަލް',
+  messengerPrevChannel: 'ކުރީގެ ޗެނަލް',
+  messengerNextChannel: 'ދެން އޮތް ޗެނަލް',
+  messengerSwitchHint: 'ޗެނަލް ބަދަލުކުރަން ފަޅިއަށް ކަނޑާ ނުވަތަ އެރޯ ކީ ބޭނުންކުރޭ',
   phoneCountry: 'ޤައުމު',
   phoneSearch: 'ޤައުމު ހޯދާ',
   phoneNumber: 'ފޯނު ނަންބަރު',

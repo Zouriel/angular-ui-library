@@ -75,11 +75,12 @@ describe('ui-contact-channels', () => {
       'Send to Aisha on Viber',
       'Send to Aisha on Telegram',
     ]);
-    expect(q('.apps')!.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))');
-    // Expanded; the row decides icon-only for all of them together.
-    expect(qa('.apps ui-messenger-button').every((b) => b.classList.contains('expand'))).toBe(true);
-    // All the same: the row never mixes labels and logos (widths are measured; the browser audit checks them).
-    expect(new Set(buttons.map((b) => b.classList.contains('icon-only'))).size).toBe(1);
+    // Small (32px, 44px to tap), the logos alone, not stretched: left-aligned with equal 12px gaps.
+    expect(buttons.every((b) => b.dataset['size'] === 'sm' && b.classList.contains('icon-only'))).toBe(true);
+    expect(qa('.apps ui-messenger-button').some((b) => b.classList.contains('expand'))).toBe(false);
+    expect(rule('.apps')).toMatch(/display: flex/);
+    expect(rule('.apps')).toMatch(/gap: var\(--ui-space-3\)/);
+    expect(rule('.apps')).not.toMatch(/grid-template-columns/);
   });
 
   it('ticks a sent or delivered email, named by its tick label', () => {
@@ -138,7 +139,6 @@ describe('ui-contact-channels', () => {
     h.messengers.update((m) => m.map((x) => (x.app === 'viber' ? { ...x, hidden: true } : x)));
     f.detectChanges();
     expect(qa('.apps ui-messenger-button').length).toBe(2);
-    expect(q('.apps')!.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
     h.email.set(null);
     f.detectChanges();
     expect(qa('.lbl').map((e) => e.textContent!.trim())).toEqual(['Number']);

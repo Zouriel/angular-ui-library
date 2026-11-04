@@ -4,8 +4,10 @@ import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { injectUiStrings } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 import { UI_MESSENGER_BRANDS, type UiMessengerApp } from './messenger-brand';
+import { UiMessengerLogo } from './messenger-logo';
 
-let nextId = 0;
+/** 'md': 44px tall (the 0.57.0 button). 'sm': 32px to look at, still a 44px target (an invisible hit area). */
+export type UiMessengerSize = 'sm' | 'md';
 
 /**
  * `ui-messenger-button` — opens a message in WhatsApp, Viber or Telegram: the brand's colour as the
@@ -27,42 +29,29 @@ let nextId = 0;
  */
 @Component({
   selector: 'ui-messenger-button',
-  imports: [HugeiconsIconComponent, UiTooltip],
+  imports: [HugeiconsIconComponent, UiTooltip, UiMessengerLogo],
   host: { class: 'ui-messenger-button', '[class.expand]': 'expand()', '[attr.aria-label]': 'null' },
   template: `
     <button
       type="button"
       class="ui-mbtn"
       [attr.data-app]="app()"
+      [attr.data-size]="size()"
       [class.expand]="expand()"
       [class.icon-only]="iconOnly()"
       [class.ticked]="ticked()"
       [style.--m-top]="brand().fill[0]"
       [style.--m-bottom]="brand().fill[1]"
       [style.--m-ink]="brand().ink"
-      [style.--m-logo]="brand().logoSize + 'px'"
+      [style.--m-logo]="logoPx() + 'px'"
       [disabled]="disabled()"
       [attr.aria-label]="accessibleName()"
       [uiTooltip]="tip()"
       (click)="pressed.emit()">
-      <svg class="logo" xmlns="http://www.w3.org/2000/svg" [attr.viewBox]="viewBox()" preserveAspectRatio="xMidYMid meet"
-        focusable="false" aria-hidden="true">
-        @if (brand().logo.disc; as disc) {
-          <defs>
-            <linearGradient [attr.id]="gradientId" x1="50%" y1="0%" x2="50%" [attr.y2]="disc.y2 * 100 + '%'">
-              <stop [attr.stop-color]="disc.top" offset="0%" />
-              <stop [attr.stop-color]="disc.bottom" offset="100%" />
-            </linearGradient>
-          </defs>
-          <circle [attr.cx]="disc.cx" [attr.cy]="disc.cy" [attr.r]="disc.r" [attr.fill]="'url(#' + gradientId + ')'" />
-        }
-        @for (p of brand().logo.paths; track $index) {
-          <path [attr.d]="p.d" fill="#FFFFFF" [attr.fill-rule]="p.evenOdd ? 'evenodd' : null" />
-        }
-      </svg>
+      <ui-messenger-logo class="logo-box" [app]="app()" [size]="logoPx()" />
       <span #label class="label">{{ text() }}</span>
       @if (ticked()) {
-        <span class="tick" aria-hidden="true"><hugeicons-icon [icon]="tickIcon" [size]="12" [strokeWidth]="2.5" /></span>
+        <span class="tick" aria-hidden="true"><hugeicons-icon [icon]="tickIcon" [size]="size() === 'sm' ? 10 : 12" [strokeWidth]="2.5" /></span>
       }
     </button>
   `,
@@ -120,7 +109,16 @@ let nextId = 0;
     .ui-mbtn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-mbtn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-mbtn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .logo { position: relative; z-index: 1; flex: none; display: block; width: var(--m-logo); height: var(--m-logo); }
+    .logo-box { position: relative; z-index: 1; }
+    /* sm: 32px to look at, 13px words; the target stays 44x44 through an invisible hit area centred on it. */
+    .ui-mbtn[data-size="sm"] { height: 32px; min-width: 32px; padding: 0 10px; gap: 6px; font-size: var(--ui-font-size-sm); line-height: 18px; }
+    .ui-mbtn[data-size="sm"].icon-only { padding: 0; width: 32px; }
+    .ui-mbtn[data-size="sm"].icon-only.expand { width: 100%; }
+    .ui-mbtn[data-size="sm"]::before {
+      content: ''; position: absolute; left: 50%; top: 50%;
+      width: max(100%, var(--ui-size-touch)); height: var(--ui-size-touch); transform: translate(-50%, -50%);
+    }
+    .ui-mbtn { -webkit-touch-callout: none; }
     .label { position: relative; z-index: 1; display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .ui-mbtn.icon-only { padding: 0; }
     /* Icon-only keeps the words in the DOM, out of sight and out of layout, so compact="auto" can
@@ -144,6 +142,7 @@ let nextId = 0;
       box-shadow: 0 0 0 2px var(--ui-color-surface);
       pointer-events: none;
     }
+    .ui-mbtn[data-size="sm"] .tick { top: -5px; inset-inline-end: -5px; width: 14px; height: 14px; }
     .tick hugeicons-icon { display: block; line-height: 0; }
     @media (prefers-reduced-motion: reduce) { .ui-mbtn, .ui-mbtn::after { transition: none; } }
   `,
@@ -164,6 +163,8 @@ export class UiMessengerButton {
   /** The accessible name ("Send to Aisha on WhatsApp"); default the label. */
   ariaLabel = input<string>();
   disabled = input(false);
+  /** 'md' (44px) or 'sm' (32px to look at, 44px to tap). */
+  size = input<UiMessengerSize>('md');
 
   readonly pressed = output<void>();
 
@@ -187,7 +188,7 @@ export class UiMessengerButton {
         const label = host.querySelector<HTMLElement>('.label');
         if (!this.expand() || !label) return;
         // padding 12 + logo + gap 8 + the words' full width (also while hidden) + padding 12.
-        this.needWidth.set(24 + this.brand().logoSize + 8 + label.scrollWidth);
+        this.needWidth.set(this.size() === 'sm' ? 20 + this.logoPx() + 6 + label.scrollWidth : 24 + this.logoPx() + 8 + label.scrollWidth);
         this.hostWidth.set(host.getBoundingClientRect().width);
       };
       const ro = new ResizeObserver(measure);
@@ -200,9 +201,9 @@ export class UiMessengerButton {
 
   private readonly strings = injectUiStrings();
   protected readonly tickIcon = Tick02Icon;
-  protected readonly gradientId = `ui-mbtn-grad-${nextId++}`;
   protected readonly brand = computed(() => UI_MESSENGER_BRANDS[this.app()]);
-  protected readonly viewBox = computed(() => `0 0 ${this.brand().logo.width} ${this.brand().logo.height}`);
+  /** The logo's box: the app's size for this button size. */
+  protected readonly logoPx = computed(() => (this.size() === 'sm' ? this.brand().logoSizeSm : this.brand().logoSize));
   protected readonly text = computed(() => this.label() || this.brand().name);
   protected readonly tip = computed(() => (this.ticked() ? this.tickLabel() ?? '' : ''));
   /** The name, plus what the tick says when ticked. */

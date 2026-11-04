@@ -35,6 +35,10 @@ export class UiTooltipPanel {
 /**
  * `uiTooltip` — accessible hover/focus tooltip backed by the CDK Overlay.
  * Sets `aria-describedby` on the host so screen readers announce it.
+ *
+ * On touch (0.58.0) a long press (500ms held still) shows it, as on phones; it hides 1.5s after the
+ * finger lifts, and that press doesn't count as a tap: the click it would end in is swallowed, and
+ * the browser's own long-press menu doesn't open.
  */
 @Directive({
   selector: '[uiTooltip]',
@@ -44,6 +48,11 @@ export class UiTooltipPanel {
     '(focusin)': 'show()',
     '(focusout)': 'hide()',
     '(keydown.escape)': 'hide()',
+    '(touchstart)': 'touchStart($event)',
+    '(touchmove)': 'touchMove($event)',
+    '(touchend)': 'touchEnd()',
+    '(touchcancel)': 'touchEnd()',
+    '(contextmenu)': 'contextMenu($event)',
     '[attr.aria-describedby]': 'describedBy()',
   },
 })
@@ -56,6 +65,66 @@ export class UiTooltip implements OnDestroy {
   private ref: OverlayRef | null = null;
   private panel: UiTooltipPanel | null = null;
   protected readonly describedBy = signal<string | null>(null);
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private hideTimer: ReturnType<typeof setTimeout> | null = null;
+  private pressStart: { x: number; y: number } | null = null;
+  /** A long press showed the tooltip: the click that ends it is not a tap. */
+  private longPressed = false;
+
+  constructor() {
+    // Capture on the host itself runs before the element's own (click) handlers.
+    this.el.nativeElement.addEventListener('click', (e) => {
+      if (!this.longPressed) return;
+      this.longPressed = false;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, { capture: true });
+  }
+
+  protected touchStart(e: TouchEvent): void {
+    if (!this.text() || e.touches.length !== 1) return;
+    this.clearTimers();
+    this.longPressed = false;
+    this.pressStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    this.pressTimer = setTimeout(() => {
+      this.pressTimer = null;
+      this.longPressed = true;
+      this.show();
+    }, 500);
+  }
+
+  protected touchMove(e: TouchEvent): void {
+    const t = e.touches[0];
+    if (!this.pressStart || !t) return;
+    if (Math.hypot(t.clientX - this.pressStart.x, t.clientY - this.pressStart.y) > 10) this.cancelPress();
+  }
+
+  protected touchEnd(): void {
+    this.pressStart = null;
+    if (this.pressTimer) this.cancelPress();
+    if (this.longPressed) {
+      this.hideTimer = setTimeout(() => this.hide(), 1500);
+      // A click doesn't always follow (the finger moved, or the browser chose not to): forget the
+      // press soon so the next real tap still works.
+      setTimeout(() => (this.longPressed = false), 700);
+    }
+  }
+
+  protected contextMenu(e: Event): void {
+    if (this.longPressed || this.pressTimer) e.preventDefault();
+  }
+
+  private cancelPress(): void {
+    if (this.pressTimer) clearTimeout(this.pressTimer);
+    this.pressTimer = null;
+    this.pressStart = null;
+  }
+
+  private clearTimers(): void {
+    this.cancelPress();
+    if (this.hideTimer) clearTimeout(this.hideTimer);
+    this.hideTimer = null;
+  }
 
   protected show(): void {
     if (this.ref || !this.text()) return;
@@ -84,6 +153,7 @@ export class UiTooltip implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clearTimers();
     this.hide();
   }
 

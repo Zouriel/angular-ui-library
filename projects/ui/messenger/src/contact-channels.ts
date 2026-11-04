@@ -1,4 +1,4 @@
-import { Component, computed, input, output, viewChildren } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { injectUiStrings } from '@zouriel/ui';
@@ -36,9 +36,9 @@ export interface UiMessengerChannel {
  * tick when sent or delivered (`emailTickLabel` as its tooltip and name), Retry when it failed or
  * bounced (with `emailError` under the row), Send when not sent, a spinner while `emailBusy`.
  *
- * The messenger buttons start at the value column's edge, under the number, in equal widths with
- * equal gaps; all show their names when every name fits in full, and their logos alone otherwise
- * (a phone), never a mix or a cut-off name.
+ * The messenger buttons start at the value column's edge, under the number: since 0.58.0 small
+ * (32px to look at, 44px to tap) and icon-only, the official logos alone, 12px apart, so the whole
+ * block stays compact; each names itself ("Send to Aisha on WhatsApp") and keeps its own tick.
  * Each can be ticked on its own. The component only reports presses: the app sends and sets ticks.
  * Twin of Flutter's `UiContactChannels`.
  */
@@ -72,9 +72,9 @@ export interface UiMessengerChannel {
         <span class="lbl" data-row="number">{{ numberLabel() ?? strings.contactNumber }}</span>
         <span class="val wide" data-row="number" [attr.title]="phone()">{{ phone() }}</span>
         @if (shown().length) {
-          <div class="apps" [style.grid-template-columns]="'repeat(' + shown().length + ', minmax(0, 1fr))'">
+          <div class="apps">
             @for (m of shown(); track m.app) {
-              <ui-messenger-button [app]="m.app" [expand]="true" [compact]="rowCompact()" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
+              <ui-messenger-button [app]="m.app" size="sm" [compact]="true" [ticked]="!!m.ticked" [tickLabel]="m.tickLabel"
                 [ariaLabel]="m.ariaLabel" (pressed)="messengerPress.emit(m.app)" />
             }
           </div>
@@ -105,8 +105,9 @@ export interface UiMessengerChannel {
     .tick { display: inline-flex; align-items: center; justify-content: center; width: var(--ui-size-touch); height: 32px; color: var(--ui-color-success); }
     .tick hugeicons-icon { display: block; line-height: 0; }
     .err { grid-column: 2 / -1; margin-top: calc(var(--ui-space-1) * -1); font-size: var(--ui-font-size-sm); line-height: 1.35; color: var(--ui-color-danger); overflow-wrap: anywhere; }
-    /* Under the number, from the value column's edge; 6px above for the tick badges. */
-    .apps { grid-column: 2 / -1; display: grid; gap: var(--ui-space-2); padding-top: 6px; min-width: 0; }
+    /* Under the number, from the value column's edge: the logos alone on 32px buttons, 12px apart, so
+       their 44px tap areas tile without overlapping; 6px above for the tick badges. */
+    .apps { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--ui-space-3); padding-top: 6px; min-width: 0; }
   `,
 })
 export class UiContactChannels {
@@ -137,7 +138,4 @@ export class UiContactChannels {
   protected readonly emailSent = computed(() => ['sent', 'delivered'].includes(this.emailStatus()));
   protected readonly emailFailed = computed(() => ['failed', 'bounced'].includes(this.emailStatus()));
   protected readonly shown = computed(() => this.messengers().filter((m) => !m.hidden));
-  private readonly buttons = viewChildren(UiMessengerButton);
-  /** The row goes icon-only together as soon as one name doesn't fit, so it never mixes the two. */
-  protected readonly rowCompact = computed(() => !this.buttons().every((b) => b.labelFits()));
 }

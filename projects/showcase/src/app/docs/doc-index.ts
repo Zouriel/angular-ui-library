@@ -52,6 +52,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Apple button', anchor: 'apple-button' },
     { name: 'Social sign-in buttons', anchor: 'social-button' },
     { name: 'Messenger buttons', anchor: 'messenger-button' },
+    { name: 'Messenger switch', anchor: 'messenger-switch' },
     { name: 'Google sign-in', anchor: 'google-sign-in' },
     { name: 'Google authorization', anchor: 'google-authorization' },
     { name: 'Icon button', anchor: 'icon-button' },

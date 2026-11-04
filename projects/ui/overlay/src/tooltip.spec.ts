@@ -48,3 +48,69 @@ describe('uiTooltip anchoring', () => {
     spy.mockRestore();
   });
 });
+
+/** jsdom has no Touch: an Event carrying touch lists of plain objects (what the handlers read). */
+function touchEvent(type: string, target: EventTarget, x: number, y: number): Event {
+  const t = { identifier: 1, target, clientX: x, clientY: y };
+  const e = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(e, 'touches', { value: type === 'touchend' || type === 'touchcancel' ? [] : [t] });
+  Object.defineProperty(e, 'changedTouches', { value: [t] });
+  return e;
+}
+
+describe('uiTooltip long press on touch', () => {
+  @Component({
+    imports: [UiTooltip],
+    template: `<button id="b" type="button" uiTooltip="Opened 3:14 pm" (click)="taps = taps + 1">Send</button>`,
+  })
+  class TouchHost {
+    taps = 0;
+  }
+
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('.cdk-overlay-container').forEach((c) => (c.innerHTML = ''));
+  });
+
+  function setup() {
+    vi.useFakeTimers();
+    const f = TestBed.createComponent(TouchHost);
+    document.body.appendChild(f.nativeElement);
+    f.detectChanges();
+    const b = (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('#b')!;
+    const touch = (type: string, x = 10, y = 10) => {
+      b.dispatchEvent(touchEvent(type, b, x, y));
+    };
+    return { f, b, touch };
+  }
+
+  it('shows after a 500ms hold, hides after the finger lifts, and the press is not a tap', () => {
+    const { f, b, touch } = setup();
+    touch('touchstart');
+    vi.advanceTimersByTime(499);
+    expect(document.querySelector('.ui-tooltip')).toBeNull();
+    vi.advanceTimersByTime(2);
+    f.detectChanges();
+    expect(document.querySelector('.ui-tooltip')?.textContent).toBe('Opened 3:14 pm');
+    touch('touchend');
+    b.click();
+    expect(f.componentInstance.taps).toBe(0);
+    vi.advanceTimersByTime(1600);
+    expect(document.querySelector('.ui-tooltip')).toBeNull();
+    // The next quick tap is a tap again.
+    touch('touchstart');
+    vi.advanceTimersByTime(100);
+    touch('touchend');
+    b.click();
+    expect(f.componentInstance.taps).toBe(1);
+    expect(document.querySelector('.ui-tooltip')).toBeNull();
+  });
+
+  it('a finger that moves (a scroll) cancels the long press', () => {
+    const { touch } = setup();
+    touch('touchstart', 10, 10);
+    touch('touchmove', 10, 40);
+    vi.advanceTimersByTime(600);
+    expect(document.querySelector('.ui-tooltip')).toBeNull();
+  });
+});
