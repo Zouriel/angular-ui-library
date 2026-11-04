@@ -77,7 +77,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, route lines, fit-to-points, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button), `ui-apple-button` (Sign in with Apple, drawn to Apple's HIG) and `UiGoogleAuthorization` (an access token for more scopes); see below |
-| `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, form field |
+| `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, phone (`ui-phone-input`, E.164 in and out, searchable country list), form field |
+| `messenger` | `ui-messenger-button` (WhatsApp, Viber or Telegram in its brand colour with its official logo, an optional tick badge) and `ui-contact-channels` (a person's email and number rows in aligned columns, with messenger buttons under the number) |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
 | `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |

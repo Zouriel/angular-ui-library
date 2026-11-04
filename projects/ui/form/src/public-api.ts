@@ -21,3 +21,5 @@ export * from './time-picker';
 export * from './token-input';
 export * from './choice-grid';
 export * from './anchor-picker';
+export * from './phone';
+export * from './phone-input';

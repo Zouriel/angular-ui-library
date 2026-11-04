@@ -1,4 +1,5 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, Directive, TemplateRef, computed, contentChildren, inject, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { UI_CONFIG, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import { UiScrollFade } from '@zouriel/ui/behaviors';
 
@@ -7,8 +8,37 @@ export interface UiColumn<T = Record<string, unknown>> {
   header: string;
   sortable?: boolean;
   align?: 'left' | 'right' | 'center';
-  /** Optional cell formatter; receives the raw cell value and the full row. */
+  /** Optional cell formatter; receives the raw cell value and the full row. A `uiCell` template for
+   *  the same key wins over it. */
   format?: (value: unknown, row: T) => string;
+}
+
+/** What a `uiCell` template gets: the row (also as `$implicit`) and the cell's raw value. */
+export interface UiCellContext<T = Record<string, unknown>> {
+  $implicit: T;
+  row: T;
+  value: unknown;
+}
+
+/**
+ * `uiCell` — a custom cell for one column of `ui-table`, for anything a string can't be (a status
+ * pill, a button, an avatar). Put it inside the table, naming the column's key; for that column it is
+ * drawn instead of `format` or the plain value. Sorting still uses the raw value.
+ *
+ *   <ui-table [columns]="cols" [data]="guests">
+ *     <ng-template uiCell="status" let-row let-value="value"><ui-badge>{{ value }}</ui-badge></ng-template>
+ *   </ui-table>
+ */
+@Directive({ selector: 'ng-template[uiCell]' })
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the row type is the app's; `let-row` stays usable as `row.name`.
+export class UiCell<T = any> {
+  /** The column key this template draws. */
+  readonly key = input.required<string>({ alias: 'uiCell' });
+  readonly template = inject<TemplateRef<UiCellContext<T>>>(TemplateRef);
+
+  static ngTemplateContextGuard<T>(_dir: UiCell<T>, ctx: unknown): ctx is UiCellContext<T> {
+    return true;
+  }
 }
 
 /**
@@ -42,7 +72,7 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
  */
 @Component({
   selector: 'ui-table',
-  imports: [UiScrollFade],
+  imports: [UiScrollFade, NgTemplateOutlet],
   template: `
     <div class="wrap" [class.no-radius]="!radius()">
       <div class="scroll" uiScrollFade>
@@ -92,7 +122,11 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
                 </td>
               }
               @for (col of columns(); track col.key) {
-                <td [attr.data-align]="col.align || 'left'">{{ cell(row, col) }}</td>
+                @if (cellTemplates().get(col.key); as tpl) {
+                  <td [attr.data-align]="col.align || 'left'"><ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row, row: row, value: row[col.key] }" /></td>
+                } @else {
+                  <td [attr.data-align]="col.align || 'left'">{{ cell(row, col) }}</td>
+                }
               }
               @if (actions().length) {
                 <td class="acts"><div class="acts-in">
@@ -175,6 +209,13 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
   emptyText = input('No data');
   radius = input<boolean>(this.config.radius);
   selectionChange = output<T[]>();
+  /** Custom cells projected as `<ng-template uiCell="key">`. */
+  private readonly cells = contentChildren(UiCell);
+  protected readonly cellTemplates = computed(() => {
+    const map = new Map<string, TemplateRef<UiCellContext<T>>>();
+    for (const c of this.cells()) map.set(c.key(), c.template as unknown as TemplateRef<UiCellContext<T>>);
+    return map;
+  });
 
   protected readonly sortKey = signal<string | null>(null);
   protected readonly sortDir = signal<SortDir>(null);

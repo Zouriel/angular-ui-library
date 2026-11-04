@@ -7,7 +7,7 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angul
 import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput,
+  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput, UiPhoneInput,
   type UiChoice, type UiAnchor, type UiTokenRun,
 } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
@@ -41,7 +41,7 @@ const TOKEN = `interface UiTokenRun {
     ReactiveFormsModule, FormsModule, UiButton, UiIconButton, HugeiconsIconComponent, UiTokenInput,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker,
+    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput,
     UiCombobox, UiMultiSelect, UiDatePicker, UiCalendar, UiDateRangePicker,
     DocPage, DocSection, DocDemo,
   ],
@@ -123,6 +123,30 @@ lock(off: boolean) { off ? this.form.disable() : this.form.enable(); }">
 <ui-number-input formControlName=&quot;width&quot; label=&quot;W&quot; suffix=&quot;px&quot; [steppers]=&quot;false&quot; />">
           <ui-number-input formControlName="age" [min]="0" [max]="120" />
           <ui-number-input formControlName="width" label="W" suffix="px" [steppers]="false" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Phone input" anchor="phone-input" selector="ui-phone-input" [api]="phoneApi" [outputs]="phoneOut"
+        summary="A phone number as one E.164 string (+447700900123): a country button (flag and dial code) that opens a searchable list of every country (245, generated from libphonenumber's metadata with English names), beside the national number field. A value picks its country by dial code: the longest code that exists, and for a shared code like +1 the country whose leading digits match (+1 268 is Antigua), else defaultCountry if it shares the code, else the code's main country. With no value, defaultCountry is chosen; without one the button shows a globe and + and the value stays null (the library never assumes a country). Out: the typed digits with spaces, dashes, dots and brackets dropped and the country's trunk prefix removed (the UK's 0; never Italy's 0, which is part of the number); typing or pasting +44… or 0044… switches the country. Checking the number is the app's job (libphonenumber): show the result with invalid and the form field's error. Inside ui-form-field the label names the number field. The Flutter twin is UiPhoneInput.">
+        <doc-demo lang="ts + html" code="import { UiPhoneInput } from '@zouriel/ui/form';
+
+phone = new FormControl<string | null>('+9607771234');
+
+<ui-form-field label=&quot;Mobile&quot; [error]=&quot;phone.invalid ? 'Check the number' : undefined&quot;>
+  <ui-phone-input [formControl]=&quot;phone&quot; defaultCountry=&quot;GB&quot; [invalid]=&quot;phone.invalid&quot; />
+</ui-form-field>">
+          <div style="display: grid; gap: var(--ui-space-3); max-width: 360px">
+            <ui-form-field label="Mobile" hint="Starts on the value's country (+960, Maldives)">
+              <ui-phone-input [formControl]="phoneCtrl" defaultCountry="GB" placeholder="777 1234" (countryChange)="phoneCountry.set($event)" />
+            </ui-form-field>
+            <ui-form-field label="Empty, defaultCountry GB">
+              <ui-phone-input [formControl]="phoneEmpty" defaultCountry="GB" placeholder="07700 900123" />
+            </ui-form-field>
+            <ui-form-field label="No default country" error="Pick a country">
+              <ui-phone-input [formControl]="phoneNone" [invalid]="true" />
+            </ui-form-field>
+            <span class="muted">value: {{ phoneValue() ?? 'null' }} · {{ phoneEmptyValue() ?? 'null' }} · country picked: {{ phoneCountry() ?? '—' }}</span>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -454,6 +478,27 @@ export class FormsPage {
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'dir', type: "'ltr' | 'rtl' | 'auto' | null", default: 'null', desc: 'Writing direction of the native textarea (see Field slots).' },
   ];
+  protected readonly phoneCtrl = new FormControl<string | null>('+9607771234');
+  protected readonly phoneEmpty = new FormControl<string | null>(null);
+  protected readonly phoneNone = new FormControl<string | null>(null);
+  protected readonly phoneValue = signal<string | null>(this.phoneCtrl.value);
+  protected readonly phoneEmptyValue = signal<string | null>(null);
+  protected readonly phoneCountry = signal<string | null>(null);
+  private readonly phoneSubs = [
+    this.phoneCtrl.valueChanges.subscribe((v) => this.phoneValue.set(v)),
+    this.phoneEmpty.valueChanges.subscribe((v) => this.phoneEmptyValue.set(v)),
+  ];
+  protected readonly phoneApi: ApiRow[] = [
+    { name: 'value (CVA)', type: 'string | null', default: 'null', desc: 'E.164 (+447700900123); null when empty or no country is chosen.' },
+    { name: 'defaultCountry', type: 'string | null', default: 'null', desc: "ISO 3166 alpha-2 ('GB', 'US', 'MV') chosen while the value is empty. No default otherwise." },
+    { name: 'placeholder', type: 'string', default: '—', desc: 'Placeholder of the number field.' },
+    { name: 'ariaLabel', type: 'string', default: "form field label, else 'Phone number'", desc: 'Name of the number field.' },
+    { name: 'name', type: 'string', default: '—', desc: 'Native name of the number field.' },
+    { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Height, as ui-input.' },
+    { name: 'invalid', type: 'boolean', default: 'false', desc: 'Red border and aria-invalid (e.g. when your libphonenumber check fails).' },
+    { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+  ];
+  protected readonly phoneOut: ApiRow[] = [{ name: 'countryChange', type: 'string', default: '—', desc: "The user picked a country (list or a typed '+' number): its ISO code." }];
   protected readonly numberApi: ApiRow[] = [
     { name: 'min', type: 'number', default: '—', desc: 'Minimum (clamped).' },
     { name: 'max', type: 'number', default: '—', desc: 'Maximum (clamped).' },

@@ -1,6 +1,7 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { UiTable, UiRowAction } from './table';
+import { UiCell, UiTable, UiRowAction, type UiColumn } from './table';
 
 /**
  * Row actions. The table's other columns read values out of a row; these do something to it, which
@@ -177,5 +178,54 @@ describe('UiTable sorting and selection', () => {
     fixture.detectChanges();
     expect(emitted.at(-1)).toEqual([b]);
     expect(all.indeterminate).toBe(true);
+  });
+});
+
+/** Custom cells: a `uiCell` template draws one column instead of `format` or the plain value. */
+describe('UiTable uiCell templates', () => {
+  type Row = Record<string, unknown> & { name: string; rsvp: string; n: number };
+
+  @Component({
+    imports: [UiTable, UiCell],
+    template: `
+      <ui-table [columns]="cols" [data]="rows">
+        <ng-template uiCell="rsvp" let-row let-value="value">
+          <span class="pill" [attr.data-name]="row.name">{{ value }}!</span>
+        </ng-template>
+      </ui-table>`,
+  })
+  class Host {
+    cols: UiColumn<Row>[] = [
+      { key: 'name', header: 'Guest', sortable: true },
+      { key: 'rsvp', header: 'RSVP', format: () => 'never shown' },
+      { key: 'n', header: 'Seats', sortable: true, format: (v) => `${v} seats` },
+    ];
+    rows: Row[] = [
+      { name: 'Mariyam', rsvp: 'yes', n: 2 },
+      { name: 'Ali', rsvp: 'no', n: 1 },
+    ];
+  }
+
+  function cellsOf(f: ComponentFixture<Host>, col: number): string[] {
+    return [...f.nativeElement.querySelectorAll('tbody tr')].map((tr) => (tr as HTMLElement).children[col].textContent!.trim());
+  }
+
+  it('draws the template for its column, with the row and the value; other columns keep format', () => {
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    const pills = [...f.nativeElement.querySelectorAll('td .pill')] as HTMLElement[];
+    expect(pills.map((p) => p.textContent!.trim())).toEqual(['yes!', 'no!']);
+    expect(pills.map((p) => p.dataset['name'])).toEqual(['Mariyam', 'Ali']);
+    expect(cellsOf(f, 1)).toEqual(['yes!', 'no!']);
+    expect(cellsOf(f, 2)).toEqual(['2 seats', '1 seats']);
+  });
+
+  it('keeps sorting by the raw values, carrying the custom cells with their rows', () => {
+    const f = TestBed.createComponent(Host);
+    f.detectChanges();
+    (f.nativeElement.querySelector('th button.sort') as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(cellsOf(f, 0)).toEqual(['Ali', 'Mariyam']);
+    expect(cellsOf(f, 1)).toEqual(['no!', 'yes!']);
   });
 });

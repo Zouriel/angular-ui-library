@@ -51,6 +51,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Google button', anchor: 'google-button' },
     { name: 'Apple button', anchor: 'apple-button' },
     { name: 'Social sign-in buttons', anchor: 'social-button' },
+    { name: 'Messenger buttons', anchor: 'messenger-button' },
     { name: 'Google sign-in', anchor: 'google-sign-in' },
     { name: 'Google authorization', anchor: 'google-authorization' },
     { name: 'Icon button', anchor: 'icon-button' },
@@ -68,6 +69,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Textarea', anchor: 'textarea' },
     { name: 'Field slots', anchor: 'field-slots' },
     { name: 'Number input', anchor: 'number-input' },
+    { name: 'Phone input', anchor: 'phone-input' },
     { name: 'Password input', anchor: 'password-input' },
     { name: 'Search input', anchor: 'search-input' },
     { name: 'Time picker', anchor: 'time-picker' },
@@ -129,6 +131,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   ],
   'data': [
     { name: 'Table', anchor: 'table' },
+    { name: 'Contact channels', anchor: 'contact-channels' },
     { name: 'List', anchor: 'list' },
     { name: 'Tree', anchor: 'tree' },
     { name: 'Tree table', anchor: 'tree-table' },

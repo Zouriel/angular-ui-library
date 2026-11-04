@@ -15,7 +15,8 @@
     "audit:density": "node projects/showcase/audit/density.mjs",
     "audit:rtl": "node projects/showcase/audit/rtl.mjs",
     "audit:nav": "node projects/showcase/audit/map-nav.mjs",
-    "audit:pinch": "node projects/showcase/audit/pinch.mjs"
+    "audit:pinch": "node projects/showcase/audit/pinch.mjs",
+    "audit:messenger": "node projects/showcase/audit/messenger.mjs"
   },
   "private": true,
   "packageManager": "npm@11.14.1",

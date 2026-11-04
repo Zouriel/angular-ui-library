@@ -16,7 +16,8 @@ import AmbulanceIcon from '@hugeicons/core-free-icons/AmbulanceIcon';
 import Medicine01Icon from '@hugeicons/core-free-icons/Medicine01Icon';
 import Calendar03Icon from '@hugeicons/core-free-icons/Calendar03Icon';
 import { UiText } from '@zouriel/ui/text';
-import { UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
+import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
+import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
@@ -36,7 +37,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 @Component({
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
-    UiText, UiTable, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
+    UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
     UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -60,6 +61,66 @@ actions: UiRowAction<Row>[] = [
         </doc-demo>
         <doc-demo code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;[]&quot; emptyText=&quot;No people match this filter&quot; />">
           <ui-table [columns]="cols" [data]="[]" emptyText="No people match this filter" />
+        </doc-demo>
+        <doc-demo lang="ts + html" code="import { UiCell, UiTable } from '@zouriel/ui/table';
+
+<!-- A custom cell: an ng-template naming the column key, inside the table. It wins over format;
+     sorting still reads the raw value. Context: the row (let-row) and the value (let-value=&quot;value&quot;). -->
+<ui-table [columns]=&quot;guestCols&quot; [data]=&quot;guests&quot;>
+  <ng-template uiCell=&quot;rsvp&quot; let-value=&quot;value&quot;>
+    <ui-badge [tone]=&quot;value === 'yes' ? 'success' : 'neutral'&quot;>{{ '{{' }} value {{ '}}' }}</ui-badge>
+  </ng-template>
+  <ng-template uiCell=&quot;whatsapp&quot; let-row>
+    <ui-messenger-button app=&quot;whatsapp&quot; [compact]=&quot;true&quot; [ariaLabel]=&quot;'Send to ' + row.name + ' on WhatsApp'&quot; (pressed)=&quot;send(row)&quot; />
+  </ng-template>
+</ui-table>">
+          <ui-table [columns]="guestCols" [data]="guests()">
+            <ng-template uiCell="rsvp" let-value="value">
+              <ui-badge [tone]="value === 'yes' ? 'success' : 'neutral'">{{ value }}</ui-badge>
+            </ng-template>
+            <ng-template uiCell="whatsapp" let-row>
+              <ui-messenger-button app="whatsapp" [compact]="true" [ticked]="!!row.sent" [tickLabel]="row.sent"
+                [ariaLabel]="'Send to ' + row.name + ' on WhatsApp'" (pressed)="sendGuest(row)" />
+            </ng-template>
+          </ui-table>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Contact channels" anchor="contact-channels" selector="ui-contact-channels" [api]="contactApi" [outputs]="contactOut"
+        shapes="// from @zouriel/ui/messenger
+type UiEmailStatus = 'none' | 'skipped' | 'sent' | 'delivered' | 'failed' | 'bounced';
+interface UiMessengerChannel { app: UiMessengerApp; ticked?: boolean; tickLabel?: string; ariaLabel?: string; hidden?: boolean }"
+        summary="One person's ways to be reached, in columns that line up: an Email row (label, address, status), a Number row, and under the number a row of ui-messenger-buttons. Every row shares three columns: labels (at least 64px), values (the rest; long values end in an ellipsis with the full text as the title) and status (at least 44px, content at the end), so ticks line up from card to card. The email's status: a success tick when sent or delivered (emailTickLabel is its tooltip and name), Retry with the error under the row when it failed or bounced, Send when not sent, a spinner while emailBusy. The messenger buttons start at the value column's edge, in equal widths with equal gaps, each ticked on its own; they show their names when there is room and their logos alone when there isn't (a 360px phone). The component reports presses; the app sends and sets the ticks. Rows without a value are left out. The Flutter twin is UiContactChannels.">
+        <doc-demo lang="ts + html" code="import { UiContactChannels } from '@zouriel/ui/messenger';
+
+<ui-contact-channels [email]=&quot;guest.email&quot; emailStatus=&quot;sent&quot; emailTickLabel=&quot;Emailed 4 Nov, 7:02 pm&quot;
+  [phone]=&quot;guest.phoneDisplay&quot; [messengers]=&quot;channels()&quot;
+  (emailRetry)=&quot;resend()&quot; (messengerPress)=&quot;open($event)&quot; />
+
+channels = computed<UiMessengerChannel[]>(() => [
+  { app: 'whatsapp', ticked: !!this.opened().whatsapp, tickLabel: this.opened().whatsapp, ariaLabel: 'Send to Aisha on WhatsApp' },
+  { app: 'viber', ariaLabel: 'Send to Aisha on Viber' },
+  { app: 'telegram', ariaLabel: 'Send to Aisha on Telegram' },
+]);">
+          <div class="cc-demos">
+            <ui-card>
+              <ui-text variant="label">Aisha Ibrahim</ui-text>
+              <ui-contact-channels email="aisha.ibrahim.longaddress@example.com" emailStatus="sent" emailTickLabel="Emailed 4 Nov, 7:02 pm"
+                phone="+960 777 1234" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+            </ui-card>
+            <ui-card>
+              <ui-text variant="label">Hassan Ali</ui-text>
+              <ui-contact-channels email="hassan@example" [emailStatus]="hassanStatus()" [emailBusy]="hassanBusy()"
+                emailError="The address doesn't exist (bounced)." emailTickLabel="Emailed just now"
+                phone="+44 7700 900123" [messengers]="hassanChannels" (emailRetry)="retryHassan()" (messengerPress)="openChannel($event)" />
+            </ui-card>
+            <div class="cc-narrow">
+              <ui-card>
+                <ui-text variant="label">At 320px</ui-text>
+                <ui-contact-channels email="aisha@example.com" emailStatus="none" phone="+960 777 1234" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+              </ui-card>
+            </div>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -368,6 +429,9 @@ events: UiTimelineItem[] = [
   styles: `
     .chat { display: flex; flex-direction: column; gap: var(--ui-space-2); max-width: 420px; margin-bottom: var(--ui-space-4); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; }
+    .cc-demos { display: grid; gap: var(--ui-space-4); max-width: 560px; }
+    .cc-demos ui-card ui-text { display: block; margin-bottom: var(--ui-space-2); }
+    .cc-narrow { max-width: 320px; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
@@ -545,6 +609,61 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'ui-row-actions', type: "component: align 'start' | 'end' = 'end'", default: '—', desc: 'For a table you build yourself: wrap a row\'s buttons in it and they keep space-2 apart, at the end, wrapping when the cell is narrow.' },
     { name: 'emptyText', type: 'string', default: "'No data'", desc: 'Shown across the table when data is empty.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+  ];
+  protected readonly guestCols: UiColumn<{ name: string; rsvp: string; sent?: string }>[] = [
+    { key: 'name', header: 'Guest', sortable: true },
+    { key: 'rsvp', header: 'RSVP', sortable: true },
+    { key: 'whatsapp', header: 'WhatsApp' },
+  ];
+  protected readonly guests = signal<{ name: string; rsvp: string; sent?: string }[]>([
+    { name: 'Aisha Ibrahim', rsvp: 'yes', sent: 'Opened in WhatsApp · 3:14 pm' },
+    { name: 'Hassan Ali', rsvp: 'no' },
+    { name: 'Mariyam Saeed', rsvp: 'yes' },
+  ]);
+  protected sendGuest(row: { name: string }): void {
+    const time = new Date().toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+    this.guests.update((g) => g.map((x) => (x.name === row.name ? { ...x, sent: `Opened in WhatsApp · ${time}` } : x)));
+  }
+  private readonly opened = signal<Partial<Record<UiMessengerApp, string>>>({ whatsapp: 'Opened in WhatsApp · 3:14 pm' });
+  protected readonly guestChannels = signal<UiMessengerChannel[]>(this.channelsFor({ whatsapp: 'Opened in WhatsApp · 3:14 pm' }));
+  private channelsFor(o: Partial<Record<UiMessengerApp, string>>): UiMessengerChannel[] {
+    const names: Record<UiMessengerApp, string> = { whatsapp: 'WhatsApp', viber: 'Viber', telegram: 'Telegram' };
+    return (['whatsapp', 'viber', 'telegram'] as const).map((app) => ({ app, ticked: !!o[app], tickLabel: o[app], ariaLabel: `Send to Aisha on ${names[app]}` }));
+  }
+  protected openChannel(app: UiMessengerApp): void {
+    const names: Record<UiMessengerApp, string> = { whatsapp: 'WhatsApp', viber: 'Viber', telegram: 'Telegram' };
+    const time = new Date().toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+    this.opened.update((o) => ({ ...o, [app]: `Opened in ${names[app]} · ${time}` }));
+    this.guestChannels.set(this.channelsFor(this.opened()));
+  }
+  protected readonly hassanChannels: UiMessengerChannel[] = [
+    { app: 'whatsapp', ariaLabel: 'Send to Hassan on WhatsApp' },
+    { app: 'viber', ariaLabel: 'Send to Hassan on Viber', hidden: true },
+    { app: 'telegram', ariaLabel: 'Send to Hassan on Telegram' },
+  ];
+  protected readonly hassanStatus = signal<UiEmailStatus>('bounced');
+  protected readonly hassanBusy = signal(false);
+  protected retryHassan(): void {
+    this.hassanBusy.set(true);
+    setTimeout(() => {
+      this.hassanBusy.set(false);
+      this.hassanStatus.set('sent');
+    }, 1200);
+  }
+  protected readonly contactApi: ApiRow[] = [
+    { name: 'email', type: 'string | null', default: '—', desc: 'The address; no Email row without one.' },
+    { name: 'emailStatus', type: 'UiEmailStatus', default: "'none'", desc: "'sent' / 'delivered': tick. 'failed' / 'bounced': Retry and the error. 'none' / 'skipped': Send." },
+    { name: 'emailTickLabel', type: 'string', default: "'Sent'", desc: "The tick's tooltip and name ('Emailed 4 Nov, 7:02 pm')." },
+    { name: 'emailError', type: 'string', default: '—', desc: 'Why it failed, shown under the row in danger text; Retry is described by it.' },
+    { name: 'emailBusy', type: 'boolean', default: 'false', desc: 'A spinner in the status cell.' },
+    { name: 'phone', type: 'string | null', default: '—', desc: 'The number as the app formats it; no Number row or buttons without one.' },
+    { name: 'messengers', type: 'UiMessengerChannel[]', default: '[]', desc: 'The buttons under the number, in order; hidden ones are left out.' },
+    { name: 'emailLabel · numberLabel', type: 'string', default: "'Email' · 'Number'", desc: 'Row labels (library strings by default).' },
+  ];
+  protected readonly contactOut: ApiRow[] = [
+    { name: 'emailSend', type: 'void', default: '—', desc: 'Send pressed.' },
+    { name: 'emailRetry', type: 'void', default: '—', desc: 'Retry pressed.' },
+    { name: 'messengerPress', type: 'UiMessengerApp', default: '—', desc: 'A messenger button pressed.' },
   ];
   protected readonly tableOut: ApiRow[] = [{ name: 'selectionChange', type: 'T[]', default: '—', desc: 'Selected rows (by reference), after each checkbox change.' }];
   protected readonly listApi: ApiRow[] = [

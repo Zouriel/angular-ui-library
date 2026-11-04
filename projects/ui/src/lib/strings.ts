@@ -66,6 +66,20 @@ export interface UiStrings {
   appleSignIn: string;
   appleSignUp: string;
   appleContinue: string;
+  /** Contact channels (ui-contact-channels): row labels, the email Send/Retry buttons, and the email
+   *  tick's name when no emailTickLabel is given. */
+  contactEmail: string;
+  contactNumber: string;
+  contactSend: string;
+  contactRetry: string;
+  contactEmailSent: string;
+  /** Messenger button (ui-messenger-button): added to the name of a ticked button that has no tickLabel. */
+  messengerOpened: string;
+  /** Phone input (ui-phone-input): the country button's name ("Country: Maldives +960"), the country
+   *  search field's placeholder, and the number field's default name. */
+  phoneCountry: string;
+  phoneSearch: string;
+  phoneNumber: string;
   /** Sidebar layout: the menu (burger) button, the drawer's close button (shown to keyboard and
    *  screen-reader users), and the drawer's name. */
   sidebarToggle: string;
@@ -395,6 +409,15 @@ export const defaultUiStrings: UiStrings = {
   appleSignIn: 'Sign in with Apple',
   appleSignUp: 'Sign up with Apple',
   appleContinue: 'Continue with Apple',
+  contactEmail: 'Email',
+  contactNumber: 'Number',
+  contactSend: 'Send',
+  contactRetry: 'Retry',
+  contactEmailSent: 'Sent',
+  messengerOpened: 'Opened',
+  phoneCountry: 'Country',
+  phoneSearch: 'Search countries',
+  phoneNumber: 'Phone number',
   sidebarToggle: 'Toggle navigation',
   sidebarClose: 'Close navigation',
   sidebarLabel: 'Navigation',
@@ -584,6 +607,15 @@ export const uiStringsDv: UiStrings = {
   appleSignIn: 'އެޕަލްއިން ސައިން އިން ކުރޭ',
   appleSignUp: 'އެޕަލްއިން ސައިން އަޕް ކުރޭ',
   appleContinue: 'އެޕަލްއިން ކުރިއަށް',
+  contactEmail: 'އީމެއިލް',
+  contactNumber: 'ނަންބަރު',
+  contactSend: 'ފޮނުވާ',
+  contactRetry: 'އަލުން ފޮނުވާ',
+  contactEmailSent: 'ފޮނުވިއްޖެ',
+  messengerOpened: 'ހުޅުވިއްޖެ',
+  phoneCountry: 'ޤައުމު',
+  phoneSearch: 'ޤައުމު ހޯދާ',
+  phoneNumber: 'ފޯނު ނަންބަރު',
   sidebarToggle: 'މެނޫ',
   sidebarClose: 'މެނޫ ބަންދުކުރޭ',
   sidebarLabel: 'ނެވިގޭޝަން',

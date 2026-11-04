@@ -21,6 +21,7 @@ import {
   UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton, UiSocialButton,
   type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
+import { UiMessengerButton, type UiMessengerApp } from '@zouriel/ui/messenger';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
@@ -128,7 +129,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -272,6 +273,37 @@ type UiSocialButtonShape = 'rounded' | 'rectangular' | 'pill';"
               <ui-social-button provider="apple" shape="pill" />
               <ui-social-button provider="google" shape="pill" [disabled]="true" />
             </div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Messenger buttons" anchor="messenger-button" selector="ui-messenger-button" [api]="messengerApi" [outputs]="messengerOut"
+        shapes="// from @zouriel/ui/messenger
+type UiMessengerApp = 'whatsapp' | 'viber' | 'telegram';"
+        summary="Opens a message in WhatsApp, Viber or Telegram: the brand colour as the fill (WhatsApp #25D366, Viber Main Purple #7360F2, Telegram the blue gradient of its own logo) and the brand's official logo, unaltered and in its own colours, taken from each brand's published files (whatsappbrand.com logo pack, viber.com Brand Center, telegram.org/press). White words fail WCAG AA on all three fills, so the words are in a dark ink that passes on every part of the fill, at rest, hovered and pressed (WhatsApp 7.46:1, Viber 4.68:1, Telegram 5.57:1 or more); the logo is never recoloured. 44px tall, the logo (22px) and words centred together. ticked adds a small success tick at the top-right corner, in the same place on every app; the button stays usable, and tickLabel shows as a tooltip and joins the accessible name. compact draws the logo alone (the name stays the accessible name); compact='auto' does so only when the button is narrower than 120px, for equal-width rows that must fit a phone. A plain button that emits (pressed): the app opens its own link. The Flutter twin is UiMessengerButton.">
+        <doc-demo lang="ts + html" code="import { UiMessengerButton } from '@zouriel/ui/messenger';
+
+<ui-messenger-button app=&quot;whatsapp&quot; ariaLabel=&quot;Send to Aisha on WhatsApp&quot;
+  [ticked]=&quot;!!openedAt()&quot; [tickLabel]=&quot;openedAt()&quot; (pressed)=&quot;openWhatsApp()&quot; />">
+          <div style="display: grid; gap: var(--ui-space-4); max-width: 520px">
+            <div class="row items-center">
+              @for (a of messengerApps; track a) {
+                <ui-messenger-button [app]="a" [ticked]="!!msgTicks()[a]" [tickLabel]="msgTicks()[a]" (pressed)="tickMessenger(a)" />
+              }
+            </div>
+            <div class="row items-center">
+              @for (a of messengerApps; track a) {
+                <ui-messenger-button [app]="a" [compact]="true" [ticked]="!!msgTicks()[a]" [tickLabel]="msgTicks()[a]" (pressed)="tickMessenger(a)" />
+              }
+              <ui-messenger-button app="whatsapp" [disabled]="true" />
+              <ui-messenger-button app="telegram" [compact]="true" [disabled]="true" />
+            </div>
+            <div class="msg-row">
+              @for (a of messengerApps; track a) {
+                <ui-messenger-button [app]="a" [expand]="true" compact="auto" [ticked]="!!msgTicks()[a]" [tickLabel]="msgTicks()[a]" (pressed)="tickMessenger(a)" />
+              }
+            </div>
+            <span class="muted">Press a button: it ticks with the time. The last row is three equal widths (expand, compact=&quot;auto&quot;).</span>
           </div>
         </doc-demo>
       </doc-section>
@@ -475,6 +507,7 @@ async addBirthday() {   // from a (click)
   styles: `
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
+    .msg-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-2); padding-top: 6px; }
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
     /* transform makes this box the containing block for the fixed-position FABs inside it. */
     .fab-frame { position: relative; transform: translateZ(0); height: 160px; padding: var(--ui-space-3); overflow: hidden;
@@ -557,6 +590,24 @@ export class ButtonsPage {
     { name: 'ariaLabel', type: 'string', default: 'the words', desc: 'Accessible name on the native button.' },
   ];
   protected readonly socialButtonOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
+  protected readonly messengerApps: UiMessengerApp[] = ['whatsapp', 'viber', 'telegram'];
+  protected readonly msgTicks = signal<Partial<Record<UiMessengerApp, string>>>({ whatsapp: 'Opened in WhatsApp · 3:14 pm' });
+  protected tickMessenger(a: UiMessengerApp): void {
+    const name = { whatsapp: 'WhatsApp', viber: 'Viber', telegram: 'Telegram' }[a];
+    const time = new Date().toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+    this.msgTicks.update((t) => ({ ...t, [a]: `Opened in ${name} · ${time}` }));
+  }
+  protected readonly messengerApi: ApiRow[] = [
+    { name: 'app', type: 'UiMessengerApp (required)', default: '—', desc: "'whatsapp', 'viber' or 'telegram'." },
+    { name: 'label', type: 'string', default: 'the app name', desc: 'The visible words.' },
+    { name: 'compact', type: "boolean | 'auto'", default: 'false', desc: "true: the logo alone (44x44). 'auto': the logo alone while the button is narrower than 120px (with expand)." },
+    { name: 'expand', type: 'boolean', default: 'false', desc: 'Fill the width; logo and words stay centred. Use for equal-width rows.' },
+    { name: 'ticked', type: 'boolean', default: 'false', desc: 'Success tick badge at the top-right corner; the button stays usable.' },
+    { name: 'tickLabel', type: 'string', default: '—', desc: "What the tick means ('Opened in WhatsApp · 3:14 pm'): tooltip, and part of the accessible name (default 'Opened')." },
+    { name: 'ariaLabel', type: 'string', default: 'the label', desc: "Accessible name ('Send to Aisha on WhatsApp')." },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
+  ];
+  protected readonly messengerOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
   protected readonly gsiApi: ApiRow[] = [
     { name: 'clientId', type: 'string (required)', default: '—', desc: 'Your OAuth web client ID.' },
     { name: 'text', type: "'signin_with' | 'signup_with' | 'continue_with' | 'signin'", default: "'signin_with'", desc: "GIS's wording." },
