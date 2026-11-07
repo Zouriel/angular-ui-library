@@ -217,7 +217,9 @@ const END_GRIP_PX = 10;
     :host { --inset: var(--ui-space-3); display: block; position: relative; min-height: 0; height: 100%; color: var(--ui-color-text);
       font: 12px/1.35 var(--ui-font-default); font-variant-numeric: tabular-nums; background: var(--ui-color-surface); user-select: none; }
     .scroller { position: absolute; inset: 0; overflow: auto; }
-    .grid { position: relative; display: grid; grid-template-columns: var(--label-w) 1fr; grid-auto-rows: var(--row-h); min-width: 100%; }
+    /* At least as tall as the timeline, so what is past the end (shaded) and the end line reach its bottom
+       edge however few rows there are, as in Flutter's UiSequencer. */
+    .grid { position: relative; display: grid; grid-template-columns: var(--label-w) 1fr; grid-auto-rows: var(--row-h); min-width: 100%; min-height: 100%; }
     .corner, .label { position: sticky; left: 0; z-index: 2; background: var(--ui-color-surface); border-right: 1px solid var(--ui-color-border); }
     .corner { top: 0; z-index: 4; display: flex; align-items: center; min-width: 0; padding: 0 var(--ui-space-3); font-weight: 600; color: var(--ui-color-text-muted);
       border-bottom: 1px solid var(--ui-color-border); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }

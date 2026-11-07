@@ -323,3 +323,13 @@ describe('UiSequencer, ruler labels', () => {
 
   });
 });
+
+/** jsdom has no layout, so the rule is checked in the component's own styles (measured in a browser too). */
+describe('UiSequencer, height', () => {
+  it('its lanes fill the timeline, so the shading past the end reaches the bottom with few rows', () => {
+    const styles = ((UiSequencer as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+    const grid = styles.match(/\.grid\[[^\]]*\]\s*\{([^}]*)\}|\.grid\s*\{([^}]*)\}/);
+    expect(grid).not.toBeNull();
+    expect((grid![1] ?? grid![2]).replace(/\s/g, '')).toContain('min-height:100%');
+  });
+});
