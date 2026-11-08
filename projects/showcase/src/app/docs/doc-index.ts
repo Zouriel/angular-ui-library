@@ -142,6 +142,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Feature card', anchor: 'feature-card' },
     { name: 'Feature card: compact tinted', anchor: 'feature-card-compact-tinted' },
     { name: 'Badge, chip, avatar', anchor: 'badge-chip-avatar' },
+    { name: 'Store badge', anchor: 'store-badge' },
     { name: 'Description list', anchor: 'description-list' },
     { name: 'Chat bubble', anchor: 'chat-bubble' },
     { name: 'Timeline', anchor: 'timeline' },

@@ -20,7 +20,7 @@ import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/ta
 import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
-import { UiBadge, UiChip, UiAvatar, UiAvatarGroup } from '@zouriel/ui/badge';
+import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
@@ -37,7 +37,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 @Component({
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
-    UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup,
+    UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
     UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -377,6 +377,17 @@ nodes: UiTreeNode[] = [
             <ui-avatar name="Ada Lovelace" size="xl" /><ui-avatar name="Aminath Hassan" [dimension]="96" />
             <ui-avatar name="Square Team" [square]="true" />
             <ui-avatar-group class="on-surface"><ui-avatar name="Ada Lovelace" /><ui-avatar name="Grace Hopper" /><ui-avatar name="Alan Turing" /></ui-avatar-group>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Store badge" anchor="store-badge" selector="ui-store-badge" [api]="storeBadgeApi"
+        summary="Apple's official Download on the App Store badge as a link, artwork unaltered: black on light surfaces, white on dark ones. scheme auto follows the surrounding colour scheme. Apple asks for at least 40px height and clear space around it. There is no Play badge: Google Play isn't public for our apps yet.">
+        <doc-demo code="<ui-store-badge href=&quot;https://apps.apple.com/us/app/invites-blog/id6829749209&quot; />
+<ui-store-badge href=&quot;...&quot; scheme=&quot;dark&quot; [height]=&quot;56&quot; />">
+          <div class="row">
+            <ui-store-badge href="https://apps.apple.com/us/app/invites-blog/id6829749209" />
+            <ui-store-badge href="https://apps.apple.com/us/app/invites-blog/id6829749209" [height]="56" />
           </div>
         </doc-demo>
       </doc-section>
@@ -732,6 +743,13 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'stat: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },
   ];
+  protected readonly storeBadgeApi: ApiRow[] = [
+    { name: 'href', type: 'string', default: 'required', desc: 'The App Store listing URL.' },
+    { name: 'scheme', type: "'auto' | 'light' | 'dark'", default: "'auto'", desc: 'auto follows the surrounding colour scheme; light is the black badge, dark the white one.' },
+    { name: 'height', type: 'number', default: '40', desc: 'Height in px. Apple asks for at least 40.' },
+    { name: 'newTab', type: 'boolean', default: 'false', desc: 'Open the listing in a new tab.' },
+  ];
+
   protected readonly badgeApi: ApiRow[] = [
     { name: 'badge: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
     { name: 'badge: tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.' },
