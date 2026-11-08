@@ -1,4 +1,4 @@
-import { Component, ElementRef, NgZone, OnDestroy, computed, inject, input, output } from '@angular/core';
+import { CSP_NONCE, Component, DOCUMENT, ElementRef, NgZone, OnDestroy, computed, inject, input, output } from '@angular/core';
 import { injectUiStrings } from '@zouriel/ui';
 
 /** A box in stage units, rotated about its centre. */
@@ -20,18 +20,42 @@ export interface UiTransformTap {
 }
 
 /** Which edges a resize handle drags: -1 left/top, 1 right/bottom, 0 untouched. */
-type Handle = { id: string; sx: -1 | 0 | 1; sy: -1 | 0 | 1; cursor: string };
+type Handle = { id: string; sx: -1 | 0 | 1; sy: -1 | 0 | 1 };
 
 const HANDLES: Handle[] = [
-  { id: 'nw', sx: -1, sy: -1, cursor: 'nwse-resize' },
-  { id: 'n', sx: 0, sy: -1, cursor: 'ns-resize' },
-  { id: 'ne', sx: 1, sy: -1, cursor: 'nesw-resize' },
-  { id: 'e', sx: 1, sy: 0, cursor: 'ew-resize' },
-  { id: 'se', sx: 1, sy: 1, cursor: 'nwse-resize' },
-  { id: 's', sx: 0, sy: 1, cursor: 'ns-resize' },
-  { id: 'sw', sx: -1, sy: 1, cursor: 'nesw-resize' },
-  { id: 'w', sx: -1, sy: 0, cursor: 'ew-resize' },
+  { id: 'nw', sx: -1, sy: -1 },
+  { id: 'n', sx: 0, sy: -1 },
+  { id: 'ne', sx: 1, sy: -1 },
+  { id: 'e', sx: 1, sy: 0 },
+  { id: 'se', sx: 1, sy: 1 },
+  { id: 's', sx: 0, sy: 1 },
+  { id: 'sw', sx: -1, sy: 1 },
+  { id: 'w', sx: -1, sy: 0 },
 ];
+
+/** The four resize cursors, by the direction they point: 0°, 45°, 90° and 135° on screen (y down). */
+const RESIZE_CURSORS = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize'] as const;
+
+/**
+ * The resize cursor for a handle that drags edges `sx`/`sy` (-1, 0 or 1) on a box turned `rotate`
+ * degrees: the handle's direction on screen, rounded to the nearest of the four resize cursors. A box
+ * turned 90° shows ↔ on its top handle.
+ */
+export function uiResizeCursor(sx: number, sy: number, rotate: number): string {
+  const deg = (Math.atan2(sy, sx) * 180) / Math.PI + rotate;
+  return RESIZE_CURSORS[Math.round((((deg % 180) + 180) % 180) / 45) % 4];
+}
+
+/** A curved double arrow, white with a dark outline so it reads on any background; `grab` where custom cursors don't load. */
+const ROTATE_SVG =
+  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>" +
+  "<g fill='none' stroke='#111' stroke-width='4.5' stroke-linejoin='round'><path d='M6.3 12A7 7 0 0 1 17.7 12'/><path d='M20 15.3L20.5 10L14.9 13.9ZM4 15.3L3.5 10L9.1 13.9Z' fill='#111' stroke-width='3'/></g>" +
+  "<path d='M6.3 12A7 7 0 0 1 17.7 12' fill='none' stroke='#fff' stroke-width='2'/><path d='M20 15.3L20.5 10L14.9 13.9ZM4 15.3L3.5 10L9.1 13.9Z' fill='#fff'/></svg>";
+/** The rotate knob's cursor, on hover and while turning. */
+export const UI_ROTATE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(ROTATE_SVG)}") 12 12, grab`;
+
+/** Id of the stylesheet that holds a drag's cursor on the whole page until the drag ends. */
+const DRAG_CURSOR_STYLE = 'ui-transform-drag-cursor';
 
 /**
  * `ui-transform-box` — selection handles for an element on a design stage: drag the body to move,
@@ -72,12 +96,12 @@ const HANDLES: Handle[] = [
     <div class="body" (pointerdown)="start($event, 'move')"></div>
     @if (resizable() && !disabled()) {
       @for (h of handles(); track h.id) {
-        <span class="handle" [attr.data-h]="h.id" [style.cursor]="h.cursor" (pointerdown)="start($event, 'resize', h)"></span>
+        <span class="handle" [attr.data-h]="h.id" [style.cursor]="cursorFor(h)" (pointerdown)="start($event, 'resize', h)"></span>
       }
     }
     @if (rotatable() && !disabled()) {
       <span class="stem" aria-hidden="true"></span>
-      <span class="rotate" [attr.title]="strings.rotate" (pointerdown)="start($event, 'rotate')"></span>
+      <span class="rotate" [attr.title]="strings.rotate" [style.cursor]="rotateCursor" (pointerdown)="start($event, 'rotate')"></span>
     }
     @if (showSize()) {
       <span class="size" [style.transform]="'rotate(' + -box().rotate + 'deg)'">{{ sizeText() }}</span>
@@ -97,9 +121,11 @@ const HANDLES: Handle[] = [
     .handle[data-h="ne"] { left: 100%; top: 0; } .handle[data-h="e"] { left: 100%; top: 50%; }
     .handle[data-h="se"] { left: 100%; top: 100%; } .handle[data-h="s"] { left: 50%; top: 100%; }
     .handle[data-h="sw"] { left: 0; top: 100%; } .handle[data-h="w"] { left: 0; top: 50%; }
-    .stem { position: absolute; left: 50%; top: -22px; width: 1.5px; height: 22px; margin-left: -0.75px; background: var(--ui-color-primary); }
+    .stem { position: absolute; left: 50%; top: -22px; width: 1.5px; height: 22px; margin-left: -0.75px; background: var(--ui-color-primary);
+      /* Drawn over the top handle: it must not take that handle's pointer (or its cursor). */
+      pointer-events: none; }
     .rotate { position: absolute; left: 50%; top: -30px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%;
-      background: var(--ui-color-primary); border: 2px solid var(--ui-color-surface); box-sizing: border-box; cursor: grab; }
+      background: var(--ui-color-primary); border: 2px solid var(--ui-color-surface); box-sizing: border-box; }
     .rotate::after { content: ''; position: absolute; inset: -8px; }
     @media (pointer: coarse) {
       /* 44px hit areas: 14px + 2×15 and 12px + 2×16 for the handles, 20px + 2×12 for the knob. */
@@ -120,6 +146,13 @@ export class UiTransformBox implements OnDestroy {
   protected readonly strings = injectUiStrings();
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly zone = inject(NgZone);
+  private readonly doc = inject(DOCUMENT);
+  private readonly nonce = inject(CSP_NONCE, { optional: true });
+  protected readonly rotateCursor = UI_ROTATE_CURSOR;
+  /** The stylesheet holding this drag's cursor on the page, while a mouse or pen drag lasts. */
+  private heldCursor: HTMLStyleElement | null = null;
+  /** The element that has the drag's pointer captured. */
+  private captured: { el: Element; pointerId: number } | null = null;
 
   box = input.required<UiBox>();
   /** Layout pixels per stage unit — how the box is sized inside its stage. */
@@ -156,6 +189,11 @@ export class UiTransformBox implements OnDestroy {
   private nudgedFrom: UiBox | null = null;
 
   protected readonly handles = computed(() => (this.cornersOnly() ? HANDLES.filter((h) => h.sx !== 0 && h.sy !== 0) : HANDLES));
+  /** A handle's cursor follows the box's turn, so it always points the way the handle drags. */
+  protected cursorFor(h: Handle): string {
+    return uiResizeCursor(h.sx, h.sy, this.box().rotate);
+  }
+
   protected readonly sizeText = computed(() => `${Math.round(this.box().w)} × ${Math.round(this.box().h)}`);
 
   private drag: {
@@ -245,6 +283,11 @@ export class UiTransformBox implements OnDestroy {
       // A finger dragging the box: a second one anywhere makes it a pinch.
       if (e.pointerType === 'touch') window.addEventListener('pointerdown', this.onSecondDown, true);
     });
+    // The cursor the drag started with stays until it ends, wherever the pointer goes: over other
+    // handles, the body, the host's own controls or an iframe.
+    this.capture(e);
+    if (e.pointerType !== 'touch')
+      this.holdCursor(mode === 'move' ? 'move' : mode === 'rotate' ? UI_ROTATE_CURSOR : uiResizeCursor(handle!.sx, handle!.sy, origin.rotate));
     this.transformStart.emit(mode);
   }
 
@@ -416,7 +459,43 @@ export class UiTransformBox implements OnDestroy {
     return { ...base, w, h: w * ratio };
   }
 
+  private capture(e: PointerEvent): void {
+    const el = e.currentTarget instanceof Element ? e.currentTarget : null;
+    if (!el?.setPointerCapture) return;
+    try {
+      el.setPointerCapture(e.pointerId);
+      this.captured = { el, pointerId: e.pointerId };
+    } catch {
+      // A pointer the browser doesn't know (a synthetic event): the window listeners still follow it.
+    }
+  }
+
+  /** Forces `cursor` on the whole page, above every other rule, until `releaseCursor`. */
+  private holdCursor(cursor: string): void {
+    this.heldCursor?.remove();
+    const style = this.doc.createElement('style');
+    style.id = DRAG_CURSOR_STYLE;
+    if (this.nonce) style.setAttribute('nonce', this.nonce);
+    // Iframes decide their own cursor, so they stop taking the pointer while the drag lasts.
+    style.textContent = `html, html * { cursor: ${cursor} !important; } iframe { pointer-events: none !important; }`;
+    this.doc.head.appendChild(style);
+    this.heldCursor = style;
+  }
+
+  private releaseCursor(): void {
+    this.heldCursor?.remove();
+    this.heldCursor = null;
+    const c = this.captured;
+    this.captured = null;
+    try {
+      if (c?.el.hasPointerCapture?.(c.pointerId)) c.el.releasePointerCapture(c.pointerId);
+    } catch {
+      // Already released.
+    }
+  }
+
   private detach(): void {
+    this.releaseCursor();
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
     window.removeEventListener('pointercancel', this.onUp);

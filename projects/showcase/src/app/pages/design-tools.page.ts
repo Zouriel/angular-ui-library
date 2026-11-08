@@ -30,7 +30,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="The pieces of a visual editor, as used by the invites.blog designer: handles for placing things on a stage, a vector editor for drawing and reshaping outlines, a timeline for when things move, text with inline variables, and the meters and frames around them.">
 
       <doc-section name="Transform box" selector="ui-transform-box" [api]="transformApi" [outputs]="transformOutputs" [shapes]="transformShapes"
-        summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre. From the keyboard, arrows nudge (Shift for 10), Alt+arrow resizes (width with left/right, height with up/down), and [ / ] rotate by 1° (15° with Shift). Two fingers pinch to scale about the point between them. Pair with uiSnap() and ui-snap-guides for alignment guides.">
+        summary="Move, resize and rotate handles for an element on a positioned stage. It never mutates the box — it reports live changes and a final one. Shift keeps proportions and snaps rotation to 15°; Alt resizes from the centre. From the keyboard, arrows nudge (Shift for 10), Alt+arrow resizes (width with left/right, height with up/down), and [ / ] rotate by 1° (15° with Shift). Two fingers pinch to scale about the point between them. Each handle's cursor points the way it drags on screen, so it turns with the box; the knob shows a rotate cursor; and during a drag the cursor it started with stays on the whole page until release. Pair with uiSnap() and ui-snap-guides for alignment guides.">
         <doc-demo code="<div class=&quot;stage&quot;>
   <ui-transform-box [box]=&quot;box()&quot; [scale]=&quot;1&quot; showSize
     (transform)=&quot;live($event)&quot; (transformEnd)=&quot;commit($event)&quot; />
@@ -457,6 +457,8 @@ export class DesignToolsPage {
     { name: 'ui-snap-guides: guides / scale', type: 'UiGuide[] / number', default: '[] / 1', desc: 'Draws the guides uiSnap returns over the stage.' },
     { name: 'uiSnap(moving, targets, threshold, extra?)', type: 'function', default: '', desc: 'Edges-and-centres snapping; returns { dx, dy, guides }.' },
     { name: 'uiRotatedBounds(box)', type: 'function', default: '', desc: 'The axis-aligned bounds of a rotated box, to snap with.' },
+    { name: 'uiResizeCursor(sx, sy, rotate)', type: 'function', default: '', desc: 'The resize cursor for a handle on a turned box (the nearest of ns / nesw / ew / nwse), for hosts with their own handles.' },
+    { name: 'UI_ROTATE_CURSOR', type: 'string', default: '', desc: 'The rotate cursor (an SVG curved arrow, grab where custom cursors do not load).' },
   ];
   protected readonly transformOutputs: ApiRow[] = [
     { name: 'transformStart', type: "'move' | 'resize' | 'rotate'", desc: 'A drag or pinch began.' },

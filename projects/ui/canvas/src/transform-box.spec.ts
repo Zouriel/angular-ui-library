@@ -1,7 +1,7 @@
 import { Component, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { UiTransformBox, type UiBox, type UiTransformMode } from './transform-box';
+import { UI_ROTATE_CURSOR, UiTransformBox, uiResizeCursor, type UiBox, type UiTransformMode } from './transform-box';
 
 function pointer(kind: string, id: number, x: number, y: number, type = 'touch'): Event {
   const e = new Event(kind, { bubbles: true, cancelable: true });
@@ -110,5 +110,100 @@ describe('UiTransformBox pinch', () => {
     window.dispatchEvent(pointer('pointerdown', 2, 240, 120));
     expect(host.tb().pinching).toBe(false);
     window.dispatchEvent(pointer('pointerup', 1, 140, 120, 'mouse'));
+  });
+});
+
+describe('UiTransformBox cursors', () => {
+  let fixture: ComponentFixture<Host>;
+  let host: Host;
+  const el = (sel: string) => fixture.nativeElement.querySelector(sel) as HTMLElement;
+  const held = () => document.getElementById('ui-transform-drag-cursor')?.textContent ?? null;
+
+  function turn(rotate: number): void {
+    host.box.set({ x: 100, y: 100, w: 80, h: 40, rotate });
+    fixture.detectChanges();
+  }
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(Host);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('points each resize handle the way it drags on screen, following the turn', () => {
+    const cursors = () => Object.fromEntries(['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].map((h) => [h, el(`.handle[data-h="${h}"]`).style.cursor]));
+    turn(0);
+    expect(cursors()).toEqual({ n: 'ns-resize', ne: 'nesw-resize', e: 'ew-resize', se: 'nwse-resize', s: 'ns-resize', sw: 'nesw-resize', w: 'ew-resize', nw: 'nwse-resize' });
+    // Turned a quarter: the top handle now drags sideways.
+    turn(90);
+    expect(cursors()).toEqual({ n: 'ew-resize', ne: 'nwse-resize', e: 'ns-resize', se: 'nesw-resize', s: 'ew-resize', sw: 'nwse-resize', w: 'ns-resize', nw: 'nesw-resize' });
+    // 40° is nearer 45° than 0°, so the side handle is diagonal; -170° is 10° off flat, so it is plain again.
+    turn(40);
+    expect(cursors()['e']).toBe('nwse-resize');
+    expect(cursors()['n']).toBe('nesw-resize');
+    turn(-170);
+    expect(cursors()['e']).toBe('ew-resize');
+    expect(uiResizeCursor(0, -1, 270)).toBe('ew-resize');
+  });
+
+  it('keeps the cursor a drag started with on the whole page until the drag ends', () => {
+    turn(90);
+    const n = el('.handle[data-h="n"]');
+    n.dispatchEvent(pointer('pointerdown', 7, 140, 100, 'mouse'));
+    expect(held()).toContain('cursor: ew-resize !important');
+    // Over other handles and the body, and off the box: still the same.
+    window.dispatchEvent(pointer('pointermove', 7, 140, 300, 'mouse'));
+    expect(held()).toContain('cursor: ew-resize !important');
+    window.dispatchEvent(pointer('pointerup', 7, 140, 300, 'mouse'));
+    expect(held()).toBeNull();
+
+    // Moving holds `move`; a cancelled drag lets go too.
+    el('.body').dispatchEvent(pointer('pointerdown', 8, 140, 120, 'mouse'));
+    expect(held()).toContain('cursor: move !important');
+    window.dispatchEvent(pointer('pointercancel', 8, 140, 120, 'mouse'));
+    expect(held()).toBeNull();
+  });
+
+  it('lets go of the cursor when destroyed mid-drag', () => {
+    el('.handle[data-h="e"]').dispatchEvent(pointer('pointerdown', 9, 180, 120, 'mouse'));
+    expect(held()).not.toBeNull();
+    fixture.destroy();
+    expect(held()).toBeNull();
+  });
+
+  it('holds no cursor for a finger', () => {
+    el('.body').dispatchEvent(pointer('pointerdown', 10, 140, 120, 'touch'));
+    expect(held()).toBeNull();
+    window.dispatchEvent(pointer('pointerup', 10, 140, 120, 'touch'));
+  });
+
+  it('shows a rotate cursor on the knob, on hover and while turning', () => {
+    expect(UI_ROTATE_CURSOR).toMatch(/^url\("data:image\/svg\+xml,.+"\) 12 12, grab$/);
+    const knob = el('.rotate');
+    expect(knob.style.cursor).toContain('data:image/svg+xml');
+    knob.dispatchEvent(pointer('pointerdown', 11, 140, 70, 'mouse'));
+    expect(held()).toContain(`cursor: ${UI_ROTATE_CURSOR} !important`);
+    window.dispatchEvent(pointer('pointerup', 11, 140, 70, 'mouse'));
+    expect(held()).toBeNull();
+  });
+});
+
+describe('UiTransformBox pointer capture', () => {
+  it('captures the pointer on the pressed handle for the whole drag, and lets it go at the end', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const handle = fixture.nativeElement.querySelector('.handle[data-h="e"]') as HTMLElement;
+    const captured = new Set<number>();
+    Object.assign(handle, {
+      setPointerCapture: (id: number) => captured.add(id),
+      releasePointerCapture: (id: number) => captured.delete(id),
+      hasPointerCapture: (id: number) => captured.has(id),
+    });
+    handle.dispatchEvent(pointer('pointerdown', 12, 180, 120, 'mouse'));
+    expect([...captured]).toEqual([12]);
+    window.dispatchEvent(pointer('pointermove', 12, 260, 120, 'mouse'));
+    expect([...captured]).toEqual([12]);
+    window.dispatchEvent(pointer('pointerup', 12, 260, 120, 'mouse'));
+    expect([...captured]).toEqual([]);
   });
 });
