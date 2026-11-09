@@ -26,6 +26,12 @@ export interface UiTreeMove {
   index: number;
 }
 
+/** A node label change asked for by the user. */
+export interface UiTreeRename {
+  value: string;
+  label: string;
+}
+
 export interface UiTreeNodeEndContext {
   $implicit: UiTreeNode;
 }
@@ -87,7 +93,13 @@ interface Drop { value: string; pos: DropPos; move: UiTreeMove; }
                 @if (isSvg(n.icon)) { <hugeicons-icon [icon]="n.icon" [size]="16" [strokeWidth]="1.8" /> } @else { {{ n.icon }} }
               </span>
             }
-            <span class="label" (dblclick)="activate(n)">{{ n.label }}</span>
+            @if (editing() === n.value) {
+              <input class="rename" type="text" maxlength="80" [value]="n.label" [attr.aria-label]="'Rename ' + n.label"
+                     (keydown)="onRenameKey(n, $event)" (blur)="commitRename(n, $event.target)"
+                     (click)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()" (pointerdown)="$event.stopPropagation()" />
+            } @else {
+              <span class="label" (dblclick)="activate(n)">{{ n.label }}</span>
+            }
             @if (endTpl(); as end) {
               <span class="end" (click)="$event.stopPropagation()" (dblclick)="$event.stopPropagation()" (pointerdown)="$event.stopPropagation()">
                 <ng-container [ngTemplateOutlet]="end.template" [ngTemplateOutletContext]="{ $implicit: n }" />
@@ -137,6 +149,10 @@ interface Drop { value: string; pos: DropPos; move: UiTreeMove; }
     .chev.spacer { cursor: inherit; }
     .icon { flex: none; width: 16px; display: inline-flex; align-items: center; justify-content: center; font-size: calc(14px * var(--ui-font-scale)); color: var(--ui-color-text-muted); }
     .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rename { flex: 1; min-width: 0; height: 24px; box-sizing: border-box; padding-inline: var(--ui-space-1);
+      border: 1px solid var(--ui-color-border-focus); border-radius: var(--ui-radius-xs); outline: none;
+      background: var(--ui-color-surface); color: var(--ui-color-text); font: inherit; }
+    .rename:focus { box-shadow: var(--ui-focus-ring); }
     .end { flex: none; display: inline-flex; align-items: center; gap: var(--ui-space-1); margin-block: calc(var(--ui-space-1) * -1); cursor: default; }
   `,
 })
@@ -154,11 +170,15 @@ export class UiTree implements OnDestroy {
   expanded = model<string[]>([]);
   /** Drag rows (mouse, pen) and Alt+Up/Down to move them; the tree emits `nodeMove`. */
   reorderable = input(false);
+  /** Let F2 or a double click replace a label with an in-place editor. */
+  renamable = input(false);
   nodeSelect = output<UiTreeNode>();
   /** A reorder the user asked for; apply it to `nodes`. */
   nodeMove = output<UiTreeMove>();
   /** Double click on a label, or F2: e.g. start renaming the node. */
   nodeActivate = output<UiTreeNode>();
+  /** A non-empty changed label committed by the user. */
+  nodeRename = output<UiTreeRename>();
 
   protected readonly endTpl = contentChild(UiTreeNodeEnd);
   /** The item that last had focus; it keeps the single tab stop while it is visible. */
@@ -167,6 +187,7 @@ export class UiTree implements OnDestroy {
   private anchor: string | null = null;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  protected readonly editing = signal<string | null>(null);
 
   protected readonly openSet = computed(() => new Set(this.expanded()));
   private readonly selSet = computed(() => new Set(this.selectedValues()));
@@ -229,7 +250,7 @@ export class UiTree implements OnDestroy {
 
   protected onKey(e: KeyboardEvent): void {
     // Keys pressed on controls in the row's end slot belong to those controls.
-    if ((e.target as HTMLElement).closest('.end')) return;
+    if ((e.target as HTMLElement).closest('.end, .rename')) return;
     const item = (e.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
     const value = item?.dataset['value'];
     const info = value === undefined ? undefined : this.index().get(value);
@@ -263,7 +284,7 @@ export class UiTree implements OnDestroy {
         this.multiple() ? this.toggleSel(n) : this.choose(n);
         break;
       case 'F2':
-        this.nodeActivate.emit(n);
+        this.activate(n);
         break;
       case '*': {
         const next = new Set(this.expanded());
@@ -380,6 +401,37 @@ export class UiTree implements OnDestroy {
 
   protected activate(n: UiTreeNode): void {
     this.nodeActivate.emit(n);
+    if (!this.renamable()) return;
+    this.editing.set(n.value);
+    afterNextRender(() => {
+      const input = this.host.nativeElement.querySelector<HTMLInputElement>('.rename');
+      input?.focus();
+      input?.select();
+    }, { injector: this.injector });
+  }
+
+  protected onRenameKey(n: UiTreeNode, e: KeyboardEvent): void {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      this.commitRename(n, e.currentTarget as HTMLInputElement);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      this.cancelRename(n.value);
+    }
+  }
+
+  protected commitRename(n: UiTreeNode, target: EventTarget | null): void {
+    if (this.editing() !== n.value) return;
+    const label = (target as HTMLInputElement).value.trim();
+    this.editing.set(null);
+    if (label && label !== n.label) this.nodeRename.emit({ value: n.value, label });
+  }
+
+  private cancelRename(value: string): void {
+    if (this.editing() !== value) return;
+    this.editing.set(null);
+    afterNextRender(() => this.focusValue(value), { injector: this.injector });
   }
 
   // ── Reordering ──────────────────────────────────────────────────────────────────────────

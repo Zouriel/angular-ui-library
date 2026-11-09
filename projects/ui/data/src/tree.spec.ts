@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import Folder01Icon from '@hugeicons/core-free-icons/Folder01Icon';
-import { UiTree, UiTreeNodeEnd, type UiTreeMove, type UiTreeNode } from './tree';
+import { UiTree, UiTreeNodeEnd, type UiTreeMove, type UiTreeNode, type UiTreeRename } from './tree';
 
 @Component({
   imports: [UiTree],
@@ -202,9 +202,9 @@ describe('UiTree', () => {
 @Component({
   imports: [UiTree, UiTreeNodeEnd],
   template: `
-    <ui-tree label="Layers" [nodes]="nodes" [multiple]="multiple()" [reorderable]="reorderable()"
+    <ui-tree label="Layers" [nodes]="nodes" [multiple]="multiple()" [reorderable]="reorderable()" [renamable]="renamable()"
              [(selected)]="selected" [(selectedValues)]="values" [(expanded)]="open"
-             (nodeMove)="moves.push($event)" (nodeActivate)="activated.push($event.value)">
+             (nodeMove)="moves.push($event)" (nodeActivate)="activated.push($event.value)" (nodeRename)="renames.push($event)">
       <ng-template uiTreeNodeEnd let-node><button type="button" class="eye" (click)="eyes.push(node.value)">Eye {{ node.label }}</button></ng-template>
     </ui-tree>
   `,
@@ -212,11 +212,13 @@ describe('UiTree', () => {
 class LayersHost {
   multiple = signal(true);
   reorderable = signal(true);
+  renamable = signal(true);
   selected = signal<string | null>(null);
   values = signal<string[]>([]);
   open = signal<string[]>(['group']);
   moves: UiTreeMove[] = [];
   activated: string[] = [];
+  renames: UiTreeRename[] = [];
   eyes: string[] = [];
   nodes: UiTreeNode[] = [
     { label: 'Title', value: 'title' },
@@ -484,5 +486,96 @@ describe('UiTree layers features', () => {
     item('title').focus();
     press('F2');
     expect(host.activated).toEqual(['photo', 'title']);
+  });
+
+  it('F2 and double click start a focused rename with all text selected and still activate', () => {
+    const { fixture, host, row, item, press } = layers();
+    item('title').focus();
+    press('F2');
+    fixture.detectChanges();
+    let input = row('title').querySelector<HTMLInputElement>('.rename')!;
+    expect(input).not.toBeNull();
+    expect(input.maxLength).toBe(80);
+    expect(input.getAttribute('aria-label')).toBe('Rename Title');
+    expect(document.activeElement).toBe(input);
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 5]);
+    expect(host.activated).toEqual(['title']);
+    press('Escape', {}, input);
+    row('photo').querySelector<HTMLElement>('.label')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+    input = row('photo').querySelector<HTMLInputElement>('.rename')!;
+    expect(input).not.toBeNull();
+    expect(host.activated).toEqual(['title', 'photo']);
+  });
+
+  it('Enter commits one trimmed changed label; unchanged and empty labels emit nothing', () => {
+    const { fixture, host, item, row, press } = layers();
+    const edit = (value: string, text: string) => {
+      item(value).focus();
+      press('F2');
+      const input = row(value).querySelector<HTMLInputElement>('.rename')!;
+      input.value = text;
+      press('Enter', {}, input);
+      fixture.detectChanges();
+    };
+    edit('title', '  New title  ');
+    expect(host.renames).toEqual([{ value: 'title', label: 'New title' }]);
+    edit('photo', ' Photo ');
+    edit('hidden', '   ');
+    expect(host.renames).toEqual([{ value: 'title', label: 'New title' }]);
+  });
+
+  it('blur commits a changed label', () => {
+    const { fixture, host, item, row, press } = layers();
+    item('title').focus();
+    press('F2');
+    const input = row('title').querySelector<HTMLInputElement>('.rename')!;
+    input.value = '  Heading  ';
+    input.dispatchEvent(new FocusEvent('blur'));
+    fixture.detectChanges();
+    expect(host.renames).toEqual([{ value: 'title', label: 'Heading' }]);
+    expect(row('title').querySelector('.rename')).toBeNull();
+  });
+
+  it('Escape cancels and refocuses the row', () => {
+    const { fixture, host, item, row, press } = layers();
+    item('title').focus();
+    press('F2');
+    const input = row('title').querySelector<HTMLInputElement>('.rename')!;
+    input.value = 'Changed';
+    press('Escape', {}, input);
+    fixture.detectChanges();
+    expect(host.renames).toEqual([]);
+    expect(row('title').querySelector('.rename')).toBeNull();
+    expect(document.activeElement).toBe(item('title'));
+  });
+
+  it('editing owns Space and arrows, and clicking the input neither selects nor drags', () => {
+    const { fixture, host, item, row, press } = layers();
+    item('title').focus();
+    press('F2');
+    const input = row('title').querySelector<HTMLInputElement>('.rename')!;
+    input.click();
+    input.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 0 }));
+    press(' ', {}, input);
+    press('ArrowDown', {}, input);
+    fixture.detectChanges();
+    expect(host.values()).toEqual([]);
+    expect(host.selected()).toBeNull();
+    expect(host.moves).toEqual([]);
+    expect(document.activeElement).toBe(input);
+    expect(row('title').querySelector('.rename')).toBe(input);
+  });
+
+  it('renamable=false never shows an input but activation still fires', () => {
+    const { fixture, host, item, row, press } = layers();
+    host.renamable.set(false);
+    fixture.detectChanges();
+    item('title').focus();
+    press('F2');
+    row('photo').querySelector<HTMLElement>('.label')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.rename')).toBeNull();
+    expect(host.activated).toEqual(['title', 'photo']);
   });
 });

@@ -34,7 +34,7 @@ import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import {
   UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable,
-  type UiTreeNode, type UiTreeMove, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
+  type UiTreeNode, type UiTreeMove, type UiTreeRename, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
 } from '@zouriel/ui/data';
 import { UiChatBubble } from '@zouriel/ui/chat-bubble';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -176,7 +176,7 @@ channels = computed<UiMessengerChannel[]>(() => [
       </doc-section>
 
       <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
-        summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique. expanded is a two-way list of open nodes, so an app can open the ancestors of a node it selects. For a layers panel: muted draws a node's label dimmed (a hidden layer); multiple makes selectedValues the selection (click selects one, Ctrl or Cmd-click toggles, Shift-click selects the visible range from the last click, Space toggles; selected follows the last click; the tree gets aria-multiselectable); an ng-template uiTreeNodeEnd draws controls at the end of every row, and clicks, double clicks and keys inside it never select, open or drag the row; reorderable lets a mouse or pen drag rows (after a 4px move, so clicks still select) with a line where the row will land, or an outline when it will go into a node that has children or is a container, and never into itself or its own descendants; Alt+Up and Alt+Down move the focused node among its siblings. The tree doesn't change nodes itself: nodeMove says to move value to child number index of parent (null for the top level), counted after taking it out. Double-clicking a label or pressing F2 emits nodeActivate (to rename). Drag on touch screens isn't supported; the list keeps scrolling there."
+        summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique. expanded is a two-way list of open nodes, so an app can open the ancestors of a node it selects. For a layers panel: muted draws a node's label dimmed (a hidden layer); multiple makes selectedValues the selection (click selects one, Ctrl or Cmd-click toggles, Shift-click selects the visible range from the last click, Space toggles; selected follows the last click; the tree gets aria-multiselectable); an ng-template uiTreeNodeEnd draws controls at the end of every row, and clicks, double clicks and keys inside it never select, open or drag the row; reorderable lets a mouse or pen drag rows (after a 4px move, so clicks still select) with a line where the row will land, or an outline when it will go into a node that has children or is a container, and never into itself or its own descendants; Alt+Up and Alt+Down move the focused node among its siblings. The tree doesn't change nodes itself: nodeMove says to move value to child number index of parent (null for the top level), counted after taking it out. Double-clicking a label or pressing F2 always emits nodeActivate; with renamable it also opens an in-place editor and nodeRename reports a committed changed label. Drag on touch screens isn't supported; the list keeps scrolling there."
         [shapes]="TREENODE">
         <doc-demo lang="ts + html" code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
 
@@ -189,9 +189,9 @@ nodes: UiTreeNode[] = [
           <ui-tree label="Project files" [nodes]="treeNodes" [(selected)]="treeSel" />
           <ui-text variant="caption">Selected: {{ treeSel() ?? 'none' }}</ui-text>
         </doc-demo>
-        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Layers&quot; [nodes]=&quot;layers()&quot; [multiple]=&quot;true&quot; [reorderable]=&quot;true&quot;
+        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Layers&quot; [nodes]=&quot;layers()&quot; [multiple]=&quot;true&quot; [reorderable]=&quot;true&quot; [renamable]=&quot;true&quot;
          [(selectedValues)]=&quot;selection&quot; [(expanded)]=&quot;open&quot;
-         (nodeMove)=&quot;move($event)&quot; (nodeActivate)=&quot;rename($event)&quot;>
+         (nodeMove)=&quot;move($event)&quot; (nodeRename)=&quot;rename($event)&quot;>
   <ng-template uiTreeNodeEnd let-node>
     <ui-icon-button size=&quot;sm&quot; [label]=&quot;(hidden(node) ? 'Show ' : 'Hide ') + node.label&quot; (click)=&quot;toggleHidden(node)&quot;>
       <hugeicons-icon [icon]=&quot;hidden(node) ? ViewOffSlashIcon : ViewIcon&quot; [size]=&quot;14&quot; />
@@ -204,9 +204,9 @@ nodes: UiTreeNode[] = [
 // An empty group that can take children: { label: 'Group', value: 'g2', container: true, children: [] }
 move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent */ }">
           <div class="layers-demo">
-            <ui-tree label="Layers" [nodes]="layerNodes()" [multiple]="true" [reorderable]="true"
+            <ui-tree label="Layers" [nodes]="layerNodes()" [multiple]="true" [reorderable]="true" [renamable]="true"
                      [(selectedValues)]="layerSel" [(expanded)]="layerOpen" [(selected)]="layerLast"
-                     (nodeMove)="moveLayer($event)" (nodeActivate)="layerActivated.set($event.label)">
+                     (nodeMove)="moveLayer($event)" (nodeActivate)="layerActivated.set($event.label)" (nodeRename)="renameLayer($event)">
               <ng-template uiTreeNodeEnd let-node>
                 <ui-icon-button size="sm" [label]="(isHidden(node) ? 'Show ' : 'Hide ') + node.label" (click)="toggleLayer(hiddenLayers, node)">
                   <hugeicons-icon [icon]="isHidden(node) ? ViewOffSlashIcon : ViewIcon" [size]="14" [strokeWidth]="1.8" />
@@ -587,6 +587,7 @@ interface UiRowAction<T = Record<string, unknown>> {
   container?: boolean;             // takes dropped children even with none yet
 }
 interface UiTreeMove { value: string; parent: string | null; index: number; }
+interface UiTreeRename { value: string; label: string; }
 // index counts parent's children after value has been taken out`;
   protected readonly TREEROW = `interface UiTreeTableRow {
   label: string;                   // shown in the tree column
@@ -676,6 +677,14 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
     // Show where it went.
     if (m.parent !== null && !this.layerOpen().includes(m.parent)) this.layerOpen.update((o) => [...o, m.parent!]);
     this.lastMove.set(`${taken.label} to ${m.parent ?? 'top'} #${m.index}`);
+  }
+  protected renameLayer(rename: UiTreeRename): void {
+    const update = (list: UiTreeNode[]): UiTreeNode[] => list.map((n) => ({
+      ...n,
+      label: n.value === rename.value ? rename.label : n.label,
+      children: n.children ? update(n.children) : undefined,
+    }));
+    this.layerTree.set(update(this.layerTree()));
   }
   protected readonly treeNodes: UiTreeNode[] = [
     {
@@ -810,12 +819,14 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'multiple', type: 'boolean', default: 'false', desc: 'Select several nodes: click, Ctrl/Cmd-click toggles, Shift-click selects a range, Space toggles.' },
     { name: 'selectedValues', type: 'string[]', default: '[]', desc: 'Two-way. The selection when multiple is on, in tree order.' },
     { name: 'reorderable', type: 'boolean', default: 'false', desc: 'Drag rows with a mouse or pen, and Alt+Up/Down, to move nodes (emits nodeMove).' },
+    { name: 'renamable', type: 'boolean', default: 'false', desc: 'Edit a label in place after double click or F2.' },
     { name: 'ng-template uiTreeNodeEnd', type: 'let-node', default: '—', desc: 'Content at the end of every row (UiTreeNodeEnd). Its clicks and keys do not select the row.' },
   ];
   protected readonly treeOut: ApiRow[] = [
     { name: 'nodeSelect', type: 'UiTreeNode', default: '—', desc: 'Node chosen by click, Enter or Space.' },
     { name: 'nodeMove', type: 'UiTreeMove', default: '—', desc: 'Move value to child number index of parent (null = top level), counted after taking it out.' },
     { name: 'nodeActivate', type: 'UiTreeNode', default: '—', desc: 'Double click on a label, or F2 (e.g. to rename).' },
+    { name: 'nodeRename', type: 'UiTreeRename', default: '—', desc: 'A non-empty changed label committed with Enter or blur.' },
   ];
   protected readonly treeTableApi: ApiRow[] = [
     { name: 'rows', type: 'UiTreeTableRow[]', default: '[]', desc: 'Hierarchical rows.' },
