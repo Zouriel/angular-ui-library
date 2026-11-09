@@ -475,3 +475,74 @@ describe('UiBottomSheet coverChange follows the resting top', () => {
     expect(c.covers.at(-1)).toBe(Math.round((room - 60) * 0.3) + 60);
   });
 });
+
+@Component({
+  imports: [UiBottomSheet],
+  template: `
+    <ui-bottom-sheet [(snap)]="snap" [snaps]="[0, 0.4, 1]" title="Layers" [expandOnFocus]="false" [bodyExpands]="bodyExpands()">
+      <div id="content" style="height: 2000px">A long list</div>
+    </ui-bottom-sheet>
+  `,
+})
+class DragHost {
+  snap = signal(1);
+  bodyExpands = signal(false);
+}
+
+/**
+ * Which way a finger's drag goes: the sheet or the content. (Whether the browser then scrolls is a
+ * real-touch question; this is the sheet's own decision, made from the first moves.)
+ */
+describe('UiBottomSheet body drags', () => {
+  async function render() {
+    const fixture = TestBed.createComponent(DragHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+    const touch = (target: Element, kind: string, y: number, id = 1) => {
+      const e = new Event(kind, { bubbles: true, cancelable: true });
+      const t = { identifier: id, clientX: 100, clientY: y, target };
+      Object.assign(e, { touches: kind === 'touchend' ? [] : [t], changedTouches: [t] });
+      target.dispatchEvent(e);
+      fixture.detectChanges();
+      return e;
+    };
+    /** A drag from y0 to y1 in small steps. */
+    const drag = (target: Element, y0: number, y1: number) => {
+      touch(target, 'touchstart', y0);
+      const moves: Event[] = [];
+      const steps = 12;
+      for (let i = 1; i <= steps; i++) moves.push(touch(target, 'touchmove', y0 + ((y1 - y0) * i) / steps));
+      touch(target, 'touchend', y1);
+      return moves;
+    };
+    return { fixture, el, drag, content: () => el.querySelector('#content')!, header: () => el.querySelector('.grab')! };
+  }
+
+  beforeEach(() => TestBed.configureTestingModule({ imports: [DragHost] }));
+
+  it('pushing the body up scrolls the content: the sheet stays the size it was', async () => {
+    const { fixture, drag, content } = await render();
+    const moves = drag(content(), 600, 300);
+    expect(fixture.componentInstance.snap()).toBe(1);
+    expect(moves.some((m) => m.defaultPrevented)).toBe(false);
+  });
+
+  it('the header still drags it taller, and the body still pulls it down from the top', async () => {
+    const { fixture, drag, content, header } = await render();
+    const h = fixture.componentInstance;
+    drag(header(), 460, 20);
+    expect(h.snap()).toBe(2);
+    const moves = drag(content(), 200, 520);
+    expect(moves.some((m) => m.defaultPrevented)).toBe(true);
+    expect(h.snap()).toBe(1);
+  });
+
+  it('with bodyExpands, pushing the body up makes it taller, as before 0.69', async () => {
+    const { fixture, drag, content } = await render();
+    fixture.componentInstance.bodyExpands.set(true);
+    fixture.detectChanges();
+    drag(content(), 600, 100);
+    expect(fixture.componentInstance.snap()).toBe(2);
+  });
+});

@@ -36,8 +36,10 @@ interface Drag {
  * toolbar and `topInset` above it for a header). `snap` is the index it rests at, two-way; a first
  * snap of 0 is closed. Drag the header anywhere, or flick it — a fast release moves one snap in that
  * direction. Dragging the body moves the sheet too when that's the only sensible reading: pulling
- * down with the content already at its top, or pushing up while there's a taller snap to reach.
- * Otherwise the content scrolls as usual. Anything marked `data-sheet-nodrag` keeps its drags.</p>
+ * down with the content already at its top. Pushing the body up scrolls the content and never makes
+ * the sheet taller (0.69): someone scrolling a list doesn't mean to resize it, and the handle is
+ * there for that; `bodyExpands` brings the old reading back. Anything marked `data-sheet-nodrag`
+ * keeps its drags.</p>
  *
  * <h4>Touch events for the finger</h4>
  *
@@ -246,6 +248,11 @@ export class UiBottomSheet {
   hasHeader = input(false);
   /** Rise to the tallest snap when a field inside is focused on a touch screen. */
   expandOnFocus = input(true);
+  /**
+   * Pushing the body up makes the sheet taller while there's a taller snap, before the content
+   * scrolls. Off by default (0.69): the body scrolls, and the handle and header resize the sheet.
+   */
+  bodyExpands = input(false);
   /**
    * See-through surface, for a sheet over a map (0.41.2); how see-through is `glassStrength`. Solid
    * where backdrop-filter is missing or under reduced transparency / more contrast. Off by default,
@@ -606,10 +613,13 @@ export class UiBottomSheet {
     return false;
   }
 
-  /** A body drag moves the sheet when the content can't use it: already at its top going down, or while there's more sheet above. */
+  /**
+   * A body drag moves the sheet when the content can't use it: already at its top going down. Going
+   * up, the content scrolls (unless `bodyExpands`, while there's more sheet above).
+   */
   private bodyShouldMove(target: Element | null, dy: number): boolean {
     if (dy > 0) return !this.scrollableAbove(target);
-    return this.index() < this.snaps().length - 1;
+    return this.bodyExpands() && this.index() < this.snaps().length - 1;
   }
 
   private scrollableAbove(target: Element | null): boolean {

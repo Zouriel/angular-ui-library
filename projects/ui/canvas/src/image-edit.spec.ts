@@ -70,5 +70,5 @@ describe('image edit helpers', () => {
     expect(e.stepCount).toBe(100);
     // Each stroke covers 2000 x 300 px; raw before/after copies would be over 100 MB.
     expect(e.historyBytes).toBeLessThan(8 * 1024 * 1024);
-  });
+  }, 20_000); // 120 strokes over a 2000 × 2000 picture: seconds under a full parallel run.
 });

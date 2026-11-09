@@ -44,7 +44,7 @@ class FakeBackend implements UiImageEditorBackend {
   imports: [UiImageEditor],
   template: `
     <ui-image-editor #ed src="data:image/png;base64,AAAA" [aspect]="aspect()" [(mode)]="mode" [(brushSize)]="size" [(brushSoftness)]="soft"
-      [(crop)]="crop" [fingerDraws]="fingerDraws()" [straightLine]="straight()" (changed)="changes = changes + 1" />
+      [(crop)]="crop" [fingerDraws]="fingerDraws()" [straightLine]="straight()" [loupe]="loupe()" (changed)="changes = changes + 1" />
   `,
 })
 class Host {
@@ -55,6 +55,7 @@ class Host {
   readonly crop = signal<UiImageCrop | null>(null);
   readonly fingerDraws = signal<boolean | 'auto'>('auto');
   readonly straight = signal(false);
+  readonly loupe = signal(true);
   changes = 0;
 }
 
@@ -525,5 +526,57 @@ describe('UiImageEditor', () => {
     const blob = await ed.toBlob('image/webp', 0.8);
     expect(blob.type).toBe('image/webp');
     expect(blob.size).toBe(160 * 75 * 4);
+  });
+  describe('loupe', () => {
+    const loupe = () => el().querySelector('canvas.loupe') as HTMLCanvasElement | null;
+
+    it('shows beside a finger while it erases or restores, and goes when it lifts', () => {
+      send('pointerdown', { x: 100, y: 50, type: 'touch' });
+      const l = loupe()!;
+      expect(l).not.toBeNull();
+      expect(l.style.width).toBe('112px');
+      // Up and to the left of the finger, clear of it.
+      const finger = client(100, 50);
+      expect(parseFloat(l.style.left) + 112).toBeLessThan(finger.clientX);
+      expect(parseFloat(l.style.top) + 112).toBeLessThan(finger.clientY);
+      send('pointermove', { x: 120, y: 50, type: 'touch' });
+      expect(loupe()).not.toBeNull();
+      send('pointerup', { x: 120, y: 50, type: 'touch' });
+      expect(loupe()).toBeNull();
+      expect(host.changes).toBe(1);
+
+      host.mode.set('restore');
+      fixture.detectChanges();
+      send('pointerdown', { x: 100, y: 50, id: 2, type: 'touch' });
+      expect(loupe()).not.toBeNull();
+      send('pointerup', { x: 100, y: 50, id: 2, type: 'touch' });
+      expect(loupe()).toBeNull();
+    });
+
+    it('never shows for a mouse, while cropping, or with loupe off; a second finger puts it away', () => {
+      send('pointerdown', { x: 100, y: 50 });
+      send('pointermove', { x: 120, y: 50 });
+      expect(loupe()).toBeNull();
+      send('pointerup', { x: 120, y: 50 });
+
+      send('pointerdown', { x: 100, y: 50, id: 2, type: 'touch' });
+      send('pointerdown', { x: 150, y: 50, id: 3, type: 'touch' });
+      expect(loupe()).toBeNull();
+      send('pointerup', { x: 150, y: 50, id: 3, type: 'touch' });
+      send('pointerup', { x: 100, y: 50, id: 2, type: 'touch' });
+
+      host.mode.set('crop');
+      fixture.detectChanges();
+      send('pointerdown', { x: 100, y: 50, id: 4, type: 'touch' });
+      expect(loupe()).toBeNull();
+      send('pointerup', { x: 100, y: 50, id: 4, type: 'touch' });
+
+      host.mode.set('erase');
+      host.loupe.set(false);
+      fixture.detectChanges();
+      send('pointerdown', { x: 100, y: 50, id: 5, type: 'touch' });
+      expect(loupe()).toBeNull();
+      send('pointerup', { x: 100, y: 50, id: 5, type: 'touch' });
+    });
   });
 });

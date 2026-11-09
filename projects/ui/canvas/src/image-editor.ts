@@ -6,6 +6,7 @@ import {
   UI_IMAGE_MAX_SIDE, UiCropHandle, UiDirtyRect, UiImageCrop, UiImageEdit, UiImageEditorMode, UiImageRaster, dragCrop, fitAspect, fullCrop,
   sameCrop,
 } from './image-edit';
+import { UI_LOUPE_ZOOM, uiLoupePlace } from './loupe';
 
 /**
  * How `ui-image-editor` gets pixels in and out. The default uses an `<img>` and a `<canvas>`; tests (and
@@ -82,6 +83,9 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
  * (the same stroke). `straightLine` does the same without Shift, for touch screens. Undo, redo, reset, a
  * new picture or another mode forget the point, so the next press starts afresh.
  *
+ * While a finger erases or restores, a round magnifier beside it (`loupe`) shows what's under the
+ * fingertip at twice the zoom, with the brush's outline in the middle.
+ *
  * Erased parts show over a checkerboard. Pinch or Ctrl/⌘ + wheel zooms about the pointer; two fingers,
  * Space + drag or the middle button pan. Once a pen has been used, fingers only navigate (as in
  * `ui-path-editor`, `fingerDraws` 'auto'). Every stroke and crop change is one undo step
@@ -145,6 +149,11 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
           @if (c.r < 4) { <circle class="brush dot" [attr.cx]="c.x" [attr.cy]="c.y" r="1.5" /> }
         }
       </svg>
+      @if (loupeView(); as l) {
+        <!-- A finger hides what it paints: this shows it, magnified, a little way off. -->
+        <canvas #loupe class="loupe" aria-hidden="true" [attr.width]="l.px" [attr.height]="l.px"
+          [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.size" [style.height.px]="l.size"></canvas>
+      }
     }
   `,
   styles: `
@@ -180,6 +189,11 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
     .brush { stroke: var(--ui-media-on-scrim); stroke-width: 1.25; }
     .brush.inner { stroke-dasharray: 3 3; opacity: .8; }
     .brush.dot { fill: var(--ui-media-on-scrim); }
+    .loupe { position: absolute; display: block; pointer-events: none; border-radius: 50%;
+      background-color: var(--ui-color-surface); background-size: 20px 20px;
+      background-image: conic-gradient(color-mix(in srgb, var(--ui-color-text) 14%, var(--ui-color-surface)) 25%, transparent 0 50%,
+        color-mix(in srgb, var(--ui-color-text) 14%, var(--ui-color-surface)) 0 75%, transparent 0);
+      box-shadow: 0 0 0 2px var(--ui-color-surface), 0 0 0 3px var(--ui-color-border-strong), var(--ui-shadow-3); }
     .line-preview-out { stroke: var(--ui-media-scrim); stroke-width: 3; opacity: .35; stroke-linecap: round; }
     .line-preview { stroke: var(--ui-media-on-scrim); stroke-width: 1.25; stroke-dasharray: 5 4; opacity: .75; stroke-linecap: round; }
   `,
@@ -188,6 +202,7 @@ export class UiImageEditor {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly backend = inject(UI_IMAGE_EDITOR_BACKEND);
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('img');
+  private readonly loupeCanvas = viewChild<ElementRef<HTMLCanvasElement>>('loupe');
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
 
@@ -196,6 +211,12 @@ export class UiImageEditor {
   readonly mode = model<UiImageEditorMode>('erase');
   /** The brush's diameter, in image pixels. */
   readonly brushSize = model(40);
+  /**
+   * While a finger erases or restores, show what's under it in a round magnifier beside it (twice
+   * the editor's zoom, with the brush's outline in the middle): up and to the left of the finger,
+   * flipping to the other side near an edge. A mouse or pen doesn't hide the spot and gets none.
+   */
+  readonly loupe = input(true);
   /** 0 is a hard edge, 1 fades out from the centre. */
   readonly brushSoftness = model(0.3);
   /** Width / height the crop keeps; null crops freely. */
@@ -311,6 +332,18 @@ export class UiImageEditor {
     const a = this.toScreen(from.x, from.y);
     return { x1: a.x, y1: a.y, x2: h.x, y2: h.y };
   });
+  /** A finger painting: where it is on the editor (pixels) and on the picture (image pixels). */
+  private readonly loupeAt = signal<{ x: number; y: number; u: { x: number; y: number } } | null>(null);
+  protected readonly loupeView = computed(() => {
+    const at = this.loupeAt();
+    if (!at) return null;
+    const { w, h } = this.size();
+    const place = uiLoupePlace(at.x, at.y, w, h);
+    const dpr = typeof devicePixelRatio === 'number' ? Math.min(3, devicePixelRatio || 1) : 1;
+    return { left: place.x - place.size / 2, top: place.y - place.size / 2, size: place.size, px: Math.round(place.size * dpr), u: at.u };
+  });
+  private loupeFrame = 0;
+
   /** A stroke is under way (the preview hides while it is). */
   private readonly painting = signal(false);
 
@@ -361,7 +394,10 @@ export class UiImageEditor {
       this.destroyRef.onDestroy(() => ro.disconnect());
     });
     this.destroyRef.onDestroy(() => {
-      if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(this.frameId);
+      if (typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(this.frameId);
+        cancelAnimationFrame(this.loupeFrame);
+      }
     });
   }
 
@@ -495,6 +531,57 @@ export class UiImageEditor {
     const ctx = this.context();
     if (!ctx || typeof ImageData === 'undefined') return;
     ctx.putImageData(new ImageData(e.composeRegion(r), r.w, r.h), r.x, r.y);
+    if (this.loupeAt()) this.drawLoupe();
+  }
+
+  private showLoupe(e: { clientX: number; clientY: number }): void {
+    this.loupeAt.set({ ...this.local(e), u: this.toUnits(e.clientX, e.clientY) });
+    // Drawn once the loupe is on the page (and the frame's pixels are in).
+    if (this.loupeFrame || typeof requestAnimationFrame !== 'function') return;
+    this.loupeFrame = requestAnimationFrame(() => {
+      this.loupeFrame = 0;
+      this.drawLoupe();
+    });
+  }
+
+  /** Copies the picture around the finger into the loupe, magnified, and draws the brush over it. */
+  private drawLoupe(): void {
+    const view = this.loupeView();
+    const el = this.loupeCanvas()?.nativeElement;
+    if (!view || !el) return;
+    let ctx: CanvasRenderingContext2D | null = null;
+    try {
+      ctx = el.getContext?.('2d') ?? null;
+    } catch {
+      ctx = null;
+    }
+    if (!ctx) return;
+    const n = view.px;
+    const k = n / view.size;
+    const zoom = this.scale() * UI_LOUPE_ZOOM;
+    const side = view.size / zoom;
+    ctx.clearRect(0, 0, n, n);
+    ctx.imageSmoothingEnabled = zoom < 3;
+    ctx.drawImage(this.canvas().nativeElement, view.u.x - side / 2, view.u.y - side / 2, side, side, 0, 0, n, n);
+    const css = getComputedStyle(this.host.nativeElement);
+    const light = css.getPropertyValue('--ui-media-on-scrim').trim() || '#fff';
+    const dark = css.getPropertyValue('--ui-media-scrim').trim() || '#000';
+    const r = Math.max(2, (this.brushSize() / 2) * zoom) * k;
+    const ring = (color: string, width: number, alpha: number) => {
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width * k;
+      ctx.beginPath();
+      ctx.arc(n / 2, n / 2, r, 0, Math.PI * 2);
+      ctx.stroke();
+    };
+    ring(dark, 3, 0.5);
+    ring(light, 1.25, 1);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = light;
+    ctx.beginPath();
+    ctx.arc(n / 2, n / 2, 1.5 * k, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // ----- View -------------------------------------------------------------------------------------------
@@ -570,6 +657,7 @@ export class UiImageEditor {
       ed.beginStroke(this.mode() === 'restore' ? 'restore' : 'erase', start.x, start.y, Math.max(1, this.brushSize()), this.brushSoftness());
       if (straight) ed.lineTo(u.x, u.y);
       this.painting.set(true);
+      if (e.pointerType === 'touch' && this.loupe()) this.showLoupe(e);
     }
     if (gesture.kind === 'crop') this.cropping.set(true);
     e.preventDefault();
@@ -615,6 +703,7 @@ export class UiImageEditor {
         const u = this.toUnits(ev.clientX, ev.clientY);
         ed.strokeTo(u.x, u.y);
       }
+      if (this.loupeAt()) this.showLoupe(e);
       return;
     }
     if (!d.moved && Math.hypot(e.clientX - d.startClient.x, e.clientY - d.startClient.y) < (e.pointerType === 'touch' ? 6 : 2)) return;
@@ -649,6 +738,7 @@ export class UiImageEditor {
       const u = this.toUnits(e.clientX, e.clientY);
       ed.strokeTo(u.x, u.y);
       this.painting.set(false);
+      this.loupeAt.set(null);
       // Where it lifted is where the next Shift-click's line starts (even if this stroke changed nothing).
       this.lineStart.set({ x: u.x, y: u.y });
       if (ed.endStroke()) this.afterChange();
@@ -671,6 +761,7 @@ export class UiImageEditor {
     this.penPainting = false;
     this.cropping.set(false);
     this.painting.set(false);
+    this.loupeAt.set(null);
     const ed = this.edit;
     if (!d || !ed) return;
     if (d.gesture.kind === 'paint') ed.cancelStroke();

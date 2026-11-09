@@ -10,6 +10,7 @@ import {
   UiBrush, UiInkSample, UiInkShape, brushSteadiness, inkArea, inkPiece, inkRadiusAt, pieceD, recognizeShape, shapeSamples,
   simulatedPressure,
 } from './ink';
+import { UI_LOUPE_ZOOM, uiLoupePlace } from './loupe';
 
 let editorSeq = 0;
 let itemSeq = 0;
@@ -124,6 +125,7 @@ const DOUBLE_TAP_MS = 320;
           <line x1="0" y1="0" x2="0" y2="8" class="hatch-line" />
         </pattern>
       </defs>
+      <g [attr.id]="contentId">
       @if (showArtboard()) {
         <rect class="artboard" x="0" y="0" [attr.width]="width()" [attr.height]="height()" />
       }
@@ -140,6 +142,7 @@ const DOUBLE_TAP_MS = 320;
       @if (inkD()) {
         <path class="ink" [class.eraser]="inkEraser()" [attr.d]="inkD()" fill-rule="nonzero" [attr.fill]="inkEraser() ? null : (fill() || null)" />
       }
+      </g>
 
       @if (mode() === 'objects' && selectedBox(); as b) {
         <g class="frame">
@@ -221,6 +224,16 @@ const DOUBLE_TAP_MS = 320;
         <rect class="marquee" [attr.x]="m.x" [attr.y]="m.y" [attr.width]="m.w" [attr.height]="m.h" />
       }
     </svg>
+    @if (loupeView(); as l) {
+      <!-- A finger hides what it paints: this shows it, magnified, a little way off. -->
+      <svg class="loupe" aria-hidden="true" [attr.viewBox]="l.box" [style.left.px]="l.left" [style.top.px]="l.top"
+        [style.width.px]="l.size" [style.height.px]="l.size">
+        <use [attr.href]="'#' + contentId" />
+        <circle class="loupe-brush-out" [attr.cx]="l.u.x" [attr.cy]="l.u.y" [attr.r]="l.r" />
+        <circle class="loupe-brush" [attr.cx]="l.u.x" [attr.cy]="l.u.y" [attr.r]="l.r" />
+        <circle class="loupe-dot" [attr.cx]="l.u.x" [attr.cy]="l.u.y" [attr.r]="l.dot" />
+      </svg>
+    }
   `,
   styles: `
     :host { display: block; position: relative; overflow: hidden; touch-action: none; outline: none; user-select: none;
@@ -260,6 +273,12 @@ const DOUBLE_TAP_MS = 320;
     .rubber { fill: none; stroke: var(--ui-color-primary); stroke-width: 1.25; stroke-dasharray: 4 4; opacity: .8; vector-effect: non-scaling-stroke; }
     .knob.point.start { stroke-width: 2.5; }
     .knob.point.closable { fill: var(--ui-color-primary); }
+    .loupe { position: absolute; display: block; pointer-events: none; border-radius: 50%; overflow: hidden;
+      background: var(--ui-color-surface-subtle); box-shadow: 0 0 0 2px var(--ui-color-surface), 0 0 0 3px var(--ui-color-border-strong), var(--ui-shadow-3); }
+    .loupe-brush, .loupe-brush-out, .loupe-dot { fill: none; vector-effect: non-scaling-stroke; }
+    .loupe-brush-out { stroke: var(--ui-media-scrim); stroke-width: 3; opacity: .5; }
+    .loupe-brush { stroke: var(--ui-media-on-scrim); stroke-width: 1.25; }
+    .loupe-dot { fill: var(--ui-color-primary); stroke: var(--ui-media-on-scrim); stroke-width: 1; }
     .marquee { fill: color-mix(in srgb, var(--ui-color-primary) 10%, transparent); stroke: var(--ui-color-primary); stroke-width: 1;
       stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; pointer-events: none; }
   `,
@@ -301,6 +320,13 @@ export class UiPathEditor {
    */
   readonly straightLine = input(false);
 
+  /**
+   * While a finger paints in draw mode, show what's under it in a magnifier beside it (twice the
+   * editor's zoom, with the brush's outline in the middle): up and to the left of the finger, flipping
+   * to the other side near an edge. A mouse or pen doesn't hide the spot, so they never get one.
+   */
+  readonly loupe = input(true);
+
   /** A finished edit: the whole list, for the host to keep (and undo). */
   readonly itemsChange = output<UiPathItem[]>();
   /** A point was tapped (not dragged) — hosts use it to pick ends to join. */
@@ -310,7 +336,24 @@ export class UiPathEditor {
   /** A pen touched the surface for the first time — fingers stop drawing now (with `fingerDraws` 'auto'). */
   readonly penDetected = output<void>();
 
-  protected readonly hatchId = `ui-path-hatch-${editorSeq++}`;
+  private readonly seq = editorSeq++;
+  protected readonly hatchId = `ui-path-hatch-${this.seq}`;
+  /** What the loupe shows again, by reference. */
+  protected readonly contentId = `ui-path-content-${this.seq}`;
+  /** A finger painting: where it is on the surface (pixels) and in editor units. */
+  private readonly loupeAt = signal<{ x: number; y: number; u: UiPathXY } | null>(null);
+  protected readonly loupeView = computed(() => {
+    const at = this.loupeAt();
+    if (!at) return null;
+    const { w, h } = this.hostSize();
+    const place = uiLoupePlace(at.x, at.y, w, h);
+    const side = place.size / (this.pxPerUnit() * UI_LOUPE_ZOOM);
+    return {
+      left: place.x - place.size / 2, top: place.y - place.size / 2, size: place.size, u: at.u,
+      box: `${at.u.x - side / 2} ${at.u.y - side / 2} ${side} ${side}`,
+      r: Math.max(this.brush().size / 2, this.px(1.5)), dot: this.px(1.5),
+    };
+  });
   private readonly draft = signal<UiPathItem[] | null>(null);
   protected readonly view = computed(() => this.draft() ?? this.items());
 
@@ -640,7 +683,10 @@ export class UiPathEditor {
       startClient: { x: e.clientX, y: e.clientY }, startUnits: units, startCenter: this.center(),
       origin: this.items(), moved: false, pressed: false,
     };
-    if (gesture.kind === 'ink') this.startInk(e, units);
+    if (gesture.kind === 'ink') {
+      this.startInk(e, units);
+      if (e.pointerType === 'touch' && this.loupe()) this.showLoupe(e);
+    }
     if (gesture.kind === 'point' && e.pointerType !== 'mouse') {
       // Long press adds the point to the selection (or takes it out) — the touch version of Shift-click.
       this.pressTimer = setTimeout(() => this.longPressPoint(), LONG_PRESS_MS);
@@ -741,6 +787,7 @@ export class UiPathEditor {
     if (g.kind === 'ink') {
       const events = e.getCoalescedEvents?.() ?? [];
       for (const ev of events.length ? events : [e]) this.addInk(ev);
+      if (this.loupeAt()) this.showLoupe(e);
       return;
     }
     if (!d.moved) {
@@ -1082,6 +1129,7 @@ export class UiPathEditor {
   private finishInk(): void {
     const ink = this.ink;
     this.ink = null;
+    this.loupeAt.set(null);
     this.clearHold();
     cancelAnimationFrame(this.inkFrame);
     this.inkD.set('');
@@ -1098,8 +1146,14 @@ export class UiPathEditor {
     this.strokePending = true;
   }
 
+  private showLoupe(e: { clientX: number; clientY: number }): void {
+    const r = this.host.nativeElement.getBoundingClientRect();
+    this.loupeAt.set({ x: e.clientX - r.left, y: e.clientY - r.top, u: this.toUnits(e.clientX, e.clientY) });
+  }
+
   private dropInk(): void {
     this.ink = null;
+    this.loupeAt.set(null);
     this.clearHold();
     cancelAnimationFrame(this.inkFrame);
     this.inkD.set('');

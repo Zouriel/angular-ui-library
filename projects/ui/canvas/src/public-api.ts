@@ -6,3 +6,4 @@ export * from './ink';
 export * from './viewport';
 export * from './image-edit';
 export * from './image-editor';
+export * from './loupe';

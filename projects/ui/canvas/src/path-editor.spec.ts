@@ -29,7 +29,7 @@ function pointer(kind: string, p: PointerInit): Event {
 @Component({
   imports: [UiPathEditor],
   template: `
-    <ui-path-editor #ed [items]="items()" [width]="100" [height]="100" [mode]="mode()" [brush]="brush()" fill="#123456" [straightLine]="straight()"
+    <ui-path-editor #ed [items]="items()" [width]="100" [height]="100" [mode]="mode()" [brush]="brush()" fill="#123456" [straightLine]="straight()" [loupe]="loupe()"
       [(selectedId)]="selectedId" [(selectedPoint)]="selectedPoint" [(selectedPoints)]="selectedPoints"
       (itemsChange)="changes.push($event); items.set($event)" (stroke)="strokes.push($event)" (penDetected)="pens = pens + 1" />
   `,
@@ -39,6 +39,7 @@ class Host {
   readonly mode = signal<UiPathEditorMode>('pen');
   readonly brush = signal<UiBrush>({ kind: 'pen', size: 4 });
   readonly straight = signal(false);
+  readonly loupe = signal(true);
   readonly selectedId = signal<string | null>(null);
   readonly selectedPoint = signal<UiPointRef | null>(null);
   readonly selectedPoints = signal<UiPointRef[]>([]);
@@ -388,6 +389,60 @@ describe('UiPathEditor', () => {
       const p = host.items()[0].contours[0].points[1];
       expect(p.out).toEqual({ x: 80, y: 0 });
       expect(p.in).toEqual({ x: 60, y: 20 });
+    });
+  });
+  describe('loupe', () => {
+    const loupe = () => fixture.nativeElement.querySelector('svg.loupe') as SVGSVGElement | null;
+    beforeEach(() => {
+      host.mode.set('draw');
+      host.brush.set({ kind: 'marker', size: 6 });
+      fixture.detectChanges();
+    });
+
+    it('shows what is under a painting finger, magnified, beside it, and goes when the finger lifts', () => {
+      send(svg(), 'pointerdown', { x: 50, y: 50, type: 'touch' });
+      const l = loupe()!;
+      expect(l).not.toBeNull();
+      // It shows the editor's own drawing again, by reference.
+      const href = l.querySelector('use')!.getAttribute('href')!;
+      expect(href).toMatch(/^#ui-path-content-/);
+      expect(fixture.nativeElement.querySelector(href)).not.toBeNull();
+      // The drawing, the artboard included, is inside what it shows.
+      expect(fixture.nativeElement.querySelector(href).querySelector('rect.artboard')).not.toBeNull();
+      // Twice the zoom (1 px a unit here, so 112 px shows 56 units), centred on the finger.
+      expect(l.getAttribute('viewBox')).toBe('22 22 56 56');
+      // Up and to the left of the finger (at 0, 0 on the unmeasured surface), clear of it.
+      const left = parseFloat(l.style.left), top = parseFloat(l.style.top);
+      expect(left + 112).toBeLessThan(0);
+      expect(top + 112).toBeLessThan(0);
+      send(svg(), 'pointermove', { x: 60, y: 55, type: 'touch' });
+      expect(loupe()!.getAttribute('viewBox')).toBe('32 27 56 56');
+      // The brush's outline sits on the finger.
+      const ring = loupe()!.querySelector('circle.loupe-brush')!;
+      expect([ring.getAttribute('cx'), ring.getAttribute('cy'), ring.getAttribute('r')]).toEqual(['60', '55', '3']);
+      send(svg(), 'pointerup', { x: 60, y: 55, type: 'touch' });
+      expect(loupe()).toBeNull();
+      expect(host.strokes).toHaveLength(1);
+    });
+
+    it('never shows for a mouse, nor with loupe off, and a second finger (a pinch) puts it away', () => {
+      send(svg(), 'pointerdown', { x: 50, y: 50, type: 'mouse' });
+      send(svg(), 'pointermove', { x: 60, y: 50, type: 'mouse' });
+      expect(loupe()).toBeNull();
+      send(svg(), 'pointerup', { x: 60, y: 50, type: 'mouse' });
+
+      send(svg(), 'pointerdown', { x: 50, y: 50, id: 2, type: 'touch' });
+      expect(loupe()).not.toBeNull();
+      send(svg(), 'pointerdown', { x: 80, y: 50, id: 3, type: 'touch' });
+      expect(loupe()).toBeNull();
+      send(svg(), 'pointerup', { x: 80, y: 50, id: 3, type: 'touch' });
+      send(svg(), 'pointerup', { x: 50, y: 50, id: 2, type: 'touch' });
+
+      host.loupe.set(false);
+      fixture.detectChanges();
+      send(svg(), 'pointerdown', { x: 50, y: 50, id: 4, type: 'touch' });
+      expect(loupe()).toBeNull();
+      send(svg(), 'pointerup', { x: 50, y: 50, id: 4, type: 'touch' });
     });
   });
 });
