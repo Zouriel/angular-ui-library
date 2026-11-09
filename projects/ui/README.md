@@ -93,7 +93,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `data` | tree, tree table, timeline, description list, code block |
 | `layout` | grid, stack, container, spacer, splitter, sidebar layout, panel section, scroll area, aspect ratio, resize handle |
 | `media` | carousel, gallery, image picker, device frame |
-| `canvas` | transform box with snapping, vector path editor (pen, points, brushes) |
+| `canvas` | transform box with snapping, vector path editor (pen, points, brushes), image editor (crop, erase, restore) |
 | `sequencer` | timeline sequencer, scrubber |
 | `command-palette` | command palette |
 | `window` | floating windows, window manager, draggable, resizable |

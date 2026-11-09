@@ -2,11 +2,12 @@ import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed,
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  UiPathEditor, UiTransformBox, UiSnapGuides, archContour, ellipseContour, insideContour, pathD, polygonContour, rectContour, starContour,
+  UiImageEditor, UiPathEditor, UiTransformBox, UiSnapGuides, archContour, ellipseContour, insideContour, pathD, polygonContour, rectContour, starContour,
   uiSnap, uiRotatedBounds, type UiBox, type UiBrushKind, type UiGuide, type UiInkStroke, type UiPathContour, type UiPathEditorMode, type UiPathItem,
+  type UiImageCrop, type UiImageEditorMode,
 } from '@zouriel/ui/canvas';
 import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
-import { UiTokenInput, UiNumberInput, UiNumberLabel, type UiTokenRun } from '@zouriel/ui/form';
+import { UiTokenInput, UiNumberInput, UiNumberLabel, UiSlider, type UiTokenRun } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 // One file per icon: importing from the package root makes the bundler read all ~4,000 icons,
 // which ran the production build out of memory on the server.
@@ -24,7 +25,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-design-tools',
   imports: [
-    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
+    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiImageEditor, UiSlider, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
     UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiIconButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -81,6 +82,50 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
               (itemsChange)="commitPath($event)" (stroke)="onStroke($event)" />
           </div>
           <p class="note">{{ peHints[peMode()] }}</p>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Image editor" selector="ui-image-editor" [api]="imageApi" [outputs]="imageOutputs" [shapes]="imageShapes"
+        summary="Crop a picture and erase parts of it, the picture counterpart of the path editor. Crop shows a frame with eight handles (drag inside to move it; outside is dimmed, thirds show while dragging, and it keeps to aspect when one is set). Erase paints transparency with a round brush, hard or soft; Restore paints the original back. Erased parts show over a checkerboard. Pinch or Ctrl/⌘ + wheel zooms about the pointer, two fingers or Space + drag pan, and once a pen has been used fingers only navigate. Every stroke and crop change is one undo step (Ctrl/⌘+Z, Shift+Ctrl/⌘+Z); [ and ] change the brush size. toBlob() gives the crop with erased pixels transparent, at up to 4096 px on the long side.">
+        <doc-demo code="<ui-image-editor #editor [src]=&quot;photoUrl&quot; [(mode)]=&quot;mode&quot; [(brushSize)]=&quot;size&quot; [(brushSoftness)]=&quot;softness&quot;
+  [aspect]=&quot;aspect()&quot; [(crop)]=&quot;crop&quot; (changed)=&quot;saved.set(false)&quot; />
+<ui-button [disabled]=&quot;!editor.canUndo()&quot; (click)=&quot;editor.undo()&quot;>Undo</ui-button>
+<ui-button (click)=&quot;save(await editor.toBlob())&quot;>Export</ui-button>">
+          <div class="pe-bar">
+            <ui-segmented size="sm" label="Mode" [options]="ieModes" [value]="ieMode()" (valueChange)="ieMode.set($any($event))" />
+            @if (ieMode() === 'crop') {
+              <ui-segmented size="sm" label="Aspect" [options]="ieAspects" [value]="ieAspectKey()" (valueChange)="ieAspectKey.set($any($event))" />
+            }
+            <span class="grow"></span>
+            <div class="pe-group">
+              <ui-button size="sm" variant="outline" [disabled]="!imageEditor.canUndo()" (click)="imageEditor.undo()">Undo</ui-button>
+              <ui-button size="sm" variant="outline" [disabled]="!imageEditor.canRedo()" (click)="imageEditor.redo()">Redo</ui-button>
+              <ui-button size="sm" variant="outline" [disabled]="!imageEditor.dirty()" (click)="imageEditor.reset()">Reset</ui-button>
+            </div>
+            <div class="pe-group">
+              <ui-button size="sm" variant="outline" (click)="imageEditor.fit()">Fit</ui-button>
+              <ui-button size="sm" [disabled]="!imageEditor.loaded()" (click)="exportImage(imageEditor)">Export</ui-button>
+            </div>
+          </div>
+          @if (ieMode() !== 'crop') {
+            <div class="ie-sliders">
+              <label class="ie-slider"><span>Size</span>
+                <ui-slider label="Brush size" [min]="4" [max]="300" [ngModel]="ieSize()" (ngModelChange)="ieSize.set($event)" /></label>
+              <label class="ie-slider"><span>Softness</span>
+                <ui-slider label="Brush softness" [min]="0" [max]="100" [ngModel]="ieSoftPct()" (ngModelChange)="ieSoft.set($event / 100)" /></label>
+            </div>
+          }
+          <div class="pe-stage">
+            <ui-image-editor #imageEditor label="Picture editor demo" src="demo/sunset.jpg" [(mode)]="ieMode" [(brushSize)]="ieSize"
+              [(brushSoftness)]="ieSoft" [aspect]="ieAspect()" [(crop)]="ieCrop" />
+          </div>
+          <p class="note">{{ ieHints[ieMode()] }}@if (ieCrop(); as c) { · Crop {{ c.width }} × {{ c.height }} at {{ c.x }}, {{ c.y }}}</p>
+          @if (ieResult(); as r) {
+            <figure class="ie-result">
+              <img [src]="r.url" alt="The exported picture" />
+              <figcaption>Exported: {{ r.width }} × {{ r.height }} PNG, {{ r.kb }} KB</figcaption>
+            </figure>
+          }
         </doc-demo>
       </doc-section>
 
@@ -229,7 +274,17 @@ wheel(e: WheelEvent, f: UiDeviceFrame) {
     .pe-bar .grow { flex: 1; }
     .pe-group { display: flex; gap: var(--ui-space-2); }
     .pe-stage { height: 340px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface-subtle); }
-    .pe-stage ui-path-editor { display: block; width: 100%; height: 100%; }
+    .pe-stage ui-path-editor, .pe-stage ui-image-editor { display: block; width: 100%; height: 100%; }
+    .ie-sliders { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-6); margin-bottom: var(--ui-space-2); }
+    .ie-slider { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1 1 220px; min-width: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); }
+    .ie-slider ui-slider { flex: 1; min-width: 0; }
+    .ie-result { margin: var(--ui-space-3) 0 0; display: grid; justify-items: start; gap: var(--ui-space-1); }
+    .ie-result img { display: block; max-width: min(100%, 360px); max-height: 240px; border-radius: var(--ui-radius-sm); border: 1px solid var(--ui-color-border);
+      background-color: var(--ui-color-surface);
+      background-image: conic-gradient(color-mix(in srgb, var(--ui-color-text) 14%, var(--ui-color-surface)) 25%, transparent 0 50%,
+        color-mix(in srgb, var(--ui-color-text) 14%, var(--ui-color-surface)) 0 75%, transparent 0);
+      background-size: 16px 16px; }
+    .ie-result figcaption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .shapes { display: flex; flex-wrap: wrap; gap: var(--ui-space-4); }
     .shapes figure { margin: 0; display: grid; justify-items: center; gap: var(--ui-space-1); }
     .shapes svg { width: 72px; height: 72px; overflow: visible; }
@@ -365,6 +420,30 @@ export class DesignToolsPage {
   protected readonly labelFor = (t: string) => ({ 'event.date': 'Date', 'guest.name': 'Guest name' } as Record<string, string>)[t] ?? t;
   protected runsJson = () => JSON.stringify(this.runs);
 
+  // Image editor
+  protected readonly ieModes = [{ value: 'crop', label: 'Crop' }, { value: 'erase', label: 'Erase' }, { value: 'restore', label: 'Restore' }];
+  protected readonly ieAspects = [{ value: 'free', label: 'Free' }, { value: '1', label: '1:1' }, { value: '0.8', label: '4:5' }, { value: '1.7778', label: '16:9' }];
+  protected readonly ieHints: Record<UiImageEditorMode, string> = {
+    crop: 'Drag the handles or the frame. Pick an aspect to keep its shape.',
+    erase: 'Drag to erase; two fingers (or Space + drag) move the view. [ and ] change the brush size.',
+    restore: 'Drag over erased parts to bring the picture back.',
+  };
+  protected readonly ieMode = signal<UiImageEditorMode>('erase');
+  protected readonly ieSize = signal(60);
+  protected readonly ieSoft = signal(0.3);
+  protected readonly ieSoftPct = computed(() => Math.round(this.ieSoft() * 100));
+  protected readonly ieAspectKey = signal('free');
+  protected readonly ieAspect = computed(() => (this.ieAspectKey() === 'free' ? null : Number(this.ieAspectKey())));
+  protected readonly ieCrop = signal<UiImageCrop | null>(null);
+  protected readonly ieResult = signal<{ url: string; width: number; height: number; kb: number } | null>(null);
+  protected async exportImage(editor: UiImageEditor): Promise<void> {
+    const blob = await editor.toBlob();
+    const old = this.ieResult();
+    if (old) URL.revokeObjectURL(old.url);
+    const c = this.ieCrop();
+    this.ieResult.set({ url: URL.createObjectURL(blob), width: c?.width ?? 0, height: c?.height ?? 0, kb: Math.round(blob.size / 1024) });
+  }
+
   // Path editor
   protected readonly peModes = [
     { value: 'objects', label: 'Objects' }, { value: 'points', label: 'Points' }, { value: 'pen', label: 'Pen' }, { value: 'draw', label: 'Draw' },
@@ -445,6 +524,30 @@ export class DesignToolsPage {
     { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'method', default: '', desc: 'Pen-mode controls for a toolbar.' },
     { name: 'penCount', type: 'Signal<number>', default: '', desc: 'Points placed so far by the pen, to enable those toolbar buttons.' },
   ];
+  protected readonly imageApi: ApiRow[] = [
+    { name: 'src', type: 'string', default: 'required', desc: 'The picture: a URL (loaded with CORS, so the server must allow it) or a data: / blob: URL.' },
+    { name: 'mode', type: "'crop' | 'erase' | 'restore'", default: "'erase'", desc: 'Two-way. What a drag does.' },
+    { name: 'brushSize', type: 'number', default: '40', desc: 'Two-way. The brush diameter in image pixels; [ and ] step it.' },
+    { name: 'brushSoftness', type: 'number', default: '0.3', desc: 'Two-way. 0 is a hard edge, 1 fades out from the centre.' },
+    { name: 'aspect', type: 'number | null', default: 'null', desc: 'Width / height the crop keeps (1, 4 / 5, 16 / 9). Setting it reshapes the crop around its centre, as an undo step.' },
+    { name: 'crop', type: 'UiImageCrop | null', default: 'null', desc: 'Two-way. The crop in image pixels; null until loaded, then the whole picture unless the host set one.' },
+    { name: 'label', type: 'string', default: "'Picture editor'", desc: 'Accessible name.' },
+    { name: 'fingerDraws', type: "boolean | 'auto'", default: "'auto'", desc: "Whether a finger paints. 'auto': until a pen is used, then fingers only pan and zoom." },
+    { name: 'naturalWidth / naturalHeight', type: 'Signal<number>', default: '0', desc: 'Read-only. The working copy\'s size (the picture\'s, unless scaled down to 4096 px).' },
+    { name: 'loaded / canUndo / canRedo / dirty', type: 'Signal<boolean>', default: 'false', desc: 'Read-only. dirty: anything erased or cropped compared with the original.' },
+    { name: 'undo() / redo() / reset()', type: 'method', default: '—', desc: 'reset() goes back to the original picture, uncropped, as one undo step.' },
+    { name: 'zoomBy(f) / fit() / resetCrop()', type: 'method', default: '—', desc: 'fit() frames the whole picture in crop mode and the crop otherwise.' },
+    { name: 'toBlob(type?, quality?)', type: 'Promise<Blob>', default: "'image/png'", desc: 'The crop with erased pixels transparent, at the working resolution.' },
+  ];
+  protected readonly imageOutputs: ApiRow[] = [
+    { name: 'changed', type: 'void', desc: 'After each committed stroke or crop change, and after undo, redo and reset.' },
+    { name: 'loadError', type: 'unknown', desc: 'The picture could not be loaded or read (a URL served without CORS).' },
+  ];
+  protected readonly imageShapes = `interface UiImageCrop { x: number; y: number; width: number; height: number; } // image pixels
+type UiImageEditorMode = 'crop' | 'erase' | 'restore';
+// Undo keeps per-stroke diffs: the 64 x 64 mask tiles a stroke touched, before and after, run-length
+// encoded; up to 100 steps within 64 MB.
+// Custom decoding (and tests) can replace the <img> + <canvas> through UI_IMAGE_EDITOR_BACKEND.`;
   protected readonly pathOutputs: ApiRow[] = [
     { name: 'itemsChange', type: 'UiPathItem[]', desc: 'A finished edit: the whole list, for the host to keep (and undo).' },
     { name: 'stroke', type: 'UiInkStroke', desc: 'A finished draw-mode stroke: samples, brush, painted pieces, and the snapped shape if any.' },

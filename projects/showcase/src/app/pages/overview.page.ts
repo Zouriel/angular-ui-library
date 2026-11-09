@@ -199,7 +199,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Map', route: 'map', entries: '/map (lazy, needs leaflet)', items: ['map'] },
     { title: 'Window system', route: 'window', entries: '/window', items: ['window', 'UiWindowManager', 'uiDraggable', 'uiResizable'] },
     { title: 'File viewer', route: 'file-viewer', entries: '/file-viewer, /pdf-viewer', items: ['file-viewer', 'image-viewer', 'video-player', 'audio-player', 'text-viewer', 'code-viewer', 'media-lightbox', 'file-explorer', 'pdf-viewer'] },
-    { title: 'Design tools', route: 'design-tools', entries: '/canvas, /sequencer, /form, /media, /layout', items: ['transform-box', 'snap-guides', 'path-editor', 'sequencer', 'scrubber', 'token-input', 'device-frame', 'resize-handle'] },
+    { title: 'Design tools', route: 'design-tools', entries: '/canvas, /sequencer, /form, /media, /layout', items: ['transform-box', 'snap-guides', 'path-editor', 'image-editor', 'sequencer', 'scrubber', 'token-input', 'device-frame', 'resize-handle'] },
     { title: 'Form builder', route: 'form-builder', entries: '/form-builder', items: ['form-builder', 'form-renderer', 'form-global-settings'] },
     { title: 'Motion & FX', route: 'fx', entries: '/fx', items: ['uiReveal', 'cursor', 'marquee', 'drift-row', 'grain', 'glyph-field', 'uiSplitText', 'uiMagnetic', 'intro-loader', 'scroll-progress', 'section-label'] },
     { title: 'Behavior directives', route: 'behaviors', entries: '/behaviors', items: ['uiSwipe', 'uiIntersect', 'uiInfiniteScroll', 'uiScrollFade', 'virtual-list', 'uiCopyToClipboard', 'uiRipple', 'uiResizeObserver'] },

@@ -191,6 +191,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'design-tools': [
     { name: 'Transform box', anchor: 'transform-box' },
     { name: 'Path editor', anchor: 'path-editor' },
+    { name: 'Image editor', anchor: 'image-editor' },
     { name: 'Path & ink helpers', anchor: 'path-ink-helpers' },
     { name: 'Sequencer', anchor: 'sequencer' },
     { name: 'Scrubber', anchor: 'scrubber' },

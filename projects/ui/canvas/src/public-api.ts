@@ -4,3 +4,5 @@ export * from './path';
 export * from './path-editor';
 export * from './ink';
 export * from './viewport';
+export * from './image-edit';
+export * from './image-editor';
