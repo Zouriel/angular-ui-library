@@ -452,7 +452,9 @@ export class UiPathEditor {
         kind = next;
       });
     });
-    // The host keeping a stroke changes `items`; any other change (an undo, say) forgets the point.
+    // The host keeping a stroke changes `items`, and so does tidying the items it has (a stroke's outline
+    // swapped in a moment later, an erase): both keep the point. Any other change that adds or removes
+    // items (an undo, a redo, Clear) forgets it.
     effect(() => {
       const items = this.items();
       untracked(() => {
@@ -460,7 +462,7 @@ export class UiPathEditor {
         this.lastItems = items;
         if (!prev || sameItems(prev, items)) return;
         if (this.strokePending) this.strokePending = false;
-        else this.lineStart.set(null);
+        else if (!sameIds(prev, items)) this.lineStart.set(null);
       });
     });
     afterNextRender(() => {
@@ -1205,6 +1207,11 @@ export class UiPathEditor {
 /** The same items, in the same order (a host handing over a fresh array of them changes nothing). */
 function sameItems(a: readonly UiPathItem[], b: readonly UiPathItem[]): boolean {
   return a === b || (a.length === b.length && a.every((item, i) => item === b[i]));
+}
+
+/** The same items by id, in the same order, though some may have been reshaped. */
+function sameIds(a: readonly UiPathItem[], b: readonly UiPathItem[]): boolean {
+  return a.length === b.length && a.every((item, i) => item.id === b[i].id);
 }
 
 /**

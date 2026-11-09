@@ -275,6 +275,18 @@ describe('UiPathEditor', () => {
       dotAt(40, 80);
     });
 
+    it('keeps the point when the host reshapes the stroke it kept a moment later (as a tidied outline)', () => {
+      tap(10, 10);
+      const id = 'kept';
+      host.items.set([...host.items(), { id, contours: [rectContour(9, 9, 2, 2)] }]);
+      fixture.detectChanges();
+      // A beat later the host swaps in a cleaner outline for the same item.
+      host.items.set(host.items().map((i) => (i.id === id ? { ...i, contours: [rectContour(8, 8, 4, 4)] } : i)));
+      fixture.detectChanges();
+      tap(60, 10, { shift: true });
+      along(host.strokes[1], [10, 10], [60, 10]);
+    });
+
     it('Shift + drag strokes straight to where the drag starts, then carries on freehand in the same stroke', () => {
       tap(10, 10);
       dragFrom(svg(), [[50, 10], [50, 20], [50, 30], [50, 40]], { shift: true });
