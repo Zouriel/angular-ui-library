@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import PencilEdit02Icon from '@hugeicons/core-free-icons/PencilEdit02Icon';
 import Rocket01Icon from '@hugeicons/core-free-icons/Rocket01Icon';
@@ -15,6 +15,14 @@ import StethoscopeIcon from '@hugeicons/core-free-icons/StethoscopeIcon';
 import AmbulanceIcon from '@hugeicons/core-free-icons/AmbulanceIcon';
 import Medicine01Icon from '@hugeicons/core-free-icons/Medicine01Icon';
 import Calendar03Icon from '@hugeicons/core-free-icons/Calendar03Icon';
+import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
+import ViewOffSlashIcon from '@hugeicons/core-free-icons/ViewOffSlashIcon';
+import SquareLock02Icon from '@hugeicons/core-free-icons/SquareLock02Icon';
+import SquareUnlock02Icon from '@hugeicons/core-free-icons/SquareUnlock02Icon';
+import TextIcon from '@hugeicons/core-free-icons/TextIcon';
+import Image01Icon from '@hugeicons/core-free-icons/Image01Icon';
+import Layers01Icon from '@hugeicons/core-free-icons/Layers01Icon';
+import SquareIcon from '@hugeicons/core-free-icons/SquareIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
 import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
@@ -23,10 +31,10 @@ import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
-import { UiButton, UiSegmented } from '@zouriel/ui/button';
+import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import {
-  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable,
-  type UiTreeNode, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
+  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable,
+  type UiTreeNode, type UiTreeMove, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
 } from '@zouriel/ui/data';
 import { UiChatBubble } from '@zouriel/ui/chat-bubble';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
@@ -38,7 +46,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
     UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
-    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeTable, UiChatBubble, DocPage, DocSection, DocDemo,
+    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -168,7 +176,7 @@ channels = computed<UiMessengerChannel[]>(() => [
       </doc-section>
 
       <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
-        summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique."
+        summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique. expanded is a two-way list of open nodes, so an app can open the ancestors of a node it selects. For a layers panel: muted draws a node's label dimmed (a hidden layer); multiple makes selectedValues the selection (click selects one, Ctrl or Cmd-click toggles, Shift-click selects the visible range from the last click, Space toggles; selected follows the last click; the tree gets aria-multiselectable); an ng-template uiTreeNodeEnd draws controls at the end of every row, and clicks, double clicks and keys inside it never select, open or drag the row; reorderable lets a mouse or pen drag rows (after a 4px move, so clicks still select) with a line where the row will land, or an outline when it will go into a node that has children or is a container, and never into itself or its own descendants; Alt+Up and Alt+Down move the focused node among its siblings. The tree doesn't change nodes itself: nodeMove says to move value to child number index of parent (null for the top level), counted after taking it out. Double-clicking a label or pressing F2 emits nodeActivate (to rename). Drag on touch screens isn't supported; the list keeps scrolling there."
         [shapes]="TREENODE">
         <doc-demo lang="ts + html" code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
 
@@ -180,6 +188,36 @@ nodes: UiTreeNode[] = [
 ];">
           <ui-tree label="Project files" [nodes]="treeNodes" [(selected)]="treeSel" />
           <ui-text variant="caption">Selected: {{ treeSel() ?? 'none' }}</ui-text>
+        </doc-demo>
+        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Layers&quot; [nodes]=&quot;layers()&quot; [multiple]=&quot;true&quot; [reorderable]=&quot;true&quot;
+         [(selectedValues)]=&quot;selection&quot; [(expanded)]=&quot;open&quot;
+         (nodeMove)=&quot;move($event)&quot; (nodeActivate)=&quot;rename($event)&quot;>
+  <ng-template uiTreeNodeEnd let-node>
+    <ui-icon-button size=&quot;sm&quot; [label]=&quot;(hidden(node) ? 'Show ' : 'Hide ') + node.label&quot; (click)=&quot;toggleHidden(node)&quot;>
+      <hugeicons-icon [icon]=&quot;hidden(node) ? ViewOffSlashIcon : ViewIcon&quot; [size]=&quot;14&quot; />
+    </ui-icon-button>
+    <ui-icon-button size=&quot;sm&quot; [label]=&quot;(locked(node) ? 'Unlock ' : 'Lock ') + node.label&quot; (click)=&quot;toggleLocked(node)&quot;>…</ui-icon-button>
+  </ng-template>
+</ui-tree>
+
+// A hidden layer: { label: 'Background', value: 'bg', muted: true }
+// An empty group that can take children: { label: 'Group', value: 'g2', container: true, children: [] }
+move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent */ }">
+          <div class="layers-demo">
+            <ui-tree label="Layers" [nodes]="layerNodes()" [multiple]="true" [reorderable]="true"
+                     [(selectedValues)]="layerSel" [(expanded)]="layerOpen" [(selected)]="layerLast"
+                     (nodeMove)="moveLayer($event)" (nodeActivate)="layerActivated.set($event.label)">
+              <ng-template uiTreeNodeEnd let-node>
+                <ui-icon-button size="sm" [label]="(isHidden(node) ? 'Show ' : 'Hide ') + node.label" (click)="toggleLayer(hiddenLayers, node)">
+                  <hugeicons-icon [icon]="isHidden(node) ? ViewOffSlashIcon : ViewIcon" [size]="14" [strokeWidth]="1.8" />
+                </ui-icon-button>
+                <ui-icon-button size="sm" [label]="(isLocked(node) ? 'Unlock ' : 'Lock ') + node.label" (click)="toggleLayer(lockedLayers, node)">
+                  <hugeicons-icon [icon]="isLocked(node) ? SquareLock02Icon : SquareUnlock02Icon" [size]="14" [strokeWidth]="1.8" />
+                </ui-icon-button>
+              </ng-template>
+            </ui-tree>
+          </div>
+          <ui-text variant="caption">Selected: {{ layerSel().join(', ') || 'none' }} · last moved: {{ lastMove() }} · activated: {{ layerActivated() ?? 'none' }}</ui-text>
         </doc-demo>
       </doc-section>
 
@@ -461,6 +499,7 @@ events: UiTimelineItem[] = [
     </doc-page>
   `,
   styles: `
+    .layers-demo { max-width: 320px; padding: var(--ui-space-2); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); margin-bottom: var(--ui-space-2); }
     .chat { display: flex; flex-direction: column; gap: var(--ui-space-2); max-width: 420px; margin-bottom: var(--ui-space-4); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; }
     .cc-demos { display: grid; gap: var(--ui-space-4); max-width: 560px; }
@@ -544,7 +583,11 @@ interface UiRowAction<T = Record<string, unknown>> {
   value: string;                   // unique across the tree
   icon?: string | IconSvgObject;   // HugeIcons icon or a short string
   children?: UiTreeNode[];
-}`;
+  muted?: boolean;                 // label dimmed (a hidden layer)
+  container?: boolean;             // takes dropped children even with none yet
+}
+interface UiTreeMove { value: string; parent: string | null; index: number; }
+// index counts parent's children after value has been taken out`;
   protected readonly TREEROW = `interface UiTreeTableRow {
   label: string;                   // shown in the tree column
   value: string;                   // unique; tracks expansion
@@ -586,6 +629,54 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
     { id: 'settings', icon: Settings01Icon, title: 'Settings (disabled)', time: '—', disabled: true },
   ];
   protected readonly treeSel = signal<string | null>(null);
+
+  // Layers demo
+  protected readonly ViewIcon = ViewIcon;
+  protected readonly ViewOffSlashIcon = ViewOffSlashIcon;
+  protected readonly SquareLock02Icon = SquareLock02Icon;
+  protected readonly SquareUnlock02Icon = SquareUnlock02Icon;
+  private readonly layerTree = signal<UiTreeNode[]>([
+    { label: 'Names', value: 'names', icon: TextIcon },
+    { label: 'Photo group', value: 'photos', icon: Layers01Icon, children: [
+      { label: 'Couple photo', value: 'photo', icon: Image01Icon },
+      { label: 'Frame', value: 'frame', icon: SquareIcon },
+    ] },
+    { label: 'Empty group', value: 'empty', icon: Layers01Icon, container: true },
+    { label: 'Background', value: 'bg', icon: SquareIcon },
+  ]);
+  protected readonly hiddenLayers = signal<Set<string>>(new Set(['bg']));
+  protected readonly lockedLayers = signal<Set<string>>(new Set(['bg']));
+  protected readonly layerSel = signal<string[]>(['names']);
+  protected readonly layerLast = signal<string | null>('names');
+  protected readonly layerOpen = signal<string[]>(['photos']);
+  protected readonly layerActivated = signal<string | null>(null);
+  protected readonly lastMove = signal('none');
+  protected readonly layerNodes = computed(() => {
+    const hidden = this.hiddenLayers();
+    const mark = (list: UiTreeNode[]): UiTreeNode[] =>
+      list.map((n) => ({ ...n, muted: hidden.has(n.value), children: n.children ? mark(n.children) : undefined }));
+    return mark(this.layerTree());
+  });
+  protected isHidden(n: UiTreeNode): boolean { return this.hiddenLayers().has(n.value); }
+  protected isLocked(n: UiTreeNode): boolean { return this.lockedLayers().has(n.value); }
+  protected toggleLayer(set: typeof this.hiddenLayers, n: UiTreeNode): void {
+    const next = new Set(set());
+    next.has(n.value) ? next.delete(n.value) : next.add(n.value);
+    set.set(next);
+  }
+  protected moveLayer(m: UiTreeMove): void {
+    let taken: UiTreeNode | undefined;
+    const without = (list: UiTreeNode[]): UiTreeNode[] =>
+      list.filter((n) => (n.value === m.value ? ((taken = n), false) : true)).map((n) => (n.children ? { ...n, children: without(n.children) } : n));
+    const rest = without(this.layerTree());
+    if (!taken) return;
+    const insert = (list: UiTreeNode[]): UiTreeNode[] => list.map((n) =>
+      n.value === m.parent ? { ...n, children: [...(n.children ?? []).slice(0, m.index), taken!, ...(n.children ?? []).slice(m.index)] } : n.children ? { ...n, children: insert(n.children) } : n);
+    this.layerTree.set(m.parent === null ? [...rest.slice(0, m.index), taken, ...rest.slice(m.index)] : insert(rest));
+    // Show where it went.
+    if (m.parent !== null && !this.layerOpen().includes(m.parent)) this.layerOpen.update((o) => [...o, m.parent!]);
+    this.lastMove.set(`${taken.label} to ${m.parent ?? 'top'} #${m.index}`);
+  }
   protected readonly treeNodes: UiTreeNode[] = [
     {
       label: 'src', value: 'src', icon: Folder01Icon, children: [
@@ -715,9 +806,16 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'nodes', type: 'UiTreeNode[]', default: '[]', desc: 'Root nodes.' },
     { name: 'selected', type: 'string | null', default: 'null', desc: 'Two-way (`[(selected)]`). Value of the selected node.' },
     { name: 'label', type: 'string', default: "''", desc: 'Accessible name of the tree (aria-label on role=tree).' },
+    { name: 'expanded', type: 'string[]', default: '[]', desc: 'Two-way (`[(expanded)]`). Values of the open nodes; unbound, the tree keeps its own.' },
+    { name: 'multiple', type: 'boolean', default: 'false', desc: 'Select several nodes: click, Ctrl/Cmd-click toggles, Shift-click selects a range, Space toggles.' },
+    { name: 'selectedValues', type: 'string[]', default: '[]', desc: 'Two-way. The selection when multiple is on, in tree order.' },
+    { name: 'reorderable', type: 'boolean', default: 'false', desc: 'Drag rows with a mouse or pen, and Alt+Up/Down, to move nodes (emits nodeMove).' },
+    { name: 'ng-template uiTreeNodeEnd', type: 'let-node', default: '—', desc: 'Content at the end of every row (UiTreeNodeEnd). Its clicks and keys do not select the row.' },
   ];
   protected readonly treeOut: ApiRow[] = [
     { name: 'nodeSelect', type: 'UiTreeNode', default: '—', desc: 'Node chosen by click, Enter or Space.' },
+    { name: 'nodeMove', type: 'UiTreeMove', default: '—', desc: 'Move value to child number index of parent (null = top level), counted after taking it out.' },
+    { name: 'nodeActivate', type: 'UiTreeNode', default: '—', desc: 'Double click on a label, or F2 (e.g. to rename).' },
   ];
   protected readonly treeTableApi: ApiRow[] = [
     { name: 'rows', type: 'UiTreeTableRow[]', default: '[]', desc: 'Hierarchical rows.' },

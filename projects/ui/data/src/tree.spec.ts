@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 import Folder01Icon from '@hugeicons/core-free-icons/Folder01Icon';
-import { UiTree, type UiTreeNode } from './tree';
+import { UiTree, UiTreeNodeEnd, type UiTreeMove, type UiTreeNode } from './tree';
 
 @Component({
   imports: [UiTree],
@@ -196,5 +196,293 @@ describe('UiTree', () => {
     expect(item('app')).toBeUndefined();
     expect(focused()).toBe('src');
     expect(item('src').tabIndex).toBe(0);
+  });
+});
+
+@Component({
+  imports: [UiTree, UiTreeNodeEnd],
+  template: `
+    <ui-tree label="Layers" [nodes]="nodes" [multiple]="multiple()" [reorderable]="reorderable()"
+             [(selected)]="selected" [(selectedValues)]="values" [(expanded)]="open"
+             (nodeMove)="moves.push($event)" (nodeActivate)="activated.push($event.value)">
+      <ng-template uiTreeNodeEnd let-node><button type="button" class="eye" (click)="eyes.push(node.value)">Eye {{ node.label }}</button></ng-template>
+    </ui-tree>
+  `,
+})
+class LayersHost {
+  multiple = signal(true);
+  reorderable = signal(true);
+  selected = signal<string | null>(null);
+  values = signal<string[]>([]);
+  open = signal<string[]>(['group']);
+  moves: UiTreeMove[] = [];
+  activated: string[] = [];
+  eyes: string[] = [];
+  nodes: UiTreeNode[] = [
+    { label: 'Title', value: 'title' },
+    { label: 'Group', value: 'group', children: [
+      { label: 'Photo', value: 'photo' },
+      { label: 'Frame', value: 'frame', children: [{ label: 'Shape', value: 'shape' }] },
+    ] },
+    { label: 'Empty', value: 'empty', container: true },
+    { label: 'Hidden', value: 'hidden', muted: true },
+  ];
+}
+
+function layers() {
+  const fixture = TestBed.createComponent(LayersHost);
+  fixture.detectChanges();
+  const el = fixture.nativeElement as HTMLElement;
+  const host = fixture.componentInstance;
+  const item = (value: string) => [...el.querySelectorAll<HTMLElement>('[role="treeitem"]')].find((i) => i.dataset['value'] === value)!;
+  const row = (value: string) => item(value)?.querySelector<HTMLElement>(':scope > .row')!;
+  const click = (value: string, init: MouseEventInit = {}) => {
+    row(value).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ...init }));
+    fixture.detectChanges();
+  };
+  const press = (k: string, init: KeyboardEventInit = {}, target: HTMLElement = document.activeElement as HTMLElement) => {
+    const ev = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init });
+    target.dispatchEvent(ev);
+    fixture.detectChanges();
+    return ev;
+  };
+  return { fixture, el, host, item, row, click, press };
+}
+
+/** Each row 20px tall, stacked from y=0 in visible order; elementFromPoint finds the row at y. */
+function fakeLayout(el: HTMLElement) {
+  const rows = () => [...el.querySelectorAll<HTMLElement>('.row')];
+  for (const r of rows()) {
+    r.getBoundingClientRect = () => {
+      const i = rows().indexOf(r);
+      return { left: 0, top: i * 20, right: 200, bottom: i * 20 + 20, width: 200, height: 20, x: 0, y: i * 20, toJSON: () => ({}) } as DOMRect;
+    };
+  }
+  const prev = document.elementFromPoint;
+  document.elementFromPoint = (_x: number, y: number) => rows()[Math.floor(y / 20)] ?? null;
+  return () => (document.elementFromPoint = prev);
+}
+
+function pointer(type: string, target: HTMLElement, y: number, x = 50) {
+  const ev = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0 });
+  Object.defineProperty(ev, 'pointerId', { value: 1 });
+  Object.defineProperty(ev, 'pointerType', { value: 'mouse' });
+  target.dispatchEvent(ev);
+}
+
+describe('UiTree layers features', () => {
+  it('draws muted nodes dimmed and leaves others alone', () => {
+    const { row } = layers();
+    expect(row('hidden').classList).toContain('muted');
+    expect(row('title').classList).not.toContain('muted');
+  });
+
+  it('multiple: click selects one, Ctrl/Cmd toggles, Shift selects the visible range; selected follows the last click', () => {
+    const { el, host, click, item } = layers();
+    expect(el.querySelector('[role="tree"]')!.getAttribute('aria-multiselectable')).toBe('true');
+    click('title');
+    expect(host.values()).toEqual(['title']);
+    click('frame', { ctrlKey: true });
+    expect(host.values()).toEqual(['title', 'frame']);
+    expect(host.selected()).toBe('frame');
+    click('title', { metaKey: true });
+    expect(host.values()).toEqual(['frame']);
+    expect(host.selected()).toBe('title');
+    click('photo');
+    click('empty', { shiftKey: true });
+    // photo, frame (its child shape is closed so it's not in the range), empty
+    expect(host.values()).toEqual(['photo', 'frame', 'empty']);
+    expect(host.selected()).toBe('empty');
+    expect(item('frame').getAttribute('aria-selected')).toBe('true');
+    expect(item('title').getAttribute('aria-selected')).toBe('false');
+    // Ctrl+Shift adds the range to what's selected.
+    click('title');
+    click('photo', { shiftKey: true, ctrlKey: true });
+    expect(host.values()).toEqual(['title', 'group', 'photo']);
+  });
+
+  it('multiple: Space toggles the focused node, Enter selects only it', () => {
+    const { host, item, press } = layers();
+    item('title').focus();
+    press(' ');
+    item('hidden').focus();
+    press(' ');
+    expect(host.values()).toEqual(['title', 'hidden']);
+    press(' ');
+    expect(host.values()).toEqual(['title']);
+    press('Enter');
+    expect(host.values()).toEqual(['hidden']);
+  });
+
+  it('single mode leaves selectedValues alone and has no aria-multiselectable', () => {
+    const { fixture, el, host, click } = layers();
+    host.multiple.set(false);
+    fixture.detectChanges();
+    expect(el.querySelector('[role="tree"]')!.hasAttribute('aria-multiselectable')).toBe(false);
+    click('title');
+    click('photo', { ctrlKey: true });
+    expect(host.selected()).toBe('photo');
+    expect(host.values()).toEqual([]);
+  });
+
+  it('renders the uiTreeNodeEnd template on every row; using it does not select the row', () => {
+    const { el, host, row, item } = layers();
+    expect(el.querySelectorAll('.end .eye').length).toBe(6);
+    expect(row('photo').querySelector('.end .eye')!.textContent).toContain('Eye Photo');
+    row('photo').querySelector<HTMLButtonElement>('.eye')!.click();
+    expect(host.eyes).toEqual(['photo']);
+    expect(host.values()).toEqual([]);
+    expect(host.selected()).toBeNull();
+    // Enter on the button is the button's, not the tree's.
+    const btn = row('photo').querySelector<HTMLButtonElement>('.eye')!;
+    btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    expect(host.selected()).toBeNull();
+    expect(item('photo')).toBeDefined();
+  });
+
+  it('expanded is a two-way model: binding opens nodes and the chevron writes back', () => {
+    const { fixture, host, item, row } = layers();
+    expect(item('photo')).toBeDefined();
+    host.open.set(['group', 'frame']);
+    fixture.detectChanges();
+    expect(item('shape')).toBeDefined();
+    row('group').querySelector<HTMLElement>('.chev')!.click();
+    fixture.detectChanges();
+    expect(host.open()).toEqual(['frame']);
+    expect(item('photo')).toBeUndefined();
+  });
+
+  it('Alt+Up/Down moves the focused node among its siblings, and stops at the ends', () => {
+    const { fixture, host, item, press } = layers();
+    item('photo').focus();
+    expect(press('ArrowDown', { altKey: true }).defaultPrevented).toBe(true);
+    expect(host.moves).toEqual([{ value: 'photo', parent: 'group', index: 1 }]);
+    press('ArrowUp', { altKey: true }); // already first among group's children
+    expect(host.moves.length).toBe(1);
+    item('hidden').focus();
+    press('ArrowUp', { altKey: true });
+    expect(host.moves[1]).toEqual({ value: 'hidden', parent: null, index: 2 });
+    // Not reorderable: Alt+Down is an ordinary Down.
+    host.reorderable.set(false);
+    fixture.detectChanges();
+    item('title').focus();
+    press('ArrowDown', { altKey: true });
+    expect(host.moves.length).toBe(2);
+    expect((document.activeElement as HTMLElement).dataset['value']).toBe('group');
+  });
+
+  it('dragging a row shows where it lands and emits nodeMove; a short move is still a click', () => {
+    const { fixture, el, host, row } = layers();
+    const restore = fakeLayout(el);
+    try {
+      // Rows: title 0, group 20, photo 40, frame 60, empty 80, hidden 100.
+      const tree = el.querySelector<HTMLElement>('[role="tree"]')!;
+      pointer('pointerdown', row('hidden'), 105);
+      pointer('pointermove', tree, 103); // under the 4px threshold
+      fixture.detectChanges();
+      expect(row('hidden').classList).not.toContain('dragging');
+      pointer('pointerup', tree, 103);
+      row('hidden').click();
+      fixture.detectChanges();
+      expect(host.values()).toEqual(['hidden']);
+      expect(host.moves).toEqual([]);
+
+      // Upper half of title: before it.
+      row('title').click();
+      fixture.detectChanges();
+      pointer('pointerdown', row('hidden'), 105);
+      pointer('pointermove', tree, 4);
+      fixture.detectChanges();
+      expect(row('hidden').classList).toContain('dragging');
+      expect(row('title').classList).toContain('drop-before');
+      pointer('pointerup', tree, 4);
+      row('hidden').click(); // the click that ends a drag doesn't select
+      fixture.detectChanges();
+      expect(host.moves).toEqual([{ value: 'hidden', parent: null, index: 0 }]);
+      expect(host.values()).toEqual(['title']);
+      expect(row('title').classList).not.toContain('drop-before');
+      expect(row('hidden').classList).not.toContain('dragging');
+
+      // Middle of an empty container: into it.
+      pointer('pointerdown', row('title'), 5);
+      pointer('pointermove', tree, 90);
+      fixture.detectChanges();
+      expect(row('empty').classList).toContain('drop-inside');
+      pointer('pointerup', tree, 90);
+      expect(host.moves[1]).toEqual({ value: 'title', parent: 'empty', index: 0 });
+
+      // Lower part of an open parent: first child of it.
+      pointer('pointerdown', row('hidden'), 105);
+      pointer('pointermove', tree, 38);
+      fixture.detectChanges();
+      expect(row('group').classList).toContain('drop-first');
+      pointer('pointerup', tree, 38);
+      expect(host.moves[2]).toEqual({ value: 'hidden', parent: 'group', index: 0 });
+
+      // A leaf has no inside: lower half of photo is after it.
+      pointer('pointerdown', row('title'), 5);
+      pointer('pointermove', tree, 55);
+      fixture.detectChanges();
+      expect(row('photo').classList).toContain('drop-after');
+      pointer('pointerup', tree, 55);
+      expect(host.moves[3]).toEqual({ value: 'title', parent: 'group', index: 1 });
+    } finally {
+      restore();
+    }
+  });
+
+  it('never drops a node into itself or its descendants, nor where it already is', () => {
+    const { fixture, el, host, row } = layers();
+    const restore = fakeLayout(el);
+    try {
+      const tree = el.querySelector<HTMLElement>('[role="tree"]')!;
+      pointer('pointerdown', row('group'), 25);
+      for (const y of [30, 45, 65]) {
+        pointer('pointermove', tree, y); // itself, then its children photo and frame
+        fixture.detectChanges();
+        expect(el.querySelector('[class*="drop-"]')).toBeNull();
+      }
+      pointer('pointerup', tree, 65);
+      expect(host.moves).toEqual([]);
+      // Just below title is where group already is.
+      pointer('pointerdown', row('group'), 25);
+      pointer('pointermove', tree, 18);
+      fixture.detectChanges();
+      expect(el.querySelector('[class*="drop-"]')).toBeNull();
+      pointer('pointerup', tree, 18);
+      expect(host.moves).toEqual([]);
+    } finally {
+      restore();
+    }
+  });
+
+  it('Escape cancels a drag', () => {
+    const { fixture, el, host, row } = layers();
+    const restore = fakeLayout(el);
+    try {
+      const tree = el.querySelector<HTMLElement>('[role="tree"]')!;
+      pointer('pointerdown', row('hidden'), 105);
+      pointer('pointermove', tree, 4);
+      fixture.detectChanges();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(row('hidden').classList).not.toContain('dragging');
+      pointer('pointerup', tree, 4);
+      expect(host.moves).toEqual([]);
+    } finally {
+      restore();
+    }
+  });
+
+  it('double click on a label, or F2, activates the node', () => {
+    const { host, row, item, press } = layers();
+    row('photo').querySelector<HTMLElement>('.label')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(host.activated).toEqual(['photo']);
+    // Double clicks in the end slot don't.
+    row('photo').querySelector<HTMLElement>('.eye')!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    expect(host.activated).toEqual(['photo']);
+    item('title').focus();
+    press('F2');
+    expect(host.activated).toEqual(['photo', 'title']);
   });
 });

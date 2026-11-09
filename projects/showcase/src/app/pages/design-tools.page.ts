@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -13,17 +13,19 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
 import DropletIcon from '@hugeicons/core-free-icons/DropletIcon';
 import RotateClockwiseIcon from '@hugeicons/core-free-icons/RotateClockwiseIcon';
+import PlusSignIcon from '@hugeicons/core-free-icons/PlusSignIcon';
+import MinusSignIcon from '@hugeicons/core-free-icons/MinusSignIcon';
 import { UiMeter } from '@zouriel/ui/progress';
 import { UiDeviceFrame } from '@zouriel/ui/media';
 import { UiResizeHandle } from '@zouriel/ui/layout';
-import { UiButton, UiSegmented } from '@zouriel/ui/button';
+import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-design-tools',
   imports: [
     DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
-    UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
+    UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiIconButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Flagship" title="Design tools"
@@ -184,10 +186,24 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
       </doc-section>
 
       <doc-section name="Device frame" selector="ui-device-frame" [api]="deviceApi"
-        summary="From @zouriel/ui/media. A phone whose screen is exactly width × height CSS pixels, scaled down (never up past maxScale) to fit its container, so give the host a height. Content lays out at true phone size and is only scaled visually.">
-        <doc-demo code="<ui-device-frame [width]=&quot;390&quot; [height]=&quot;844&quot;> … </ui-device-frame>">
+        summary="From @zouriel/ui/media. A phone whose screen is exactly width × height CSS pixels, scaled down (never up past maxScale) to fit its container, so give the host a height. Content lays out at true phone size and is only scaled visually. zoom multiplies that fitted scale (1 fits, 2 is twice; kept within 0.25–8, and not capped by maxScale): zoomed past the space, the host scrolls both ways and every edge of the phone can be reached; smaller, the phone stays centred. fitScale is the scale at zoom 1 and scale the one drawn, so the zoom can be shown with 100% meaning fits. To zoom around the cursor (Ctrl+wheel here), read pointAt(x, y) before the zoom changes and call scrollPointTo(point, x, y) after it renders; scrollElement is the element that scrolls.">
+        <doc-demo lang="ts + html" code="<ui-device-frame #f [width]=&quot;390&quot; [height]=&quot;844&quot; [zoom]=&quot;zoom()&quot; (wheel)=&quot;wheel($event, f)&quot;> … </ui-device-frame>
+
+wheel(e: WheelEvent, f: UiDeviceFrame) {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const p = f.pointAt(e.clientX, e.clientY);
+  this.zoom.set(Math.min(8, Math.max(0.25, this.zoom() * Math.exp(-e.deltaY / 300))));
+  afterNextRender(() => f.scrollPointTo(p, e.clientX, e.clientY), { injector: this.injector });
+}">
+          <div class="zoom-bar">
+            <ui-icon-button size="sm" variant="outline" label="Zoom out" [disabled]="zoom() <= 0.25" (click)="stepZoom(-1)"><hugeicons-icon [icon]="MinusSignIcon" [size]="14" [strokeWidth]="1.8" /></ui-icon-button>
+            <span class="zoom-pct" aria-live="polite">{{ zoom() * 100 | number: '1.0-0' }}%</span>
+            <ui-icon-button size="sm" variant="outline" label="Zoom in" [disabled]="zoom() >= 8" (click)="stepZoom(1)"><hugeicons-icon [icon]="PlusSignIcon" [size]="14" [strokeWidth]="1.8" /></ui-icon-button>
+            <ui-button size="sm" variant="ghost" [disabled]="zoom() === 1" (click)="zoom.set(1)">Fit</ui-button>
+          </div>
           <div class="device-box">
-            <ui-device-frame [width]="390" [height]="844">
+            <ui-device-frame #df [width]="390" [height]="844" [zoom]="zoom()" (wheel)="wheelZoom($event, df)">
               <div class="phone-page"><strong>390 × 844</strong><span>Laid out at phone size</span></div>
             </ui-device-frame>
           </div>
@@ -232,6 +248,8 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
     .stack { display: grid; gap: var(--ui-space-3); max-width: 420px; }
     .json { margin: var(--ui-space-2) 0 0; padding: var(--ui-space-2); background: var(--ui-color-surface-subtle); border-radius: var(--ui-radius-sm); font: 11px/1.4 var(--ui-font-mono); white-space: pre-wrap; }
     .device-box { height: 420px; }
+    .zoom-bar { display: flex; align-items: center; gap: var(--ui-space-2); margin-bottom: var(--ui-space-2); }
+    .zoom-pct { min-width: 48px; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--ui-font-size-sm); color: var(--ui-color-text); }
     .phone-page { height: 100%; display: grid; place-content: center; gap: 6px; text-align: center; background: var(--ui-gradient-hero); color: var(--ui-color-text); font-size: 20px; }
     .panel-demo { height: 360px; display: flex; flex-direction: column; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; }
     .content { flex: 1; display: grid; place-items: center; color: var(--ui-color-text-muted); }
@@ -240,6 +258,25 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
   `,
 })
 export class DesignToolsPage {
+  private readonly injector = inject(Injector);
+  protected readonly PlusSignIcon = PlusSignIcon;
+  protected readonly MinusSignIcon = MinusSignIcon;
+  /** Device frame demo: 1 = fits. */
+  protected readonly zoom = signal(1);
+  private static readonly ZOOMS = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8];
+  protected stepZoom(dir: 1 | -1): void {
+    const z = this.zoom();
+    const steps = DesignToolsPage.ZOOMS;
+    const next = dir > 0 ? steps.find((s) => s > z + 1e-6) : [...steps].reverse().find((s) => s < z - 1e-6);
+    if (next !== undefined) this.zoom.set(next);
+  }
+  protected wheelZoom(e: WheelEvent, f: UiDeviceFrame): void {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const p = f.pointAt(e.clientX, e.clientY);
+    this.zoom.set(Math.min(8, Math.max(0.25, this.zoom() * Math.exp(-e.deltaY / 300))));
+    afterNextRender(() => f.scrollPointTo(p, e.clientX, e.clientY), { injector: this.injector });
+  }
   /** Phones: the sequencer demo switches to its compact label column so the timeline keeps room. */
   protected readonly narrow = signal(false);
   constructor() {
@@ -556,8 +593,12 @@ export class DesignToolsPage {
   protected readonly deviceApi: ApiRow[] = [
     { name: 'width / height', type: 'number', default: '390 / 844', desc: 'Screen size in CSS pixels.' },
     { name: 'bezel / island', type: 'boolean', default: 'true', desc: 'Draw the phone body / the camera island (the island needs the bezel).' },
-    { name: 'maxScale', type: 'number', default: '1', desc: 'Never scale above this.' },
-    { name: 'scale', type: 'Signal<number>', default: '1', desc: 'Read-only current scale, read from a template reference (#f then f.scale()) to line overlays up with the screen.' },
+    { name: 'maxScale', type: 'number', default: '1', desc: 'Never fit above this (zoom is not capped by it).' },
+    { name: 'zoom', type: 'number', default: '1', desc: 'Multiplies the fitted scale; kept within 0.25–8. Above 1 the host scrolls both ways.' },
+    { name: 'scale', type: 'Signal<number>', default: '1', desc: 'Read-only scale actually drawn (fitScale × zoom), read from a template reference (#f then f.scale()) to line overlays up with the screen.' },
+    { name: 'fitScale', type: 'Signal<number>', default: '1', desc: 'Read-only scale at zoom 1 (fits the host).' },
+    { name: 'scrollElement', type: 'HTMLElement', default: '—', desc: 'The element that scrolls when zoomed in (the host).' },
+    { name: 'pointAt(x, y) / scrollPointTo(p, x, y)', type: 'method', default: '—', desc: 'Screen px under a client point; scroll so that point is under the client point again (call after the new zoom renders).' },
     { name: '<ng-content>', type: 'slot', default: '', desc: 'The screen content, laid out at true size.' },
   ];
   protected readonly resizeApi: ApiRow[] = [
