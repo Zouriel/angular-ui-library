@@ -250,6 +250,20 @@ export class UiImageEdit {
     s.last = { x, y };
   }
 
+  /**
+   * Carries the stroke on to (x, y) in a straight line, with no smoothing: the Shift-click line. A
+   * stroke can go on freehand after it.
+   */
+  lineTo(x: number, y: number): void {
+    const s = this.stroke;
+    if (!s) return;
+    // Finish any curve in progress to where the stroke really is, then go straight from there.
+    this.segment({ x: (s.prev.x + s.last.x) / 2, y: (s.prev.y + s.last.y) / 2 }, s.last);
+    this.segment(s.last, { x, y });
+    s.prev = { x, y };
+    s.last = { x, y };
+  }
+
   /** Ends the stroke: one undo step. Returns whether it changed anything. */
   endStroke(): boolean {
     const s = this.stroke;

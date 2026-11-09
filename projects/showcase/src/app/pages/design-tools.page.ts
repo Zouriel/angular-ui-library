@@ -7,7 +7,7 @@ import {
   type UiImageCrop, type UiImageEditorMode,
 } from '@zouriel/ui/canvas';
 import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
-import { UiTokenInput, UiNumberInput, UiNumberLabel, UiSlider, type UiTokenRun } from '@zouriel/ui/form';
+import { UiTokenInput, UiNumberInput, UiNumberLabel, UiSlider, UiSwitch, type UiTokenRun } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 // One file per icon: importing from the package root makes the bundler read all ~4,000 icons,
 // which ran the production build out of memory on the server.
@@ -25,7 +25,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-design-tools',
   imports: [
-    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiImageEditor, UiSlider, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
+    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiImageEditor, UiSlider, UiSwitch, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
     UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiIconButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -55,7 +55,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Path editor" selector="ui-path-editor" [api]="pathApi" [outputs]="pathOutputs" [shapes]="pathShapes"
-        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. Pinch or Ctrl/⌘ + wheel zooms; a plain wheel scrolls the page. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
+        summary="A vector surface for outlines, as in a shape tool. Objects selects, moves, scales and rotates; Points edits points and curve handles (tap an edge to add one, double-tap to switch corner/curve); Pen places points (drag for a curve, tap the first point to close); Draw paints with pressure-sensitive brushes, and holding still at the end of a stroke snaps it to a line, circle, rectangle or triangle. In Draw, Shift-click strokes straight from where the last stroke ended to the click, with the current brush (the eraser too), and the next Shift-click carries the line on; a faint line shows where it will go while Shift is held, and [straightLine] does the same without Shift for phones. Pinch or Ctrl/⌘ + wheel zooms; a plain wheel scrolls the page. Keyboard: ] and [ step the selection through the items, Escape clears points then the item, arrows nudge (Shift for 10), Delete removes selected points, Ctrl/⌘+A selects every point, and in Pen mode Enter or Escape finishes and Backspace takes back the last point. It never changes items itself: each finished edit comes back once through (itemsChange), so the host owns undo.">
         <doc-demo code="<ui-path-editor #editor [items]=&quot;items()&quot; [width]=&quot;400&quot; [height]=&quot;260&quot; [mode]=&quot;mode()&quot; [brush]=&quot;brush()&quot;
   [(selectedId)]=&quot;selectedId&quot; (itemsChange)=&quot;commit($event)&quot; (stroke)=&quot;addStroke($event)&quot; />
 <ui-button (click)=&quot;editor.fit()&quot;>Fit</ui-button>">
@@ -63,6 +63,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
             <ui-segmented size="sm" label="Mode" [options]="peModes" [value]="peMode()" (valueChange)="peMode.set($any($event))" />
             @if (peMode() === 'draw') {
               <ui-segmented size="sm" label="Brush" [options]="brushes" [value]="brushKind()" (valueChange)="brushKind.set($any($event))" />
+              <ui-switch size="sm" [ngModel]="peStraight()" (ngModelChange)="peStraight.set($event)">Straight lines</ui-switch>
             }
             <span class="grow"></span>
             <!-- Groups wrap as a whole on narrow screens, so the shapes stay together on their own row. -->
@@ -78,7 +79,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           </div>
           <div class="pe-stage">
             <ui-path-editor #pathEditor label="Shape editor demo" [items]="pathItems()" [width]="400" [height]="260" [mode]="peMode()"
-              [brush]="{ kind: brushKind(), size: brushKind() === 'marker' ? 12 : 5 }" [(selectedId)]="peSelected"
+              [brush]="{ kind: brushKind(), size: brushKind() === 'marker' ? 12 : 5 }" [straightLine]="peStraight()" [(selectedId)]="peSelected"
               (itemsChange)="commitPath($event)" (stroke)="onStroke($event)" />
           </div>
           <p class="note">{{ peHints[peMode()] }}</p>
@@ -86,7 +87,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Image editor" selector="ui-image-editor" [api]="imageApi" [outputs]="imageOutputs" [shapes]="imageShapes"
-        summary="Crop a picture and erase parts of it, the picture counterpart of the path editor. Crop shows a frame with eight handles (drag inside to move it; outside is dimmed, thirds show while dragging, and it keeps to aspect when one is set). Erase paints transparency with a round brush, hard or soft; Restore paints the original back. Erased parts show over a checkerboard. Pinch or Ctrl/⌘ + wheel zooms about the pointer, two fingers or Space + drag pan, and once a pen has been used fingers only navigate. Every stroke and crop change is one undo step (Ctrl/⌘+Z, Shift+Ctrl/⌘+Z); [ and ] change the brush size. toBlob() gives the crop with erased pixels transparent, at up to 4096 px on the long side.">
+        summary="Crop a picture and erase parts of it, the picture counterpart of the path editor. Crop shows a frame with eight handles (drag inside to move it; outside is dimmed, thirds show while dragging, and it keeps to aspect when one is set). Erase paints transparency with a round brush, hard or soft; Restore paints the original back. Shift-click paints a straight line from where the last stroke ended (or the last click) to the click, as one undo step, and the next Shift-click carries it on; a faint line shows where it will go while Shift is held, and [straightLine] does the same without Shift for phones. Erased parts show over a checkerboard. Pinch or Ctrl/⌘ + wheel zooms about the pointer, two fingers or Space + drag pan, and once a pen has been used fingers only navigate. Every stroke and crop change is one undo step (Ctrl/⌘+Z, Shift+Ctrl/⌘+Z); [ and ] change the brush size. toBlob() gives the crop with erased pixels transparent, at up to 4096 px on the long side.">
         <doc-demo code="<ui-image-editor #editor [src]=&quot;photoUrl&quot; [(mode)]=&quot;mode&quot; [(brushSize)]=&quot;size&quot; [(brushSoftness)]=&quot;softness&quot;
   [aspect]=&quot;aspect()&quot; [(crop)]=&quot;crop&quot; (changed)=&quot;saved.set(false)&quot; />
 <ui-button [disabled]=&quot;!editor.canUndo()&quot; (click)=&quot;editor.undo()&quot;>Undo</ui-button>
@@ -95,6 +96,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
             <ui-segmented size="sm" label="Mode" [options]="ieModes" [value]="ieMode()" (valueChange)="ieMode.set($any($event))" />
             @if (ieMode() === 'crop') {
               <ui-segmented size="sm" label="Aspect" [options]="ieAspects" [value]="ieAspectKey()" (valueChange)="ieAspectKey.set($any($event))" />
+            } @else {
+              <ui-switch size="sm" [ngModel]="ieStraight()" (ngModelChange)="ieStraight.set($event)">Straight lines</ui-switch>
             }
             <span class="grow"></span>
             <div class="pe-group">
@@ -117,7 +120,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           }
           <div class="pe-stage">
             <ui-image-editor #imageEditor label="Picture editor demo" src="demo/sunset.jpg" [(mode)]="ieMode" [(brushSize)]="ieSize"
-              [(brushSoftness)]="ieSoft" [aspect]="ieAspect()" [(crop)]="ieCrop" />
+              [(brushSoftness)]="ieSoft" [aspect]="ieAspect()" [(crop)]="ieCrop" [straightLine]="ieStraight()" />
           </div>
           <p class="note">{{ ieHints[ieMode()] }}@if (ieCrop(); as c) { · Crop {{ c.width }} × {{ c.height }} at {{ c.x }}, {{ c.y }}}</p>
           @if (ieResult(); as r) {
@@ -425,10 +428,11 @@ export class DesignToolsPage {
   protected readonly ieAspects = [{ value: 'free', label: 'Free' }, { value: '1', label: '1:1' }, { value: '0.8', label: '4:5' }, { value: '1.7778', label: '16:9' }];
   protected readonly ieHints: Record<UiImageEditorMode, string> = {
     crop: 'Drag the handles or the frame. Pick an aspect to keep its shape.',
-    erase: 'Drag to erase; two fingers (or Space + drag) move the view. [ and ] change the brush size.',
-    restore: 'Drag over erased parts to bring the picture back.',
+    erase: 'Drag to erase; Shift-click to erase in a straight line from the last point. Two fingers (or Space + drag) move the view; [ and ] change the brush size.',
+    restore: 'Drag over erased parts to bring the picture back; Shift-click restores in a straight line.',
   };
   protected readonly ieMode = signal<UiImageEditorMode>('erase');
+  protected readonly ieStraight = signal(false);
   protected readonly ieSize = signal(60);
   protected readonly ieSoft = signal(0.3);
   protected readonly ieSoftPct = computed(() => Math.round(this.ieSoft() * 100));
@@ -456,9 +460,10 @@ export class DesignToolsPage {
     objects: 'Tap a shape to select it, drag to move, corner knobs scale, the top knob rotates. Shift keeps proportions; arrows nudge; ] and [ step through shapes.',
     points: 'Drag points and handles; tap an edge to add a point; double-tap a point to switch corner/curve; Shift-click or drag a box to select several.',
     pen: 'Tap to place corners, drag to pull out a curve, tap the first point to close the shape (Enter finishes an open line).',
-    draw: 'Paint with the brush (pens use pressure). Hold still at the end of a stroke to snap it to a shape. The eraser removes shapes it touches.',
+    draw: 'Paint with the brush (pens use pressure). Hold still at the end of a stroke to snap it to a shape; Shift-click (or turn on Straight lines) to draw straight from the last point. The eraser removes shapes it touches.',
   };
   protected readonly peMode = signal<UiPathEditorMode>('objects');
+  protected readonly peStraight = signal(false);
   protected readonly brushKind = signal<UiBrushKind>('pen');
   protected readonly peSelected = signal<string | null>(null);
   private shapeSeq = 0;
@@ -519,6 +524,8 @@ export class DesignToolsPage {
     { name: 'fill', type: 'string | null', default: 'null', desc: 'Paint for ink as it goes down and for items the pen makes.' },
     { name: 'fingerDraws', type: "boolean | 'auto'", default: "'auto'", desc: 'After a pen is seen, fingers pan instead of drawing (palm rejection).' },
     { name: 'snapToShape / freeHandles / lockAspect', type: 'boolean', default: 'true / false / false', desc: 'Hold-to-snap strokes; handles move independently (Alt for touch); keep proportions when scaling.' },
+    { name: 'straightLine', type: 'boolean', default: 'false', desc: 'Draw mode: every press after the first strokes straight from where the last stroke ended, as Shift-click does (a "straight line" button for phones). Shift + drag goes straight to where the drag starts, then on freehand in the same stroke.' },
+    { name: 'clearLineStart()', type: 'method', default: '', desc: 'Forget where the last stroke ended (it is also forgotten on another brush or mode, and on any items change that is not a stroke being kept, such as an undo).' },
     { name: 'showArtboard / label', type: 'boolean / string', default: "true / 'Shape editor'", desc: 'Draw the artboard; accessible name.' },
     { name: 'fit() / zoomBy(f) / selectAllPoints()', type: 'method', default: '', desc: 'Frame the artboard and everything drawn; zoom by a factor about the centre; select every point of the selected item.' },
     { name: 'finishPen(closed) / undoPenPoint() / cancelPen()', type: 'method', default: '', desc: 'Pen-mode controls for a toolbar.' },
@@ -533,6 +540,7 @@ export class DesignToolsPage {
     { name: 'crop', type: 'UiImageCrop | null', default: 'null', desc: 'Two-way. The crop in image pixels; null until loaded, then the whole picture unless the host set one.' },
     { name: 'label', type: 'string', default: "'Picture editor'", desc: 'Accessible name.' },
     { name: 'fingerDraws', type: "boolean | 'auto'", default: "'auto'", desc: "Whether a finger paints. 'auto': until a pen is used, then fingers only pan and zoom." },
+    { name: 'straightLine', type: 'boolean', default: 'false', desc: 'Every press after the first paints straight from where the last stroke ended, as Shift-click does (a "straight line" button for phones). Undo, redo, reset and another mode forget the point.' },
     { name: 'naturalWidth / naturalHeight', type: 'Signal<number>', default: '0', desc: 'Read-only. The working copy\'s size (the picture\'s, unless scaled down to 4096 px).' },
     { name: 'loaded / canUndo / canRedo / dirty', type: 'Signal<boolean>', default: 'false', desc: 'Read-only. dirty: anything erased or cropped compared with the original.' },
     { name: 'undo() / redo() / reset()', type: 'method', default: '—', desc: 'reset() goes back to the original picture, uncropped, as one undo step.' },

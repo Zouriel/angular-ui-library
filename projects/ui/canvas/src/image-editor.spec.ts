@@ -44,7 +44,7 @@ class FakeBackend implements UiImageEditorBackend {
   imports: [UiImageEditor],
   template: `
     <ui-image-editor #ed src="data:image/png;base64,AAAA" [aspect]="aspect()" [(mode)]="mode" [(brushSize)]="size" [(brushSoftness)]="soft"
-      [(crop)]="crop" [fingerDraws]="fingerDraws()" (changed)="changes = changes + 1" />
+      [(crop)]="crop" [fingerDraws]="fingerDraws()" [straightLine]="straight()" (changed)="changes = changes + 1" />
   `,
 })
 class Host {
@@ -54,10 +54,11 @@ class Host {
   readonly aspect = signal<number | null>(null);
   readonly crop = signal<UiImageCrop | null>(null);
   readonly fingerDraws = signal<boolean | 'auto'>('auto');
+  readonly straight = signal(false);
   changes = 0;
 }
 
-interface P { x: number; y: number; id?: number; type?: 'mouse' | 'pen' | 'touch'; button?: number }
+interface P { x: number; y: number; id?: number; type?: 'mouse' | 'pen' | 'touch'; button?: number; shift?: boolean }
 
 describe('UiImageEditor', () => {
   let fixture: ComponentFixture<Host>;
@@ -76,7 +77,7 @@ describe('UiImageEditor', () => {
   };
   const send = (kind: string, p: P, target: Element = el()) => {
     const e = new Event(kind, { bubbles: true, cancelable: true });
-    Object.assign(e, { pointerId: p.id ?? 1, pointerType: p.type ?? 'mouse', button: p.button ?? 0, ...client(p.x, p.y) });
+    Object.assign(e, { pointerId: p.id ?? 1, pointerType: p.type ?? 'mouse', button: p.button ?? 0, shiftKey: !!p.shift, ...client(p.x, p.y) });
     target.dispatchEvent(e);
     fixture.detectChanges();
     return e;
@@ -217,6 +218,133 @@ describe('UiImageEditor', () => {
       drag([[50, 50], [90, 50]]);
       el().dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
       expect(ed.canUndo()).toBe(false);
+    });
+  });
+
+  describe('Shift-click straight lines', () => {
+    const tap = (x: number, y: number, extra: Partial<P> = {}) => drag([[x, y]], extra);
+    const keyUp = (k: string) => {
+      el().dispatchEvent(new KeyboardEvent('keyup', { key: k, bubbles: true }));
+      fixture.detectChanges();
+    };
+    const preview = () => el().querySelector('.line-preview') as SVGLineElement | null;
+    const ends = (l: SVGLineElement) => ['x1', 'y1', 'x2', 'y2'].map((a) => Number(l.getAttribute(a)));
+    /** The alpha along a–b (every 4 px), and whether all of it is gone. */
+    const lineGone = (alpha: (x: number, y: number) => number, a: [number, number], b: [number, number]) => {
+      const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 4);
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(a[0] + ((b[0] - a[0]) * i) / n), y = Math.round(a[1] + ((b[1] - a[1]) * i) / n);
+        if (alpha(Math.min(W - 1, x), Math.min(H - 1, y)) !== 0) return false;
+      }
+      return true;
+    };
+
+    it('a Shift-click erases straight from where the last stroke ended, as one undo step', async () => {
+      tap(20, 20);
+      tap(180, 80, { shift: true });
+      expect(host.changes).toBe(2);
+      let { alpha } = await exported();
+      expect(lineGone(alpha, [20, 20], [180, 80])).toBe(true);
+      // Off the line (brush 20: 10 px either side) nothing changes.
+      for (const [x, y] of [[180, 20], [20, 80], [100, 25], [100, 75], [5, 5], [195, 95]]) expect(alpha(x, y)).toBe(255);
+      ed.undo();
+      ({ alpha } = await exported());
+      expect(alpha(100, 50)).toBe(255);
+      expect(alpha(180, 80)).toBe(255);
+      // The dot before it stays.
+      expect(alpha(20, 20)).toBe(0);
+    });
+
+    it('Shift-clicks chain from point to point', async () => {
+      tap(20, 20);
+      tap(100, 20, { shift: true });
+      tap(100, 80, { shift: true });
+      expect(host.changes).toBe(3);
+      let { alpha } = await exported();
+      expect(lineGone(alpha, [20, 20], [100, 20])).toBe(true);
+      expect(lineGone(alpha, [100, 20], [100, 80])).toBe(true);
+      expect(alpha(60, 60)).toBe(255);
+      ed.undo();
+      ({ alpha } = await exported());
+      expect(alpha(100, 60)).toBe(255);
+      expect(lineGone(alpha, [20, 20], [100, 20])).toBe(true);
+    });
+
+    it('restore paints the original back along the line', async () => {
+      for (const y of [35, 45, 55, 65]) drag([[0, y], [100, y], [199, y]]);
+      host.mode.set('restore');
+      host.size.set(6);
+      fixture.detectChanges();
+      tap(30, 50);
+      tap(170, 50, { shift: true });
+      const { alpha } = await exported();
+      for (const x of [30, 60, 100, 140, 170]) expect(alpha(x, 50)).toBe(255);
+      expect(alpha(100, 40)).toBe(0);
+      expect(alpha(100, 60)).toBe(0);
+    });
+
+    it('with no point remembered (fresh, after undo, another mode or reset), a Shift-click is a plain dot', async () => {
+      const dotOnly = async (x: number, y: number, far: [number, number]) => {
+        tap(x, y, { shift: true });
+        const { alpha } = await exported();
+        expect(alpha(x, y)).toBe(0);
+        expect(alpha(far[0], far[1])).toBe(255);
+      };
+      await dotOnly(100, 50, [60, 50]);
+      ed.undo();
+      await dotOnly(180, 80, [140, 65]);
+      host.mode.set('restore');
+      fixture.detectChanges();
+      host.mode.set('erase');
+      fixture.detectChanges();
+      await dotOnly(20, 80, [100, 80]);
+      ed.reset();
+      await dotOnly(20, 20, [60, 20]);
+    });
+
+    it('Shift + drag goes straight to where the drag starts, then on freehand: one undo step', async () => {
+      tap(20, 50);
+      drag([[100, 20], [100, 40], [100, 60], [100, 80]], { shift: true });
+      expect(host.changes).toBe(2);
+      let { alpha } = await exported();
+      expect(lineGone(alpha, [20, 50], [100, 20])).toBe(true);
+      expect(lineGone(alpha, [100, 20], [100, 80])).toBe(true);
+      ed.undo();
+      ({ alpha } = await exported());
+      expect(alpha(60, 35)).toBe(255);
+      expect(alpha(100, 70)).toBe(255);
+      expect(alpha(20, 50)).toBe(0);
+    });
+
+    it('shows a faint line to the pointer while Shift is held, and drops it on release', () => {
+      send('pointermove', { x: 150, y: 70, shift: true });
+      expect(preview()).toBeNull(); // nothing remembered yet
+      tap(20, 20);
+      send('pointermove', { x: 150, y: 70 });
+      expect(preview()).toBeNull(); // no Shift
+      key('Shift', { shiftKey: true });
+      const a = client(20, 20), b = client(150, 70);
+      expect(ends(preview()!)).toEqual([a.clientX, a.clientY, b.clientX, b.clientY]);
+      keyUp('Shift');
+      expect(preview()).toBeNull();
+      send('pointermove', { x: 150, y: 70, shift: true });
+      expect(preview()).not.toBeNull();
+      host.mode.set('crop');
+      fixture.detectChanges();
+      expect(preview()).toBeNull();
+    });
+
+    it('straightLine connects every press after the first, without Shift', async () => {
+      host.straight.set(true);
+      fixture.detectChanges();
+      tap(20, 20, { type: 'touch' });
+      tap(180, 80, { type: 'touch' });
+      tap(180, 20, { type: 'touch' });
+      expect(host.changes).toBe(3);
+      const { alpha } = await exported();
+      expect(lineGone(alpha, [20, 20], [180, 80])).toBe(true);
+      expect(lineGone(alpha, [180, 80], [180, 20])).toBe(true);
+      expect(alpha(100, 25)).toBe(255);
     });
   });
 

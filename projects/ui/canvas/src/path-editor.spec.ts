@@ -29,7 +29,7 @@ function pointer(kind: string, p: PointerInit): Event {
 @Component({
   imports: [UiPathEditor],
   template: `
-    <ui-path-editor #ed [items]="items()" [width]="100" [height]="100" [mode]="mode()" [brush]="brush()" fill="#123456"
+    <ui-path-editor #ed [items]="items()" [width]="100" [height]="100" [mode]="mode()" [brush]="brush()" fill="#123456" [straightLine]="straight()"
       [(selectedId)]="selectedId" [(selectedPoint)]="selectedPoint" [(selectedPoints)]="selectedPoints"
       (itemsChange)="changes.push($event); items.set($event)" (stroke)="strokes.push($event)" (penDetected)="pens = pens + 1" />
   `,
@@ -38,6 +38,7 @@ class Host {
   readonly items = signal<UiPathItem[]>([]);
   readonly mode = signal<UiPathEditorMode>('pen');
   readonly brush = signal<UiBrush>({ kind: 'pen', size: 4 });
+  readonly straight = signal(false);
   readonly selectedId = signal<string | null>(null);
   readonly selectedPoint = signal<UiPointRef | null>(null);
   readonly selectedPoints = signal<UiPointRef[]>([]);
@@ -169,6 +170,155 @@ describe('UiPathEditor', () => {
       const [x, y] = loop.at(-1)!;
       send(svg(), 'pointerup', { x, y });
       expect(host.strokes[0].shape?.kind).toBe('ellipse');
+    });
+  });
+
+  describe('Shift-click straight strokes', () => {
+    const el = () => fixture.nativeElement.querySelector('ui-path-editor') as HTMLElement;
+    const key = (type: 'keydown' | 'keyup', k: string) => {
+      el().dispatchEvent(new KeyboardEvent(type, { key: k, bubbles: true }));
+      fixture.detectChanges();
+    };
+    const preview = () => fixture.nativeElement.querySelector('.line-preview') as SVGLineElement | null;
+    const ends = (l: SVGLineElement) => ['x1', 'y1', 'x2', 'y2'].map((a) => Number(l.getAttribute(a)));
+    /** How far a point is from the segment a–b. */
+    const off = (p: { x: number; y: number }, a: [number, number], b: [number, number]) => {
+      const vx = b[0] - a[0], vy = b[1] - a[1];
+      const t = Math.max(0, Math.min(1, ((p.x - a[0]) * vx + (p.y - a[1]) * vy) / (vx * vx + vy * vy)));
+      return Math.hypot(p.x - a[0] - t * vx, p.y - a[1] - t * vy);
+    };
+    const along = (stroke: UiInkStroke, a: [number, number], b: [number, number]) => {
+      expect(stroke.samples[0]).toMatchObject({ x: a[0], y: a[1] });
+      expect(stroke.samples.at(-1)).toMatchObject({ x: b[0], y: b[1] });
+      expect(stroke.samples.length).toBeGreaterThan(2);
+      for (const p of stroke.samples) expect(off(p, a, b)).toBeLessThan(1e-9);
+      expect(stroke.pieces.length).toBe(stroke.samples.length - 1);
+    };
+
+    beforeEach(() => {
+      host.mode.set('draw');
+      fixture.detectChanges();
+    });
+
+    it('a Shift-click strokes straight from where the last stroke ended, with the current brush', () => {
+      host.brush.set({ kind: 'brush', size: 6 });
+      fixture.detectChanges();
+      dragFrom(svg(), [[10, 50], [20, 50], [30, 50]]);
+      const end = host.strokes[0].samples.at(-1)!;
+      tap(70, 20, { shift: true });
+      expect(host.strokes).toHaveLength(2);
+      const line = host.strokes[1];
+      expect(line.brush).toEqual({ kind: 'brush', size: 6 });
+      expect(line.shape).toBeNull();
+      along(line, [end.x, end.y], [70, 20]);
+    });
+
+    it('Shift-clicks chain, each one stroke from the point before', () => {
+      tap(10, 10);
+      tap(60, 10, { shift: true });
+      tap(60, 70, { shift: true });
+      expect(host.strokes).toHaveLength(3);
+      along(host.strokes[1], [10, 10], [60, 10]);
+      along(host.strokes[2], [60, 10], [60, 70]);
+    });
+
+    it('the eraser erases along the line', () => {
+      host.brush.set({ kind: 'eraser', size: 8 });
+      fixture.detectChanges();
+      tap(10, 30);
+      tap(90, 30, { shift: true });
+      expect(host.strokes[1].brush.kind).toBe('eraser');
+      along(host.strokes[1], [10, 30], [90, 30]);
+    });
+
+    it('with no point remembered, a Shift-click is a plain dot (and is remembered)', () => {
+      tap(40, 40, { shift: true });
+      expect(host.strokes).toHaveLength(1);
+      expect(host.strokes[0].samples).toHaveLength(1);
+      expect(host.strokes[0].samples[0]).toMatchObject({ x: 40, y: 40 });
+      tap(80, 40, { shift: true });
+      along(host.strokes[1], [40, 40], [80, 40]);
+    });
+
+    it('another brush, another mode, an undo by the host or clearLineStart() forget the point', () => {
+      const dotAt = (x: number, y: number) => {
+        tap(x, y, { shift: true });
+        const s = host.strokes.at(-1)!;
+        expect(s.samples.every((p) => p.x === x && p.y === y)).toBe(true);
+      };
+      // The host keeps each stroke as an item: that change keeps the point.
+      const keep = () => host.items.set([...host.items(), { id: `s${host.strokes.length}`, contours: [rectContour(0, 0, 1, 1)] }]);
+      tap(10, 10);
+      keep();
+      fixture.detectChanges();
+      tap(50, 10, { shift: true });
+      keep();
+      fixture.detectChanges();
+      along(host.strokes[1], [10, 10], [50, 10]);
+      const before = host.items();
+      // Undo: the host takes the line back.
+      host.items.set(before.slice(0, 1));
+      fixture.detectChanges();
+      dotAt(50, 50);
+
+      host.brush.set({ kind: 'marker', size: 4 });
+      fixture.detectChanges();
+      dotAt(20, 80);
+
+      host.mode.set('objects');
+      fixture.detectChanges();
+      host.mode.set('draw');
+      fixture.detectChanges();
+      dotAt(30, 80);
+
+      (fixture.debugElement.children[0].componentInstance as UiPathEditor).clearLineStart();
+      dotAt(40, 80);
+    });
+
+    it('Shift + drag strokes straight to where the drag starts, then carries on freehand in the same stroke', () => {
+      tap(10, 10);
+      dragFrom(svg(), [[50, 10], [50, 20], [50, 30], [50, 40]], { shift: true });
+      expect(host.strokes).toHaveLength(2);
+      const s = host.strokes[1];
+      expect(s.samples[0]).toMatchObject({ x: 10, y: 10 });
+      const corner = s.samples.findIndex((p) => p.x === 50 && p.y === 10);
+      expect(corner).toBeGreaterThan(1);
+      for (const p of s.samples.slice(0, corner + 1)) expect(p.y).toBe(10);
+      expect(s.samples.at(-1)).toMatchObject({ x: 50, y: 40 });
+    });
+
+    it('shows a faint line from the point to the pointer while Shift is held, and drops it on release', () => {
+      send(svg(), 'pointermove', { x: 70, y: 70, shift: true });
+      expect(preview()).toBeNull(); // nothing remembered yet
+      tap(20, 20);
+      send(svg(), 'pointermove', { x: 70, y: 60 });
+      expect(preview()).toBeNull(); // no Shift
+      key('keydown', 'Shift');
+      expect(ends(preview()!)).toEqual([20, 20, 70, 60]);
+      send(svg(), 'pointermove', { x: 80, y: 30, shift: true });
+      expect(ends(preview()!)).toEqual([20, 20, 80, 30]);
+      key('keyup', 'Shift');
+      expect(preview()).toBeNull();
+      // A finger has no hover: nothing to show.
+      send(svg(), 'pointermove', { x: 40, y: 40, shift: true, type: 'touch', id: 4 });
+      expect(ends(preview()!)).toEqual([20, 20, 80, 30]);
+      send(svg(), 'pointerleave', { x: 40, y: 40 });
+      expect(preview()).toBeNull();
+    });
+
+    it('straightLine connects every press after the first, without Shift', () => {
+      host.straight.set(true);
+      fixture.detectChanges();
+      tap(10, 90, { type: 'touch' });
+      tap(90, 90, { type: 'touch' });
+      tap(90, 10, { type: 'touch' });
+      expect(host.strokes).toHaveLength(3);
+      expect(host.strokes[0].samples).toHaveLength(1);
+      along(host.strokes[1], [10, 90], [90, 90]);
+      along(host.strokes[2], [90, 90], [90, 10]);
+      // A mouse hovering shows where it would go, Shift or not.
+      send(svg(), 'pointermove', { x: 50, y: 50 });
+      expect(ends(preview()!)).toEqual([90, 10, 50, 50]);
     });
   });
 

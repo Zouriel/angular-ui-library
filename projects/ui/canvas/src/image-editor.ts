@@ -75,6 +75,13 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
  * - **erase**: drag to paint transparency; **restore** paints the original back. `brushSize` is the
  *   brush's diameter in image pixels, `brushSoftness` runs from a hard edge (0) to very soft (1).
  *
+ * Shift-click draws a straight line: the editor remembers where the last stroke ended (a click paints a
+ * dot there), and a press with Shift held paints straight from that point to the new one with the current
+ * brush, as one undo step; the new point is then remembered, so Shift-clicks chain. While Shift is held a
+ * faint line shows where it will go. Dragging after a Shift-press carries on freehand from the new point
+ * (the same stroke). `straightLine` does the same without Shift, for touch screens. Undo, redo, reset, a
+ * new picture or another mode forget the point, so the next press starts afresh.
+ *
  * Erased parts show over a checkerboard. Pinch or Ctrl/⌘ + wheel zooms about the pointer; two fingers,
  * Space + drag or the middle button pan. Once a pen has been used, fingers only navigate (as in
  * `ui-path-editor`, `fingerDraws` 'auto'). Every stroke and crop change is one undo step
@@ -95,7 +102,7 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
     '[class.panning]': 'panReady()',
     '(keydown)': 'onKey($event)',
     '(keyup)': 'onKeyUp($event)',
-    '(blur)': 'space.set(false)',
+    '(blur)': 'space.set(false); shift.set(false)',
     '(pointerdown)': 'down($event)',
     '(pointermove)': 'move($event)',
     '(pointerup)': 'up($event)',
@@ -124,6 +131,10 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
             <path class="mark" [attr.d]="h.d" />
             <rect class="hit" [attr.data-handle]="h.id" [attr.x]="h.x - hit / 2" [attr.y]="h.y - hit / 2" [attr.width]="hit" [attr.height]="hit" />
           }
+        }
+        @if (linePreview(); as l) {
+          <line class="line-preview-out" [attr.x1]="l.x1" [attr.y1]="l.y1" [attr.x2]="l.x2" [attr.y2]="l.y2" />
+          <line class="line-preview" [attr.x1]="l.x1" [attr.y1]="l.y1" [attr.x2]="l.x2" [attr.y2]="l.y2" />
         }
         @if (cursor(); as c) {
           <circle class="brush-out" [attr.cx]="c.x" [attr.cy]="c.y" [attr.r]="c.r" />
@@ -169,6 +180,8 @@ const HANDLES: { id: Exclude<UiCropHandle, 'move'>; fx: number; fy: number }[] =
     .brush { stroke: var(--ui-media-on-scrim); stroke-width: 1.25; }
     .brush.inner { stroke-dasharray: 3 3; opacity: .8; }
     .brush.dot { fill: var(--ui-media-on-scrim); }
+    .line-preview-out { stroke: var(--ui-media-scrim); stroke-width: 3; opacity: .35; stroke-linecap: round; }
+    .line-preview { stroke: var(--ui-media-on-scrim); stroke-width: 1.25; stroke-dasharray: 5 4; opacity: .75; stroke-linecap: round; }
   `,
 })
 export class UiImageEditor {
@@ -192,6 +205,11 @@ export class UiImageEditor {
   readonly label = input('Picture editor');
   /** Whether a finger paints. 'auto': until a pen is used, then fingers only pan and zoom. */
   readonly fingerDraws = input<boolean | 'auto'>('auto');
+  /**
+   * Every press after the first connects to the last point with a straight line, as Shift does: for
+   * touch screens, where there's no Shift key (a host shows it as a "straight line" button).
+   */
+  readonly straightLine = input(false);
 
   /** After each committed stroke or crop change (and undo, redo and reset). */
   readonly changed = output<void>();
@@ -221,6 +239,9 @@ export class UiImageEditor {
   private readonly center = signal({ x: 0, y: 0 });
   protected readonly hover = signal<{ x: number; y: number } | null>(null);
   protected readonly space = signal(false);
+  protected readonly shift = signal(false);
+  /** Where the last stroke ended (image pixels): a Shift-press draws a straight line from here. */
+  private readonly lineStart = signal<{ x: number; y: number } | null>(null);
   protected readonly cropping = signal(false);
   protected readonly coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   protected readonly hit = this.coarse ? 44 : 22;
@@ -282,6 +303,17 @@ export class UiImageEditor {
 
   protected readonly panReady = computed(() => this.space());
 
+  /** While Shift is held (or `straightLine` is on), where the next press would draw, on screen. */
+  protected readonly linePreview = computed(() => {
+    const from = this.lineStart();
+    const h = this.hover();
+    if (!from || !h || this.mode() === 'crop' || this.space() || this.painting() || !(this.shift() || this.straightLine())) return null;
+    const a = this.toScreen(from.x, from.y);
+    return { x1: a.x, y1: a.y, x2: h.x, y2: h.y };
+  });
+  /** A stroke is under way (the preview hides while it is). */
+  private readonly painting = signal(false);
+
   constructor() {
     effect(() => {
       const src = this.src();
@@ -314,6 +346,7 @@ export class UiImageEditor {
       const crop = this.mode() === 'crop';
       untracked(() => {
         this.abort();
+        this.lineStart.set(null);
         if (wasCrop !== null && wasCrop !== crop) this.fit();
         wasCrop = crop;
       });
@@ -335,10 +368,12 @@ export class UiImageEditor {
   // ----- Public -----------------------------------------------------------------------------------------
 
   undo(): void {
+    this.lineStart.set(null);
     if (this.edit?.undo()) this.afterChange();
   }
 
   redo(): void {
+    this.lineStart.set(null);
     if (this.edit?.redo()) this.afterChange();
   }
 
@@ -347,6 +382,7 @@ export class UiImageEditor {
     const e = this.edit;
     if (!e) return;
     this.abort();
+    this.lineStart.set(null);
     const aspect = this.aspect();
     const whole = fullCrop(e.width, e.height);
     if (e.reset(aspect ? fitAspect(whole, aspect, e.width, e.height) : whole)) this.afterChange();
@@ -389,6 +425,7 @@ export class UiImageEditor {
     const seq = ++this.loadSeq;
     this.abort();
     this.edit = null;
+    this.lineStart.set(null);
     this._loaded.set(false);
     let raster: UiImageRaster;
     try {
@@ -526,7 +563,13 @@ export class UiImageEditor {
     this.drag = { gesture, pointerId: e.pointerId, startClient: { x: e.clientX, y: e.clientY }, startUnits: u, startCenter: this.center(), moved: false };
     this.penPainting = gesture.kind === 'paint' && e.pointerType === 'pen';
     if (gesture.kind === 'paint') {
-      ed.beginStroke(this.mode() === 'restore' ? 'restore' : 'erase', u.x, u.y, Math.max(1, this.brushSize()), this.brushSoftness());
+      // Shift (or `straightLine`) with a remembered point: straight from there to here, then on as usual.
+      const from = this.lineStart();
+      const straight = !!from && (e.shiftKey || this.straightLine());
+      const start = straight ? from : u;
+      ed.beginStroke(this.mode() === 'restore' ? 'restore' : 'erase', start.x, start.y, Math.max(1, this.brushSize()), this.brushSoftness());
+      if (straight) ed.lineTo(u.x, u.y);
+      this.painting.set(true);
     }
     if (gesture.kind === 'crop') this.cropping.set(true);
     e.preventDefault();
@@ -541,6 +584,7 @@ export class UiImageEditor {
   }
 
   protected move(e: PointerEvent): void {
+    if (e.shiftKey !== this.shift()) this.shift.set(e.shiftKey);
     // A mouse or pen shows the brush while hovering; a finger shows it while it paints.
     if (e.pointerType !== 'touch' || this.drag?.gesture.kind === 'paint') this.hover.set(this.local(e));
     if (!this.pointers.has(e.pointerId)) return;
@@ -604,6 +648,9 @@ export class UiImageEditor {
     if (g.kind === 'paint') {
       const u = this.toUnits(e.clientX, e.clientY);
       ed.strokeTo(u.x, u.y);
+      this.painting.set(false);
+      // Where it lifted is where the next Shift-click's line starts (even if this stroke changed nothing).
+      this.lineStart.set({ x: u.x, y: u.y });
       if (ed.endStroke()) this.afterChange();
     } else if (g.kind === 'crop') {
       if (ed.commitCrop(ed.crop, g.start)) this.afterChange();
@@ -623,6 +670,7 @@ export class UiImageEditor {
     this.drag = null;
     this.penPainting = false;
     this.cropping.set(false);
+    this.painting.set(false);
     const ed = this.edit;
     if (!d || !ed) return;
     if (d.gesture.kind === 'paint') ed.cancelStroke();
@@ -660,6 +708,10 @@ export class UiImageEditor {
       this.redo();
       return;
     }
+    if (e.key === 'Shift') {
+      this.shift.set(true);
+      return;
+    }
     if (e.key === ' ') {
       e.preventDefault();
       if (!this.space()) this.space.set(true);
@@ -673,6 +725,7 @@ export class UiImageEditor {
 
   protected onKeyUp(e: KeyboardEvent): void {
     if (e.key === ' ') this.space.set(false);
+    if (e.key === 'Shift') this.shift.set(false);
   }
 
   // ----- State ------------------------------------------------------------------------------------------

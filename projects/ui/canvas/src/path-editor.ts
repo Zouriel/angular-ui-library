@@ -63,6 +63,8 @@ interface Ink {
   snapped: UiInkShape | null;
   holdFrom: UiPathXY;
   pen: boolean;
+  /** Started as a Shift-click line (it doesn't snap to a shape). */
+  straight: boolean;
 }
 
 const LONG_PRESS_MS = 450;
@@ -88,6 +90,13 @@ const DOUBLE_TAP_MS = 320;
  *   has been used, fingers move the view instead of drawing (palm rejection, as `fingerDraws` 'auto').
  *   Hold still at the end of a stroke to snap it to a line, circle, ellipse, rectangle or triangle.
  *   Each finished stroke is reported through `stroke`: the host decides what it becomes.
+ *   Shift-click draws a straight stroke: the editor remembers where the last stroke ended (a click is a
+ *   dot there), and a press with Shift held strokes straight from that point to the new one with the
+ *   current brush (eraser included), reported as one `stroke`; the new point is remembered, so Shift-clicks
+ *   chain. While Shift is held a faint line shows where it will go. Dragging after a Shift-press carries
+ *   on freehand from the new point, in the same stroke. `straightLine` does it without Shift (touch).
+ *   Another brush or mode, or any change to `items` that isn't a stroke being kept (an undo), forgets the
+ *   point; `clearLineStart()` does it by hand.
  *
  * The view zooms with a two-finger pinch or Ctrl/⌘ + wheel (a plain wheel scrolls the page), and pans by dragging empty space (or with two
  * fingers). It never mutates `items`: a finished gesture is reported once through `itemsChange`, so
@@ -102,11 +111,13 @@ const DOUBLE_TAP_MS = 320;
     '[attr.aria-label]': 'label()',
     '[attr.data-mode]': 'mode()',
     '(keydown)': 'onKey($event)',
+    '(keyup)': 'onKeyUp($event)',
+    '(blur)': 'shift.set(false)',
   },
   template: `
     <svg #svg class="surface" [attr.viewBox]="viewBox()" preserveAspectRatio="none"
       (pointerdown)="down($event)" (pointermove)="move($event)" (pointerup)="up($event)" (pointercancel)="cancel($event)"
-      (pointerleave)="hover.set(null)" (wheel)="wheel($event)">
+      (pointerleave)="hover.set(null); lineHover.set(null)" (wheel)="wheel($event)">
       <defs>
         <pattern [attr.id]="hatchId" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <rect width="8" height="8" class="hatch-bg" />
@@ -123,6 +134,9 @@ const DOUBLE_TAP_MS = 320;
           [attr.fill]="op(item) === 'cut' ? 'url(#' + hatchId + ')' : (item.fill || null)" />
       }
 
+      @if (linePreview(); as l) {
+        <line class="line-preview" [attr.x1]="l.from.x" [attr.y1]="l.from.y" [attr.x2]="l.to.x" [attr.y2]="l.to.y" />
+      }
       @if (inkD()) {
         <path class="ink" [class.eraser]="inkEraser()" [attr.d]="inkD()" fill-rule="nonzero" [attr.fill]="inkEraser() ? null : (fill() || null)" />
       }
@@ -228,6 +242,8 @@ const DOUBLE_TAP_MS = 320;
     .ink { fill: var(--ui-color-text-muted); pointer-events: none; }
     .ink.eraser { fill: color-mix(in srgb, var(--ui-color-danger) 22%, transparent); stroke: var(--ui-color-danger); stroke-width: 1;
       stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+    .line-preview { stroke: var(--ui-color-primary); stroke-width: 1.25; stroke-dasharray: 5 4; opacity: .7; stroke-linecap: round;
+      vector-effect: non-scaling-stroke; pointer-events: none; }
     .frame-box { fill: none; stroke: var(--ui-color-primary); stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
     .frame-stem, .arm { stroke: var(--ui-color-primary); stroke-width: 1.25; vector-effect: non-scaling-stroke; pointer-events: none; }
     .knob { fill: var(--ui-color-surface); stroke: var(--ui-color-primary); stroke-width: 1.75; vector-effect: non-scaling-stroke; cursor: grab; }
@@ -279,6 +295,11 @@ export class UiPathEditor {
   readonly snapToShape = input(true);
   /** Handles move independently (what Alt does once) — for touch, where there's no Alt key. */
   readonly freeHandles = input(false);
+  /**
+   * In draw mode, every press after the first strokes straight from where the last stroke ended, as
+   * Shift does: for touch screens, where there's no Shift key (a host shows it as a "straight line" button).
+   */
+  readonly straightLine = input(false);
 
   /** A finished edit: the whole list, for the host to keep (and undo). */
   readonly itemsChange = output<UiPathItem[]>();
@@ -344,6 +365,20 @@ export class UiPathEditor {
   private inkFrame = 0;
   private holdTimer: ReturnType<typeof setTimeout> | null = null;
   private penSeen = false;
+  /** Where the last stroke ended: a Shift-press strokes straight from here. */
+  private readonly lineStart = signal<UiInkSample | null>(null);
+  /** A stroke was reported and the host hasn't changed `items` since (its change keeps the point). */
+  private strokePending = false;
+  private lastItems: UiPathItem[] | null = null;
+  protected readonly shift = signal(false);
+  protected readonly lineHover = signal<UiPathXY | null>(null);
+  /** While Shift is held (or `straightLine` is on) in draw mode: where the next press would stroke. */
+  protected readonly linePreview = computed(() => {
+    const from = this.lineStart();
+    const to = this.lineHover();
+    if (!from || !to || this.mode() !== 'draw' || this.inkD() || !(this.shift() || this.straightLine())) return null;
+    return { from, to };
+  });
 
   // Pen mode.
   protected readonly penPoints = signal<UiPathPoint[]>([]);
@@ -405,6 +440,27 @@ export class UiPathEditor {
         if (mode !== 'pen' && this.penPoints().length) this.finishPen(false);
         if (mode !== 'draw') this.dropInk();
         this.marquee.set(null);
+        this.lineStart.set(null);
+      });
+    });
+    // Another brush forgets where the last stroke ended (its size or softness don't).
+    let kind: string | null = null;
+    effect(() => {
+      const next = this.brush().kind;
+      untracked(() => {
+        if (kind !== null && kind !== next) this.lineStart.set(null);
+        kind = next;
+      });
+    });
+    // The host keeping a stroke changes `items`; any other change (an undo, say) forgets the point.
+    effect(() => {
+      const items = this.items();
+      untracked(() => {
+        const prev = this.lastItems;
+        this.lastItems = items;
+        if (!prev || sameItems(prev, items)) return;
+        if (this.strokePending) this.strokePending = false;
+        else this.lineStart.set(null);
       });
     });
     afterNextRender(() => {
@@ -439,6 +495,11 @@ export class UiPathEditor {
     const want = w && h ? Math.min(w / ((x1 - x0) * 1.35), h / ((y1 - y0) * 1.35)) : 1;
     this.zoom.set(Math.min(20, Math.max(0.2, want / base)));
     this.center.set({ x: (x0 + x1) / 2, y: (y0 + y1) / 2 });
+  }
+
+  /** Forgets where the last stroke ended, so the next Shift-press starts a new stroke there. */
+  clearLineStart(): void {
+    this.lineStart.set(null);
   }
 
   /** Zooms by a factor about the middle of the view. */
@@ -648,9 +709,11 @@ export class UiPathEditor {
   }
 
   protected move(e: PointerEvent): void {
+    if (e.shiftKey !== this.shift()) this.shift.set(e.shiftKey);
     if (!this.pointers.has(e.pointerId)) {
       // Hovering (a mouse, or a pen above the screen): the pen shows where the next segment would go.
       if (this.mode() === 'pen' && e.pointerType !== 'touch') this.hover.set(this.constrained(this.toUnits(e.clientX, e.clientY), e));
+      if (this.mode() === 'draw' && e.pointerType !== 'touch') this.lineHover.set(this.toUnits(e.clientX, e.clientY));
       return;
     }
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -965,10 +1028,22 @@ export class UiPathEditor {
     const brush = this.brush();
     const pen = e.pointerType === 'pen';
     const sample: UiInkSample = { x: u.x, y: u.y, pressure: pen ? e.pressure || 0.5 : simulatedPressure(brush.kind, 0.5, 0, brush.size) };
-    const r = inkRadiusAt(sample, 0, brush);
+    // Shift (or `straightLine`) with a remembered point: a straight stroke from there to here.
+    const from = this.lineStart();
+    const straight = !!from && (e.shiftKey || this.straightLine());
+    const samples = straight && from ? lineSamples(from, sample, brush, pen, Math.max(this.px(1.5), brush.size * 0.5)) : [sample];
+    const radii: number[] = [];
+    const parts: string[] = [];
+    let along = 0;
+    samples.forEach((s, i) => {
+      if (i) along += Math.hypot(s.x - samples[i - 1].x, s.y - samples[i - 1].y);
+      const r = inkRadiusAt(s, along, brush);
+      parts.push(pieceD(i ? inkPiece(samples[i - 1], radii[i - 1], s, r, brush) : inkPiece(s, r, null, 0, brush)));
+      radii.push(r);
+    });
     this.ink = {
-      brush, samples: [sample], radii: [r], along: 0, parts: [pieceD(inkPiece(sample, r, null, 0, brush))],
-      raw: sample, snapped: null, holdFrom: { x: e.clientX, y: e.clientY }, pen,
+      brush, samples, radii, along, parts,
+      raw: samples.at(-1)!, snapped: null, holdFrom: { x: e.clientX, y: e.clientY }, pen, straight,
     };
     this.inkEraser.set(brush.kind === 'eraser');
     this.armHold();
@@ -1016,6 +1091,9 @@ export class UiPathEditor {
       if (Math.hypot(ink.raw.x - last.x, ink.raw.y - last.y) > ink.brush.size * 0.1) samples = [...samples, ink.raw];
     }
     this.stroke.emit({ samples, brush: ink.brush, pieces: inkArea(samples, ink.brush), shape: ink.snapped });
+    // The next Shift-press strokes straight from where this one ended.
+    this.lineStart.set(samples.at(-1)!);
+    this.strokePending = true;
   }
 
   private dropInk(): void {
@@ -1045,7 +1123,7 @@ export class UiPathEditor {
   private snapInk(): void {
     this.holdTimer = null;
     const ink = this.ink;
-    if (!ink || ink.snapped || ink.samples.length < 4) return;
+    if (!ink || ink.snapped || ink.straight || ink.samples.length < 4) return;
     const shape = recognizeShape([...ink.samples, ink.raw]);
     if (!shape) return;
     ink.snapped = shape;
@@ -1060,7 +1138,12 @@ export class UiPathEditor {
 
   // ----- Keyboard -------------------------------------------------------------------------------------
 
+  protected onKeyUp(e: KeyboardEvent): void {
+    if (e.key === 'Shift') this.shift.set(false);
+  }
+
   protected onKey(e: KeyboardEvent): void {
+    if (e.key === 'Shift') this.shift.set(true);
     if (this.mode() === 'pen' && this.penPoints().length) {
       if (e.key === 'Enter' || e.key === 'Escape') {
         e.preventDefault();
@@ -1117,6 +1200,28 @@ export class UiPathEditor {
     const next = pointsMode ? movePoints(item.contours, refs, m[0], m[1]) : translateContours(item.contours, m[0], m[1]);
     this.itemsChange.emit(this.items().map((i) => (i.id === item.id ? { ...i, contours: next } : i)));
   }
+}
+
+/** The same items, in the same order (a host handing over a fresh array of them changes nothing). */
+function sameItems(a: readonly UiPathItem[], b: readonly UiPathItem[]): boolean {
+  return a === b || (a.length === b.length && a.every((item, i) => item === b[i]));
+}
+
+/**
+ * The samples of a straight stroke from `from` to `to`, about `spacing` apart. A pen's pressure runs
+ * evenly from one end's to the other's; a mouse or finger gets the pressure of a steady stroke.
+ */
+function lineSamples(from: UiInkSample, to: UiInkSample, brush: UiBrush, pen: boolean, spacing: number): UiInkSample[] {
+  const len = Math.hypot(to.x - from.x, to.y - from.y);
+  const n = Math.max(1, Math.min(256, Math.ceil(len / Math.max(1e-6, spacing))));
+  const out: UiInkSample[] = [{ x: from.x, y: from.y, pressure: from.pressure }];
+  let pressure = from.pressure;
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    pressure = pen ? from.pressure + (to.pressure - from.pressure) * t : simulatedPressure(brush.kind, pressure, len / n, brush.size);
+    out.push({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t, pressure });
+  }
+  return out;
 }
 
 /** Keeps a movement to the nearest 45° direction, the way Shift does in drawing apps. */
