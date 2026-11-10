@@ -28,7 +28,7 @@ import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/ta
 import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
-import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge } from '@zouriel/ui/badge';
+import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge, type UiAvatarCrop } from '@zouriel/ui/badge';
 import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
@@ -377,7 +377,7 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
       </doc-section>
 
       <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot; tier makes it a plan tier's metal, gold, platinum or premium, the same in every theme. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
+        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot; tier makes it a plan tier's metal, gold, platinum or premium, the same in every theme. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). crop shows one box of the image, given as fractions (x, y, w, h, each 0 to 1), filling the circle, so a face from a photo needs no cropped file; cropPadding adds room around the box (0.25 of its size per side) and the box is kept inside the image. ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
         <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
 <ui-badge tone=&quot;danger&quot; [dot]=&quot;true&quot; role=&quot;img&quot; aria-label=&quot;Offline&quot; />
 <ui-badge tier=&quot;gold&quot;>Gold pass</ui-badge>
@@ -387,7 +387,8 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
 <ui-avatar-group style=&quot;--ui-avatar-ring: var(--ui-color-surface)&quot;>
   <ui-avatar name=&quot;Ada Lovelace&quot; />
   <ui-avatar name=&quot;Grace Hopper&quot; src=&quot;/grace.jpg&quot; alt=&quot;Grace Hopper&quot; />
-</ui-avatar-group>">
+</ui-avatar-group>
+<ui-avatar src=&quot;/photo.jpg&quot; alt=&quot;Aminath&quot; [crop]=&quot;{ x: 0.42, y: 0.18, w: 0.12, h: 0.2 }&quot; [dimension]=&quot;96&quot; />">
           <div class="row">
             <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge><ui-badge tone="success">success</ui-badge>
             <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
@@ -414,6 +415,11 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             <ui-avatar name="Ada Lovelace" size="sm" /><ui-avatar name="Ada Lovelace" /><ui-avatar name="Ada Lovelace" size="lg" />
             <ui-avatar name="Ada Lovelace" size="xl" /><ui-avatar name="Aminath Hassan" [dimension]="96" />
             <ui-avatar name="Square Team" [square]="true" />
+            <ui-avatar src="demo/sunset.jpg" alt="Whole photo" [dimension]="64" />
+            <ui-avatar src="demo/sunset.jpg" alt="Cropped to a box" [crop]="cropBox" [dimension]="64" />
+            <ui-avatar src="demo/sunset.jpg" alt="Cropped, no padding" [crop]="cropBox" [cropPadding]="0" [dimension]="64" />
+            <ui-avatar src="demo/sunset.jpg" alt="Cropped" [crop]="cropBox" size="sm" />
+            <ui-avatar src="demo/sunset.jpg" alt="Cropped" [crop]="cropBox" size="xl" />
             <ui-avatar-group class="on-surface"><ui-avatar name="Ada Lovelace" /><ui-avatar name="Grace Hopper" /><ui-avatar name="Alan Turing" /></ui-avatar-group>
           </div>
         </doc-demo>
@@ -859,6 +865,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'newTab', type: 'boolean', default: 'false', desc: 'Open the listing in a new tab.' },
   ];
 
+  protected readonly cropBox: UiAvatarCrop = { x: 0.55, y: 0.2, w: 0.2, h: 0.3 };
   protected readonly badgeApi: ApiRow[] = [
     { name: 'badge: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
     { name: 'badge: tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.' },
@@ -872,6 +879,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'avatar: name', type: 'string', default: '—', desc: 'Initials (first and last word) and fallback accessible name.' },
     { name: 'avatar: size', type: "'sm' | 'md' | 'lg' | 'xl'", default: "'md'", desc: 'Avatar size: 26, 30, 38 or 56px.' },
     { name: 'avatar: dimension', type: 'number | null', default: 'null', desc: 'Any pixel size (96, 128 for a profile photo); overrides size, and the initials scale with it.' },
+    { name: 'avatar: crop', type: 'UiAvatarCrop | null', default: 'null', desc: 'A box of the image as fractions of its width and height ({ x, y, w, h }, each 0 to 1) that fills the avatar, centred; a box that is not square in pixels is covered by its larger side. Leave null for the whole image. The image is read on load to keep it undistorted and stays hidden until then.' },
+    { name: 'avatar: cropPadding', type: 'number', default: '0.25', desc: 'Room added around the crop box on every side, as a fraction of its size, kept inside the image; 0 fits the box exactly.' },
     { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Rounded square instead of a circle.' },
     { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational only; trim the list yourself.' },
     { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-1)', desc: 'How far grouped avatars overlap.' },
