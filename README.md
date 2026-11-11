@@ -16,14 +16,16 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 ## Highlights
 
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
-  set of token overrides. Ships **15 themes**:
-  - **Winter**: Dark and Light, the defaults;
-  - **colour palettes** (10): Light Orange; Light and Dark Pink, Teal and Purple; Gold Black, Gold Red and Light Purple Gold;
+  set of token overrides. Ships **19 current themes**:
+  - **Navy**: Navy Dark and Navy Light (`dark` / `light`), the defaults: Midnight Navy, Powder Blue and Sunflower;
   - **Dark Orange**: a cinematic theme with web fonts and FX;
-  - **Maldives** and **Maldives Dark**: a calm sea theme (Poppins) by day and by night, with its own sea backdrops.
+  - **Maldives** and **Maldives Dark**: a calm sea theme (Poppins) by day and by night, with its own sea backdrops;
+  - **Liquid** (12): Rugged, Glacier, Oxblood, Graphite, Cocoa and Violet, each by day and by night, made for
+    glass surfaces over a flowing `ui-liquid-backdrop`.
 
-  All text and status colours meet WCAG AA in every theme. Switch at runtime with
-  `UiThemeService.set('goldBlack')`.
+  Plus **legacy themes**, still supported but not for new work: the ten colour palettes and the
+  retired Winter names (see Theming). All text and status colours meet WCAG AA in every theme.
+  Switch at runtime with `UiThemeService.set('glacier')`.
 - **Secondary entry points**: import only what you use (`@zouriel/ui/button`,
   `@zouriel/ui/form`, `@zouriel/ui/overlay`, `@zouriel/ui/form-builder`, …).
   Breaking in 0.33.1: `UiDropdownButton` / `UiDropdownItem` moved from `@zouriel/ui/button` to
@@ -273,12 +275,14 @@ Load the global styles once (e.g. in `angular.json` styles or your global styles
 ```css
 @import '@zouriel/ui/styles/tokens.css';
 @import '@zouriel/ui/styles/animations.css';
-/* optional: the ten colour palettes */
-@import '@zouriel/ui/styles/theme-palettes.css';
+/* optional: the twelve liquid themes (rugged, glacier, oxblood, graphite, cocoa, violet, each with -dark) */
+@import '@zouriel/ui/styles/theme-liquid.css';
 /* optional: the cinematic Dark Orange skin (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';
 /* optional: the Maldives sea skins, maldives and maldives-dark (loads Poppins) */
 @import '@zouriel/ui/styles/theme-maldives.css';
+/* optional, legacy: the ten colour palettes */
+@import '@zouriel/ui/styles/theme-palettes.css';
 /* optional: FX utility classes (.ui-glow, .ui-gradient-text, .ui-underline)
    and the palettes' signature motion on them */
 @import '@zouriel/ui/styles/fx.css';
@@ -334,22 +338,29 @@ Themes are token overrides keyed on `data-theme`. `UiThemeService` writes it for
 
 ```ts
 theme = inject(UiThemeService);
-this.theme.set('goldBlack');   // any of the 14, or your own
-this.theme.toggle();           // dark <-> light
+this.theme.set('glacier');     // any built-in theme, or your own
+this.theme.toggle();           // glacier <-> glacier-dark, dark <-> light
 ```
 
 | Family | Themes | Stylesheet |
 | --- | --- | --- |
-| Winter (default) | `dark` (`winterDark`), `light` (`winterLight`) | `tokens.css` |
-| Palettes | `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed` | `theme-palettes.css` |
+| Navy (default) | `dark` (also `navy-dark`): Midnight Navy canvas, Powder Blue ink and secondary, Sunflower primary; `light` (also `navy`): Mist canvas, Midnight ink, a deepened Sunflower primary | `tokens.css` |
 | Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
 | Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins; `maldives-dark`: the same sea at night (deep ocean canvas, Foam ink, Lagoon primary, Coral accent). A day/night toggle switches between the two names | `theme-maldives.css` |
+| Liquid | `rugged` / `rugged-dark` (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue, Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood), `graphite` / `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa, Raspberry), `violet` / `violet-dark` (Mist, Ink, Electric Violet). Glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` | `theme-liquid.css` |
 
-`toggle()` moves from `dark` to `light` and from any other theme to `dark`; `winterDark` and
-`winterLight` swap with each other.
+**Legacy themes** still work exactly as before, but new work should use a current theme:
+`lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`,
+`darkPurple`, `goldBlack` and `goldRed` (`theme-palettes.css`), and `winterDark` / `winterLight`, the
+retired Winter palette's names, now aliases of `navy-dark` / `navy`. `UI_CURRENT_THEMES`,
+`UI_LEGACY_THEMES` and `isLegacyTheme()` (from `@zouriel/ui/theme`) let a picker group them.
+
+`toggle()` flips `dark` and `light`, any built-in `x` / `x-dark` pair (`navy`, `maldives` and the
+liquid themes) and the legacy `winterDark` / `winterLight`; from any other theme it goes to `dark`.
 The darkOrange film grain and custom cursor are components (`ui-grain`, `ui-cursor` from
 `@zouriel/ui/fx`) that the app mounts itself; so are the maldives sea backdrops (`ui-wave-footer`,
-`ui-ocean-hero`, `ui-coral-decor`, `ui-palm-decor`, `ui-sunrise`, `ui-sea-surface`, `[uiTide]`).
+`ui-ocean-hero`, `ui-coral-decor`, `ui-palm-decor`, `ui-sunrise`, `ui-sea-surface`, `[uiTide]`), and
+the liquid themes' `ui-liquid-backdrop` (it works in Navy too).
 
 A custom theme is a `[data-theme="yours"]` block that sets the core `--ui-color-*` tokens;
 every other token is derived. See `projects/ui/styles/COLOR-SYSTEM.md`. `ui-theme-provider`
@@ -378,7 +389,7 @@ It keeps everything in the browser's local storage.
 ng test ui --watch=false                    # unit tests, plus the style contract:
                                             #   tokens exist, text ≥ 11px, colours from tokens,
                                             #   every named theme passes WCAG AA
-node projects/ui/styles/contrast-check.mjs  # Winter dark/light contrast table
+node projects/ui/styles/contrast-check.mjs  # Navy dark/light contrast table
 npm run audit:ui -- --url http://localhost:4200
 npm run audit:chat-wrap -- --url http://localhost:4310   # or --dist <showcase build>
 npm run audit:rtl -- --dist <showcase build>             # RTL / Dhivehi, measured (0.46.0)

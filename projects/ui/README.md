@@ -25,9 +25,10 @@ Load the styles once (global stylesheet or `angular.json` styles):
 ```css
 @import '@zouriel/ui/styles/tokens.css';            /* required */
 @import '@zouriel/ui/styles/animations.css';        /* enter/leave animations used by overlays */
-@import '@zouriel/ui/styles/theme-palettes.css';    /* optional: the ten colour palettes */
+@import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the twelve liquid themes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: cinematic Dark Orange (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives sea skins, day and night (loads Poppins) */
+@import '@zouriel/ui/styles/theme-palettes.css';    /* optional, legacy: the ten colour palettes */
 @import '@zouriel/ui/styles/fx.css';                /* optional: FX utility classes */
 @import '@zouriel/ui/styles/theme-animations.css';  /* optional: palette motion on the FX classes */
 @import '@zouriel/ui/styles/color-aliases.css';     /* optional: --color-* aliases for app code */
@@ -57,11 +58,20 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 
 ## Themes
 
-`UiThemeService.set(name)` sets `data-theme` on the document:
-- `dark` / `light` (Winter, the default; also `winterDark` / `winterLight`), in `tokens.css`;
-- `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`, `goldRed`, in `theme-palettes.css`;
+`UiThemeService.set(name)` sets `data-theme` on the document. Current themes:
+- `dark` / `light` (Navy, the default: Midnight Navy, Powder Blue and Sunflower; also `navy-dark` / `navy`), in `tokens.css`;
 - `darkOrange`, in `theme-dark-orange.css`;
-- `maldives` and its night variant `maldives-dark`, both in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`; `ui-sea-surface` scopes `maldives` unless given `theme="maldives-dark"` or `[theme]="null"`).
+- `maldives` and its night variant `maldives-dark`, both in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`; `ui-sea-surface` scopes `maldives` unless given `theme="maldives-dark"` or `[theme]="null"`);
+- the liquid themes `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa` and `violet`, each with a `-dark` night twin, in `theme-liquid.css`: glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` from `@zouriel/ui/fx`.
+
+`toggle()` flips `dark` / `light` and every built-in `x` / `x-dark` pair.
+
+### Legacy themes
+
+Still supported and unchanged, but new work should use a current theme: `lightOrange`, `lightPink`,
+`lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`, `darkPurple`, `goldBlack`,
+`goldRed` (in `theme-palettes.css`), and `winterDark` / `winterLight`, the retired Winter names, now
+aliases of `navy-dark` / `navy`. `UI_CURRENT_THEMES`, `UI_LEGACY_THEMES` and `isLegacyTheme()` list them.
 
 `ui-theme-provider` scopes a theme to part of the page. A custom theme sets the core `--ui-color-*`
 tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).

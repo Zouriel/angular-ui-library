@@ -1,174 +1,249 @@
-# Winter colour system
+# Navy colour system
 
-`@zouriel/ui` ships one colour identity in two modes, built on a six-colour winter palette.
+`@zouriel/ui` ships one colour identity in two modes, built on three brand colours: **Midnight Navy**
+`#0F1433`, **Powder Blue** `#C9D6FF` and **Sunflower** `#FFC93C`. It replaced the retired Winter palette
+as the library default.
 
-| Mode | Theme names | Mood |
+| Mode | Theme names | Character |
 |---|---|---|
-| Light | `light` (default light), `winterLight` | Fresh snow, pale ice and frosted glass in winter daylight: calm Nordic architecture |
-| Dark | `dark` (library default), `winterDark` | A pine forest beside a dark ocean under moonlight: a true-black ground, faintly blue-black surfaces and soft ice-blue text |
+| Dark (library default) | `dark`, `navy-dark` | A Midnight Navy canvas with surfaces stepped up from it, Powder Blue as the ink and the secondary tone, Sunflower as the primary |
+| Light | `light`, `navy` | A Mist canvas (`#EEF2FF`) with white cards, Midnight Navy ink, Powder Blue for secondary fills and borders, and Sunflower deepened to a dark gold for the primary |
 
 ```html
-<html data-theme="winterLight">   <!-- or winterDark; `light` / `dark` resolve to the same tokens -->
+<html data-theme="navy">   <!-- or navy-dark; `light` / `dark` resolve to the same tokens -->
 ```
 
 ```ts
-inject(UiThemeService).set('winterDark');
-inject(UiThemeService).toggle(); // winterDark <-> winterLight (dark <-> light for the short names)
+inject(UiThemeService).set('navy-dark');
+inject(UiThemeService).toggle(); // navy-dark <-> navy (dark <-> light for the short names)
 ```
 
-The named skins in `theme-palettes.css` (`lightPurpleGold`, `darkPurple`, …) and `theme-dark-orange.css` still work unchanged.
+**Deprecated aliases.** `winterDark` and `winterLight`, the old palette's names, are selectors on the
+same blocks as `navy-dark` and `navy`, so an app that sets them gets Navy and keeps working.
+`UI_LEGACY_THEMES` lists them; new code should use `dark` / `light` or `navy-dark` / `navy`.
+
+**Rules the palette follows.**
+
+- Powder Blue is never a large surface on dark: it is the ink, the secondary fill and the info tone.
+  Dark surfaces are Midnight Navy stepped up (`navy-900`, `navy-850`, `navy-800`).
+- Sunflower is 1.37:1 on the light canvas, so it can't be text or the primary there. The light primary
+  is Sunflower deepened to `#7a5800` (5.8:1 on Mist, 6.5:1 under white text); Sunflower itself stays the
+  accent fill (with Midnight text), the selection bar, the glow, the highlight gradient and the liquid
+  backdrop.
+- On dark, Sunflower is the primary as it is (11.7:1 on the canvas, with a Midnight label).
+
+`theme-dark-orange.css`, `theme-maldives.css`, `theme-liquid.css` and the legacy `theme-palettes.css`
+set their own palettes and don't read Navy.
 
 ---
 
 ## 1. Primitive palette
 
-Primitives are named `--ui-winter-*`. Components never read them; only the theme blocks in `tokens.css` do.
+Primitives are named `--ui-navy-*`. Components never read them; only the theme blocks in `tokens.css` do.
 
 ### Reference colours
 
-| Token | Hex | Name |
+| Token | Hex | Note |
 |---|---|---|
-| `--ui-winter-black-pine` | `#152026` | Black Pine |
-| `--ui-winter-deep-ocean` | `#1b3d59` | Deep Ocean |
-| `--ui-winter-windstorm` | `#6a97c0` | Windstorm |
-| `--ui-winter-melting-ice` | `#b3d5f1` | Melting Ice |
-| `--ui-winter-avalanche` | `#d4eef8` | Avalanche |
-| `--ui-winter-sun-beam` | `#f3eed8` | Sun Beam |
+| `--ui-navy-midnight` | `#0f1433` | Midnight Navy: the dark canvas and the light ink |
+| `--ui-navy-powder` | `#c9d6ff` | Powder Blue: the dark ink and secondary tone |
+| `--ui-navy-sunflower` | `#ffc93c` | Sunflower: the accent |
+| `--ui-navy-mist` | `#eef2ff` | the light canvas |
 
-### Scales
+### Navy ramp
 
-| Scale | Steps |
-|---|---|
-| Pine | 950 `#152026` (Black Pine) · 900 `#19262e` · 850 `#1c2c37` |
-| Night (dark-mode ground and surfaces) | 1000 `#000000` · 950 `#06080a` · 900 `#0b0f12` · 850 `#11171c` · 800 `#1a232a` · 700 `#26323b` |
-| Blue (ocean → ice → snow) | 900 `#1b3d59` (Deep Ocean) · 850 `#20364a` · 800 `#264460` · 700 `#3a6488` · 500 `#6a97c0` (Windstorm) · 400 `#8bb5db` · 300 `#b3d5f1` (Melting Ice) · 100 `#d4eef8` (Avalanche) · 75 `#e3f0f7` · 50 `#eef5f9` · 25 `#f7fbfd` · white `#ffffff` |
-| Slate (blue-grey neutrals) | 900 `#233441` · 800 `#2e4658` · 700 `#465d6f` · 600 `#587488` · 500 `#6c8497` · 400 `#93a6b5` · 300 `#c3d2dd` · 200 `#dae5ec` |
-| Sun | 50 `#f9f7ec` · 100 `#f3eed8` (Sun Beam) · 700 `#76591a` · 900 `#34393a` |
-| Status | green 700 `#2e6b50` / 300 `#8ccba9` · amber 700 `#85570f` / 300 `#e6c27d` · red 700 `#a83a3f` / 300 `#f0a3a3` |
+From the deepest step under Midnight, through the mid blues, to Powder Blue, Mist and white.
 
-Some reference colours fail contrast in some roles, so the palette adds these accessible variants:
+| Token | Hex | Note |
+|---|---|---|
+| `--ui-navy-1000` | `#0a0e26` |  |
+| `--ui-navy-950` | `#0f1433` | Midnight Navy |
+| `--ui-navy-900` | `#151b3f` |  |
+| `--ui-navy-850` | `#1b224b` |  |
+| `--ui-navy-800` | `#232b59` |  |
+| `--ui-navy-750` | `#2c3568` |  |
+| `--ui-navy-725` | `#2d3a7a` | deep blue: secondary text, focus and info on light |
+| `--ui-navy-700` | `#38427a` |  |
+| `--ui-navy-650` | `#46507e` | slate navy: muted text on light |
+| `--ui-navy-500` | `#6673b0` |  |
+| `--ui-navy-400` | `#9daadc` | muted text on dark |
+| `--ui-navy-300` | `#aebbea` |  |
+| `--ui-navy-275` | `#b7c7ff` | Powder Blue, a step deeper: the light secondary's hover |
+| `--ui-navy-250` | `#bfcbf5` | secondary text on dark: 4.5:1 even on a selected row's Sunflower tint |
+| `--ui-navy-200` | `#c9d6ff` | Powder Blue |
+| `--ui-navy-100` | `#dce4ff` |  |
+| `--ui-navy-75` | `#e4eaff` |  |
+| `--ui-navy-50` | `#eef2ff` | Mist |
+| `--ui-navy-25` | `#f7f9ff` |  |
+| `--ui-navy-white` | `#ffffff` |  |
 
-- **Blue 700 `#3a6488`.** Windstorm deepened for light mode. Raw Windstorm on the light background is only about 3:1, which fails as text and as a fill behind light labels.
-- **Blue 400 `#8bb5db`.** Windstorm brightened for dark mode, where it is the primary colour.
-- **Sun 700 `#76591a`.** Sun Beam as readable text or an icon on light surfaces. Sun Beam itself is about 1.1:1 on snow.
-- **Status 700/300 pairs.** These are desaturated and cool-leaning so they sit inside the palette. The 700 steps are for light mode and the 300 steps for dark mode.
+### Sunflower
+
+| Token | Hex | Note |
+|---|---|---|
+| `--ui-navy-sun-50` | `#fff4d6` |  |
+| `--ui-navy-sun-200` | `#ffe6a3` |  |
+| `--ui-navy-sun-300` | `#ffd873` |  |
+| `--ui-navy-sun-400` | `#ffc93c` | Sunflower |
+| `--ui-navy-sun-500` | `#f2b91e` |  |
+| `--ui-navy-sun-700` | `#7a5800` | the light theme's primary: Sunflower deepened to 5.8:1 on Mist |
+| `--ui-navy-sun-800` | `#6a4c00` |  |
+| `--ui-navy-sun-900` | `#5a4100` |  |
+| `--ui-navy-sun-950` | `#3a3014` |  |
+
+### Status
+
+| Token | Hex | Note |
+|---|---|---|
+| `--ui-navy-green-700` | `#23673f` |  |
+| `--ui-navy-green-300` | `#8fd3ae` |  |
+| `--ui-navy-orange-700` | `#a34700` |  |
+| `--ui-navy-orange-300` | `#ffa463` |  |
+| `--ui-navy-red-800` | `#922831` |  |
+| `--ui-navy-red-700` | `#b0303a` |  |
+| `--ui-navy-red-300` | `#ff9c9c` |  |
+| `--ui-navy-red-200` | `#ffb8b8` |  |
 
 ---
 
-## 2. Light theme tokens (`winterLight`)
+## 2. Light theme tokens (`navy`)
 
-| Role | Token | Value | Primitive |
-|---|---|---|---|
-| background.default | `--ui-color-bg` | `#eef5f9` | blue-50 |
-| background.surface | `--ui-color-surface` | `#f7fbfd` | blue-25 |
-| background.elevated | `--ui-color-surface-raised` | `#ffffff` | white (frosted) |
-| background.subtle | `--ui-color-surface-subtle` | `#e3f0f7` | blue-75 |
-| hover (surface / in panels) | `--ui-color-surface-hover`, `--ui-color-elevated-hover` | `#e3f0f7` | blue-75 |
-| text.primary | `--ui-color-text` | `#152026` | Black Pine |
-| text.secondary | `--ui-color-text-secondary` | `#1b3d59` | Deep Ocean |
-| text.muted | `--ui-color-text-muted` | `#465d6f` | slate-700 |
-| text.disabled | `--ui-color-text-disabled` | `#93a6b5` | slate-400 |
-| text.inverse | `--ui-color-text-inverse` | `#eef5f9` | blue-50 |
-| border.subtle | `--ui-color-border-subtle` | `#dae5ec` | slate-200 |
-| border.default | `--ui-color-border` | `#c3d2dd` | slate-300 |
-| border.strong | `--ui-color-border-strong` | `#6c8497` | slate-500 |
-| border.focus | `--ui-color-border-focus` | `#3a6488` | blue-700 |
-| brand.primary | `--ui-color-primary` | `#1b3d59` | Deep Ocean |
-| brand.primary-hover | `--ui-color-primary-hover` | `#264460` | blue-800 |
-| brand.primary-active | `--ui-color-primary-active` | `#152026` | Black Pine |
-| on brand.primary | `--ui-color-primary-contrast` | `#f7fbfd` | blue-25 |
-| brand.secondary | `--ui-color-secondary` | `#3a6488` | blue-700 |
-| brand.secondary-hover | `--ui-color-secondary-hover` | `#264460` | blue-800 |
-| on brand.secondary | `--ui-color-secondary-contrast` | `#f7fbfd` | blue-25 |
-| accent.default | `--ui-color-accent` | `#f3eed8` | Sun Beam |
-| accent.subtle | `--ui-color-accent-subtle` | `#f9f7ec` | sun-50 |
-| accent.strong (text/icon) | `--ui-color-accent-strong` | `#76591a` | sun-700 |
-| on accent | `--ui-color-accent-contrast` | `#152026` | Black Pine |
-| status.success | `--ui-color-success` | `#2e6b50` | green-700 |
-| status.warning | `--ui-color-warning` | `#85570f` | amber-700 |
-| status.error | `--ui-color-danger` (hover `--ui-color-danger-hover`) | `#a83a3f` (`#922f34`) | red-700 |
-| status.info | `--ui-color-info` | `#3a6488` | blue-700 |
-| on status fills | `--ui-color-{success,warning,danger,info}-contrast` | `#f7fbfd` | blue-25 |
-| selected tint | `--ui-color-selected` | `rgba(27,61,89,.12)` | Deep Ocean 12% |
-| track | `--ui-color-track` | `#dae5ec` | slate-200 |
-| overlay scrim | `--ui-color-overlay` | `rgba(21,32,38,.42)` | Black Pine 42% |
+| Token | Value | From |
+|---|---|---|
+| `--ui-color-bg` | `#eef2ff` | `--ui-navy-50` |
+| `--ui-color-surface` | `#f7f9ff` | `--ui-navy-25` |
+| `--ui-color-surface-raised` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-surface-subtle` | `#e4eaff` | `--ui-navy-75` |
+| `--ui-color-surface-hover` | `#e4eaff` | `--ui-navy-75` |
+| `--ui-color-elevated-hover` | `#e4eaff` | `--ui-navy-75` |
+| `--ui-color-text` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-text-secondary` | `#2d3a7a` | `--ui-navy-725` |
+| `--ui-color-text-muted` | `#46507e` | `--ui-navy-650` |
+| `--ui-color-text-disabled` | `#6673b0` | `--ui-navy-500` |
+| `--ui-color-text-inverse` | `#eef2ff` | `--ui-navy-50` |
+| `--ui-color-border-subtle` | `#dce4ff` | `--ui-navy-100` |
+| `--ui-color-border` | `#c9d6ff` | `--ui-navy-200` |
+| `--ui-color-border-strong` | `#6673b0` | `--ui-navy-500` |
+| `--ui-color-border-focus` | `#2d3a7a` | `--ui-navy-725` |
+| `--ui-color-primary` | `#7a5800` | `--ui-navy-sun-700` |
+| `--ui-color-primary-hover` | `#6a4c00` | `--ui-navy-sun-800` |
+| `--ui-color-primary-active` | `#5a4100` | `--ui-navy-sun-900` |
+| `--ui-color-primary-contrast` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-secondary` | `#c9d6ff` | `--ui-navy-200` |
+| `--ui-color-secondary-hover` | `#b7c7ff` | `--ui-navy-275` |
+| `--ui-color-secondary-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-accent` | `#ffc93c` | `--ui-navy-sun-400` |
+| `--ui-color-accent-subtle` | `#fff4d6` | `--ui-navy-sun-50` |
+| `--ui-color-accent-strong` | `#7a5800` | `--ui-navy-sun-700` |
+| `--ui-color-accent-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-info` | `#2d3a7a` | `--ui-navy-725` |
+| `--ui-color-info-contrast` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-success` | `#23673f` | `--ui-navy-green-700` |
+| `--ui-color-success-contrast` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-warning` | `#a34700` | `--ui-navy-orange-700` |
+| `--ui-color-warning-contrast` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-danger` | `#b0303a` | `--ui-navy-red-700` |
+| `--ui-color-danger-hover` | `#922831` | `--ui-navy-red-800` |
+| `--ui-color-danger-contrast` | `#ffffff` | `--ui-navy-white` |
+| `--ui-color-selected` | `rgba(15, 20, 51, 0.1)` |  |
+| `--ui-color-track` | `#dce4ff` | `--ui-navy-100` |
+| `--ui-color-overlay` | `rgba(15, 20, 51, 0.42)` |  |
 
-## 3. Dark theme tokens (`winterDark`)
+---
 
-| Role | Token | Value | Primitive |
-|---|---|---|---|
-| background.default | `--ui-color-bg` | `#000000` | night-1000 |
-| background.surface | `--ui-color-surface` | `#0b0f12` | night-900 |
-| background.elevated | `--ui-color-surface-raised` | `#11171c` | night-850 |
-| background.subtle | `--ui-color-surface-subtle` | `#06080a` | night-950 |
-| hover (surface / in panels) | `--ui-color-surface-hover`, `--ui-color-elevated-hover` | `#1a232a` | night-800 |
-| text.primary | `--ui-color-text` | `#b3cbdc` | softened Avalanche (Avalanche glares on black) |
-| text.secondary | `--ui-color-text-secondary` | `#a6c0d3` | softened Melting Ice |
-| text.muted | `--ui-color-text-muted` | `#8aa4b8` | softened Windstorm |
-| text.disabled | `--ui-color-text-disabled` | `#587488` | slate-600 |
-| text.inverse | `--ui-color-text-inverse` | `#152026` | Black Pine |
-| border.subtle | `--ui-color-border-subtle` | `#1a232a` | night-800 |
-| border.default | `--ui-color-border` | `#26323b` | night-700 |
-| border.strong | `--ui-color-border-strong` | `#6c8497` | slate-500 |
-| border.focus | `--ui-color-border-focus` | `#8bb5db` | blue-400 |
-| brand.primary | `--ui-color-primary` | `#8bb5db` | blue-400 (bright Windstorm) |
-| brand.primary-hover | `--ui-color-primary-hover` | `#b3d5f1` | Melting Ice |
-| brand.primary-active | `--ui-color-primary-active` | `#6a97c0` | Windstorm |
-| on brand.primary | `--ui-color-primary-contrast` | `#152026` | Black Pine |
-| brand.secondary | `--ui-color-secondary` | `#264460` | blue-800 (Deep Ocean lifted) |
-| brand.secondary-hover | `--ui-color-secondary-hover` | `#3a6488` | blue-700 |
-| on brand.secondary | `--ui-color-secondary-contrast` | `#d4eef8` | Avalanche |
-| accent.default | `--ui-color-accent` | `#f3eed8` | Sun Beam |
-| accent.subtle | `--ui-color-accent-subtle` | `#34393a` | sun-900 |
-| accent.strong (text/icon) | `--ui-color-accent-strong` | `#f3eed8` | Sun Beam |
-| on accent | `--ui-color-accent-contrast` | `#152026` | Black Pine |
-| status.success | `--ui-color-success` | `#8ccba9` | green-300 |
-| status.warning | `--ui-color-warning` | `#e6c27d` | amber-300 |
-| status.error | `--ui-color-danger` (hover `--ui-color-danger-hover`) | `#f0a3a3` (`#f5bcbc`) | red-300 |
-| status.info | `--ui-color-info` | `#b3d5f1` | Melting Ice |
-| on status fills | `--ui-color-{success,warning,danger,info}-contrast` | `#152026` | Black Pine |
-| selected tint | `--ui-color-selected` | `rgba(139,181,219,.14)` | blue-400 14% |
-| track | `--ui-color-track` | `#2e4658` | slate-800 |
-| overlay scrim | `--ui-color-overlay` | `rgba(0,0,0,.72)` | black 72% |
+## 3. Dark theme tokens (`navy-dark`)
+
+| Token | Value | From |
+|---|---|---|
+| `--ui-color-bg` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-surface` | `#151b3f` | `--ui-navy-900` |
+| `--ui-color-surface-raised` | `#1b224b` | `--ui-navy-850` |
+| `--ui-color-surface-subtle` | `#0a0e26` | `--ui-navy-1000` |
+| `--ui-color-surface-hover` | `#232b59` | `--ui-navy-800` |
+| `--ui-color-elevated-hover` | `#232b59` | `--ui-navy-800` |
+| `--ui-color-text` | `#c9d6ff` | `--ui-navy-200` |
+| `--ui-color-text-secondary` | `#bfcbf5` | `--ui-navy-250` |
+| `--ui-color-text-muted` | `#9daadc` | `--ui-navy-400` |
+| `--ui-color-text-disabled` | `#6673b0` | `--ui-navy-500` |
+| `--ui-color-text-inverse` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-border-subtle` | `#232b59` | `--ui-navy-800` |
+| `--ui-color-border` | `#38427a` | `--ui-navy-700` |
+| `--ui-color-border-strong` | `#6673b0` | `--ui-navy-500` |
+| `--ui-color-border-focus` | `#ffc93c` | `--ui-navy-sun-400` |
+| `--ui-color-primary` | `#ffc93c` | `--ui-navy-sun-400` |
+| `--ui-color-primary-hover` | `#ffd873` | `--ui-navy-sun-300` |
+| `--ui-color-primary-active` | `#f2b91e` | `--ui-navy-sun-500` |
+| `--ui-color-primary-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-secondary` | `#c9d6ff` | `--ui-navy-200` |
+| `--ui-color-secondary-hover` | `#dce4ff` | `--ui-navy-100` |
+| `--ui-color-secondary-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-accent` | `#ffc93c` | `--ui-navy-sun-400` |
+| `--ui-color-accent-subtle` | `#3a3014` | `--ui-navy-sun-950` |
+| `--ui-color-accent-strong` | `#ffd873` | `--ui-navy-sun-300` |
+| `--ui-color-accent-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-info` | `#c9d6ff` | `--ui-navy-200` |
+| `--ui-color-info-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-success` | `#8fd3ae` | `--ui-navy-green-300` |
+| `--ui-color-success-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-warning` | `#ffa463` | `--ui-navy-orange-300` |
+| `--ui-color-warning-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-danger` | `#ff9c9c` | `--ui-navy-red-300` |
+| `--ui-color-danger-hover` | `#ffb8b8` | `--ui-navy-red-200` |
+| `--ui-color-danger-contrast` | `#0f1433` | `--ui-navy-950` |
+| `--ui-color-selected` | `rgba(201, 214, 255, 0.14)` |  |
+| `--ui-color-track` | `#2c3568` | `--ui-navy-750` |
+| `--ui-color-overlay` | `rgba(5, 7, 20, 0.72)` |  |
 
 ### Component tokens (both modes)
 
-| Token | Light | Dark | Used by |
-|---|---|---|---|
-| `--ui-control-border` | `#6c8497` (border-strong) | `#6c8497` (border-strong) | input, textarea, select, combobox, multi-select, chip-input, search, password, number, OTP, time, date picker, colour picker, file upload, checkbox, radio |
-| `--ui-switch-track` / `-checked` | `#6c8497` / `#1b3d59` | `#6c8497` / `#8bb5db` | switch |
-| `--ui-switch-thumb` / `-checked` | `#ffffff` / `#ffffff` | `#d4eef8` / `#152026` | switch |
-| `--ui-slider-thumb` / `-border` | `#ffffff` / control border | `#d4eef8` / `#152026` | slider |
-| `--ui-skeleton-base` / `-highlight` | `#e3f0f7` / `#f7fbfd` | `#1a232a` / `#26323b` | skeleton |
-| `--ui-scroll-progress-track` | Deep Ocean 6% | Melting Ice 6% | scroll progress |
-| `--ui-media-bg` / `-scrim` / `-on-scrim` / `-danger` | `#152026` / `#0b1216` / `#f7fbfd` / `#f0a3a3` | `#000000` / `#000000` / `#f7fbfd` / `#f0a3a3` | video player, carousel, gallery, media lightbox (always dark over photos) |
-| `--ui-pdf-page-bg` | `#ffffff` | `#ffffff` | PDF viewer pages (paper) |
-| `--ui-cursor-color` | `#1b3d59` | `#d4eef8` | FX cursor |
-| `--ui-section-label-bracket` | `#76591a` (accent-strong) | `#f3eed8` (accent-strong) | section label |
-
-### Gradients, glow, glass, shadow
-
-| Token | Light | Dark |
+| Token | Light (`navy`) | Dark (`navy-dark`) |
 |---|---|---|
-| `--ui-gradient-brand` (brand CTA, gradient text) | Deep Ocean → blue-700 `#1b3d59 → #3a6488` | blue-400 → Melting Ice `#8bb5db → #b3d5f1` |
-| `--ui-gradient-hero` | Deep Ocean → Windstorm | black → Deep Ocean |
-| `--ui-gradient-frost` | Windstorm → Melting Ice | Deep Ocean → Windstorm |
-| `--ui-gradient-snow` | Melting Ice → Avalanche | night-900 → night-850 |
-| `--ui-gradient-highlight` | Avalanche 90% → transparent | Melting Ice 14% → transparent |
-| `--ui-glow-amber` (legacy name) | `0 8px 24px rgba(27,61,89,.18)` | `0 0 28px rgba(139,181,219,.26)` |
-| `--ui-glass-bg` / `-border` | white 62% / Deep Ocean 12% | Melting Ice 6% / 13% |
-| `--ui-shadow-1..3` | Black Pine / Deep Ocean tinted, 7–16% | black, 60–80% |
+| `--ui-control-border` | `#6673b0` | `#6673b0` |
+| `--ui-switch-track` | `#6673b0` | `#6673b0` |
+| `--ui-switch-thumb` | `#ffffff` | `#c9d6ff` |
+| `--ui-switch-thumb-checked` | `#ffffff` | `#0f1433` |
+| `--ui-slider-thumb` | `#ffffff` | `#c9d6ff` |
+| `--ui-slider-thumb-border` | `#6673b0` | `#0f1433` |
+| `--ui-skeleton-base` | `#dce4ff` | `#232b59` |
+| `--ui-skeleton-highlight` | `#eef2ff` | `#2c3568` |
+| `--ui-progress-neutral` | `#686e73` | `#a1a6b4` |
+| `--ui-media-bg` | `#0f1433` | `#000000` |
+| `--ui-media-on-scrim` | `#f7f9ff` | `#f7f9ff` |
+| `--ui-cursor-color` | `#0f1433` | `#c9d6ff` |
 
-The brand gradient is a deliberate accessibility deviation from the brief. The brief suggested Deep Ocean → Windstorm, but the brand button puts its label on the gradient. A light label on raw Windstorm is about 3:1, and a light label on the dark-mode Windstorm stop is about 2.4:1. Each mode therefore keeps both stops readable against its label, and the full brief gradients live in `--ui-gradient-hero` and `--ui-gradient-frost`, which are decoration only.
+### Gradients, glow, glass, shadow, liquid backdrop
+
+| Token | Light (`navy`) | Dark (`navy-dark`) |
+|---|---|---|
+| `--ui-gradient-brand` | `linear-gradient(90deg, #0f1433 0%, #2d3a7a 100%)` | `linear-gradient(90deg, #ffc93c 0%, #ffd873 100%)` |
+| `--ui-gradient-hero` | `linear-gradient(160deg, #0f1433 0%, #2d3a7a 70%, #6673b0 100%)` | `linear-gradient(160deg, #0f1433 0%, #2c3568 100%)` |
+| `--ui-gradient-frost` | `linear-gradient(135deg, #6673b0 0%, #c9d6ff 100%)` | `linear-gradient(135deg, #2c3568 0%, #6673b0 100%)` |
+| `--ui-gradient-snow` | `linear-gradient(135deg, #c9d6ff 0%, #dce4ff 100%)` | `linear-gradient(135deg, #151b3f 0%, #1b224b 100%)` |
+| `--ui-gradient-highlight` | `linear-gradient(180deg, rgba(255, 201, 60, 0.22) 0%, rgba(255, 201, 60, 0) 100%)` | `linear-gradient(180deg, rgba(201, 214, 255, 0.14) 0%, rgba(201, 214, 255, 0) 100%)` |
+| `--ui-glow-amber` | `0 8px 24px rgba(255, 201, 60, 0.35)` | `0 0 28px rgba(255, 201, 60, 0.28)` |
+| `--ui-glass-bg` | `rgba(255, 255, 255, 0.9)` | `rgba(201, 214, 255, 0.06)` |
+| `--ui-glass-border` | `rgba(15, 20, 51, 0.12)` | `rgba(201, 214, 255, 0.13)` |
+| `--ui-shadow-1` | `0 1px 2px rgba(15, 20, 51, 0.07)` | `0 1px 2px rgba(0, 0, 0, 0.6)` |
+| `--ui-shadow-2` | `0 8px 24px rgba(15, 20, 51, 0.1)` | `0 8px 24px rgba(0, 0, 0, 0.7)` |
+| `--ui-shadow-3` | `0 16px 48px rgba(15, 20, 51, 0.16)` | `0 16px 48px rgba(0, 0, 0, 0.8)` |
+| `--ui-liquid-main` | `#eef2ff` | `#0f1433` |
+| `--ui-liquid-second` | `#c9d6ff` | `#c9d6ff` |
+| `--ui-liquid-accent` | `#ffc93c` | `#ffc93c` |
+| `--ui-liquid-second-strength` | `60%` | `10%` |
+| `--ui-liquid-accent-strength` | `45%` | `10%` |
+
+The `--ui-liquid-*` tokens let `ui-liquid-backdrop` (`@zouriel/ui/fx`) work in Navy: faint pools of
+Powder Blue and Sunflower on Midnight in dark, stronger ones on Mist in light. `provideUiConfig`'s
+`glass` stays `false` by default, so apps keep their solid surfaces unless they ask for glass.
 
 ---
 
 ## 4. Semantic token architecture
 
 ```
-Primitive  --ui-winter-blue-900 (#1b3d59)
+Primitive  --ui-navy-sun-700 (#7a5800)
     │   only referenced inside the theme blocks of tokens.css
-Semantic   --ui-color-primary  →  light: var(--ui-winter-blue-900)   dark: var(--ui-winter-blue-400)
+Semantic   --ui-color-primary  →  light: var(--ui-navy-sun-700)   dark: var(--ui-navy-sun-400)
     │   what every component reads
 Component  --ui-switch-track-checked: var(--ui-color-primary)
            --ui-control-border: var(--ui-color-border-strong)
@@ -180,8 +255,8 @@ Component  --ui-switch-track-checked: var(--ui-color-primary)
 2. **`:root, [data-theme]`** derives the extended semantic and component tokens from the core set. Every theme defines the core set: bg, surface, surface-raised, text, text-muted, border, primary, primary-hover, primary-contrast, secondary, success, warning, danger.
    - A skin written before 0.7.0 gets formula defaults, for example `--ui-color-border-strong: var(--ui-color-border)` and `--ui-color-danger-contrast: var(--ui-color-primary-contrast)`, so it renders exactly as before.
    - The block is declared on every `[data-theme]` element, so a scoped `<ui-theme-provider>` island recomputes the tokens from its own palette.
-3. **`:root, [data-theme="dark"], [data-theme="winterDark"]`** sets the Winter Dark core tokens. **`:root:not([data-theme]), [data-theme="dark"], [data-theme="winterDark"]`** sets the tuned extended tokens. A page with no `data-theme` gets Winter Dark.
-4. **`[data-theme="light"], [data-theme="winterLight"]`** sets the complete Winter Light set.
+3. **`:root, [data-theme="dark"], [data-theme="navy-dark"], [data-theme="winterDark"]`** sets the Navy Dark core tokens. **`:root:not([data-theme]), [data-theme="dark"], [data-theme="navy-dark"], [data-theme="winterDark"]`** sets the tuned extended tokens. A page with no `data-theme` gets Navy Dark. (`winterDark` is the deprecated alias.)
+4. **`[data-theme="light"], [data-theme="navy"], [data-theme="winterLight"]`** sets the complete Navy Light set. (`winterLight` is the deprecated alias.)
 
 `color-aliases.css` is optional. It exposes the brief's generic names (`--color-background-default`, `--color-text-primary`, `--color-brand-primary`, `--color-status-error`, …) as aliases of the `--ui-color-*` tokens. Library components never read them.
 
@@ -195,7 +270,7 @@ Component  --ui-switch-track-checked: var(--ui-color-primary)
 | Button, secondary | `secondary` fill, `secondary-contrast` | `secondary-hover` | press scale | focus ring | n/a | 50% opacity | loading spinner |
 | Button, outline / ghost / default | `surface` + `border` / transparent | `surface-hover` | press scale | focus ring | n/a | 50% opacity | |
 | Button, destructive | `danger` fill, `danger-contrast` | `danger-hover` | press scale | focus ring | n/a | 50% opacity | |
-| Button, brand | `gradient-brand`, `primary-contrast`, `glow-amber` | brightness 1.08 | press scale | focus ring | n/a | 50% opacity | |
+| Button, brand | `gradient-brand`, `gradient-brand-contrast` (else `primary-contrast`), `glow-amber` | contrast-colour wash | press scale | focus ring | n/a | 50% opacity | |
 | Link | `primary` | `primary-hover` + underline | n/a | focus ring | n/a | n/a | |
 | Input, textarea, select, combobox, date/time | `surface` + `control-border` | n/a | n/a | `primary` border + 30% primary halo | n/a | 55% opacity | error: `danger` border + 30% danger halo; message text `danger` |
 | Checkbox / radio | `surface` + `control-border` | n/a | n/a | focus ring | `primary` fill (tick `primary-contrast`) / `primary` dot | 55% opacity | invalid: `danger` border |
@@ -234,410 +309,475 @@ The thresholds come from WCAG 2.2:
 - **4.5:1** for body text, labels, links and status text (1.4.3).
 - **3:1** for control boundaries, focus indicators and checked, selected or track states (1.4.11).
 
-Result: **73 of 73 pairs pass in light and 73 of 73 in dark.**
+Result: **79 of 79 pairs pass in light and 79 of 79 in dark.**
 
 | Mode | Lowest text | Lowest label on fill | Lowest link / status text | Lowest non-text |
 |---|---|---|---|---|
-| Light | 5.56 (muted on selected) | 5.99 (label on warning) | 5.66 (warning on bg) | 3.05 (slider thumb ring on track) |
-| Dark | 5.39 (muted on selected) | 5.18 (label on secondary-hover) | 8.37 (primary on elevated) | 3.23 (switch thumb on track) |
+| Light | 6.30 (text-muted on selected (raised)) | 5.42 (tier-premium-contrast on tier-premium-light) | 5.43 (warning on bg) | 3.57 (slider thumb (slider-thumb-border) on track) |
+| Dark | 4.71 (text-muted on selected (raised)) | 5.42 (tier-premium-contrast on tier-premium-light) | 7.62 (danger on surface-raised) | 3.13 (switch-thumb on switch-track) |
 
-Adjustments made while validating:
+Derived role colours (where a brand colour fails its role):
 
-- **Dark ground.** Moved from Black Pine to true black (night-1000), with faintly blue-black surfaces (night-900/850). Text was softened from Avalanche to `#b3cbdc` because the brighter blue glares on black; it is still 10.7:1 or better on every surface.
-- **Dark `--ui-color-selected`.** Lowered from 20% to 14%, so muted text stays above 4.5:1 on selected rows.
-- **Dark switch track.** slate-500, so the track stays above 3:1 against the surfaces it sits on.
-- **Dark slider thumb.** It has a Black Pine ring (`--ui-slider-thumb-border`). An Avalanche thumb on the bright fill was 1.8:1.
-- **Form controls.** They moved from `border` to `--ui-control-border`, which is border-strong. The default `border`, at about 1.4–1.7:1, is right for cards and dividers but not for input boundaries.
+- **Light primary** `#7a5800` (`--ui-navy-sun-700`): Sunflower deepened; Sunflower is 1.37:1 on Mist.
+  Hover `#6a4c00`, pressed `#5a4100`, white label.
+- **Light brand gradient** Midnight → `#2d3a7a` with a white label: `.ui-gradient-text` paints the
+  gradient straight onto the page, where Sunflower would vanish. Sunflower carries the light theme's
+  glow, highlight gradient, eyebrow bar and backdrop instead.
+- **Dark muted text** `#9daadc` (`--ui-navy-400`): 4.5:1 even on frosted glass over a white backdrop.
+- **Dark secondary text** `#bfcbf5` (`--ui-navy-250`): 4.5:1 on a selected row's 26% Sunflower tint
+  (the mid step `#aebbea` was 4.33:1).
+- **Status colours** are their own steps (green, orange, red: 700 on light, 300 on dark); warning is an
+  orange rather than an amber so it doesn't read as the Sunflower primary.
+
+The library-wide contract (`projects/ui/src/lib/style-contract.spec.ts`) checks Navy again under its
+`dark` / `light` names with every other theme (glass over maps, frosted glass over white and black, the
+feature-card tints, route lines, tier metals), and its `navy` suite checks that the Winter aliases
+resolve to exactly the Navy tokens.
 
 ### Full results
-#### Light (winterLight)
+
+#### Light (navy)
 
 
 **Text**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| text on bg | `#152026` | `#eef5f9` | 15.05 | 4.5 | Pass |
-| text-secondary on bg | `#1b3d59` | `#eef5f9` | 10.26 | 4.5 | Pass |
-| text-muted on bg | `#465d6f` | `#eef5f9` | 6.24 | 4.5 | Pass |
-| text on surface | `#152026` | `#f7fbfd` | 15.93 | 4.5 | Pass |
-| text-secondary on surface | `#1b3d59` | `#f7fbfd` | 10.85 | 4.5 | Pass |
-| text-muted on surface | `#465d6f` | `#f7fbfd` | 6.60 | 4.5 | Pass |
-| text on surface-raised | `#152026` | `#ffffff` | 16.58 | 4.5 | Pass |
-| text-secondary on surface-raised | `#1b3d59` | `#ffffff` | 11.30 | 4.5 | Pass |
-| text-muted on surface-raised | `#465d6f` | `#ffffff` | 6.87 | 4.5 | Pass |
-| text on surface-subtle | `#152026` | `#e3f0f7` | 14.27 | 4.5 | Pass |
-| text-secondary on surface-subtle | `#1b3d59` | `#e3f0f7` | 9.73 | 4.5 | Pass |
-| text-muted on surface-subtle | `#465d6f` | `#e3f0f7` | 5.91 | 4.5 | Pass |
-| text on surface-hover | `#152026` | `#e3f0f7` | 14.27 | 4.5 | Pass |
-| text-muted on surface-hover | `#465d6f` | `#e3f0f7` | 5.91 | 4.5 | Pass |
-| text-inverse on text | `#eef5f9` | `#152026` | 15.05 | 4.5 | Pass |
-| text on selected (raised) | `#152026` | `#e4e8eb` | 13.42 | 4.5 | Pass |
-| text-muted on selected (raised) | `#465d6f` | `#e4e8eb` | 5.56 | 4.5 | Pass |
-| text on primary 26% tint (raised) | `#152026` | `#c4cdd4` | 10.25 | 4.5 | Pass |
-| text-secondary on primary 26% tint (raised) | `#1b3d59` | `#c4cdd4` | 6.98 | 4.5 | Pass |
+| text on bg | `#0f1433` | `#eef2ff` | 16.08 | 4.5 | Pass |
+| text-secondary on bg | `#2d3a7a` | `#eef2ff` | 9.40 | 4.5 | Pass |
+| text-muted on bg | `#46507e` | `#eef2ff` | 6.93 | 4.5 | Pass |
+| text on surface | `#0f1433` | `#f7f9ff` | 17.08 | 4.5 | Pass |
+| text-secondary on surface | `#2d3a7a` | `#f7f9ff` | 9.99 | 4.5 | Pass |
+| text-muted on surface | `#46507e` | `#f7f9ff` | 7.36 | 4.5 | Pass |
+| text on surface-raised | `#0f1433` | `#ffffff` | 17.98 | 4.5 | Pass |
+| text-secondary on surface-raised | `#2d3a7a` | `#ffffff` | 10.51 | 4.5 | Pass |
+| text-muted on surface-raised | `#46507e` | `#ffffff` | 7.75 | 4.5 | Pass |
+| text on surface-subtle | `#0f1433` | `#e4eaff` | 14.99 | 4.5 | Pass |
+| text-secondary on surface-subtle | `#2d3a7a` | `#e4eaff` | 8.77 | 4.5 | Pass |
+| text-muted on surface-subtle | `#46507e` | `#e4eaff` | 6.46 | 4.5 | Pass |
+| text on surface-hover | `#0f1433` | `#e4eaff` | 14.99 | 4.5 | Pass |
+| text-muted on surface-hover | `#46507e` | `#e4eaff` | 6.46 | 4.5 | Pass |
+| text-inverse on text | `#eef2ff` | `#0f1433` | 16.08 | 4.5 | Pass |
+| text on selected (raised) | `#0f1433` | `#e7e8eb` | 14.62 | 4.5 | Pass |
+| text-muted on selected (raised) | `#46507e` | `#e7e8eb` | 6.30 | 4.5 | Pass |
+| text on primary 26% tint (raised) | `#0f1433` | `#dcd4bd` | 12.12 | 4.5 | Pass |
+| text-secondary on primary 26% tint (raised) | `#2d3a7a` | `#dcd4bd` | 7.09 | 4.5 | Pass |
 
 **Button & badge labels**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| primary-contrast on primary | `#f7fbfd` | `#1b3d59` | 10.85 | 4.5 | Pass |
-| primary-contrast on primary-hover | `#f7fbfd` | `#264460` | 9.71 | 4.5 | Pass |
-| primary-contrast on primary-active | `#f7fbfd` | `#152026` | 15.93 | 4.5 | Pass |
-| secondary-contrast on secondary | `#f7fbfd` | `#3a6488` | 6.01 | 4.5 | Pass |
-| secondary-contrast on secondary-hover | `#f7fbfd` | `#264460` | 9.71 | 4.5 | Pass |
-| danger-contrast on danger | `#f7fbfd` | `#a83a3f` | 6.04 | 4.5 | Pass |
-| danger-contrast on danger-hover | `#f7fbfd` | `#922f34` | 7.53 | 4.5 | Pass |
-| success-contrast on success | `#f7fbfd` | `#2e6b50` | 6.05 | 4.5 | Pass |
-| warning-contrast on warning | `#f7fbfd` | `#85570f` | 5.99 | 4.5 | Pass |
-| info-contrast on info | `#f7fbfd` | `#3a6488` | 6.01 | 4.5 | Pass |
-| accent-contrast on accent | `#152026` | `#f3eed8` | 14.24 | 4.5 | Pass |
-| primary-contrast on gradient-brand start | `#f7fbfd` | `#1b3d59` | 10.85 | 4.5 | Pass |
-| primary-contrast on gradient-brand end | `#f7fbfd` | `#3a6488` | 6.01 | 4.5 | Pass |
+| primary-contrast on primary | `#ffffff` | `#7a5800` | 6.51 | 4.5 | Pass |
+| primary-contrast on primary-hover | `#ffffff` | `#6a4c00` | 7.93 | 4.5 | Pass |
+| primary-contrast on primary-active | `#ffffff` | `#5a4100` | 9.59 | 4.5 | Pass |
+| secondary-contrast on secondary | `#0f1433` | `#c9d6ff` | 12.45 | 4.5 | Pass |
+| secondary-contrast on secondary-hover | `#0f1433` | `#b7c7ff` | 10.81 | 4.5 | Pass |
+| danger-contrast on danger | `#ffffff` | `#b0303a` | 6.31 | 4.5 | Pass |
+| danger-contrast on danger-hover | `#ffffff` | `#922831` | 8.17 | 4.5 | Pass |
+| success-contrast on success | `#ffffff` | `#23673f` | 6.81 | 4.5 | Pass |
+| warning-contrast on warning | `#ffffff` | `#a34700` | 6.07 | 4.5 | Pass |
+| info-contrast on info | `#ffffff` | `#2d3a7a` | 10.51 | 4.5 | Pass |
+| accent-contrast on accent | `#0f1433` | `#ffc93c` | 11.70 | 4.5 | Pass |
+| tier-gold-contrast on tier-gold | `#2b1e00` | `#d9a520` | 7.26 | 4.5 | Pass |
+| tier-gold-contrast on tier-gold-light | `#2b1e00` | `#f2d272` | 11.05 | 4.5 | Pass |
+| tier-platinum-contrast on tier-platinum | `#1f2933` | `#cdd4dd` | 9.88 | 4.5 | Pass |
+| tier-platinum-contrast on tier-platinum-light | `#1f2933` | `#eef1f5` | 13.02 | 4.5 | Pass |
+| tier-premium-contrast on tier-premium | `#ffffff` | `#4a2fb0` | 9.03 | 4.5 | Pass |
+| tier-premium-contrast on tier-premium-light | `#ffffff` | `#6e52d9` | 5.42 | 4.5 | Pass |
+| primary-contrast on gradient-brand start | `#ffffff` | `#0f1433` | 17.98 | 4.5 | Pass |
+| primary-contrast on gradient-brand end | `#ffffff` | `#2d3a7a` | 10.51 | 4.5 | Pass |
 
 **Links & status text**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| primary on bg | `#1b3d59` | `#eef5f9` | 10.26 | 4.5 | Pass |
-| primary-hover on bg | `#264460` | `#eef5f9` | 9.17 | 4.5 | Pass |
-| danger on bg | `#a83a3f` | `#eef5f9` | 5.70 | 4.5 | Pass |
-| success on bg | `#2e6b50` | `#eef5f9` | 5.72 | 4.5 | Pass |
-| warning on bg | `#85570f` | `#eef5f9` | 5.66 | 4.5 | Pass |
-| info on bg | `#3a6488` | `#eef5f9` | 5.68 | 4.5 | Pass |
-| accent-strong on bg | `#76591a` | `#eef5f9` | 5.93 | 4.5 | Pass |
-| primary on surface | `#1b3d59` | `#f7fbfd` | 10.85 | 4.5 | Pass |
-| primary-hover on surface | `#264460` | `#f7fbfd` | 9.71 | 4.5 | Pass |
-| danger on surface | `#a83a3f` | `#f7fbfd` | 6.04 | 4.5 | Pass |
-| success on surface | `#2e6b50` | `#f7fbfd` | 6.05 | 4.5 | Pass |
-| warning on surface | `#85570f` | `#f7fbfd` | 5.99 | 4.5 | Pass |
-| info on surface | `#3a6488` | `#f7fbfd` | 6.01 | 4.5 | Pass |
-| accent-strong on surface | `#76591a` | `#f7fbfd` | 6.28 | 4.5 | Pass |
-| primary on surface-raised | `#1b3d59` | `#ffffff` | 11.30 | 4.5 | Pass |
-| primary-hover on surface-raised | `#264460` | `#ffffff` | 10.11 | 4.5 | Pass |
-| danger on surface-raised | `#a83a3f` | `#ffffff` | 6.28 | 4.5 | Pass |
-| success on surface-raised | `#2e6b50` | `#ffffff` | 6.30 | 4.5 | Pass |
-| warning on surface-raised | `#85570f` | `#ffffff` | 6.24 | 4.5 | Pass |
-| info on surface-raised | `#3a6488` | `#ffffff` | 6.25 | 4.5 | Pass |
-| accent-strong on surface-raised | `#76591a` | `#ffffff` | 6.53 | 4.5 | Pass |
+| primary on bg | `#7a5800` | `#eef2ff` | 5.83 | 4.5 | Pass |
+| primary-hover on bg | `#6a4c00` | `#eef2ff` | 7.10 | 4.5 | Pass |
+| danger on bg | `#b0303a` | `#eef2ff` | 5.64 | 4.5 | Pass |
+| success on bg | `#23673f` | `#eef2ff` | 6.09 | 4.5 | Pass |
+| warning on bg | `#a34700` | `#eef2ff` | 5.43 | 4.5 | Pass |
+| info on bg | `#2d3a7a` | `#eef2ff` | 9.40 | 4.5 | Pass |
+| accent-strong on bg | `#7a5800` | `#eef2ff` | 5.83 | 4.5 | Pass |
+| primary on surface | `#7a5800` | `#f7f9ff` | 6.19 | 4.5 | Pass |
+| primary-hover on surface | `#6a4c00` | `#f7f9ff` | 7.54 | 4.5 | Pass |
+| danger on surface | `#b0303a` | `#f7f9ff` | 5.99 | 4.5 | Pass |
+| success on surface | `#23673f` | `#f7f9ff` | 6.47 | 4.5 | Pass |
+| warning on surface | `#a34700` | `#f7f9ff` | 5.77 | 4.5 | Pass |
+| info on surface | `#2d3a7a` | `#f7f9ff` | 9.99 | 4.5 | Pass |
+| accent-strong on surface | `#7a5800` | `#f7f9ff` | 6.19 | 4.5 | Pass |
+| primary on surface-raised | `#7a5800` | `#ffffff` | 6.51 | 4.5 | Pass |
+| primary-hover on surface-raised | `#6a4c00` | `#ffffff` | 7.93 | 4.5 | Pass |
+| danger on surface-raised | `#b0303a` | `#ffffff` | 6.31 | 4.5 | Pass |
+| success on surface-raised | `#23673f` | `#ffffff` | 6.81 | 4.5 | Pass |
+| warning on surface-raised | `#a34700` | `#ffffff` | 6.07 | 4.5 | Pass |
+| info on surface-raised | `#2d3a7a` | `#ffffff` | 10.51 | 4.5 | Pass |
+| accent-strong on surface-raised | `#7a5800` | `#ffffff` | 6.51 | 4.5 | Pass |
 
 **Controls & focus (non-text)**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| control-border on bg | `#6c8497` | `#eef5f9` | 3.54 | 3 | Pass |
-| border-focus on bg | `#3a6488` | `#eef5f9` | 5.68 | 3 | Pass |
-| checked / selected indicator on bg | `#1b3d59` | `#eef5f9` | 10.26 | 3 | Pass |
-| error border on bg | `#a83a3f` | `#eef5f9` | 5.70 | 3 | Pass |
-| switch-track on bg | `#6c8497` | `#eef5f9` | 3.54 | 3 | Pass |
-| control-border on surface | `#6c8497` | `#f7fbfd` | 3.75 | 3 | Pass |
-| border-focus on surface | `#3a6488` | `#f7fbfd` | 6.01 | 3 | Pass |
-| checked / selected indicator on surface | `#1b3d59` | `#f7fbfd` | 10.85 | 3 | Pass |
-| error border on surface | `#a83a3f` | `#f7fbfd` | 6.04 | 3 | Pass |
-| switch-track on surface | `#6c8497` | `#f7fbfd` | 3.75 | 3 | Pass |
-| control-border on surface-raised | `#6c8497` | `#ffffff` | 3.90 | 3 | Pass |
-| border-focus on surface-raised | `#3a6488` | `#ffffff` | 6.25 | 3 | Pass |
-| checked / selected indicator on surface-raised | `#1b3d59` | `#ffffff` | 11.30 | 3 | Pass |
-| error border on surface-raised | `#a83a3f` | `#ffffff` | 6.28 | 3 | Pass |
-| switch-track on surface-raised | `#6c8497` | `#ffffff` | 3.90 | 3 | Pass |
-| switch-thumb on switch-track | `#ffffff` | `#6c8497` | 3.90 | 3 | Pass |
-| switch-thumb-checked on switch-track-checked | `#ffffff` | `#1b3d59` | 11.30 | 3 | Pass |
-| progress / slider fill on track | `#1b3d59` | `#dae5ec` | 8.83 | 3 | Pass |
-| slider thumb (slider-thumb) on fill | `#ffffff` | `#1b3d59` | 11.30 | 3 | Pass |
-| slider thumb (slider-thumb-border) on track | `#6c8497` | `#dae5ec` | 3.05 | 3 | Pass |
+| control-border on bg | `#6673b0` | `#eef2ff` | 4.04 | 3 | Pass |
+| border-focus on bg | `#2d3a7a` | `#eef2ff` | 9.40 | 3 | Pass |
+| checked / selected indicator on bg | `#7a5800` | `#eef2ff` | 5.83 | 3 | Pass |
+| error border on bg | `#b0303a` | `#eef2ff` | 5.64 | 3 | Pass |
+| switch-track on bg | `#6673b0` | `#eef2ff` | 4.04 | 3 | Pass |
+| control-border on surface | `#6673b0` | `#f7f9ff` | 4.30 | 3 | Pass |
+| border-focus on surface | `#2d3a7a` | `#f7f9ff` | 9.99 | 3 | Pass |
+| checked / selected indicator on surface | `#7a5800` | `#f7f9ff` | 6.19 | 3 | Pass |
+| error border on surface | `#b0303a` | `#f7f9ff` | 5.99 | 3 | Pass |
+| switch-track on surface | `#6673b0` | `#f7f9ff` | 4.30 | 3 | Pass |
+| control-border on surface-raised | `#6673b0` | `#ffffff` | 4.52 | 3 | Pass |
+| border-focus on surface-raised | `#2d3a7a` | `#ffffff` | 10.51 | 3 | Pass |
+| checked / selected indicator on surface-raised | `#7a5800` | `#ffffff` | 6.51 | 3 | Pass |
+| error border on surface-raised | `#b0303a` | `#ffffff` | 6.31 | 3 | Pass |
+| switch-track on surface-raised | `#6673b0` | `#ffffff` | 4.52 | 3 | Pass |
+| switch-thumb on switch-track | `#ffffff` | `#6673b0` | 4.52 | 3 | Pass |
+| switch-thumb-checked on switch-track-checked | `#ffffff` | `#7a5800` | 6.51 | 3 | Pass |
+| progress / slider fill on track | `#7a5800` | `#dce4ff` | 5.15 | 3 | Pass |
+| slider thumb (slider-thumb) on fill | `#ffffff` | `#7a5800` | 6.51 | 3 | Pass |
+| slider thumb (slider-thumb-border) on track | `#6673b0` | `#dce4ff` | 3.57 | 3 | Pass |
 
 **Informational (exempt)**
 
 | Pair | Foreground | Background | Ratio |
 |---|---|---|---:|
-| text-disabled on bg | `#93a6b5` | `#eef5f9` | 2.28 |
-| text-disabled on surface-raised | `#93a6b5` | `#ffffff` | 2.51 |
-| border on bg | `#c3d2dd` | `#eef5f9` | 1.40 |
-| border-subtle on surface-raised | `#dae5ec` | `#ffffff` | 1.28 |
-| surface-raised vs bg | `#ffffff` | `#eef5f9` | 1.10 |
-| skeleton on raised card | `#e3f0f7` | `#ffffff` | 1.16 |
+| text-disabled on bg | `#6673b0` | `#eef2ff` | 4.04 |
+| text-disabled on surface-raised | `#6673b0` | `#ffffff` | 4.52 |
+| border on bg | `#c9d6ff` | `#eef2ff` | 1.29 |
+| border-subtle on surface-raised | `#dce4ff` | `#ffffff` | 1.27 |
+| surface-raised vs bg | `#ffffff` | `#eef2ff` | 1.12 |
+| skeleton on raised card | `#dce4ff` | `#ffffff` | 1.27 |
 
-#### Dark (winterDark)
+#### Dark (navy-dark)
 
 
 **Text**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| text on bg | `#b3cbdc` | `#000000` | 12.49 | 4.5 | Pass |
-| text-secondary on bg | `#a6c0d3` | `#000000` | 11.10 | 4.5 | Pass |
-| text-muted on bg | `#8aa4b8` | `#000000` | 8.08 | 4.5 | Pass |
-| text on surface | `#b3cbdc` | `#0b0f12` | 11.45 | 4.5 | Pass |
-| text-secondary on surface | `#a6c0d3` | `#0b0f12` | 10.17 | 4.5 | Pass |
-| text-muted on surface | `#8aa4b8` | `#0b0f12` | 7.41 | 4.5 | Pass |
-| text on surface-raised | `#b3cbdc` | `#11171c` | 10.74 | 4.5 | Pass |
-| text-secondary on surface-raised | `#a6c0d3` | `#11171c` | 9.54 | 4.5 | Pass |
-| text-muted on surface-raised | `#8aa4b8` | `#11171c` | 6.95 | 4.5 | Pass |
-| text on surface-subtle | `#b3cbdc` | `#06080a` | 11.93 | 4.5 | Pass |
-| text-secondary on surface-subtle | `#a6c0d3` | `#06080a` | 10.60 | 4.5 | Pass |
-| text-muted on surface-subtle | `#8aa4b8` | `#06080a` | 7.72 | 4.5 | Pass |
-| text on surface-hover | `#b3cbdc` | `#1a232a` | 9.48 | 4.5 | Pass |
-| text-muted on surface-hover | `#8aa4b8` | `#1a232a` | 6.13 | 4.5 | Pass |
-| text-inverse on text | `#152026` | `#b3cbdc` | 9.86 | 4.5 | Pass |
-| text on selected (raised) | `#b3cbdc` | `#222d37` | 8.33 | 4.5 | Pass |
-| text-muted on selected (raised) | `#8aa4b8` | `#222d37` | 5.39 | 4.5 | Pass |
-| text on primary 26% tint (raised) | `#b3cbdc` | `#31404e` | 6.33 | 4.5 | Pass |
-| text-secondary on primary 26% tint (raised) | `#a6c0d3` | `#31404e` | 5.63 | 4.5 | Pass |
+| text on bg | `#c9d6ff` | `#0f1433` | 12.45 | 4.5 | Pass |
+| text-secondary on bg | `#bfcbf5` | `#0f1433` | 11.19 | 4.5 | Pass |
+| text-muted on bg | `#9daadc` | `#0f1433` | 7.89 | 4.5 | Pass |
+| text on surface | `#c9d6ff` | `#151b3f` | 11.54 | 4.5 | Pass |
+| text-secondary on surface | `#bfcbf5` | `#151b3f` | 10.37 | 4.5 | Pass |
+| text-muted on surface | `#9daadc` | `#151b3f` | 7.31 | 4.5 | Pass |
+| text on surface-raised | `#c9d6ff` | `#1b224b` | 10.56 | 4.5 | Pass |
+| text-secondary on surface-raised | `#bfcbf5` | `#1b224b` | 9.50 | 4.5 | Pass |
+| text-muted on surface-raised | `#9daadc` | `#1b224b` | 6.69 | 4.5 | Pass |
+| text on surface-subtle | `#c9d6ff` | `#0a0e26` | 13.18 | 4.5 | Pass |
+| text-secondary on surface-subtle | `#bfcbf5` | `#0a0e26` | 11.85 | 4.5 | Pass |
+| text-muted on surface-subtle | `#9daadc` | `#0a0e26` | 8.35 | 4.5 | Pass |
+| text on surface-hover | `#c9d6ff` | `#232b59` | 9.32 | 4.5 | Pass |
+| text-muted on surface-hover | `#9daadc` | `#232b59` | 5.90 | 4.5 | Pass |
+| text-inverse on text | `#0f1433` | `#c9d6ff` | 12.45 | 4.5 | Pass |
+| text on selected (raised) | `#c9d6ff` | `#333b64` | 7.43 | 4.5 | Pass |
+| text-muted on selected (raised) | `#9daadc` | `#333b64` | 4.71 | 4.5 | Pass |
+| text on primary 26% tint (raised) | `#c9d6ff` | `#564d47` | 5.68 | 4.5 | Pass |
+| text-secondary on primary 26% tint (raised) | `#bfcbf5` | `#564d47` | 5.10 | 4.5 | Pass |
 
 **Button & badge labels**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| primary-contrast on primary | `#152026` | `#8bb5db` | 7.68 | 4.5 | Pass |
-| primary-contrast on primary-hover | `#152026` | `#b3d5f1` | 10.82 | 4.5 | Pass |
-| primary-contrast on primary-active | `#152026` | `#6a97c0` | 5.37 | 4.5 | Pass |
-| secondary-contrast on secondary | `#d4eef8` | `#264460` | 8.37 | 4.5 | Pass |
-| secondary-contrast on secondary-hover | `#d4eef8` | `#3a6488` | 5.18 | 4.5 | Pass |
-| danger-contrast on danger | `#152026` | `#f0a3a3` | 8.27 | 4.5 | Pass |
-| danger-contrast on danger-hover | `#152026` | `#f5bcbc` | 10.11 | 4.5 | Pass |
-| success-contrast on success | `#152026` | `#8ccba9` | 8.87 | 4.5 | Pass |
-| warning-contrast on warning | `#152026` | `#e6c27d` | 9.77 | 4.5 | Pass |
-| info-contrast on info | `#152026` | `#b3d5f1` | 10.82 | 4.5 | Pass |
-| accent-contrast on accent | `#152026` | `#f3eed8` | 14.24 | 4.5 | Pass |
-| primary-contrast on gradient-brand start | `#152026` | `#8bb5db` | 7.68 | 4.5 | Pass |
-| primary-contrast on gradient-brand end | `#152026` | `#b3d5f1` | 10.82 | 4.5 | Pass |
+| primary-contrast on primary | `#0f1433` | `#ffc93c` | 11.70 | 4.5 | Pass |
+| primary-contrast on primary-hover | `#0f1433` | `#ffd873` | 13.12 | 4.5 | Pass |
+| primary-contrast on primary-active | `#0f1433` | `#f2b91e` | 10.04 | 4.5 | Pass |
+| secondary-contrast on secondary | `#0f1433` | `#c9d6ff` | 12.45 | 4.5 | Pass |
+| secondary-contrast on secondary-hover | `#0f1433` | `#dce4ff` | 14.20 | 4.5 | Pass |
+| danger-contrast on danger | `#0f1433` | `#ff9c9c` | 8.98 | 4.5 | Pass |
+| danger-contrast on danger-hover | `#0f1433` | `#ffb8b8` | 10.96 | 4.5 | Pass |
+| success-contrast on success | `#0f1433` | `#8fd3ae` | 10.36 | 4.5 | Pass |
+| warning-contrast on warning | `#0f1433` | `#ffa463` | 9.20 | 4.5 | Pass |
+| info-contrast on info | `#0f1433` | `#c9d6ff` | 12.45 | 4.5 | Pass |
+| accent-contrast on accent | `#0f1433` | `#ffc93c` | 11.70 | 4.5 | Pass |
+| tier-gold-contrast on tier-gold | `#2b1e00` | `#d9a520` | 7.26 | 4.5 | Pass |
+| tier-gold-contrast on tier-gold-light | `#2b1e00` | `#f2d272` | 11.05 | 4.5 | Pass |
+| tier-platinum-contrast on tier-platinum | `#1f2933` | `#cdd4dd` | 9.88 | 4.5 | Pass |
+| tier-platinum-contrast on tier-platinum-light | `#1f2933` | `#eef1f5` | 13.02 | 4.5 | Pass |
+| tier-premium-contrast on tier-premium | `#ffffff` | `#4a2fb0` | 9.03 | 4.5 | Pass |
+| tier-premium-contrast on tier-premium-light | `#ffffff` | `#6e52d9` | 5.42 | 4.5 | Pass |
+| primary-contrast on gradient-brand start | `#0f1433` | `#ffc93c` | 11.70 | 4.5 | Pass |
+| primary-contrast on gradient-brand end | `#0f1433` | `#ffd873` | 13.12 | 4.5 | Pass |
 
 **Links & status text**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| primary on bg | `#8bb5db` | `#000000` | 9.73 | 4.5 | Pass |
-| primary-hover on bg | `#b3d5f1` | `#000000` | 13.70 | 4.5 | Pass |
-| danger on bg | `#f0a3a3` | `#000000` | 10.47 | 4.5 | Pass |
-| success on bg | `#8ccba9` | `#000000` | 11.23 | 4.5 | Pass |
-| warning on bg | `#e6c27d` | `#000000` | 12.38 | 4.5 | Pass |
-| info on bg | `#b3d5f1` | `#000000` | 13.70 | 4.5 | Pass |
-| accent-strong on bg | `#f3eed8` | `#000000` | 18.03 | 4.5 | Pass |
-| primary on surface | `#8bb5db` | `#0b0f12` | 8.92 | 4.5 | Pass |
-| primary-hover on surface | `#b3d5f1` | `#0b0f12` | 12.56 | 4.5 | Pass |
-| danger on surface | `#f0a3a3` | `#0b0f12` | 9.60 | 4.5 | Pass |
-| success on surface | `#8ccba9` | `#0b0f12` | 10.29 | 4.5 | Pass |
-| warning on surface | `#e6c27d` | `#0b0f12` | 11.34 | 4.5 | Pass |
-| info on surface | `#b3d5f1` | `#0b0f12` | 12.56 | 4.5 | Pass |
-| accent-strong on surface | `#f3eed8` | `#0b0f12` | 16.52 | 4.5 | Pass |
-| primary on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 4.5 | Pass |
-| primary-hover on surface-raised | `#b3d5f1` | `#11171c` | 11.78 | 4.5 | Pass |
-| danger on surface-raised | `#f0a3a3` | `#11171c` | 9.00 | 4.5 | Pass |
-| success on surface-raised | `#8ccba9` | `#11171c` | 9.66 | 4.5 | Pass |
-| warning on surface-raised | `#e6c27d` | `#11171c` | 10.64 | 4.5 | Pass |
-| info on surface-raised | `#b3d5f1` | `#11171c` | 11.78 | 4.5 | Pass |
-| accent-strong on surface-raised | `#f3eed8` | `#11171c` | 15.50 | 4.5 | Pass |
+| primary on bg | `#ffc93c` | `#0f1433` | 11.70 | 4.5 | Pass |
+| primary-hover on bg | `#ffd873` | `#0f1433` | 13.12 | 4.5 | Pass |
+| danger on bg | `#ff9c9c` | `#0f1433` | 8.98 | 4.5 | Pass |
+| success on bg | `#8fd3ae` | `#0f1433` | 10.36 | 4.5 | Pass |
+| warning on bg | `#ffa463` | `#0f1433` | 9.20 | 4.5 | Pass |
+| info on bg | `#c9d6ff` | `#0f1433` | 12.45 | 4.5 | Pass |
+| accent-strong on bg | `#ffd873` | `#0f1433` | 13.12 | 4.5 | Pass |
+| primary on surface | `#ffc93c` | `#151b3f` | 10.85 | 4.5 | Pass |
+| primary-hover on surface | `#ffd873` | `#151b3f` | 12.16 | 4.5 | Pass |
+| danger on surface | `#ff9c9c` | `#151b3f` | 8.32 | 4.5 | Pass |
+| success on surface | `#8fd3ae` | `#151b3f` | 9.60 | 4.5 | Pass |
+| warning on surface | `#ffa463` | `#151b3f` | 8.52 | 4.5 | Pass |
+| info on surface | `#c9d6ff` | `#151b3f` | 11.54 | 4.5 | Pass |
+| accent-strong on surface | `#ffd873` | `#151b3f` | 12.16 | 4.5 | Pass |
+| primary on surface-raised | `#ffc93c` | `#1b224b` | 9.93 | 4.5 | Pass |
+| primary-hover on surface-raised | `#ffd873` | `#1b224b` | 11.13 | 4.5 | Pass |
+| danger on surface-raised | `#ff9c9c` | `#1b224b` | 7.62 | 4.5 | Pass |
+| success on surface-raised | `#8fd3ae` | `#1b224b` | 8.78 | 4.5 | Pass |
+| warning on surface-raised | `#ffa463` | `#1b224b` | 7.80 | 4.5 | Pass |
+| info on surface-raised | `#c9d6ff` | `#1b224b` | 10.56 | 4.5 | Pass |
+| accent-strong on surface-raised | `#ffd873` | `#1b224b` | 11.13 | 4.5 | Pass |
 
 **Controls & focus (non-text)**
 
 | Pair | Foreground | Background | Ratio | Needs | Result |
 |---|---|---|---:|---:|---|
-| control-border on bg | `#6c8497` | `#000000` | 5.39 | 3 | Pass |
-| border-focus on bg | `#8bb5db` | `#000000` | 9.73 | 3 | Pass |
-| checked / selected indicator on bg | `#8bb5db` | `#000000` | 9.73 | 3 | Pass |
-| error border on bg | `#f0a3a3` | `#000000` | 10.47 | 3 | Pass |
-| switch-track on bg | `#6c8497` | `#000000` | 5.39 | 3 | Pass |
-| control-border on surface | `#6c8497` | `#0b0f12` | 4.93 | 3 | Pass |
-| border-focus on surface | `#8bb5db` | `#0b0f12` | 8.92 | 3 | Pass |
-| checked / selected indicator on surface | `#8bb5db` | `#0b0f12` | 8.92 | 3 | Pass |
-| error border on surface | `#f0a3a3` | `#0b0f12` | 9.60 | 3 | Pass |
-| switch-track on surface | `#6c8497` | `#0b0f12` | 4.93 | 3 | Pass |
-| control-border on surface-raised | `#6c8497` | `#11171c` | 4.63 | 3 | Pass |
-| border-focus on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 3 | Pass |
-| checked / selected indicator on surface-raised | `#8bb5db` | `#11171c` | 8.37 | 3 | Pass |
-| error border on surface-raised | `#f0a3a3` | `#11171c` | 9.00 | 3 | Pass |
-| switch-track on surface-raised | `#6c8497` | `#11171c` | 4.63 | 3 | Pass |
-| switch-thumb on switch-track | `#d4eef8` | `#6c8497` | 3.23 | 3 | Pass |
-| switch-thumb-checked on switch-track-checked | `#152026` | `#8bb5db` | 7.68 | 3 | Pass |
-| progress / slider fill on track | `#8bb5db` | `#2e4658` | 4.56 | 3 | Pass |
-| slider thumb (slider-thumb-border) on fill | `#152026` | `#8bb5db` | 7.68 | 3 | Pass |
-| slider thumb (slider-thumb) on track | `#d4eef8` | `#2e4658` | 8.15 | 3 | Pass |
+| control-border on bg | `#6673b0` | `#0f1433` | 3.98 | 3 | Pass |
+| border-focus on bg | `#ffc93c` | `#0f1433` | 11.70 | 3 | Pass |
+| checked / selected indicator on bg | `#ffc93c` | `#0f1433` | 11.70 | 3 | Pass |
+| error border on bg | `#ff9c9c` | `#0f1433` | 8.98 | 3 | Pass |
+| switch-track on bg | `#6673b0` | `#0f1433` | 3.98 | 3 | Pass |
+| control-border on surface | `#6673b0` | `#151b3f` | 3.68 | 3 | Pass |
+| border-focus on surface | `#ffc93c` | `#151b3f` | 10.85 | 3 | Pass |
+| checked / selected indicator on surface | `#ffc93c` | `#151b3f` | 10.85 | 3 | Pass |
+| error border on surface | `#ff9c9c` | `#151b3f` | 8.32 | 3 | Pass |
+| switch-track on surface | `#6673b0` | `#151b3f` | 3.68 | 3 | Pass |
+| control-border on surface-raised | `#6673b0` | `#1b224b` | 3.37 | 3 | Pass |
+| border-focus on surface-raised | `#ffc93c` | `#1b224b` | 9.93 | 3 | Pass |
+| checked / selected indicator on surface-raised | `#ffc93c` | `#1b224b` | 9.93 | 3 | Pass |
+| error border on surface-raised | `#ff9c9c` | `#1b224b` | 7.62 | 3 | Pass |
+| switch-track on surface-raised | `#6673b0` | `#1b224b` | 3.37 | 3 | Pass |
+| switch-thumb on switch-track | `#c9d6ff` | `#6673b0` | 3.13 | 3 | Pass |
+| switch-thumb-checked on switch-track-checked | `#0f1433` | `#ffc93c` | 11.70 | 3 | Pass |
+| progress / slider fill on track | `#ffc93c` | `#2c3568` | 7.53 | 3 | Pass |
+| slider thumb (slider-thumb-border) on fill | `#0f1433` | `#ffc93c` | 11.70 | 3 | Pass |
+| slider thumb (slider-thumb) on track | `#c9d6ff` | `#2c3568` | 8.01 | 3 | Pass |
 
 **Informational (exempt)**
 
 | Pair | Foreground | Background | Ratio |
 |---|---|---|---:|
-| text-disabled on bg | `#587488` | `#000000` | 4.27 |
-| text-disabled on surface-raised | `#587488` | `#11171c` | 3.67 |
-| border on bg | `#26323b` | `#000000` | 1.60 |
-| border-subtle on surface-raised | `#1a232a` | `#11171c` | 1.13 |
-| surface-raised vs bg | `#11171c` | `#000000` | 1.16 |
-| skeleton on raised card | `#1a232a` | `#11171c` | 1.13 |
+| text-disabled on bg | `#6673b0` | `#0f1433` | 3.98 |
+| text-disabled on surface-raised | `#6673b0` | `#1b224b` | 3.37 |
+| border on bg | `#38427a` | `#0f1433` | 1.91 |
+| border-subtle on surface-raised | `#232b59` | `#1b224b` | 1.13 |
+| surface-raised vs bg | `#1b224b` | `#0f1433` | 1.18 |
+| skeleton on raised card | `#232b59` | `#1b224b` | 1.13 |
 
 ---
 
 ## 7. CSS variables
 
-The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
+The complete source is `projects/ui/styles/tokens.css`. The Navy theme blocks:
 
 ```css
-/* ── Winter Dark (default `dark`, alias `winterDark`) ──────────────────────
-   A pine forest beside a dark ocean under moonlight. Core tokens also live on :root so a page
-   with no data-theme at all still renders Winter Dark. */
+/* ── Navy Dark (default `dark`, also `navy-dark`; `winterDark` is a deprecated alias) ──────────
+   Midnight Navy stepped up for the surfaces, Powder Blue as the ink and the secondary tone, Sunflower
+   as the primary. Core tokens also live on :root so a page with no data-theme at all still renders
+   Navy Dark. */
 :root,
 [data-theme="dark"],
+[data-theme="navy-dark"],
 [data-theme="winterDark"] {
   color-scheme: dark;
 
-  --ui-color-bg: var(--ui-winter-night-1000);
-  --ui-color-surface: var(--ui-winter-night-900);
-  --ui-color-surface-raised: var(--ui-winter-night-850);
-  /* A soft, slightly grey blue rather than Avalanche itself: on a black ground the brighter blue
-     glares. 12.5:1 on the ground, 10.7:1 on raised surfaces. */
-  --ui-color-text: #b3cbdc;
-  --ui-color-text-muted: #8aa4b8;
-  --ui-color-border: var(--ui-winter-night-700);
-  --ui-color-primary: var(--ui-winter-blue-400);
-  --ui-color-primary-hover: var(--ui-winter-blue-300);
-  --ui-color-primary-contrast: var(--ui-winter-pine-950);
-  --ui-color-secondary: var(--ui-winter-blue-800);
-  --ui-color-success: var(--ui-winter-green-300);
-  --ui-color-warning: var(--ui-winter-amber-300);
-  --ui-color-danger: var(--ui-winter-red-300);
+  --ui-color-bg: var(--ui-navy-950);
+  --ui-color-surface: var(--ui-navy-900);
+  --ui-color-surface-raised: var(--ui-navy-850);
+  /* Powder Blue: 12.5:1 on the canvas, 10.4:1 on raised surfaces. */
+  --ui-color-text: var(--ui-navy-200);
+  --ui-color-text-muted: var(--ui-navy-400);
+  --ui-color-border: var(--ui-navy-700);
+  --ui-color-primary: var(--ui-navy-sun-400);
+  --ui-color-primary-hover: var(--ui-navy-sun-300);
+  --ui-color-primary-contrast: var(--ui-navy-950);
+  --ui-color-secondary: var(--ui-navy-200);
+  --ui-color-success: var(--ui-navy-green-300);
+  --ui-color-warning: var(--ui-navy-orange-300);
+  --ui-color-danger: var(--ui-navy-red-300);
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.43;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
 }
 
 :root:not([data-theme]),
 [data-theme="dark"],
+[data-theme="navy-dark"],
 [data-theme="winterDark"] {
-  --ui-color-surface-subtle: var(--ui-winter-night-950);
-  --ui-color-surface-hover: var(--ui-winter-night-800);
-  --ui-color-elevated-hover: var(--ui-winter-night-800);
-  --ui-color-text-secondary: #a6c0d3;
-  --ui-color-text-disabled: var(--ui-winter-slate-600);
-  --ui-color-text-inverse: var(--ui-winter-pine-950);
-  --ui-color-border-subtle: var(--ui-winter-night-800);
-  --ui-color-border-strong: var(--ui-winter-slate-500);
-  --ui-color-border-focus: var(--ui-winter-blue-400);
-  --ui-color-primary-active: var(--ui-winter-blue-500);
-  --ui-color-secondary-hover: var(--ui-winter-blue-700);
-  --ui-color-secondary-contrast: var(--ui-winter-blue-100);
-  --ui-color-accent: var(--ui-winter-sun-100);
-  --ui-color-accent-subtle: var(--ui-winter-sun-900);
-  --ui-color-accent-strong: var(--ui-winter-sun-100);
-  --ui-color-accent-contrast: var(--ui-winter-pine-950);
-  --ui-color-info: var(--ui-winter-blue-300);
-  --ui-color-info-contrast: var(--ui-winter-pine-950);
-  --ui-color-success-contrast: var(--ui-winter-pine-950);
-  --ui-color-warning-contrast: var(--ui-winter-pine-950);
-  --ui-color-danger-contrast: var(--ui-winter-pine-950);
-  --ui-color-danger-hover: #f5bcbc;
-  --ui-color-selected: rgba(139, 181, 219, 0.14);
-  --ui-color-track: var(--ui-winter-slate-800);
-  --ui-color-overlay: rgba(0, 0, 0, 0.72);
+  --ui-color-surface-subtle: var(--ui-navy-1000);
+  --ui-color-surface-hover: var(--ui-navy-800);
+  --ui-color-elevated-hover: var(--ui-navy-800);
+  --ui-color-text-secondary: var(--ui-navy-250);
+  --ui-color-text-disabled: var(--ui-navy-500);
+  --ui-color-text-inverse: var(--ui-navy-950);
+  --ui-color-border-subtle: var(--ui-navy-800);
+  --ui-color-border-strong: var(--ui-navy-500);
+  --ui-color-border-focus: var(--ui-navy-sun-400);
+  --ui-color-primary-active: var(--ui-navy-sun-500);
+  --ui-color-secondary-hover: var(--ui-navy-100);
+  --ui-color-secondary-contrast: var(--ui-navy-950);
+  --ui-color-accent: var(--ui-navy-sun-400);
+  --ui-color-accent-subtle: var(--ui-navy-sun-950);
+  --ui-color-accent-strong: var(--ui-navy-sun-300);
+  --ui-color-accent-contrast: var(--ui-navy-950);
+  --ui-color-info: var(--ui-navy-200);
+  --ui-color-info-contrast: var(--ui-navy-950);
+  --ui-color-success-contrast: var(--ui-navy-950);
+  --ui-color-warning-contrast: var(--ui-navy-950);
+  --ui-color-danger-contrast: var(--ui-navy-950);
+  --ui-color-danger-hover: var(--ui-navy-red-200);
+  --ui-color-selected: rgba(201, 214, 255, 0.14);
+  --ui-color-track: var(--ui-navy-750);
+  --ui-color-overlay: rgba(5, 7, 20, 0.72);
 
-  --ui-switch-track: var(--ui-winter-slate-500);
-  --ui-switch-thumb: var(--ui-winter-blue-100);
-  --ui-switch-thumb-checked: var(--ui-winter-pine-950);
-  --ui-slider-thumb: var(--ui-winter-blue-100);
-  --ui-slider-thumb-border: var(--ui-winter-pine-950);
+  --ui-switch-track: var(--ui-navy-500);
+  --ui-switch-thumb: var(--ui-navy-200);
+  --ui-switch-thumb-checked: var(--ui-navy-950);
+  --ui-slider-thumb: var(--ui-navy-200);
+  --ui-slider-thumb-border: var(--ui-navy-950);
   /* One step above the raised surface, so a skeleton inside a card is still visible at rest. */
-  --ui-skeleton-base: var(--ui-winter-night-800);
-  --ui-skeleton-highlight: var(--ui-winter-night-700);
-  --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
-  --ui-media-bg: var(--ui-winter-night-1000);
+  --ui-skeleton-base: var(--ui-navy-800);
+  --ui-skeleton-highlight: var(--ui-navy-750);
+  /* Navy's muted text is blue, which reads as the secondary fill; a true grey for the neutral tone. */
+  --ui-progress-neutral: #a1a6b4;
+  --ui-scroll-progress-track: rgba(201, 214, 255, 0.06);
+  --ui-media-bg: #000000;
   --ui-media-scrim: #000000;
-  --ui-media-on-scrim: var(--ui-winter-blue-25);
-  --ui-media-danger: var(--ui-winter-red-300);
-  --ui-cursor-color: var(--ui-winter-blue-100);
+  --ui-media-on-scrim: var(--ui-navy-25);
+  --ui-media-danger: var(--ui-navy-red-300);
+  --ui-cursor-color: var(--ui-navy-200);
   --ui-section-label-bracket: var(--ui-color-accent-strong);
 
-  --ui-gradient-brand: linear-gradient(90deg, #8bb5db 0%, #b3d5f1 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #000000 0%, #1b3d59 100%);
-  --ui-gradient-frost: linear-gradient(135deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #0b0f12 0%, #11171c 100%);
-  --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 213, 241, 0.14) 0%, rgba(179, 213, 241, 0) 100%);
-  --ui-glow-amber: 0 0 28px rgba(139, 181, 219, 0.26);
+  --ui-gradient-brand: linear-gradient(90deg, #ffc93c 0%, #ffd873 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #0f1433 0%, #2c3568 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #2c3568 0%, #6673b0 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #151b3f 0%, #1b224b 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(201, 214, 255, 0.14) 0%, rgba(201, 214, 255, 0) 100%);
+  --ui-glow-amber: 0 0 28px rgba(255, 201, 60, 0.28);
 
-  --ui-glass-bg: rgba(179, 213, 241, 0.06);
-  --ui-glass-border: rgba(179, 213, 241, 0.13);
+  --ui-glass-bg: rgba(201, 214, 255, 0.06);
+  --ui-glass-border: rgba(201, 214, 255, 0.13);
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
   --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.7);
   --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.8);
+
+  /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
+  --ui-map-route-muted: var(--ui-navy-300);
+
+  /* ui-liquid-backdrop (@zouriel/ui/fx) in Navy: faint pools of Powder Blue and Sunflower on Midnight. */
+  --ui-liquid-main: #0f1433;
+  --ui-liquid-second: #c9d6ff;
+  --ui-liquid-accent: #ffc93c;
+  --ui-liquid-ink: #c9d6ff;
+  --ui-liquid-second-strength: 10%;
+  --ui-liquid-accent-strength: 10%;
 }
 
-/* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
-   Snow-covered Nordic architecture in winter daylight. */
+/* ── Navy Light (default `light`, also `navy`; `winterLight` is a deprecated alias) ─────────────
+   A Mist canvas with white cards, Midnight Navy ink, Powder Blue for secondary fills and borders, and
+   Sunflower deepened to a dark gold for the primary (Sunflower itself is 1.4:1 on Mist; it stays for
+   the accent fill, the backdrop, the glow and highlights). */
 [data-theme="light"],
+[data-theme="navy"],
 [data-theme="winterLight"] {
   color-scheme: light;
+  /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0.70;
+  --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.35;
+  --ui-glass-clear-ceiling: 1;
 
-  --ui-color-bg: var(--ui-winter-blue-50);
-  --ui-color-surface: var(--ui-winter-blue-25);
-  --ui-color-surface-raised: var(--ui-winter-white);
-  --ui-color-text: var(--ui-winter-pine-950);
-  --ui-color-text-muted: var(--ui-winter-slate-700);
-  --ui-color-border: var(--ui-winter-slate-300);
-  --ui-color-primary: var(--ui-winter-blue-900);
-  --ui-color-primary-hover: var(--ui-winter-blue-800);
-  --ui-color-primary-contrast: var(--ui-winter-blue-25);
-  --ui-color-secondary: var(--ui-winter-blue-700);
-  --ui-color-success: var(--ui-winter-green-700);
-  --ui-color-warning: var(--ui-winter-amber-700);
-  --ui-color-danger: var(--ui-winter-red-700);
+  --ui-color-bg: var(--ui-navy-50);
+  --ui-color-surface: var(--ui-navy-25);
+  --ui-color-surface-raised: var(--ui-navy-white);
+  --ui-color-text: var(--ui-navy-950);
+  --ui-color-text-muted: var(--ui-navy-650);
+  --ui-color-border: var(--ui-navy-200);
+  --ui-color-primary: var(--ui-navy-sun-700);
+  --ui-color-primary-hover: var(--ui-navy-sun-800);
+  --ui-color-primary-contrast: var(--ui-navy-white);
+  --ui-color-secondary: var(--ui-navy-200);
+  --ui-color-success: var(--ui-navy-green-700);
+  --ui-color-warning: var(--ui-navy-orange-700);
+  --ui-color-danger: var(--ui-navy-red-700);
 
-  --ui-color-surface-subtle: var(--ui-winter-blue-75);
-  --ui-color-surface-hover: var(--ui-winter-blue-75);
-  --ui-color-elevated-hover: var(--ui-winter-blue-75);
-  --ui-color-text-secondary: var(--ui-winter-blue-900);
-  --ui-color-text-disabled: var(--ui-winter-slate-400);
-  --ui-color-text-inverse: var(--ui-winter-blue-50);
-  --ui-color-border-subtle: var(--ui-winter-slate-200);
-  --ui-color-border-strong: var(--ui-winter-slate-500);
-  --ui-color-border-focus: var(--ui-winter-blue-700);
-  --ui-color-primary-active: var(--ui-winter-pine-950);
-  --ui-color-secondary-hover: var(--ui-winter-blue-800);
-  --ui-color-secondary-contrast: var(--ui-winter-blue-25);
-  --ui-color-accent: var(--ui-winter-sun-100);
-  --ui-color-accent-subtle: var(--ui-winter-sun-50);
-  --ui-color-accent-strong: var(--ui-winter-sun-700);
-  --ui-color-accent-contrast: var(--ui-winter-pine-950);
-  --ui-color-info: var(--ui-winter-blue-700);
-  --ui-color-info-contrast: var(--ui-winter-blue-25);
-  --ui-color-success-contrast: var(--ui-winter-blue-25);
-  --ui-color-warning-contrast: var(--ui-winter-blue-25);
-  --ui-color-danger-contrast: var(--ui-winter-blue-25);
-  --ui-color-danger-hover: #922f34;
-  --ui-color-selected: rgba(27, 61, 89, 0.12);
-  --ui-color-track: var(--ui-winter-slate-200);
-  --ui-color-overlay: rgba(21, 32, 38, 0.42);
+  --ui-color-surface-subtle: var(--ui-navy-75);
+  --ui-color-surface-hover: var(--ui-navy-75);
+  --ui-color-elevated-hover: var(--ui-navy-75);
+  --ui-color-text-secondary: var(--ui-navy-725);
+  --ui-color-text-disabled: var(--ui-navy-500);
+  --ui-color-text-inverse: var(--ui-navy-50);
+  --ui-color-border-subtle: var(--ui-navy-100);
+  --ui-color-border-strong: var(--ui-navy-500);
+  --ui-color-border-focus: var(--ui-navy-725);
+  --ui-color-primary-active: var(--ui-navy-sun-900);
+  --ui-color-secondary-hover: var(--ui-navy-275);
+  --ui-color-secondary-contrast: var(--ui-navy-950);
+  --ui-color-accent: var(--ui-navy-sun-400);
+  --ui-color-accent-subtle: var(--ui-navy-sun-50);
+  --ui-color-accent-strong: var(--ui-navy-sun-700);
+  --ui-color-accent-contrast: var(--ui-navy-950);
+  --ui-color-info: var(--ui-navy-725);
+  --ui-color-info-contrast: var(--ui-navy-white);
+  --ui-color-success-contrast: var(--ui-navy-white);
+  --ui-color-warning-contrast: var(--ui-navy-white);
+  --ui-color-danger-contrast: var(--ui-navy-white);
+  --ui-color-danger-hover: var(--ui-navy-red-800);
+  --ui-color-selected: rgba(15, 20, 51, 0.1);
+  --ui-color-track: var(--ui-navy-100);
+  --ui-color-overlay: rgba(15, 20, 51, 0.42);
 
-  --ui-switch-track: var(--ui-winter-slate-500);
-  --ui-switch-thumb: var(--ui-winter-white);
-  --ui-switch-thumb-checked: var(--ui-winter-white);
-  --ui-slider-thumb: var(--ui-winter-white);
-  --ui-skeleton-base: var(--ui-winter-blue-75);
-  --ui-skeleton-highlight: var(--ui-winter-blue-25);
-  --ui-scroll-progress-track: rgba(27, 61, 89, 0.06);
-  --ui-media-bg: var(--ui-winter-pine-950);
-  --ui-media-scrim: #0b1216;
-  --ui-media-on-scrim: var(--ui-winter-blue-25);
-  --ui-media-danger: var(--ui-winter-red-300);
-  --ui-cursor-color: var(--ui-winter-blue-900);
-  --ui-section-label-bracket: var(--ui-color-accent-strong);
+  --ui-switch-track: var(--ui-navy-500);
+  --ui-switch-thumb: var(--ui-navy-white);
+  --ui-switch-thumb-checked: var(--ui-navy-white);
+  --ui-slider-thumb: var(--ui-navy-white);
+  /* 1.26:1 on white cards, and the shimmer a step lighter. */
+  --ui-skeleton-base: var(--ui-navy-100);
+  --ui-skeleton-highlight: var(--ui-navy-50);
+  --ui-progress-neutral: #686e73; /* a true grey, 4:1 on the track */
+  --ui-scroll-progress-track: rgba(15, 20, 51, 0.06);
+  --ui-media-bg: var(--ui-navy-950);
+  --ui-media-scrim: var(--ui-navy-1000);
+  --ui-media-on-scrim: var(--ui-navy-25);
+  --ui-media-danger: var(--ui-navy-red-300);
+  --ui-cursor-color: var(--ui-navy-950);
+  --ui-section-label-bracket: var(--ui-navy-sun-400);
 
-  --ui-gradient-brand: linear-gradient(90deg, #1b3d59 0%, #3a6488 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-frost: linear-gradient(135deg, #6a97c0 0%, #b3d5f1 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #b3d5f1 0%, #d4eef8 100%);
-  --ui-gradient-highlight: linear-gradient(180deg, rgba(212, 238, 248, 0.9) 0%, rgba(212, 238, 248, 0) 100%);
-  --ui-glow-amber: 0 8px 24px rgba(27, 61, 89, 0.18);
+  --ui-gradient-brand: linear-gradient(90deg, #0f1433 0%, #2d3a7a 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #0f1433 0%, #2d3a7a 70%, #6673b0 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #6673b0 0%, #c9d6ff 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #c9d6ff 0%, #dce4ff 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(255, 201, 60, 0.22) 0%, rgba(255, 201, 60, 0) 100%);
+  --ui-glow-amber: 0 8px 24px rgba(255, 201, 60, 0.35);
 
-  --ui-glass-bg: rgba(255, 255, 255, 0.62);
-  --ui-glass-border: rgba(27, 61, 89, 0.12);
-  --ui-shadow-1: 0 1px 2px rgba(21, 32, 38, 0.07);
-  --ui-shadow-2: 0 8px 24px rgba(27, 61, 89, 0.1);
-  --ui-shadow-3: 0 16px 48px rgba(27, 61, 89, 0.16);
+  --ui-glass-bg: rgba(255, 255, 255, 0.9);
+  --ui-glass-border: rgba(15, 20, 51, 0.12);
+  --ui-shadow-1: 0 1px 2px rgba(15, 20, 51, 0.07);
+  --ui-shadow-2: 0 8px 24px rgba(15, 20, 51, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(15, 20, 51, 0.16);
+
+  /* ui-liquid-backdrop in Navy: Powder Blue and Sunflower pooling on Mist. */
+  --ui-liquid-main: #eef2ff;
+  --ui-liquid-second: #c9d6ff;
+  --ui-liquid-accent: #ffc93c;
+  --ui-liquid-ink: #0f1433;
+  --ui-liquid-second-strength: 60%;
+  --ui-liquid-accent-strength: 45%;
 }
 
 [data-theme="dark"] ::selection,
+[data-theme="navy-dark"] ::selection,
 [data-theme="winterDark"] ::selection {
-  background: rgba(106, 151, 192, 0.45);
-  color: #f7fbfd;
+  background: rgba(255, 201, 60, 0.32);
+  color: #f7f9ff;
 }
 [data-theme="light"] ::selection,
+[data-theme="navy"] ::selection,
 [data-theme="winterLight"] ::selection {
-  background: #b3d5f1;
-  color: #152026;
+  background: #c9d6ff;
+  color: #0f1433;
 }
 ```
 
@@ -645,44 +785,42 @@ The complete source is `projects/ui/styles/tokens.css`. The Winter theme blocks:
 
 ## 8. Usage guidelines
 
-- **Read semantic tokens only.** Use `--ui-color-*`, or a component token, in components and app code. Never use `--ui-winter-*` or raw hex.
-- **Pair every fill with its `-contrast` token.** For example, `danger` goes with `danger-contrast`. `primary-contrast` is Black Pine in dark mode, so it is not a generic "white".
+- **Read semantic tokens only.** Use `--ui-color-*`, or a component token, in components and app code. Never use `--ui-navy-*` or raw hex.
+- **Pair every fill with its `-contrast` token.** For example, `danger` goes with `danger-contrast`. `primary-contrast` is Midnight Navy in dark mode and white in light mode, so it is not a generic "white".
 - **Separate text and fill roles.**
-  - `accent` (Sun Beam) is a fill. For accent-coloured text or icons use `accent-strong`.
-  - Use Sun Beam sparingly: a highlight badge, a featured marker, one warm detail per view.
+  - `accent` (Sunflower) is a fill. For accent-coloured text or icons use `accent-strong` (Sunflower deepened on light).
+  - Use Sunflower sparingly as a fill on light: a highlight badge, a featured marker, one warm detail per view.
+- **Never put Powder Blue on a large dark surface.** It is the dark ink; as a panel it would glare and turn the hierarchy upside down.
 - **Pick borders by role.**
   - `border-subtle` for dividers and table rows.
   - `border` for cards and containers.
   - `border-strong` / `--ui-control-border` for anything a user must find to operate: inputs, checkboxes, radios.
   - `border-focus` for focus indicators only.
-- **Keep text hierarchy to three steps.** `text` for content, `text-secondary` for supporting headings and labels, `text-muted` for captions and hints. `text-muted` is tuned to pass on selected tints. Anything quieter is disabled and must not carry meaning.
+- **Keep text hierarchy to three steps.** `text` for content, `text-secondary` for supporting headings and labels, `text-muted` for captions and hints. Anything quieter is disabled and must not carry meaning.
 - **Keep status colours for status.** Never use them as decoration or as a second brand colour.
 - **Keep media chrome dark.** The lightbox, carousel, gallery and video player read `--ui-media-*`, which stays dark in both modes because it sits over photographs.
 - **Use gradients in few places.**
   - *Allowed:* hero sections, featured or marketing cards, background decoration, callouts, the single brand CTA per view (`variant="brand"`), and `.ui-gradient-text` display headings.
   - *Not allowed:* ordinary buttons, inputs, nav, tables, badges, alerts or body text.
   - Prefer `--ui-gradient-hero` for large decorative surfaces, `--ui-gradient-frost` / `--ui-gradient-snow` for featured cards, and `--ui-gradient-highlight` as a top-fade over a surface.
-- **Keep elevation quiet.** In light mode, elevation comes from the white raised surface plus a tinted shadow, not from heavier borders. In dark mode, surfaces step up from the black ground in faint blue-blacks (night-900, night-850) rather than greys.
+- **Keep elevation quiet.** In light mode, elevation comes from the white raised surface plus a Midnight-tinted shadow, not from heavier borders. In dark mode, surfaces step up from Midnight in navy steps rather than greys.
 - **Write new skins against the core tokens.** Set the core 13 tokens. The derived block fills in the rest, and you can override any extended token when its formula is not good enough.
 
 ---
 
 ## 9. Same components, light and dark
 
-| Component | Light | Dark |
+| Component | Light (`navy`) | Dark (`navy-dark`) |
 |---|---|---|
-| Page | `#eef5f9` snow ground, `#152026` text | `#000000` ground, `#b3cbdc` text |
-| Card | `#ffffff` on the snow ground, `#c3d2dd` hairline, soft Deep Ocean shadow | `#0b0f12` surface, `#26323b` hairline, deep shadow |
-| Primary button | `#1b3d59` fill, `#f7fbfd` label (10.85:1); hover `#264460`; pressed `#152026` | `#8bb5db` fill, `#152026` label; hover `#b3d5f1`; pressed `#6a97c0` |
-| Secondary button | `#3a6488` fill, `#f7fbfd` label (6.01:1) | `#264460` fill, `#d4eef8` label |
-| Brand CTA | Deep Ocean → `#3a6488` pill, light label | `#8bb5db` → Melting Ice pill, Black Pine label, moonlight glow |
-| Input | `#f7fbfd` field, `#6c8497` outline; focus `#1b3d59` + halo; error `#a83a3f` | `#0b0f12` field, `#6c8497` outline; focus `#8bb5db` + halo; error `#f0a3a3` |
-| Checkbox checked | `#1b3d59` box, light tick | `#8bb5db` box, Black Pine tick |
-| Switch on | `#1b3d59` track, white thumb | `#8bb5db` track, Black Pine thumb |
-| Selected tab | `#152026` label, `#1b3d59` underline | `#b3cbdc` label, `#8bb5db` underline |
-| Alert (warning) | `#f7fbfd` surface, `#85570f` stripe | `#0b0f12` surface, `#e6c27d` stripe |
-| Badge (success) | `#2e6b50` fill, `#f7fbfd` label | `#8ccba9` fill, `#152026` label |
-| Modal | white panel over a 42% Black Pine scrim | `#11171c` panel over a 72% black scrim |
-| Skeleton | `#e3f0f7` shimmering to `#f7fbfd` | `#1a232a` shimmering to `#26323b` |
+| Page | `#eef2ff` Mist canvas, `#0f1433` text | `#0f1433` Midnight canvas, `#c9d6ff` text |
+| Card | `#f7f9ff` on the canvas, `#c9d6ff` hairline, soft Midnight shadow | `#151b3f` surface, `#38427a` hairline, deep shadow |
+| Primary button | `#7a5800` fill, `#ffffff` label; hover `#6a4c00` | `#ffc93c` fill, `#0f1433` label; hover `#ffd873` |
+| Secondary button | `#c9d6ff` fill, `#0f1433` label | `#c9d6ff` fill, `#0f1433` label |
+| Accent fill | `#ffc93c` Sunflower, `#0f1433` label | `#ffc93c` Sunflower, `#0f1433` label |
+| Input | `#f7f9ff` field, `#6673b0` outline; focus `#2d3a7a` | `#151b3f` field, `#6673b0` outline; focus `#ffc93c` |
+| Switch on | `#7a5800` track, white thumb | `#ffc93c` track, Midnight thumb |
+| Badge (success) | `#23673f` fill, `#ffffff` label | `#8fd3ae` fill, `#0f1433` label |
+| Modal | white panel over a 42% Midnight scrim | `#1b224b` panel over a 72% scrim |
+| Skeleton | `#dce4ff` shimmering to `#eef2ff` | `#232b59` shimmering to `#2c3568` |
 
 The showcase's Foundation page renders these components live; switch the theme in its top bar to compare.

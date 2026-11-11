@@ -33,15 +33,15 @@
   --ui-navy-850: #1b224b;
   --ui-navy-800: #232b59;
   --ui-navy-750: #2c3568;
+  --ui-navy-725: #2d3a7a; /* deep blue: secondary text, focus and info on light */
   --ui-navy-700: #38427a;
-  --ui-navy-600: #2d3a7a; /* deep blue for text and fills on light */
+  --ui-navy-650: #46507e; /* slate navy: muted text on light */
   --ui-navy-500: #6673b0;
-  --ui-navy-450: #46507e; /* slate navy: muted text on light */
   --ui-navy-400: #9daadc; /* muted text on dark */
   --ui-navy-300: #aebbea;
+  --ui-navy-275: #b7c7ff; /* Powder Blue, a step deeper: the light secondary's hover */
   --ui-navy-250: #bfcbf5; /* secondary text on dark: 4.5:1 even on a selected row's Sunflower tint */
   --ui-navy-200: #c9d6ff; /* Powder Blue */
-  --ui-navy-150: #b7c7ff;
   --ui-navy-100: #dce4ff;
   --ui-navy-75: #e4eaff;
   --ui-navy-50: #eef2ff; /* Mist */
@@ -439,7 +439,7 @@
   --ui-color-surface: var(--ui-navy-25);
   --ui-color-surface-raised: var(--ui-navy-white);
   --ui-color-text: var(--ui-navy-950);
-  --ui-color-text-muted: var(--ui-navy-450);
+  --ui-color-text-muted: var(--ui-navy-650);
   --ui-color-border: var(--ui-navy-200);
   --ui-color-primary: var(--ui-navy-sun-700);
   --ui-color-primary-hover: var(--ui-navy-sun-800);
@@ -452,20 +452,20 @@
   --ui-color-surface-subtle: var(--ui-navy-75);
   --ui-color-surface-hover: var(--ui-navy-75);
   --ui-color-elevated-hover: var(--ui-navy-75);
-  --ui-color-text-secondary: var(--ui-navy-600);
+  --ui-color-text-secondary: var(--ui-navy-725);
   --ui-color-text-disabled: var(--ui-navy-500);
   --ui-color-text-inverse: var(--ui-navy-50);
   --ui-color-border-subtle: var(--ui-navy-100);
   --ui-color-border-strong: var(--ui-navy-500);
-  --ui-color-border-focus: var(--ui-navy-600);
+  --ui-color-border-focus: var(--ui-navy-725);
   --ui-color-primary-active: var(--ui-navy-sun-900);
-  --ui-color-secondary-hover: var(--ui-navy-150);
+  --ui-color-secondary-hover: var(--ui-navy-275);
   --ui-color-secondary-contrast: var(--ui-navy-950);
   --ui-color-accent: var(--ui-navy-sun-400);
   --ui-color-accent-subtle: var(--ui-navy-sun-50);
   --ui-color-accent-strong: var(--ui-navy-sun-700);
   --ui-color-accent-contrast: var(--ui-navy-950);
-  --ui-color-info: var(--ui-navy-600);
+  --ui-color-info: var(--ui-navy-725);
   --ui-color-info-contrast: var(--ui-navy-white);
   --ui-color-success-contrast: var(--ui-navy-white);
   --ui-color-warning-contrast: var(--ui-navy-white);
