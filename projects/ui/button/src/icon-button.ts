@@ -50,7 +50,7 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn:disabled { opacity: .5; cursor: not-allowed; }
     .ui-icon-btn.no-radius { border-radius: 0; }
     .ui-icon-btn.round { border-radius: var(--ui-radius-pill); }
-    .ui-icon-btn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-icon-btn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight); }
     .ui-icon-btn[data-size="sm"] { width: var(--ui-size-sm); height: var(--ui-size-sm); }
     .ui-icon-btn[data-size="lg"] { width: var(--ui-size-lg); height: var(--ui-size-lg); }
     .ui-icon-btn[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); }
@@ -67,8 +67,8 @@ import type { UiButtonVariant } from './button';
     /* Icons follow the button's colour when it is filled; ghost and outline ones take --ui-color-icon. */
     .ui-icon-btn:not([data-variant="ghost"]):not([data-variant="outline"]):not([data-variant="link"]) { --ui-color-icon: currentColor; }
     .ui-icon-btn[data-variant="ghost"], .ui-icon-btn[data-variant="link"] { background: transparent; border-color: transparent; }
-    .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-color-primary-contrast); border-color: transparent; }
-    .ui-icon-btn[data-variant="brand"]:hover:not(:disabled) { background: var(--ui-gradient-brand, var(--ui-color-primary)); box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-color-primary-contrast) 12%, transparent); }
+    .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast)); border-color: transparent; }
+    .ui-icon-btn[data-variant="brand"]:hover:not(:disabled) { background: var(--ui-gradient-brand, var(--ui-color-primary)); box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast)) 12%, transparent); }
     /* badge (0.44.0): a count bubble at the top-end corner, the bottom nav's badge look. Hidden from
        screen readers: the button's name carries it ("Chat, 2 unread"). */
     .ui-badge { position: absolute; top: -6px; inset-inline-end: -6px; z-index: 1; min-width: 16px; height: 16px; padding: 0 var(--ui-space-1);

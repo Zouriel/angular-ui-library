@@ -72,6 +72,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       background: var(--ui-glass-bg);
       backdrop-filter: blur(var(--ui-glass-blur));
       border-color: var(--ui-glass-border);
+      box-shadow: var(--ui-glass-highlight);
     }
     .ui-btn[data-size="sm"] { height: var(--ui-size-sm); font-size: calc(13px * var(--ui-font-scale)); padding: 0 var(--ui-space-3); }
     .ui-btn[data-size="lg"] { height: var(--ui-size-lg); font-size: calc(15px * var(--ui-font-scale)); padding: 0 var(--ui-space-6); }
@@ -99,7 +100,8 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
        that should pull focus (hero CTA, final CTA) — not a default. */
     .ui-btn[data-variant="brand"] {
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
-      color: var(--ui-color-primary-contrast);
+      /* The label colour a theme pairs with its brand gradient (the liquid themes), else primary-contrast. */
+      color: var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast));
       /* border: none rather than border-color: transparent — a 1px transparent border on top
          of a gradient fill with this much border-radius renders as a visible dark seam at the
          curved edge in Chrome/Firefox (the border box anti-aliases separately from the
@@ -120,7 +122,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       background: var(--ui-gradient-brand, linear-gradient(90deg, var(--ui-color-primary), var(--ui-color-primary-hover)));
       /* Hover lifts the gradient with a contrast-colour wash rather than filter: brightness, so it
          follows each theme's own contrast colour (a dark wash on light gradients, light on dark). */
-      box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-color-primary-contrast) 12%, transparent), var(--ui-glow-amber, 0 0 transparent);
+      box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast)) 12%, transparent), var(--ui-glow-amber, 0 0 transparent);
     }
     .ui-btn[data-variant="brand"]:focus-visible:not(:disabled) { box-shadow: var(--ui-focus-ring); }
     .ui-btn[data-variant="brand"].no-radius { border-radius: 0; }
