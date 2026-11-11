@@ -28,6 +28,8 @@ import { ShowcaseLanguageService } from './docs/language';
 
 /** Display names of the legacy themes in the picker. */
 const LEGACY_LABELS: Record<(typeof UI_LEGACY_THEMES)[number], string> = {
+  winterDark: 'Winter Dark (Navy alias)',
+  winterLight: 'Winter Light (Navy alias)',
   lightOrange: 'Light Orange',
   lightPink: 'Light Pink',
   darkPink: 'Dark Pink',
@@ -210,8 +212,8 @@ export class App {
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
   protected readonly THEMES: { value: string; label: string; disabled?: boolean }[] = [
-    { value: 'dark', label: 'Winter Dark' },
-    { value: 'light', label: 'Winter Light' },
+    { value: 'dark', label: 'Navy Dark' },
+    { value: 'light', label: 'Navy Light' },
     { value: 'darkOrange', label: 'Dark Orange' },
     { value: 'maldives', label: 'Maldives' },
     { value: 'maldives-dark', label: 'Maldives Dark' },

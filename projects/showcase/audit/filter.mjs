@@ -48,7 +48,7 @@ const demoCount = (page) => page.locator('#filter .flt-note').innerText();
 const rowHeights = (page, scope) =>
   page.evaluate((sel) => [...document.querySelectorAll(`${sel} label.row`)].map((r) => r.getBoundingClientRect().height), scope);
 
-for (const theme of ['winterLight', 'winterDark']) {
+for (const theme of ['navy', 'navy-dark']) {
   // Desktop: popover.
   {
     const where = `${theme} @1440`;

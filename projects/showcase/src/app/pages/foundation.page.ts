@@ -20,7 +20,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       lead="Design tokens, the config provider, and the theme service. Everything else builds on these.">
 
       <doc-section name="Design tokens" selector="@zouriel/ui/styles/tokens.css"
-        summary="Components read CSS custom properties, not hard-coded values, so overriding the tokens re-skins the whole library. Load tokens.css once at the app root. Colour comes in three layers: --ui-winter-* primitives (never read by components), semantic --ui-color-* roles that every theme sets, and component tokens that default to a semantic role. The swatches below show the current theme.">
+        summary="Components read CSS custom properties, not hard-coded values, so overriding the tokens re-skins the whole library. Load tokens.css once at the app root. Colour comes in three layers: --ui-navy-* primitives (never read by components), semantic --ui-color-* roles that every theme sets, and component tokens that default to a semantic role. The swatches below show the current theme.">
         <div class="swatches">
           @for (c of colors; track c) {
             <div class="sw"><span class="chip" [style.background]="'var(--ui-color-' + c + ')'"></span><ui-text variant="caption">{{ c }}</ui-text></div>
@@ -28,9 +28,10 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </div>
         <doc-demo lang="css" code="/* styles.css (or angular.json &quot;styles&quot;) */
 @import '@zouriel/ui/styles/tokens.css';
-@import '@zouriel/ui/styles/theme-palettes.css';     /* the accent palettes */
+@import '@zouriel/ui/styles/theme-liquid.css';       /* the liquid themes (rugged, glacier, …) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';  /* darkOrange; loads web fonts */
-@import '@zouriel/ui/styles/theme-maldives.css';     /* maldives; loads Poppins */"></doc-demo>
+@import '@zouriel/ui/styles/theme-maldives.css';     /* maldives; loads Poppins */
+@import '@zouriel/ui/styles/theme-palettes.css';     /* legacy accent palettes */"></doc-demo>
         <doc-demo lang="css" code="Colour roles (per theme)
 --ui-color-bg / surface / surface-raised / surface-subtle / surface-hover / elevated-hover
 --ui-color-text / text-secondary / text-muted / text-disabled / text-inverse
@@ -131,23 +132,39 @@ function setLanguage(lang: 'en' | 'dv') {
       </doc-section>
 
       <doc-section name="Theme service" selector="UiThemeService" [api]="themeApi"
-        summary="Sets data-theme on the html element; read the current theme from the theme signal. The default is dark. Any string is accepted, so you can add your own themes in CSS under [data-theme=&quot;name&quot;]. toggle() flips dark and light, or winterDark and winterLight if the app uses those names; from any other theme it goes to dark. The service does not remember the choice between visits; store it yourself if you need to."
+        summary="Sets data-theme on the html element; read the current theme from the theme signal. The default is dark. Any string is accepted, so you can add your own themes in CSS under [data-theme=&quot;name&quot;]. toggle() flips dark and light, and any built-in day/night pair (navy and navy-dark, maldives, the liquid themes); from any other theme it goes to dark. UI_CURRENT_THEMES, UI_LEGACY_THEMES and isLegacyTheme() let a picker group the legacy themes. The service does not remember the choice between visits; store it yourself if you need to."
         [shapes]="THEME_TYPE">
         <doc-demo lang="ts" code="import { UiThemeService } from '@zouriel/ui/theme';
 
 theme = inject(UiThemeService);
-this.theme.set('darkPink');
-this.theme.toggle();   // dark <-> light
+this.theme.set('glacier');
+this.theme.toggle();   // glacier <-> glacier-dark, dark <-> light
 this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Themes" selector="data-theme"
-        summary="Fifteen built-in themes. dark and light are the Winter colour system in tokens.css, also reachable as winterDark and winterLight. The ten accent palettes live in theme-palettes.css and change colours only. darkOrange lives in theme-dark-orange.css and also changes the fonts; maldives, the light sea theme, and maldives-dark, its night variant, live in theme-maldives.css, set Poppins and have their own sea backdrops (see Motion & FX). Each tile below is a ui-theme-provider island; Use sets it for the whole page.">
+        summary="Nineteen current themes. dark and light are the Navy colour system in tokens.css (also navy-dark and navy): Midnight Navy, Powder Blue and Sunflower. darkOrange (theme-dark-orange.css) also changes the fonts; maldives and maldives-dark (theme-maldives.css) set Poppins and have their own sea backdrops. The twelve liquid themes in theme-liquid.css (rugged, glacier, oxblood, graphite, cocoa and violet, each with a -dark night twin) are made for glass surfaces over ui-liquid-backdrop. The legacy themes below still work unchanged but are not for new work. Each tile is a ui-theme-provider island; Use sets it for the whole page.">
         <div class="themes">
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
               <div class="tile-head">
                 <ui-text variant="label" class="tile-name">{{ t.name }}</ui-text>
+                <ui-button size="sm" variant="outline" (click)="theme.set(t.name)">Use<span class="sr-only"> {{ t.name }}</span></ui-button>
+                <ui-text variant="caption" class="tile-file">{{ t.file }}</ui-text>
+              </div>
+              <div class="dots" aria-hidden="true">
+                @for (c of tileColors; track c) { <span class="dot" [style.background]="'var(--ui-color-' + c + ')'"></span> }
+              </div>
+            </ui-theme-provider>
+          }
+        </div>
+        <ui-text variant="h4" class="legacy-head">Legacy themes</ui-text>
+        <ui-text variant="body" class="legacy-note">Still supported and unchanged, but new work should use a current theme. winterDark and winterLight are the retired Winter names, now aliases of the Navy themes.</ui-text>
+        <div class="themes">
+          @for (t of legacyThemes; track t.name) {
+            <ui-theme-provider [theme]="t.name" class="ui-surface tile">
+              <div class="tile-head">
+                <ui-text variant="label" class="tile-name">{{ t.name }} (legacy)</ui-text>
                 <ui-button size="sm" variant="outline" (click)="theme.set(t.name)">Use<span class="sr-only"> {{ t.name }}</span></ui-button>
                 <ui-text variant="caption" class="tile-file">{{ t.file }}</ui-text>
               </div>
@@ -187,6 +204,8 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
     .tile-name { min-width: 0; }
     .tile-file { grid-column: 1 / -1; white-space: nowrap; }
     .dots { display: flex; gap: var(--ui-space-1); }
+    .legacy-head { display: block; margin: var(--ui-space-8) 0 var(--ui-space-1); }
+    .legacy-note { display: block; margin-bottom: var(--ui-space-3); color: var(--ui-color-text-muted); }
     .dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--ui-color-border); }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .islands { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
@@ -203,10 +222,29 @@ export class FoundationPage {
   protected readonly bell = Notification01Icon;
   protected readonly colors = ['bg', 'surface', 'surface-raised', 'surface-subtle', 'text', 'text-secondary', 'text-muted', 'border', 'border-strong', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger', 'info', 'selected', 'track'];
   protected readonly tileColors = ['surface', 'text', 'primary', 'secondary', 'success', 'warning', 'danger'];
+  /** Current themes first; the legacy ones (still supported, not for new work) in their own group below. */
   protected readonly themes = [
-    { name: 'dark', file: 'tokens.css (default)' },
-    { name: 'light', file: 'tokens.css' },
+    { name: 'dark', file: 'tokens.css (default, Navy Dark)' },
+    { name: 'light', file: 'tokens.css (Navy Light)' },
     { name: 'darkOrange', file: 'theme-dark-orange.css' },
+    { name: 'maldives', file: 'theme-maldives.css' },
+    { name: 'maldives-dark', file: 'theme-maldives.css' },
+    { name: 'rugged', file: 'theme-liquid.css' },
+    { name: 'rugged-dark', file: 'theme-liquid.css' },
+    { name: 'glacier', file: 'theme-liquid.css' },
+    { name: 'glacier-dark', file: 'theme-liquid.css' },
+    { name: 'oxblood', file: 'theme-liquid.css' },
+    { name: 'oxblood-dark', file: 'theme-liquid.css' },
+    { name: 'graphite', file: 'theme-liquid.css' },
+    { name: 'graphite-dark', file: 'theme-liquid.css' },
+    { name: 'cocoa', file: 'theme-liquid.css' },
+    { name: 'cocoa-dark', file: 'theme-liquid.css' },
+    { name: 'violet', file: 'theme-liquid.css' },
+    { name: 'violet-dark', file: 'theme-liquid.css' },
+  ];
+  protected readonly legacyThemes = [
+    { name: 'winterDark', file: 'tokens.css (alias of navy-dark)' },
+    { name: 'winterLight', file: 'tokens.css (alias of navy)' },
     { name: 'lightOrange', file: 'theme-palettes.css' },
     { name: 'lightPink', file: 'theme-palettes.css' },
     { name: 'darkPink', file: 'theme-palettes.css' },
@@ -217,14 +255,21 @@ export class FoundationPage {
     { name: 'lightPurple', file: 'theme-palettes.css' },
     { name: 'darkPurple', file: 'theme-palettes.css' },
     { name: 'lightPurpleGold', file: 'theme-palettes.css' },
-    { name: 'maldives', file: 'theme-maldives.css' },
-    { name: 'maldives-dark', file: 'theme-maldives.css' },
   ];
   protected readonly THEME_TYPE = `type UiTheme =
-  | 'dark' | 'light' | 'winterDark' | 'winterLight' | 'darkOrange'
+  // current
+  | 'dark' | 'light' | 'navy' | 'navy-dark' | 'darkOrange' | 'maldives' | 'maldives-dark'
+  | 'rugged' | 'rugged-dark' | 'glacier' | 'glacier-dark' | 'oxblood' | 'oxblood-dark'
+  | 'graphite' | 'graphite-dark' | 'cocoa' | 'cocoa-dark' | 'violet' | 'violet-dark'
+  // legacy (@deprecated): the Winter aliases and the palette skins
+  | 'winterDark' | 'winterLight'
   | 'lightOrange' | 'lightPink' | 'darkPink' | 'goldBlack' | 'goldRed'
   | 'lightTeal' | 'darkTeal' | 'lightPurple' | 'darkPurple' | 'lightPurpleGold'
-  | 'maldives' | 'maldives-dark' | (string & {});`;
+  | (string & {});
+
+const UI_CURRENT_THEMES: readonly UiCurrentTheme[];  // in picker order
+const UI_LEGACY_THEMES: readonly UiLegacyTheme[];
+function isLegacyTheme(name: string): name is UiLegacyTheme;`;
   protected readonly stringsApi: ApiRow[] = [
     { name: 'close / dismiss', type: 'string', default: "'Close' / 'Dismiss'", desc: 'Modal, drawer and bottom sheet close; toast, alert and hint dismiss.' },
     { name: 'clear / clearAll / clearSearch', type: 'string', default: "'Clear' / 'Clear all' / 'Clear search'", desc: 'Combobox, multi-select and search input.' },
@@ -275,7 +320,9 @@ export class FoundationPage {
   protected readonly themeApi: ApiRow[] = [
     { name: 'theme', type: 'WritableSignal<UiTheme>', default: "'dark'", desc: 'Current theme; written to data-theme on the html element.' },
     { name: 'set()', type: 'method', default: '—', desc: 'set(theme: UiTheme): switch the global theme.' },
-    { name: 'toggle()', type: 'method', default: '—', desc: 'Flip between the light and dark Winter themes.' },
+    { name: 'toggle()', type: 'method', default: '—', desc: 'Flip day and night: dark <-> light, and any built-in x <-> x-dark pair (navy, maldives and the liquid themes). Any other theme goes to dark.' },
+    { name: 'UI_CURRENT_THEMES / UI_LEGACY_THEMES', type: 'readonly string[]', default: '—', desc: 'The built-in themes, current (for new work, in picker order) and legacy (still supported).' },
+    { name: 'isLegacyTheme(name)', type: 'function', default: '—', desc: 'Whether a theme name is one of the legacy ones, to group or flag it in a picker.' },
   ];
   protected readonly providerApi: ApiRow[] = [
     { name: 'theme', type: 'UiTheme', default: "'dark'", desc: 'Two-way (`[(theme)]`). Theme for this subtree.' },

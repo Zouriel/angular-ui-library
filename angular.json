@@ -84,8 +84,9 @@
                   // 0.31.0: +10 kB for the maldives theme, whose stylesheet the showcase loads globally
                   // like every theme (~7 kB of CSS); main.js was already at the old 560 kB line.
                   // 0.32.0: +5 kB for maldives-dark, the night block in the same global stylesheet.
+                  // Liquid themes: +25 kB for theme-liquid.css (twelve themes, ~20 kB of CSS), loaded globally like every theme.
                   "type": "initial",
-                  "maximumWarning": "575kB",
+                  "maximumWarning": "600kB",
                   "maximumError": "1MB"
                 },
                 {

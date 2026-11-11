@@ -9,7 +9,10 @@ export type UiGoogleButtonTheme = 'auto' | 'light' | 'dark' | 'neutral';
 export type UiGoogleButtonShape = 'rectangular' | 'pill';
 
 /** The library themes that are dark (their stylesheets set `color-scheme: dark`). */
-const DARK_THEMES = new Set(['dark', 'winterDark', 'darkOrange', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'maldives-dark']);
+const DARK_THEMES = new Set([
+  'dark', 'navy-dark', 'winterDark', 'darkOrange', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'maldives-dark',
+  'rugged-dark', 'glacier-dark', 'oxblood-dark', 'graphite-dark', 'cocoa-dark', 'violet-dark',
+]);
 
 /**
  * Whether the library theme in effect at `el` is dark: its computed `color-scheme` when the theme

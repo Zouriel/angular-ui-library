@@ -3,7 +3,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import AiBrain01Icon from '@hugeicons/core-free-icons/AiBrain01Icon';
 import { UiButton } from '@zouriel/ui/button';
 import { UiThemeProvider } from '@zouriel/ui/theme';
-import {
+import { UiLiquidBackdrop,
   UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
   UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide, type UiDecorCorner,
 } from '@zouriel/ui/fx';
@@ -12,6 +12,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-fx',
   imports: [
+    UiLiquidBackdrop,
     HugeiconsIconComponent, UiButton, UiThemeProvider, UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField,
     UiIntroLoader, UiMagnetic, UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide,
     DocPage, DocSection, DocDemo,
@@ -52,7 +53,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Section label" selector="ui-section-label" [api]="labelApi" [shapes]="'type UiSectionLabelVariant = &quot;auto&quot; | &quot;bracket&quot; | &quot;eyebrow&quot;;'"
-        summary="A section marker above a heading. eyebrow is a short accent bar and the label in small caps, in the theme's own font, with the index in the primary colour; bracket is the editorial mono marker made for Dark Orange, [ 00 · INDEX ]. auto (the default) picks bracket on Dark Orange and eyebrow everywhere else. The accent colour is --ui-section-label-bracket: the theme's primary by default, its warm accent in Winter, blood red in Dark Orange, coral in Maldives. label is required; the index is left out when empty.">
+        summary="A section marker above a heading. eyebrow is a short accent bar and the label in small caps, in the theme's own font, with the index in the primary colour; bracket is the editorial mono marker made for Dark Orange, [ 00 · INDEX ]. auto (the default) picks bracket on Dark Orange and eyebrow everywhere else. The accent colour is --ui-section-label-bracket: the theme's primary by default, Sunflower in Navy, blood red in Dark Orange, coral in Maldives. label is required; the index is left out when empty.">
         <doc-demo code="<ui-section-label index=&quot;00&quot; label=&quot;Index&quot; />
 <ui-section-label variant=&quot;bracket&quot; index=&quot;01&quot; label=&quot;Work&quot; />">
           <div class="labels">
@@ -173,6 +174,28 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Liquid backdrop" selector="ui-liquid-backdrop" [api]="liquidApi"
+        summary="The liquid themes' backdrop: a slow, flowing satin surface for glass panels to float over. Blurred pools of the theme's second and accent colours drift and turn over its main colour, and a soft sheen of the glass highlight slides across. Decorative (aria-hidden, never takes the pointer); it fills its positioned container, or the window with fixed. Only transform and opacity animate, and it stands still under reduced motion, animations: false and .ui-no-anim. Painted from --ui-liquid-* tokens, which the liquid themes and Navy set; elsewhere it pools the secondary and primary colours.">
+        <doc-demo code="<div style=&quot;position: relative&quot;>
+  <ui-liquid-backdrop />
+  <ui-card [glass]=&quot;true&quot;>…</ui-card>
+</div>
+<ui-liquid-backdrop fixed />   <!-- the whole window -->">
+          <div class="liquid-row">
+            @for (t of liquidDemo; track t) {
+              <ui-theme-provider [theme]="t" class="ui-surface liquid-box">
+                <ui-liquid-backdrop />
+                <div class="liquid-glass">
+                  <span class="surface-title">{{ t }}</span>
+                  <span class="surface-copy">Glass over the flow.</span>
+                  <ui-button variant="primary" size="sm">Continue</ui-button>
+                </div>
+              </ui-theme-provider>
+            }
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Tide" selector="[uiTide]" [api]="tideApi"
         summary="Directive. A staggered entrance for lists and cards: each item fades in and slides up 8px, starting tideDelay + index × tideStep ms after it renders. It reuses the shared ui-slide-up-enter class from animations.css (load it globally), so reduced motion turns it into a plain fade and animations off skips it. The .ui-pulse class from fx.css is the matching slow glow pulse for a working or AI-thinking mark.">
         <doc-demo code="@for (d of doctors; track d.id; let i = $index) {
@@ -216,6 +239,11 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
     .sun-inner { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-4); }
     .sun-logo { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.6rem; }
     .surface-demo { border-radius: var(--ui-radius-lg); min-height: 260px; }
+    .liquid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-3); }
+    .liquid-box { position: relative; overflow: hidden; border-radius: var(--ui-radius-lg); min-height: 200px; display: grid; place-items: center; padding: var(--ui-space-4); }
+    .liquid-glass { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); padding: var(--ui-space-4);
+      border-radius: var(--ui-radius-lg); background: var(--ui-glass-bg); border: 1px solid var(--ui-glass-border);
+      -webkit-backdrop-filter: blur(var(--ui-glass-blur)); backdrop-filter: blur(var(--ui-glass-blur)); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
     .surface-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--ui-space-3); padding: var(--ui-space-8) var(--ui-space-6) var(--ui-space-20); }
     .surface-title { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.4rem; }
     .surface-copy { max-width: 36ch; color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); }
@@ -316,6 +344,13 @@ export class FxPage {
   protected readonly sunApi: ApiRow[] = [
     { name: 'size', type: 'number', default: '120', desc: 'Diameter of the sun (px); the host is 1.6 times that, for the glow.' },
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'The logo, centred on the sun.' },
+  ];
+  protected readonly liquidDemo = ['glacier', 'rugged-dark', 'cocoa', 'violet-dark', 'navy'];
+  protected readonly liquidApi: ApiRow[] = [
+    { name: 'fixed', type: 'boolean', default: 'false', desc: 'Cover the window (position: fixed) instead of the nearest positioned container.' },
+    { name: 'opacity', type: 'number', default: '1', desc: 'Opacity of the whole backdrop, 0-1.' },
+    { name: '--ui-liquid-main / -second / -accent', type: 'CSS colour', default: 'bg / secondary / primary', desc: 'The ground and the two pooled colours (set by the liquid themes and Navy).' },
+    { name: '--ui-liquid-second-strength / -accent-strength', type: 'percentage', default: '18% / 14%', desc: 'How strongly each colour pools at its centre; themes keep text readable on the strongest pool.' },
   ];
   protected readonly surfaceApi: ApiRow[] = [
     { name: 'theme', type: 'string | null', default: "'maldives'", desc: "Theme scoped to the region ('maldives-dark' for the night sea); null keeps the page theme." },

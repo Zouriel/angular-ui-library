@@ -251,6 +251,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Coral and palm decor', anchor: 'coral-and-palm-decor' },
     { name: 'Sunrise', anchor: 'sunrise' },
     { name: 'Sea surface', anchor: 'sea-surface' },
+    { name: 'Liquid backdrop', anchor: 'liquid-backdrop' },
     { name: 'Tide', anchor: 'tide' },
   ],
   'find-doctor': [

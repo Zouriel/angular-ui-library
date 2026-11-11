@@ -96,7 +96,7 @@ function checkButtons(where, list) {
 const equal = (xs, tol = 0.5) => xs.every((x) => Math.abs(x - xs[0]) <= tol);
 const report = [];
 
-for (const theme of ['winterLight', 'winterDark']) {
+for (const theme of ['navy', 'navy-dark']) {
   for (const width of [1440, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 2, hasTouch: true });
     const page = await context.newPage();
