@@ -260,6 +260,12 @@
      readable: it isn't drawn everywhere (no GPU, some WebViews), and where it is, crisp text right
      under the panel still bleeds through a 6% tint. Mostly the raised surface, a little see-through. */
   --ui-glass-panel-bg: color-mix(in srgb, var(--ui-color-surface-raised) 90%, transparent);
+  /* The rim of a glass surface (theme-liquid.css): a 1px inner highlight, brightest on the top edge, drawn as
+     inset shadows before the surface's own shadow. Transparent unless a theme lights it, so glass elsewhere
+     looks exactly as before. */
+  --ui-glass-highlight-top: transparent;
+  --ui-glass-highlight-edge: transparent;
+  --ui-glass-highlight: inset 0 1px 0 0 var(--ui-glass-highlight-top), inset 0 0 0 1px var(--ui-glass-highlight-edge);
 
   /* Frosted glass (0.41.2), from the theme's surface and backdrop range. contrast(c) brightness(b)
      maps a channel v to v*c*b + b*(1-c)/2, so these two land every backdrop colour in
