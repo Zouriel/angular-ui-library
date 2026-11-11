@@ -28,7 +28,7 @@ import { UI_CONFIG } from '@zouriel/ui';
       font-family: var(--ui-font-default); line-height: 1.35;
     }
     .ui-navbar.no-radius { border-radius: 0; }
-    .ui-navbar.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-navbar.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight); }
     :host(.ui-navbar-sticky) { position: sticky; top: 0; z-index: var(--ui-z-docked); }
     .brand { font-weight: 700; color: var(--ui-color-text); letter-spacing: var(--ui-tracking-tight); display: flex; align-items: center; gap: var(--ui-space-2); }
     .links { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1; min-width: 0; }

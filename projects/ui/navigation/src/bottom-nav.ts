@@ -49,7 +49,7 @@ export interface UiBottomNavItem {
     .bn { display: flex; align-items: stretch; height: 56px; background: var(--ui-color-surface);
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; font-family: var(--ui-font-default); line-height: 1.35;
       padding-bottom: env(safe-area-inset-bottom); }
-    .bn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .bn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight); }
     .item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
       min-width: 0; padding: 0 var(--ui-space-1); background: none; border: none; cursor: pointer; color: var(--ui-color-text-muted); font: inherit;
       touch-action: manipulation; -webkit-tap-highlight-color: transparent;
