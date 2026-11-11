@@ -65,7 +65,7 @@ export type UiPopoverPlacement = 'bottom' | 'top' | 'bottom-start' | 'bottom-end
       font-family: var(--ui-font-default);
     }
     .ui-popover.no-radius { border-radius: 0; }
-    .ui-popover.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-popover.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
   `,
 })
 export class UiPopover {

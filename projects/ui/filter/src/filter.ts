@@ -232,7 +232,7 @@ export class UiFilterFooter {
       font-family: var(--ui-font-default);
     }
     .ui-filter-pop.no-radius { border-radius: 0; }
-    .ui-filter-pop.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-filter-pop.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
     .head { flex: none; padding: var(--ui-space-3) var(--ui-space-4) var(--ui-space-2); font-size: var(--ui-font-size-md); font-weight: 600; }
     .body { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 var(--ui-space-2) var(--ui-space-3); }
     .foot { flex: none; padding: var(--ui-space-2) var(--ui-space-3); border-top: 1px solid var(--ui-color-border); }
