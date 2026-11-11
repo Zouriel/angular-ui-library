@@ -147,8 +147,8 @@ export function contrast(fg: Rgba, bg: Rgba): number {
   return (x + 0.05) / (y + 0.05);
 }
 
-/** The liquid themes (theme-liquid.css): four day/night pairs. */
-const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark'] as const;
+/** The liquid themes (theme-liquid.css): six day/night pairs. */
+const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark'] as const;
 
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
@@ -280,7 +280,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
@@ -357,7 +357,7 @@ describe('theme palettes', () => {
       return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
     };
     const fails: string[] = [];
-    expect(names.length).toBe(23);
+    expect(names.length).toBe(27);
     for (const name of names) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
       const get = (k: string, depth = 0): Rgba | null => {
@@ -461,7 +461,7 @@ describe('theme palettes', () => {
         need('action words', hex(r.ink), S, 4.5);
       }
     }
-    expect(names.length).toBe(23);
+    expect(names.length).toBe(27);
     expect(fails).toEqual([]);
   });
 });
@@ -706,7 +706,7 @@ describe('see-through glass', () => {
         if (c < 3) fails.push(`${name}: ${tone} route is ${c.toFixed(2)}:1 on its casing, needs 3:1`);
       }
     }
-    expect(names.length).toBe(23);
+    expect(names.length).toBe(27);
     expect(fails).toEqual([]);
   });
 });
@@ -736,7 +736,7 @@ describe('badge tier metals', () => {
   }
 
   it('sees every theme', () => {
-    expect(names.length).toBeGreaterThanOrEqual(23);
+    expect(names.length).toBeGreaterThanOrEqual(27);
   });
 
   it('holds AA for the text on every stop of the sheen, in every theme', () => {
@@ -836,9 +836,9 @@ describe('liquid themes', () => {
   const mixed = (a: Rgba, b: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + b[i] * (1 - k)).concat(1) as Rgba;
   const pct = (v: string) => parseFloat(v) / 100;
 
-  it('defines all eight themes, each night theme with exactly the token set of its day twin', () => {
+  it('defines all twelve themes, each night theme with exactly the token set of its day twin', () => {
     expect(Object.keys(blocks).sort()).toEqual([...LIQUID].sort());
-    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite']) {
+    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
       const keys = (n: string) => Object.keys(blocks[n]).sort();
       expect(keys(day).length, day).toBeGreaterThan(55);
       expect(keys(`${day}-dark`), day).toEqual(keys(day));
@@ -861,6 +861,10 @@ describe('liquid themes', () => {
       'oxblood-dark': ['#1C1C1F', '#3A3633', '#A3162E', '#F2EADB'],
       graphite: ['#ECEDEF', '#5A5F6B', '#E84A00'],
       'graphite-dark': ['#1A1B1F', '#5A5F6B', '#FF5A0A', '#ECEDEF'],
+      cocoa: ['#EEE4D6', '#3A2A21', '#E3173E'],
+      'cocoa-dark': ['#1F1612', '#3A2A21', '#F2385A', '#EEE4D6'],
+      violet: ['#E9ECEF', '#111316', '#7B4DFF'],
+      'violet-dark': ['#111316', '#2A2D33', '#8F6BFF', '#E9ECEF'],
     };
     for (const [name, [main, second, accent, ink]] of Object.entries(brand)) {
       const b = blocks[name];

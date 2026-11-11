@@ -1,10 +1,12 @@
 /*
- * UI Library: the liquid themes. Four families, each a day and a night theme:
+ * UI Library: the liquid themes. Six families, each a day and a night theme:
  *
  *   rugged / rugged-dark       Desert Sand, Olive Drab, Signal Yellow
  *   glacier / glacier-dark     Ice White, Glacier Blue, Signal Red
  *   oxblood / oxblood-dark     Bone, Charcoal, Oxblood
  *   graphite / graphite-dark   Light Grey, Slate, Safety Orange
+ *   cocoa / cocoa-dark         Cream, Cocoa, Raspberry
+ *   violet / violet-dark       Mist, Ink, Electric Violet
  *
  * Each brand is 60% main (the canvas), 30% second (panels and secondary fills) and 10% accent (the
  * primary). The raw brand colours paint the liquid backdrop (ui-liquid-backdrop in @zouriel/ui/fx) and
@@ -773,4 +775,380 @@
 [data-theme="graphite-dark"] ::selection {
   background: rgba(255, 138, 76, 0.34);
   color: #ECEDEF;
+}
+
+/*
+ * "cocoa" (Cocoa): Cream ground, Cocoa panels and a Raspberry accent: chocolate and fruit.
+ */
+[data-theme="cocoa"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0.87;
+  --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.46;
+  --ui-glass-clear-ceiling: 1;
+  color-scheme: light;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #EEE4D6;
+  --ui-liquid-second: #3A2A21;
+  --ui-liquid-accent: #E3173E;
+  --ui-liquid-ink: #1F1612;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 10%;
+  --ui-liquid-accent-strength: 10%;
+
+  /* Canvas (60%): the main colour; panels a step lighter, tinted by the second. */
+  --ui-color-bg: #EEE4D6;
+  --ui-glass-bg: rgba(246, 239, 229, 0.68);
+  --ui-color-surface: #F6EFE5;
+  --ui-color-surface-raised: #FBF7F1;
+  --ui-color-surface-subtle: #EEE7DE;
+  --ui-color-surface-hover: #E9E2D8;
+  --ui-color-elevated-hover: #ECE7E1;
+  --ui-color-text: #1F1612;
+  --ui-color-text-muted: #5A4A40;
+  --ui-color-border: #D4CCC3;
+  --ui-color-border-strong: #86807B;
+
+  /* Roles: second (30%) for secondary fills, accent (10%) for the primary. */
+  --ui-color-primary: #B3102E;
+  --ui-color-primary-hover: #A1112B;
+  --ui-color-primary-contrast: #FFFFFF;
+  --ui-color-secondary: #3A2A21;
+  --ui-color-secondary-contrast: #EEE4D6;
+  --ui-color-success: #24603A;
+  --ui-color-warning: #8A5200;
+  --ui-color-warning-contrast: #FFFFFF;
+  --ui-color-danger: #9E1420;
+  --ui-color-accent: #E3173E;
+  --ui-color-accent-contrast: #FFFFFF;
+  --ui-color-accent-subtle: rgba(227, 23, 62, 0.16);
+  --ui-color-accent-strong: #B3102E;
+  --ui-color-selected: rgba(179, 16, 46, 0.14);
+  --ui-color-track: #D4CCC3;
+  --ui-color-overlay: rgba(20, 22, 26, 0.42);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #5E4B40;
+  --ui-switch-track: #86807B;
+
+  --ui-rating-fill: #E3173E;
+  --ui-cursor-color: #1F1612;
+  --ui-section-label-bracket: #E3173E;
+  --ui-scroll-progress-track: rgba(31, 22, 18, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #E3173E 0%, #B3102E 100%);
+  --ui-gradient-brand-contrast: #FFFFFF;
+  --ui-gradient-hero: linear-gradient(160deg, #EEE4D6 0%, #DCD1C4 60%, #EDD8CD 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 16, 46, 0.16) 0%, rgba(179, 16, 46, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(227, 23, 62, 0.28);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(31, 22, 18, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.85);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.4);
+  --ui-shadow-1: 0 1px 2px rgba(31, 22, 18, 0.07);
+  --ui-shadow-2: 0 6px 20px rgba(31, 22, 18, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(31, 22, 18, 0.16);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #B3102E;
+  --ui-map-route-success: #24603A;
+  --ui-map-route-danger: #9E1420;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #6E52D9;
+}
+
+[data-theme="cocoa"] ::selection {
+  background: rgba(179, 16, 46, 0.24);
+  color: #1F1612;
+}
+
+/*
+ * "cocoa-dark" (Cocoa Dark): a dark-chocolate ground, cream ink, and the raspberry lifted so it reads.
+ */
+[data-theme="cocoa-dark"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.3;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
+  color-scheme: dark;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #1F1612;
+  --ui-liquid-second: #3A2A21;
+  --ui-liquid-accent: #F2385A;
+  --ui-liquid-ink: #EEE4D6;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 60%;
+  --ui-liquid-accent-strength: 18%;
+
+  /* Canvas (60%): the main colour; panels a step up, tinted by the second. */
+  --ui-color-bg: #1F1612;
+  --ui-glass-bg: rgba(39, 28, 23, 0.72);
+  --ui-color-surface: #271C17;
+  --ui-color-surface-raised: #2F231D;
+  --ui-color-surface-subtle: #2E231E;
+  --ui-color-surface-hover: #332822;
+  --ui-color-elevated-hover: #3C312A;
+  --ui-color-text: #EEE4D6;
+  --ui-color-text-muted: #BFAE9E;
+  --ui-color-border: #493E37;
+  --ui-color-border-strong: #857A70;
+
+  /* Roles: second (30%) for secondary fills, accent (10%) for the primary. */
+  --ui-color-primary: #FF7D93;
+  --ui-color-primary-hover: #FF8DA0;
+  --ui-color-primary-contrast: #1F1612;
+  --ui-color-secondary: #3A2A21;
+  --ui-color-secondary-contrast: #EEE4D6;
+  --ui-color-success: #8ACB98;
+  --ui-color-warning: #EFB35A;
+  --ui-color-warning-contrast: #1F1612;
+  --ui-color-danger: #FF8E8E;
+  --ui-color-accent: #F2385A;
+  --ui-color-accent-contrast: #1F1612;
+  --ui-color-accent-subtle: rgba(242, 56, 90, 0.16);
+  --ui-color-accent-strong: #FF7D93;
+  --ui-color-selected: rgba(255, 125, 147, 0.2);
+  --ui-color-track: #493E37;
+  --ui-color-overlay: rgba(11, 15, 20, 0.62);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #C9A99A;
+  --ui-switch-track: #8E847A;
+
+  --ui-rating-fill: #F2385A;
+  --ui-cursor-color: #EEE4D6;
+  --ui-section-label-bracket: #F2385A;
+  --ui-scroll-progress-track: rgba(238, 228, 214, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #EEE4D6 0%, #FF7D93 100%);
+  --ui-gradient-brand-contrast: #1F1612;
+  --ui-gradient-hero: linear-gradient(160deg, #1F1612 0%, #2F221B 60%, #361A1A 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(255, 125, 147, 0.16) 0%, rgba(255, 125, 147, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(242, 56, 90, 0.32);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(255, 255, 255, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.16);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.06);
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #FF7D93;
+  --ui-map-route-success: #8ACB98;
+  --ui-map-route-danger: #FF8E8E;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #8c74e8;
+}
+
+[data-theme="cocoa-dark"] ::selection {
+  background: rgba(255, 125, 147, 0.34);
+  color: #EEE4D6;
+}
+
+/*
+ * "violet" (Violet): Mist ground, Ink panels and an Electric Violet accent: crisp and digital.
+ */
+[data-theme="violet"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0.87;
+  --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.46;
+  --ui-glass-clear-ceiling: 1;
+  color-scheme: light;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #E9ECEF;
+  --ui-liquid-second: #111316;
+  --ui-liquid-accent: #7B4DFF;
+  --ui-liquid-ink: #111316;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 8%;
+  --ui-liquid-accent-strength: 12%;
+
+  /* Canvas (60%): the main colour; panels a step lighter, tinted by the second. */
+  --ui-color-bg: #E9ECEF;
+  --ui-glass-bg: rgba(243, 245, 247, 0.68);
+  --ui-color-surface: #F3F5F7;
+  --ui-color-surface-raised: #FBFCFD;
+  --ui-color-surface-subtle: #EBEDEF;
+  --ui-color-surface-hover: #E5E7E9;
+  --ui-color-elevated-hover: #EBECED;
+  --ui-color-text: #111316;
+  --ui-color-text-muted: #4A4F57;
+  --ui-color-border: #CFD1D3;
+  --ui-color-border-strong: #848587;
+
+  /* Roles: second (30%) for secondary fills, accent (10%) for the primary. */
+  --ui-color-primary: #6236E6;
+  --ui-color-primary-hover: #5832CD;
+  --ui-color-primary-contrast: #FFFFFF;
+  --ui-color-secondary: #111316;
+  --ui-color-secondary-contrast: #E9ECEF;
+  --ui-color-success: #22663F;
+  --ui-color-warning: #875000;
+  --ui-color-warning-contrast: #FFFFFF;
+  --ui-color-danger: #A8201A;
+  --ui-color-accent: #7B4DFF;
+  --ui-color-accent-contrast: #FFFFFF;
+  --ui-color-accent-subtle: rgba(123, 77, 255, 0.16);
+  --ui-color-accent-strong: #6236E6;
+  --ui-color-selected: rgba(98, 54, 230, 0.14);
+  --ui-color-track: #CFD1D3;
+  --ui-color-overlay: rgba(20, 22, 26, 0.42);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #565B64;
+  --ui-switch-track: #848587;
+
+  --ui-rating-fill: #7B4DFF;
+  --ui-cursor-color: #111316;
+  --ui-section-label-bracket: #7B4DFF;
+  --ui-scroll-progress-track: rgba(17, 19, 22, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #7B4DFF 0%, #6236E6 100%);
+  --ui-gradient-brand-contrast: #FFFFFF;
+  --ui-gradient-hero: linear-gradient(160deg, #E9ECEF 0%, #D8DBDE 60%, #E1E1F0 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(98, 54, 230, 0.16) 0%, rgba(98, 54, 230, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(123, 77, 255, 0.28);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(17, 19, 22, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.85);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.4);
+  --ui-shadow-1: 0 1px 2px rgba(17, 19, 22, 0.07);
+  --ui-shadow-2: 0 6px 20px rgba(17, 19, 22, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(17, 19, 22, 0.16);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #6236E6;
+  --ui-map-route-success: #22663F;
+  --ui-map-route-danger: #A8201A;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #8c74e8;
+}
+
+[data-theme="violet"] ::selection {
+  background: rgba(98, 54, 230, 0.24);
+  color: #111316;
+}
+
+/*
+ * "violet-dark" (Violet Dark): an ink-black ground, mist ink, and the violet lifted to a lavender for text.
+ */
+[data-theme="violet-dark"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.3;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
+  color-scheme: dark;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #111316;
+  --ui-liquid-second: #2A2D33;
+  --ui-liquid-accent: #8F6BFF;
+  --ui-liquid-ink: #E9ECEF;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 60%;
+  --ui-liquid-accent-strength: 20%;
+
+  /* Canvas (60%): the main colour; panels a step up, tinted by the second. */
+  --ui-color-bg: #111316;
+  --ui-glass-bg: rgba(24, 26, 30, 0.72);
+  --ui-color-surface: #181A1E;
+  --ui-color-surface-raised: #1F2226;
+  --ui-color-surface-subtle: #1F2125;
+  --ui-color-surface-hover: #25272B;
+  --ui-color-elevated-hover: #2D3034;
+  --ui-color-text: #E9ECEF;
+  --ui-color-text-muted: #AAB0B9;
+  --ui-color-border: #3C3E42;
+  --ui-color-border-strong: #7A7D80;
+
+  /* Roles: second (30%) for secondary fills, accent (10%) for the primary. */
+  --ui-color-primary: #AC92FF;
+  --ui-color-primary-hover: #B69FFF;
+  --ui-color-primary-contrast: #111316;
+  --ui-color-secondary: #2A2D33;
+  --ui-color-secondary-contrast: #E9ECEF;
+  --ui-color-success: #7ED19A;
+  --ui-color-warning: #F2B14E;
+  --ui-color-warning-contrast: #111316;
+  --ui-color-danger: #FF8A80;
+  --ui-color-accent: #8F6BFF;
+  --ui-color-accent-contrast: #111316;
+  --ui-color-accent-subtle: rgba(143, 107, 255, 0.16);
+  --ui-color-accent-strong: #AC92FF;
+  --ui-color-selected: rgba(172, 146, 255, 0.2);
+  --ui-color-track: #3C3E42;
+  --ui-color-overlay: rgba(11, 15, 20, 0.62);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #A7A2C8;
+  --ui-switch-track: #84878A;
+
+  --ui-rating-fill: #8F6BFF;
+  --ui-cursor-color: #E9ECEF;
+  --ui-section-label-bracket: #8F6BFF;
+  --ui-scroll-progress-track: rgba(233, 236, 239, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #8F6BFF 0%, #AC92FF 100%);
+  --ui-gradient-brand-contrast: #111316;
+  --ui-gradient-hero: linear-gradient(160deg, #111316 0%, #202327 60%, #201E32 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(172, 146, 255, 0.16) 0%, rgba(172, 146, 255, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(143, 107, 255, 0.32);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(255, 255, 255, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.16);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.06);
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #BCA6FF;
+  --ui-map-route-success: #7ED19A;
+  --ui-map-route-danger: #FF8A80;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #8c74e8;
+}
+
+[data-theme="violet-dark"] ::selection {
+  background: rgba(172, 146, 255, 0.34);
+  color: #E9ECEF;
 }

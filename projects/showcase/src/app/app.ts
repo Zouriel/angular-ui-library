@@ -206,7 +206,7 @@ export class App {
   /** The maldives themes' fx layer (day and night): the tide along the bottom of the window. */
   protected readonly seaTheme = computed(() => this.theme.theme() === 'maldives' || this.theme.theme() === 'maldives-dark');
   /** The liquid themes (theme-liquid.css): the flowing backdrop behind the whole window. */
-  protected readonly liquidTheme = computed(() => /^(rugged|glacier|oxblood|graphite)(-dark)?$/.test(this.theme.theme()));
+  protected readonly liquidTheme = computed(() => /^(rugged|glacier|oxblood|graphite|cocoa|violet)(-dark)?$/.test(this.theme.theme()));
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
   protected readonly THEMES: { value: string; label: string; disabled?: boolean }[] = [
@@ -223,6 +223,10 @@ export class App {
     { value: 'oxblood-dark', label: 'Oxblood Dark' },
     { value: 'graphite', label: 'Graphite' },
     { value: 'graphite-dark', label: 'Graphite Dark' },
+    { value: 'cocoa', label: 'Cocoa' },
+    { value: 'cocoa-dark', label: 'Cocoa Dark' },
+    { value: 'violet', label: 'Violet' },
+    { value: 'violet-dark', label: 'Violet Dark' },
     // Legacy themes last, behind a divider (ui-select has no option groups): still supported, not for new work.
     { value: '', label: '── Legacy ──', disabled: true },
     ...UI_LEGACY_THEMES.map((t) => ({ value: t, label: `${LEGACY_LABELS[t]} (legacy)` })),

@@ -17,11 +17,12 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  *   `@zouriel/ui/styles/theme-maldives.css`.
  * - `maldives-dark` is its night variant (deep ocean canvas, Foam ink, Lagoon primary, Coral
  *   accent), in the same stylesheet; toggle day/night by switching between the two names.
- * - The liquid themes, four day/night pairs in `@zouriel/ui/styles/theme-liquid.css`, made for
+ * - The liquid themes, six day/night pairs in `@zouriel/ui/styles/theme-liquid.css`, made for
  *   glass surfaces over `ui-liquid-backdrop` (`@zouriel/ui/fx`): `rugged` / `rugged-dark`
  *   (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue,
  *   Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood) and `graphite` /
- *   `graphite-dark` (Light Grey, Slate, Safety Orange).
+ *   `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa,
+ *   Raspberry) and `violet` / `violet-dark` (Mist, Ink, Electric Violet).
  *
  * Legacy themes (still supported and unchanged, but new work should use a current theme; see
  * {@link UI_LEGACY_THEMES} and {@link isLegacyTheme}):
@@ -50,6 +51,10 @@ export type UiTheme =
   | 'oxblood-dark'
   | 'graphite'
   | 'graphite-dark'
+  | 'cocoa'
+  | 'cocoa-dark'
+  | 'violet'
+  | 'violet-dark'
   /** @deprecated Legacy theme: still supported, but new work should use a current theme. */
   | 'lightOrange'
   /** @deprecated Legacy theme: still supported, but new work should use a current theme. */
@@ -89,6 +94,10 @@ export const UI_CURRENT_THEMES = [
   'oxblood-dark',
   'graphite',
   'graphite-dark',
+  'cocoa',
+  'cocoa-dark',
+  'violet',
+  'violet-dark',
 ] as const;
 
 /**
@@ -119,7 +128,7 @@ export function isLegacyTheme(name: string): name is UiLegacyTheme {
 }
 
 /** Built-in themes that come as a day/night pair named `x` and `x-dark`. */
-const UI_DAY_NIGHT_PAIRS: readonly string[] = ['maldives', 'rugged', 'glacier', 'oxblood', 'graphite'];
+const UI_DAY_NIGHT_PAIRS: readonly string[] = ['maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
 
 /**
  * Global theme controller. Drives `data-theme` on the document root so the
@@ -149,7 +158,7 @@ export class UiThemeService {
 
   /**
    * Flips day and night: a built-in `x` / `x-dark` pair (`maldives`, `rugged`, `glacier`, `oxblood`,
-   * `graphite`) to its other half, and anything else between the light and dark Winter themes,
+   * `graphite`, `cocoa`, `violet`) to its other half, and anything else between the light and dark Winter themes,
    * keeping whichever naming the app uses.
    */
   toggle(): void {
