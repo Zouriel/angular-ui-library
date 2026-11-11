@@ -7,6 +7,9 @@
  * lightweight, ambient, and entirely token-driven, so each theme family
  * animates in its own colour without any per-theme JS.
  *
+ * The palette sections below are LEGACY (theme-palettes.css; UI_LEGACY_THEMES): still supported and
+ * unchanged. The maldives and liquid sections are for current themes.
+ *
  * They enhance the fx.css utility classes only (.ui-gradient-text, .ui-glow),
  * so nothing moves unless a component opts in by using those classes. Every
  * animation is disabled under prefers-reduced-motion and the .ui-no-anim
@@ -87,9 +90,19 @@
 [data-theme="goldRed"]     .ui-gradient-text,
 [data-theme="lightPurpleGold"] .ui-gradient-text,
 [data-theme="maldives"]    .ui-gradient-text,
-[data-theme="maldives-dark"] .ui-gradient-text {
+[data-theme="maldives-dark"] .ui-gradient-text,
+[data-theme="rugged"] .ui-gradient-text,
+[data-theme="rugged-dark"] .ui-gradient-text,
+[data-theme="glacier"] .ui-gradient-text,
+[data-theme="glacier-dark"] .ui-gradient-text,
+[data-theme="oxblood"] .ui-gradient-text,
+[data-theme="oxblood-dark"] .ui-gradient-text,
+[data-theme="graphite"] .ui-gradient-text,
+[data-theme="graphite-dark"] .ui-gradient-text {
   background-size: 220% 100%;
 }
+
+/* ── LEGACY palettes (theme-palettes.css): still supported and unchanged; new work uses a current theme. ── */
 
 /* Gold — a slow, luxe shimmer sweep + breathing glow. */
 [data-theme="goldBlack"] .ui-gradient-text,
@@ -147,6 +160,8 @@
   animation: ui-fx-regal-glow 3.8s var(--ui-ease-standard) infinite;
 }
 
+/* ── Current themes ── */
+
 /* Maldives (day and night) — calm: a slow tide across the gradient + a shimmer of light on the glow. */
 [data-theme="maldives"] .ui-gradient-text,
 [data-theme="maldives-dark"] .ui-gradient-text {
@@ -155,6 +170,29 @@
 [data-theme="maldives"] .ui-glow,
 [data-theme="maldives-dark"] .ui-glow {
   animation: ui-fx-shimmer 8s var(--ui-ease-standard) infinite;
+}
+
+/* Liquid themes (theme-liquid.css, day and night) — molten: the brand gradient flows slowly one way and
+   back, like ui-liquid-backdrop behind it, and the glow breathes. */
+[data-theme="rugged"] .ui-gradient-text,
+[data-theme="rugged-dark"] .ui-gradient-text,
+[data-theme="glacier"] .ui-gradient-text,
+[data-theme="glacier-dark"] .ui-gradient-text,
+[data-theme="oxblood"] .ui-gradient-text,
+[data-theme="oxblood-dark"] .ui-gradient-text,
+[data-theme="graphite"] .ui-gradient-text,
+[data-theme="graphite-dark"] .ui-gradient-text {
+  animation: ui-fx-tide 18s ease-in-out infinite;
+}
+[data-theme="rugged"] .ui-glow,
+[data-theme="rugged-dark"] .ui-glow,
+[data-theme="glacier"] .ui-glow,
+[data-theme="glacier-dark"] .ui-glow,
+[data-theme="oxblood"] .ui-glow,
+[data-theme="oxblood-dark"] .ui-glow,
+[data-theme="graphite"] .ui-glow,
+[data-theme="graphite-dark"] .ui-glow {
+  animation: ui-fx-breathe 5s var(--ui-ease-standard) infinite;
 }
 
 /* ---- Honour reduced-motion + the animations off-switch --------------- */

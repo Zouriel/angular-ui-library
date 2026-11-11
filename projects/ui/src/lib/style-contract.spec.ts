@@ -871,15 +871,20 @@ describe('liquid themes', () => {
     }
   });
 
-  it('starts the brand gradient on the raw accent, with a label that holds 4.5:1 on every stop', () => {
+  it('builds the brand gradient from brand colours that read on the page, with a label that holds 4.5:1 on every stop', () => {
+    // Brand buttons put the label on it; .ui-gradient-text paints it straight onto the page (display type: 3:1).
     const fails: string[] = [];
     for (const name of LIQUID) {
       const b = blocks[name];
       const stops = [...b['--ui-gradient-brand'].matchAll(/#[0-9a-fA-F]{6}/g)].map((m) => m[0]);
-      expect(stops[0], name).toBe(b['--ui-liquid-accent']);
+      expect(stops.length, name).toBeGreaterThanOrEqual(2);
+      const raw = ['--ui-liquid-main', '--ui-liquid-second', '--ui-liquid-accent', '--ui-liquid-ink'].map((k) => b[k].toLowerCase());
+      expect(stops.some((s) => raw.includes(s.toLowerCase())), `${name}: a raw brand colour in the gradient`).toBe(true);
       for (const s of stops) {
         const r = contrast(col(name, '--ui-gradient-brand-contrast'), parseColor(s)!);
         if (r < 4.5) fails.push(`${name}: brand label on ${s} is ${r.toFixed(2)}:1`);
+        const t = contrast(parseColor(s)!, col(name, '--ui-color-bg'));
+        if (t < 3) fails.push(`${name}: gradient text stop ${s} on the page is ${t.toFixed(2)}:1`);
       }
     }
     expect(fails).toEqual([]);

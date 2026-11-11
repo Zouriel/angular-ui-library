@@ -1,4 +1,11 @@
 /*
+ * ─── LEGACY ───────────────────────────────────────────────────────────────────────────────────────
+ * Every theme in this file is a legacy theme (UI_LEGACY_THEMES in @zouriel/ui/theme). They stay
+ * supported and unchanged: the same data-theme names, tokens, look and import path. New work should
+ * use a current theme: Winter (dark/light), darkOrange, maldives / maldives-dark, or the liquid
+ * themes in theme-liquid.css.
+ * ──────────────────────────────────────────────────────────────────────────────────────────────────
+ *
  * UI Library — Professional accent palettes.
  *
  * Lightweight, colours-only theme skins built purely on the design tokens —

@@ -84,9 +84,9 @@
   --ui-section-label-bracket: #5C4600;
   --ui-scroll-progress-track: rgba(30, 32, 21, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
-  --ui-gradient-brand: linear-gradient(90deg, #FFD21F 0%, #D8C3A0 100%);
-  --ui-gradient-brand-contrast: #1E2015;
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #5B5E3C 0%, #5C4600 100%);
+  --ui-gradient-brand-contrast: #FFD21F;
   --ui-gradient-hero: linear-gradient(160deg, #D8C3A0 0%, #C9B794 60%, #E5C875 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(92, 70, 0, 0.16) 0%, rgba(92, 70, 0, 0) 100%);
   --ui-glow-amber: 0 0 24px rgba(255, 210, 31, 0.28);
@@ -178,7 +178,7 @@
   --ui-section-label-bracket: #FFD21F;
   --ui-scroll-progress-track: rgba(216, 195, 160, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
   --ui-gradient-brand: linear-gradient(90deg, #FFD21F 0%, #D8C3A0 100%);
   --ui-gradient-brand-contrast: #1E2015;
   --ui-gradient-hero: linear-gradient(160deg, #1E2015 0%, #333623 60%, #312F16 100%);
@@ -272,7 +272,7 @@
   --ui-section-label-bracket: #E4002B;
   --ui-scroll-progress-track: rgba(14, 26, 36, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
   --ui-gradient-brand: linear-gradient(90deg, #E4002B 0%, #B30022 100%);
   --ui-gradient-brand-contrast: #FFFFFF;
   --ui-gradient-hero: linear-gradient(160deg, #F1F3F4 0%, #C2DAE9 60%, #F0E7EA 100%);
@@ -366,7 +366,7 @@
   --ui-section-label-bracket: #FF2D4F;
   --ui-scroll-progress-track: rgba(241, 243, 244, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
   --ui-gradient-brand: linear-gradient(90deg, #FF2D4F 0%, #FF8394 100%);
   --ui-gradient-brand-contrast: #0E1A24;
   --ui-gradient-hero: linear-gradient(160deg, #0E1A24 0%, #203B4E 60%, #281C29 100%);
@@ -460,7 +460,7 @@
   --ui-section-label-bracket: #7A0C1E;
   --ui-scroll-progress-track: rgba(28, 28, 31, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
   --ui-gradient-brand: linear-gradient(90deg, #7A0C1E 0%, #2B2B2E 100%);
   --ui-gradient-brand-contrast: #F2EADB;
   --ui-gradient-hero: linear-gradient(160deg, #F2EADB 0%, #DED7CA 60%, #EBDDD0 100%);
@@ -554,9 +554,9 @@
   --ui-section-label-bracket: #F58A99;
   --ui-scroll-progress-track: rgba(242, 234, 219, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
-  --ui-gradient-brand: linear-gradient(90deg, #A3162E 0%, #3A3633 100%);
-  --ui-gradient-brand-contrast: #F2EADB;
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #F2EADB 0%, #F58A99 100%);
+  --ui-gradient-brand-contrast: #1C1C1F;
   --ui-gradient-hero: linear-gradient(160deg, #1C1C1F 0%, #2E2C2B 60%, #381B22 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(245, 138, 153, 0.16) 0%, rgba(245, 138, 153, 0) 100%);
   --ui-glow-amber: 0 0 24px rgba(163, 22, 46, 0.32);
@@ -648,9 +648,9 @@
   --ui-section-label-bracket: #E84A00;
   --ui-scroll-progress-track: rgba(26, 27, 31, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
-  --ui-gradient-brand: linear-gradient(90deg, #E84A00 0%, #F57A33 100%);
-  --ui-gradient-brand-contrast: #111114;
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #A83500 0%, #5A5F6B 100%);
+  --ui-gradient-brand-contrast: #FFFFFF;
   --ui-gradient-hero: linear-gradient(160deg, #ECEDEF 0%, #DADCDF 60%, #ECE3E1 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(168, 53, 0, 0.16) 0%, rgba(168, 53, 0, 0) 100%);
   --ui-glow-amber: 0 0 24px rgba(232, 74, 0, 0.28);
@@ -742,7 +742,7 @@
   --ui-section-label-bracket: #FF5A0A;
   --ui-scroll-progress-track: rgba(236, 237, 239, 0.08);
 
-  /* Brand gradient from the raw brand colours, and the label that holds 4.5:1 on every stop (brand buttons). */
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
   --ui-gradient-brand: linear-gradient(90deg, #FF5A0A 0%, #FF7A33 100%);
   --ui-gradient-brand-contrast: #1A1B1F;
   --ui-gradient-hero: linear-gradient(160deg, #1A1B1F 0%, #30333A 60%, #33221D 100%);
