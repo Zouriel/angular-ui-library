@@ -11,3 +11,4 @@ export * from './glyph-field';
 export * from './magnetic';
 export * from './sea';
 export * from './sea-shapes';
+export * from './liquid';

@@ -899,6 +899,8 @@ describe('liquid themes', () => {
         ['main', main],
         ['second', mixed(col(name, '--ui-liquid-second'), main, pct(b['--ui-liquid-second-strength']))],
         ['accent', mixed(col(name, '--ui-liquid-accent'), main, pct(b['--ui-liquid-accent-strength']))],
+        // The sheen: the glass highlight at the backdrop's brightest sheen opacity (0.28, fx/src/liquid.ts).
+        ['sheen', over([...col(name, '--ui-glass-highlight-top').slice(0, 3), col(name, '--ui-glass-highlight-top')[3] * 0.28] as Rgba, main)],
       ];
       const glass = col(name, '--ui-glass-bg');
       expect(glass[3], `${name}: glass is see-through`).toBeLessThan(1);
