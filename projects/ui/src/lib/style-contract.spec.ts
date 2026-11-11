@@ -147,10 +147,13 @@ export function contrast(fg: Rgba, bg: Rgba): number {
   return (x + 0.05) / (y + 0.05);
 }
 
+/** The liquid themes (theme-liquid.css): four day/night pairs. */
+const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark'] as const;
+
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
   const out: { name: string; vars: Record<string, string> }[] = [];
-  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
     for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
       const vars = Object.fromEntries([...m[2].matchAll(/(--ui-color-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -165,7 +168,7 @@ describe('theme palettes', () => {
 
   it('finds every named skin', () => {
     expect(list.map((t) => t.name).sort()).toEqual(
-      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark'].sort(),
+      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark', ...LIQUID].sort(),
     );
   });
 
@@ -223,7 +226,7 @@ describe('theme palettes', () => {
    */
   it('keeps the skeleton visible on a card and its shimmer visible in every theme', () => {
     const fails: string[] = [];
-    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
         const v = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -269,7 +272,7 @@ describe('theme palettes', () => {
    */
   it('keeps text readable on glass in every light theme, over the page and over a dimmed page', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -277,7 +280,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
@@ -339,7 +342,7 @@ describe('theme palettes', () => {
    */
   it('keeps the tinted ui-feature-card readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -354,7 +357,7 @@ describe('theme palettes', () => {
       return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
     };
     const fails: string[] = [];
-    expect(names.length).toBe(15);
+    expect(names.length).toBe(23);
     for (const name of names) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
       const get = (k: string, depth = 0): Rgba | null => {
@@ -396,7 +399,7 @@ describe('theme palettes', () => {
    */
   it('keeps badgeTone combinations and custom feature-card colours readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -458,7 +461,7 @@ describe('theme palettes', () => {
         need('action words', hex(r.ink), S, 4.5);
       }
     }
-    expect(names.length).toBe(15);
+    expect(names.length).toBe(23);
     expect(fails).toEqual([]);
   });
 });
@@ -466,7 +469,7 @@ describe('theme palettes', () => {
 /* ── See-through glass over a map (ui-bottom-sheet / ui-floating-panel `glass`, 0.41.2) ─────────── */
 
 describe('see-through glass', () => {
-  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css'];
+  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css'];
   const blocks: Record<string, Record<string, string>> = {};
   /** Per selector, the properties set in a block that names only that selector. */
   const own: Record<string, Set<string>> = {};
@@ -481,7 +484,7 @@ describe('see-through glass', () => {
   }
   const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
   const names = ['dark', 'light', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold',
-    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark'];
+    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark', ...LIQUID];
   const resolve = (name: string) => {
     const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
     const raw = (k: string, depth = 0): string => {
@@ -703,7 +706,7 @@ describe('see-through glass', () => {
         if (c < 3) fails.push(`${name}: ${tone} route is ${c.toFixed(2)}:1 on its casing, needs 3:1`);
       }
     }
-    expect(names.length).toBe(15);
+    expect(names.length).toBe(23);
     expect(fails).toEqual([]);
   });
 });
@@ -712,7 +715,7 @@ describe('see-through glass', () => {
 
 describe('badge tier metals', () => {
   const blocks: Record<string, Record<string, string>> = {};
-  for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+  for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
     for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
       const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -733,7 +736,7 @@ describe('badge tier metals', () => {
   }
 
   it('sees every theme', () => {
-    expect(names.length).toBeGreaterThanOrEqual(15);
+    expect(names.length).toBeGreaterThanOrEqual(23);
   });
 
   it('holds AA for the text on every stop of the sheen, in every theme', () => {
@@ -814,5 +817,150 @@ describe('badge tier metals', () => {
       }
     }
     expect(fails).toEqual([]);
+  });
+});
+
+/* ── Liquid themes (theme-liquid.css): brand, backdrop and glass ──────────────────────────────────── */
+
+describe('liquid themes', () => {
+  const text = withoutComments(readFileSync(join(root, 'styles/theme-liquid.css'), 'utf8'));
+  const blocks: Record<string, Record<string, string>> = {};
+  for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
+    blocks[m[1]] = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+|color-scheme):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+  }
+  const col = (name: string, k: string) => {
+    const c = parseColor(blocks[name][k] ?? '');
+    if (!c) throw new Error(`${name}: ${k} unreadable (${blocks[name][k]})`);
+    return c;
+  };
+  const mixed = (a: Rgba, b: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + b[i] * (1 - k)).concat(1) as Rgba;
+  const pct = (v: string) => parseFloat(v) / 100;
+
+  it('defines all eight themes, each night theme with exactly the token set of its day twin', () => {
+    expect(Object.keys(blocks).sort()).toEqual([...LIQUID].sort());
+    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite']) {
+      const keys = (n: string) => Object.keys(blocks[n]).sort();
+      expect(keys(day).length, day).toBeGreaterThan(55);
+      expect(keys(`${day}-dark`), day).toEqual(keys(day));
+      expect(blocks[day]['color-scheme']).toBe('light');
+      expect(blocks[`${day}-dark`]['color-scheme']).toBe('dark');
+      // A night canvas, and the day canvas colour as its ink.
+      const night = col(`${day}-dark`, '--ui-color-bg');
+      expect(contrast(night, [0, 0, 0, 1]), day).toBeLessThan(1.5);
+      expect(contrast(col(`${day}-dark`, '--ui-color-text'), night), day).toBeGreaterThan(7);
+    }
+  });
+
+  it('keeps the brand colours exactly as given (60% main, 30% second, 10% accent; the ink of each night theme)', () => {
+    const brand: Record<string, [string, string, string, string?]> = {
+      rugged: ['#D8C3A0', '#5B5E3C', '#FFD21F'],
+      'rugged-dark': ['#1E2015', '#5B5E3C', '#FFD21F', '#D8C3A0'],
+      glacier: ['#F1F3F4', '#9CC6E0', '#E4002B'],
+      'glacier-dark': ['#0E1A24', '#2F5670', '#FF2D4F', '#F1F3F4'],
+      oxblood: ['#F2EADB', '#2B2B2E', '#7A0C1E'],
+      'oxblood-dark': ['#1C1C1F', '#3A3633', '#A3162E', '#F2EADB'],
+      graphite: ['#ECEDEF', '#5A5F6B', '#E84A00'],
+      'graphite-dark': ['#1A1B1F', '#5A5F6B', '#FF5A0A', '#ECEDEF'],
+    };
+    for (const [name, [main, second, accent, ink]] of Object.entries(brand)) {
+      const b = blocks[name];
+      expect([b['--ui-liquid-main'], b['--ui-liquid-second'], b['--ui-liquid-accent']], name).toEqual([main, second, accent]);
+      expect(b['--ui-color-bg'], name).toBe(main);
+      expect(b['--ui-color-accent'], name).toBe(accent);
+      if (ink) expect(b['--ui-liquid-ink'], name).toBe(ink);
+    }
+  });
+
+  it('starts the brand gradient on the raw accent, with a label that holds 4.5:1 on every stop', () => {
+    const fails: string[] = [];
+    for (const name of LIQUID) {
+      const b = blocks[name];
+      const stops = [...b['--ui-gradient-brand'].matchAll(/#[0-9a-fA-F]{6}/g)].map((m) => m[0]);
+      expect(stops[0], name).toBe(b['--ui-liquid-accent']);
+      for (const s of stops) {
+        const r = contrast(col(name, '--ui-gradient-brand-contrast'), parseColor(s)!);
+        if (r < 4.5) fails.push(`${name}: brand label on ${s} is ${r.toFixed(2)}:1`);
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  /*
+   * ui-liquid-backdrop pools the second and accent colours into the main one, at most at the theme's
+   * --ui-liquid-*-strength. Page text sits straight on the backdrop and glass panels over it, so check
+   * both on the strongest pool of each colour (the blur only ever makes a pool weaker).
+   */
+  it('keeps page text and glass panels readable on the strongest pool of the backdrop', () => {
+    const fails: string[] = [];
+    for (const name of LIQUID) {
+      const b = blocks[name];
+      const main = col(name, '--ui-liquid-main');
+      const pools: [string, Rgba][] = [
+        ['main', main],
+        ['second', mixed(col(name, '--ui-liquid-second'), main, pct(b['--ui-liquid-second-strength']))],
+        ['accent', mixed(col(name, '--ui-liquid-accent'), main, pct(b['--ui-liquid-accent-strength']))],
+      ];
+      const glass = col(name, '--ui-glass-bg');
+      expect(glass[3], `${name}: glass is see-through`).toBeLessThan(1);
+      for (const [pool, ground] of pools) {
+        for (const [fg, need] of [['text', 4.5], ['text-muted', 4.5], ['primary', 4.5], ['icon', 3]] as const) {
+          const r = contrast(col(name, `--ui-color-${fg}`), ground);
+          if (r < need) fails.push(`${name}: ${fg} on the ${pool} pool is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+        const panel = over(glass, ground);
+        for (const [fg, need] of [['text', 7], ['text-muted', 4.5], ['primary', 4.5], ['success', 4.5], ['danger', 4.5], ['warning', 3], ['icon', 3]] as const) {
+          const r = contrast(col(name, `--ui-color-${fg}`), panel);
+          if (r < need) fails.push(`${name}: ${fg} on glass over the ${pool} pool is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('keeps control edges, an off switch and the primary hover readable', () => {
+    const fails: string[] = [];
+    for (const name of LIQUID) {
+      for (const g of ['bg', 'surface', 'surface-raised']) {
+        const ground = col(name, `--ui-color-${g}`);
+        for (const k of ['--ui-color-border-strong', '--ui-switch-track']) {
+          const r = contrast(col(name, k), ground);
+          if (r < 3) fails.push(`${name}: ${k} on ${g} is ${r.toFixed(2)}:1`);
+        }
+      }
+      const r = contrast(col(name, '--ui-color-primary-contrast'), col(name, '--ui-color-primary-hover'));
+      if (r < 4.5) fails.push(`${name}: primary-contrast on primary-hover is ${r.toFixed(2)}:1`);
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('lights a glass rim brighter on the top edge, and leaves it transparent in every other theme', () => {
+    for (const name of LIQUID) {
+      const [top, edge] = [col(name, '--ui-glass-highlight-top'), col(name, '--ui-glass-highlight-edge')];
+      expect(top[3], name).toBeGreaterThan(edge[3]);
+      expect(edge[3], name).toBeGreaterThan(0);
+    }
+    const tokens = withoutComments(readFileSync(join(root, 'styles/tokens.css'), 'utf8'));
+    expect(tokens).toMatch(/--ui-glass-highlight-top:\s*transparent;/);
+    expect(tokens).toMatch(/--ui-glass-highlight-edge:\s*transparent;/);
+    expect(tokens).toMatch(/--ui-glass-highlight:\s*inset 0 1px 0 0 var\(--ui-glass-highlight-top\), inset 0 0 0 1px var\(--ui-glass-highlight-edge\);/);
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+      expect(readFileSync(join(root, file), 'utf8'), file).not.toContain('--ui-glass-highlight');
+    }
+  });
+
+  it('draws the rim on every glass surface in the library', () => {
+    // A rule that paints a component as glass (its selector names the glass class and it sets a glass
+    // background) also composes the rim into its shadow.
+    const missing: string[] = [];
+    let seen = 0;
+    for (const { file, text: cssText } of css) {
+      for (const m of withoutComments(cssText).matchAll(/([^{}]*\.glass[^{}]*)\{([^}]*)\}/g)) {
+        if (!/background:\s*var\(--ui-glass-(bg|panel-bg|clear-bg)\)/.test(m[2])) continue;
+        seen++;
+        if (!m[2].includes('var(--ui-glass-highlight)')) missing.push(`${file}: ${m[1].trim()}`);
+      }
+    }
+    expect(seen).toBeGreaterThanOrEqual(17);
+    expect(missing).toEqual([]);
   });
 });
