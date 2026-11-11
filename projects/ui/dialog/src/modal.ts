@@ -78,7 +78,7 @@ let modalSeq = 0;
     .panel[data-size="full"] .bd { flex: 1; min-height: 0; min-width: 0; padding: 0; gap: 0; overflow: hidden; }
     .panel.no-radius { border-radius: 0; }
     .focus-start { position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden; outline: none; }
-    .panel.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .panel.glass { background: var(--ui-glass-panel-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-3); }
     .hd { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); border-bottom: 1px solid var(--ui-color-border); }
     .title { min-width: 0; overflow-wrap: anywhere; text-wrap: balance; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     /* Only the body scrolls, so the header and footer stay put on long content. */

@@ -191,7 +191,7 @@ interface Drag {
        range before the tint, which is what keeps the text AA (see tokens.css): clear (the default,
        0.41.3) over a map in the theme's brightness, frosted over anything. */
     :host(.glass) .sheet {
-      background: var(--ui-glass-clear-bg); border-color: var(--ui-glass-border);
+      background: var(--ui-glass-clear-bg); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-3);
       -webkit-backdrop-filter: var(--ui-glass-clear-filter); backdrop-filter: var(--ui-glass-clear-filter);
     }
     :host(.glass.frosted) .sheet {

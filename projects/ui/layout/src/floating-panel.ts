@@ -62,7 +62,7 @@ import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
        the sheet (see tokens.css). Clear by default (0.41.3): the map shows through; frosted holds AA
        over any backdrop. Solid when it can't be either. */
     :host(.glass) {
-      background: var(--ui-glass-clear-bg); border-color: var(--ui-glass-border);
+      background: var(--ui-glass-clear-bg); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-3);
       -webkit-backdrop-filter: var(--ui-glass-clear-filter); backdrop-filter: var(--ui-glass-clear-filter);
     }
     :host(.glass.frosted) {

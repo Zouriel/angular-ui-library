@@ -71,7 +71,7 @@ type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
       overflow: hidden;
     }
     .ui-window.no-radius { border-radius: 0; }
-    .ui-window.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .ui-window.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-3); }
     .ui-window.minimized { min-height: 0; height: auto; }
     .titlebar { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3);
       height: calc(var(--ui-size-sm) + var(--ui-space-2)); box-sizing: border-box; padding: 0 var(--ui-space-1) 0 var(--ui-space-3); flex: none;
