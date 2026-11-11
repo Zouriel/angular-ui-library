@@ -155,7 +155,7 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
       border-color: transparent;
       background: var(--fc-wash) padding-box, var(--ui-gradient-brand) border-box;
     }
-    .fc.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); }
+    .fc.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1); }
     .fc.no-radius, .fc.no-radius .badge { border-radius: 0; }
 
     .fc[data-size="lg"] { padding: var(--ui-space-8); --fc-badge: 56px; --fc-icon: 28px; }
@@ -275,6 +275,7 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
                   border-color var(--ui-motion-base) var(--ui-ease-standard);
     }
     .fc.interactive:not(.disabled):hover { transform: translateY(-2px); box-shadow: var(--ui-shadow-2); }
+    .fc.glass.interactive:not(.disabled):hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
     .fc.interactive:not(.disabled):not([data-tone="brand"]):not(.glass):not([data-surface="tinted"]):hover { border-color: var(--ui-color-border-strong); }
     .fc.interactive:not(.disabled):active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
     .fc.interactive:not(.disabled):hover .arrow { transform: translateX(3px); }

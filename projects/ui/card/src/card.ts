@@ -51,7 +51,9 @@ import { UI_CONFIG } from '@zouriel/ui';
       background: var(--ui-glass-bg);
       backdrop-filter: blur(var(--ui-glass-blur));
       border-color: var(--ui-glass-border);
+      box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
     }
+    .ui-card.glass.interactive:hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
     .hd, .bd, .ft { padding: var(--ui-space-3) var(--ui-space-4); }
     .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-space-2) var(--ui-space-3); }
     .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-space-6) var(--ui-space-8); }
