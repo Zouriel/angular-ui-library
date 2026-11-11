@@ -67,6 +67,7 @@
               "projects/ui/styles/theme-animations.css",
               "projects/ui/styles/theme-dark-orange.css",
               "projects/ui/styles/theme-maldives.css",
+              "projects/ui/styles/theme-liquid.css",
               "projects/ui/styles/fx.css",
               "projects/showcase/src/styles.css"
             ]

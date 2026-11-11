@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { UiText } from '@zouriel/ui/text';
-import { UiThemeService } from '@zouriel/ui/theme';
+import { UI_LEGACY_THEMES, UiThemeService } from '@zouriel/ui/theme';
 import { UiButton, UiIconButton, UiToggleButton } from '@zouriel/ui/button';
 import { UiSideNav, type UiSideNavGroup } from '@zouriel/ui/navigation';
 import { UiSelect } from '@zouriel/ui/form';
@@ -18,7 +18,7 @@ import { UiSelect } from '@zouriel/ui/form';
 // (A library entry point the shell imports eagerly lands in the initial chunk with everything any page
 // uses from it, so the shell keeps its eager imports to what the first paint needs.)
 import { UiDrawer, UiToastHost, UiSnackbarHost } from '@zouriel/ui/dialog';
-import { UiScrollProgress, UiCursor, UiGrain, UiWaveFooter } from '@zouriel/ui/fx';
+import { UiScrollProgress, UiCursor, UiGrain, UiWaveFooter, UiLiquidBackdrop } from '@zouriel/ui/fx';
 import { UiCommandPalette } from '@zouriel/ui/command-palette';
 import type { UiCommand } from '@zouriel/ui/command-palette';
 import { UiKbd } from '@zouriel/ui/link';
@@ -26,16 +26,30 @@ import { NAV } from './app.routes';
 import { ShowcaseDensity } from './docs/density';
 import { ShowcaseLanguageService } from './docs/language';
 
+/** Display names of the legacy themes in the picker. */
+const LEGACY_LABELS: Record<(typeof UI_LEGACY_THEMES)[number], string> = {
+  lightOrange: 'Light Orange',
+  lightPink: 'Light Pink',
+  darkPink: 'Dark Pink',
+  goldBlack: 'Gold Black',
+  goldRed: 'Gold Red',
+  lightTeal: 'Light Teal',
+  darkTeal: 'Dark Teal',
+  lightPurple: 'Light Purple',
+  darkPurple: 'Dark Purple',
+  lightPurpleGold: 'Light Purple Gold',
+};
+
 @Component({
   selector: 'app-root',
   imports: [
     HugeiconsIconComponent, FormsModule, RouterLink, RouterOutlet, UiText, UiButton, UiIconButton, UiToggleButton, UiSideNav, UiSelect, UiDrawer,
-    UiScrollProgress, UiCursor, UiGrain, UiWaveFooter, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
+    UiScrollProgress, UiCursor, UiGrain, UiWaveFooter, UiLiquidBackdrop, UiCommandPalette, UiToastHost, UiSnackbarHost, UiKbd,
   ],
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
     <a class="skip" href="#main" (click)="skipToMain($event)">Skip to content</a>
-    <div class="shell">
+    <div class="shell" [class.liquid]="liquidTheme()">
       <aside class="sidebar" aria-label="Documentation">
         <a class="brand" routerLink="/">
           <img class="logo" src="favicon.svg" alt="" width="24" height="24" /><ui-text variant="label">UI Library</ui-text>
@@ -97,6 +111,7 @@ import { ShowcaseLanguageService } from './docs/language';
       <ui-scroll-progress />
       @if (fxTheme()) { <ui-grain /> <ui-cursor /> }
       @if (seaTheme()) { <ui-wave-footer class="page-waves" [layers]="3" [height]="96" [opacity]="0.35" /> }
+      @if (liquidTheme()) { <ui-liquid-backdrop class="page-liquid" fixed /> }
       <ui-toast-host position="bottom-end" />
       <ui-snackbar-host />
     }
@@ -106,6 +121,10 @@ import { ShowcaseLanguageService } from './docs/language';
     .content:focus { outline: none; }
     /* Fixed along the window's bottom edge, behind the page (the canvas background still shows under it). */
     .page-waves { position: fixed; z-index: -1; }
+    /* The liquid themes' backdrop fills the window behind everything; the sidebar turns to glass over it. */
+    .page-liquid { z-index: -1; }
+    .shell.liquid .sidebar { background: var(--ui-glass-bg); -webkit-backdrop-filter: blur(var(--ui-glass-blur)); backdrop-filter: blur(var(--ui-glass-blur));
+      border-inline-end-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight); }
     .hint { margin-inline-start: var(--ui-space-1); }
     .shell { display: flex; min-height: 100vh; }
     .sidebar { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 264px; flex: none; box-sizing: border-box;
@@ -186,24 +205,27 @@ export class App {
   protected readonly fxTheme = computed(() => this.theme.theme() === 'darkOrange');
   /** The maldives themes' fx layer (day and night): the tide along the bottom of the window. */
   protected readonly seaTheme = computed(() => this.theme.theme() === 'maldives' || this.theme.theme() === 'maldives-dark');
+  /** The liquid themes (theme-liquid.css): the flowing backdrop behind the whole window. */
+  protected readonly liquidTheme = computed(() => /^(rugged|glacier|oxblood|graphite)(-dark)?$/.test(this.theme.theme()));
 
   /** Theme roster for the top-bar picker (value = data-theme key). */
-  protected readonly THEMES = [
+  protected readonly THEMES: { value: string; label: string; disabled?: boolean }[] = [
     { value: 'dark', label: 'Winter Dark' },
     { value: 'light', label: 'Winter Light' },
     { value: 'darkOrange', label: 'Dark Orange' },
-    { value: 'lightOrange', label: 'Light Orange' },
-    { value: 'lightPink', label: 'Light Pink' },
-    { value: 'darkPink', label: 'Dark Pink' },
-    { value: 'goldBlack', label: 'Gold Black' },
-    { value: 'goldRed', label: 'Gold Red' },
-    { value: 'lightTeal', label: 'Light Teal' },
-    { value: 'darkTeal', label: 'Dark Teal' },
-    { value: 'lightPurple', label: 'Light Purple' },
-    { value: 'darkPurple', label: 'Dark Purple' },
-    { value: 'lightPurpleGold', label: 'Light Purple Gold' },
     { value: 'maldives', label: 'Maldives' },
     { value: 'maldives-dark', label: 'Maldives Dark' },
+    { value: 'rugged', label: 'Rugged' },
+    { value: 'rugged-dark', label: 'Rugged Dark' },
+    { value: 'glacier', label: 'Glacier' },
+    { value: 'glacier-dark', label: 'Glacier Dark' },
+    { value: 'oxblood', label: 'Oxblood' },
+    { value: 'oxblood-dark', label: 'Oxblood Dark' },
+    { value: 'graphite', label: 'Graphite' },
+    { value: 'graphite-dark', label: 'Graphite Dark' },
+    // Legacy themes last, behind a divider (ui-select has no option groups): still supported, not for new work.
+    { value: '', label: '── Legacy ──', disabled: true },
+    ...UI_LEGACY_THEMES.map((t) => ({ value: t, label: `${LEGACY_LABELS[t]} (legacy)` })),
   ];
 
   /**
