@@ -6,9 +6,10 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  *
  * Current themes (use these for new work):
  *
- * - `dark` (default) and `light` are the Winter colour system (defined in
+ * - `dark` (default) and `light` are the Navy colour system (defined in
  *   `@zouriel/ui/styles/tokens.css`), also reachable by their explicit names
- *   `winterDark` and `winterLight`. See `@zouriel/ui/styles/COLOR-SYSTEM.md`.
+ *   `navy-dark` and `navy`: Midnight Navy, Powder Blue and Sunflower. See
+ *   `@zouriel/ui/styles/COLOR-SYSTEM.md`.
  * - `darkOrange` is the cinematic ink/ember skin (grain, FX cursor, web fonts,
  *   glow) and requires `@zouriel/ui/styles/theme-dark-orange.css`. It was formerly
  *   named `dramatic`.
@@ -24,13 +25,15 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  *   `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa,
  *   Raspberry) and `violet` / `violet-dark` (Mist, Ink, Electric Violet).
  *
- * Legacy themes (still supported and unchanged, but new work should use a current theme; see
+ * Legacy themes (still supported, but new work should use a current theme; see
  * {@link UI_LEGACY_THEMES} and {@link isLegacyTheme}):
  *
+ * - `winterDark` and `winterLight`: the retired Winter palette's names, kept as aliases that now
+ *   resolve to the Navy tokens (the same as `navy-dark` and `navy`), so apps that set them keep working.
  * - The accent palettes `lightOrange`, `lightPink`, `darkPink`, `goldBlack`, `goldRed`,
  *   `lightTeal`, `darkTeal`, `lightPurple`, `darkPurple` and `lightPurpleGold`: colours-only skins
  *   in `@zouriel/ui/styles/theme-palettes.css`, with optional signature motion in
- *   `@zouriel/ui/styles/theme-animations.css`.
+ *   `@zouriel/ui/styles/theme-animations.css`. They look exactly as before.
  *
  * Consumers may register their own theme names too — any string is accepted by
  * {@link UiThemeService.set}.
@@ -38,8 +41,8 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 export type UiTheme =
   | 'dark'
   | 'light'
-  | 'winterDark'
-  | 'winterLight'
+  | 'navy'
+  | 'navy-dark'
   | 'darkOrange'
   | 'maldives'
   | 'maldives-dark'
@@ -55,6 +58,10 @@ export type UiTheme =
   | 'cocoa-dark'
   | 'violet'
   | 'violet-dark'
+  /** @deprecated The retired Winter name: an alias of `navy-dark` (use `dark` or `navy-dark`). */
+  | 'winterDark'
+  /** @deprecated The retired Winter name: an alias of `navy` (use `light` or `navy`). */
+  | 'winterLight'
   /** @deprecated Legacy theme: still supported, but new work should use a current theme. */
   | 'lightOrange'
   /** @deprecated Legacy theme: still supported, but new work should use a current theme. */
@@ -81,8 +88,8 @@ export type UiTheme =
 export const UI_CURRENT_THEMES = [
   'dark',
   'light',
-  'winterDark',
-  'winterLight',
+  'navy',
+  'navy-dark',
   'darkOrange',
   'maldives',
   'maldives-dark',
@@ -101,10 +108,13 @@ export const UI_CURRENT_THEMES = [
 ] as const;
 
 /**
- * The legacy built-in themes: still supported and unchanged (same names, tokens and stylesheets), but
- * new work should use one of {@link UI_CURRENT_THEMES}. Pickers list them in a separate "Legacy" group.
+ * The legacy built-in themes: still supported (the ten palette skins unchanged; the two Winter names
+ * as aliases of the Navy themes), but new work should use one of {@link UI_CURRENT_THEMES}. Pickers
+ * list them in a separate "Legacy" group.
  */
 export const UI_LEGACY_THEMES = [
+  'winterDark',
+  'winterLight',
   'lightOrange',
   'lightPink',
   'darkPink',
@@ -128,7 +138,7 @@ export function isLegacyTheme(name: string): name is UiLegacyTheme {
 }
 
 /** Built-in themes that come as a day/night pair named `x` and `x-dark`. */
-const UI_DAY_NIGHT_PAIRS: readonly string[] = ['maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
+const UI_DAY_NIGHT_PAIRS: readonly string[] = ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
 
 /**
  * Global theme controller. Drives `data-theme` on the document root so the
@@ -139,7 +149,7 @@ const UI_DAY_NIGHT_PAIRS: readonly string[] = ['maldives', 'rugged', 'glacier', 
 export class UiThemeService {
   private readonly doc = inject(DOCUMENT);
 
-  /** Current global theme. Defaults to dark (Winter Dark, the library's base palette). */
+  /** Current global theme. Defaults to dark (Navy Dark, the library's base palette). */
   readonly theme = signal<UiTheme>('dark');
 
   constructor() {
@@ -157,9 +167,9 @@ export class UiThemeService {
   }
 
   /**
-   * Flips day and night: a built-in `x` / `x-dark` pair (`maldives`, `rugged`, `glacier`, `oxblood`,
-   * `graphite`, `cocoa`, `violet`) to its other half, and anything else between the light and dark Winter themes,
-   * keeping whichever naming the app uses.
+   * Flips day and night: `dark` <-> `light`, a built-in `x` / `x-dark` pair (`navy`, `maldives`,
+   * `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa`, `violet`) to its other half, and the
+   * deprecated `winterDark` <-> `winterLight`; from any other theme it goes to `dark`.
    */
   toggle(): void {
     this.theme.update((t) => {

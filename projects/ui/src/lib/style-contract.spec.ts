@@ -975,3 +975,93 @@ describe('liquid themes', () => {
     expect(missing).toEqual([]);
   });
 });
+
+/* ── Navy, the default colour system (tokens.css), and its retired Winter names ──────────────────── */
+
+describe('navy', () => {
+  const text = withoutComments(readFileSync(join(root, 'styles/tokens.css'), 'utf8'));
+  const blocks: { sels: string[]; decls: Record<string, string> }[] = [...text.matchAll(/([^{}]+)\{([^}]*)\}/g)].map((m) => ({
+    sels: m[1].split(',').map((x) => x.trim()),
+    decls: Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+|color-scheme):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()])),
+  }));
+  /** Every declaration that reaches an element carrying only data-theme="name" (no :root). */
+  const tokensFor = (name: string) => {
+    const out: Record<string, string> = {};
+    for (const b of blocks) if (b.sels.includes(`[data-theme="${name}"]`) || b.sels.includes('[data-theme]')) Object.assign(out, b.decls);
+    return out;
+  };
+  const primitives = Object.assign({}, ...blocks.filter((b) => b.sels.length === 1 && b.sels[0] === ':root').map((b) => b.decls));
+
+  it('resolves winterDark and winterLight to exactly the tokens of navy-dark and navy, as dark and light do', () => {
+    for (const [alias, navy, short] of [['winterDark', 'navy-dark', 'dark'], ['winterLight', 'navy', 'light']]) {
+      const n = tokensFor(navy);
+      expect(Object.keys(n).length, navy).toBeGreaterThan(60);
+      expect(tokensFor(alias), alias).toEqual(n);
+      expect(tokensFor(short), short).toEqual(n);
+      // Every block that names one of the three names names all three.
+      for (const b of blocks) {
+        const has = [alias, navy, short].map((t) => b.sels.some((s) => s.startsWith(`[data-theme="${t}"]`)));
+        if (has.some(Boolean)) expect(has, b.sels.join(', ')).toEqual([true, true, true]);
+      }
+    }
+  });
+
+  it('builds on the three brand colours, with no Winter primitive left', () => {
+    expect(primitives['--ui-navy-midnight']).toBe('#0f1433');
+    expect(primitives['--ui-navy-powder']).toBe('#c9d6ff');
+    expect(primitives['--ui-navy-sunflower']).toBe('#ffc93c');
+    expect(text).not.toMatch(/--ui-winter-/);
+    const resolve = (vars: Record<string, string>, k: string, depth = 0): string => {
+      const v = vars[k] ?? primitives[k] ?? '';
+      const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+      return ref && depth < 5 ? resolve(vars, ref[1], depth + 1) : v;
+    };
+    const dark = tokensFor('navy-dark');
+    const light = tokensFor('navy');
+    // Dark: Midnight canvas, Powder ink and secondary, Sunflower primary. Light: Midnight ink, and a
+    // Sunflower deepened to AA as the primary (Sunflower itself stays the accent fill).
+    expect(resolve(dark, '--ui-color-bg')).toBe('#0f1433');
+    expect(resolve(dark, '--ui-color-text')).toBe('#c9d6ff');
+    expect(resolve(dark, '--ui-color-secondary')).toBe('#c9d6ff');
+    expect(resolve(dark, '--ui-color-primary')).toBe('#ffc93c');
+    expect(resolve(light, '--ui-color-bg')).toBe('#eef2ff');
+    expect(resolve(light, '--ui-color-text')).toBe('#0f1433');
+    expect(resolve(light, '--ui-color-accent')).toBe('#ffc93c');
+    const lightPrimary = parseColor(resolve(light, '--ui-color-primary'))!;
+    expect(contrast(lightPrimary, parseColor('#eef2ff')!)).toBeGreaterThanOrEqual(4.5);
+    // Powder Blue is never a large surface on dark.
+    for (const k of ['--ui-color-bg', '--ui-color-surface', '--ui-color-surface-raised', '--ui-color-surface-subtle', '--ui-color-surface-hover']) {
+      expect(resolve(dark, k), k).not.toBe('#c9d6ff');
+    }
+  });
+
+  it('keeps page text and glass readable on the liquid backdrop in navy and navy-dark', () => {
+    const fails: string[] = [];
+    for (const name of ['navy', 'navy-dark']) {
+      const vars = tokensFor(name);
+      const get = (k: string, depth = 0): string => {
+        const v = vars[k] ?? primitives[k] ?? '';
+        const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+        return ref && depth < 5 ? get(ref[1], depth + 1) : v;
+      };
+      const c = (k: string) => parseColor(get(k))!;
+      const main = c('--ui-liquid-main');
+      const mix = (a: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + main[i] * (1 - k)).concat(1) as Rgba;
+      const pools: [string, Rgba][] = [
+        ['main', main],
+        ['second', mix(c('--ui-liquid-second'), parseFloat(get('--ui-liquid-second-strength')) / 100)],
+        ['accent', mix(c('--ui-liquid-accent'), parseFloat(get('--ui-liquid-accent-strength')) / 100)],
+      ];
+      for (const [pool, ground] of pools) {
+        for (const fg of ['text', 'text-muted', 'primary']) {
+          const r = contrast(c(`--ui-color-${fg}`), ground);
+          if (r < 4.5) fails.push(`${name}: ${fg} on the ${pool} pool is ${r.toFixed(2)}:1`);
+        }
+        const panel = over(c('--ui-glass-bg'), ground);
+        const r = contrast(c('--ui-color-text'), panel);
+        if (r < 7) fails.push(`${name}: text on glass over the ${pool} pool is ${r.toFixed(2)}:1`);
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+});

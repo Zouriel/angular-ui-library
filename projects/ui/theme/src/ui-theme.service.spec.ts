@@ -21,7 +21,7 @@ describe('UiThemeService', () => {
     service = TestBed.inject(UiThemeService);
   });
 
-  it('defaults to Winter dark and writes data-theme on <html>', () => {
+  it('defaults to dark (Navy Dark) and writes data-theme on <html>', () => {
     expect(service.theme()).toBe('dark');
     TestBed.tick();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
@@ -30,7 +30,7 @@ describe('UiThemeService', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('glacier');
   });
 
-  for (const day of ['maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
+  for (const day of ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
     it(`toggles ${day} <-> ${day}-dark`, () => {
       service.set(day);
       service.toggle();
@@ -40,7 +40,7 @@ describe('UiThemeService', () => {
     });
   }
 
-  it('keeps the Winter toggle in either naming', () => {
+  it('flips dark and light, and the deprecated Winter names', () => {
     service.set('dark');
     service.toggle();
     expect(service.theme()).toBe('light');
@@ -53,7 +53,7 @@ describe('UiThemeService', () => {
     expect(service.theme()).toBe('winterLight');
   });
 
-  it('goes to Winter dark from a theme with no pair (a legacy skin, an app theme, an unknown -dark name)', () => {
+  it('goes to dark from a theme with no pair (a legacy skin, an app theme, an unknown -dark name)', () => {
     for (const t of ['lightTeal', 'darkOrange', 'my-brand', 'brand-dark']) {
       service.set(t);
       service.toggle();
@@ -68,13 +68,14 @@ describe('theme roster', () => {
     const legacy = [...UI_LEGACY_THEMES];
     expect(current.filter((t) => (legacy as string[]).includes(t))).toEqual([]);
     expect([...current, ...legacy].sort()).toEqual(stylesheetThemes());
-    expect(current.length + legacy.length).toBe(29);
+    expect(current.length + legacy.length).toBe(31);
   });
 
-  it('names exactly the old palette skins as legacy', () => {
+  it('names exactly the old palette skins and the Winter aliases as legacy', () => {
     expect([...UI_LEGACY_THEMES].sort()).toEqual(
-      ['darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal'],
+      ['darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'winterDark', 'winterLight'].sort(),
     );
+    expect([...UI_CURRENT_THEMES].slice(0, 4)).toEqual(['dark', 'light', 'navy', 'navy-dark']);
     for (const t of UI_LEGACY_THEMES) expect(isLegacyTheme(t)).toBe(true);
     for (const t of UI_CURRENT_THEMES) expect(isLegacyTheme(t)).toBe(false);
     expect(isLegacyTheme('my-brand')).toBe(false);

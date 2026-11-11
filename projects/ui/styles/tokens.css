@@ -7,78 +7,69 @@
  *   @import '@zouriel/ui/styles/tokens.css';
  *
  * Colour architecture (see COLOR-SYSTEM.md):
- *   1. Primitives   --ui-winter-*          raw palette steps. Never read by components.
+ *   1. Primitives   --ui-navy-*            raw palette steps. Never read by components.
  *   2. Semantic     --ui-color-*           roles (background, text, border, brand, accent, status).
  *   3. Component    --ui-switch-*, --ui-control-border, --ui-media-* …  per-component hooks that
  *                                          default to a semantic token.
  *
- * The default `dark` / `light` themes are the Winter pair (also reachable as `winterDark` /
- * `winterLight`). Named skins in theme-palettes.css override only the core --ui-color-* tokens;
- * every extended token below has a formula default so those skins keep working unchanged.
+ * The default `dark` / `light` themes are the Navy pair (also reachable as `navy-dark` / `navy`,
+ * and through the deprecated aliases `winterDark` / `winterLight`). Named skins in theme-palettes.css
+ * override only the core --ui-color-* tokens; every extended token below has a formula default so
+ * those skins keep working unchanged.
  */
 
 :root {
-  /* ── 1. Primitive palette (Winter) ─────────────────────────────────── */
-  /* Reference colours */
-  --ui-winter-black-pine: #152026;
-  --ui-winter-deep-ocean: #1b3d59;
-  --ui-winter-windstorm: #6a97c0;
-  --ui-winter-melting-ice: #b3d5f1;
-  --ui-winter-avalanche: #d4eef8;
-  --ui-winter-sun-beam: #f3eed8;
+  /* ── 1. Primitive palette (Navy) ───────────────────────────────────── */
+  /* Reference colours: the three brand colours and the light canvas. */
+  --ui-navy-midnight: #0f1433; /* Midnight Navy: the dark canvas and the light ink */
+  --ui-navy-powder: #c9d6ff; /* Powder Blue: the dark ink and secondary tone */
+  --ui-navy-sunflower: #ffc93c; /* Sunflower: the accent */
+  --ui-navy-mist: #eef2ff; /* the light canvas */
 
-  /* Pine: the blue-blacks of the night surfaces */
-  --ui-winter-pine-950: #152026; /* Black Pine */
-  --ui-winter-pine-900: #19262e;
-  --ui-winter-pine-850: #1c2c37;
+  /* Navy: Midnight stepped up for dark surfaces, through the mid blues, to Powder and Mist. */
+  --ui-navy-1000: #0a0e26;
+  --ui-navy-950: #0f1433; /* Midnight Navy */
+  --ui-navy-900: #151b3f;
+  --ui-navy-850: #1b224b;
+  --ui-navy-800: #232b59;
+  --ui-navy-750: #2c3568;
+  --ui-navy-700: #38427a;
+  --ui-navy-600: #2d3a7a; /* deep blue for text and fills on light */
+  --ui-navy-500: #6673b0;
+  --ui-navy-450: #46507e; /* slate navy: muted text on light */
+  --ui-navy-400: #9daadc; /* muted text on dark */
+  --ui-navy-300: #aebbea;
+  --ui-navy-250: #bfcbf5; /* secondary text on dark: 4.5:1 even on a selected row's Sunflower tint */
+  --ui-navy-200: #c9d6ff; /* Powder Blue */
+  --ui-navy-150: #b7c7ff;
+  --ui-navy-100: #dce4ff;
+  --ui-navy-75: #e4eaff;
+  --ui-navy-50: #eef2ff; /* Mist */
+  --ui-navy-25: #f7f9ff;
+  --ui-navy-white: #ffffff;
 
-  /* Night: true black and the faint blue-blacks laid on it, for dark mode's ground and surfaces */
-  --ui-winter-night-1000: #000000;
-  --ui-winter-night-950: #06080a;
-  --ui-winter-night-900: #0b0f12;
-  --ui-winter-night-850: #11171c;
-  --ui-winter-night-800: #1a232a;
-  --ui-winter-night-700: #26323b;
+  /* Sunflower: the warm accent. 400 is the brand colour; 700 and below are deepened for text on light. */
+  --ui-navy-sun-50: #fff4d6;
+  --ui-navy-sun-200: #ffe6a3;
+  --ui-navy-sun-300: #ffd873;
+  --ui-navy-sun-400: #ffc93c; /* Sunflower */
+  --ui-navy-sun-500: #f2b91e;
+  --ui-navy-sun-700: #7a5800; /* the light theme's primary: Sunflower deepened to 5.8:1 on Mist */
+  --ui-navy-sun-800: #6a4c00;
+  --ui-navy-sun-900: #5a4100;
+  --ui-navy-sun-950: #3a3014;
 
-  /* Blue: ocean → ice → snow */
-  --ui-winter-blue-900: #1b3d59; /* Deep Ocean */
-  --ui-winter-blue-850: #20364a;
-  --ui-winter-blue-800: #264460;
-  --ui-winter-blue-700: #3a6488; /* Windstorm, deepened for text on light */
-  --ui-winter-blue-500: #6a97c0; /* Windstorm */
-  --ui-winter-blue-400: #8bb5db; /* Windstorm, brightened for dark */
-  --ui-winter-blue-300: #b3d5f1; /* Melting Ice */
-  --ui-winter-blue-100: #d4eef8; /* Avalanche */
-  --ui-winter-blue-75: #e3f0f7;
-  --ui-winter-blue-50: #eef5f9;
-  --ui-winter-blue-25: #f7fbfd;
-  --ui-winter-white: #ffffff;
+  /* Status: 700 for light, 300 for dark */
+  --ui-navy-green-700: #23673f;
+  --ui-navy-green-300: #8fd3ae;
+  --ui-navy-orange-700: #a34700;
+  --ui-navy-orange-300: #ffa463;
+  --ui-navy-red-800: #922831;
+  --ui-navy-red-700: #b0303a;
+  --ui-navy-red-300: #ff9c9c;
+  --ui-navy-red-200: #ffb8b8;
 
-  /* Slate: blue-grey neutrals for borders, muted text, tracks */
-  --ui-winter-slate-900: #233441;
-  --ui-winter-slate-800: #2e4658;
-  --ui-winter-slate-700: #465d6f;
-  --ui-winter-slate-600: #587488;
-  --ui-winter-slate-500: #6c8497;
-  --ui-winter-slate-400: #93a6b5;
-  --ui-winter-slate-300: #c3d2dd;
-  --ui-winter-slate-200: #dae5ec;
-
-  /* Sun Beam: the one warm note */
-  --ui-winter-sun-50: #f9f7ec;
-  --ui-winter-sun-100: #f3eed8; /* Sun Beam */
-  --ui-winter-sun-700: #76591a;
-  --ui-winter-sun-900: #34393a;
-
-  /* Status: muted, cool-leaning; 700 for light, 300 for dark */
-  --ui-winter-green-700: #2e6b50;
-  --ui-winter-green-300: #8ccba9;
-  --ui-winter-amber-700: #85570f;
-  --ui-winter-amber-300: #e6c27d;
-  --ui-winter-red-700: #a83a3f;
-  --ui-winter-red-300: #f0a3a3;
-
-  /* Default elevation + glass. Named dark skins inherit these; the Winter themes set their own. */
+  /* Default elevation + glass. Named dark skins inherit these; the Navy themes set their own. */
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
   --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.4);
   --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.5);
@@ -190,7 +181,7 @@
    primary-hover, primary-contrast, secondary, success, warning, danger). The extended roles below
    are computed from it, so a named skin that predates them renders exactly as it did. Declared on
    every [data-theme] element (not just :root) so a scoped <ui-theme-provider> island recomputes
-   them from its own palette instead of inheriting the page's. The Winter themes override most of
+   them from its own palette instead of inheriting the page's. The Navy themes override most of
    these with tuned, contrast-checked values. */
 :root,
 [data-theme] {
@@ -324,29 +315,30 @@
   --ui-glass-bg: var(--ui-glass-panel-bg);
 }
 
-/* ── Winter Dark (default `dark`, alias `winterDark`) ──────────────────────
-   A pine forest beside a dark ocean under moonlight. Core tokens also live on :root so a page
-   with no data-theme at all still renders Winter Dark. */
+/* ── Navy Dark (default `dark`, also `navy-dark`; `winterDark` is a deprecated alias) ──────────
+   Midnight Navy stepped up for the surfaces, Powder Blue as the ink and the secondary tone, Sunflower
+   as the primary. Core tokens also live on :root so a page with no data-theme at all still renders
+   Navy Dark. */
 :root,
 [data-theme="dark"],
+[data-theme="navy-dark"],
 [data-theme="winterDark"] {
   color-scheme: dark;
 
-  --ui-color-bg: var(--ui-winter-night-1000);
-  --ui-color-surface: var(--ui-winter-night-900);
-  --ui-color-surface-raised: var(--ui-winter-night-850);
-  /* A soft, slightly grey blue rather than Avalanche itself: on a black ground the brighter blue
-     glares. 12.5:1 on the ground, 10.7:1 on raised surfaces. */
-  --ui-color-text: #b3cbdc;
-  --ui-color-text-muted: #8aa4b8;
-  --ui-color-border: var(--ui-winter-night-700);
-  --ui-color-primary: var(--ui-winter-blue-400);
-  --ui-color-primary-hover: var(--ui-winter-blue-300);
-  --ui-color-primary-contrast: var(--ui-winter-pine-950);
-  --ui-color-secondary: var(--ui-winter-blue-800);
-  --ui-color-success: var(--ui-winter-green-300);
-  --ui-color-warning: var(--ui-winter-amber-300);
-  --ui-color-danger: var(--ui-winter-red-300);
+  --ui-color-bg: var(--ui-navy-950);
+  --ui-color-surface: var(--ui-navy-900);
+  --ui-color-surface-raised: var(--ui-navy-850);
+  /* Powder Blue: 12.5:1 on the canvas, 10.4:1 on raised surfaces. */
+  --ui-color-text: var(--ui-navy-200);
+  --ui-color-text-muted: var(--ui-navy-400);
+  --ui-color-border: var(--ui-navy-700);
+  --ui-color-primary: var(--ui-navy-sun-400);
+  --ui-color-primary-hover: var(--ui-navy-sun-300);
+  --ui-color-primary-contrast: var(--ui-navy-950);
+  --ui-color-secondary: var(--ui-navy-200);
+  --ui-color-success: var(--ui-navy-green-300);
+  --ui-color-warning: var(--ui-navy-orange-300);
+  --ui-color-danger: var(--ui-navy-red-300);
   /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.43;
@@ -357,71 +349,83 @@
 
 :root:not([data-theme]),
 [data-theme="dark"],
+[data-theme="navy-dark"],
 [data-theme="winterDark"] {
-  --ui-color-surface-subtle: var(--ui-winter-night-950);
-  --ui-color-surface-hover: var(--ui-winter-night-800);
-  --ui-color-elevated-hover: var(--ui-winter-night-800);
-  --ui-color-text-secondary: #a6c0d3;
-  --ui-color-text-disabled: var(--ui-winter-slate-600);
-  --ui-color-text-inverse: var(--ui-winter-pine-950);
-  --ui-color-border-subtle: var(--ui-winter-night-800);
-  --ui-color-border-strong: var(--ui-winter-slate-500);
-  --ui-color-border-focus: var(--ui-winter-blue-400);
-  --ui-color-primary-active: var(--ui-winter-blue-500);
-  --ui-color-secondary-hover: var(--ui-winter-blue-700);
-  --ui-color-secondary-contrast: var(--ui-winter-blue-100);
-  --ui-color-accent: var(--ui-winter-sun-100);
-  --ui-color-accent-subtle: var(--ui-winter-sun-900);
-  --ui-color-accent-strong: var(--ui-winter-sun-100);
-  --ui-color-accent-contrast: var(--ui-winter-pine-950);
-  --ui-color-info: var(--ui-winter-blue-300);
-  --ui-color-info-contrast: var(--ui-winter-pine-950);
-  --ui-color-success-contrast: var(--ui-winter-pine-950);
-  --ui-color-warning-contrast: var(--ui-winter-pine-950);
-  --ui-color-danger-contrast: var(--ui-winter-pine-950);
-  --ui-color-danger-hover: #f5bcbc;
-  --ui-color-selected: rgba(139, 181, 219, 0.14);
-  --ui-color-track: var(--ui-winter-slate-800);
-  --ui-color-overlay: rgba(0, 0, 0, 0.72);
+  --ui-color-surface-subtle: var(--ui-navy-1000);
+  --ui-color-surface-hover: var(--ui-navy-800);
+  --ui-color-elevated-hover: var(--ui-navy-800);
+  --ui-color-text-secondary: var(--ui-navy-250);
+  --ui-color-text-disabled: var(--ui-navy-500);
+  --ui-color-text-inverse: var(--ui-navy-950);
+  --ui-color-border-subtle: var(--ui-navy-800);
+  --ui-color-border-strong: var(--ui-navy-500);
+  --ui-color-border-focus: var(--ui-navy-sun-400);
+  --ui-color-primary-active: var(--ui-navy-sun-500);
+  --ui-color-secondary-hover: var(--ui-navy-100);
+  --ui-color-secondary-contrast: var(--ui-navy-950);
+  --ui-color-accent: var(--ui-navy-sun-400);
+  --ui-color-accent-subtle: var(--ui-navy-sun-950);
+  --ui-color-accent-strong: var(--ui-navy-sun-300);
+  --ui-color-accent-contrast: var(--ui-navy-950);
+  --ui-color-info: var(--ui-navy-200);
+  --ui-color-info-contrast: var(--ui-navy-950);
+  --ui-color-success-contrast: var(--ui-navy-950);
+  --ui-color-warning-contrast: var(--ui-navy-950);
+  --ui-color-danger-contrast: var(--ui-navy-950);
+  --ui-color-danger-hover: var(--ui-navy-red-200);
+  --ui-color-selected: rgba(201, 214, 255, 0.14);
+  --ui-color-track: var(--ui-navy-750);
+  --ui-color-overlay: rgba(5, 7, 20, 0.72);
 
-  --ui-switch-track: var(--ui-winter-slate-500);
-  --ui-switch-thumb: var(--ui-winter-blue-100);
-  --ui-switch-thumb-checked: var(--ui-winter-pine-950);
-  --ui-slider-thumb: var(--ui-winter-blue-100);
-  --ui-slider-thumb-border: var(--ui-winter-pine-950);
+  --ui-switch-track: var(--ui-navy-500);
+  --ui-switch-thumb: var(--ui-navy-200);
+  --ui-switch-thumb-checked: var(--ui-navy-950);
+  --ui-slider-thumb: var(--ui-navy-200);
+  --ui-slider-thumb-border: var(--ui-navy-950);
   /* One step above the raised surface, so a skeleton inside a card is still visible at rest. */
-  --ui-skeleton-base: var(--ui-winter-night-800);
-  --ui-skeleton-highlight: var(--ui-winter-night-700);
-  /* Winter's muted text is blue, which reads as the primary fill; a true grey, 3.8:1 on the track. */
-  --ui-progress-neutral: #9ba1a6;
-  --ui-scroll-progress-track: rgba(179, 213, 241, 0.06);
-  --ui-media-bg: var(--ui-winter-night-1000);
+  --ui-skeleton-base: var(--ui-navy-800);
+  --ui-skeleton-highlight: var(--ui-navy-750);
+  /* Navy's muted text is blue, which reads as the secondary fill; a true grey for the neutral tone. */
+  --ui-progress-neutral: #a1a6b4;
+  --ui-scroll-progress-track: rgba(201, 214, 255, 0.06);
+  --ui-media-bg: #000000;
   --ui-media-scrim: #000000;
-  --ui-media-on-scrim: var(--ui-winter-blue-25);
-  --ui-media-danger: var(--ui-winter-red-300);
-  --ui-cursor-color: var(--ui-winter-blue-100);
+  --ui-media-on-scrim: var(--ui-navy-25);
+  --ui-media-danger: var(--ui-navy-red-300);
+  --ui-cursor-color: var(--ui-navy-200);
   --ui-section-label-bracket: var(--ui-color-accent-strong);
 
-  --ui-gradient-brand: linear-gradient(90deg, #8bb5db 0%, #b3d5f1 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #000000 0%, #1b3d59 100%);
-  --ui-gradient-frost: linear-gradient(135deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #0b0f12 0%, #11171c 100%);
-  --ui-gradient-highlight: linear-gradient(180deg, rgba(179, 213, 241, 0.14) 0%, rgba(179, 213, 241, 0) 100%);
-  --ui-glow-amber: 0 0 28px rgba(139, 181, 219, 0.26);
+  --ui-gradient-brand: linear-gradient(90deg, #ffc93c 0%, #ffd873 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #0f1433 0%, #2c3568 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #2c3568 0%, #6673b0 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #151b3f 0%, #1b224b 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(201, 214, 255, 0.14) 0%, rgba(201, 214, 255, 0) 100%);
+  --ui-glow-amber: 0 0 28px rgba(255, 201, 60, 0.28);
 
-  --ui-glass-bg: rgba(179, 213, 241, 0.06);
-  --ui-glass-border: rgba(179, 213, 241, 0.13);
+  --ui-glass-bg: rgba(201, 214, 255, 0.06);
+  --ui-glass-border: rgba(201, 214, 255, 0.13);
   --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.6);
   --ui-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.7);
   --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.8);
 
   /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
-  --ui-map-route-muted: #92aabd;
+  --ui-map-route-muted: var(--ui-navy-300);
+
+  /* ui-liquid-backdrop (@zouriel/ui/fx) in Navy: faint pools of Powder Blue and Sunflower on Midnight. */
+  --ui-liquid-main: #0f1433;
+  --ui-liquid-second: #c9d6ff;
+  --ui-liquid-accent: #ffc93c;
+  --ui-liquid-ink: #c9d6ff;
+  --ui-liquid-second-strength: 10%;
+  --ui-liquid-accent-strength: 10%;
 }
 
-/* ── Winter Light (default `light`, alias `winterLight`) ───────────────────
-   Snow-covered Nordic architecture in winter daylight. */
+/* ── Navy Light (default `light`, also `navy`; `winterLight` is a deprecated alias) ─────────────
+   A Mist canvas with white cards, Midnight Navy ink, Powder Blue for secondary fills and borders, and
+   Sunflower deepened to a dark gold for the primary (Sunflower itself is 1.4:1 on Mist; it stays for
+   the accent fill, the backdrop, the glow and highlights). */
 [data-theme="light"],
+[data-theme="navy"],
 [data-theme="winterLight"] {
   color-scheme: light;
   /* Frosted glass (glassStrength="frosted"; bottom sheet, floating panel): the backdrop is held between these, so text stays AA over white or black. */
@@ -431,74 +435,82 @@
   --ui-glass-clear-floor: 0.35;
   --ui-glass-clear-ceiling: 1;
 
-  --ui-color-bg: var(--ui-winter-blue-50);
-  --ui-color-surface: var(--ui-winter-blue-25);
-  --ui-color-surface-raised: var(--ui-winter-white);
-  --ui-color-text: var(--ui-winter-pine-950);
-  --ui-color-text-muted: var(--ui-winter-slate-700);
-  --ui-color-border: var(--ui-winter-slate-300);
-  --ui-color-primary: var(--ui-winter-blue-900);
-  --ui-color-primary-hover: var(--ui-winter-blue-800);
-  --ui-color-primary-contrast: var(--ui-winter-blue-25);
-  --ui-color-secondary: var(--ui-winter-blue-700);
-  --ui-color-success: var(--ui-winter-green-700);
-  --ui-color-warning: var(--ui-winter-amber-700);
-  --ui-color-danger: var(--ui-winter-red-700);
+  --ui-color-bg: var(--ui-navy-50);
+  --ui-color-surface: var(--ui-navy-25);
+  --ui-color-surface-raised: var(--ui-navy-white);
+  --ui-color-text: var(--ui-navy-950);
+  --ui-color-text-muted: var(--ui-navy-450);
+  --ui-color-border: var(--ui-navy-200);
+  --ui-color-primary: var(--ui-navy-sun-700);
+  --ui-color-primary-hover: var(--ui-navy-sun-800);
+  --ui-color-primary-contrast: var(--ui-navy-white);
+  --ui-color-secondary: var(--ui-navy-200);
+  --ui-color-success: var(--ui-navy-green-700);
+  --ui-color-warning: var(--ui-navy-orange-700);
+  --ui-color-danger: var(--ui-navy-red-700);
 
-  --ui-color-surface-subtle: var(--ui-winter-blue-75);
-  --ui-color-surface-hover: var(--ui-winter-blue-75);
-  --ui-color-elevated-hover: var(--ui-winter-blue-75);
-  --ui-color-text-secondary: var(--ui-winter-blue-900);
-  --ui-color-text-disabled: var(--ui-winter-slate-400);
-  --ui-color-text-inverse: var(--ui-winter-blue-50);
-  --ui-color-border-subtle: var(--ui-winter-slate-200);
-  --ui-color-border-strong: var(--ui-winter-slate-500);
-  --ui-color-border-focus: var(--ui-winter-blue-700);
-  --ui-color-primary-active: var(--ui-winter-pine-950);
-  --ui-color-secondary-hover: var(--ui-winter-blue-800);
-  --ui-color-secondary-contrast: var(--ui-winter-blue-25);
-  --ui-color-accent: var(--ui-winter-sun-100);
-  --ui-color-accent-subtle: var(--ui-winter-sun-50);
-  --ui-color-accent-strong: var(--ui-winter-sun-700);
-  --ui-color-accent-contrast: var(--ui-winter-pine-950);
-  --ui-color-info: var(--ui-winter-blue-700);
-  --ui-color-info-contrast: var(--ui-winter-blue-25);
-  --ui-color-success-contrast: var(--ui-winter-blue-25);
-  --ui-color-warning-contrast: var(--ui-winter-blue-25);
-  --ui-color-danger-contrast: var(--ui-winter-blue-25);
-  --ui-color-danger-hover: #922f34;
-  --ui-color-selected: rgba(27, 61, 89, 0.12);
-  --ui-color-track: var(--ui-winter-slate-200);
-  --ui-color-overlay: rgba(21, 32, 38, 0.42);
+  --ui-color-surface-subtle: var(--ui-navy-75);
+  --ui-color-surface-hover: var(--ui-navy-75);
+  --ui-color-elevated-hover: var(--ui-navy-75);
+  --ui-color-text-secondary: var(--ui-navy-600);
+  --ui-color-text-disabled: var(--ui-navy-500);
+  --ui-color-text-inverse: var(--ui-navy-50);
+  --ui-color-border-subtle: var(--ui-navy-100);
+  --ui-color-border-strong: var(--ui-navy-500);
+  --ui-color-border-focus: var(--ui-navy-600);
+  --ui-color-primary-active: var(--ui-navy-sun-900);
+  --ui-color-secondary-hover: var(--ui-navy-150);
+  --ui-color-secondary-contrast: var(--ui-navy-950);
+  --ui-color-accent: var(--ui-navy-sun-400);
+  --ui-color-accent-subtle: var(--ui-navy-sun-50);
+  --ui-color-accent-strong: var(--ui-navy-sun-700);
+  --ui-color-accent-contrast: var(--ui-navy-950);
+  --ui-color-info: var(--ui-navy-600);
+  --ui-color-info-contrast: var(--ui-navy-white);
+  --ui-color-success-contrast: var(--ui-navy-white);
+  --ui-color-warning-contrast: var(--ui-navy-white);
+  --ui-color-danger-contrast: var(--ui-navy-white);
+  --ui-color-danger-hover: var(--ui-navy-red-800);
+  --ui-color-selected: rgba(15, 20, 51, 0.1);
+  --ui-color-track: var(--ui-navy-100);
+  --ui-color-overlay: rgba(15, 20, 51, 0.42);
 
-  --ui-switch-track: var(--ui-winter-slate-500);
-  --ui-switch-thumb: var(--ui-winter-white);
-  --ui-switch-thumb-checked: var(--ui-winter-white);
-  --ui-slider-thumb: var(--ui-winter-white);
-  /* 1.2:1 on the page and on cards, like the dark theme; blue-75 on blue-25 all but vanished. */
-  --ui-skeleton-base: var(--ui-winter-slate-200);
-  --ui-skeleton-highlight: var(--ui-winter-blue-75);
+  --ui-switch-track: var(--ui-navy-500);
+  --ui-switch-thumb: var(--ui-navy-white);
+  --ui-switch-thumb-checked: var(--ui-navy-white);
+  --ui-slider-thumb: var(--ui-navy-white);
+  /* 1.26:1 on white cards, and the shimmer a step lighter. */
+  --ui-skeleton-base: var(--ui-navy-100);
+  --ui-skeleton-highlight: var(--ui-navy-50);
   --ui-progress-neutral: #686e73; /* a true grey, 4:1 on the track */
-  --ui-scroll-progress-track: rgba(27, 61, 89, 0.06);
-  --ui-media-bg: var(--ui-winter-pine-950);
-  --ui-media-scrim: #0b1216;
-  --ui-media-on-scrim: var(--ui-winter-blue-25);
-  --ui-media-danger: var(--ui-winter-red-300);
-  --ui-cursor-color: var(--ui-winter-blue-900);
-  --ui-section-label-bracket: var(--ui-color-accent-strong);
+  --ui-scroll-progress-track: rgba(15, 20, 51, 0.06);
+  --ui-media-bg: var(--ui-navy-950);
+  --ui-media-scrim: var(--ui-navy-1000);
+  --ui-media-on-scrim: var(--ui-navy-25);
+  --ui-media-danger: var(--ui-navy-red-300);
+  --ui-cursor-color: var(--ui-navy-950);
+  --ui-section-label-bracket: var(--ui-navy-sun-400);
 
-  --ui-gradient-brand: linear-gradient(90deg, #1b3d59 0%, #3a6488 100%);
-  --ui-gradient-hero: linear-gradient(160deg, #1b3d59 0%, #6a97c0 100%);
-  --ui-gradient-frost: linear-gradient(135deg, #6a97c0 0%, #b3d5f1 100%);
-  --ui-gradient-snow: linear-gradient(135deg, #b3d5f1 0%, #d4eef8 100%);
-  --ui-gradient-highlight: linear-gradient(180deg, rgba(212, 238, 248, 0.9) 0%, rgba(212, 238, 248, 0) 100%);
-  --ui-glow-amber: 0 8px 24px rgba(27, 61, 89, 0.18);
+  --ui-gradient-brand: linear-gradient(90deg, #0f1433 0%, #2d3a7a 100%);
+  --ui-gradient-hero: linear-gradient(160deg, #0f1433 0%, #2d3a7a 70%, #6673b0 100%);
+  --ui-gradient-frost: linear-gradient(135deg, #6673b0 0%, #c9d6ff 100%);
+  --ui-gradient-snow: linear-gradient(135deg, #c9d6ff 0%, #dce4ff 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(255, 201, 60, 0.22) 0%, rgba(255, 201, 60, 0) 100%);
+  --ui-glow-amber: 0 8px 24px rgba(255, 201, 60, 0.35);
 
   --ui-glass-bg: rgba(255, 255, 255, 0.9);
-  --ui-glass-border: rgba(27, 61, 89, 0.12);
-  --ui-shadow-1: 0 1px 2px rgba(21, 32, 38, 0.07);
-  --ui-shadow-2: 0 8px 24px rgba(27, 61, 89, 0.1);
-  --ui-shadow-3: 0 16px 48px rgba(27, 61, 89, 0.16);
+  --ui-glass-border: rgba(15, 20, 51, 0.12);
+  --ui-shadow-1: 0 1px 2px rgba(15, 20, 51, 0.07);
+  --ui-shadow-2: 0 8px 24px rgba(15, 20, 51, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(15, 20, 51, 0.16);
+
+  /* ui-liquid-backdrop in Navy: Powder Blue and Sunflower pooling on Mist. */
+  --ui-liquid-main: #eef2ff;
+  --ui-liquid-second: #c9d6ff;
+  --ui-liquid-accent: #ffc93c;
+  --ui-liquid-ink: #0f1433;
+  --ui-liquid-second-strength: 60%;
+  --ui-liquid-accent-strength: 45%;
 }
 
 /* Icon colour. A theme may set --ui-color-icon (maldives tints icons Lagoon); icons then take it
@@ -567,14 +579,16 @@ hugeicons-icon {
 }
 
 [data-theme="dark"] ::selection,
+[data-theme="navy-dark"] ::selection,
 [data-theme="winterDark"] ::selection {
-  background: rgba(106, 151, 192, 0.45);
-  color: #f7fbfd;
+  background: rgba(255, 201, 60, 0.32);
+  color: #f7f9ff;
 }
 [data-theme="light"] ::selection,
+[data-theme="navy"] ::selection,
 [data-theme="winterLight"] ::selection {
-  background: #b3d5f1;
-  color: #152026;
+  background: #c9d6ff;
+  color: #0f1433;
 }
 
 /* Animation-first product: reduced-motion CALMS rather than eliminates. We keep the motion

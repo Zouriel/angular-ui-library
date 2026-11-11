@@ -45,7 +45,7 @@ import { Component, ElementRef, OnDestroy, afterNextRender, computed, inject, in
     :host(.zoomed) { overflow: auto; }
     .fit { position: relative; flex: none; margin: auto; }
     .device { position: absolute; left: 0; top: 0; transform-origin: 0 0; box-sizing: border-box; padding: var(--bezel);
-      border-radius: 54px; background: var(--ui-winter-black-pine, #111); box-shadow: var(--ui-shadow-3), inset 0 0 0 2px color-mix(in srgb, #fff 12%, transparent); --bezel: 12px; }
+      border-radius: 54px; background: #152026; /* Black Pine: the colour the frame always had (it read a Winter primitive, now retired) */ box-shadow: var(--ui-shadow-3), inset 0 0 0 2px color-mix(in srgb, #fff 12%, transparent); --bezel: 12px; }
     .device.bare { padding: 0; border-radius: 0; background: none; box-shadow: var(--ui-shadow-2); --bezel: 0px; }
     .screen { position: relative; overflow: hidden; border-radius: 42px; background: var(--ui-color-bg); isolation: isolate; }
     .device.bare .screen { border-radius: var(--ui-radius); }

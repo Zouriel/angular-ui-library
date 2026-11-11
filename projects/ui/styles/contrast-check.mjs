@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /*
- * WCAG contrast check for the Winter colour system.
+ * WCAG contrast check for the Navy colour system (the default dark / light themes).
  *
  *   node projects/ui/styles/contrast-check.mjs            # table + exit 1 on any failure
  *   node projects/ui/styles/contrast-check.mjs --json     # machine-readable
  *   node projects/ui/styles/contrast-check.mjs --md       # markdown tables (for COLOR-SYSTEM.md)
  *
- * Reads the real values from tokens.css (primitives + the winterDark / winterLight blocks), resolves
+ * Reads the real values from tokens.css (primitives + the navy-dark / navy blocks), resolves
  * var() chains, flattens translucent colours onto the surface they sit on, and checks each pair
  * against its WCAG 2.2 threshold: 4.5 body text, 3 large text / non-text UI (1.4.11).
  */
@@ -40,8 +40,8 @@ const pick = (pred) => Object.assign({}, ...all.filter((b) => b.selectors.some(p
 
 const primitives = pick((s) => s === ':root');
 const themes = {
-  light: { ...primitives, ...pick((s) => s === '[data-theme="winterLight"]') },
-  dark: { ...primitives, ...pick((s) => s === '[data-theme="winterDark"]') },
+  light: { ...primitives, ...pick((s) => s === '[data-theme="navy"]') },
+  dark: { ...primitives, ...pick((s) => s === '[data-theme="navy-dark"]') },
 };
 
 /* ── Colour maths ─────────────────────────────────────────────────────── */
@@ -145,9 +145,11 @@ function checks(theme) {
     ['--ui-tier-premium-light', '--ui-tier-premium-contrast'],
   ]) add('Button & badge labels', T(on), T(fill), TEXT);
   const [g0, g1] = gradientStops(theme, '--ui-gradient-brand');
-  const brandText = color(theme, '--ui-color-primary-contrast');
-  add('Button & badge labels', { n: 'primary-contrast', c: brandText }, { n: 'gradient-brand start', c: g0 }, TEXT);
-  add('Button & badge labels', { n: 'primary-contrast', c: brandText }, { n: 'gradient-brand end', c: g1 }, TEXT);
+  // Brand buttons label the gradient with --ui-gradient-brand-contrast when the theme sets one, else primary-contrast.
+  const brandRef = theme['--ui-gradient-brand-contrast'] ? '--ui-gradient-brand-contrast' : '--ui-color-primary-contrast';
+  const brandText = color(theme, brandRef);
+  add('Button & badge labels', { n: short(brandRef), c: brandText }, { n: 'gradient-brand start', c: g0 }, TEXT);
+  add('Button & badge labels', { n: short(brandRef), c: brandText }, { n: 'gradient-brand end', c: g1 }, TEXT);
 
   for (const s of ['--ui-color-bg', '--ui-color-surface', '--ui-color-surface-raised']) {
     add('Links & status text', T('--ui-color-primary'), T(s), TEXT);
@@ -194,7 +196,7 @@ if (arg === '--json') {
   console.log(JSON.stringify(results, null, 2));
 } else if (arg === '--md') {
   for (const [k, r] of Object.entries(results)) {
-    console.log(`\n#### ${k === 'light' ? 'Light (winterLight)' : 'Dark (winterDark)'}\n`);
+    console.log(`\n#### ${k === 'light' ? 'Light (navy)' : 'Dark (navy-dark)'}\n`);
     let group = '';
     for (const x of r.rows) {
       if (x.group !== group) {
