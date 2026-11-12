@@ -1,5 +1,6 @@
 import { Component, HostAttributeToken, computed, inject, input } from '@angular/core';
 import { UI_CONFIG, type UiSize, type UiButtonSize, type UiTier } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
 
@@ -9,6 +10,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
  */
 @Component({
   selector: 'ui-button',
+  imports: [UiShutterLoader],
   template: `
     <button
       class="ui-btn"
@@ -27,7 +29,10 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       @if (fill() !== null) {
         <span class="fill" aria-hidden="true" [style.width.%]="fill()! * 100" [style.transition-duration.ms]="fillDuration()"></span>
       }
-      @if (loading()) { <span class="spin" aria-hidden="true"></span> }
+      @if (loading()) {
+        @if (config.spinner === 'shutter') { <ui-shutter-loader class="shutter" decorative /> }
+        @else { <span class="spin" aria-hidden="true"></span> }
+      }
       <ng-content />
       @if (badge() !== null) {
         <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span>
@@ -168,6 +173,8 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       .ui-btn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
     }
     @keyframes ui-btn-spin { to { transform: rotate(360deg); } }
+    /* The shutter busy mark (spinner: 'shutter') sits in the ring's 1em box, in the label colour. */
+    .shutter { width: 1em; height: 1em; }
     .ui-btn.badged { position: relative; overflow: visible; }
     /* badge (0.44.0): a count bubble at the top-end corner, the bottom nav's badge look. Hidden from
        screen readers: the button's name carries it ("Chat, 2 unread"). */
@@ -186,7 +193,7 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
   host: { '[class.block-host]': 'block()', '[attr.aria-label]': 'null' },
 })
 export class UiButton {
-  private config = inject(UI_CONFIG);
+  protected readonly config = inject(UI_CONFIG);
   /** Accessible name for the inner native control, when its visible text doesn't say enough
    *  ("View" in a row of doctors: "View Dr Aminath"). A plain `aria-label="…"` on the element works too. */
   ariaLabel = input<string | undefined>(undefined);

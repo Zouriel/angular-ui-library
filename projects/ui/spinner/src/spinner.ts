@@ -1,10 +1,21 @@
 import { Component, computed, input } from '@angular/core';
-import { type UiSize, injectUiStrings } from '@zouriel/ui';
+import { type UiSize, injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
-/** `ui-spinner` — indeterminate activity indicator. */
+/**
+ * `ui-spinner` — indeterminate activity indicator. With `provideUiConfig({ spinner: 'shutter' })`
+ * it draws `ui-shutter-loader` (same size, the primary colour, same announcement) instead of the ring.
+ */
 @Component({
   selector: 'ui-spinner',
-  template: `<span class="ui-spinner" [attr.data-size]="size()" role="status" [attr.aria-label]="labelText()"></span>`,
+  imports: [UiShutterLoader],
+  template: `
+    @if (shutter) {
+      <ui-shutter-loader [size]="size()" [label]="labelText()" color="var(--ui-color-primary)" />
+    } @else {
+      <span class="ui-spinner" [attr.data-size]="size()" role="status" [attr.aria-label]="labelText()"></span>
+    }
+  `,
   styles: `
     :host { display: inline-flex; }
     .ui-spinner {
@@ -23,6 +34,7 @@ import { type UiSize, injectUiStrings } from '@zouriel/ui';
 export class UiSpinner {
   size = input<UiSize>('md');
   protected readonly strings = injectUiStrings();
+  protected readonly shutter = injectUiConfig().spinner === 'shutter';
   /** Default: the built-in `loading` (Loading…), which follows the app's language. */
   label = input<string | undefined>(undefined);
   protected readonly labelText = computed(() => this.label() ?? this.strings.loading);

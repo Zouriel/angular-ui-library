@@ -1,5 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
 /** Which sign-in the button is for. */
 export type UiSocialProvider = 'apple' | 'google';
@@ -49,6 +50,7 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
  */
 @Component({
   selector: 'ui-social-button',
+  imports: [UiShutterLoader],
   host: { class: 'ui-social-button', '[class.expand]': 'expand()' },
   template: `
     <button
@@ -64,7 +66,8 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
       (click)="pressed.emit()">
       <span class="slot" aria-hidden="true">
         @if (loading()) {
-          <span class="spin"></span>
+          @if (shutterSpin) { <ui-shutter-loader class="shutter" [size]="16" decorative /> }
+          @else { <span class="spin"></span> }
         } @else if (provider() === 'apple') {
           <svg class="apple" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 31 44" focusable="false" aria-hidden="true">
             <path [attr.d]="appleLogo" fill="currentColor" fill-rule="nonzero"/>
@@ -175,6 +178,8 @@ export const UI_APPLE_LOGO_LEFT_MEDIUM_PATH =
   `,
 })
 export class UiSocialButton {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   /** Apple or Google. */
   provider = input.required<UiSocialProvider>();
   /** Which wording; use the same one for every button in a stack. */

@@ -1,22 +1,33 @@
 import { Component, signal } from '@angular/core';
+import { UI_CONFIG, defaultUiConfig } from '@zouriel/ui';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import FolderAddIcon from '@hugeicons/core-free-icons/FolderAddIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
 import { UiAlert } from '@zouriel/ui/alert';
 import { UiSpinner } from '@zouriel/ui/spinner';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { UiSkeleton } from '@zouriel/ui/skeleton';
 import { UiProgressBar, UiProgressCircle } from '@zouriel/ui/progress';
 import { UiEmptyState, UiResult, UiLoadingOverlay } from '@zouriel/ui/feedback';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";
+
+/** Demo only: gives its contents `spinner: 'shutter'`, as `provideUiConfig({ spinner: 'shutter' })` does app-wide. */
+@Component({
+  selector: 'shutter-config-scope',
+  providers: [{ provide: UI_CONFIG, useValue: { ...defaultUiConfig, spinner: 'shutter' } }],
+  template: `<ng-content />`,
+  styles: `:host { display: contents; }`,
+})
+export class ShutterConfigScope {}
 const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
 @Component({
   selector: 'page-feedback',
   imports: [HugeiconsIconComponent, 
-    UiText, UiButton, UiAlert, UiSpinner, UiSkeleton, UiProgressBar, UiProgressCircle, UiEmptyState, UiResult, UiLoadingOverlay,
+    UiText, UiButton, UiAlert, UiSpinner, UiShutterLoader, ShutterConfigScope, UiSkeleton, UiProgressBar, UiProgressCircle, UiEmptyState, UiResult, UiLoadingOverlay,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -46,6 +57,58 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
         <doc-demo code="<ui-spinner size=&quot;lg&quot; label=&quot;Loading&quot; />">
           <div class="row items-center"><ui-spinner size="sm" /><ui-spinner /><ui-spinner size="lg" /></div>
         </doc-demo>
+      </doc-section>
+
+      <doc-section name="Shutter loader" selector="ui-shutter-loader" [api]="shutterApi"
+        summary="A loading mark shaped like a camera shutter: six blades click shut three times, then rest open (a 2.1 s loop, under three flashes a second). Drawn in the current text colour, so inside a button it takes the label colour; color sets another. Announced like ui-spinner (role=status, 'Loading…' unless label says otherwise); decorative hides it when something nearby already says it is busy. Under reduced motion, and with animations off, the blades stay still and the mark gently fades in and out instead.">
+        <doc-demo code="<ui-shutter-loader size=&quot;lg&quot; color=&quot;var(--ui-color-primary)&quot; />
+<ui-shutter-loader [size]=&quot;48&quot; label=&quot;Loading photos&quot; />">
+          <div class="row items-center">
+            <ui-shutter-loader size="sm" color="var(--ui-color-primary)" />
+            <ui-shutter-loader color="var(--ui-color-primary)" />
+            <ui-shutter-loader size="lg" color="var(--ui-color-primary)" />
+            <ui-shutter-loader [size]="48" color="var(--ui-color-primary)" />
+            <ui-shutter-loader [size]="48" />
+          </div>
+        </doc-demo>
+        <doc-demo code="<ui-button [loading]=&quot;true&quot;>Saving…</ui-button>
+<div class=&quot;card&quot;><ui-shutter-loader [size]=&quot;28&quot; color=&quot;var(--ui-color-primary)&quot; decorative /> Loading photos…</div>">
+          <div class="cols2">
+            @for (t of shutterThemes; track t.theme) {
+              <div class="shutter-panel" [attr.data-theme]="t.theme">
+                <ui-text variant="label">{{ t.name }}</ui-text>
+                <ui-shutter-loader [size]="72" color="var(--ui-color-primary)" />
+                <shutter-config-scope>
+                  <ui-button [loading]="true">Saving…</ui-button>
+                </shutter-config-scope>
+                <div class="shutter-card">
+                  <ui-shutter-loader [size]="28" color="var(--ui-color-primary)" decorative />
+                  <span>Loading photos…</span>
+                </div>
+              </div>
+            }
+          </div>
+        </doc-demo>
+        <ui-text variant="label" class="shutter-cap">App-wide: provideUiConfig({{ '{' }} spinner: 'shutter' {{ '}' }})</ui-text>
+        <ui-text variant="body" class="shutter-note">Every ui-spinner and every busy mark the library draws (button loading, loading overlay, image picker, sign-in buttons, map locate, media lightbox, option-source picker) becomes the shutter, at the same size and colour. The default, 'ring', keeps the turning ring.</ui-text>
+        <doc-demo lang="ts" code="// app.config.ts
+providers: [provideUiConfig({ spinner: 'shutter' })]">
+          <shutter-config-scope>
+            <div class="stack">
+              <div class="row items-center">
+                <ui-spinner size="sm" /><ui-spinner /><ui-spinner size="lg" />
+                <ui-button [loading]="true">Saving…</ui-button>
+                <ui-button variant="outline" [loading]="true">Uploading</ui-button>
+              </div>
+              <div class="lo-host">
+                <ui-loading-overlay [loading]="shutterOverlay()" />
+                <ui-text variant="body">Content area</ui-text>
+                <ui-button size="sm" variant="outline" (click)="runShutterOverlay()">Show overlay 2.1s</ui-button>
+              </div>
+            </div>
+          </shutter-config-scope>
+        </doc-demo>
+        <ui-text variant="body" class="shutter-note">Flutter only: the shutter overscroll ball and UiPullToRefresh exist only in the Flutter library (zouriel_ui). Browsers own overscroll and pull-to-refresh on the web, so @zouriel/ui doesn't replace them.</ui-text>
       </doc-section>
 
       <doc-section name="Progress bar" selector="ui-progress-bar" [api]="progressApi"
@@ -140,6 +203,12 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
     .grow { flex: 1; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; } }
+    .shutter-panel { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-4); padding: var(--ui-space-6) var(--ui-space-4);
+      border-radius: var(--ui-radius); background: var(--ui-color-bg); color: var(--ui-color-text); border: 1px solid var(--ui-color-border); }
+    .shutter-card { display: flex; align-items: center; gap: var(--ui-space-3); align-self: stretch; padding: var(--ui-space-3) var(--ui-space-4);
+      border-radius: var(--ui-radius); background: var(--ui-color-surface); border: 1px solid var(--ui-color-border); color: var(--ui-color-text-muted); }
+    .shutter-cap { display: block; margin: var(--ui-space-4) 0 var(--ui-space-1); }
+    .shutter-note { display: block; color: var(--ui-color-text-muted); max-width: 66ch; margin: var(--ui-space-2) 0 var(--ui-space-3); }
     .lo-host { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); padding: var(--ui-space-4);
       border: 1px dashed var(--ui-color-border); border-radius: var(--ui-radius); }
   `,
@@ -150,6 +219,15 @@ export class FeedbackPage {
   protected readonly showWarning = signal(true);
   protected readonly RESULT = `type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | '500';`;
   protected readonly ALERT = `type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';`;
+  protected readonly shutterOverlay = signal(false);
+  protected runShutterOverlay(): void { this.shutterOverlay.set(true); setTimeout(() => this.shutterOverlay.set(false), 2100); }
+  protected readonly shutterThemes = [{ name: 'Light', theme: 'oxblood' }, { name: 'Dark', theme: 'oxblood-dark' }];
+  protected readonly shutterApi: ApiRow[] = [
+    { name: 'size', type: "'sm' | 'md' | 'lg' | number", default: "'md'", desc: "The spinner's boxes (14, 20, 32px) or a number of pixels. Every stroke scales with it." },
+    { name: 'color', type: 'string', default: 'currentColor', desc: 'Any CSS colour; by default the text colour around it.' },
+    { name: 'label', type: 'string', default: "'Loading…'", desc: 'Accessible name (aria-label); not shown.' },
+    { name: 'decorative', type: 'boolean', default: 'false', desc: 'Hidden from screen readers, for when something nearby already says it is busy.' },
+  ];
   protected runLoading(): void { this.loading.set(true); setTimeout(() => this.loading.set(false), 1500); }
 
   protected readonly alertApi: ApiRow[] = [

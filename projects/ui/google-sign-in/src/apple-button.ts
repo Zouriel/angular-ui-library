@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { uiGoogleObserveTheme } from './google-brand';
 
 /** The words on the button (Apple's approved wordings; the words come from UI_STRINGS). */
@@ -31,6 +32,7 @@ export const UI_APPLE_LOGO_PATH =
  */
 @Component({
   selector: 'ui-apple-button',
+  imports: [UiShutterLoader],
   host: { class: 'ui-apple-button', '[class.expand]': 'expand()' },
   template: `
     <button
@@ -45,7 +47,8 @@ export const UI_APPLE_LOGO_PATH =
       (click)="pressed.emit()">
       <span class="logo" aria-hidden="true">
         @if (loading()) {
-          <span class="spin"></span>
+          @if (shutterSpin) { <ui-shutter-loader class="shutter" decorative /> }
+          @else { <span class="spin"></span> }
         } @else {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 31" focusable="false" aria-hidden="true">
             <path [attr.d]="logo" fill="currentColor"/>
@@ -130,6 +133,7 @@ export const UI_APPLE_LOGO_PATH =
       animation: ui-abtn-spin var(--ui-motion-slow) linear infinite;
     }
     @keyframes ui-abtn-spin { to { transform: rotate(360deg); } }
+    .shutter { width: 100%; height: auto; aspect-ratio: 1; }
     /* Touch: the hit area grows to 44px tall on coarse pointers, never sideways. */
     @media (pointer: coarse) {
       .ui-abtn::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--ui-size-touch); transform: translateY(-50%); }
@@ -137,6 +141,8 @@ export const UI_APPLE_LOGO_PATH =
   `,
 })
 export class UiAppleButton {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   /** Which approved wording to show. */
   text = input<UiAppleButtonText>('signIn');
   /** Apple's style; 'auto' is white on a dark library theme, black otherwise, and follows theme changes. */
