@@ -110,7 +110,7 @@ this.theme.theme();           // the current theme (a signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="What's inside" anchor="catalog"
-        summary="About 140 components and directives across 39 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
+        summary="About 140 components and directives across 40 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
         <div class="grid">
           @for (g of groups; track g.route) {
             <ui-card padding="sm">
