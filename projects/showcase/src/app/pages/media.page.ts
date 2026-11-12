@@ -2,6 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
+import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
 import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
@@ -15,7 +16,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -45,7 +46,19 @@ function grad(a: string, b: string): string {
     .like-view { position: relative; max-width: 420px; aspect-ratio: 4 / 3; border-radius: var(--ui-radius); overflow: hidden; margin-top: var(--ui-space-4); }
     .like-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: flex-end; padding: var(--ui-space-2);
       background: linear-gradient(to top, color-mix(in srgb, var(--ui-media-scrim) 70%, transparent), transparent); }
-    .sel-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }`,
+    .sel-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .at-phone { max-width: 390px; display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .at-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-2); }
+    .at-tile { position: relative; aspect-ratio: 1; border-radius: var(--ui-radius); overflow: hidden; }
+    .at-tile img, .at-post-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .at-corner { position: absolute; top: var(--ui-space-1); left: var(--ui-space-1); max-width: calc(100% - 2 * var(--ui-space-1)); }
+    .at-post { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface); }
+    .at-post-head { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); }
+    .at-post-head strong { flex: 1 1 auto; min-width: 0; font-size: var(--ui-font-size-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .at-post-head ui-avatar-tag { flex: 0 1 auto; max-width: 60%; }
+    .at-post-photo { position: relative; aspect-ratio: 4 / 3; }
+    .at-post-photo .at-corner { top: var(--ui-space-2); left: auto; right: var(--ui-space-2); max-width: calc(100% - 2 * var(--ui-space-2)); }
+    .at-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); }`,
   template: `
     <doc-page eyebrow="Components" title="Media"
       lead="Image components from @zouriel/ui/media: a carousel, a thumbnail gallery with a lightbox, and a picker for choosing an image. ui-device-frame, the phone frame from the same entry point, is documented on the Design tools page.">
@@ -158,6 +171,42 @@ function grad(a: string, b: string): string {
             </ui-selectable>
             <div class="like-bar">
               <ui-like-button [liked]="likes()[likeOpen()].liked" [count]="likes()[likeOpen()].count" (likedChange)="setLiked(likeOpen(), $event)" />
+            </div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Avatar tag" selector="ui-avatar-tag" [api]="avatarTagApi"
+        summary="A tiny round picture and a name in small text, for a venue or a person on the corner of an album tile or a feed post. The picture is decorative (alt=&quot;&quot;); without one, or when it fails to load, the circle shows the name's first letter on the primary colour. A long name ends in an ellipsis inside the width the tag is given; it never grows past its container, so give the corner a max-width. variant=&quot;overlay&quot; (the default) is the dark see-through pill of ui-like-count, readable on any picture, white included; with glass (the library's glass config by default) it also blurs the photo behind it and lights its rim. variant=&quot;plain&quot; sits on an ordinary surface. size xs (16px picture) is for a small tile's corner, sm (20px) for a post. Read out as prefix + name (&quot;At Coco Palm&quot;); it takes no tap of its own.">
+        <doc-demo code="<div class=&quot;tile&quot;>
+  <img [src]=&quot;album.cover&quot; alt=&quot;&quot; />
+  <ui-avatar-tag class=&quot;corner&quot; size=&quot;xs&quot; prefix=&quot;At&quot; [name]=&quot;venue.name&quot; [src]=&quot;venue.logo&quot; />
+</div>
+<!-- .corner { position: absolute; top: 4px; left: 4px; max-width: calc(100% - 8px); } -->
+<ui-avatar-tag variant=&quot;plain&quot; prefix=&quot;At&quot; [name]=&quot;venue.name&quot; [src]=&quot;venue.logo&quot; />">
+          <div class="at-phone">
+            <div class="at-tiles">
+              @for (a of avatarTagAlbums; track $index) {
+                <div class="at-tile">
+                  <img [src]="a.cover" alt="" />
+                  <ui-avatar-tag class="at-corner" size="xs" prefix="At" [name]="a.venue" [src]="a.logo" />
+                </div>
+              }
+            </div>
+            <div class="at-post">
+              <div class="at-post-head">
+                <strong>Aisha and Ali's wedding</strong>
+                <ui-avatar-tag variant="plain" prefix="At" name="Coco Palm Dhuni Kolhu" [src]="avatarTagLogo" />
+              </div>
+              <div class="at-post-photo">
+                <img [src]="photos[4]" alt="" />
+                <ui-avatar-tag class="at-corner" prefix="At" name="Coco Palm Dhuni Kolhu" [src]="avatarTagLogo" />
+              </div>
+            </div>
+            <div class="at-row">
+              <ui-avatar-tag variant="plain" name="Bandos Hall" />
+              <ui-avatar-tag variant="plain" size="xs" name="Bandos Hall" />
+              <ui-avatar-tag variant="plain" [glass]="true" name="Glass, plain" [src]="avatarTagLogo" />
             </div>
           </div>
         </doc-demo>
@@ -386,6 +435,21 @@ export class MediaPage {
     { name: 'ui-like-button [tone]', type: "'media' | 'surface'", default: "'media'", desc: 'White over media, or text colour on a normal background.' },
     { name: 'ui-selectable [doubleTapEnabled]', type: 'boolean', default: 'false', desc: 'Listen for double taps; a single tap then waits 280ms.' },
     { name: 'ui-media-lightbox [doubleTap] / (doubleTapped) / playHeart(x, y)', type: "'zoom' | 'emit'", default: "'zoom'", desc: 'emit: a double tap reports the item and point instead of zooming; playHeart pops the heart there. Put ui-like-button in the [lightbox-bottom] slot (0.63.1), the start of the bottom bar.' },
+  ];
+  protected readonly avatarTagLogo = grad('#1f6f8b', '#66c2a5');
+  protected readonly avatarTagAlbums = [
+    { cover: grad('#3d5afe', '#e5484d'), venue: 'Coco Palm', logo: grad('#1f6f8b', '#66c2a5') },
+    { cover: grad('#f7f3ea', '#ffffff'), venue: 'The Sunset Ballroom at Kurumba Maldives Resort', logo: grad('#b34a3c', '#f2e1c2') },
+    { cover: grad('#2faa6e', '#d9a521'), venue: 'Bandos Hall', logo: null },
+    { cover: grad('#7a4fa0', '#99d8e2'), venue: 'Dharubaaruge', logo: 'data:image/png;base64,broken' },
+  ];
+  protected readonly avatarTagApi: ApiRow[] = [
+    { name: 'name', type: 'string', default: "''", desc: 'The name shown, ellipsised when long; its first letter is the fallback picture.' },
+    { name: 'src', type: 'string | null', default: 'null', desc: "The picture's URL (decorative). Missing or failing: the first letter." },
+    { name: 'prefix', type: 'string | null', default: 'null', desc: 'Words read before the name, e.g. "At" for "At Coco Palm". Not shown.' },
+    { name: 'variant', type: "'overlay' | 'plain'", default: "'overlay'", desc: 'overlay: dark see-through pill for photos; plain: for a normal surface.' },
+    { name: 'size', type: "'sm' | 'xs'", default: "'sm'", desc: 'sm: 20px picture (a post); xs: 16px picture (a small tile corner).' },
+    { name: 'glass', type: 'boolean', default: 'config.glass', desc: 'Blur what is behind the tag and light its rim.' },
   ];
   protected readonly likeOut: ApiRow[] = [
     { name: 'ui-like-button (likedChange)', type: 'boolean', default: '—', desc: 'The new state; the count is yours to update.' },

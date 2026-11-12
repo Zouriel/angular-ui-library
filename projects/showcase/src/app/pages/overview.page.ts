@@ -199,7 +199,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Navigation', route: 'navigation', entries: '/navigation, /menubar, /tabs', items: ['navbar', 'side-nav', 'bottom-nav', 'menubar', 'breadcrumbs', 'pagination', 'stepper', 'anchor-nav', 'tabs'] },
     { title: 'Data display', route: 'data', entries: '/table, /list, /data, /chat-bubble, /accordion, /card, /badge', items: ['table', 'list', 'tree', 'tree-table', 'timeline', 'chat-bubble', 'description-list', 'code-block', 'accordion', 'card', 'stat-card', 'feature-card', 'badge', 'chip', 'avatar', 'avatar-group'] },
     { title: 'Plans', route: 'plans', entries: '/plans, /button', items: ['plan-card', 'plan-grid', 'plan-compare', 'button tier'] },
-    { title: 'Media', route: 'media', entries: '/media', items: ['carousel', 'gallery', 'image-picker'] },
+    { title: 'Media', route: 'media', entries: '/media, /avatar-tag', items: ['carousel', 'gallery', 'image-picker', 'avatar-tag'] },
     { title: 'Map', route: 'map', entries: '/map (lazy, needs leaflet)', items: ['map'] },
     { title: 'Window system', route: 'window', entries: '/window', items: ['window', 'UiWindowManager', 'uiDraggable', 'uiResizable'] },
     { title: 'File viewer', route: 'file-viewer', entries: '/file-viewer, /pdf-viewer', items: ['file-viewer', 'image-viewer', 'video-player', 'audio-player', 'text-viewer', 'code-viewer', 'media-lightbox', 'file-explorer', 'pdf-viewer'] },
