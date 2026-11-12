@@ -95,6 +95,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts, task progress (+ dialog) |
 | `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
+| `shutter-loader` | ui-shutter-loader: a camera-shutter loading mark; `provideUiConfig({ spinner: 'shutter' })` makes every spinner and built-in busy mark draw it |
 | `badge` | badge, chip, avatar, avatar group |
 | `plans` | plan card, plan grid, plan comparison table (pricing pages; see below) |
 | `filter` | `ui-filter` (one Filter button that opens a panel of sections: a bottom sheet on phones, a popover wider), `ui-filter-chips` (the filters that are on, removable, with Clear all) and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer` (see below) |

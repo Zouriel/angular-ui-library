@@ -1,5 +1,6 @@
 import { Component, input, computed } from '@angular/core';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
 /**
  * `ui-loading-overlay` — covers its positioned parent with a dimmed, blurred
@@ -8,10 +9,12 @@ import { injectUiStrings } from '@zouriel/ui';
  */
 @Component({
   selector: 'ui-loading-overlay',
+  imports: [UiShutterLoader],
   template: `
     @if (loading()) {
       <div class="veil" role="status" [attr.aria-label]="labelText()" animate.enter="ui-fade-enter" animate.leave="ui-fade-leave">
-        <span class="spin" aria-hidden="true"></span>
+        @if (shutterSpin) { <ui-shutter-loader size="lg" decorative color="var(--ui-color-primary)" /> }
+        @else { <span class="spin" aria-hidden="true"></span> }
         @if (labelText()) { <span class="lbl">{{ labelText() }}</span> }
       </div>
     }
@@ -33,6 +36,8 @@ import { injectUiStrings } from '@zouriel/ui';
   `,
 })
 export class UiLoadingOverlay {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   protected readonly strings = injectUiStrings();
   loading = input(false);
   /** Default: the built-in `loading` (Loading…), which follows the app's language. */

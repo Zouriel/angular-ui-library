@@ -16,7 +16,8 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import { clampOffset, isSwipe, resist } from './gestures';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { UiHeartBurst } from '@zouriel/ui/media';
 
 /** One thing in the lightbox: a photograph or a clip. */
@@ -99,7 +100,7 @@ function fmt(seconds: number): string {
 @Component({
   selector: 'ui-media-lightbox',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HugeiconsIconComponent, UiHeartBurst],
+  imports: [HugeiconsIconComponent, UiHeartBurst, UiShutterLoader],
   template: `
     <dialog
       #dlg
@@ -165,7 +166,8 @@ function fmt(seconds: number): string {
             }
 
             @if (loading()) {
-              <span class="spin" aria-hidden="true"></span>
+              @if (shutterSpin) { <ui-shutter-loader class="shutter" [size]="34" decorative color="var(--ui-media-on-scrim)" /> }
+              @else { <span class="spin" aria-hidden="true"></span> }
             }
 
             <!-- The one control that is not chrome: a paused clip should say so in the middle of
@@ -447,6 +449,7 @@ function fmt(seconds: number): string {
       border: 2px solid color-mix(in srgb, var(--ui-media-on-scrim) 22%, transparent); border-top-color: var(--ui-media-on-scrim);
       animation: lb-spin 700ms linear infinite; }
     @keyframes lb-spin { to { transform: rotate(360deg); } }
+    .shutter { position: absolute; }
 
     .play { position: absolute; width: 84px; height: 84px; border-radius: 50%; border: 0; cursor: pointer;
       display: grid; place-items: center; color: var(--ui-media-on-scrim);
@@ -593,6 +596,8 @@ function fmt(seconds: number): string {
   `,
 })
 export class UiMediaLightbox {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   protected readonly strings = injectUiStrings();
   /** Everything the lightbox can show, in the order the host wants it stepped through. */
   items = input<readonly UiMediaItem[]>([]);

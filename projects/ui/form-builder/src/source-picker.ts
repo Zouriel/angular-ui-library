@@ -1,5 +1,7 @@
 import { CdkConnectedOverlay, CdkOverlayOrigin, type ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, untracked, viewChild } from '@angular/core';
+import { injectUiConfig } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { isChoice, sourceHasMore, toChoice, type UiFbChoice, type UiFbOptionSourceDef, type UiFbSourceItem } from './option-sources';
 
 let seq = 0;
@@ -14,7 +16,7 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
  */
 @Component({
   selector: 'ui-fb-source-picker',
-  imports: [CdkConnectedOverlay, CdkOverlayOrigin],
+  imports: [CdkConnectedOverlay, CdkOverlayOrigin, UiShutterLoader],
   host: { class: 'ui-fb-sp-host' },
   template: `
     <div class="sp" cdkOverlayOrigin #origin="cdkOverlayOrigin" [class.open]="open()" [class.invalid]="invalid()" [class.disabled]="disabled()"
@@ -40,7 +42,10 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
         </button>
       }
       <span class="chev" aria-hidden="true">
-        @if (status() === 'loading' && open()) { <span class="spin"></span> }
+        @if (status() === 'loading' && open()) {
+          @if (shutterSpin) { <ui-shutter-loader [size]="12" decorative color="var(--ui-color-primary)" /> }
+          @else { <span class="spin"></span> }
+        }
         @else { <svg viewBox="0 0 24 24" width="12" height="12"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg> }
       </span>
     </div>
@@ -143,6 +148,8 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
   `,
 })
 export class UiFbSourcePicker {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   private readonly destroyRef = inject(DestroyRef);
 
   readonly source = input.required<UiFbOptionSourceDef>();

@@ -43,7 +43,17 @@ export interface UiConfig {
    * keeps them on the right and the other side's on the left in both directions (the chat-app habit).
    */
   chatMineSide: UiChatBubbleSide;
+  /**
+   * Which busy mark the library draws (0.72.0). `'ring'` (the default) is the turning ring;
+   * `'shutter'` makes every `ui-spinner` and every built-in busy mark (button `loading`, loading
+   * overlay, image picker, sign-in buttons, map locate, media lightbox, option-source picker) draw
+   * `ui-shutter-loader` instead, at the same size and colour.
+   */
+  spinner: UiSpinnerStyle;
 }
+
+/** The library's busy mark: see {@link UiConfig.spinner}. */
+export type UiSpinnerStyle = 'ring' | 'shutter';
 
 /** Where `ui-chat-bubble` puts your own messages: see {@link UiConfig.chatMineSide}. */
 export type UiChatBubbleSide = 'end' | 'right';
@@ -78,6 +88,7 @@ export const defaultUiConfig: UiConfig = {
   animations: true,
   density: 'comfortable',
   chatMineSide: 'end',
+  spinner: 'ring',
 };
 
 /**

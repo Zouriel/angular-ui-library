@@ -7,8 +7,9 @@ import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Gps01Icon from '@hugeicons/core-free-icons/Gps01Icon';
 import GpsOff01Icon from '@hugeicons/core-free-icons/GpsOff01Icon';
 import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
-import { defaultUiStrings, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings, UiDirectionService } from '@zouriel/ui';
+import { defaultUiStrings, injectUiConfig, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings, UiDirectionService } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
 /**
  * How ui-map loads Leaflet: `import('leaflet')` by default. Provide another loader to test a map
@@ -580,7 +581,7 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
   selector: 'ui-map',
   encapsulation: ViewEncapsulation.None,
   host: { class: 'ui-map', '[attr.data-preview]': 'preview() || null', '[attr.data-dark]': 'dark() || null', '[attr.data-dark-tiles]': '(dark() && !!tileUrlDark()) || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
-  imports: [HugeiconsIconComponent, UiTooltip],
+  imports: [HugeiconsIconComponent, UiTooltip, UiShutterLoader],
   template: `<div class="ui-map-canvas" #canvas></div>
     @if (locateControl() && !preview()) {
       <button type="button" class="ui-map-locate" [attr.data-state]="locating() ? 'locating' : locateOff() ? 'off' : null"
@@ -588,7 +589,8 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
         [attr.aria-description]="locateOff() ? strings.mapLocationOff : null"
         [uiTooltip]="locateOff() ? strings.mapLocationOff : ''" [uiTooltipPosition]="tooltipSide()" (click)="onLocate()">
         @if (locating()) {
-          <span class="ui-map-locate-spin" aria-hidden="true"></span>
+          @if (shutterSpin) { <ui-shutter-loader [size]="18" decorative color="var(--ui-color-primary)" /> }
+          @else { <span class="ui-map-locate-spin" aria-hidden="true"></span> }
         } @else {
           <hugeicons-icon [icon]="locateOff() ? icons.off : icons.locate" [size]="20" [strokeWidth]="1.8" aria-hidden="true" />
         }
@@ -612,6 +614,8 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
   styleUrls: ['./leaflet.css', './map.css'],
 })
 export class UiMap {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   /** Where the map is centred. Changing it moves the map. */
   center = input<UiLatLng>({ lat: 4.1755, lng: 73.5093 });
   zoom = input(13);

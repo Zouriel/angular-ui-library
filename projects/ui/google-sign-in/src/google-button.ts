@@ -1,6 +1,7 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
-import { injectUiStrings } from '@zouriel/ui';
+import { injectUiConfig, injectUiStrings } from '@zouriel/ui';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { uiGoogleObserveTheme, type UiGoogleButtonShape, type UiGoogleButtonText, type UiGoogleButtonTheme } from './google-brand';
 
 /**
@@ -16,6 +17,7 @@ import { uiGoogleObserveTheme, type UiGoogleButtonShape, type UiGoogleButtonText
  */
 @Component({
   selector: 'ui-google-button',
+  imports: [UiShutterLoader],
   host: { class: 'ui-google-button', '[class.expand]': 'expand()' },
   template: `
     <button
@@ -30,7 +32,8 @@ import { uiGoogleObserveTheme, type UiGoogleButtonShape, type UiGoogleButtonText
       (click)="pressed.emit()">
       <span class="logo" aria-hidden="true">
         @if (loading()) {
-          <span class="spin"></span>
+          @if (shutterSpin) { <ui-shutter-loader class="shutter" [size]="16" decorative /> }
+          @else { <span class="spin"></span> }
         } @else {
           <!-- Google's standard "G", unmodified (paths verbatim from the guideline's sample SVG). -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="10 10 20 20" width="20" height="20" focusable="false">
@@ -129,6 +132,8 @@ import { uiGoogleObserveTheme, type UiGoogleButtonShape, type UiGoogleButtonText
   `,
 })
 export class UiGoogleButton {
+  /** `provideUiConfig({ spinner: 'shutter' })`: the busy mark is the shutter instead of the ring. */
+  protected readonly shutterSpin = injectUiConfig().spinner === 'shutter';
   /** Which approved wording to show. */
   text = input<UiGoogleButtonText>('signIn');
   /** Google's theme; 'auto' is dark on a dark library theme, light otherwise, and follows theme changes. */
