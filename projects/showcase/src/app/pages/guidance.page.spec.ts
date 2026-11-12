@@ -43,7 +43,7 @@ describe('Guidance page', () => {
     }
     expect(document.querySelector('ui-tour-panel')).toBeNull();
     expect(el.textContent).toContain('Last tour: finished');
-  });
+  }, 30_000); // real timers: about 3 s of waiting for the tour to settle at each step
 
   it('ticks checklist steps on tap and dismisses the offer', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
