@@ -111,7 +111,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
       <doc-section name="Bottom nav" selector="ui-bottom-nav" [api]="bottomApi" anchor="nav-bottom"
         summary="Mobile-style bottom bar: a nav of buttons, the active one marked aria-current=&quot;page&quot;. active is a two-way model; map it to a route yourself. It is not fixed to the screen; place it. Give each item a HugeIcons icon: it is drawn in currentColor, so it follows the theme and the active state. A short string still works, but emoji draw in the platform's own colours."
-        [shapes]="'interface UiBottomNavItem { label: string; value: string; icon?: string | IconSvgObject; badge?: string|number; }'">
+        [shapes]="'interface UiBottomNavItem { label: string; value: string; icon?: string | IconSvgObject; badge?: string|number; anchor?: string; }'">
         <doc-demo code="<ui-bottom-nav [items]=&quot;items&quot; [(active)]=&quot;active&quot; label=&quot;Sections&quot; />">
           <ui-bottom-nav [items]="bottom" [(active)]="bottomActive" label="Demo sections" />
         </doc-demo>
@@ -180,6 +180,7 @@ export class NavigationPage {
     { name: 'tab: disabled', type: 'boolean', default: 'false', desc: 'Disable the tab.' },
     { name: 'tab: icon', type: 'IconSvgObject', default: 'undefined', desc: 'HugeIcons icon drawn before the label.' },
     { name: 'tab: iconOnly', type: 'boolean', default: 'false', desc: 'Show only the icon (needs icon). The label stays the accessible name and tooltip.' },
+    { name: 'tab: anchor', type: 'string', default: 'undefined', desc: "A uiTourAnchor id for this tab's button, so a tour step can point at it." },
     { name: 'tab: (default)', type: 'slot', default: '—', desc: 'The panel content.' },
   ];
   protected readonly sideApi: ApiRow[] = [
@@ -214,7 +215,7 @@ export class NavigationPage {
   protected readonly menubarOut: ApiRow[] = [{ name: 'select', type: 'UiMenubarItem', default: '—', desc: 'Chosen item.' }];
   protected readonly bottomApi: ApiRow[] = [
     { name: 'label', type: 'string', default: 'undefined', desc: 'Accessible name for the <nav>. Set it when the page has more than one navigation landmark.' },
-    { name: 'items', type: 'UiBottomNavItem[]', default: '[]', desc: 'Destinations. A truthy badge shows as a red pill with its text.' },
+    { name: 'items', type: 'UiBottomNavItem[]', default: '[]', desc: 'Destinations. A truthy badge shows as a red pill with its text; anchor is a uiTourAnchor id for that item\'s button, so a tour step can point at it.' },
     { name: 'active', type: 'string', default: "''", desc: 'Two-way (`[(active)]`). Value of the active item; set on click.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'iconSize', type: 'number', default: '22', desc: 'Drawn-icon size in px. String icons ignore it.' },

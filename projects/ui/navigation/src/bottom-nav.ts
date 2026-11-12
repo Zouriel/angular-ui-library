@@ -1,7 +1,7 @@
 import { Component, inject, input, model } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, UiTourAnchor } from '@zouriel/ui';
 
 export interface UiBottomNavItem {
   label: string;
@@ -16,6 +16,8 @@ export interface UiBottomNavItem {
    */
   icon?: string | IconSvgObject;
   badge?: string | number;
+  /** A tour anchor id (`uiTourAnchor`) for this destination's button, so a tour step can point at it. */
+  anchor?: string;
 }
 
 /**
@@ -25,11 +27,11 @@ export interface UiBottomNavItem {
  */
 @Component({
   selector: 'ui-bottom-nav',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, UiTourAnchor],
   template: `
     <nav class="bn" [attr.aria-label]="label() || null" [class.glass]="glass()">
       @for (item of items(); track item.value) {
-        <button type="button" class="item" [class.active]="item.value === active()"
+        <button type="button" class="item" [uiTourAnchor]="item.anchor" [class.active]="item.value === active()"
                 [attr.aria-current]="item.value === active() ? 'page' : null" (click)="active.set(item.value)">
           <span class="icon" aria-hidden="true">
             @if (isSvg(item.icon)) {

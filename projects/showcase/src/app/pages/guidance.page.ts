@@ -286,7 +286,8 @@ interface UiTourSpec { id: string; steps: UiTourStep[]; labels?: UiTourLabels; t
 interface UiTourStep { anchor: string; text: string; title?: string; placement?: 'auto' | 'top' | 'bottom' | 'start' | 'end'; }
 interface UiTourLabels { back?: string; next?: string; done?: string; skip?: string; turnOff?: string; step?: string; }`;
   protected readonly tourApi: ApiRow[] = [
-    { name: 'uiTourAnchor', type: 'string (required)', default: '—', desc: 'The anchor id a step points at (shared with the other app). Several elements may share one; the first on screen wins.' },
+    { name: 'uiTourAnchor', type: 'string (required)', default: '—', desc: 'The anchor id a step points at (shared with the other app). Several elements may share one; the first on screen wins. Empty, null or undefined registers nothing.' },
+    { name: 'UiBottomNavItem.anchor · ui-tab [anchor]', type: 'string', default: 'undefined', desc: 'Anchors for buttons the library builds itself: one bottom-nav destination or one tab.' },
     { name: 'UiTourService.start(spec)', type: 'Promise<UiTourOutcome>', default: '—', desc: 'Runs a tour (1 to 5 steps). A tour already running ends with closed; no step on the page resolves closed at once.' },
     { name: 'UiTourService.stop()', type: 'void', default: '—', desc: 'Ends the running tour with closed.' },
     { name: 'UiTourService.active', type: 'Signal<string | null>', default: 'null', desc: 'The id of the tour on screen.' },

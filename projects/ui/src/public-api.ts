@@ -13,3 +13,4 @@ export * from './lib/strings';
 export * from './lib/direction';
 export * from './lib/theme-watch';
 export * from './lib/badge';
+export * from './lib/tour-anchor';

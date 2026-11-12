@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
-import { uiLogicalKey, injectUiStrings } from '@zouriel/ui';
+import { uiLogicalKey, injectUiStrings, UiTourAnchor } from '@zouriel/ui';
 
 let tabSeq = 0;
 
@@ -36,6 +36,8 @@ export class UiTab {
   icon = input<IconSvgObject | undefined>(undefined);
   /** Show only the icon. The label stays as the accessible name and the tooltip. */
   iconOnly = input(false);
+  /** A tour anchor id (`uiTourAnchor`) for this tab's button in the strip, so a tour step can point at it. */
+  anchor = input<string | undefined>(undefined);
   readonly active = signal(false);
   readonly tabId = `ui-tab-${tabSeq}`;
   readonly panelId = `ui-tabpanel-${tabSeq++}`;
@@ -47,7 +49,7 @@ export class UiTab {
  */
 @Component({
   selector: 'ui-tabs',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, UiTourAnchor],
   template: `
     <div class="tablist" role="tablist" [attr.aria-label]="labelText()">
       @for (tab of tabs(); track tab.tabId; let i = $index) {
@@ -55,6 +57,7 @@ export class UiTab {
           type="button"
           role="tab"
           class="tab"
+          [uiTourAnchor]="tab.anchor()"
           [id]="tab.tabId"
           [attr.aria-controls]="tab.panelId"
           [attr.aria-selected]="selectedIndex() === i"

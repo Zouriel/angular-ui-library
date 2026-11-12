@@ -50,6 +50,9 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   spotlight, at most 5 steps), `ui-offer-card`, `ui-checklist`, `UiGuidance` (what may show, what was seen, through
   the app's store) and `uiHintOnce`; `ui-empty-state` gained `[empty-art]` and `[empty-starters]` with `ui-starter-card`
   (in `@zouriel/ui/feedback`). The twins of Flutter's `UiTour`, `UiOfferCard`, `UiChecklist`, `UiGuidance`, `UiHintOnce`.
+  0.75.1: bottom-nav items (`UiBottomNavItem.anchor`) and tabs (`ui-tab [anchor]`) take a tour anchor id for the
+  buttons the library builds itself; `uiTourAnchor` now lives in the core entry point (`@zouriel/ui`, still
+  re-exported from `@zouriel/ui/guidance`), so they don't pull the tour into the first paint.
 - **Filter** (`@zouriel/ui/filter`, 0.59.0): `ui-filter` (one Filter button, a panel of sections as a bottom
   sheet on phones or a popover wider), `ui-filter-chips`, and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer`
 - **App shell, feature card, Google authorization** (0.37): `ui-sidebar-layout` puts the sidebar on
