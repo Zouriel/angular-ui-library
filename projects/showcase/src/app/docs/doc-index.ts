@@ -163,6 +163,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Scrim', anchor: 'scrim' },
     { name: 'Selectable', anchor: 'selectable' },
     { name: 'Likes', anchor: 'likes' },
+    { name: 'Avatar tag', anchor: 'avatar-tag' },
     { name: 'Selection bar', anchor: 'selection-bar' },
     { name: 'Filter', anchor: 'filter' },
     { name: 'Masonry grid', anchor: 'masonry-grid' },
