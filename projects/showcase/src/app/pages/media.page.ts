@@ -1,6 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
 import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
 import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
@@ -16,7 +16,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -48,9 +48,7 @@ function grad(a: string, b: string): string {
       background: linear-gradient(to top, color-mix(in srgb, var(--ui-media-scrim) 70%, transparent), transparent); }
     .sel-grid img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .at-phone { max-width: 390px; display: flex; flex-direction: column; gap: var(--ui-space-4); }
-    .at-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-2); }
-    .at-tile { position: relative; aspect-ratio: 1; border-radius: var(--ui-radius); overflow: hidden; }
-    .at-tile img, .at-post-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .at-post-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
     .at-corner { position: absolute; top: var(--ui-space-1); left: var(--ui-space-1); max-width: calc(100% - 2 * var(--ui-space-1)); }
     .at-post { border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface); }
     .at-post-head { display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2) var(--ui-space-3); }
@@ -81,7 +79,7 @@ function grad(a: string, b: string): string {
       </doc-section>
 
       <doc-section name="Poster grid" selector="ui-poster-grid" [api]="posterGridApi" [outputs]="posterGridOut"
-        summary="One grid of same-shape picture tiles (ratio): 2 columns on a phone, 3 from 544px, 4 from 992px and 5 from 1280px of the grid's own width (a container query, so it fits a sidebar too). With a uiPosterDetails template every tile carries its details over the bottom of its picture on a compact ui-scrim that fades from clear to dark, so the words stay readable on any picture; keep them short and non-interactive, since the whole tile is the target. Without the template a tile is the picture alone, named by its label. A tile with an href is a link; with handleClicks a plain click goes to (select) for client-side routing and a Ctrl/Cmd click still opens a new tab. No picture, or one that fails to load, shows a gradient of its colors (or the theme's primary and accent). A small dot (mark) can flag a tile; screen readers hear its label."
+        summary="One grid of same-shape picture tiles (ratio): 2 columns on a phone, 3 from 544px, 4 from 992px and 5 from 1280px of the grid's own width (a container query, so it fits a sidebar too). With a uiPosterDetails template every tile carries its details over the bottom of its picture on a compact ui-scrim that fades from clear to dark, so the words stay readable on any picture; keep them short and non-interactive, since the whole tile is the target. Without the template a tile is the picture alone, named by its label. A tile with an href is a link; with handleClicks a plain click goes to (select) for client-side routing and a Ctrl/Cmd click still opens a new tab. No picture, or one that fails to load, shows a gradient of its colors (or the theme's primary and accent). A small dot (mark) can flag a tile; screen readers hear its label. A uiPosterCorner template draws something small, such as a venue's ui-avatar-tag at size xs, over every picture's top-start corner (top-left in a left-to-right page): inset by space2, above the picture, never wider than it (nor over the dot), and it takes no taps, so the whole tile stays the target. The Avatar tag demo below shows it."
         [shapes]="posterShapes">
         <doc-demo [code]="posterGridCode">
           <ui-poster-grid [posters]="posters" focus="top" [handleClicks]="true" (select)="picked.set($event)">
@@ -178,21 +176,14 @@ function grad(a: string, b: string): string {
 
       <doc-section name="Avatar tag" selector="ui-avatar-tag" [api]="avatarTagApi"
         summary="A tiny round picture and a name in small text, for a venue or a person on the corner of an album tile or a feed post. The picture is decorative (alt=&quot;&quot;); without one, or when it fails to load, the circle shows the name's first letter on the primary colour. A long name ends in an ellipsis inside the width the tag is given; it never grows past its container, so give the corner a max-width. variant=&quot;overlay&quot; (the default) is the dark see-through pill of ui-like-count, readable on any picture, white included; with glass (the library's glass config by default) it also blurs the photo behind it and lights its rim. variant=&quot;plain&quot; sits on an ordinary surface. size xs (16px picture) is for a small tile's corner, sm (20px) for a post. Read out as prefix + name (&quot;At Coco Palm&quot;); it takes no tap of its own.">
-        <doc-demo code="<div class=&quot;tile&quot;>
-  <img [src]=&quot;album.cover&quot; alt=&quot;&quot; />
-  <ui-avatar-tag class=&quot;corner&quot; size=&quot;xs&quot; prefix=&quot;At&quot; [name]=&quot;venue.name&quot; [src]=&quot;venue.logo&quot; />
-</div>
-<!-- .corner { position: absolute; top: 4px; left: 4px; max-width: calc(100% - 8px); } -->
-<ui-avatar-tag variant=&quot;plain&quot; prefix=&quot;At&quot; [name]=&quot;venue.name&quot; [src]=&quot;venue.logo&quot; />">
+        <doc-demo [code]="avatarTagCode">
           <div class="at-phone">
-            <div class="at-tiles">
-              @for (a of avatarTagAlbums; track $index) {
-                <div class="at-tile">
-                  <img [src]="a.cover" alt="" />
-                  <ui-avatar-tag class="at-corner" size="xs" prefix="At" [name]="a.venue" [src]="a.logo" />
-                </div>
-              }
-            </div>
+            <ui-poster-grid [posters]="avatarTagPosters" [ratio]="1" focus="top">
+              <ng-template uiPosterDetails let-p><span class="pt-title">{{ p.label }}</span></ng-template>
+              <ng-template uiPosterCorner let-i="index">
+                <ui-avatar-tag size="xs" prefix="At" [name]="avatarTagAlbums[i].venue" [src]="avatarTagAlbums[i].logo" />
+              </ng-template>
+            </ui-poster-grid>
             <div class="at-post">
               <div class="at-post-head">
                 <strong>Aisha and Ali's wedding</strong>
@@ -306,6 +297,7 @@ export class MediaPage {
     { name: 'focus', type: "'top' | 'center'", default: "'center'", desc: "Which part of a picture survives the crop; 'top' keeps a poster's heading." },
     { name: 'handleClicks', type: 'boolean', default: 'false', desc: 'A plain click on a link tile goes to (select) only (no browser navigation), for client-side routing.' },
     { name: '<ng-template uiPosterDetails>', type: 'slot', default: '—', desc: 'Details drawn on every tile over a compact scrim; context: the poster ($implicit) and index.' },
+    { name: '<ng-template uiPosterCorner>', type: 'slot', default: '—', desc: "Something small (a ui-avatar-tag, size xs) over each picture's top-start corner, inside it with a space2 inset; no taps of its own. Context: the poster ($implicit) and index. 0.74.0." },
   ];
   protected readonly posterGridOut: ApiRow[] = [{ name: 'select', type: 'number', default: '—', desc: 'The index of the tile that was activated.' }];
   protected readonly posterViewApi: ApiRow[] = [
@@ -442,6 +434,20 @@ export class MediaPage {
     { cover: grad('#f7f3ea', '#ffffff'), venue: 'The Sunset Ballroom at Kurumba Maldives Resort', logo: grad('#b34a3c', '#f2e1c2') },
     { cover: grad('#2faa6e', '#d9a521'), venue: 'Bandos Hall', logo: null },
     { cover: grad('#7a4fa0', '#99d8e2'), venue: 'Dharubaaruge', logo: 'data:image/png;base64,broken' },
+  ];
+  protected readonly avatarTagCode = `<ui-poster-grid [posters]="albums" (select)="open($event)">
+  <ng-template uiPosterDetails let-p><strong>{{ p.label }}</strong></ng-template>
+  <!-- Over each picture's top-left corner, inside it -->
+  <ng-template uiPosterCorner let-i="index">
+    <ui-avatar-tag size="xs" prefix="At" [name]="venues[i].name" [src]="venues[i].logo" />
+  </ng-template>
+</ui-poster-grid>
+<ui-avatar-tag variant="plain" prefix="At" [name]="venue.name" [src]="venue.logo" />`;
+  protected readonly avatarTagPosters: UiPoster[] = [
+    { src: this.avatarTagAlbums[0].cover, label: 'Aisha and Ali', mark: { tone: 'primary', label: 'New' } },
+    { src: this.avatarTagAlbums[1].cover, label: 'Hawwa turns 30' },
+    { src: this.avatarTagAlbums[2].cover, label: 'Eid get-together' },
+    { src: null, label: 'Office dinner', colors: ['#5b2a86', '#e5484d'] },
   ];
   protected readonly avatarTagApi: ApiRow[] = [
     { name: 'name', type: 'string', default: "''", desc: 'The name shown, ellipsised when long; its first letter is the fallback picture.' },

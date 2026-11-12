@@ -40,6 +40,21 @@ export class UiPosterDetails {
   }
 }
 
+/**
+ * Put on an `<ng-template>` inside ui-poster-grid to draw something small over the top-start corner of
+ * every tile's picture (top-left in a left-to-right page), e.g. a venue's ui-avatar-tag:
+ * `<ng-template uiPosterCorner let-p let-i="index">…</ng-template>`. It sits inside the picture with a
+ * space2 inset, above the picture and below the tile's focus ring, never grows wider than the picture
+ * (less the room for a mark's dot), and takes no taps: the whole tile stays the target.
+ */
+@Directive({ selector: 'ng-template[uiPosterCorner]' })
+export class UiPosterCorner {
+  readonly template = inject<TemplateRef<UiPosterDetailsContext>>(TemplateRef);
+  static ngTemplateContextGuard(_d: UiPosterCorner, ctx: unknown): ctx is UiPosterDetailsContext {
+    return true;
+  }
+}
+
 /** The gradient a poster without a picture shows. Shared with ui-poster-view so both agree. */
 export function uiPosterFallback(colors?: string[] | null): string {
   const c = (colors ?? []).filter(Boolean);
@@ -57,6 +72,7 @@ export function uiPosterFallback(colors?: string[] | null): string {
  * and a small dot (`mark`) can flag it, named for screen readers. A tile with an `href` is a link;
  * every tile emits `select` with its index when activated, and with `handleClicks` a plain click on a
  * link is left to `select` (for client-side routing) while modified clicks still open a new tab.
+ * A `uiPosterCorner` template draws something small (a ui-avatar-tag) over each picture's top-start corner.
  */
 @Component({
   selector: 'ui-poster-grid',
@@ -92,6 +108,11 @@ export function uiPosterFallback(colors?: string[] | null): string {
           @if (p.mark; as m) { <span class="sr">{{ m.label }}</span> }
         </ui-scrim>
       }
+      @if (corner(); as c) {
+        <span class="corner" [class.corner--mark]="!!p.mark">
+          <ng-container [ngTemplateOutlet]="c.template" [ngTemplateOutletContext]="{ $implicit: p, index: i }" />
+        </span>
+      }
     </ng-template>
   `,
   styles: `
@@ -101,7 +122,7 @@ export function uiPosterFallback(colors?: string[] | null): string {
     @container (min-width: 992px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     @container (min-width: 1280px) { .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
     li { min-width: 0; }
-    .tile { position: relative; display: block; width: 100%; padding: 0; border: none; cursor: pointer; font: inherit; text-align: start;
+    .tile { position: relative; isolation: isolate; display: block; width: 100%; padding: 0; border: none; cursor: pointer; font: inherit; text-align: start;
       color: inherit; text-decoration: none;
       aspect-ratio: var(--ui-poster-ratio, 0.75); overflow: hidden; border-radius: var(--ui-radius);
       background: var(--ui-color-surface-raised);
@@ -112,6 +133,10 @@ export function uiPosterFallback(colors?: string[] | null): string {
     img, .fallback { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
     img { object-fit: cover; }
     .details { position: absolute; inset-inline: 0; bottom: 0; max-height: 100%; overflow: hidden; }
+    /* Over the picture's top-start corner, inside it: never wider than the picture, nor over the mark's dot. */
+    .corner { position: absolute; top: var(--ui-space-2); inset-inline-start: var(--ui-space-2); z-index: 1;
+      display: flex; min-width: 0; max-width: calc(100% - 2 * var(--ui-space-2)); pointer-events: none; }
+    .corner--mark { max-width: calc(100% - 3 * var(--ui-space-2) - 10px); }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     /* A light ring, then a faint dark edge: the dot shows on any picture, dark posters included. */
     .dot { position: absolute; top: var(--ui-space-2); inset-inline-end: var(--ui-space-2); width: 10px; height: 10px; border-radius: 50%;
@@ -132,6 +157,7 @@ export class UiPosterGrid {
   readonly select = output<number>();
 
   protected readonly details = contentChild(UiPosterDetails);
+  protected readonly corner = contentChild(UiPosterCorner);
 
   protected readonly broken = signal(new Set<string>());
   protected readonly position = computed(() => (this.focus() === 'top' ? '50% 0' : '50% 50%'));
