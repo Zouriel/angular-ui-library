@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { provideUiConfig } from '@zouriel/ui';
 import { UiButton } from '@zouriel/ui/button';
 import { UiSpinner } from '@zouriel/ui/spinner';
@@ -73,6 +73,8 @@ describe('UiShutterLoader geometry', () => {
 });
 
 describe('UiShutterLoader timing', () => {
+  // Full motion, whatever matchMedia stub another spec file left on the shared window.
+  beforeEach(() => reduceMotion(false));
   it('is shut at 0.09 s, part open at 0.2 s and fully open by 1.5 s', () => {
     expect(uiShutterClosure(0.09)).toBeCloseTo(1, 6);
     expect(uiShutterBladeDistance(uiShutterClosure(0.09))).toBeCloseTo(0.08 * UI_SHUTTER_A0, 6);

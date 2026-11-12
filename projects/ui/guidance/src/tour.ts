@@ -2,11 +2,12 @@ import { FocusTrap, FocusTrapFactory, LiveAnnouncer } from '@angular/cdk/a11y';
 import { Overlay, OverlayRef } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { DOCUMENT } from '@angular/common';
-import {
-  Component, DestroyRef, Directive, ElementRef, Injectable, NgZone, computed, effect, inject, input, signal, untracked, type Signal,
-} from '@angular/core';
-import { injectUiStrings, uiFormatString } from '@zouriel/ui';
+import { Component, ElementRef, Injectable, NgZone, computed, inject, signal, type Signal } from '@angular/core';
+import { UiTourAnchors, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import type { UiTourOutcome } from './guidance';
+
+/** `uiTourAnchor` lives in the core entry point (see `UiTourAnchors`); it is re-exported here. */
+export { UiTourAnchor } from '@zouriel/ui';
 
 /** Which side of its anchor a tour step's bubble prefers; `auto` is below, else above. `start` /
  *  `end` follow the text direction. */
@@ -60,33 +61,20 @@ type Side = 'top' | 'bottom' | 'left' | 'right';
 export class UiTourService {
   private readonly overlay = inject(Overlay);
   private readonly doc = inject(DOCUMENT);
-  private readonly anchors = new Map<string, Set<HTMLElement>>();
+  private readonly anchors = inject(UiTourAnchors);
   private readonly running = signal<string | null>(null);
   private stopCurrent: ((o: UiTourOutcome) => void) | null = null;
   /** The id of the tour on screen, or null. */
   readonly active: Signal<string | null> = this.running.asReadonly();
 
-  /** Used by `uiTourAnchor`. */
+  /** Adds an anchor by hand (what `uiTourAnchor` does); returns the function that removes it. */
   register(id: string, el: HTMLElement): () => void {
-    let set = this.anchors.get(id);
-    if (!set) this.anchors.set(id, (set = new Set()));
-    set.add(el);
-    return () => {
-      set!.delete(el);
-      if (!set!.size && this.anchors.get(id) === set) this.anchors.delete(id);
-    };
+    return this.anchors.register(id, el);
   }
 
   /** The element for an anchor id that is on the page and drawn (has a size), or null. */
   findAnchor(id: string): HTMLElement | null {
-    for (const el of this.anchors.get(id) ?? []) {
-      if (!el.isConnected) continue;
-      const r = el.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) continue;
-      if (this.doc.defaultView?.getComputedStyle(el).visibility === 'hidden') continue;
-      return el;
-    }
-    return null;
+    return this.anchors.find(id);
   }
 
   /**
@@ -134,30 +122,6 @@ export class UiTourService {
   /** Ends the running tour with `closed` (e.g. the page is leaving). */
   stop(): void {
     this.stopCurrent?.('closed');
-  }
-}
-
-/**
- * `uiTourAnchor`: marks an element as a tour step's target, by a shared id
- * (`<a uiTourAnchor="nav.feed">`). Several elements may share an id; the first one on screen wins.
- */
-@Directive({ selector: '[uiTourAnchor]' })
-export class UiTourAnchor {
-  readonly id = input.required<string>({ alias: 'uiTourAnchor' });
-
-  constructor() {
-    const tours = inject(UiTourService);
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-    let off: (() => void) | null = null;
-    // Registered under its id, again whenever the id changes.
-    effect(() => {
-      const id = this.id();
-      untracked(() => {
-        off?.();
-        off = tours.register(id, host);
-      });
-    });
-    inject(DestroyRef).onDestroy(() => off?.());
   }
 }
 
