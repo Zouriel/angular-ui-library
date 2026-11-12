@@ -374,6 +374,22 @@ export interface UiStrings {
   filterDone: string;
   /** Filter: a section's "everything" row when the section gives no allLabel. */
   filterAll: string;
+  /** Tour (0.75.0): the coach-mark bubble's buttons, its step count ("2 of 4") and what a screen
+   *  reader hears on each step (`{n}`, `{total}`, `{text}`). */
+  tourBack: string;
+  tourNext: string;
+  tourDone: string;
+  tourSkip: string;
+  tourStep: string;
+  tourStepAnnounce: string;
+  /** Tour, offer card (0.75.0): the small action that turns every tip off. */
+  tipsOff: string;
+  /** Checklist (0.75.0): the count in its header, its finished state, and each item's state for
+   *  screen readers. */
+  checklistCount: string;
+  checklistAllDone: string;
+  checklistItemDone: string;
+  checklistItemToDo: string;
 
   /** Date names and formats (0.46.0) for the calendar, date picker and date range picker. `locale` is
    *  the locale Intl formats with; '' uses the app's `LOCALE_ID`. */
@@ -586,6 +602,17 @@ export const defaultUiStrings: UiStrings = {
   filterShow: 'Show {n}',
   filterDone: 'Done',
   filterAll: 'All',
+  tourBack: 'Back',
+  tourNext: 'Next',
+  tourDone: 'Done',
+  tourSkip: 'Skip',
+  tourStep: '{n} of {total}',
+  tourStepAnnounce: 'Step {n} of {total}: {text}',
+  tipsOff: 'Turn off tips',
+  checklistCount: '{done} of {total}',
+  checklistAllDone: 'All set',
+  checklistItemDone: 'Done',
+  checklistItemToDo: 'Not done yet',
   locale: '',
   months: [],
   monthsShort: [],
@@ -795,6 +822,17 @@ export const uiStringsDv: UiStrings = {
   filterShow: '{n} ދައްކާ',
   filterDone: 'ނިމުނީ',
   filterAll: 'ހުރިހާ',
+  tourBack: 'ފަހަތަށް',
+  tourNext: 'ކުރިއަށް',
+  tourDone: 'ނިމުނީ',
+  tourSkip: 'ދޫކޮށްލާ',
+  tourStep: '{total} އިން {n}',
+  tourStepAnnounce: '{total} ފިޔަވަޅުގެ {n} ވަނަ: {text}',
+  tipsOff: 'ޓިޕްސް ނިއްވާލާ',
+  checklistCount: '{total} އިން {done}',
+  checklistAllDone: 'ހުރިހާ ކަމެއް ނިމިއްޖެ',
+  checklistItemDone: 'ނިމިފައި',
+  checklistItemToDo: 'އަދި ނުނިމޭ',
   locale: 'dv',
   months: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],
   monthsShort: ['ޖަނަވަރީ', 'ފެބުރުއަރީ', 'މާރިޗު', 'އެޕްރީލް', 'މޭ', 'ޖޫން', 'ޖުލައި', 'އޯގަސްޓު', 'ސެޕްޓެމްބަރު', 'އޮކްޓޫބަރު', 'ނޮވެމްބަރު', 'ޑިސެމްބަރު'],

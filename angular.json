@@ -86,8 +86,10 @@
                   // 0.32.0: +5 kB for maldives-dark, the night block in the same global stylesheet.
                   // Liquid themes: +25 kB for theme-liquid.css (twelve themes, ~20 kB of CSS), loaded globally like every theme.
                   // 0.72.0: +5 kB because ui-button (top bar) now carries ui-shutter-loader for spinner: 'shutter'.
+                  // 0.75.0: 610 kB measured; under 1 kB of that is the guidance words (tour, tips, checklist) in
+                  // the built-in strings, English and Dhivehi, which the shell loads with the core entry point.
                   "type": "initial",
-                  "maximumWarning": "605kB",
+                  "maximumWarning": "612kB",
                   "maximumError": "1MB"
                 },
                 {
