@@ -85,8 +85,9 @@
                   // like every theme (~7 kB of CSS); main.js was already at the old 560 kB line.
                   // 0.32.0: +5 kB for maldives-dark, the night block in the same global stylesheet.
                   // Liquid themes: +25 kB for theme-liquid.css (twelve themes, ~20 kB of CSS), loaded globally like every theme.
+                  // 0.72.0: +5 kB because ui-button (top bar) now carries ui-shutter-loader for spinner: 'shutter'.
                   "type": "initial",
-                  "maximumWarning": "600kB",
+                  "maximumWarning": "605kB",
                   "maximumError": "1MB"
                 },
                 {

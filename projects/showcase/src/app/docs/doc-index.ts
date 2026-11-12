@@ -113,6 +113,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'feedback': [
     { name: 'Alert', anchor: 'alert' },
     { name: 'Spinner', anchor: 'spinner' },
+    { name: 'Shutter loader', anchor: 'shutter-loader' },
     { name: 'Progress bar', anchor: 'progress-bar' },
     { name: 'Progress circle', anchor: 'progress-circle' },
     { name: 'Skeleton', anchor: 'skeleton' },
