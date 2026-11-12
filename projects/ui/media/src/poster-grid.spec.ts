@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
+import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
+import { UiPosterCorner, UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
 import { UiPosterView } from './poster-view';
 import { UiScrim } from './scrim';
 
@@ -30,6 +31,26 @@ class DetailsHost {
     { src: 'a.png', label: 'Aisha and Ali', href: '/dashboard/1', mark: { tone: 'primary', label: 'New' } },
     { src: null, label: 'Eid party' },
   ];
+  picked: number[] = [];
+}
+
+@Component({
+  imports: [UiPosterGrid, UiPosterDetails, UiPosterCorner, UiAvatarTag],
+  template: `
+    <ui-poster-grid [posters]="posters" (select)="picked.push($event)">
+      <ng-template uiPosterDetails let-p><b class="t">{{ p.label }}</b></ng-template>
+      <ng-template uiPosterCorner let-p let-i="index">
+        <ui-avatar-tag size="xs" [name]="venues[i]" />
+      </ng-template>
+    </ui-poster-grid>
+  `,
+})
+class CornerHost {
+  posters: UiPoster[] = [
+    { src: 'a.png', label: 'Aisha and Ali' },
+    { src: null, label: 'Eid party', mark: { tone: 'primary', label: 'New' } },
+  ];
+  venues = ['Coco Palm Dhuni Kolhu Maldives Resort and Spa, the long name', 'Bandos'];
   picked: number[] = [];
 }
 
@@ -148,6 +169,58 @@ describe('ui-poster-grid with details', () => {
     const css = ((UiScrim as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
     expect(css).toMatch(/\.compact[^{]*\{[^}]*--ui-scrim-lead:\s*var\(--ui-space-8\)/);
     expect(css).toMatch(/padding:\s*var\(--ui-scrim-lead\)/);
+  });
+});
+
+describe('ui-poster-grid with a corner', () => {
+  const css = () => ((UiPosterGrid as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
+
+  it('draws each poster\'s corner inside its own tile, over the picture, with the poster and index', async () => {
+    const fx = TestBed.createComponent(CornerHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    const tiles = (fx.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.tile');
+    expect(tiles[0].querySelector('.corner ui-avatar-tag')!.getAttribute('aria-label')).toBe(fx.componentInstance.venues[0]);
+    expect(tiles[1].querySelector('.corner ui-avatar-tag')!.getAttribute('aria-label')).toBe('Bandos');
+    // After the picture (and the details scrim), so it paints above them; not inside the scrim.
+    const corner = tiles[0].querySelector('.corner')!;
+    expect(tiles[0].querySelector('img')!.compareDocumentPosition(corner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(corner.closest('ui-scrim')).toBeNull();
+    // A tile with a mark keeps the corner clear of the dot on the other side.
+    expect(tiles[0].querySelector('.corner')!.classList.contains('corner--mark')).toBe(false);
+    expect(tiles[1].querySelector('.corner')!.classList.contains('corner--mark')).toBe(true);
+  });
+
+  it('has no corner without the template', async () => {
+    const fx = TestBed.createComponent(DetailsHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    expect((fx.nativeElement as HTMLElement).querySelector('.corner')).toBeNull();
+    const plain = TestBed.createComponent(GridHost);
+    plain.autoDetectChanges();
+    await plain.whenStable();
+    expect((plain.nativeElement as HTMLElement).querySelector('.corner')).toBeNull();
+  });
+
+  it('pins it to the top-start corner with an inset, never wider than the picture, and passes taps through', () => {
+    const rule = css().match(/\.corner(\[[^\]]*\])?\s*\{([^}]*)\}/)![2];
+    expect(rule).toMatch(/position:\s*absolute/);
+    expect(rule).toMatch(/top:\s*var\(--ui-space-2\)/);
+    expect(rule).toMatch(/inset-inline-start:\s*var\(--ui-space-2\)/);
+    expect(rule).not.toMatch(/(^|[^-])left:/);
+    expect(rule).toMatch(/max-width:\s*calc\(100% - 2 \* var\(--ui-space-2\)\)/);
+    expect(rule).toMatch(/min-width:\s*0/);
+    expect(rule).toMatch(/pointer-events:\s*none/);
+    expect(css()).toMatch(/\.corner--mark(\[[^\]]*\])?\s*\{[^}]*max-width:\s*calc\(100% - 3 \* var\(--ui-space-2\) - 10px\)/);
+  });
+
+  it('still selects the tile when the corner is tapped', async () => {
+    const fx = TestBed.createComponent(CornerHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    const tag = (fx.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.tile')[1].querySelector<HTMLElement>('ui-avatar-tag')!;
+    tag.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+    expect(fx.componentInstance.picked).toEqual([1]);
   });
 });
 
