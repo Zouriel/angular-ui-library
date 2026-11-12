@@ -164,7 +164,7 @@ export class UiTourAnchor {
 /** The tour on screen: the dimmed layer with its cut-out and the bubble. Internal: use UiTourService. */
 @Component({
   selector: 'ui-tour-panel',
-  host: { '[attr.data-side]': 'side()', '[class.calm]': 'calm', '[class.ready]': 'ready()' },
+  host: { '[attr.data-side]': 'side()', '[class.calm]': 'calm', '[class.ready]': 'ready()', '[class.glide]': 'glide()' },
   template: `
     <div class="catcher" aria-hidden="true"></div>
     <div class="hole" aria-hidden="true" [style.left.px]="hole().x" [style.top.px]="hole().y"
@@ -200,6 +200,9 @@ export class UiTourAnchor {
       position: absolute; box-sizing: border-box; pointer-events: none;
       border-radius: var(--ui-radius-lg);
       box-shadow: 0 0 0 200vmax var(--ui-color-overlay);
+    }
+    /* Glides between steps only: on the first step it appears where the anchor is. */
+    :host(.glide) .hole {
       transition: left var(--ui-motion-slow) var(--ui-ease-standard), top var(--ui-motion-slow) var(--ui-ease-standard),
         width var(--ui-motion-slow) var(--ui-ease-standard), height var(--ui-motion-slow) var(--ui-ease-standard);
     }
@@ -258,10 +261,10 @@ export class UiTourAnchor {
       .btn::before, .link::before { content: ''; position: absolute; inset: -6px -2px; }
       .btn { min-height: 36px; }
     }
-    :host(.calm) .hole, :host(.calm) .bubble { transition: none; animation: none; }
+    :host(.calm) .hole, :host(.calm.glide) .hole, :host(.calm) .bubble { transition: none; animation: none; }
     :host(.calm) .hole::after { animation: none; }
     @media (prefers-reduced-motion: reduce) {
-      .hole, :host(.ready) .bubble { transition: none; animation: none; }
+      .hole, :host(.glide) .hole, :host(.ready) .bubble { transition: none; animation: none; }
       .hole::after { animation: none; }
     }
   `,
@@ -283,6 +286,7 @@ export class UiTourPanel {
   protected readonly last = computed(() => this.index() === this.steps().length - 1);
   protected readonly turnOff = signal(true);
   protected readonly ready = signal(false);
+  protected readonly glide = signal(false);
   protected readonly side = signal<Side | 'none'>('bottom');
   protected readonly hole = signal({ x: 0, y: 0, w: 0, h: 0 });
   protected readonly pos = signal({ x: 0, y: 0, arrow: 24 });
@@ -352,7 +356,8 @@ export class UiTourPanel {
     const steps = this.steps();
     while (i >= 0 && i < steps.length && !this.find(steps[i].anchor)) i += dir;
     if (i < 0) i = this.index();
-    if (i >= steps.length) return this.finish(dir === 1 && this.index() > 0 ? 'finished' : 'closed');
+    // Past the last step still on the page: the tour was gone through to its end.
+    if (i >= steps.length) return this.finish('finished');
     const el = this.find(steps[i].anchor)!;
     this.index.set(i);
     this.anchorEl = el;
@@ -388,6 +393,8 @@ export class UiTourPanel {
   private reveal(): void {
     this.layout();
     this.ready.set(true);
+    // From now on the cut-out glides to the next anchor (after this frame has drawn it in place).
+    setTimeout(() => this.glide.set(true), 50);
     const s = this.step();
     const text = s.title ? `${s.title}. ${s.text}` : s.text;
     this.announcer.announce(

@@ -184,6 +184,28 @@ describe('UiTourService', () => {
     expect(t.outcome).toBe('finished');
   });
 
+  it('Next on the first step finishes when every later anchor has gone', async () => {
+    const { f, run, click } = setup();
+    const t = run();
+    boxes.set('a2', { x: 0, y: 0, w: 0, h: 0 });
+    f.componentInstance.third.set(false);
+    f.detectChanges();
+    click('.next');
+    await t.p;
+    expect(t.outcome).toBe('finished');
+  });
+
+  it('puts the cut-out in place on the first step and glides only between steps', async () => {
+    const { f, q, tours, settle, click } = setup();
+    void tours.start(spec());
+    f.detectChanges();
+    expect(q('ui-tour-panel')!.classList.contains('glide')).toBe(false);
+    settle();
+    expect(q('ui-tour-panel')!.classList.contains('glide')).toBe(true);
+    click('.next');
+    expect(q('ui-tour-panel')!.classList.contains('glide')).toBe(true);
+  });
+
   it('keeps at most 5 steps, with a warning', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { q, run } = setup();
