@@ -166,7 +166,7 @@ providers: [provideUiConfig({ spinner: 'shutter' })]">
       </doc-section>
 
       <doc-section name="Empty state" selector="ui-empty-state" [api]="emptyApi"
-        summary="Placeholder for no content: heading, optional description, and two slots, [empty-icon] and [empty-actions]; empty slots collapse.">
+        summary="Placeholder for no content: heading, optional description, and four slots, [empty-art], [empty-icon], [empty-actions] and [empty-starters]; empty slots collapse. Art and starter cards are shown on the Guidance page.">
         <doc-demo code="<ui-empty-state heading=&quot;No projects&quot; description=&quot;Create one to start.&quot;>
   <hugeicons-icon empty-icon [icon]=&quot;FolderAddIcon&quot; [size]=&quot;32&quot; />
   <ui-button empty-actions>New project</ui-button>
@@ -277,6 +277,7 @@ export class FeedbackPage {
     { name: 'heading', type: 'string', default: "'Nothing here yet'", desc: 'Title.' },
     { name: 'description', type: 'string', default: '—', desc: 'Supporting text.' },
     { name: '[empty-icon] / [empty-actions]', type: 'slot', default: '—', desc: 'Icon above the heading; buttons below the text.' },
+    { name: '[empty-art] / [empty-starters]', type: 'slot', default: '—', desc: 'A picture above everything (at most 320 x 200); ui-starter-cards at the bottom (see Guidance).' },
   ];
   protected readonly resultApi: ApiRow[] = [
     { name: 'status', type: 'UiResultStatus', default: "'info'", desc: 'Icon and colour.' },

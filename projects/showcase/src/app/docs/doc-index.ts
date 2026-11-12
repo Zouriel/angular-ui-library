@@ -121,6 +121,15 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Empty state', anchor: 'empty-state' },
     { name: 'Result', anchor: 'result' },
   ],
+  'guidance': [
+    { name: 'Tour', anchor: 'tour' },
+    { name: 'Offer card', anchor: 'offer-card' },
+    { name: 'Checklist', anchor: 'checklist' },
+    { name: 'Empty state with art and starters', anchor: 'empty-art' },
+    { name: 'Starter card', anchor: 'starter-card' },
+    { name: 'Guidance controller', anchor: 'guidance' },
+    { name: 'One-off hint', anchor: 'hint-once' },
+  ],
   'navigation': [
     { name: 'Navbar', anchor: 'nav-navbar' },
     { name: 'Tabs', anchor: 'nav-tabs' },
