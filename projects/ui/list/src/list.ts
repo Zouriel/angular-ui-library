@@ -73,7 +73,9 @@ export class UiList {
     .ui-list-item:disabled { opacity: .5; cursor: not-allowed; }
     .lead:empty, .trail:empty { display: none; }
     .main { flex: 1; min-width: 0; }
-    .trail { flex: none; color: var(--ui-color-text-muted); }
+    /* A flex box like .lead: as a block, a trailing icon sat on a text line box and added its descender
+       space, so rows with a chevron were 4px taller than rows without (38 vs 34px in one settings list). */
+    .trail { flex: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
     .lead { flex: none; display: inline-flex; }
   `,
 })
