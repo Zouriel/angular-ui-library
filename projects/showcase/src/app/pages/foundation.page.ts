@@ -1,10 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
-import { UiThemeProvider, UiThemeService } from '@zouriel/ui/theme';
+import { UiThemeProvider, UiThemeService, UiThemeSwatch, type UiThemeSwatchColors } from '@zouriel/ui/theme';
 import { UiCard } from '@zouriel/ui/card';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiChip, UiAvatar } from '@zouriel/ui/badge';
-import { UiInput, UiSwitch, UiCheckbox } from '@zouriel/ui/form';
+import { UiInput, UiSwitch, UiCheckbox, UiChoiceGrid, type UiChoice } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Notification01Icon from '@hugeicons/core-free-icons/Notification01Icon';
 import { ShowcaseDensity } from '../docs/density';
@@ -14,7 +14,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-foundation',
-  imports: [UiText, UiThemeProvider, UiCard, UiButton, UiSegmented, UiChip, UiAvatar, UiInput, UiSwitch, UiCheckbox, HugeiconsIconComponent, FormsModule, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiThemeProvider, UiCard, UiButton, UiSegmented, UiChip, UiAvatar, UiInput, UiSwitch, UiCheckbox, UiChoiceGrid, UiThemeSwatch, HugeiconsIconComponent, FormsModule, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Getting started" title="Foundation"
       lead="Design tokens, the config provider, and the theme service. Everything else builds on these.">
@@ -190,6 +190,16 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
           </div>
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Theme swatch" selector="ui-theme-swatch" [api]="swatchApi" shapes="interface UiThemeSwatchColors { bg: string; surface: string; text: string; muted: string; accent: string; }   // CSS colours"
+        summary="A small picture of a theme for a theme picker: the page colour, a card with two lines of text and a button, at 4:3, as wide as its box. It takes the colours themselves (a server can send them), so it shows a theme the app hasn't loaded; accent replaces the button colour, for a custom brand colour. Put it in a ui-choice-grid #tile, where the tile carries the name: the swatch is hidden from screen readers unless it has a label.">
+        <doc-demo [code]="swatchCode">
+          <ui-choice-grid [options]="swatchChoices" [(value)]="swatchPick" label="Theme" minTile="120px">
+            <ng-template #tile let-item><ui-theme-swatch [colors]="swatchColors[item.value]" /></ng-template>
+          </ui-choice-grid>
+          <div class="single-swatch"><ui-theme-swatch [colors]="swatchColors['oxblood']" accent="#2f6f4f" label="Oxblood with a green button" /></div>
+        </doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `
@@ -211,12 +221,38 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
     .islands { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
     .islands .ui-surface { border-radius: var(--ui-radius-lg); }
     @media (max-width: 640px) { .islands { grid-template-columns: 1fr; } }
+    .single-swatch { width: 160px; }
     .density-demo { display: flex; flex-direction: column; gap: var(--ui-space-4); }
     .density-sample { display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 420px; }
     .density-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
   `,
 })
 export class FoundationPage {
+  protected readonly swatchColors: Record<string, UiThemeSwatchColors> = {
+    oxblood: { bg: '#F2EADB', surface: '#F8F3EA', text: '#1C1C1F', muted: '#55504A', accent: '#7A0C1E' },
+    'oxblood-dark': { bg: '#1C1C1F', surface: '#232326', text: '#F2EADB', muted: '#BDB4A6', accent: '#F58A99' },
+    glacier: { bg: '#F1F3F4', surface: '#F8FBFC', text: '#0E1A24', muted: '#475867', accent: '#B30022' },
+    maldives: { bg: '#f3f8fb', surface: '#ffffff', text: '#0b2d3a', muted: '#365f6e', accent: '#0b2d3a' },
+    dark: { bg: '#0f1433', surface: '#151b3f', text: '#c9d6ff', muted: '#9daadc', accent: '#ffc93c' },
+    light: { bg: '#eef2ff', surface: '#f7f9ff', text: '#0f1433', muted: '#46507e', accent: '#7a5800' },
+  };
+  protected readonly swatchChoices: UiChoice[] = [
+    { value: 'oxblood', label: 'Oxblood' }, { value: 'oxblood-dark', label: 'Oxblood night' }, { value: 'glacier', label: 'Glacier' },
+    { value: 'maldives', label: 'Maldives' }, { value: 'dark', label: 'Navy dark' }, { value: 'light', label: 'Navy light' },
+  ];
+  protected swatchPick: string | null = 'oxblood';
+  protected readonly swatchCode = `<ui-choice-grid [options]="themes" [(value)]="theme" label="Theme">
+  <ng-template #tile let-item><ui-theme-swatch [colors]="previews[item.value]" [accent]="brandColour" /></ng-template>
+</ui-choice-grid>
+
+previews: Record<string, UiThemeSwatchColors> = {
+  oxblood: { bg: '#F2EADB', surface: '#F8F3EA', text: '#1C1C1F', muted: '#55504A', accent: '#7A0C1E' },
+};`;
+  protected readonly swatchApi: ApiRow[] = [
+    { name: 'colors', type: 'UiThemeSwatchColors (required)', default: '—', desc: 'The page, card, text, muted text and button colours (any CSS colours).' },
+    { name: 'accent', type: 'string | null', default: 'null', desc: 'Replaces colors.accent for the button.' },
+    { name: 'label', type: 'string | null', default: 'null', desc: 'Names the picture (role="img"); without it the swatch is hidden from screen readers.' },
+  ];
   protected readonly theme = inject(UiThemeService);
   protected readonly density = inject(ShowcaseDensity);
   protected readonly bell = Notification01Icon;

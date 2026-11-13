@@ -7,8 +7,8 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angul
 import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput, UiPhoneInput,
-  type UiChoice, type UiAnchor, type UiTokenRun,
+  UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput, UiPhoneInput, UiHandleField,
+  type UiChoice, type UiHandleCheck, type UiAnchor, type UiTokenRun,
 } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
@@ -27,6 +27,11 @@ const CHOICE = `interface UiChoice {
 }
 // context of the #tile template
 interface UiChoiceTileContext { $implicit: UiChoice; selected: boolean; }`;
+const HANDLE = `interface UiHandleCheck {
+  state: 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+  message?: string;      // replaces the built-in line
+  suggestion?: string;   // offered as "Use @x"
+}`;
 const TOKEN = `interface UiTokenRun {
   text?: string;     // literal text ('\\n' for a line break)
   token?: string;    // or an atomic token's machine value, e.g. 'event.date'
@@ -41,7 +46,7 @@ const TOKEN = `interface UiTokenRun {
     ReactiveFormsModule, FormsModule, UiButton, UiIconButton, HugeiconsIconComponent, UiTokenInput,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
-    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput,
+    UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput, UiHandleField,
     UiCombobox, UiMultiSelect, UiDatePicker, UiCalendar, UiDateRangePicker,
     DocPage, DocSection, DocDemo,
   ],
@@ -310,6 +315,16 @@ phone = new FormControl<string | null>('+9607771234');
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Handle field" selector="ui-handle-field" [api]="handleApi" [outputs]="handleOut" [shapes]="HANDLE"
+        summary="A field for an @handle (a link name) that checks as you type whether it is free. Letters become lower case and anything but a-z, 0-9, dot and underscore is dropped as you type or paste; the prefix sits inside the field but is not part of the value. After a pause it calls check (shorter than minLength it says so and doesn't ask). The line under the field shows Checking…, a tick and @x is free, or a cross and @x is taken, and is read out politely. A reply for an older value never replaces a newer one, and a failed check says Couldn't check. Try again. A suggestion from the reply (or the suggestion input while the field is empty) shows as Use @x, which fills it in and checks it. 44px tall for a thumb.">
+        <doc-demo lang="ts + html" [code]="handleCode">
+          <div class="slot-demos">
+            <ui-handle-field [(value)]="handle" [check]="checkHandle" suggestion="mia.ali" hint="invites.blog/@yourname" (statusChange)="handleState.set($event.state)" />
+          </div>
+          <span class="muted">value: {{ handle() }} · state: {{ handleState() }} · taken in this demo: mia, admin, studio</span>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Anchor picker" selector="ui-anchor-picker" [api]="anchorApi" shapes="interface UiAnchor { x: number; y: number }   // fractions of the box: 0, 0.5 or 1 for the dots"
         summary="The nine-dot grid for picking a point of a box, such as a pivot or an alignment. Value is {x, y} in fractions of the box; a point between dots shows none chosen. A radiogroup with one tab stop; arrow keys move the choice, and each dot is named (Top left, Centre…). Also a form control.">
         <doc-demo code="<ui-anchor-picker [(value)]=&quot;pivot&quot; label=&quot;Pivot&quot; />">
@@ -347,6 +362,29 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
   `,
 })
 export class FormsPage {
+  protected readonly HANDLE = HANDLE;
+  protected readonly handle = signal('');
+  protected readonly handleState = signal('idle');
+  /** A pretend server: a short wait, three handles taken, a suggestion for them. */
+  protected readonly checkHandle = (h: string): Promise<UiHandleCheck> =>
+    new Promise((resolve) => setTimeout(() => resolve(['mia', 'admin', 'studio'].includes(h) ? { state: 'taken', suggestion: h + '.studio' } : { state: 'available' }), 600));
+  protected readonly handleCode = `<ui-handle-field [(value)]="handle" [check]="checkHandle" suggestion="mia.ali" hint="invites.blog/@yourname" />
+
+checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/api/handles/' + handle));`;
+  protected readonly handleApi: ApiRow[] = [
+    { name: 'value', type: 'model<string>', default: "''", desc: 'The handle without the prefix; two-way with [(value)].' },
+    { name: 'check', type: '(handle: string) => Promise<UiHandleCheck> (required)', default: '—', desc: 'Asks whether a handle is free. A rejected promise shows Couldn\'t check. Try again.' },
+    { name: 'label', type: 'string', default: "'Your link name'", desc: 'The visible label.' },
+    { name: 'prefix', type: 'string', default: "'@'", desc: 'Drawn inside the field before the text; not part of the value.' },
+    { name: 'debounceMs', type: 'number', default: '400', desc: 'How long typing must pause before check is called.' },
+    { name: 'minLength', type: 'number', default: '3', desc: 'Shorter than this says At least 3 letters or numbers, without calling check.' },
+    { name: 'maxLength', type: 'number', default: '30', desc: 'Longer input is cut.' },
+    { name: 'suggestion', type: 'string', default: 'undefined', desc: 'Offered as Use @x while the field is empty.' },
+    { name: 'hint', type: 'string', default: 'undefined', desc: 'Shown under the field while nothing is being checked.' },
+  ];
+  protected readonly handleOut: ApiRow[] = [
+    { name: 'statusChange', type: 'UiHandleCheck', desc: 'Every change of the status line (idle, checking, available, taken, invalid).' },
+  ];
   protected readonly choices: UiChoice[] = [
     // A full first group and wider tiles (minTile 120px), so the grid fills the demo instead of a corner of it.
     { value: 'fade', label: 'Fade', group: 'Entrances' }, { value: 'rise', label: 'Rise', group: 'Entrances' },
