@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, model } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Tick02Icon from '@hugeicons/core-free-icons/Tick02Icon';
 import { UI_CONFIG, type UiTier } from '@zouriel/ui';
@@ -14,6 +14,11 @@ let nextId = 0;
  * `[plan-action]` (it sits at the bottom, lined up across a `ui-plan-grid`) and small print under it
  * with `[plan-fineprint]`. The card is a group named by the plan; the price is read as one phrase
  * ("MVR 499 per event").
+ *
+ * `addOn` adds an optional extra under the features ("Add the AI designer", with `addOnNote` "+MVR 77 a
+ * month" muted under it): a bordered row that ticks as a whole, bound with `[(addOnChecked)]`. The card
+ * doesn't change its price; the caller shows the new total (on its button, say). One checkbox, named by
+ * the label and the note. `addOnDisabled` greys it out.
  */
 @Component({
   selector: 'ui-plan-card',
@@ -40,6 +45,24 @@ let nextId = 0;
             <li><hugeicons-icon [icon]="tick" [size]="16" [strokeWidth]="2" aria-hidden="true" /><span>{{ f }}</span></li>
           }
         </ul>
+      }
+      @if (addOn()) {
+        <label class="addon" [class.on]="addOnChecked()" [class.disabled]="addOnDisabled()">
+          <input
+            type="checkbox"
+            class="native"
+            [checked]="addOnChecked()"
+            [disabled]="addOnDisabled()"
+            [attr.aria-label]="addOnName()"
+            (change)="toggleAddOn($event)" />
+          <span class="box" aria-hidden="true">
+            <svg viewBox="0 0 16 16" class="tick"><path d="M3 8.5l3 3 7-7" /></svg>
+          </span>
+          <span class="addon-text" aria-hidden="true">
+            <span class="addon-label">{{ addOn() }}</span>
+            @if (addOnNote()) { <span class="addon-note">{{ addOnNote() }}</span> }
+          </span>
+        </label>
       }
       <div class="foot">
         <div class="action"><ng-content select="[plan-action]" /></div>
@@ -98,6 +121,38 @@ let nextId = 0;
     .features { list-style: none; margin: var(--ui-space-4) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); }
     .features li { display: flex; align-items: flex-start; gap: var(--ui-space-2); font-size: calc(14px * var(--ui-font-scale)); line-height: 1.45; }
     .features hugeicons-icon { flex: none; margin-top: 2px; color: var(--ui-color-success); }
+    /* The add-on: one row that ticks as a whole; ticked, its border takes the tier's (or primary). */
+    .addon {
+      position: relative; box-sizing: border-box;
+      margin-top: var(--ui-space-4);
+      display: flex; align-items: flex-start; gap: var(--ui-space-3);
+      padding: var(--ui-space-3) var(--ui-space-4);
+      background: var(--ui-color-surface-subtle);
+      border: 1px solid var(--ui-color-border);
+      border-radius: var(--ui-radius);
+      cursor: pointer;
+      transition: border-color var(--ui-motion-fast) var(--ui-ease-standard), background var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .card.no-radius .addon { border-radius: 0; }
+    .addon:not(.disabled):hover { background: var(--ui-color-surface-hover); }
+    .addon.on { border-color: var(--_edge); }
+    .addon.disabled { opacity: .5; cursor: not-allowed; }
+    .addon:has(.native:focus-visible) { box-shadow: var(--ui-focus-ring); }
+    .addon .native { position: absolute; opacity: 0; width: 0; height: 0; margin: 0; }
+    .addon .box {
+      display: inline-flex; align-items: center; justify-content: center;
+      box-sizing: border-box; width: 18px; height: 18px; flex: none; margin-top: 1px;
+      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-xs);
+      background: var(--ui-color-surface);
+      transition: background var(--ui-motion-fast) var(--ui-ease-standard), border-color var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .addon .tick { width: 12px; height: 12px; fill: none; stroke: var(--ui-color-primary-contrast); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16; stroke-dashoffset: 16; transition: stroke-dashoffset var(--ui-motion-base) var(--ui-ease-standard); }
+    .addon .native:checked + .box { background: var(--ui-color-primary); border-color: var(--ui-color-primary); }
+    .addon .native:checked + .box .tick { stroke-dashoffset: 0; }
+    .addon:not(.disabled):hover .native:not(:checked) + .box { border-color: var(--ui-color-primary); }
+    .addon-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .addon-label { font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+    .addon-note { font-size: calc(13px * var(--ui-font-scale)); line-height: 1.35; color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     /* The action takes the slack, so it sits at the bottom of a stretched card. */
     .foot { margin-top: auto; padding-top: var(--ui-space-6); display: flex; flex-direction: column; }
     .foot:has(.action:empty):has(.fineprint:empty) { display: none; }
@@ -130,6 +185,19 @@ export class UiPlanCard {
   current = input(false);
   currentLabel = input('Your plan');
   radius = input<boolean>(this.config.radius);
+  /** An optional extra under the features, shown as a tick row ("Add the AI designer"). Nothing shows without it. */
+  addOn = input<string | null>(null);
+  /** A muted second line in the add-on row ("+MVR 77 a month, about $5"). */
+  addOnNote = input<string | null>(null);
+  /** Whether the add-on is ticked; two-way: `[(addOnChecked)]`. */
+  addOnChecked = model(false);
+  /** Greys the add-on out and stops it toggling. */
+  addOnDisabled = input(false);
+  /** The add-on checkbox's accessible name: the label and the note. */
+  protected readonly addOnName = computed(() => [this.addOn(), this.addOnNote()].filter((s) => !!s).join(', '));
+  protected toggleAddOn(e: Event): void {
+    this.addOnChecked.set((e.target as HTMLInputElement).checked);
+  }
   /** What screen readers hear for the price. */
   protected readonly priceLabel = computed(() => [this.price(), this.period()].filter((s) => !!s).join(' '));
 }

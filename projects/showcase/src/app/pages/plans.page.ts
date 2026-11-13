@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { UiButton } from '@zouriel/ui/button';
 import { UiBadge } from '@zouriel/ui/badge';
 import { UiPlanCard, UiPlanCompare, UiPlanGrid, type UiPlanColumn, type UiPlanRow } from '@zouriel/ui/plans';
@@ -60,6 +60,19 @@ const TIER = "'gold' | 'platinum' | 'premium' | null";
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Add-on" selector="ui-plan-card addOn"
+        summary="addOn adds an optional extra under the features: a bordered row with a checkbox, the label in bold and addOnNote muted under it. The whole row ticks; bind it with [(addOnChecked)]. Ticked, its border takes the tier's colour. The card's price stays as it is: show the new total yourself, on the button for example. Screen readers hear one checkbox named by the label and the note; addOnDisabled greys it out.">
+        <doc-demo [code]="addOnCode">
+          <div class="single">
+            <ui-plan-card name="Premium" tier="premium" tagline="Keep every event's photos" price="MVR 77" period="a month" note="about $5" [features]="premiumFeatures"
+              addOn="Add the AI designer" addOnNote="+MVR 77 a month, about $5" [(addOnChecked)]="designer">
+              <ui-button plan-action tier="premium" [block]="true">Get Premium · {{ designer() ? 'MVR 154' : 'MVR 77' }} a month</ui-button>
+              <span plan-fineprint>Cancel any time</span>
+            </ui-plan-card>
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Compare plans" selector="ui-plan-compare" [api]="compareApi"
         shapes="interface UiPlanColumn { key: string; name: string; tier?: UiTier | null; }
 interface UiPlanRow { label: string; values: Record<string, string | boolean | null>; }"
@@ -113,6 +126,12 @@ interface UiPlanRow { label: string; values: Record<string, string | boolean | n
 })
 export class PlansPage {
   protected readonly islands = ['light', 'dark'] as const;
+  protected readonly designer = signal(false);
+  protected readonly addOnCode = `<ui-plan-card name="Premium" tier="premium" price="MVR 77" period="a month" [features]="premium"
+  addOn="Add the AI designer" addOnNote="+MVR 77 a month, about $5" [(addOnChecked)]="designer">
+  <ui-button plan-action tier="premium" [block]="true">Get Premium · {{ designer() ? 'MVR 154' : 'MVR 77' }} a month</ui-button>
+  <span plan-fineprint>Cancel any time</span>
+</ui-plan-card>`;
   protected readonly freeFeatures = ['1 GB of photos', 'Invitation and RSVP', 'Guest list'];
   protected readonly goldFeatures = ['25 GB of photos', 'Guest camera', 'Photos kept for a year', 'Everything in Free'];
   protected readonly platinumFeatures = ['50 GB of photos', 'Guest camera and videos', 'Photos kept for a year', 'Save the date', 'Everything in Gold'];
@@ -144,6 +163,10 @@ export class PlansPage {
     { name: 'current', type: 'boolean', default: 'false', desc: 'Shows currentLabel as a badge. The action is yours to choose.' },
     { name: 'currentLabel', type: 'string', default: "'Your plan'", desc: 'The current badge text.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+    { name: 'addOn', type: 'string | null', default: 'null', desc: 'An optional extra under the features, shown as a tick row ("Add the AI designer"). Nothing shows without it.' },
+    { name: 'addOnNote', type: 'string | null', default: 'null', desc: 'A muted second line in the add-on row ("+MVR 77 a month, about $5"); also read by screen readers.' },
+    { name: 'addOnChecked', type: 'model<boolean>', default: 'false', desc: 'Whether the add-on is ticked; two-way with [(addOnChecked)]. The card never changes its price: show the total yourself.' },
+    { name: 'addOnDisabled', type: 'boolean', default: 'false', desc: 'Greys the add-on out and stops it toggling.' },
     { name: '[plan-action]', type: 'slot', default: '—', desc: 'The button; sits at the bottom, lined up across a grid.' },
     { name: '[plan-fineprint]', type: 'slot', default: '—', desc: 'Small muted text under the action.' },
     { name: 'ui-plan-grid (content)', type: 'slot', default: '—', desc: 'The cards. 1 column under 600px, 2 under 912px, at most 3; equal heights.' },
