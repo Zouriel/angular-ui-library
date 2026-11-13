@@ -1,6 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
+import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import { injectUiStrings } from '@zouriel/ui';
 
 /**
@@ -12,13 +13,26 @@ import { injectUiStrings } from '@zouriel/ui';
   imports: [HugeiconsIconComponent],
   template: `
     <label class="dz" [class.over]="dragOver()" [class.no-radius]="!radius()" [class.disabled]="disabled()"
+           [class.has-preview]="!!preview()" [class.fit-contain]="previewFit() === 'contain'"
+           [style.--upload-aspect]="preview() ? previewAspect() : null"
            (dragover)="onDragOver($event)" (dragleave)="dragOver.set(false)" (drop)="onDrop($event)">
-      <input type="file" class="native" [disabled]="disabled()" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)" />
-      <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
-      <span class="hint"><strong>{{ label() ?? strings.uploadLabel }}</strong>@if (hint() ?? strings.uploadHint; as h) { {{ ' ' + h }} }</span>
-      @if (acceptLabel() ?? accept(); as label) { <span class="accept">{{ label }}</span> }
+      <input type="file" class="native" [disabled]="disabled()" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)"
+             [attr.aria-label]="preview() ? (previewAlt() ? previewAlt() + '. ' : '') + (replaceLabel() ?? strings.uploadReplace) : null" />
+      @if (preview(); as src) {
+        <img class="preview" [src]="src" [attr.alt]="previewAlt() ?? ''" />
+        <span class="replace"><hugeicons-icon [icon]="uploadIcon" [size]="16" [strokeWidth]="1.8" />{{ replaceLabel() ?? strings.uploadReplace }}</span>
+      } @else {
+        <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
+        <span class="hint"><strong>{{ label() ?? strings.uploadLabel }}</strong>@if (hint() ?? strings.uploadHint; as h) { {{ ' ' + h }} }</span>
+        @if (acceptLabel() ?? accept(); as label) { <span class="accept">{{ label }}</span> }
+      }
     </label>
-    @if (files().length) {
+    @if (preview() && removable()) {
+      <button type="button" class="remove" [disabled]="disabled()" (click)="remove.emit()">
+        <hugeicons-icon [icon]="removeIcon" [size]="16" [strokeWidth]="1.8" />{{ removeLabel() ?? strings.uploadRemove }}
+      </button>
+    }
+    @if (files().length && !preview()) {
       <ul class="files">
         @for (f of files(); track f.name) {
           <li><span class="fn" [attr.title]="f.name">{{ f.name }}</span><span class="sz">{{ size(f.size) }}</span></li>
@@ -41,6 +55,22 @@ import { injectUiStrings } from '@zouriel/ui';
     .hint { font-size: var(--ui-font-size-md); color: var(--ui-color-text); }
     .accept { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); overflow-wrap: anywhere; }
     .hint { overflow-wrap: anywhere; }
+    .dz.has-preview { position: relative; padding: 0; overflow: hidden; border-style: solid; border-color: var(--ui-color-border); min-height: 120px; aspect-ratio: var(--upload-aspect, 16 / 9); }
+    .preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* A contained picture (a logo) keeps clear of the label at the bottom. */
+    .fit-contain .preview { object-fit: contain; padding: var(--ui-space-3) var(--ui-space-3) calc(var(--ui-space-3) + 32px); box-sizing: border-box; }
+    .replace { position: absolute; left: 50%; bottom: var(--ui-space-2); transform: translateX(-50%); display: inline-flex; align-items: center;
+      gap: var(--ui-space-1); max-width: calc(100% - 2 * var(--ui-space-2)); padding: var(--ui-space-1) var(--ui-space-3); border-radius: 999px;
+      background: color-mix(in srgb, var(--ui-color-surface) 88%, transparent); color: var(--ui-color-text); box-shadow: var(--ui-shadow-1);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dz.has-preview:not(.disabled):hover { background: var(--ui-color-surface); }
+    .dz.has-preview:not(.disabled):hover .replace, .dz.has-preview.over .replace { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); }
+    .remove { margin-top: var(--ui-space-2); display: inline-flex; align-items: center; gap: var(--ui-space-1); min-height: 36px;
+      padding: 0 var(--ui-space-3); border: 0; border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text-muted);
+      font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); cursor: pointer; }
+    .remove:hover:not(:disabled) { background: var(--ui-color-surface-hover); color: var(--ui-color-danger); }
+    .remove:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .remove:disabled { opacity: .5; cursor: not-allowed; }
     .files { margin: var(--ui-space-2) 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
     .files li { display: flex; justify-content: space-between; gap: var(--ui-space-3); line-height: 1.35; padding: var(--ui-space-1) var(--ui-space-2);
       background: var(--ui-color-surface-raised); border-radius: var(--ui-radius-xs); font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); }
@@ -50,6 +80,7 @@ import { injectUiStrings } from '@zouriel/ui';
 })
 export class UiFileUpload {
   protected readonly uploadIcon = CloudUploadIcon;
+  protected readonly removeIcon = Delete02Icon;
 
   multiple = input(false);
   accept = input<string>();
@@ -65,6 +96,21 @@ export class UiFileUpload {
   filesSelected = output<File[]>();
   /** Dropped files that don't match `accept`. */
   rejected = output<File[]>();
+  /**
+   * A picture already uploaded (its URL). The box then shows it, and clicking it picks a replacement
+   * ("Click to change", the uploadReplace string, or `replaceLabel`). Null or '' shows the empty dropzone.
+   */
+  preview = input<string | null | undefined>(null);
+  previewAlt = input<string | undefined>(undefined);
+  /** `cover` fills the box (photos); `contain` shows all of it with room around (logos, transparent pictures). */
+  previewFit = input<'cover' | 'contain'>('cover');
+  /** The box's shape while it shows a picture, CSS aspect-ratio (e.g. '16 / 9', '1'). */
+  previewAspect = input<string>('16 / 9');
+  replaceLabel = input<string | undefined>(undefined);
+  /** Shows a Remove button under the picture (the uploadRemove string, or `removeLabel`) that emits `(remove)`. */
+  removable = input(false);
+  removeLabel = input<string | undefined>(undefined);
+  remove = output<void>();
   protected readonly files = signal<File[]>([]);
   protected readonly dragOver = signal(false);
 

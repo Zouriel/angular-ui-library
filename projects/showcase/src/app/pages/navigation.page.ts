@@ -45,7 +45,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Tabs" selector="ui-tabs · ui-tab" [api]="tabsApi" anchor="nav-tabs"
-        summary="WAI-ARIA tabs with roving tabindex; ArrowLeft/Right, Home and End move and select (disabled tabs are skipped). selectedIndex is a two-way model. Each ui-tab needs a label and may be disabled or carry a HugeIcons icon; with iconOnly the label stays as the accessible name and tooltip. Inactive panels stay in the DOM but hidden. When the strip scrolls, the selected tab is kept in view.">
+        summary="WAI-ARIA tabs with roving tabindex; ArrowLeft/Right, Home and End move and select (disabled tabs are skipped). selectedIndex is a two-way model. Each ui-tab needs a label and may be disabled or carry a HugeIcons icon; with iconOnly the label stays as the accessible name and tooltip. Inactive panels stay in the DOM but hidden. When the strip scrolls, the selected tab is kept in view. A tab can show a count after its label with badge (nothing for 0), read out as badgeLabel when given (0.79.0).">
         <doc-demo lang="ts + html" code="import { UiTabs, UiTab } from '@zouriel/ui/tabs';
 
 <ui-tabs [(selectedIndex)]=&quot;idx&quot; label=&quot;Project&quot;>
@@ -55,6 +55,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <ui-tabs label="Demo">
             <ui-tab label="Overview"><ui-text variant="body">First panel.</ui-text></ui-tab>
             <ui-tab label="Details"><ui-text variant="body">Second panel.</ui-text></ui-tab>
+            <ui-tab label="Messages" [badge]="3" badgeLabel="3 new"><ui-text variant="body">A tab with a count (badge).</ui-text></ui-tab>
             <ui-tab label="Disabled" [disabled]="true">—</ui-tab>
           </ui-tabs>
         </doc-demo>
@@ -177,6 +178,8 @@ export class NavigationPage {
     { name: 'tabs: selectedIndex', type: 'number', default: '0', desc: 'Two-way (`[(selectedIndex)]`). Index of the selected tab.' },
     { name: 'tabs: label', type: 'string', default: "'Tabs'", desc: 'tablist aria-label.' },
     { name: 'tab: label', type: 'string (required)', default: '—', desc: 'Tab button text.' },
+    { name: 'tab: badge', type: 'string | number | null', default: 'null', desc: 'A small count after the label (unread messages); nothing for null, empty or 0 (0.79.0).' },
+    { name: 'tab: badgeLabel', type: 'string', default: '—', desc: 'What screen readers hear for the badge instead of the bare number ("3 new").' },
     { name: 'tab: disabled', type: 'boolean', default: 'false', desc: 'Disable the tab.' },
     { name: 'tab: icon', type: 'IconSvgObject', default: 'undefined', desc: 'HugeIcons icon drawn before the label.' },
     { name: 'tab: iconOnly', type: 'boolean', default: 'false', desc: 'Show only the icon (needs icon). The label stays the accessible name and tooltip.' },

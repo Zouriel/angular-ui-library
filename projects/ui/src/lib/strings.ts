@@ -35,6 +35,10 @@ export interface UiStrings {
   /** File upload: the action (in bold) and what follows it. */
   uploadLabel: string;
   uploadHint: string;
+  /** File upload with a picture in it: what tapping the picture does. */
+  uploadReplace: string;
+  /** File upload with a picture in it: the button under it that takes the picture away. */
+  uploadRemove: string;
   /** Hold button: what holding does (read with the button), and its confirm dialog. */
   holdHint: string;
   confirmTitle: string;
@@ -423,6 +427,8 @@ export const defaultUiStrings: UiStrings = {
   moreActions: 'More actions',
   uploadLabel: 'Click to upload',
   uploadHint: 'or drag & drop',
+  uploadReplace: 'Click to change',
+  uploadRemove: 'Remove',
   holdHint: 'Press and hold to confirm',
   confirmTitle: 'Are you sure?',
   confirm: 'Confirm',
@@ -643,6 +649,8 @@ export const uiStringsDv: UiStrings = {
   moreActions: 'އިތުރު ކަންކަން',
   uploadLabel: 'ކްލިކްކޮށް އަޕްލޯޑް ކުރޭ',
   uploadHint: 'ނުވަތަ ދަމައިގެން ލާ',
+  uploadReplace: 'ކްލިކްކޮށް ބަދަލު ކުރޭ',
+  uploadRemove: 'ނައްތާލާ',
   holdHint: 'ކަށަވަރުކުރަން ފިތާލައިގެން ހިފަހައްޓާ',
   confirmTitle: 'ޔަގީންތޯ؟',
   confirm: 'ކަށަވަރުކުރޭ',

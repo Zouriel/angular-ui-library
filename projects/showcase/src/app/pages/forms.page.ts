@@ -272,9 +272,15 @@ phone = new FormControl<string | null>('+9607771234');
       </doc-section>
 
       <doc-section name="File upload" selector="ui-file-upload" [api]="uploadApi" [outputs]="uploadOut"
-        summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected).">
+        summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected). With preview set (a picture already uploaded) the same box shows that picture and clicking it picks a replacement; removable adds a Remove button under it (0.79.0).">
         <doc-demo code="<ui-file-upload [multiple]=&quot;true&quot; accept=&quot;image/*&quot; (filesSelected)=&quot;onFiles($event)&quot; />">
           <ui-file-upload [multiple]="true" accept="image/*" />
+        </doc-demo>
+        <doc-demo title="With a picture in it" code="<ui-file-upload accept=&quot;image/*&quot; [preview]=&quot;coverUrl()&quot; [removable]=&quot;true&quot; (filesSelected)=&quot;useCover($event)&quot; (remove)=&quot;coverUrl.set(null)&quot; />">
+          <div class="upload-preview-demo">
+            <ui-file-upload accept="image/*" label="Upload a cover picture" acceptLabel="JPEG, PNG or WebP" [preview]="coverUrl()" previewAlt="Cover picture"
+              [removable]="true" (filesSelected)="useCover($event)" (remove)="coverUrl.set(null)" />
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -350,6 +356,7 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
   `,
   styles: `
     .slot-demos { display: grid; gap: var(--ui-space-4); max-width: 420px; }
+    .upload-preview-demo { max-width: 420px; }
     .stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
@@ -395,6 +402,11 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
   ];
   protected readonly choice = signal<string | null>('rise');
   protected readonly lastPick = signal('—');
+  /** The "With a picture in it" upload demo: starts with a picture; a picked file replaces it (a local blob: URL). */
+  protected readonly coverUrl = signal<string | null>('demo/sunset.jpg');
+  protected useCover(files: File[]): void {
+    if (files[0]) this.coverUrl.set(URL.createObjectURL(files[0]));
+  }
   protected readonly anchor = signal<UiAnchor | null>({ x: 0.5, y: 0 });
   protected readonly COMBO = COMBO;
   protected readonly CHOICE = CHOICE;
@@ -646,10 +658,18 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'hint', type: 'string', default: "strings.uploadHint ('or drag & drop')", desc: "What follows it; '' hides it (a phone has nothing to drag)." },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Rounded corners.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Greys out the dropzone and ignores clicks and drops.' },
+    { name: 'preview', type: 'string | null', default: 'null', desc: "A picture already uploaded (URL). The same box then shows it, and clicking or dropping on it picks a replacement (0.79.0)." },
+    { name: 'previewAlt', type: 'string', default: '—', desc: 'What the picture shows (alt text; also starts the picker\'s name).' },
+    { name: 'previewFit', type: "'cover' | 'contain'", default: "'cover'", desc: "cover fills the box (photos); contain shows all of it with room around (logos, transparent pictures)." },
+    { name: 'previewAspect', type: 'string', default: "'16 / 9'", desc: "The box's shape while it shows a picture (CSS aspect-ratio, e.g. '1')." },
+    { name: 'replaceLabel', type: 'string', default: "strings.uploadReplace ('Click to change')", desc: 'The label on the picture.' },
+    { name: 'removable', type: 'boolean', default: 'false', desc: 'A Remove button under the picture that emits (remove).' },
+    { name: 'removeLabel', type: 'string', default: "strings.uploadRemove ('Remove')", desc: 'Its label.' },
   ];
   protected readonly uploadOut: ApiRow[] = [
     { name: 'filesSelected', type: 'File[]', default: '—', desc: 'Chosen files.' },
     { name: 'rejected', type: 'File[]', default: '—', desc: 'Dropped files that did not match accept.' },
+    { name: 'remove', type: 'void', default: '—', desc: 'The Remove button under the picture was clicked (removable).' },
   ];
   protected readonly dateApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Select a date'", desc: 'Placeholder.' },
