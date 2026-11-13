@@ -38,6 +38,17 @@ export class UiTab {
   iconOnly = input(false);
   /** A tour anchor id (`uiTourAnchor`) for this tab's button in the strip, so a tour step can point at it. */
   anchor = input<string | undefined>(undefined);
+  /**
+   * A small count after the label (e.g. unread messages). Nothing shows for null, '' or 0 (0.79.0).
+   * Screen readers hear it after the label, or `badgeLabel` instead when given ("3 new").
+   */
+  badge = input<string | number | null | undefined>(null);
+  badgeLabel = input<string | undefined>(undefined);
+  /** The badge as shown, or null when there is none. */
+  readonly badgeText = computed(() => {
+    const b = this.badge();
+    return b === null || b === undefined || b === '' || b === 0 || b === '0' ? null : String(b);
+  });
   readonly active = signal(false);
   readonly tabId = `ui-tab-${tabSeq}`;
   readonly panelId = `ui-tabpanel-${tabSeq++}`;
@@ -64,7 +75,7 @@ export class UiTab {
           [attr.tabindex]="selectedIndex() === i ? 0 : -1"
           [disabled]="tab.disabled()"
           [class.tab--icon]="tab.iconOnly() && !!tab.icon()"
-          [attr.aria-label]="tab.iconOnly() && tab.icon() ? tab.label() : null"
+          [attr.aria-label]="tab.iconOnly() && tab.icon() ? tab.label() + (tab.badgeText() ? ', ' + (tab.badgeLabel() ?? tab.badgeText()) : '') : null"
           [attr.title]="tab.iconOnly() && tab.icon() ? tab.label() : null"
           (click)="select(i)"
           (keydown)="onKeydown($event, i)">
@@ -73,6 +84,12 @@ export class UiTab {
           }
           @if (!tab.iconOnly() || !tab.icon()) {
             <span class="tab__label">{{ tab.label() }}</span>
+          }
+          @if (tab.badgeText(); as b) {
+            <span class="tab__badge" [attr.aria-hidden]="tab.badgeLabel() || (tab.iconOnly() && tab.icon()) ? 'true' : null">{{ b }}</span>
+            @if (tab.badgeLabel(); as bl) {
+              @if (!tab.iconOnly() || !tab.icon()) { <span class="tab__sr">{{ bl }}</span> }
+            }
           }
         </button>
       }
@@ -112,6 +129,10 @@ export class UiTab {
     }
     .tab { display: inline-flex; align-items: center; gap: var(--ui-space-2); }
     .tab__icon { display: inline-flex; flex: none; }
+    .tab__badge { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 18px; height: 18px;
+      padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
+      font-size: calc(12px * var(--ui-font-scale)); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+    .tab__sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     /* Icon-only tabs share the strip evenly and keep a thumb-sized target. */
     .tab--icon { flex: 1 1 0; justify-content: center; min-width: var(--ui-size-touch, 44px); }
     @media (pointer: coarse) { .tab { min-height: var(--ui-size-touch); } }
