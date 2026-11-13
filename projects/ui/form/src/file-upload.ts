@@ -32,7 +32,7 @@ import { injectUiStrings } from '@zouriel/ui';
         <hugeicons-icon [icon]="removeIcon" [size]="16" [strokeWidth]="1.8" />{{ removeLabel() ?? strings.uploadRemove }}
       </button>
     }
-    @if (files().length && !preview()) {
+    @if (showFiles() && files().length && !preview()) {
       <ul class="files">
         @for (f of files(); track f.name) {
           <li><span class="fn" [attr.title]="f.name">{{ f.name }}</span><span class="sz">{{ size(f.size) }}</span></li>
@@ -111,6 +111,11 @@ export class UiFileUpload {
   removable = input(false);
   removeLabel = input<string | undefined>(undefined);
   remove = output<void>();
+  /**
+   * List the picked files (name and size) under the box. Turn it off when the app shows its own list, such as
+   * one with each file's upload progress (0.80.0).
+   */
+  showFiles = input(true);
   protected readonly files = signal<File[]>([]);
   protected readonly dragOver = signal(false);
 

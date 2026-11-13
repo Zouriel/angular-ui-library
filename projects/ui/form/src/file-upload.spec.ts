@@ -19,6 +19,12 @@ describe('fileMatchesAccept', () => {
 })
 class Host { off = false; got: File[] = []; bad: File[] = []; }
 
+@Component({
+  imports: [UiFileUpload],
+  template: `<ui-file-upload accept="image/*" [multiple]="true" [showFiles]="false" (filesSelected)="got = $event" />`,
+})
+class QuietHost { got: File[] = []; }
+
 describe('ui-file-upload', () => {
   function drop(el: HTMLElement, files: File[]) {
     const ev = new Event('drop', { bubbles: true, cancelable: true }) as Event & { dataTransfer: unknown };
@@ -32,6 +38,21 @@ describe('ui-file-upload', () => {
     drop(fx.nativeElement, [file('a.png', 'image/png'), file('b.exe', 'application/octet-stream')]);
     expect(fx.componentInstance.got.map((f) => f.name)).toEqual(['a.png']);
     expect(fx.componentInstance.bad.map((f) => f.name)).toEqual(['b.exe']);
+  });
+
+  it('lists the picked files under the box, unless showFiles is off (the app shows its own list)', () => {
+    const fx = TestBed.createComponent(Host);
+    fx.detectChanges();
+    drop(fx.nativeElement, [file('a.png', 'image/png'), file('b.png', 'image/png')]);
+    fx.detectChanges();
+    expect((fx.nativeElement as HTMLElement).querySelectorAll('.files li').length).toBe(2);
+
+    const quiet = TestBed.createComponent(QuietHost);
+    quiet.detectChanges();
+    drop(quiet.nativeElement, [file('a.png', 'image/png')]);
+    quiet.detectChanges();
+    expect(quiet.componentInstance.got.map((f) => f.name)).toEqual(['a.png']);
+    expect((quiet.nativeElement as HTMLElement).querySelector('.files')).toBeNull();
   });
 
   it('ignores drops and disables the picker when disabled', () => {
