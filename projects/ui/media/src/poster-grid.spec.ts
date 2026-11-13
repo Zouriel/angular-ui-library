@@ -1,7 +1,8 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
-import { UiPosterCorner, UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
+import { UiIconButton } from '@zouriel/ui/button';
+import { UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
 import { UiPosterView } from './poster-view';
 import { UiScrim } from './scrim';
 
@@ -52,6 +53,27 @@ class CornerHost {
   ];
   venues = ['Coco Palm Dhuni Kolhu Maldives Resort and Spa, the long name', 'Bandos'];
   picked: number[] = [];
+}
+
+@Component({
+  imports: [UiPosterGrid, UiPosterDetails, UiPosterCorner, UiPosterAction, UiIconButton],
+  template: `
+    <ui-poster-grid [posters]="posters" [handleClicks]="true" (select)="picked.push($event)">
+      <ng-template uiPosterDetails let-p><b class="t">{{ p.label }}</b></ng-template>
+      <ng-template uiPosterCorner let-p><i class="c">{{ p.label }}</i></ng-template>
+      <ng-template uiPosterAction let-p let-i="index">
+        <ui-icon-button class="view" [label]="'View ' + p.label" variant="ghost" size="sm" (click)="viewed.push(i)">v</ui-icon-button>
+      </ng-template>
+    </ui-poster-grid>
+  `,
+})
+class ActionHost {
+  posters: UiPoster[] = [
+    { src: 'a.png', label: 'Aisha and Ali', href: '/dashboard/1', mark: { tone: 'primary', label: 'New' } },
+    { src: null, label: 'Eid party' },
+  ];
+  picked: number[] = [];
+  viewed: number[] = [];
 }
 
 @Component({
@@ -221,6 +243,93 @@ describe('ui-poster-grid with a corner', () => {
     const tag = (fx.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('.tile')[1].querySelector<HTMLElement>('ui-avatar-tag')!;
     tag.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
     expect(fx.componentInstance.picked).toEqual([1]);
+  });
+});
+
+describe('ui-poster-grid with an action', () => {
+  const css = () => ((UiPosterGrid as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n');
+  const make = async () => {
+    const fx = TestBed.createComponent(ActionHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    return { fx, el: fx.nativeElement as HTMLElement };
+  };
+
+  it('draws each poster\'s action in its li, beside the tile and never inside its link or button', async () => {
+    const { el } = await make();
+    const items = el.querySelectorAll<HTMLElement>('li');
+    expect(items.length).toBe(2);
+    items.forEach((li, i) => {
+      const btn = li.querySelector<HTMLButtonElement>('.top-end .action ui-icon-button button')!;
+      expect(btn).not.toBeNull();
+      expect(btn.getAttribute('aria-label')).toBe('View ' + ['Aisha and Ali', 'Eid party'][i]);
+      expect(btn.closest('.tile')).toBeNull();
+      expect(btn.closest('a')).toBeNull();
+      expect(li.querySelector('.tile')!.contains(btn)).toBe(false);
+      // A sibling of the tile, after it, so it paints above the picture.
+      const top = li.querySelector('.top-end')!;
+      expect(top.parentElement).toBe(li);
+      expect(li.querySelector('.tile')!.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  it('activating the action never selects or opens the tile; the tile elsewhere still does', async () => {
+    const { fx, el } = await make();
+    const btns = el.querySelectorAll<HTMLButtonElement>('.action button');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 });
+    btns[0].dispatchEvent(click);
+    btns[1].click();
+    expect(fx.componentInstance.viewed).toEqual([0, 1]);
+    expect(fx.componentInstance.picked).toEqual([]);
+    expect(click.defaultPrevented).toBe(false);
+    // The tile itself (and the dot's corner, which takes no taps) still select.
+    el.querySelectorAll<HTMLElement>('.tile')[1].click();
+    el.querySelector<HTMLElement>('a.tile .t')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+    expect(fx.componentInstance.picked).toEqual([1, 0]);
+    expect(fx.componentInstance.viewed).toEqual([0, 1]);
+  });
+
+  it('moves a mark\'s dot out of the tile and beside the action, before it, so they never overlap', async () => {
+    const { el } = await make();
+    const [first, second] = Array.from(el.querySelectorAll<HTMLElement>('li'));
+    expect(first.querySelector('.tile .dot')).toBeNull();
+    const top = first.querySelector('.top-end')!;
+    expect(top.children[0].classList.contains('dot--primary')).toBe(true);
+    expect(top.children[1].classList.contains('action')).toBe(true);
+    expect(second.querySelector('.dot')).toBeNull();
+    // Screen readers still hear the mark with the tile.
+    expect(first.querySelector('.tile ui-scrim .sr')!.textContent).toBe('New');
+    // The corner keeps clear of the action (and of the dot beside it).
+    expect(first.querySelector('.corner')!.classList.contains('corner--action-mark')).toBe(true);
+    expect(second.querySelector('.corner')!.classList.contains('corner--action')).toBe(true);
+    expect(first.querySelector('.corner')!.classList.contains('corner--mark')).toBe(false);
+  });
+
+  it('pins the action to the top-end corner of the li, laid out in a row with the dot, on a scrim backdrop', () => {
+    expect(css()).toMatch(/li(\[[^\]]*\])?\s*\{[^}]*position:\s*relative/);
+    const top = css().match(/\.top-end(\[[^\]]*\])?\s*\{([^}]*)\}/)![2];
+    expect(top).toMatch(/position:\s*absolute/);
+    expect(top).toMatch(/top:\s*var\(--ui-space-2\)/);
+    expect(top).toMatch(/inset-inline-end:\s*var\(--ui-space-2\)/);
+    expect(top).toMatch(/display:\s*flex/);
+    expect(top).toMatch(/gap:\s*var\(--ui-space-2\)/);
+    expect(top).toMatch(/pointer-events:\s*none/);
+    // The dot inside the row is laid out, not absolutely placed over the action; the override is more
+    // specific than .dot even with the emulated-encapsulation attributes.
+    expect(css()).toMatch(/\.top-end(\[[^\]]*\])?\s+\.dot(\[[^\]]*\])?\s*\{[^}]*position:\s*static/);
+    const act = css().match(/\.top-end(\[[^\]]*\])?\s+\.action(\[[^\]]*\])?\s*\{([^}]*)\}/)![3];
+    expect(act).toMatch(/pointer-events:\s*auto/);
+    expect(act).toMatch(/background:\s*color-mix\(in srgb, var\(--ui-media-scrim\)/);
+    expect(act).toMatch(/--ui-color-icon:\s*var\(--ui-media-on-scrim\)/);
+  });
+
+  it('has no action corner without the template, and the dot stays in the tile', async () => {
+    const fx = TestBed.createComponent(GridHost);
+    fx.autoDetectChanges();
+    await fx.whenStable();
+    const el = fx.nativeElement as HTMLElement;
+    expect(el.querySelector('.top-end')).toBeNull();
+    expect(el.querySelectorAll('.tile .dot').length).toBe(2);
   });
 });
 

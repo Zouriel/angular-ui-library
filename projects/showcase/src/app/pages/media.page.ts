@@ -1,6 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
-import { UiButton } from '@zouriel/ui/button';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiButton, UiIconButton } from '@zouriel/ui/button';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
+import { UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
 import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
 import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
@@ -16,7 +18,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiCarousel, UiGallery, UiImagePicker, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiIconButton, HugeiconsIconComponent, UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -79,7 +81,7 @@ function grad(a: string, b: string): string {
       </doc-section>
 
       <doc-section name="Poster grid" selector="ui-poster-grid" [api]="posterGridApi" [outputs]="posterGridOut"
-        summary="One grid of same-shape picture tiles (ratio): 2 columns on a phone, 3 from 544px, 4 from 992px and 5 from 1280px of the grid's own width (a container query, so it fits a sidebar too). With a uiPosterDetails template every tile carries its details over the bottom of its picture on a compact ui-scrim that fades from clear to dark, so the words stay readable on any picture; keep them short and non-interactive, since the whole tile is the target. Without the template a tile is the picture alone, named by its label. A tile with an href is a link; with handleClicks a plain click goes to (select) for client-side routing and a Ctrl/Cmd click still opens a new tab. No picture, or one that fails to load, shows a gradient of its colors (or the theme's primary and accent). A small dot (mark) can flag a tile; screen readers hear its label. A uiPosterCorner template draws something small, such as a venue's ui-avatar-tag at size xs, over every picture's top-start corner (top-left in a left-to-right page): inset by space2, above the picture, never wider than it (nor over the dot), and it takes no taps, so the whole tile stays the target. The Avatar tag demo below shows it."
+        summary="One grid of same-shape picture tiles (ratio): 2 columns on a phone, 3 from 544px, 4 from 992px and 5 from 1280px of the grid's own width (a container query, so it fits a sidebar too). With a uiPosterDetails template every tile carries its details over the bottom of its picture on a compact ui-scrim that fades from clear to dark, so the words stay readable on any picture; keep them short and non-interactive, since the whole tile is the target. Without the template a tile is the picture alone, named by its label. A tile with an href is a link; with handleClicks a plain click goes to (select) for client-side routing and a Ctrl/Cmd click still opens a new tab. No picture, or one that fails to load, shows a gradient of its colors (or the theme's primary and accent). A small dot (mark) can flag a tile; screen readers hear its label. A uiPosterCorner template draws something small, such as a venue's ui-avatar-tag at size xs, over every picture's top-start corner (top-left in a left-to-right page): inset by space2, above the picture, never wider than it (nor over the dot), and it takes no taps, so the whole tile stays the target. The Avatar tag demo below shows it. A uiPosterAction template gives every tile one small action of its own, such as a ghost ui-icon-button to view the invitation, at the picture's top-end corner on a round scrim backdrop: it sits beside the tile's link or button (never inside it), so it is its own tab stop and activating it never selects or opens the tile. A mark's dot then moves beside the action."
         [shapes]="posterShapes">
         <doc-demo [code]="posterGridCode">
           <ui-poster-grid [posters]="posters" focus="top" [handleClicks]="true" (select)="picked.set($event)">
@@ -89,6 +91,20 @@ function grad(a: string, b: string): string {
             </ng-template>
           </ui-poster-grid>
           <p class="note">Last picked: {{ posters[picked()].label }}</p>
+        </doc-demo>
+        <doc-demo [code]="posterActionCode">
+          <ui-poster-grid [posters]="posters" focus="top" (select)="picked.set($event)">
+            <ng-template uiPosterDetails let-p let-i="index">
+              <span class="pt-title">{{ p.label }}</span>
+              <span class="pt-line">{{ when[i % when.length] }}</span>
+            </ng-template>
+            <ng-template uiPosterAction let-p let-i="index">
+              <ui-icon-button [label]="'View ' + p.label" variant="ghost" size="sm" (click)="viewed.set(i)">
+                <hugeicons-icon [icon]="viewIcon" [size]="16" [strokeWidth]="1.8" />
+              </ui-icon-button>
+            </ng-template>
+          </ui-poster-grid>
+          <p class="note">Last picked: {{ posters[picked()].label }} · Last viewed: {{ viewed() < 0 ? 'none' : posters[viewed()].label }}</p>
         </doc-demo>
       </doc-section>
 
@@ -286,6 +302,16 @@ export class MediaPage {
     <strong>{{ p.label }}</strong> <span>Sat 12 Dec · Malé</span>
   </ng-template>
 </ui-poster-grid>`;
+  protected readonly viewIcon = ViewIcon;
+  protected readonly viewed = signal(-1);
+  protected readonly posterActionCode = `<ui-poster-grid [posters]="posters" (select)="open($event)">
+  <ng-template uiPosterDetails let-p><strong>{{ p.label }}</strong></ng-template>
+  <ng-template uiPosterAction let-p let-i="index">
+    <ui-icon-button [label]="'View ' + p.label" variant="ghost" size="sm" (click)="view(i)">
+      <hugeicons-icon [icon]="ViewIcon" [size]="16" [strokeWidth]="1.8" />
+    </ui-icon-button>
+  </ng-template>
+</ui-poster-grid>`;
   protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
   protected readonly viewOpen = signal(false);
   protected readonly picked = signal(0);
@@ -298,6 +324,7 @@ export class MediaPage {
     { name: 'handleClicks', type: 'boolean', default: 'false', desc: 'A plain click on a link tile goes to (select) only (no browser navigation), for client-side routing.' },
     { name: '<ng-template uiPosterDetails>', type: 'slot', default: '—', desc: 'Details drawn on every tile over a compact scrim; context: the poster ($implicit) and index.' },
     { name: '<ng-template uiPosterCorner>', type: 'slot', default: '—', desc: "Something small (a ui-avatar-tag, size xs) over each picture's top-start corner, inside it with a space2 inset; no taps of its own. Context: the poster ($implicit) and index. 0.74.0." },
+    { name: '<ng-template uiPosterAction>', type: 'slot', default: '—', desc: "One small action (a ui-icon-button, size sm or md) at each picture's top-end corner on a round scrim backdrop, outside the tile's link or button: its own tab stop, and it never selects the tile. A mark's dot moves beside it. Context: the poster ($implicit) and index. 0.77.0." },
   ];
   protected readonly posterGridOut: ApiRow[] = [{ name: 'select', type: 'number', default: '—', desc: 'The index of the tile that was activated.' }];
   protected readonly posterViewApi: ApiRow[] = [

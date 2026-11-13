@@ -55,6 +55,22 @@ export class UiPosterCorner {
   }
 }
 
+/**
+ * Put on an `<ng-template>` inside ui-poster-grid to give every tile one small action of its own at the
+ * top-end corner of its picture (top-right in a left-to-right page), e.g. a "View invite" eye:
+ * `<ng-template uiPosterAction let-p let-i="index"><ui-icon-button label="View invite" variant="ghost" size="sm" (click)="view(i)">…</ui-icon-button></ng-template>`.
+ * It sits beside the tile's link or button, never inside it, so it is its own tab stop and activating
+ * it never selects or opens the tile. A round backdrop in the media scrim colour keeps it readable on
+ * any picture; keep it to one small icon button (size sm or md). A mark's dot moves beside it.
+ */
+@Directive({ selector: 'ng-template[uiPosterAction]' })
+export class UiPosterAction {
+  readonly template = inject<TemplateRef<UiPosterDetailsContext>>(TemplateRef);
+  static ngTemplateContextGuard(_d: UiPosterAction, ctx: unknown): ctx is UiPosterDetailsContext {
+    return true;
+  }
+}
+
 /** The gradient a poster without a picture shows. Shared with ui-poster-view so both agree. */
 export function uiPosterFallback(colors?: string[] | null): string {
   const c = (colors ?? []).filter(Boolean);
@@ -72,7 +88,9 @@ export function uiPosterFallback(colors?: string[] | null): string {
  * and a small dot (`mark`) can flag it, named for screen readers. A tile with an `href` is a link;
  * every tile emits `select` with its index when activated, and with `handleClicks` a plain click on a
  * link is left to `select` (for client-side routing) while modified clicks still open a new tab.
- * A `uiPosterCorner` template draws something small (a ui-avatar-tag) over each picture's top-start corner.
+ * A `uiPosterCorner` template draws something small (a ui-avatar-tag) over each picture's top-start corner,
+ * and a `uiPosterAction` template one small action (an icon button) at its top-end corner, outside the
+ * tile's link so it never selects the tile; a mark's dot then sits beside the action.
  */
 @Component({
   selector: 'ui-poster-grid',
@@ -90,6 +108,15 @@ export function uiPosterFallback(colors?: string[] | null): string {
               <ng-container [ngTemplateOutlet]="body" [ngTemplateOutletContext]="{ $implicit: p, index: $index }" />
             </button>
           }
+          @if (action(); as a) {
+            <!-- Beside the tile, never inside its link or button: its own tab stop, and its clicks never select the tile. -->
+            <div class="top-end">
+              @if (p.mark; as m) { <span [class]="'dot dot--' + m.tone" aria-hidden="true"></span> }
+              <span class="action">
+                <ng-container [ngTemplateOutlet]="a.template" [ngTemplateOutletContext]="{ $implicit: p, index: $index }" />
+              </span>
+            </div>
+          }
         </li>
       }
     </ul>
@@ -99,8 +126,8 @@ export function uiPosterFallback(colors?: string[] | null): string {
       } @else {
         <span class="fallback" [style.background]="fallback(p)"></span>
       }
-      @if (p.mark; as m) {
-        <span [class]="'dot dot--' + m.tone" aria-hidden="true"></span>
+      @if (p.mark && !action()) {
+        <span [class]="'dot dot--' + p.mark.tone" aria-hidden="true"></span>
       }
       @if (details(); as d) {
         <ui-scrim class="details" [compact]="true">
@@ -109,7 +136,7 @@ export function uiPosterFallback(colors?: string[] | null): string {
         </ui-scrim>
       }
       @if (corner(); as c) {
-        <span class="corner" [class.corner--mark]="!!p.mark">
+        <span class="corner" [class.corner--mark]="!!p.mark && !action()" [class.corner--action]="!!action() && !p.mark" [class.corner--action-mark]="!!action() && !!p.mark">
           <ng-container [ngTemplateOutlet]="c.template" [ngTemplateOutletContext]="{ $implicit: p, index: i }" />
         </span>
       }
@@ -121,7 +148,7 @@ export function uiPosterFallback(colors?: string[] | null): string {
     @container (min-width: 544px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-3); } }
     @container (min-width: 992px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     @container (min-width: 1280px) { .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-    li { min-width: 0; }
+    li { min-width: 0; position: relative; }
     .tile { position: relative; isolation: isolate; display: block; width: 100%; padding: 0; border: none; cursor: pointer; font: inherit; text-align: start;
       color: inherit; text-decoration: none;
       aspect-ratio: var(--ui-poster-ratio, 0.75); overflow: hidden; border-radius: var(--ui-radius);
@@ -137,6 +164,8 @@ export function uiPosterFallback(colors?: string[] | null): string {
     .corner { position: absolute; top: var(--ui-space-2); inset-inline-start: var(--ui-space-2); z-index: 1;
       display: flex; min-width: 0; max-width: calc(100% - 2 * var(--ui-space-2)); pointer-events: none; }
     .corner--mark { max-width: calc(100% - 3 * var(--ui-space-2) - 10px); }
+    .corner--action { max-width: calc(100% - 3 * var(--ui-space-2) - var(--ui-size-md)); }
+    .corner--action-mark { max-width: calc(100% - 4 * var(--ui-space-2) - var(--ui-size-md) - 10px); }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     /* A light ring, then a faint dark edge: the dot shows on any picture, dark posters included. */
     .dot { position: absolute; top: var(--ui-space-2); inset-inline-end: var(--ui-space-2); width: 10px; height: 10px; border-radius: 50%;
@@ -144,6 +173,17 @@ export function uiPosterFallback(colors?: string[] | null): string {
     .dot--primary { background: var(--ui-color-primary); }
     .dot--warning { background: var(--ui-color-warning); }
     .dot--neutral { background: var(--ui-media-on-scrim); }
+    /* The action's corner: a sibling of the tile in the li, over the picture's top-end corner. Taps pass
+       through everything here but the action itself (the dot beside it still opens the tile). */
+    .top-end { position: absolute; top: var(--ui-space-2); inset-inline-end: var(--ui-space-2); z-index: 2;
+      display: flex; align-items: center; gap: var(--ui-space-2); pointer-events: none; }
+    .top-end .dot { position: static; flex: none; }
+    /* A round scrim backdrop with on-scrim colours, so a ghost icon button reads on any picture. */
+    .top-end .action { display: inline-flex; pointer-events: auto; border-radius: var(--ui-radius-pill);
+      background: color-mix(in srgb, var(--ui-media-scrim) 55%, transparent);
+      color: var(--ui-media-on-scrim); --ui-color-text: var(--ui-media-on-scrim); --ui-color-icon: var(--ui-media-on-scrim);
+      --ui-color-surface-hover: color-mix(in srgb, var(--ui-media-on-scrim) 18%, transparent);
+      --ui-radius: var(--ui-radius-pill); }
   `,
 })
 export class UiPosterGrid {
@@ -158,6 +198,7 @@ export class UiPosterGrid {
 
   protected readonly details = contentChild(UiPosterDetails);
   protected readonly corner = contentChild(UiPosterCorner);
+  protected readonly action = contentChild(UiPosterAction);
 
   protected readonly broken = signal(new Set<string>());
   protected readonly position = computed(() => (this.focus() === 'top' ? '50% 0' : '50% 50%'));
