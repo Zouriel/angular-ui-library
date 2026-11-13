@@ -87,7 +87,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `hold-button` | press-and-hold to confirm, with a confirm-dialog fallback |
 | `map` | OpenStreetMap (or any raster tiles, light and dark) map with markers, a pin, route lines, fit-to-points, a "searching" pulse, view insets for full-screen map pages, a "my location" button and the "you are here" dot (Leaflet, loaded on first use; install `leaflet` ~1.9.4) |
 | `google-sign-in` | Sign in with Google: `ui-google-sign-in` (Google Identity Services' button, emits the ID token), `ui-google-button` (the drawn, branded button), `ui-apple-button` (Sign in with Apple, drawn to Apple's HIG) and `UiGoogleAuthorization` (an access token for more scopes); see below |
-| `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, anchor picker, editable text, time, phone (`ui-phone-input`, E.164 in and out, searchable country list), form field |
+| `form` | input and textarea (with leading/trailing slots and `dir`), number (scrubbable) + number label, password, search, select, checkbox(es), radio, switch, slider, rating, OTP, chip/token input, colour, file upload, choice grid, handle field (`ui-handle-field`, an @handle with a live availability check), anchor picker, editable text, time, phone (`ui-phone-input`, E.164 in and out, searchable country list), form field |
 | `messenger` | `ui-messenger-button` (WhatsApp, Viber or Telegram in its brand colour with its official logo, an optional tick badge; `size="sm"` a 28px small icon button with a 44px tap area), `ui-messenger-switch` (a swipeable "Send next on …" channel switch), `ui-messenger-logo` and `ui-contact-channels` (a person's email and number rows in aligned columns, with messenger buttons under the number; `layout="compact"` for a phone card: one line per contact, the state right after the value, the buttons at the end of the number line) |
 | `combobox` | combobox, multi-select |
 | `datepicker` | date picker, date range picker, calendar |
@@ -105,6 +105,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `data` | tree, tree table, timeline, description list, code block |
 | `layout` | grid, stack, container, spacer, splitter, sidebar layout, panel section, scroll area, aspect ratio, resize handle |
 | `media` | carousel, gallery, image picker, device frame |
+| `sortable` | `ui-section-list` (rows put in order by a drag handle or the arrow keys, with hide, edit and remove buttons; locked rows keep their place) and `ui-reorder-grid` (square photo tiles: hold and drag with a finger, tap for your own menu, a cover star, an optional x) |
 | `canvas` | transform box with snapping, vector path editor (pen, points, brushes), image editor (crop, erase, restore) |
 | `sequencer` | timeline sequencer, scrubber |
 | `command-palette` | command palette |
@@ -113,7 +114,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `form-builder` | form builder, form renderer, global form settings, option sources ([guide](form-builder/README.md)) |
 | `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide) |
 | `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer, slide transition (views and routes) |
-| `theme` | `UiThemeService`, `ui-theme-provider` |
+| `theme` | `UiThemeService`, `ui-theme-provider`, `ui-theme-swatch` (a small picture of a theme from its colours, for a theme picker) |
 
 ## Sign in with Google (`@zouriel/ui/google-sign-in`)
 

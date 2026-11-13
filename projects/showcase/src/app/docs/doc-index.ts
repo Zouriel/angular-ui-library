@@ -23,6 +23,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Theme service', anchor: 'theme-service' },
     { name: 'Themes', anchor: 'themes' },
     { name: 'Scoped theme', anchor: 'scoped-theme' },
+    { name: 'Theme swatch', anchor: 'theme-swatch' },
   ],
   'typography': [
     { name: 'Text', anchor: 'text' },
@@ -91,6 +92,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Calendar', anchor: 'calendar' },
     { name: 'Date range picker', anchor: 'date-range-picker' },
     { name: 'Choice grid', anchor: 'choice-grid' },
+    { name: 'Handle field', anchor: 'handle-field' },
     { name: 'Anchor picker', anchor: 'anchor-picker' },
     { name: 'Token input', anchor: 'token-input' },
   ],
@@ -164,6 +166,10 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Add-on', anchor: 'add-on' },
     { name: 'Compare plans', anchor: 'compare-plans' },
     { name: 'Tier buttons', anchor: 'tier-buttons' },
+  ],
+  'sortable': [
+    { name: 'Section list', anchor: 'section-list' },
+    { name: 'Reorder grid', anchor: 'reorder-grid' },
   ],
   'media': [
     { name: 'Carousel', anchor: 'carousel' },
