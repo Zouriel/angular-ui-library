@@ -131,6 +131,95 @@ describe('UiPlanCard', () => {
   });
 });
 
+@Component({
+  imports: [UiPlanCard],
+  template: `
+    <ui-plan-card name="Premium" price="MVR 77" period="a month" tier="premium" [features]="['3 GB per event']"
+      [addOn]="addOn()" [addOnNote]="addOnNote()" [(addOnChecked)]="checked" [addOnDisabled]="disabled()">
+      <button plan-action type="button">Get Premium · {{ checked() ? 'MVR 154' : 'MVR 77' }}</button>
+    </ui-plan-card>
+  `,
+})
+class AddOnHost {
+  addOn = signal<string | null>('Add the AI designer');
+  addOnNote = signal<string | null>('+MVR 77 a month, about $5');
+  checked = signal(false);
+  disabled = signal(false);
+}
+
+describe('UiPlanCard add-on', () => {
+  function addOnCard(patch: Partial<Record<keyof AddOnHost, unknown>> = {}) {
+    const f = TestBed.createComponent(AddOnHost);
+    for (const [k, v] of Object.entries(patch)) (f.componentInstance[k as keyof AddOnHost] as ReturnType<typeof signal>).set(v);
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    return { f, el, row: el.querySelector('.addon') as HTMLLabelElement | null, box: el.querySelector('.addon input[type="checkbox"]') as HTMLInputElement | null };
+  }
+
+  it('is not rendered without addOn, nor on a card that never set it', () => {
+    expect(addOnCard({ addOn: null }).row).toBeNull();
+    expect(card().el.querySelector('.addon')).toBeNull();
+  });
+
+  it('shows the label and the muted note between the features and the action', () => {
+    const { el, row } = addOnCard();
+    expect(row!.querySelector('.addon-label')!.textContent!.trim()).toBe('Add the AI designer');
+    expect(row!.querySelector('.addon-note')!.textContent!.trim()).toBe('+MVR 77 a month, about $5');
+    expect(rule(UiPlanCard, '.addon-note')).toContain('color: var(--ui-color-text-muted)');
+    const order = [...el.querySelectorAll('.features, .addon, .foot')].map((n) => n.className.split(' ')[0]);
+    expect(order).toEqual(['features', 'addon', 'foot']);
+    expect(addOnCard({ addOnNote: null }).row!.querySelector('.addon-note')).toBeNull();
+  });
+
+  it('is one native checkbox named by the label and the note', () => {
+    const { row, box } = addOnCard();
+    expect(row!.querySelectorAll('input').length).toBe(1);
+    expect(box!.getAttribute('aria-label')).toBe('Add the AI designer, +MVR 77 a month, about $5');
+    expect(row!.querySelector('.box')!.getAttribute('aria-hidden')).toBe('true');
+    expect(row!.querySelector('.addon-text')!.getAttribute('aria-hidden')).toBe('true');
+    expect(addOnCard({ addOnNote: null }).box!.getAttribute('aria-label')).toBe('Add the AI designer');
+  });
+
+  it('toggles from anywhere on the row and binds two-way, so the caller can change its total', () => {
+    const { f, el, row, box } = addOnCard();
+    expect(box!.checked).toBe(false);
+    expect(el.querySelector('button')!.textContent).toContain('MVR 77');
+    (row!.querySelector('.addon-note') as HTMLElement).click();
+    f.detectChanges();
+    expect(f.componentInstance.checked()).toBe(true);
+    expect(box!.checked).toBe(true);
+    expect(row!.classList.contains('on')).toBe(true);
+    expect(el.querySelector('button')!.textContent).toContain('MVR 154');
+    row!.click();
+    f.detectChanges();
+    expect(f.componentInstance.checked()).toBe(false);
+    expect(row!.classList.contains('on')).toBe(false);
+    // From the caller's side too.
+    f.componentInstance.checked.set(true);
+    f.detectChanges();
+    expect(box!.checked).toBe(true);
+  });
+
+  it('when disabled, does not toggle and is greyed out', () => {
+    const { f, row, box } = addOnCard({ disabled: true });
+    expect(box!.disabled).toBe(true);
+    expect(row!.classList.contains('disabled')).toBe(true);
+    row!.click();
+    f.detectChanges();
+    expect(f.componentInstance.checked()).toBe(false);
+    expect(rule(UiPlanCard, '.addon.disabled')).toContain('opacity: .5');
+  });
+
+  it('is a bordered, rounded row; ticked, the border takes the tier colour; keyboard focus rings the row', () => {
+    const row = rule(UiPlanCard, '.addon');
+    expect(row).toContain('border: 1px solid var(--ui-color-border)');
+    expect(row).toContain('border-radius: var(--ui-radius)');
+    expect(row).toContain('background: var(--ui-color-surface-subtle)');
+    expect(rule(UiPlanCard, '.addon.on')).toContain('border-color: var(--_edge)');
+    expect(rule(UiPlanCard, '.addon:has(.native:focus-visible)')).toContain('box-shadow: var(--ui-focus-ring)');
+  });
+});
+
 describe('UiPlanGrid', () => {
   const css = () => rule(UiPlanGrid, ':host');
 

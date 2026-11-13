@@ -161,6 +161,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'plans': [
     { name: 'Plan cards', anchor: 'plan-cards' },
     { name: 'Premium', anchor: 'premium' },
+    { name: 'Add-on', anchor: 'add-on' },
     { name: 'Compare plans', anchor: 'compare-plans' },
     { name: 'Tier buttons', anchor: 'tier-buttons' },
   ],

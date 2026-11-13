@@ -46,6 +46,8 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).
+  0.76.0: `ui-plan-card` takes an optional add-on tick row under the features (`addOn`, `addOnNote`,
+  `[(addOnChecked)]`, `addOnDisabled`); the caller shows the new total. Flutter: `addOn`, `addOnNote`, `addOnValue`, `onAddOnChanged`.
 - **Guidance** (`@zouriel/ui/guidance`, 0.75.0): `uiTourAnchor` + `UiTourService` (a coach-mark tour with a
   spotlight, at most 5 steps), `ui-offer-card`, `ui-checklist`, `UiGuidance` (what may show, what was seen, through
   the app's store) and `uiHintOnce`; `ui-empty-state` gained `[empty-art]` and `[empty-starters]` with `ui-starter-card`
