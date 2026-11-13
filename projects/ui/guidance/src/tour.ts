@@ -222,7 +222,9 @@ export class UiTourService {
     .next { border: 0; background: var(--ui-color-primary-contrast); color: var(--ui-color-primary); }
     .next:hover { background: color-mix(in srgb, var(--ui-color-primary-contrast) 88%, var(--ui-color-primary)); }
     @media (pointer: coarse) {
-      .btn::before, .link::before { content: ''; position: absolute; inset: -6px -2px; }
+      /* At least 44px tall to a finger (0.82.0: the text actions were 33px), however tall the button is drawn: the
+         hit area reaches half of 44px above and below its middle. */
+      .btn::before, .link::before { content: ''; position: absolute; inset: min(-6px, calc(50% - 22px)) -2px; }
       .btn { min-height: 36px; }
     }
     :host(.calm) .hole, :host(.calm.glide) .hole, :host(.calm) .bubble { transition: none; animation: none; }
