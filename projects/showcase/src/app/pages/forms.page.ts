@@ -665,6 +665,7 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'replaceLabel', type: 'string', default: "strings.uploadReplace ('Click to change')", desc: 'The label on the picture.' },
     { name: 'removable', type: 'boolean', default: 'false', desc: 'A Remove button under the picture that emits (remove).' },
     { name: 'removeLabel', type: 'string', default: "strings.uploadRemove ('Remove')", desc: 'Its label.' },
+    { name: 'showFiles', type: 'boolean', default: 'true', desc: 'List the picked files under the box; turn it off when the app shows its own list, such as each file\'s upload progress (0.80.0).' },
   ];
   protected readonly uploadOut: ApiRow[] = [
     { name: 'filesSelected', type: 'File[]', default: '—', desc: 'Chosen files.' },
