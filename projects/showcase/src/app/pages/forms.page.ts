@@ -262,6 +262,12 @@ phone = new FormControl<string | null>('+9607771234');
         <doc-demo code="<ui-editable-text formControlName=&quot;nick&quot; placeholder=&quot;Empty&quot; />">
           <ui-editable-text formControlName="nick" />
         </doc-demo>
+        <doc-demo code="<span class=&quot;label&quot;>Event name</span>&#10;<ui-editable-text [flush]=&quot;true&quot; formControlName=&quot;nick&quot; />">
+          <div class="flush-demo">
+            <strong>Event name</strong>
+            <ui-editable-text [flush]="true" formControlName="nick" />
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Color picker" selector="ui-color-picker" [api]="colorApi"
@@ -357,6 +363,7 @@ labelFor = (token: string) => ({ 'guest.name': 'Guest name', 'event.date': 'Date
   styles: `
     .slot-demos { display: grid; gap: var(--ui-space-4); max-width: 420px; }
     .upload-preview-demo { max-width: 420px; }
+    .flush-demo { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-1); }
     .stack { display: flex; flex-direction: column; gap: var(--ui-space-3); }
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-3); }
     .muted { color: var(--ui-color-text-muted); font: var(--ui-font-size-sm) var(--ui-font-mono); }
@@ -645,6 +652,7 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
   ];
   protected readonly editApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Empty'", desc: 'Shown (muted) when the value is empty.' },
+    { name: 'flush', type: 'boolean', default: 'false', desc: 'The text starts on the same line as the label or heading above it; the hover outline and the field reach out past it instead of indenting the text.' },
   ];
   protected readonly colorApi: ApiRow[] = [
     { name: 'swatches', type: 'string[]', default: '6 fixed presets', desc: 'Preset colours; each is a button named by its hex and aria-pressed when it matches the value.' },

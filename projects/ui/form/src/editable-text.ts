@@ -8,6 +8,7 @@ import { injectUiStrings } from '@zouriel/ui';
 @Component({
   selector: 'ui-editable-text',
   imports: [HugeiconsIconComponent],
+  host: { '[class.flush]': 'flush()' },
   template: `
     @if (editing()) {
       <input #inp class="edit" [value]="draft()" [disabled]="disabled()"
@@ -35,6 +36,9 @@ import { injectUiStrings } from '@zouriel/ui';
     .view:hover .pencil, .view:focus-visible .pencil { opacity: 1; }
     /* Touch has no hover, so the edit affordance is always shown there. */
     @media (hover: none) { .pencil { opacity: 1; } }
+    /* flush (0.82.0): the text starts on the line its neighbours start on, as a heading's text does; the box's
+       padding and border (its hover outline, the field) reach out past that line instead of pushing the text in. */
+    :host(.flush) .view, :host(.flush) .edit { margin-inline-start: calc(-1 * (var(--ui-space-2) + 1px)); }
     .edit { padding: 2px var(--ui-space-2); background: var(--ui-color-surface); border: 1px solid var(--ui-color-primary);
       border-radius: var(--ui-radius); color: var(--ui-color-text); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); line-height: 1.35;
       outline: none; box-shadow: var(--ui-focus-ring); }
@@ -47,6 +51,11 @@ export class UiEditableText implements ControlValueAccessor {
   protected readonly editIcon = Edit02Icon;
   /** Default: the built-in `empty` (Empty), which follows the app's language. */
   placeholder = input<string | undefined>(undefined);
+  /**
+   * Line the text up with what's above and below it (a label, a heading): the hover outline and the field reach out
+   * to the start instead of indenting the text by their padding. Off by default; the box then sits where it is put.
+   */
+  flush = input(false);
   protected readonly placeholderText = computed(() => this.placeholder() ?? this.strings.empty);
   private inp = viewChild<ElementRef<HTMLInputElement>>('inp');
 
