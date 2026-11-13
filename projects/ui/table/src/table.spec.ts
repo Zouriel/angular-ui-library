@@ -229,3 +229,40 @@ describe('UiTable uiCell templates', () => {
     expect(cellsOf(f, 1)).toEqual(['no!', 'yes!']);
   });
 });
+
+/**
+ * Crowded tables (2026-11-13 UI audit): a guest list with a few long question headings was 1279px wide in a
+ * 1082px box, so its last columns were cut off while names and "Not sent yet" broke onto one word per line.
+ * Headings now wrap; a column can keep its cells on one line or keep a minimum width.
+ */
+describe('UiTable crowded columns', () => {
+  type Row = Record<string, unknown> & { name: string; status: string };
+  const css = (UiTable as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('').replace(/\s+/g, ' ');
+
+  it('lets headings wrap rather than forcing the column as wide as its heading', () => {
+    const head = css.match(/thead\[[^\]]*\] th\[[^\]]*\] \{([^}]*)\}/)?.[1] ?? '';
+    expect(head).toContain('font-weight: 600');
+    expect(head).not.toContain('white-space: nowrap');
+  });
+
+  it('keeps a nowrap column on one line and gives a minWidth column its width, heading and cells', async () => {
+    await TestBed.configureTestingModule({ imports: [UiTable] }).compileComponents();
+    const fixture = TestBed.createComponent(UiTable<Row>);
+    const cols: UiColumn<Row>[] = [
+      { key: 'name', header: 'Guest', minWidth: '9rem' },
+      { key: 'status', header: 'Status', nowrap: true },
+    ];
+    fixture.componentRef.setInput('columns', cols);
+    fixture.componentRef.setInput('data', [{ name: 'Mariyam Naseer', status: 'Not sent yet' }]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const [nameTh, statusTh] = [...el.querySelectorAll<HTMLElement>('thead th')];
+    const [nameTd, statusTd] = [...el.querySelectorAll<HTMLElement>('tbody td')];
+    expect(nameTh.style.minWidth).toBe('9rem');
+    expect(statusTh.style.minWidth).toBe('');
+    expect(statusTh.classList.contains('nowrap')).toBe(true);
+    expect(statusTd.classList.contains('nowrap')).toBe(true);
+    expect(nameTd.classList.contains('nowrap')).toBe(false);
+    expect(css).toMatch(/th\.nowrap\[[^\]]*\], td\.nowrap\[[^\]]*\] \{ white-space: nowrap; \}/);
+  });
+});

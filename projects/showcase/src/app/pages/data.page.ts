@@ -92,6 +92,21 @@ actions: UiRowAction<Row>[] = [
             </ng-template>
           </ui-table>
         </doc-demo>
+        <doc-demo lang="ts + html" code="// Many columns in a box too narrow for them all: long headings wrap, the status stays on one
+// line (nowrap), and names keep at least 9rem (minWidth). On a phone the table scrolls instead.
+crowdedCols: UiColumn<Row>[] = [
+  { key: 'name', header: 'Guest', minWidth: '9rem' },
+  { key: 'status', header: 'Status', nowrap: true },
+  { key: 'rsvp', header: 'RSVP', nowrap: true },
+  { key: 'count', header: 'How many guests? (including you)' },
+  { key: 'meal', header: 'Meal preference' },
+  { key: 'arrival', header: 'Arrival time' },
+  { key: 'note', header: 'A note for the host' },
+];
+
+<ui-table [columns]=&quot;crowdedCols&quot; [data]=&quot;crowded&quot; [selectable]=&quot;true&quot; />">
+          <ui-table [columns]="crowdedCols" [data]="crowded" [selectable]="true" />
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Contact channels" anchor="contact-channels" selector="ui-contact-channels" [api]="contactApi" [outputs]="contactOut"
@@ -576,6 +591,10 @@ export class DataPage {
   align?: 'left' | 'right' | 'center';
   /** Cell text; receives the raw value and the row. Sorting still uses the raw value. */
   format?: (value: unknown, row: T) => string;
+  /** Keep this column's cells on one line (a short label such as a status). */
+  nowrap?: boolean;
+  /** A CSS length the column never gets narrower than, e.g. '9rem' for names. */
+  minWidth?: string;
 }
 
 interface UiRowAction<T = Record<string, unknown>> {
@@ -751,6 +770,20 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'ui-row-actions', type: "component: align 'start' | 'end' = 'end'", default: '—', desc: 'For a table you build yourself: wrap a row\'s buttons in it and they keep space-2 apart, at the end, wrapping when the cell is narrow.' },
     { name: 'emptyText', type: 'string', default: "'No data'", desc: 'Shown across the table when data is empty.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
+  ];
+  protected readonly crowdedCols: UiColumn<Record<string, unknown>>[] = [
+    { key: 'name', header: 'Guest', minWidth: '9rem' },
+    { key: 'status', header: 'Status', nowrap: true },
+    { key: 'rsvp', header: 'RSVP', nowrap: true },
+    { key: 'count', header: 'How many guests? (including you)' },
+    { key: 'meal', header: 'Meal preference' },
+    { key: 'arrival', header: 'Arrival time' },
+    { key: 'note', header: 'A note for the host' },
+  ];
+  protected readonly crowded: Record<string, unknown>[] = [
+    { name: 'Hassan Ibrahim', status: 'Not sent yet', rsvp: 'No reply yet', count: '—', meal: '—', arrival: '—', note: '—' },
+    { name: 'Mariyam Naseer Abdulla Didi', status: 'Opened', rsvp: 'Coming', count: '3', meal: 'Fish', arrival: '7:30 pm', note: 'Running a little late' },
+    { name: 'Aminath Shareef', status: 'Sent', rsvp: 'Maybe', count: '2', meal: 'Vegetarian', arrival: '—', note: '—' },
   ];
   protected readonly guestCols: UiColumn<{ name: string; rsvp: string; sent?: string }>[] = [
     { key: 'name', header: 'Guest', sortable: true },

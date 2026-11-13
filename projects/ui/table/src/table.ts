@@ -11,6 +11,11 @@ export interface UiColumn<T = Record<string, unknown>> {
   /** Optional cell formatter; receives the raw cell value and the full row. A `uiCell` template for
    *  the same key wins over it. */
   format?: (value: unknown, row: T) => string;
+  /** Keep this column's cells on one line (short labels such as a status), so a crowded table squeezes
+   *  the other columns instead of breaking "Not sent yet" into one word per line. */
+  nowrap?: boolean;
+  /** A CSS length this column never gets narrower than (e.g. `'9rem'` for names), however crowded. */
+  minWidth?: string;
 }
 
 /** What a `uiCell` template gets: the row (also as `$implicit`) and the cell's raw value. */
@@ -89,6 +94,8 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
               <th
                 scope="col"
                 [attr.data-align]="col.align || 'left'"
+                [class.nowrap]="col.nowrap"
+                [style.min-width]="col.minWidth || null"
                 [class.sortable]="col.sortable"
                 [attr.aria-sort]="ariaSort(col.key)">
                 @if (col.sortable) {
@@ -123,9 +130,9 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
               }
               @for (col of columns(); track col.key) {
                 @if (cellTemplates().get(col.key); as tpl) {
-                  <td [attr.data-align]="col.align || 'left'"><ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row, row: row, value: row[col.key] }" /></td>
+                  <td [attr.data-align]="col.align || 'left'" [class.nowrap]="col.nowrap"><ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row, row: row, value: row[col.key] }" /></td>
                 } @else {
-                  <td [attr.data-align]="col.align || 'left'">{{ cell(row, col) }}</td>
+                  <td [attr.data-align]="col.align || 'left'" [class.nowrap]="col.nowrap">{{ cell(row, col) }}</td>
                 }
               }
               @if (actions().length) {
@@ -161,7 +168,11 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
     th, td { padding: var(--ui-space-2) var(--ui-space-3); text-align: left; }
     th[data-align="right"], td[data-align="right"] { text-align: right; }
     th[data-align="center"], td[data-align="center"] { text-align: center; }
-    thead th { background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: 12px; color: var(--ui-color-text-muted); white-space: nowrap; }
+    thead th { background: var(--ui-color-surface-raised); border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: 12px; color: var(--ui-color-text-muted); text-wrap: balance; }
+    /* Headings wrap: a long one ("How many guests? (including you)") would otherwise set its column's
+       width, and a table with a few of them grew wider than its box, cutting off the last columns and
+       squeezing names and short labels onto one word per line. Short headings are one word and never wrap. */
+    th.nowrap, td.nowrap { white-space: nowrap; }
     tbody tr { border-bottom: 1px solid var(--ui-color-border); transition: background var(--ui-motion-fast) var(--ui-ease-standard); }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--ui-color-surface-hover); }
