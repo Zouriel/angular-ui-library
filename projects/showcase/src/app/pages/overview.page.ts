@@ -12,7 +12,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
   imports: [RouterLink, UiText, UiCard, UiBadge, UiButton, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Introduction" title="UI Library"
-      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 39 secondary entry points, and themeable, with 15 themes whose text and status colours pass WCAG AA.">
+      lead="A token-driven, signal-first Angular 22 component library: standalone, zoneless, tree-shakeable across 49 secondary entry points, and themeable, with 15 themes whose text and status colours pass WCAG AA.">
 
       <doc-section name="Install" anchor="install"
         summary="The package is on GitHub Packages: point the @zouriel scope there, then install it with its peers. Peers: @angular/core, @angular/common, @angular/forms and @angular/cdk ^22, @hugeicons/angular ^1.0.11 and @hugeicons/core-free-icons ^4.3.0. pdfjs-dist ^4.10.38 is optional and only needed to show PDFs.">
@@ -110,7 +110,7 @@ this.theme.theme();           // the current theme (a signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="What's inside" anchor="catalog"
-        summary="About 140 components and directives across 40 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
+        summary="About 140 components and directives across 49 entry points, grouped as in the sidebar. Each card names the entry points to import from and links to its page.">
         <div class="grid">
           @for (g of groups; track g.route) {
             <ui-card padding="sm">
@@ -199,6 +199,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Guidance', route: 'guidance', entries: '/guidance, /feedback', items: ['uiTourAnchor', 'UiTourService', 'offer-card', 'checklist', 'starter-card', 'UiGuidance', 'uiHintOnce'] },
     { title: 'Navigation', route: 'navigation', entries: '/navigation, /menubar, /tabs', items: ['navbar', 'side-nav', 'bottom-nav', 'menubar', 'breadcrumbs', 'pagination', 'stepper', 'anchor-nav', 'tabs'] },
     { title: 'Data display', route: 'data', entries: '/table, /list, /data, /chat-bubble, /accordion, /card, /badge', items: ['table', 'list', 'tree', 'tree-table', 'timeline', 'chat-bubble', 'description-list', 'code-block', 'accordion', 'card', 'stat-card', 'feature-card', 'badge', 'chip', 'avatar', 'avatar-group'] },
+    { title: 'Charts', route: 'charts', entries: '/chart', items: ['bar-chart'] },
     { title: 'Plans', route: 'plans', entries: '/plans, /button', items: ['plan-card', 'plan-grid', 'plan-compare', 'button tier'] },
     { title: 'Sortable', route: 'sortable', entries: '/sortable', items: ['section-list', 'reorder-grid'] },
     { title: 'Media', route: 'media', entries: '/media, /avatar-tag', items: ['carousel', 'gallery', 'image-picker', 'avatar-tag'] },

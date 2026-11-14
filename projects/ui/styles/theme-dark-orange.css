@@ -76,6 +76,13 @@
   --ui-map-route-muted: #aca5a2;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #f08996;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #c47d05;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 /* Selection tint in the darkOrange theme */

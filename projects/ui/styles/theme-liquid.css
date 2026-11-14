@@ -112,6 +112,13 @@
   --ui-tier-gold-border: #6E520A;
   --ui-tier-platinum-border: #4F5A66;
   --ui-tier-premium-border: #3B2491;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #896a01;
+  --ui-chart-2: #6250d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="rugged"] ::selection {
@@ -206,6 +213,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #ab8c10;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 [data-theme="rugged-dark"] ::selection {
@@ -300,6 +314,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #b30022;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="glacier"] ::selection {
@@ -394,6 +415,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #db6375;
+  --ui-chart-2: #9085e9;
+  --ui-chart-3: #c98500;
+  --ui-chart-4: #3987e5;
 }
 
 [data-theme="glacier-dark"] ::selection {
@@ -488,6 +516,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #932a32;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="oxblood"] ::selection {
@@ -582,6 +617,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #d26a7a;
+  --ui-chart-2: #9085e9;
+  --ui-chart-3: #c98500;
+  --ui-chart-4: #3987e5;
 }
 
 [data-theme="oxblood-dark"] ::selection {
@@ -676,6 +718,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #a83500;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="graphite"] ::selection {
@@ -770,6 +819,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #db6a28;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 [data-theme="graphite-dark"] ::selection {
@@ -864,6 +920,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #6E52D9;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #b3102e;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="cocoa"] ::selection {
@@ -958,6 +1021,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #de5f77;
+  --ui-chart-2: #9085e9;
+  --ui-chart-3: #c98500;
+  --ui-chart-4: #199e70;
 }
 
 [data-theme="cocoa-dark"] ::selection {
@@ -1052,6 +1122,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #6236e6;
+  --ui-chart-2: #1baf7a;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="violet"] ::selection {
@@ -1146,6 +1223,13 @@
   --ui-tier-gold-border: #a67c12;
   --ui-tier-platinum-border: #76818e;
   --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #947ae4;
+  --ui-chart-2: #c98500;
+  --ui-chart-3: #d55181;
+  --ui-chart-4: #3987e5;
 }
 
 [data-theme="violet-dark"] ::selection {

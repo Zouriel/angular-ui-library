@@ -109,6 +109,13 @@
   /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
   --ui-map-route-success: #1d7657;
   --ui-map-route-danger: #b83d3c;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #0283aa;
+  --ui-chart-2: #6250d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 [data-theme="maldives"] ::selection {
@@ -205,6 +212,13 @@
   /* Map route tones: its own colours hold 3:1 here (see tokens.css); set to match maldives' token set. */
   --ui-map-route-success: var(--ui-color-success);
   --ui-map-route-danger: var(--ui-color-danger);
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #1aa0b9;
+  --ui-chart-2: #d95926;
+  --ui-chart-3: #3987e5;
+  --ui-chart-4: #199e70;
 }
 
 [data-theme="maldives-dark"] ::selection {

@@ -160,6 +160,12 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Timeline', anchor: 'timeline' },
     { name: 'Code block', anchor: 'code-block' },
   ],
+  'charts': [
+    { name: 'Bar chart', anchor: 'bar-chart' },
+    { name: 'Grouped bars', anchor: 'grouped-bars' },
+    { name: 'Value labels', anchor: 'value-labels' },
+    { name: 'No data', anchor: 'no-data' },
+  ],
   'plans': [
     { name: 'Plan cards', anchor: 'plan-cards' },
     { name: 'Premium', anchor: 'premium' },

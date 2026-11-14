@@ -1,7 +1,7 @@
 # @zouriel/ui
 
 A token-driven, signal-first component library for **Angular 22**. It is:
-- standalone, zoneless and tree-shakeable, with 39 secondary entry points;
+- standalone, zoneless and tree-shakeable, with 49 secondary entry points;
 - themeable, with 15 themes that all pass WCAG AA;
 - accessible: ARIA roles, keyboard support and CDK focus handling.
 
@@ -99,6 +99,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `badge` | badge, chip, avatar, avatar group |
 | `avatar-tag` | ui-avatar-tag: a tiny round picture and a name for a photo tile's corner or a feed post (overlay pill or plain) |
 | `plans` | plan card, plan grid, plan comparison table (pricing pages; see below) |
+| `chart` | `ui-bar-chart`: columns or grouped bars over categories, with a tooltip, keyboard support and a table for screen readers (see below) |
 | `filter` | `ui-filter` (one Filter button that opens a panel of sections: a bottom sheet on phones, a popover wider), `ui-filter-chips` (the filters that are on, removable, with Clear all) and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer` (see below) |
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
@@ -677,6 +678,37 @@ locateOff:, onLocate:, userLocation: UiMapUserLocation(lat, lng, accuracy: 30))`
 
 The Flutter twin: `UiFeatureCard(badgeTone:, colors: UiFeatureCardColors.tryParse(surface: '#E1F4EF',
 accent: '#4B8791'), enter: true, enterDelay: Duration(milliseconds: 90))`.
+
+## Bar chart (`@zouriel/ui/chart`, 0.83.0)
+
+```ts
+import { UiBarChart, type UiBarChartSeries } from '@zouriel/ui/chart';
+```
+
+```html
+<ui-bar-chart ariaLabel="Income and spending by month" [categories]="months"
+  [series]="[{ name: 'Income', values: income }, { name: 'Spending', values: spending }]"
+  [formatValue]="money" [minCategoryWidth]="44"
+  [selectedIndex]="month()" (categorySelect)="month.set($event)" />
+```
+
+- One series draws plain columns (no legend: name it in your heading); two to four draw grouped
+  bars side by side, 2px apart, with a legend. More than four are not drawn (they stay in the table).
+- Inputs: `ariaLabel` (required), `categories: string[]`, `series: UiBarChartSeries[]`
+  (`{ name, values, color? }`), `formatValue?: (value: number) => string` (axis, tooltip, value labels,
+  table; default the locale's number format), `height` (px, default 220), `showValues` (a value above
+  each bar, for a few bars), `selectedIndex: number | null`, `minCategoryWidth: number | null` (px; the
+  plot scrolls sideways inside the chart when narrower, starting at the latest, the y axis and legend
+  staying put), `emptyLabel` (default the built-in `noData`). Output: `categorySelect(index)` on click,
+  tap, Enter or Space.
+- One y axis from zero on round numbers (`uiChartScale`); values below zero hang under the zero line.
+  x labels are thinned when they would overlap, counted back from the latest (`uiChartLabels`).
+- Hover a category, tap it, or focus the chart and press Left/Right (Home, End, Escape): a panel lists
+  each series' value and name. The same numbers are in a visually hidden table (caption = `ariaLabel`).
+- Colours: `--ui-chart-1` to `--ui-chart-4`, set by every built-in theme (1 is the theme's primary moved
+  into the band where a filled mark reads as a colour; 2 to 4 come from the dataviz reference palette)
+  and checked per theme for colour-blind separation. A theme of your own should set them too.
+- The twin of Flutter's `UiBarChart`.
 
 ## Plans and tier metals (`@zouriel/ui/plans`, 0.52.0)
 

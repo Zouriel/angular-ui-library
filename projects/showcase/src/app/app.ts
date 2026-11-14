@@ -71,7 +71,7 @@ const LEGACY_LABELS: Record<(typeof UI_LEGACY_THEMES)[number], string> = {
           @if (!filtered().length) { <ui-text variant="caption" class="no-match">No pages match “{{ query().trim() }}”.</ui-text> }
         </div>
         <div class="side-foot">
-          <ui-text variant="caption">40 entry points · {{ themeLabel() }}</ui-text>
+          <ui-text variant="caption">49 entry points · {{ themeLabel() }}</ui-text>
         </div>
       </aside>
 
