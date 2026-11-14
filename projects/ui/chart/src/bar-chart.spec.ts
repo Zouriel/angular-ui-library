@@ -123,6 +123,11 @@ describe('UiBarChart', () => {
     const rows = [...table.querySelectorAll('tbody tr')].map((tr) => [...tr.children].map((c) => c.textContent));
     expect(rows).toEqual([['Jan', '$100', '$40'], ['Feb', '$50', '$75'], ['Mar', '$-25', '$10']]);
     expect(table.closest('[aria-hidden="true"]')).toBeNull();
+    // Hidden from the eye by a box around it: a table itself ignores a 1px size and would still take room.
+    expect(table.classList.contains('sr')).toBe(false);
+    expect(table.parentElement!.tagName).toBe('DIV');
+    expect(table.parentElement!.classList.contains('sr')).toBe(true);
+    expect(css()).toMatch(/\.sr \{[^}]*position: absolute[^}]*width: 1px[^}]*height: 1px[^}]*overflow: hidden/);
     // The drawing is for the eye only: the table and the live line carry it for screen readers.
     for (const sel of ['.plot', '.yaxis', '.xaxis', '.legend']) expect(root.querySelector(sel)!.getAttribute('aria-hidden')).toBe('true');
   });

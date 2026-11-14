@@ -96,7 +96,8 @@ let nextId = 0;
       }
     </div>
     <span class="sr" aria-live="polite" [attr.id]="id + '-live'">{{ liveText() }}</span>
-    <table class="sr">
+    <!-- A table ignores a 1px size, so the hiding box is a div around it. -->
+    <div class="sr"><table>
       <caption>{{ ariaLabel() }}</caption>
       <thead><tr><td></td>@for (s of series(); track $index) { <th scope="col">{{ s.name }}</th> }</tr></thead>
       <tbody>
@@ -104,7 +105,7 @@ let nextId = 0;
           <tr><th scope="row">{{ c }}</th>@for (s of series(); track $index) { <td>{{ fmt(valueOf(s, i)) }}</td> }</tr>
         }
       </tbody>
-    </table>
+    </table></div>
   `,
   styles: `
     :host { display: block; position: relative; min-width: 0; color: var(--ui-color-text); font-family: var(--ui-font-default); }
