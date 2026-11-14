@@ -90,6 +90,13 @@
 
   /* Map route tones that hold 3:1 over the map tiles here (see tokens.css). */
   --ui-map-route-primary: #b83e0b;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #c2410c;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 /* ── Light Pink ─────────────────────────────────────────────────────── */
@@ -117,6 +124,13 @@
   --ui-color-danger: #c42b25;
   --ui-gradient-brand: linear-gradient(90deg, #db2777 0%, #ec4899 50%, #f9a8d4 100%);
   --ui-glow-amber: 0 0 24px rgba(219, 39, 119, 0.20);
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #be185d;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 /* ── Light Teal ─────────────────────────────────────────────────────── */
@@ -144,6 +158,13 @@
   --ui-color-danger: #c42b25;
   --ui-gradient-brand: linear-gradient(90deg, #0d9488 0%, #14b8a6 50%, #5eead4 100%);
   --ui-glow-amber: 0 0 24px rgba(13, 148, 136, 0.20);
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #039e94;
+  --ui-chart-2: #6250d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 /* ── Light Purple ───────────────────────────────────────────────────── */
@@ -171,6 +192,13 @@
   --ui-color-danger: #c42b25;
   --ui-gradient-brand: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #c4b5fd 100%);
   --ui-glow-amber: 0 0 24px rgba(124, 58, 237, 0.22);
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #7c3aed;
+  --ui-chart-2: #e87ba4;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #2a78d6;
 }
 
 /* ── Dark Pink ──────────────────────────────────────────────────────── */
@@ -202,6 +230,13 @@
   --ui-map-route-muted: #b0a3aa;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #f48694;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #ea4697;
+  --ui-chart-2: #c98500;
+  --ui-chart-3: #3987e5;
+  --ui-chart-4: #199e70;
 }
 
 /* ── Dark Teal ──────────────────────────────────────────────────────── */
@@ -232,6 +267,13 @@
   --ui-map-route-muted: #9ba9a5;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #f48694;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #14a595;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #c98500;
+  --ui-chart-4: #d55181;
 }
 
 /* ── Dark Purple ────────────────────────────────────────────────────── */
@@ -263,6 +305,13 @@
   --ui-map-route-muted: #aaa5b4;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #f48694;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #9874ef;
+  --ui-chart-2: #199e70;
+  --ui-chart-3: #c98500;
+  --ui-chart-4: #d55181;
 }
 
 /* ── Gold Black (luxe gold-on-black) ────────────────────────────────── */
@@ -293,6 +342,13 @@
   --ui-map-route-muted: #aaa699;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #f48883;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #ac8b12;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 /* ── Gold Red (gold accents over deep oxblood) ──────────────────────── */
@@ -323,6 +379,13 @@
   --ui-map-route-muted: #b3a49f;
   --ui-map-route-success: #34bc7a;
   --ui-map-route-danger: #ef8b8e;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #ac8b12;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 /* ── Light Purple Gold (regal: royal-purple primary, gold accents) ──── */
@@ -355,4 +418,11 @@
   /* Purple → gold sweep is this theme's signature. */
   --ui-gradient-brand: linear-gradient(90deg, #6d28d9 0%, #9333ea 35%, #c99a2e 75%, #f0d27a 100%);
   --ui-glow-amber: 0 0 24px rgba(124, 58, 237, 0.22), 0 0 60px rgba(201, 154, 46, 0.20);
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #7c3aed;
+  --ui-chart-2: #e87ba4;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #2a78d6;
 }

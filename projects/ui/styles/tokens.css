@@ -305,6 +305,15 @@
   --ui-tier-premium-border: #8c74e8;
   --ui-tier-premium-contrast: #ffffff;
   --ui-gradient-tier-premium: linear-gradient(90deg, var(--ui-tier-premium) 0%, var(--ui-tier-premium-light) 50%, var(--ui-tier-premium) 100%);
+
+  /* Chart series colours (ui-bar-chart, 0.83.0), in a fixed order: the first series takes 1, the
+     second 2, and so on. Every built-in theme sets its own checked values (the "Chart series"
+     lines in its block); these formulas only keep a theme of your own drawing something
+     sensible until it sets them too. */
+  --ui-chart-1: var(--ui-color-primary);
+  --ui-chart-2: var(--ui-color-text-muted);
+  --ui-chart-3: color-mix(in srgb, var(--ui-color-primary) 55%, var(--ui-color-surface));
+  --ui-chart-4: color-mix(in srgb, var(--ui-color-text-muted) 55%, var(--ui-color-surface));
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
@@ -345,6 +354,13 @@
   /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #b28811;
+  --ui-chart-2: #3987e5;
+  --ui-chart-3: #199e70;
+  --ui-chart-4: #9085e9;
 }
 
 :root:not([data-theme]),
@@ -511,6 +527,13 @@
   --ui-liquid-ink: #0f1433;
   --ui-liquid-second-strength: 60%;
   --ui-liquid-accent-strength: 45%;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #8f6806;
+  --ui-chart-2: #2a78d6;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
 }
 
 /* Icon colour. A theme may set --ui-color-icon (maldives tints icons Lagoon); icons then take it

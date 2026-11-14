@@ -3,7 +3,7 @@
 A token-driven, signal-first **Angular v22** component library. Standalone, zoneless,
 tree-shakeable across secondary entry points, themeable, and accessible (ARIA roles,
 keyboard support, CDK focus handling). About 140 components and directives across
-40 secondary entry points, plus a small core (`@zouriel/ui`):
+49 secondary entry points, plus a small core (`@zouriel/ui`):
 - the everyday catalog;
 - design tools;
 - three flagships: a floating-window system, a multi-format file viewer and a form builder;
@@ -43,6 +43,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   button to the Human Interface Guidelines (black, white, white with outline; 40px, lined up with
   `ui-google-button`), a plain button for the app's own Sign in with Apple flow (the twin of
   Flutter's `UiAppleSignInButton`).
+- **Bar chart** (`@zouriel/ui/chart`, 0.83.0): `ui-bar-chart` draws columns or grouped bars (one to four
+  series) from a zero baseline, with a tooltip on hover, tap and arrow keys, a table for screen readers, label
+  thinning, sideways scrolling inside itself and `--ui-chart-1..4` colours checked in every theme (the twin
+  of Flutter's `UiBarChart`).
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).
