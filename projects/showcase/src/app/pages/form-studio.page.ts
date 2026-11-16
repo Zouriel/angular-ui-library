@@ -436,12 +436,12 @@ export class FormStudioPage {
   }
 
   protected saveNew(f: StudioForm, s: UiFormSubmission): void {
-    const r = this.store.addResponse(f.id, s.data, s.revision ?? f.published?.revision ?? 1, s.locale);
+    const r = this.store.addResponse(f.id, s.values, s.revision ?? f.published?.revision ?? 1, s.locale);
     this.lastId.set(r.id);
     this.justSaved.set(true);
   }
   protected saveEdit(f: StudioForm, r: StudioResponse, s: UiFormSubmission): void {
-    this.store.updateResponse(f.id, r.id, s.data, s.revision ?? r.revision);
+    this.store.updateResponse(f.id, r.id, s.values, s.revision ?? r.revision);
     this.editing.set(false);
     this.toast.success('Changes saved.');
   }

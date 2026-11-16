@@ -78,7 +78,7 @@ describe('UiFormEngine languages', () => {
     expect(e.locale()).toBe('dv');
     expect(e.dir()).toBe('rtl');
     expect(e.text(t('A', 'B'))).toBe('B');
-    expect(e.instanceState('name', null).errors).toEqual(['ފުރިހަމަ ނަން is required.']);
+    expect(e.instanceState('name', null).errors).toEqual(['ފުރިހަމަ ނަން ފުރިހަމަ ކުރަންޖެހެއެވެ.']);
     e.setLocale('xx');
     expect(e.locale()).toBe('en');
     expect(e.text({ fr: 'Seulement' })).toBe('Seulement');

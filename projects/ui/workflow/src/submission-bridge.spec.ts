@@ -6,9 +6,9 @@ import {
   wfAnswerAt, wfPickWorkflow, wfRouteSubmission, wfStartFromSubmission, wfSubmissionPayload, wfSubmissionRegistry, wfSubmissionTokens,
 } from './submission-bridge';
 
-function submission(data: Record<string, unknown>, extra: Partial<UiFormSubmission> = {}): UiFormSubmission {
+function submission(values: Record<string, unknown>, extra: Partial<UiFormSubmission> = {}): UiFormSubmission {
   return {
-    formId: 'leave', revision: 3, locale: 'dv', data, submittedAt: '2026-11-16T08:00:00Z', workflowId: 'wf-leave', serviceCode: 'HR-LEAVE',
+    formId: 'leave', revision: 3, locale: 'dv', values, submittedAt: '2026-11-16T08:00:00Z', workflowId: 'wf-leave', serviceCode: 'HR-LEAVE',
     fields: [
       { path: 'days', key: 'days', label: 'Days', type: 'number' },
       { path: 'address.city', key: 'city', label: 'City', type: 'text' },
@@ -48,7 +48,7 @@ describe('wfSubmissionPayload', () => {
     const p = wfSubmissionPayload(submission({ days: 5 }, { files: { cert: [new File(['x'], 'a.pdf')] } }));
     expect(p).toEqual({
       formId: 'leave', revision: 3, locale: 'dv', submittedAt: '2026-11-16T08:00:00Z', workflowId: 'wf-leave', serviceCode: 'HR-LEAVE',
-      data: { days: 5 }, fields: expect.any(Array),
+      values: { days: 5 }, fields: expect.any(Array),
     });
     expect(p.fields.map((f) => f.path)).toEqual(['days', 'address.city', 'children[].age', 'cert']);
     expect('files' in p).toBe(false);

@@ -14,7 +14,8 @@ import { fbSlug, fbUid, indexDefinition } from './definition';
 import { requiredMessage } from './engine';
 import { valueKindOf } from './field-types';
 import type { UiFbCalc, UiFbCalcArg, UiFbCalcOp, UiFbCondition, UiFbField, UiFbGroup, UiFbLocalizedText, UiFbOption, UiFbValidatorRule } from './schema';
-import { comparisonWords, describeDateParam, formatMessage, UI_FB_IMPLICIT_VALIDATOR, type UiFbParamSpec, type UiFbValidatorDef } from './validators';
+import { comparisonWords, describeDateParam, formatMessage, UI_FB_IMPLICIT_VALIDATOR, validatorMessage, type UiFbParamSpec, type UiFbValidatorDef } from './validators';
+import { UI_FB_STRINGS_EN } from './form-strings';
 import { FB_ICONS } from './builder-icons';
 import { FbSourceSettings } from './builder-source';
 import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
@@ -508,7 +509,7 @@ export class FbChecksEditor {
       const v = rule.params?.[p.key] ?? p.default;
       vars[p.key] = p.kind === 'field' ? `“${this.store.name(String(v ?? ''))}”` : p.kind === 'date' ? describeDateParam(v) : p.key === 'comparison' ? comparisonWords(v) : v;
     }
-    return formatMessage(d.defaultMessage, vars);
+    return formatMessage(validatorMessage(d, UI_FB_STRINGS_EN), vars);
   }
 }
 

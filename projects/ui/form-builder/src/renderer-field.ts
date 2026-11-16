@@ -26,6 +26,7 @@ import type { UiFbErrorPlacement, UiFbField, UiFbFileValue, UiFbLabelPlacement }
 import { FB_ICONS } from './builder-icons';
 import { optionValueOf, type UiFbChoice } from './option-sources';
 import { UiFbSourcePicker } from './source-picker';
+import { fbFormat } from './form-strings';
 
 /** Uploads a picked file and returns what to store (usually with a `url` or `id`). */
 export type UiFbUploader = (file: File, field: UiFbField) => Promise<UiFbFileValue>;
@@ -66,7 +67,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
       }
       <div class="ui-fbf-body">
         @if (viewing()) {
-          <div class="ui-fbf-value" [class.empty]="!display()">{{ display() || 'Not answered' }}</div>
+          <div class="ui-fbf-value" [class.empty]="!display()">{{ display() || s().notAnswered }}</div>
         } @else {
           <div class="ui-fbf-control" (focusout)="blurred($event)" [attr.role]="grouped() ? 'group' : null"
             [attr.aria-labelledby]="grouped() ? ids().label : null">
@@ -76,10 +77,10 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
             @if (f.source && (f.type === 'select' || f.type === 'multiselect')) {
               @if (sourceDef(); as src) {
                 <ui-fb-source-picker [source]="src" [params]="sourceParams()" [multiple]="f.type === 'multiselect'" [value]="st.value"
-                  [placeholder]="placeholder() || 'Search ' + src.label.toLowerCase() + '…'" [disabled]="st.disabled" [invalid]="showError()"
+                   [strings]="s()" [placeholder]="placeholder() || fmt(s().searchSource, { name: src.label.toLowerCase() })" [disabled]="st.disabled" [invalid]="showError()"
                   [inputId]="ids().control" (valueChange)="set($event)" />
               } @else {
-                <p class="ui-fbf-note bad" role="alert">This list isn’t available right now.@if (display()) { Saved answer: {{ display() }}. }</p>
+                <p class="ui-fbf-note bad" role="alert">{{ s().listUnavailable }}@if (display()) { {{ fmt(s().savedAnswer, { answer: display() }) }} }</p>
               }
             } @else {
             @switch (f.type) {
@@ -91,14 +92,14 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
               @case ('number') { <ng-container [ngTemplateOutlet]="numberTpl" /> }
               @case ('currency') { <ng-container [ngTemplateOutlet]="numberTpl" /> }
               @case ('date') {
-                <ui-date-picker [placeholder]="placeholder() || 'Select a date'" [min]="dateMin()" [max]="dateMax()"
+                <ui-date-picker [placeholder]="placeholder() || s().selectDate" [min]="dateMin()" [max]="dateMax()"
                   [ngModel]="st.value ?? null" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('time') {
                 <ui-time-picker [invalid]="showError()" [ngModel]="st.value ?? ''" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('select') {
-                <ui-select [options]="options()" [placeholder]="placeholder() || 'Choose…'" [label]="label()" [invalid]="showError()"
+                <ui-select [options]="options()" [placeholder]="placeholder() || s().choose" [label]="label()" [invalid]="showError()"
                   [ngModel]="st.value ?? ''" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('radio') {
@@ -110,14 +111,14 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
                   [ngModel]="list()" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('multiselect') {
-                <ui-multi-select [options]="options()" [placeholder]="placeholder() || 'Choose…'" [invalid]="showError()"
+                <ui-multi-select [options]="options()" [placeholder]="placeholder() || s().choose" [invalid]="showError()"
                   [ngModel]="list()" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('checkbox') {
                 <ui-checkbox [invalid]="showError()" [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ caption() || label() }}</ui-checkbox>
               }
               @case ('toggle') {
-                <ui-switch [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ caption() || 'Yes' }}</ui-switch>
+                <ui-switch [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ caption() || s().yes }}</ui-switch>
               }
               @case ('rating') {
                 <ui-rating [max]="f.props?.maxRating ?? 5" [label]="label()" [ngModel]="st.value ?? 0" (ngModelChange)="set($event)" [disabled]="st.disabled" />
@@ -127,27 +128,27 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
                   [ngModel]="st.value ?? f.props?.min ?? 0" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('file') {
-                <ui-file-upload [multiple]="!!f.props?.multiple" [accept]="f.props?.accept" (filesSelected)="pick($event)" />
+                <ui-file-upload [multiple]="!!f.props?.multiple" [accept]="f.props?.accept" [label]="s().fileUploadLabel" [hint]="s().fileUploadHint" (filesSelected)="pick($event)" />
                 @if (files().length) {
                   <ul class="ui-fbf-files">
                     @for (file of files(); track $index) {
                       <li>
                         @if (file.url) { <a [href]="file.url" target="_blank" rel="noopener">{{ file.name }}</a> } @else { <span>{{ file.name }}</span> }
                         <span class="size">{{ size(file.size) }}</span>
-                        <button type="button" class="ui-fbf-x" [attr.aria-label]="'Remove ' + file.name" [disabled]="st.disabled" (click)="unpick($index)">
+                        <button type="button" class="ui-fbf-x"  [attr.aria-label]="fmt(s().remove, { name: file.name })" [disabled]="st.disabled" (click)="unpick($index)">
                           <hugeicons-icon aria-hidden="true" [icon]="removeIcon" [size]="14" [strokeWidth]="1.8" />
                         </button>
                       </li>
                     }
                   </ul>
                 }
-                @if (uploading()) { <p class="ui-fbf-note" role="status">Uploading…</p> }
-                @if (uploadError()) { <p class="ui-fbf-note bad" role="alert">{{ uploadError() }}</p> }
+                @if (uploading()) { <p class="ui-fbf-note" role="status">{{ s().uploading }}</p> }
+                @if (uploadError()) { <p class="ui-fbf-note bad" role="alert">{{ s().uploadFailed }}</p> }
               }
               @case ('calculated') {
                 <output class="ui-fbf-calc" [id]="ids().control" [attr.aria-labelledby]="ids().label">
                   <hugeicons-icon [icon]="calcIcon" [size]="15" [strokeWidth]="1.8" aria-hidden="true" />
-                  <span [class.muted]="!display()">{{ display() || 'Worked out as you answer' }}</span>
+                  <span [class.muted]="!display()">{{ display() || s().calculatedHint }}</span>
                 </output>
               }
               @default {
@@ -168,18 +169,18 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
           @if (showError()) {
             <p class="ui-fbf-error" [class.sr-only]="errInside()" [id]="ids().error">
               <hugeicons-icon [icon]="errorIcon" [size]="14" [strokeWidth]="2" aria-hidden="true" />
-              <span><span class="sr-only">Error: </span>{{ error() }}</span>
+              <span><span class="sr-only">{{ s().errorLabel }} </span>{{ error() }}</span>
             </p>
           }
           @for (w of warningsShown(); track w) { <p class="ui-fbf-warning">{{ w }}</p> }
-          @if (st.pending && touchedOnce()) { <p class="ui-fbf-note" role="status">Checking…</p> }
+          @if (st.pending && touchedOnce()) { <p class="ui-fbf-note" role="status">{{ s().checking }}</p> }
         }
       </div>
     </div>
 
     <ng-template #markerTpl>
       @if (marker() === 'asterisk' && st.required) { <span class="ui-fbf-req" aria-hidden="true">*</span> }
-      @if (marker() === 'optional' && !st.required && !viewing() && f.type !== 'calculated') { <span class="ui-fbf-opt">(optional)</span> }
+      @if (marker() === 'optional' && !st.required && !viewing() && f.type !== 'calculated') { <span class="ui-fbf-opt">{{ s().optional }}</span> }
     </ng-template>
     <ng-template #numberTpl>
       <ui-number-input [min]="f.props?.min" [max]="f.props?.max" [step]="f.props?.step ?? 1" [precision]="f.props?.decimals ?? null"
@@ -288,11 +289,13 @@ export class UiFbFieldView {
   protected readonly removeIcon = FB_ICONS.Cancel01Icon;
   protected readonly calcIcon = FB_ICONS.CalculatorIcon;
   protected readonly uploading = signal(false);
-  protected readonly uploadError = signal('');
+  protected readonly uploadError = signal(false);
 
   readonly addr = computed(() => (this.row() ? `${this.row()}/${this.field().id}` : this.field().id));
   protected readonly state = computed(() => this.engine().instanceState(this.field().id, this.row()));
   protected readonly viewing = computed(() => this.engine().mode === 'view');
+  protected readonly s = computed(() => this.engine().strings());
+  protected readonly fmt = fbFormat;
   protected readonly info = computed(() => fieldTypeInfo(this.field().type));
   protected readonly grouped = computed(() => GROUP_TYPES.has(this.field().type));
 
@@ -325,7 +328,7 @@ export class UiFbFieldView {
   protected readonly text = computed(() => (this.state().value == null ? '' : String(this.state().value)));
   protected readonly list = computed(() => (Array.isArray(this.state().value) ? (this.state().value as string[]) : []));
   protected readonly files = computed(() => (Array.isArray(this.state().value) ? (this.state().value as UiFbFileValue[]) : []));
-  protected readonly display = computed(() => formatValue(this.field(), this.state().value, this.engine().locale(), this.engine().defaultLocale));
+  protected readonly display = computed(() => formatValue(this.field(), this.state().value, this.engine().locale(), this.engine().defaultLocale, this.s()));
 
   protected readonly inputType = computed(() => ({ email: 'email', phone: 'tel', url: 'url' } as Record<string, 'email' | 'tel' | 'url'>)[this.field().type] ?? 'text');
   protected readonly inputmode = computed(() => ({ email: 'email', phone: 'tel', url: 'url' } as Record<string, string>)[this.field().type]);
@@ -346,7 +349,7 @@ export class UiFbFieldView {
     for (const c of chosen) {
       if (live.some((o) => o.value === c)) continue;
       const old = f.options?.find((o) => o.value === c);
-      live.push({ label: `${old ? tx(old.label) : c} (no longer offered)`, value: c });
+      live.push({ label: fbFormat(this.s().noLongerOffered, { label: old ? tx(old.label) : c }), value: c });
     }
     return live;
   });
@@ -428,12 +431,12 @@ export class UiFbFieldView {
       return;
     }
     this.uploading.set(true);
-    this.uploadError.set('');
+    this.uploadError.set(false);
     try {
       const done = await Promise.all(picked.map((p) => up(p, f)));
       this.engine().setValue(f.id, this.row(), [...keep, ...done]);
     } catch {
-      this.uploadError.set('The file could not be uploaded. Try again.');
+      this.uploadError.set(true);
     } finally {
       this.uploading.set(false);
     }

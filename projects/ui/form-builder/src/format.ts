@@ -2,13 +2,14 @@ import { isEmptyValue } from './conditions';
 import { isChoice } from './option-sources';
 import { fbText } from './localize';
 import type { UiFbField, UiFbFileValue } from './schema';
+import { fbFormat, UI_FB_STRINGS_EN, type UiFbStrings } from './form-strings';
 
 /** An option's label for a stored value, or the value itself (marked) when the option is gone. */
-export function optionLabel(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null): string {
+export function optionLabel(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null, strings: UiFbStrings = UI_FB_STRINGS_EN): string {
   // Sourced answers carry the label they were picked with.
   if (isChoice(value)) return value.label;
   const opt = field.options?.find((o) => o.value === String(value));
-  return opt ? fbText(opt.label, locale, defaultLocale) : `${String(value)} (no longer an option)`;
+  return opt ? fbText(opt.label, locale, defaultLocale) : fbFormat(strings.noLongerOption, { value: String(value) });
 }
 
 function formatNumber(n: number, field: UiFbField): string {
@@ -32,18 +33,18 @@ export function formatDate(iso: string): string {
 }
 
 /** An answer as people read it: option labels, dates, money, Yes/No, file names. */
-export function formatValue(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null): string {
+export function formatValue(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null, strings: UiFbStrings = UI_FB_STRINGS_EN): string {
   if (isEmptyValue(value)) return '';
   switch (field.type) {
     case 'select':
     case 'radio':
-      return optionLabel(field, value, locale, defaultLocale);
+      return optionLabel(field, value, locale, defaultLocale, strings);
     case 'checkboxes':
     case 'multiselect':
-      return (Array.isArray(value) ? value : [value]).map((v) => optionLabel(field, v, locale, defaultLocale)).join(', ');
+      return (Array.isArray(value) ? value : [value]).map((v) => optionLabel(field, v, locale, defaultLocale, strings)).join(', ');
     case 'checkbox':
     case 'toggle':
-      return value === true ? 'Yes' : 'No';
+      return value === true ? strings.yes : strings.no;
     case 'date':
       return formatDate(String(value));
     case 'file':

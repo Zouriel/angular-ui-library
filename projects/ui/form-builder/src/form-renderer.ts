@@ -22,6 +22,7 @@ import { formatValue } from './format';
 import { UiFbFieldView, type UiFbUploader } from './renderer-field';
 import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFbSubmissionLink, UiFormDefinition, UiFormSubmission } from './schema';
 import { fbLocaleDir, fbResolveLocale } from './localize';
+import { fbFormat, mergeFbStringOverrides, UI_FB_STRINGS_EN, UI_FORM_STRINGS, type UiFbStringOverrides } from './form-strings';
 import { UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
 import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
 import { sourcesFromSettings, type UiFormGlobalSettings } from './global-settings';
@@ -36,7 +37,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
  * `ui-form-renderer` — fills in a form built with `ui-form-builder`.
  *
  * Give it a definition, and (to edit or view saved answers) the saved `data`.
- * It emits `submitted` with JSON ready to store: `{ formId, revision, data, … }`.
+ * It emits `submitted` with JSON ready to store: `{ formId, revision, values, … }`.
  */
 @Component({
   selector: 'ui-form-renderer',
@@ -79,13 +80,13 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                 <span class="seg" [class.done]="n < e.step()" [class.on]="n === e.step()"></span>
               }
             </div>
-            <p class="ui-fr-step">Step {{ e.step() + 1 }} of {{ e.path().length }}@if (e.text(page.title)) {<span class="sep">:</span> {{ e.text(page.title) }}}</p>
+            <p class="ui-fr-step">{{ fmt(s().stepOf, { n: e.step() + 1, total: e.path().length }) }}@if (e.text(page.title)) {<span class="sep">:</span> {{ e.text(page.title) }}}</p>
           </div>
         }
 
         @if (summary().length) {
           <div class="ui-fr-summary" role="alert" tabindex="-1" #summaryBox [attr.aria-labelledby]="uid + '-sum'">
-            <h3 class="ui-fr-summary-title" [id]="uid + '-sum'">There {{ summary().length === 1 ? 'is a problem' : 'are ' + summary().length + ' problems' }}</h3>
+            <h3 class="ui-fr-summary-title" [id]="uid + '-sum'">{{ summary().length === 1 ? s().problemOne : fmt(s().problemMany, { n: summary().length }) }}</h3>
             <ul>
               @for (item of summary(); track item.addr) {
                 <li><a [href]="'#' + uid + '-' + item.addr" (click)="$event.preventDefault(); focusField(item.addr)">{{ item.message }}</a></li>
@@ -110,7 +111,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           <footer class="ui-fr-footer">
             <div class="ui-fr-footer-start">
               @if (multiPage() && e.step() > 0) {
-                <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ e.text(def.settings?.backLabel) || 'Back' }}</ui-button>
+                <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ e.text(def.settings?.backLabel) || s().back }}</ui-button>
               }
               @if (cancelLabel()) {
                 <ui-button variant="ghost" type="button" (click)="cancelled.emit()">{{ cancelLabel() }}</ui-button>
@@ -120,7 +121,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
               @if (e.mode === 'edit') {
                 @if (e.dirty()) {
                   <details class="ui-fr-changes">
-                    <summary>{{ e.changes().length === 1 ? '1 change' : e.changes().length + ' changes' }}</summary>
+                    <summary>{{ e.changes().length === 1 ? s().changeOne : fmt(s().changeMany, { n: e.changes().length }) }}</summary>
                     <ul>
                       @for (c of e.changes(); track c.path) {
                         <li><span class="what">{{ c.label }}</span><span class="from">{{ show(c, c.from) }}</span><span class="to">{{ show(c, c.to) }}</span></li>
@@ -128,7 +129,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                     </ul>
                   </details>
                 } @else {
-                  <span class="ui-fr-saved">No changes</span>
+                  <span class="ui-fr-saved">{{ s().noChanges }}</span>
                 }
               }
               <ui-button type="submit" [loading]="busy()">{{ primaryLabel() }}@if (!e.isLastPage()) {<hugeicons-icon aria-hidden="true" [icon]="nextIcon" [size]="14" [strokeWidth]="1.8" />}</ui-button>
@@ -166,15 +167,15 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                             @if (e.mode !== 'view') {
                               <div class="ui-fr-entry-tools">
                                 @if (rows.length > 1) {
-                                  <button type="button" class="ui-fr-icon" [disabled]="n === 0" (click)="e.moveRow(g.id, r, -1)" [attr.aria-label]="'Move ' + entryLabel(g, n) + ' up'">
+                                  <button type="button" class="ui-fr-icon" [disabled]="n === 0" (click)="e.moveRow(g.id, r, -1)" [attr.aria-label]="fmt(s().moveUp, { name: entryLabel(g, n) })">
                                     <hugeicons-icon aria-hidden="true" [icon]="upIcon" [size]="15" [strokeWidth]="1.8" />
                                   </button>
-                                  <button type="button" class="ui-fr-icon" [disabled]="n === rows.length - 1" (click)="e.moveRow(g.id, r, 1)" [attr.aria-label]="'Move ' + entryLabel(g, n) + ' down'">
+                                  <button type="button" class="ui-fr-icon" [disabled]="n === rows.length - 1" (click)="e.moveRow(g.id, r, 1)" [attr.aria-label]="fmt(s().moveDown, { name: entryLabel(g, n) })">
                                     <hugeicons-icon aria-hidden="true" [icon]="downIcon" [size]="15" [strokeWidth]="1.8" />
                                   </button>
                                 }
                                 @if (e.canRemoveRow(g.id)) {
-                                  <button type="button" class="ui-fr-icon danger" (click)="removeRow(g, r, n)" [attr.aria-label]="'Remove ' + entryLabel(g, n)">
+                                  <button type="button" class="ui-fr-icon danger" (click)="removeRow(g, r, n)" [attr.aria-label]="fmt(s().remove, { name: entryLabel(g, n) })">
                                     <hugeicons-icon aria-hidden="true" [icon]="deleteIcon" [size]="15" [strokeWidth]="1.8" />
                                   </button>
                                 }
@@ -186,16 +187,16 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                           </div>
                         </section>
                       } @empty {
-                        <p class="ui-fr-empty">{{ e.mode === 'view' ? 'None added.' : 'Nothing added yet.' }}</p>
+                        <p class="ui-fr-empty">{{ e.mode === 'view' ? s().noneAdded : s().nothingAdded }}</p>
                       }
                       @if (e.mode !== 'view') {
                         @if (removed()?.groupId === g.id) {
-                          <p class="ui-fr-undo">{{ removed()!.label }} removed.
-                            <button type="button" class="ui-fr-link" (click)="undoRemove()">Undo</button></p>
+                          <p class="ui-fr-undo">{{ fmt(s().entryRemoved, { name: removed()!.label }) }}
+                            <button type="button" class="ui-fr-link" (click)="undoRemove()">{{ s().undo }}</button></p>
                         }
                         <div class="ui-fr-add" [attr.data-fr-add]="g.id">
                           <ui-button variant="outline" size="sm" type="button" [disabled]="!e.canAddRow(g.id) || e.instanceState(g.id, row).disabled" (click)="addRow(g)">
-                            <hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="15" [strokeWidth]="1.8" />{{ e.text(g.repeat.addLabel) || 'Add another' }}
+                            <hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="15" [strokeWidth]="1.8" />{{ e.text(g.repeat.addLabel) || s().addAnother }}
                           </ui-button>
                           @if (g.repeat.max) { <span class="ui-fr-count">{{ rows.length }} of {{ g.repeat.max }}</span> }
                         </div>
@@ -291,6 +292,7 @@ export class UiFormRenderer {
   private readonly registered = (inject(UI_FB_VALIDATORS, { optional: true }) ?? []).flat();
   private readonly registeredSources = (inject(UI_FB_OPTION_SOURCES, { optional: true }) ?? []).flat();
   private readonly http = inject(UI_FB_HTTP_SOURCES, { optional: true }) ?? {};
+  private readonly providedStrings = inject(UI_FORM_STRINGS, { optional: true });
 
   readonly definition = input.required<UiFormDefinition>();
   /** Saved answers to edit or view. */
@@ -313,6 +315,11 @@ export class UiFormRenderer {
   readonly busy = input(false);
   /** The language to show the form in. Falls back to the form's default language. Switching keeps the answers. */
   readonly locale = input<string | null>(null);
+  /**
+   * The renderer's own words (buttons, step text, messages) per language code, on top of the built-in
+   * English and Dhivehi, e.g. `{ fr: { submit: 'Envoyer' } }`. Wins over `provideUiFormStrings`.
+   */
+  readonly strings = input<UiFbStringOverrides | null>(null);
   /** Copied onto each submission (`workflowId`, `serviceCode`). */
   readonly link = input<UiFbSubmissionLink | null>(null);
   /** Fixes "today" (previews and tests). */
@@ -342,11 +349,15 @@ export class UiFormRenderer {
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
   private readonly fields = viewChildren(UiFbFieldView);
 
+  private readonly stringOverrides = computed(() => mergeFbStringOverrides(this.providedStrings, this.strings()));
   /** The language in use. */
   readonly activeLocale = computed(() => fbResolveLocale(this.definition(), this.locale()));
   protected readonly dir = computed(() => fbLocaleDir(this.definition(), this.activeLocale()));
   protected readonly lang = computed(() => this.activeLocale());
 
+  /** The renderer's own words in the language in use. */
+  protected readonly s = computed(() => this.engine()?.strings() ?? UI_FB_STRINGS_EN);
+  protected readonly fmt = fbFormat;
   protected readonly multiPage = computed(() => (this.engine()?.path().length ?? 0) > 1);
   protected readonly summary = computed(() => {
     const e = this.engine();
@@ -357,8 +368,8 @@ export class UiFormRenderer {
   protected readonly primaryLabel = computed(() => {
     const e = this.engine();
     if (!e) return '';
-    if (!e.isLastPage()) return e.text(e.definition.settings?.nextLabel) || 'Continue';
-    return this.submitLabel() || e.text(e.definition.settings?.submitLabel) || (e.mode === 'edit' ? 'Save changes' : 'Submit');
+    if (!e.isLastPage()) return e.text(e.definition.settings?.nextLabel) || e.strings().next;
+    return this.submitLabel() || e.text(e.definition.settings?.submitLabel) || (e.mode === 'edit' ? e.strings().saveChanges : e.strings().submit);
   });
 
   constructor() {
@@ -372,7 +383,7 @@ export class UiFormRenderer {
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
         definition, data, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
-        locale: this.locale(), link: this.link(),
+        locale: this.locale(), link: this.link(), strings: untracked(() => this.stringOverrides()),
       }));
       this.engine.set(e);
       onCleanup(() => e.destroy());
@@ -382,6 +393,11 @@ export class UiFormRenderer {
       const e = this.engine();
       const locale = this.locale();
       if (e) untracked(() => e.setLocale(locale));
+    });
+    effect(() => {
+      const e = this.engine();
+      const overrides = this.stringOverrides();
+      if (e) untracked(() => e.setStrings(overrides));
     });
     effect(() => {
       const e = this.engine();
@@ -438,7 +454,7 @@ export class UiFormRenderer {
   protected addRow(g: UiFbGroup): void {
     const e = this.engine();
     if (!e?.addRow(g.id)) return;
-    this.announce.set(`${this.entryLabel(g, e.rows(g.id).length - 1)} added`);
+    this.announce.set(fbFormat(e.strings().entryAdded, { name: this.entryLabel(g, e.rows(g.id).length - 1) }));
   }
 
   protected removeRow(g: UiFbGroup, row: string, n: number): void {
@@ -446,7 +462,7 @@ export class UiFormRenderer {
     if (!snapshot) return;
     const label = this.entryLabel(g, n);
     this.removed.set({ ...snapshot, label });
-    this.announce.set(`${label} removed. Undo is next to the add button.`);
+    this.announce.set(fbFormat(this.s().entryRemovedAnnounce, { name: label }));
     if (this.removedTimer) clearTimeout(this.removedTimer);
     this.removedTimer = setTimeout(() => this.removed.set(null), 12000);
     // The button that was pressed is gone; keep focus in the same place in the form.
@@ -458,7 +474,7 @@ export class UiFormRenderer {
     if (!r) return;
     this.engine()?.restoreRow(r);
     this.removed.set(null);
-    this.announce.set(`${r.label} restored`);
+    this.announce.set(fbFormat(this.s().entryRestored, { name: r.label }));
   }
 
   protected focusField(addr: string): void {
@@ -466,7 +482,7 @@ export class UiFormRenderer {
   }
 
   protected entryLabel(g: UiFbGroup, n: number): string {
-    return (this.engine()?.text(g.repeat?.itemLabel) || 'Entry {n}').replace('{n}', String(n + 1));
+    return (this.engine()?.text(g.repeat?.itemLabel) || this.s().entryTitle).replace('{n}', String(n + 1));
   }
 
   protected span(el: UiFbElement, cols: number): number {
@@ -477,10 +493,11 @@ export class UiFormRenderer {
   }
 
   protected show(c: UiFbChange, v: unknown): string {
-    if (v === null || v === undefined || v === '') return 'Empty';
+    const w = this.s();
+    if (v === null || v === undefined || v === '') return w.empty;
     const id = [...(this.engine()?.index.values() ?? [])].find((x) => x.kind === 'field' && this.engine()?.dataPath(x.id, null) === c.path.replace(/\[\d+\]/g, ''))?.id;
     const field = id ? this.engine()?.field(id) : undefined;
-    return field ? formatValue(field, v, this.engine()?.locale(), this.engine()?.defaultLocale) || 'Empty' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return field ? formatValue(field, v, this.engine()?.locale(), this.engine()?.defaultLocale, w) || w.empty : typeof v === 'object' ? JSON.stringify(v) : String(v);
   }
 
   protected asField(el: UiFbElement): UiFbField {
@@ -509,7 +526,7 @@ export class UiFormRenderer {
     if (!e) return;
     const page = e.page();
     const title = e.text(page.title);
-    this.announce.set(`Step ${e.step() + 1} of ${e.path().length}${title ? `: ${title}` : ''}`);
+    this.announce.set(`${fbFormat(e.strings().stepOf, { n: e.step() + 1, total: e.path().length })}${title ? `: ${title}` : ''}`);
     afterNextRender(() => {
       const el = this.host.nativeElement;
       if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' });

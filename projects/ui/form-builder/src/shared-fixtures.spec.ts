@@ -16,6 +16,7 @@ import {
 import { coerceValue, UiFormEngine, type UiFormMode } from './engine';
 import { operatorsFor, typesCompatible } from './field-types';
 import { formatValue } from './format';
+import { fbStrings, UI_FB_STRINGS, UI_FB_STRINGS_DV, UI_FB_STRINGS_EN } from './form-strings';
 import { fbLocaleDir, fbLocales, fbResolveLocale, fbSetText, fbText, fbTextIn } from './localize';
 import { sourcesFromSettings } from './global-settings';
 import { fillPattern, httpOptionSource, originAllowed, originOf, readSourceReply, sourceUrl, type UiFbHttpSourceConfig } from './http-sources';
@@ -36,7 +37,7 @@ describe('shared fixtures', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
     expect(files).toEqual([
       'calc.json', 'conditions.json', 'definition.json', 'describe.json', 'engine-locale.json', 'engine-rules.json',
-      'engine-scholarship.json', 'http-sources.json', 'localize.json', 'migrate.json', 'scholarship.answers.json',
+      'engine-scholarship.json', 'form-strings.json', 'http-sources.json', 'localize.json', 'migrate.json', 'scholarship.answers.json',
       'scholarship.definition.json', 'slug.json', 'submission-fields.json', 'values.json',
     ]);
   });
@@ -373,5 +374,38 @@ describe('http-sources.json', () => {
   });
   it('turns global settings into sources', () => {
     expect(sourcesFromSettings(fx.globalSettings.settings).map((x) => x.type)).toEqual(fx.globalSettings.expectedTypes);
+  });
+});
+
+// ── The renderer's own words ────────────────────────────────────────────────────────────────
+
+describe('form-strings.json', () => {
+  const fx = load('form-strings.json');
+  const holes = (v: string) => (v.match(/\{\w+\}/g) ?? []).sort();
+
+  it('has the same English table as the code', () => {
+    expect(UI_FB_STRINGS_EN).toEqual(fx.en);
+    expect(Object.keys(UI_FB_STRINGS_EN)).toEqual(Object.keys(fx.en));
+  });
+  it('has the same Dhivehi table as the code', () => {
+    expect(UI_FB_STRINGS_DV).toEqual(fx.dv);
+    expect(Object.keys(UI_FB_STRINGS_DV)).toEqual(Object.keys(fx.en));
+  });
+  it('registers en and dv', () => {
+    expect(Object.keys(UI_FB_STRINGS).sort()).toEqual(['dv', 'en']);
+  });
+  it('words every phrase in Dhivehi with the same placeholders, in Thaana', () => {
+    for (const [k, en] of Object.entries(fx.en) as [string, string][]) {
+      const dv = fx.dv[k] as string;
+      expect(dv, k).toBeTruthy();
+      expect(holes(dv), `${k} placeholders`).toEqual(holes(en));
+      if (/[A-Za-z]/.test(en.replace(/\{\w+\}/g, ''))) expect(dv, `${k} thaana`).toMatch(/[\u0780-\u07BF]/);
+    }
+  });
+  it('picks the words for a language', () => {
+    for (const c of fx.resolve) {
+      const expected = { ...(fx[c.base] as Record<string, string>), ...(c.set ?? {}) };
+      expect(fbStrings(c.locale, c.overrides), c.name).toEqual(expected);
+    }
   });
 });

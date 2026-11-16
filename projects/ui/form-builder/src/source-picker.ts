@@ -3,6 +3,7 @@ import { Component, DestroyRef, ElementRef, computed, effect, inject, input, out
 import { injectUiConfig } from '@zouriel/ui';
 import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { isChoice, sourceHasMore, toChoice, type UiFbChoice, type UiFbOptionSourceDef, type UiFbSourceItem } from './option-sources';
+import { fbFormat, UI_FB_STRINGS_EN, type UiFbStrings } from './form-strings';
 
 let seq = 0;
 
@@ -25,7 +26,7 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
         @for (c of chosenList(); track c.value) {
           <span class="chip">
             <span class="chip-t">{{ c.label }}</span>
-            <button type="button" class="chip-x" [attr.aria-label]="'Remove ' + c.label" [disabled]="disabled()" (click)="remove(c, $event)">
+            <button type="button" class="chip-x" [attr.aria-label]="fmt(strings().remove, { name: c.label })" [disabled]="disabled()" (click)="remove(c, $event)">
               <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg>
             </button>
           </span>
@@ -34,10 +35,10 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
       <input #inp class="in" type="text" role="combobox" autocomplete="off" spellcheck="false" aria-autocomplete="list"
         [id]="inputId() || null" [attr.aria-label]="ariaLabel() || null" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
         [attr.aria-activedescendant]="open() && active() >= 0 ? optId(active()) : null" [attr.aria-invalid]="invalid() || null"
-        [placeholder]="showPlaceholder() ? placeholder() : ''" [value]="inputText()" [disabled]="disabled()"
+        [placeholder]="showPlaceholder() ? (placeholder() ?? strings().search) : ''" [value]="inputText()" [disabled]="disabled()"
         (input)="onInput($event)" (focus)="onFocus()" (blur)="onBlur()" (keydown)="onKey($event)" />
       @if (!multiple() && single() && !disabled()) {
-        <button type="button" class="clear" aria-label="Clear" (click)="clear($event)">
+        <button type="button" class="clear" [attr.aria-label]="strings().clear" (click)="clear($event)">
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
         </button>
       }
@@ -79,7 +80,7 @@ type Status = 'idle' | 'loading' | 'more' | 'error' | 'needs' | 'short';
         @if (message(); as m) {
           <div class="status" [class.bad]="status() === 'error'">
             <span role="status">{{ m }}</span>
-            @if (status() === 'error') { <button type="button" class="retry" (click)="retry()">Try again</button> }
+            @if (status() === 'error') { <button type="button" class="retry" (click)="retry()">{{ strings().tryAgain }}</button> }
           </div>
         }
       </div>
@@ -158,13 +159,17 @@ export class UiFbSourcePicker {
   readonly multiple = input(false);
   /** `{ value, label }`, a list of them when `multiple`, or null. Bare values are accepted too. */
   readonly value = input<unknown>(null);
-  readonly placeholder = input('Search…');
+  /** Placeholder; leave out for the form strings' "Search…". */
+  readonly placeholder = input<string | null>(null);
+  /** The form's own words (see `fbStrings`); English by default. */
+  readonly strings = input<UiFbStrings>(UI_FB_STRINGS_EN);
   readonly disabled = input(false);
   readonly invalid = input(false);
   readonly inputId = input('');
   readonly ariaLabel = input('');
   readonly valueChange = output<UiFbChoice | UiFbChoice[] | null>();
 
+  protected readonly fmt = fbFormat;
   protected readonly listId = `ui-fb-sp-${++seq}`;
   protected readonly positions: ConnectedPosition[] = [
     { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
@@ -204,12 +209,13 @@ export class UiFbSourcePicker {
   protected readonly message = computed(() => {
     const st = this.status();
     const missing = this.missingParam();
-    if (st === 'needs' && missing) return `Choose ${missing.label.toLowerCase()} first.`;
-    if (st === 'short') return `Type at least ${this.source().minQueryLength} characters to search.`;
-    if (st === 'error') return 'Couldn’t load the list.';
-    if (st === 'loading') return 'Searching…';
-    if (st === 'more') return 'Loading more…';
-    if (!this.items().length && this.loadedKey !== null) return this.query().trim() ? `No matches for “${this.query().trim()}”.` : 'Nothing to choose from.';
+    const w = this.strings();
+    if (st === 'needs' && missing) return fbFormat(w.chooseFirst, { name: missing.label.toLowerCase() });
+    if (st === 'short') return fbFormat(w.typeToSearch, { n: this.source().minQueryLength });
+    if (st === 'error') return w.loadFailed;
+    if (st === 'loading') return w.searching;
+    if (st === 'more') return w.loadingMore;
+    if (!this.items().length && this.loadedKey !== null) return this.query().trim() ? fbFormat(w.noMatches, { query: this.query().trim() }) : w.nothingToChoose;
     return '';
   });
 

@@ -50,7 +50,7 @@ export interface UiWfSubmissionPayload {
   submittedAt: string;
   workflowId?: string;
   serviceCode?: string;
-  data: Record<string, unknown>;
+  values: Record<string, unknown>;
   fields: UiFbSubmissionField[];
 }
 
@@ -61,7 +61,7 @@ export function wfSubmissionPayload(s: UiFormSubmission): UiWfSubmissionPayload 
     revision: s.revision ?? null,
     locale: s.locale,
     submittedAt: s.submittedAt,
-    data: JSON.parse(JSON.stringify(s.data ?? {})) as Record<string, unknown>,
+    values: JSON.parse(JSON.stringify(s.values ?? {})) as Record<string, unknown>,
     fields: (s.fields ?? []).map((f) => ({ ...f })),
   };
   if (s.workflowId) p.workflowId = s.workflowId;
@@ -103,7 +103,7 @@ export function wfStartFromSubmission(api: Pick<UiWorkflowApi, 'startManual'>, w
   if (Object.values(s.files ?? {}).some((f) => f.length)) {
     throw new Error('The files picked in this form can’t be sent: the form needs an upload address for them.');
   }
-  return api.startManual(workflow.key, null, null, wfSubmissionPayload(s).data);
+  return api.startManual(workflow.key, null, null, wfSubmissionPayload(s).values);
 }
 
 // ── Reading answers in conditions ─────────────────────────────────────────
@@ -125,7 +125,7 @@ export function wfAnswerAt(data: unknown, path: string): unknown {
 
 function conditionContext(payload: UiWfSubmissionPayload, outcomes: Record<string, string>, today: string): UiFbConditionContext {
   const value = (ref: string): unknown => {
-    for (const prefix of ['entity.', 'input.', 'trigger.data.']) if (ref.startsWith(prefix)) return wfAnswerAt(payload.data, ref.slice(prefix.length));
+    for (const prefix of ['entity.', 'input.', 'trigger.data.']) if (ref.startsWith(prefix)) return wfAnswerAt(payload.values, ref.slice(prefix.length));
     const meta: Record<string, unknown> = {
       'trigger.formId': payload.formId, 'trigger.revision': payload.revision, 'trigger.locale': payload.locale,
       'trigger.serviceCode': payload.serviceCode, 'trigger.workflowId': payload.workflowId, 'trigger.at': payload.submittedAt,

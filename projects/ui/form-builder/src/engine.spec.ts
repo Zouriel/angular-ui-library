@@ -171,12 +171,12 @@ describe('UiFormEngine', () => {
     vi.useRealTimers();
   });
 
-  it('submits the form id, revision and data', () => {
+  it('submits the form id, revision and values', () => {
     const e = engine(def([f('a', 'text', { required: true })]));
     expect(e.submit()).toBeNull();
     e.setValue('a', null, 'hi');
     const s = e.submit()!;
-    expect(s).toMatchObject({ formId: 'form1', revision: 3, data: { a: 'hi' } });
+    expect(s).toMatchObject({ formId: 'form1', revision: 3, values: { a: 'hi' } });
   });
 
   it('shows only values in view mode and never validates', () => {

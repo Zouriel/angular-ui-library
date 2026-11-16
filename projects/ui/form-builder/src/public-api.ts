@@ -9,6 +9,7 @@ export * from './definition';
 export * from './conditions';
 export * from './calc';
 export * from './validators';
+export { UI_FB_STRINGS, UI_FB_STRINGS_DV, UI_FB_STRINGS_EN, UI_FORM_STRINGS, fbStrings, provideUiFormStrings, type UiFbStringOverrides, type UiFbStrings } from './form-strings';
 export * from './option-sources';
 export * from './http-sources';
 export * from './global-settings';

@@ -119,7 +119,7 @@ export class FbPreview {
 
   protected setMode(m: 'create' | 'edit' | 'view'): void {
     // Moving to edit/view starts from what was just filled in, which is the natural thing to test.
-    if (m !== 'create' && this.mode() === 'create') this.dataText.set(JSON.stringify(this.last()?.data ?? this.live(), null, 2));
+    if (m !== 'create' && this.mode() === 'create') this.dataText.set(JSON.stringify(this.last()?.values ?? this.live(), null, 2));
     this.mode.set(m);
     this.restart();
   }

@@ -59,7 +59,7 @@ const STUDENT_ID: UiFbValidatorDef = {
             <li><strong>Load.</strong> New forms come from <code>createDefinition(title, settings.defaults)</code>. Stored ones go through <code>migrateDefinition(json)</code>, which fills in defaults and upgrades older versions.</li>
             <li><strong>Build.</strong> Bind <code>[(definition)]</code> on ui-form-builder and save it when it changes or on your Save button.</li>
             <li><strong>Publish.</strong> Check <code>problems()</code> for errors, bump <code>revision</code>, store a copy as the published version, and pass it back as <code>published</code> with its answer count, so the builder protects saved answers.</li>
-            <li><strong>Fill in.</strong> Give ui-form-renderer the published version. <code>(submitted)</code> emits <code>&#123; formId, revision, data, submittedAt, files &#125;</code>; store <code>data</code> with <code>revision</code>.</li>
+            <li><strong>Fill in.</strong> Give ui-form-renderer the published version. <code>(submitted)</code> emits <code>&#123; formId, revision, values, submittedAt, files &#125;</code>; store <code>values</code> with <code>revision</code>.</li>
             <li><strong>Edit or view.</strong> Pass the stored <code>data</code> back. It opens in edit mode with a change list (or <code>mode="view"</code> for read-only text). Unknown keys and old answers are kept.</li>
             <li><strong>Share lists.</strong> Store the JSON from ui-form-global-settings and pass it to both components as <code>globalSettings</code>. Answers from searchable lists are saved as <code>&#123; value, label &#125;</code>.</li>
           </ol>
@@ -86,7 +86,7 @@ const STUDENT_ID: UiFbValidatorDef = {
       <doc-section name="Renderer" selector="ui-form-renderer" [api]="rendererApi" [outputs]="rendererOutputs"
         summary="Fills in a definition. Problems show when a question is left (or only on Continue, per form), and all of a page’s problems are listed at the top, with links, when someone tries to move on. Hidden questions never block submitting. Give it saved data to edit (it tracks dirty() and lists the changes next to Save) or to view, where every page shows at once as text. It emits JSON ready to store.">
         <doc-demo code="<ui-form-renderer [definition]=&quot;form&quot; (submitted)=&quot;save($event)&quot; />
-<ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; (submitted)=&quot;update($event.data)&quot; />
+<ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; (submitted)=&quot;update($event.values)&quot; />
 <ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; mode=&quot;view&quot; />">
           <div class="bar">
             <ui-segmented [options]="modes" [value]="mode()" (valueChange)="mode.set($any($event))" label="Mode" size="sm" />
@@ -151,8 +151,8 @@ const submission = engine.submit();             // null when something is wrong 
 engine.destroy();" />
       </doc-section>
 
-      <doc-section name="Languages" selector="UiFbLocalizedText"
-        summary="Every text a person reads (questions, help, options, titles, messages, button labels) is either a plain string or a map from language code to text. A form with one language stays plain strings; supportedLocales and defaultLocale turn on more. In the builder, add a language from Languages in the top bar, write everything in the default language first, then pick the other language in the switcher to translate each text with the default shown underneath. Right-to-left languages such as Dhivehi (Thaana) lay the canvas, the form and its inputs out right to left. Data keys and option values are never translated. A text with no translation shows in the default language, and the builder lists missing translations under Logic.">
+      <doc-section name="Languages" selector="UiFbLocalizedText" [api]="stringsApi" apiTitle="UiFbStrings: built-in words"
+        summary="Every text a person reads (questions, help, options, titles, messages, button labels) is either a plain string or a map from language code to text. A form with one language stays plain strings; supportedLocales and defaultLocale turn on more. In the builder, add a language from Languages in the top bar, write everything in the default language first, then pick the other language in the switcher to translate each text with the default shown underneath. Right-to-left languages such as Dhivehi (Thaana) lay the canvas, the form and its inputs out right to left. Data keys and option values are never translated. A text with no translation shows in the default language, and the builder lists missing translations under Logic. The words the renderer says itself (Submit, Continue, Back, Step x of y, Yes and No, Choose…, Add another, Undo, the error summary heading, and the default message of every built-in check such as “is required” or “must be at least 5 characters”) follow the same language: English and Dhivehi are built in, and any other language, or different wording, is set with the strings input, provideUiFormStrings or the engine’s strings option. A label or message written in the form always wins. The builder’s own screens stay English.">
         <doc-demo [code]="languagesCode">
           <div class="bar">
             <ui-segmented [options]="langOptions" [value]="lang()" (valueChange)="lang.set($any($event))" label="Language" size="sm" />
@@ -261,12 +261,12 @@ publish() {
 
 // 4. Fill in (template: <ui-form-renderer [definition]="live()" (submitted)="save($event)">)
 save(s: UiFormSubmission) {
-  api.saveAnswers({ formId: s.formId, revision: s.revision, data: s.data });
+  api.saveAnswers({ formId: s.formId, revision: s.revision, values: s.values });
 }
 
 // 5. Edit (template: <ui-form-renderer [definition]="live()" [data]="answer.data" (submitted)="update(answer.id, $event)">)
 update(id: string, s: UiFormSubmission) {
-  api.updateAnswers(id, { revision: s.revision, data: s.data });
+  api.updateAnswers(id, { revision: s.revision, values: s.values });
 }`;
 
   protected readonly builderCode = `<ui-form-builder [(definition)]="form" [published]="live" [submissionCount]="answerCount"
@@ -302,6 +302,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'Makes the lists from ui-form-global-settings searchable.' },
     { name: 'uploader', type: 'UiFbUploader | null', default: 'null', desc: '(file, field) => Promise<UiFbFileValue>: uploads files as they are picked. Without it, the File objects come back in submission.files.' },
     { name: 'locale', type: 'string | null', default: 'null', desc: 'The language to show the form in (`en`, `dv`, or `dv-MV` for the same language). Unknown codes fall back to the form’s default language. Changing it keeps the answers, and right-to-left languages lay the form out right to left.' },
+    { name: 'strings', type: 'UiFbStringOverrides | null', default: 'null', desc: 'The renderer’s own words (Submit, Continue, Back, Step x of y, Yes/No, default error messages, …) per language code, on top of the built-in English and Dhivehi: { fr: { submit: \'Envoyer\' } }. Wins over provideUiFormStrings. Words the form author wrote always win over these.' },
     { name: 'link', type: 'UiFbSubmissionLink | null', default: 'null', desc: '{ workflowId?, serviceCode? } copied onto each submission so a workflow knows which process the answers belong to. Never stored in the form.' },
     { name: 'submitLabel', type: 'string | null', default: 'null', desc: 'Last button’s text. Otherwise the form’s setting, then “Submit” (“Save changes” in edit mode).' },
     { name: 'cancelLabel', type: 'string | null', default: 'null', desc: 'Shows a Cancel button with this text.' },
@@ -314,7 +315,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'engine()', type: 'method', default: '—', desc: 'Signal of the running UiFormEngine: data(), dirty(), changes() and the rest (see below).' },
   ];
   protected readonly rendererOutputs: ApiRow[] = [
-    { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, locale, data, submittedAt, workflowId?, serviceCode?, fields, files } once everything on the route is valid. locale is the language it was filled in; fields lists each answer’s path, key, label (in that language) and type; workflowId and serviceCode come from the link input.' },
+    { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, locale, values, submittedAt, workflowId?, serviceCode?, fields, files } once everything on the route is valid. locale is the language it was filled in; fields lists each answer’s path, key, label (in that language) and type; workflowId and serviceCode come from the link input.' },
     { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The data as it would be saved, after every change.' },
     { name: 'dirtyChange', type: 'boolean', default: '—', desc: 'Whether the answers differ from what the form opened with.' },
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
@@ -325,7 +326,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'valueKinds', type: 'UiFbValueKind[]', default: 'every field', desc: "Which answers it is offered for: 'text', 'number', 'date', 'time', 'choice', 'multi', 'boolean', 'file'." },
     { name: 'fieldTypes', type: 'UiFbFieldType[]', default: '—', desc: 'Narrower than valueKinds: only these field types.' },
     { name: 'params', type: 'UiFbParamSpec[]', default: '[]', desc: "Settings admins fill in: { key, label, kind: 'number' | 'text' | 'date' | 'field' | 'select', options?, hint?, default? }." },
-    { name: 'defaultMessage', type: 'string', default: '—', desc: 'Supports {label} and {paramKey}. Admins can override it per field.' },
+    { name: 'defaultMessage', type: 'string | Record<string, string>', default: '—', desc: 'Supports {label} and {paramKey}. A string, or a map by language code ({ en, dv }; dv also serves dv-MV) so the message follows the form’s language. Admins can override it per field. Built-in checks leave it out: their wording is in UiFbStrings (validatorMinLength, …).' },
     { name: 'validate', type: '(value, params, ctx) => result | Promise<result>', default: '—', desc: 'true, null or undefined passes; false fails with the message; a string fails with that text.' },
     { name: 'debounceMs', type: 'number', default: '400 for async', desc: 'Pause after typing before the check runs.' },
     { name: 'runWhenEmpty', type: 'boolean', default: 'false', desc: 'Also run on empty answers (checks normally leave those to “required”).' },
@@ -382,7 +383,8 @@ interface UiFbSourcePage { items: UiFbSourceItem[]; hasMore?: boolean; total?: n
   signal?: AbortSignal;          // aborted when the answer changes again
 }`;
   protected readonly engineApi: ApiRow[] = [
-    { name: 'new UiFormEngine(options)', type: 'UiFormEngineOptions', default: '—', desc: '{ definition, injector, data?, mode?, validators?, optionSources?, today? }. Built-in checks are always included.' },
+    { name: 'new UiFormEngine(options)', type: 'UiFormEngineOptions', default: '—', desc: '{ definition, injector, data?, mode?, validators?, optionSources?, today?, locale?, strings?, link? }. Built-in checks are always included.' },
+    { name: 'strings() / setStrings(overrides)', type: 'Signal<UiFbStrings> / method', default: '—', desc: 'The engine’s and renderer’s own words in the language in use (built-in table plus the strings option). Messages are worded again when the language or the overrides change.' },
     { name: 'data() / dirty() / changes()', type: 'method', default: '—', desc: 'Signals: the answers as they would be saved; whether they differ from data; the differences as UiFbChange[] ({ path, label, from, to }).' },
     { name: 'setValue(id, row, value)', type: 'method', default: '—', desc: 'Sets an answer. row is the repeat entry id from rows(groupId), or null.' },
     { name: 'instanceState(id, row)', type: 'method', default: '—', desc: 'UiFbInstanceState: { visible, disabled, required, value, errors, warnings, pending }.' },
@@ -393,6 +395,19 @@ interface UiFbSourcePage { items: UiFbSourceItem[]; hasMore?: boolean; total?: n
     { name: 'submit()', type: 'method', default: '—', desc: 'UiFormSubmission, or null (it then moves to the first page with problems).' },
     { name: 'destroy()', type: 'method', default: '—', desc: 'Stops its effects and pending checks.' },
   ];
+  protected readonly stringsApi: ApiRow[] = [
+    { name: 'submit / saveChanges / next / back', type: 'string', default: 'Submit / Save changes / Continue / Back', desc: 'Buttons. Dhivehi: ހުށަހަޅާ / ބަދަލުތައް ރައްކާކުރޭ / ކުރިއަށް / ފަހަތަށް. A settings.submitLabel, nextLabel or backLabel in the form wins.' },
+    { name: 'stepOf', type: 'string', default: 'Step {n} of {total}', desc: 'The progress line; the page title follows after a colon.' },
+    { name: 'problemOne / problemMany / errorLabel', type: 'string', default: 'There is a problem / There are {n} problems / Error:', desc: 'The error summary heading and the word read out before a field’s error.' },
+    { name: 'yes / no / empty / notAnswered / optional / calculatedHint', type: 'string', default: 'Yes / No / Empty / Not answered / (optional) / Worked out as you answer', desc: 'Answers shown as text, the change list, view mode and the optional marker.' },
+    { name: 'entryTitle / addAnother / nothingAdded / noneAdded / remove / moveUp / moveDown / entryAdded / entryRemoved / entryRemovedAnnounce / entryRestored / undo', type: 'string', default: 'Entry {n}, Add another, …', desc: 'Repeating sections. {n} is the entry number and {name} the entry’s title.' },
+    { name: 'choose / selectDate / fileUploadLabel / fileUploadHint / uploading / uploadFailed / checking', type: 'string', default: 'Choose…, Select a date, …', desc: 'Placeholders and notes of the controls. A field’s own placeholder wins.' },
+    { name: 'searchSource / search / clear / tryAgain / listUnavailable / savedAnswer / chooseFirst / typeToSearch / loadFailed / searching / loadingMore / noMatches / nothingToChoose', type: 'string', default: 'Search {name}…, …', desc: 'Lists searched from your app (option sources).' },
+    { name: 'requiredField / requiredQuestion / requiredTick', type: 'string', default: '{label} is required.', desc: 'Default messages of a required question. A field’s requiredMessage wins.' },
+    { name: 'validatorEmail … validatorCompareField', type: 'string', default: 'one per built-in check', desc: 'Default message of each built-in check, named validator + the check’s type with a capital (validatorMinLength). Placeholders are the check’s settings: {label}, {min}, {max}, {date}, {field}, {comparison}, …. A rule’s own message wins.' },
+    { name: 'compareEq … compareLte / dateToday / dateInDays / dateDaysAgo', type: 'string', default: 'the same as, more than, …', desc: 'Words filled into {comparison} and {date}.' },
+  ];
+
   protected readonly languagesCode = `// Every user-facing text: one string, or a map by language code.
 type UiFbLocalizedText = string | Record<string, string>;
 
@@ -404,7 +419,17 @@ const form: UiFormDefinition = {
 };
 
 fbText(label, 'dv', 'en')        // the text in dv, else en, else the first one written
-<ui-form-renderer [definition]="form" [locale]="'dv'" />   // answers survive switching language`;
+<ui-form-renderer [definition]="form" [locale]="'dv'" />   // answers survive switching language
+
+// The renderer's own words (buttons, step text, default error messages) follow the language too.
+// English and Dhivehi are built in; change or add wording per language code:
+<ui-form-renderer [definition]="form" [locale]="'fr'" [strings]="{ fr: { submit: 'Envoyer', back: 'Retour' } }" />
+
+// Or once for the whole app (the strings input is laid on top):
+providers: [provideUiFormStrings({ fr: { submit: 'Envoyer' }, dv: { back: 'އަނބުރާ' } })]
+
+fbStrings('dv-MV').submit        // the dv table: exact code, then base language, else English
+new UiFormEngine({ definition, injector, locale: 'dv', strings: { dv: { next: 'ދެން' } } })`;
 
   protected readonly definitionShape = `interface UiFormDefinition {
   schemaVersion: number;   // UI_FB_SCHEMA_VERSION (2); older forms are upgraded by migrateDefinition
@@ -463,22 +488,26 @@ type UiFbCondition = { match: 'all' | 'any' | 'none'; conditions: UiFbCondition[
                    | { ref: string; op: UiFbOperator; value?: UiFbOperand; value2?: UiFbOperand };   // ref: an element id
 type UiFbOperand = { const: unknown } | { ref: string } | { today: number };   // today: days from today
 
-// Answers (submission.data): keys are field keys. Text, dates ('YYYY-MM-DD') and times ('HH:mm') are strings;
+// Answers (submission.values): keys are field keys. Text, dates ('YYYY-MM-DD') and times ('HH:mm') are strings;
 // numbers are numbers; a choice is its option value; multiple choice is a list of values; yes/no is a boolean;
 // files are UiFbFileValue[] ({ name, size, type, url?, id? }); option sources are { value, label } (or a list);
 // a keyed section is an object; a repeating section is a list of objects.
 interface UiFormSubmission {
-  formId: string; revision: number | null; data: Record<string, unknown>;
+  formId: string; revision: number | null; values: Record<string, unknown>;
   locale: string;                                       // the language it was filled in
   workflowId?: string; serviceCode?: string;            // copied from the renderer's [link]
   fields: { path: string; key: string; label: string; type: UiFbFieldType }[];   // what each answer is, labels in locale
-  submittedAt: string; files: Record<string, File[]>;   // picked files with no uploader, by data path
+  submittedAt: string; files: Record<string, File[]>;   // picked files with no uploader, by path in values
 }`;
 
   protected readonly reference: { title: string; rows: ApiRow[] }[] = [
     {
       title: 'Languages and revisions',
       rows: [
+        { name: 'UiFbStrings / UI_FB_STRINGS_EN / UI_FB_STRINGS_DV / UI_FB_STRINGS', type: 'interface / tables', default: '—', desc: 'One key per built-in phrase ({placeholders} filled by the code), the English and Dhivehi tables, and the tables by language code.' },
+        { name: 'fbStrings(locale, overrides?)', type: 'UiFbStrings', default: '—', desc: 'The words for a language: the table of that exact code, else of its base language (dv-MV uses dv), else English; overrides for the base language, then for the exact code, are laid on top. A language with no table but with overrides gets English plus them.' },
+        { name: 'provideUiFormStrings(overrides) / UiFbStringOverrides', type: 'Provider / type', default: '—', desc: 'Sets the renderer’s wording once for the app: Partial<Record<languageCode, Partial<UiFbStrings>>>. The renderer’s strings input is laid on top.' },
+        { name: 'validatorMessage(def, strings, locale?)', type: 'string', default: '—', desc: 'The message a check shows by default in a language: a registered check’s defaultMessage, else the built-in wording from strings.' },
         { name: 'fbText(text, locale?, defaultLocale?)', type: 'string', default: '—', desc: 'A UiFbLocalizedText in a language: that language, else the same base language, else the default, else the first text written.' },
         { name: 'fbTextIn(text, locale, defaultLocale?) / fbSetText(text, locale, value, defaultLocale?)', type: 'string / UiFbLocalizedText', default: '—', desc: 'Read exactly one language (blank when missing), or write one. A text stays a plain string until a second language is written.' },
         { name: 'fbLocales(def) / fbDefaultLocale(def) / fbResolveLocale(def, requested?) / fbLocaleDir(def, locale?)', type: 'various', default: '—', desc: 'The form’s languages with label and direction filled in (default first), its default, the language a request resolves to, and a language’s direction.' },

@@ -47,8 +47,8 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('wfFormAnswers / wfSkipValue / wfRemarksCounter', () => {
   it('reads every answer from the submission and refuses picked files that have nowhere to go', () => {
-    expect(wfFormAnswers({ formId: 'f', revision: null, locale: 'en', fields: [], data: { a: 1 }, submittedAt: '', files: {} })).toEqual({ data: { a: 1 } });
-    expect('error' in wfFormAnswers({ formId: 'f', revision: null, locale: 'en', fields: [], data: {}, submittedAt: '', files: { doc: [new File(['x'], 'x.txt')] } })).toBe(true);
+    expect(wfFormAnswers({ formId: 'f', revision: null, locale: 'en', fields: [], values: { a: 1 }, submittedAt: '', files: {} })).toEqual({ data: { a: 1 } });
+    expect('error' in wfFormAnswers({ formId: 'f', revision: null, locale: 'en', fields: [], values: {}, submittedAt: '', files: { doc: [new File(['x'], 'x.txt')] } })).toBe(true);
   });
 
   it('turns a skipped step\'s results into their registry types', () => {

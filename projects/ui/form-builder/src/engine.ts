@@ -4,6 +4,7 @@ import { evaluateCondition, isEmptyValue, resolveOperand, type UiFbConditionCont
 import { optionValueOf, toChoice, type UiFbChoice, type UiFbOptionSourceDef } from './option-sources';
 import { indexDefinition, elementName, fbSubmissionFields, migrateDefinition, type UiFbIndex, type UiFbIndexEntry } from './definition';
 import { fieldTypeInfo, valueKindOf } from './field-types';
+import { fbStrings, UI_FB_STRINGS_EN, type UiFbStringOverrides, type UiFbStrings } from './form-strings';
 import { fbDefaultLocale, fbLocaleDir, fbLocales, fbResolveLocale, fbText } from './localize';
 import type {
   UiFbChange,
@@ -25,6 +26,7 @@ import {
   describeDateParam,
   formatMessage,
   todayIso,
+  validatorMessage,
   UI_FB_BUILTIN_VALIDATORS,
   UI_FB_IMPLICIT_VALIDATOR,
   type UiFbValidatorDef,
@@ -46,6 +48,8 @@ export interface UiFormEngineOptions {
   today?: () => string;
   /** The language to word things in (default: the form's default language). Change it later with `setLocale`. */
   locale?: string | null;
+  /** Wording of the engine's and renderer's own words (buttons, messages) per language, on top of the built-in tables. */
+  strings?: UiFbStringOverrides | null;
   /** Copied onto each submission. */
   link?: UiFbSubmissionLink | null;
   injector: Injector;
@@ -108,10 +112,10 @@ interface EvalResult {
 const HIDDEN: UiFbInstanceState = { visible: false, disabled: false, required: false, value: undefined, errors: [], warnings: [], pending: false };
 
 /** "Email is required." — or, for a label that is a question, "Answer “Are you a student?”". */
-export function requiredMessage(f: UiFbField, label: string): string {
-  if (label.trim().endsWith('?')) return 'Answer “{label}”';
-  if (valueKindOf(f.type) === 'boolean' && f.type === 'checkbox') return '{label} must be ticked.';
-  return '{label} is required.';
+export function requiredMessage(f: UiFbField, label: string, strings: UiFbStrings = UI_FB_STRINGS_EN): string {
+  if (label.trim().endsWith('?')) return strings.requiredQuestion;
+  if (valueKindOf(f.type) === 'boolean' && f.type === 'checkbox') return strings.requiredTick;
+  return strings.requiredField;
 }
 
 export const addrOf = (id: string, row: string | null) => (row ? `${row}/${id}` : id);
@@ -188,12 +192,15 @@ export class UiFormEngine {
   private readonly asyncResults = signal<Record<string, { hash: string; result: string | false | null }>>({});
   private readonly requestedLocale = signal<string | null>(null);
   private readonly linkSig = signal<UiFbSubmissionLink | null>(null);
+  private readonly stringOverrides = signal<UiFbStringOverrides | null>(null);
   readonly defaultLocale: string;
   /** The language in use: the requested one if the form has it, else the form's default. */
   readonly locale = computed(() => fbResolveLocale(this.definition, this.requestedLocale()));
   /** Writing direction of the language in use. */
   readonly dir = computed<UiFbDir>(() => fbLocaleDir(this.definition, this.locale()));
   readonly locales = computed(() => fbLocales(this.definition));
+  /** The engine's and renderer's own words in the language in use (built-in table plus the overrides). Reactive. */
+  readonly strings = computed<UiFbStrings>(() => fbStrings(this.locale(), this.stringOverrides()));
   /** Fields that have been left at least once (their errors show from then on). */
   readonly touched = signal<ReadonlySet<string>>(new Set());
   /** Pages someone tried to leave or submit (all their errors show). */
@@ -222,6 +229,7 @@ export class UiFormEngine {
     this.defaultLocale = fbDefaultLocale(this.definition);
     this.requestedLocale.set(opts.locale ?? null);
     this.linkSig.set(opts.link ?? null);
+    this.stringOverrides.set(opts.strings ?? null);
     this.mode = opts.mode ?? (opts.data ? 'edit' : 'create');
     this.today = opts.today ?? todayIso;
     const s = this.definition.settings ?? {};
@@ -246,6 +254,11 @@ export class UiFormEngine {
   /** Switches the language. Answers are kept; every message and label is worded again. */
   setLocale(code: string | null): void {
     this.requestedLocale.set(code);
+  }
+
+  /** Replaces the wording overrides (see the `strings` option). Answers are kept; messages are worded again. */
+  setStrings(overrides: UiFbStringOverrides | null): void {
+    this.stringOverrides.set(overrides);
   }
 
   /** The submission link (workflow id, service code) copied onto each submission. */
@@ -417,7 +430,7 @@ export class UiFormEngine {
     const entry = this.index.get(id);
     if (!row || !entry?.repeat) return name;
     const n = this.rows(entry.repeat.id).indexOf(row) + 1;
-    const item = (this.text(entry.repeat.repeat?.itemLabel) || 'Entry {n}').replace('{n}', String(n));
+    const item = (this.text(entry.repeat.repeat?.itemLabel) || this.strings().entryTitle).replace('{n}', String(n));
     return `${name} (${item})`;
   }
 
@@ -547,7 +560,7 @@ export class UiFormEngine {
       formId: this.definition.id,
       revision: this.definition.revision ?? null,
       locale,
-      data: this.data(),
+      values: this.data(),
       submittedAt: new Date().toISOString(),
       ...(link?.workflowId ? { workflowId: link.workflowId } : {}),
       ...(link?.serviceCode ? { serviceCode: link.serviceCode } : {}),
@@ -680,6 +693,7 @@ export class UiFormEngine {
     const view = this.mode === 'view';
     const dl = this.defaultLocale;
     const tx = (t: UiFbLocalizedText | undefined) => fbText(t, locale, dl);
+    const strings = this.strings();
     const nameOf = (id: string) => elementName(idx.get(id)?.element, def, locale);
 
     /** Runs `fn` once per key; a key that asks about itself gets `fallback` (a loop). */
@@ -796,7 +810,7 @@ export class UiFormEngine {
         const label = tx(f.label) || f.key;
         const empty = isEmptyValue(v) || (valueKindOf(f.type) === 'boolean' && v !== true);
         if (required(id, row) && empty) {
-          res.errors.push(formatMessage(tx(f.requiredMessage) || requiredMessage(f, label), { label }));
+          res.errors.push(formatMessage(tx(f.requiredMessage) || requiredMessage(f, label, strings), { label }));
           return res;
         }
         const rules: UiFbValidatorRule[] = [...(f.validators ?? [])];
@@ -821,11 +835,11 @@ export class UiFormEngine {
             for (const spec of vdef.params ?? []) {
               const pv = params[spec.key];
               vars[spec.key] = spec.kind === 'field' ? `“${nameOf(String(pv))}”`
-                : spec.kind === 'date' ? describeDateParam(pv)
-                : spec.key === 'comparison' ? comparisonWords(pv)
+                : spec.kind === 'date' ? describeDateParam(pv, strings)
+                : spec.key === 'comparison' ? comparisonWords(pv, strings)
                 : pv;
             }
-            return formatMessage(tx(rule.message) || vdef.defaultMessage, vars);
+            return formatMessage(tx(rule.message) || validatorMessage(vdef, strings, locale), vars);
           };
           const push = (result: UiFbValidatorResult) => {
             if (result === true || result == null) return;

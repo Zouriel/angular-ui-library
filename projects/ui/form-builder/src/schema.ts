@@ -362,9 +362,9 @@ export interface UiFbFileValue {
   id?: string;
 }
 
-/** One answer of a submission: where it sits in `data` and what kind of value it is. */
+/** One answer of a submission: where it sits in `values` and what kind of value it is. */
 export interface UiFbSubmissionField {
-  /** Path in `data`: `name`, `address.city`, `children[].age` for a repeating section. */
+  /** Path in `values`: `name`, `address.city`, `children[].age` for a repeating section. */
   path: string;
   key: string;
   /** The label in the submission's locale. */
@@ -378,20 +378,20 @@ export interface UiFbSubmissionLink {
   serviceCode?: string;
 }
 
-/** Emitted when a form is submitted. `data` is the JSON to store. */
+/** Emitted when a form is submitted. `values` is the JSON to store. */
 export interface UiFormSubmission {
   formId: string;
   revision: number | null;
   /** The language the form was filled in. */
   locale: string;
-  data: Record<string, unknown>;
+  values: Record<string, unknown>;
   submittedAt: string;
   /** Set by the host (the renderer's `link` input) so a workflow can tell which process the answers belong to. */
   workflowId?: string;
   serviceCode?: string;
-  /** What each answer in `data` is, so a workflow can build conditions on them without the form definition. */
+  /** What each answer in `values` is, so a workflow can build conditions on them without the form definition. */
   fields: UiFbSubmissionField[];
-  /** Files picked in this session that have no uploader URL yet, keyed by data path. */
+  /** Files picked in this session that have no uploader URL yet, keyed by path in `values`. */
   files: Record<string, File[]>;
 }
 

@@ -235,7 +235,7 @@ async onSubmit(s: UiFormSubmission) {
 }`;
 
   protected readonly bridgeApi: ApiRow[] = [
-    { name: 'wfSubmissionPayload(s)', type: '(UiFormSubmission) => UiWfSubmissionPayload', desc: 'The plain JSON a workflow start receives: formId, revision, locale, submittedAt, workflowId, serviceCode, data, fields. No File objects.' },
+    { name: 'wfSubmissionPayload(s)', type: '(UiFormSubmission) => UiWfSubmissionPayload', desc: 'The plain JSON a workflow start receives: formId, revision, locale, submittedAt, workflowId, serviceCode, values, fields. No File objects.' },
     { name: 'wfPickWorkflow(list, s)', type: '(UiWfSubmissionBinding[] | UiWorkflowDefinition[], s) => UiWorkflowDefinition | null', desc: 'By s.workflowId (a definition id or key), else s.serviceCode (binding.serviceCodes), else s.formId (binding.formIds). A workflowId that matches nothing returns null.' },
     { name: 'wfStartFromSubmission(api, wf, s)', type: '(Pick<UiWorkflowApi, "startManual">, wf, s) => Promise<UiWfInstance>', desc: 'Starts the workflow on an engine with the answers as input. Throws when files were picked and have no upload address.' },
     { name: 'wfRouteSubmission(wf, s, options?)', type: '(wf, s | payload, { decisions?, registry?, today? }) => UiWfRoute', desc: 'Client-side route. A branch takes its first path whose condition holds, else otherwise; a switch compares its value to each case; parallel paths are all walked; approvals follow approved (or decisions[stepId]); tasks follow their first outcome.' },

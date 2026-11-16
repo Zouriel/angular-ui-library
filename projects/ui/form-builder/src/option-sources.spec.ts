@@ -232,7 +232,7 @@ describe('sourced fields in ui-form-renderer', () => {
     await fx.whenStable();
     (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
     fx.detectChanges();
-    expect(fx.componentInstance.sent!.data['city']).toEqual({ value: 'mle', label: 'Malé' });
+    expect(fx.componentInstance.sent!.values['city']).toEqual({ value: 'mle', label: 'Malé' });
 
     // Choosing another country drops the city that belonged to the old one.
     const engine = fx.debugElement.children[0].componentInstance.engine();

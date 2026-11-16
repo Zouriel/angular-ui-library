@@ -56,6 +56,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   the host's `workflowId` / `serviceCode`, and `@zouriel/ui/workflow` has a bridge (`wfPickWorkflow`,
   `wfRouteSubmission`, `wfStartFromSubmission`) that hands a submission to a workflow. `migrateDefinition()`
   upgrades version 1 forms.
+- **Form words in the form's language** (`@zouriel/ui/form-builder`, 0.84.1): the renderer's own words (Submit,
+  Continue, Step 1 of 2, required and validation messages, repeating sections, pickers) follow the form's
+  locale, with English and Dhivehi tables (`UiFbStrings`, `fbStrings()`); change any of them with
+  `<ui-form-renderer [strings]>` or `provideUiFormStrings()`. Breaking: a submission's answers are now
+  `UiFormSubmission.values` (was `data`), and `UiWfSubmissionPayload.values` in the workflow bridge.
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).

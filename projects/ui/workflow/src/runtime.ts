@@ -62,7 +62,7 @@ export function wfFormAnswers(s: UiFormSubmission): { data: Record<string, unkno
   if (Object.values(s.files).some((f) => f.length)) {
     return { error: 'The files picked in this form can’t be sent: the form needs an upload address for them.' };
   }
-  return { data: s.data };
+  return { data: s.values };
 }
 
 // ── State badge ───────────────────────────────────────────────────────────
