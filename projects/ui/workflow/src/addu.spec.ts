@@ -157,6 +157,7 @@ describe('state inspector: pausing the time limit', () => {
     const first = f.nativeElement.querySelector('ui-wf-check-list') as HTMLElement;
     expect(text(first)).toContain('Waiting');
     expect(text(first)).not.toContain('Open');
+    expect(text(first)).not.toContain('Done');
     ed.setSla('pauseOnStatus', ['s2']);
     ed.setSla('pauseOnEvent', ['docsAsked']);
     ed.setSla('resumeOnEvent', ['docsIn']);

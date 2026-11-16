@@ -451,9 +451,9 @@ export class WfStateEditor {
   protected readonly field = computed(() => fieldOf(this.store.registry(), this.store.def().entity, this.store.def().lifecycle?.field));
   protected readonly keyOptions = computed<WfOption[]>(() => (this.field()?.options ?? []).map((o) => ({ value: '' + o.value, label: `${o.label} (${o.value})` })));
 
-  /** The lifecycle's other states, the ones that can pause this state's clock. */
+  /** The lifecycle's other states that are not final, the ones that can pause this state's clock (a final state ends it). */
   protected readonly otherStates = computed<WfOption[]>(() =>
-    (this.store.def().lifecycle?.states ?? []).filter((x) => x.id !== this.state()?.id).map((x) => ({ value: x.id, label: x.label })));
+    (this.store.def().lifecycle?.states ?? []).filter((x) => x.id !== this.state()?.id && x.category !== 'terminal').map((x) => ({ value: x.id, label: x.label })));
   protected readonly signalOptions = computed<WfOption[]>(() => (this.store.registry()?.signals ?? []).map((x) => ({ value: x.key, label: x.label })));
 
   /** Sets one of the clock's lists; an empty list removes the key (never `[]`). */
