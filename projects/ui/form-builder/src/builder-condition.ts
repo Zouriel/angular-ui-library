@@ -131,7 +131,7 @@ export class FbValueInput {
   protected readonly options = computed(() => {
     const s = this.subject();
     const f = s ? this.store.field(s.id) : null;
-    return (f?.options ?? []).filter((o) => !o.archived).map((o) => ({ label: o.label, value: o.value }));
+    return (f?.options ?? []).filter((o) => !o.archived).map((o) => ({ label: this.store.shown(o.label), value: o.value }));
   });
 
   /** The list the subject searches, when its options come from a data source. */

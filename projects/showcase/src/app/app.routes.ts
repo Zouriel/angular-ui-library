@@ -25,6 +25,7 @@ export const routes: Routes = [
   { path: 'workflow-panel', redirectTo: 'workflow-components' },
   { path: 'workflow-studio', loadComponent: () => import('./pages/workflow-studio.page').then((m) => m.WorkflowStudioPage), title: 'Workflow studio (playground) · @zouriel/ui' },
   { path: 'form-studio', loadComponent: () => import('./pages/form-studio.page').then((m) => m.FormStudioPage), title: 'Form studio (playground) · @zouriel/ui' },
+  { path: 'form-workflow', loadComponent: () => import('./pages/form-workflow.page').then((m) => m.FormWorkflowPage), title: 'Form → workflow · @zouriel/ui' },
   { path: 'file-viewer', loadComponent: () => import('./pages/file-viewer.page').then((m) => m.FileViewerPage), title: 'File viewer · @zouriel/ui' },
   { path: 'fx', loadComponent: () => import('./pages/fx.page').then((m) => m.FxPage), title: 'Motion & FX · @zouriel/ui' },
   { path: 'find-doctor', loadComponent: () => import('./pages/find-doctor.page').then((m) => m.FindDoctorPage), title: 'Find Doctor (Maldives) · @zouriel/ui' },
@@ -74,6 +75,7 @@ export const NAV = [
       { label: 'Workflow builder', value: 'workflow-builder' },
       { label: 'Workflow components', value: 'workflow-components' },
       { label: 'Workflow studio (playground)', value: 'workflow-studio' },
+      { label: 'Form → workflow', value: 'form-workflow' },
     ],
   },
   {

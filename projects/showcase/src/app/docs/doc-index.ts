@@ -233,6 +233,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Option sources', anchor: 'option-sources' },
     { name: 'Global settings', anchor: 'global-settings' },
     { name: 'Running a form without UI', anchor: 'running-a-form-without-ui' },
+    { name: 'Languages', anchor: 'languages' },
     { name: 'JSON format', anchor: 'json-format' },
     { name: 'Reference', anchor: 'reference' },
   ],
@@ -248,6 +249,11 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Permissions', anchor: 'permissions' },
     { name: 'Global settings', anchor: 'global-settings' },
     { name: 'Putting a settings page together', anchor: 'settings-page' },
+  ],
+  'form-workflow': [
+    { name: 'Live example', anchor: 'live-example' },
+    { name: 'Integrating it', anchor: 'integrating-it' },
+    { name: 'Bridge API', anchor: 'bridge-api' },
   ],
   'file-viewer': [
     { name: 'File viewer (dispatcher)', anchor: 'file-viewer-dispatcher' },

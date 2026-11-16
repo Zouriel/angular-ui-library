@@ -10,7 +10,27 @@
  * so answers saved under the old name still load.
  */
 
-export const UI_FB_SCHEMA_VERSION = 1;
+export const UI_FB_SCHEMA_VERSION = 2;
+
+// ── Languages ─────────────────────────────────────────────────────────────
+
+/**
+ * Text people read. A plain string is the same in every language; a map holds one text per
+ * locale code (`{ en: 'Name', dv: 'ނަން' }`). Resolve it with `fbText()`, write it with `fbSetText()`.
+ */
+export type UiFbLocalizedText = string | Record<string, string>;
+
+export type UiFbDir = 'ltr' | 'rtl';
+
+/** One language a form is written in. */
+export interface UiFbLocale {
+  /** A BCP 47 code: `en`, `dv`, `ar-SA`. */
+  code: string;
+  /** Shown in the language switcher. Defaults to the language's own name. */
+  label?: string;
+  /** Writing direction. Defaults by language (`dv`, `ar`, `he`, `fa`, `ur`… are right-to-left). */
+  dir?: UiFbDir;
+}
 
 export type UiFbFieldType =
   | 'text'
@@ -134,7 +154,7 @@ export interface UiFbValidatorRule {
   type: string;
   params?: Record<string, unknown>;
   /** Overrides the validator's default message. Supports `{label}` and `{param}` placeholders. */
-  message?: string;
+  message?: UiFbLocalizedText;
   /** Only check this rule when the condition holds. */
   when?: UiFbCondition;
   /** Warnings are shown but do not block submitting. */
@@ -171,7 +191,7 @@ export interface UiFbOption {
   id: string;
   /** Stored in the submitted data. Locked once a form has answers. */
   value: string;
-  label: string;
+  label: UiFbLocalizedText;
   /** Hidden from new answers but still understood in old ones. */
   archived?: boolean;
 }
@@ -200,7 +220,7 @@ export interface UiFbFieldProps {
   accept?: string;
   autocomplete?: string;
   /** Text shown next to a single checkbox or toggle. */
-  caption?: string;
+  caption?: UiFbLocalizedText;
   /** For calculated fields: how the result is shown. */
   format?: 'number' | 'currency' | 'text';
   /** For calculated fields: leave the result out of the submitted data. */
@@ -222,13 +242,13 @@ export interface UiFbField {
   type: UiFbFieldType;
   key: string;
   keyHistory?: string[];
-  label: string;
-  help?: string;
-  placeholder?: string;
+  label: UiFbLocalizedText;
+  help?: UiFbLocalizedText;
+  placeholder?: UiFbLocalizedText;
   defaultValue?: unknown;
   readOnly?: boolean;
   required?: UiFbToggle;
-  requiredMessage?: string;
+  requiredMessage?: UiFbLocalizedText;
   disabled?: UiFbToggle;
   visibility?: UiFbVisibility;
   options?: UiFbOption[];
@@ -250,16 +270,16 @@ export interface UiFbRepeat {
   min?: number;
   max?: number;
   /** Label of the "add another" button. */
-  addLabel?: string;
+  addLabel?: UiFbLocalizedText;
   /** Title of each entry; `{n}` is replaced by its number. */
-  itemLabel?: string;
+  itemLabel?: UiFbLocalizedText;
 }
 
 export interface UiFbGroup {
   kind: 'group';
   id: string;
-  title?: string;
-  description?: string;
+  title?: UiFbLocalizedText;
+  description?: UiFbLocalizedText;
   /** When set, the group's answers are nested under this key. Required for repeatable groups. */
   key?: string;
   keyHistory?: string[];
@@ -276,7 +296,7 @@ export interface UiFbStatic {
   kind: 'static';
   id: string;
   type: UiFbStaticType;
-  text?: string;
+  text?: UiFbLocalizedText;
   visibility?: UiFbVisibility;
   layout?: Pick<UiFbLayout, 'width'>;
   archived?: boolean;
@@ -293,8 +313,8 @@ export interface UiFbJump {
 
 export interface UiFbPage {
   id: string;
-  title?: string;
-  description?: string;
+  title?: UiFbLocalizedText;
+  description?: UiFbLocalizedText;
   visibility?: UiFbVisibility;
   /** Checked in order after this page; the first that holds decides where to go next. */
   jumps?: UiFbJump[];
@@ -310,17 +330,21 @@ export interface UiFbSettings {
   clearHidden?: 'onSubmit' | 'never';
   errorSummary?: boolean;
   requiredMarker?: 'asterisk' | 'optional' | 'none';
-  submitLabel?: string;
-  nextLabel?: string;
-  backLabel?: string;
+  submitLabel?: UiFbLocalizedText;
+  nextLabel?: UiFbLocalizedText;
+  backLabel?: UiFbLocalizedText;
   showProgress?: boolean;
 }
 
 export interface UiFormDefinition {
   schemaVersion: number;
   id: string;
-  title: string;
-  description?: string;
+  title: UiFbLocalizedText;
+  description?: UiFbLocalizedText;
+  /** The language plain-string texts are written in, and the fallback for a missing translation. Default `en`. */
+  defaultLocale?: string;
+  /** Every language the form is offered in, the default one included. Default: just the default locale. */
+  supportedLocales?: UiFbLocale[];
   /** Bumped by the host each time it publishes; recorded on every submission. */
   revision?: number;
   settings?: UiFbSettings;
@@ -338,12 +362,35 @@ export interface UiFbFileValue {
   id?: string;
 }
 
+/** One answer of a submission: where it sits in `data` and what kind of value it is. */
+export interface UiFbSubmissionField {
+  /** Path in `data`: `name`, `address.city`, `children[].age` for a repeating section. */
+  path: string;
+  key: string;
+  /** The label in the submission's locale. */
+  label: string;
+  type: UiFbFieldType;
+}
+
+/** Host-supplied linkage copied onto each submission. Never stored in the form definition. */
+export interface UiFbSubmissionLink {
+  workflowId?: string;
+  serviceCode?: string;
+}
+
 /** Emitted when a form is submitted. `data` is the JSON to store. */
 export interface UiFormSubmission {
   formId: string;
   revision: number | null;
+  /** The language the form was filled in. */
+  locale: string;
   data: Record<string, unknown>;
   submittedAt: string;
+  /** Set by the host (the renderer's `link` input) so a workflow can tell which process the answers belong to. */
+  workflowId?: string;
+  serviceCode?: string;
+  /** What each answer in `data` is, so a workflow can build conditions on them without the form definition. */
+  fields: UiFbSubmissionField[];
   /** Files picked in this session that have no uploader URL yet, keyed by data path. */
   files: Record<string, File[]>;
 }

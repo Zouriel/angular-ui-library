@@ -10,12 +10,13 @@ import { join } from 'node:path';
 import { describeCalc, evaluateCalc } from './calc';
 import { conditionComplete, describeCondition, evaluateCondition } from './conditions';
 import {
-  createDefinition, diffDefinitions, externalReferences, fbKeyValid, fbSlug, findCycles, indexDefinition, lintDefinition,
+  createDefinition, diffDefinitions, externalReferences, fbKeyValid, fbSlug, fbSubmissionFields, findCycles, indexDefinition, lintDefinition,
   migrateDefinition, moveElement, referencesTo, removeReferences, renameKey, subtreeIds, uniqueKey,
 } from './definition';
 import { coerceValue, UiFormEngine, type UiFormMode } from './engine';
 import { operatorsFor, typesCompatible } from './field-types';
 import { formatValue } from './format';
+import { fbLocaleDir, fbLocales, fbResolveLocale, fbSetText, fbText, fbTextIn } from './localize';
 import { sourcesFromSettings } from './global-settings';
 import { fillPattern, httpOptionSource, originAllowed, originOf, readSourceReply, sourceUrl, type UiFbHttpSourceConfig } from './http-sources';
 import { optionValueOf, sourceHasMore, toChoice } from './option-sources';
@@ -34,8 +35,9 @@ describe('shared fixtures', () => {
   it('are all present', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
     expect(files).toEqual([
-      'calc.json', 'conditions.json', 'definition.json', 'describe.json', 'engine-rules.json', 'engine-scholarship.json',
-      'http-sources.json', 'scholarship.answers.json', 'scholarship.definition.json', 'slug.json', 'values.json',
+      'calc.json', 'conditions.json', 'definition.json', 'describe.json', 'engine-locale.json', 'engine-rules.json',
+      'engine-scholarship.json', 'http-sources.json', 'localize.json', 'migrate.json', 'scholarship.answers.json',
+      'scholarship.definition.json', 'slug.json', 'submission-fields.json', 'values.json',
     ]);
   });
 });
@@ -49,7 +51,7 @@ function runEngine(file: string): void {
       it(c.name, async () => {
         const definition: UiFormDefinition = c.definition ?? (c.definitionFile ? load(c.definitionFile) : fx.definition ?? load(fx.definitionFile));
         const data = c.data ?? (c.dataFile ? load(c.dataFile) : undefined);
-        const e = new UiFormEngine({ definition, data, mode: c.mode as UiFormMode | undefined, today: () => c.today, injector: TestBed.inject(Injector) });
+        const e = new UiFormEngine({ definition, data, mode: c.mode as UiFormMode | undefined, today: () => c.today, locale: c.locale, link: c.link, injector: TestBed.inject(Injector) });
         const tick = () => { TestBed.tick(); TestBed.tick(); };
         tick();
         const at = (addr: string): [string, string | null] => {
@@ -72,11 +74,22 @@ function runEngine(file: string): void {
           else if ('next' in step) expect(e.next(), `${where}: next`).toBe(step.next);
           else if ('back' in step) expect(e.back(), `${where}: back`).toBe(step.back);
           else if ('goTo' in step) e.goTo(step.goTo);
+          else if ('setLocale' in step) e.setLocale(step.setLocale);
+          else if ('setLink' in step) e.setLink(step.setLink);
+          else if ('submitLacks' in step) {
+            const s = e.submit();
+            expect(s, `${where}: submit`).not.toBeNull();
+            for (const k of step.submitLacks as string[]) expect(k in (s as object), `${where}: submission lacks ${k}`).toBe(false);
+          }
           else if ('submit' in step) {
             const s = e.submit();
             if (step.submit === false) expect(s, `${where}: submit`).toBeNull();
             else if (step.submit === true) expect(s, `${where}: submit`).not.toBeNull();
-            else expect(norm({ formId: s?.formId, revision: s?.revision, data: s?.data }), `${where}: submit`).toEqual(step.submit);
+            else {
+              // Compares the keys the fixture lists (the time of submitting and the files vary).
+              const got: Json = norm(s) ?? {};
+              expect(norm(Object.fromEntries(Object.keys(step.submit).map((k) => [k, got[k]]))), `${where}: submit`).toEqual(step.submit);
+            }
           } else if ('expect' in step) checkEngine(step.expect, where);
           tick();
         });
@@ -88,6 +101,8 @@ function runEngine(file: string): void {
               expect(norm(read(id, row)), `${where}: ${key} of ${addr}`).toEqual(want);
             }
           };
+          if ('locale' in x) expect(e.locale(), `${where}: locale`).toBe(x.locale);
+          if ('dir' in x) expect(e.dir(), `${where}: dir`).toBe(x.dir);
           if ('mode' in x) expect(e.mode, `${where}: mode`).toBe(x.mode);
           if ('path' in x) expect(e.path(), `${where}: path`).toEqual(x.path);
           if ('pageIndex' in x) expect(e.pageIndex(), `${where}: pageIndex`).toBe(x.pageIndex);
@@ -102,7 +117,7 @@ function runEngine(file: string): void {
           per('errors', (id, row) => e.instanceState(id, row).errors);
           per('warnings', (id, row) => e.instanceState(id, row).warnings);
           per('errorsShown', (id, row) => e.errorsShown(id, row));
-          per('display', (id, row) => formatValue(e.field(id)!, e.instanceState(id, row).value));
+          per('display', (id, row) => formatValue(e.field(id)!, e.instanceState(id, row).value, e.locale(), e.defaultLocale));
           per('dataPath', (id, row) => e.dataPath(id, row));
           per('instanceLabel', (id, row) => e.instanceLabel(id, row));
           per('sourceParams', (id, row) => {
@@ -130,6 +145,7 @@ function runEngine(file: string): void {
 
 runEngine('engine-scholarship.json');
 runEngine('engine-rules.json');
+runEngine('engine-locale.json');
 
 // ── Rules, calculations and wording ─────────────────────────────────────────────────────────
 
@@ -231,7 +247,9 @@ describe('definition.json', () => {
       expect(d.pages.length).toBe(c.pages);
       expect(d.id).toBeTruthy();
       expect(d.pages.every((p) => !!p.id && Array.isArray(p.elements))).toBe(true);
-      expect(d.schemaVersion).toBe(1);
+      expect(d.schemaVersion).toBe(2);
+      expect(d.defaultLocale).toBe('en');
+      expect(d.supportedLocales).toEqual([{ code: 'en' }]);
     }
   });
   it('round-trips definitions unchanged', () => {
@@ -274,6 +292,50 @@ describe('definition.json', () => {
     expect(d.settings).toEqual(c.expectedSettings);
     expect(d.title).toBe(c.title);
     expect(d.pages.length).toBe(1);
+    expect({ defaultLocale: d.defaultLocale, supportedLocales: d.supportedLocales }).toEqual(c.expectedLocales);
+    expect(d.schemaVersion).toBe(2);
+  });
+});
+
+describe('localize.json', () => {
+  const fx = load('localize.json');
+  it('resolves text in a language', () => {
+    for (const c of fx.text) expect(fbText(c.text, c.locale, c.defaultLocale), c.name).toBe(c.expected);
+  });
+  it('reads one language only, with no fallback', () => {
+    for (const c of fx.textIn) expect(fbTextIn(c.text, c.locale, c.defaultLocale), JSON.stringify(c)).toBe(c.expected);
+  });
+  it('writes text in a language', () => {
+    for (const c of fx.setText) expect(norm(fbSetText(c.text, c.locale, c.value, c.defaultLocale)), c.name).toEqual(c.expected);
+  });
+  it('picks the language to show', () => {
+    for (const c of fx.resolveLocale) expect(fbResolveLocale(c.definition, c.requested), JSON.stringify(c)).toBe(c.expected);
+  });
+  it('knows each language’s direction', () => {
+    for (const c of fx.localeDir) expect(fbLocaleDir(c.definition, c.locale), JSON.stringify(c)).toBe(c.expected);
+  });
+  it('lists a form’s languages with labels and directions', () => {
+    for (const c of fx.locales) expect(norm(fbLocales(c.definition)), JSON.stringify(c.definition)).toEqual(c.expected);
+  });
+  it('warns about missing translations, once per element and language', () => {
+    for (const c of fx.lintTranslations) expect(lintDefinition(c.definition), c.name).toEqual(c.expected);
+  });
+});
+
+describe('migrate.json', () => {
+  const fx = load('migrate.json');
+  it('brings older forms up to the current version', () => {
+    for (const c of fx.cases) expect(norm(migrateDefinition(c.raw)), c.name).toEqual(c.expected);
+  });
+  it('does nothing the second time', () => {
+    for (const c of fx.cases) expect(norm(migrateDefinition(migrateDefinition(c.raw))), c.name).toEqual(c.expected);
+  });
+});
+
+describe('submission-fields.json', () => {
+  const fx = load('submission-fields.json');
+  it('describes where each answer sits', () => {
+    for (const c of fx.cases) expect(fbSubmissionFields(c.definition, c.locale), c.name).toEqual(c.expected);
   });
 });
 

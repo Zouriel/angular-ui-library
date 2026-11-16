@@ -20,7 +20,8 @@ import { UiButton } from '@zouriel/ui/button';
 import { UiFormEngine, type UiFbRemovedRow, type UiFormMode } from './engine';
 import { formatValue } from './format';
 import { UiFbFieldView, type UiFbUploader } from './renderer-field';
-import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFormDefinition, UiFormSubmission } from './schema';
+import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFbSubmissionLink, UiFormDefinition, UiFormSubmission } from './schema';
+import { fbLocaleDir, fbResolveLocale } from './localize';
 import { UI_FB_VALIDATORS, type UiFbValidatorDef } from './validators';
 import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources';
 import { sourcesFromSettings, type UiFormGlobalSettings } from './global-settings';
@@ -41,16 +42,16 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
   selector: 'ui-form-renderer',
   encapsulation: ViewEncapsulation.None,
   imports: [NgTemplateOutlet, HugeiconsIconComponent, UiButton, UiFbFieldView],
-  host: { class: 'ui-fr-host' },
+  host: { class: 'ui-fr-host', '[attr.dir]': 'dir()', '[attr.lang]': 'lang()' },
   template: `
     @if (engine(); as e) {
       @let def = e.definition;
       @let page = e.page();
       <form class="ui-fr" novalidate (submit)="$event.preventDefault(); primary()" [attr.aria-labelledby]="showTitle() ? uid + '-title' : null">
-        @if (showTitle() && (def.title || def.description)) {
+        @if (showTitle() && (e.text(def.title) || e.text(def.description))) {
           <header class="ui-fr-header">
-            @if (def.title) { <h2 class="ui-fr-title" [id]="uid + '-title'">{{ def.title }}</h2> }
-            @if (def.description) { <p class="ui-fr-desc">{{ def.description }}</p> }
+            @if (e.text(def.title)) { <h2 class="ui-fr-title" [id]="uid + '-title'">{{ e.text(def.title) }}</h2> }
+            @if (e.text(def.description)) { <p class="ui-fr-desc">{{ e.text(def.description) }}</p> }
           </header>
         }
 
@@ -58,11 +59,11 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           <!-- Reading saved answers: every page on the route, one after another, no steps. -->
           @for (i of e.path(); track i) {
             @let p = def.pages[i];
-            <section class="ui-fr-view-page" [attr.aria-label]="p.title || null">
-              @if (multiPage() && (p.title || p.description)) {
+            <section class="ui-fr-view-page" [attr.aria-label]="e.text(p.title) || null">
+              @if (multiPage() && (e.text(p.title) || e.text(p.description))) {
                 <div class="ui-fr-page-head">
-                  @if (p.title) { <h3 class="ui-fr-page-title">{{ p.title }}</h3> }
-                  @if (p.description) { <p class="ui-fr-desc">{{ p.description }}</p> }
+                  @if (e.text(p.title)) { <h3 class="ui-fr-page-title">{{ e.text(p.title) }}</h3> }
+                  @if (e.text(p.description)) { <p class="ui-fr-desc">{{ e.text(p.description) }}</p> }
                 </div>
               }
               <div class="ui-fr-grid">
@@ -78,7 +79,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                 <span class="seg" [class.done]="n < e.step()" [class.on]="n === e.step()"></span>
               }
             </div>
-            <p class="ui-fr-step">Step {{ e.step() + 1 }} of {{ e.path().length }}@if (page.title) {<span class="sep">:</span> {{ page.title }}}</p>
+            <p class="ui-fr-step">Step {{ e.step() + 1 }} of {{ e.path().length }}@if (e.text(page.title)) {<span class="sep">:</span> {{ e.text(page.title) }}}</p>
           </div>
         }
 
@@ -93,10 +94,10 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           </div>
         }
 
-        @if (multiPage() && (page.title || page.description)) {
+        @if (multiPage() && (e.text(page.title) || e.text(page.description))) {
           <div class="ui-fr-page-head">
-            @if (page.title && def.settings?.showProgress === false) { <h3 class="ui-fr-page-title">{{ page.title }}</h3> }
-            @if (page.description) { <p class="ui-fr-desc">{{ page.description }}</p> }
+            @if (e.text(page.title) && def.settings?.showProgress === false) { <h3 class="ui-fr-page-title">{{ e.text(page.title) }}</h3> }
+            @if (e.text(page.description)) { <p class="ui-fr-desc">{{ e.text(page.description) }}</p> }
           </div>
         }
 
@@ -109,7 +110,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           <footer class="ui-fr-footer">
             <div class="ui-fr-footer-start">
               @if (multiPage() && e.step() > 0) {
-                <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ def.settings?.backLabel || 'Back' }}</ui-button>
+                <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ e.text(def.settings?.backLabel) || 'Back' }}</ui-button>
               }
               @if (cancelLabel()) {
                 <ui-button variant="ghost" type="button" (click)="cancelled.emit()">{{ cancelLabel() }}</ui-button>
@@ -146,16 +147,16 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                 }
                 @case ('static') {
                   @switch (el.type) {
-                    @case ('heading') { <h3 class="ui-fr-heading">{{ el.text }}</h3> }
-                    @case ('paragraph') { <p class="ui-fr-para">{{ el.text }}</p> }
+                    @case ('heading') { <h3 class="ui-fr-heading">{{ e.text(el.text) }}</h3> }
+                    @case ('paragraph') { <p class="ui-fr-para">{{ e.text(el.text) }}</p> }
                     @default { <hr class="ui-fr-hr" /> }
                   }
                 }
                 @case ('group') {
                   @let g = asGroup(el);
                   <fieldset class="ui-fr-group" [class.is-repeat]="!!g.repeat" [disabled]="e.instanceState(g.id, row).disabled && e.mode !== 'view'">
-                    @if (g.title) { <legend class="ui-fr-legend">{{ g.title }}</legend> }
-                    @if (g.description) { <p class="ui-fr-desc">{{ g.description }}</p> }
+                    @if (e.text(g.title)) { <legend class="ui-fr-legend">{{ e.text(g.title) }}</legend> }
+                    @if (e.text(g.description)) { <p class="ui-fr-desc">{{ e.text(g.description) }}</p> }
                     @if (g.repeat) {
                       @let rows = e.rows(g.id);
                       @for (r of rows; track r; let n = $index) {
@@ -194,7 +195,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                         }
                         <div class="ui-fr-add" [attr.data-fr-add]="g.id">
                           <ui-button variant="outline" size="sm" type="button" [disabled]="!e.canAddRow(g.id) || e.instanceState(g.id, row).disabled" (click)="addRow(g)">
-                            <hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="15" [strokeWidth]="1.8" />{{ g.repeat.addLabel || 'Add another' }}
+                            <hugeicons-icon aria-hidden="true" [icon]="addIcon" [size]="15" [strokeWidth]="1.8" />{{ e.text(g.repeat.addLabel) || 'Add another' }}
                           </ui-button>
                           @if (g.repeat.max) { <span class="ui-fr-count">{{ rows.length }} of {{ g.repeat.max }}</span> }
                         </div>
@@ -227,7 +228,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-steps .seg.done { background: color-mix(in srgb, var(--ui-color-primary) 55%, var(--ui-color-track, var(--ui-color-border))); }
     .ui-fr-steps .seg.on { background: var(--ui-color-primary); }
     .ui-fr-step { margin: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); font-weight: 500; }
-    .ui-fr-step .sep { margin-right: 2px; }
+    .ui-fr-step .sep { margin-inline-end: 2px; }
     .ui-fr-view-page > .ui-fr-page-head { margin-bottom: var(--ui-space-3); }
     .ui-fr-view-page + .ui-fr-view-page { margin-top: var(--ui-space-6); padding-top: var(--ui-space-6); border-top: 1px solid var(--ui-color-border); }
     .ui-fr-page-title { margin: 0 0 2px; font-size: var(--ui-font-size-lg); font-weight: 600; }
@@ -240,7 +241,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-group { margin: 0; padding: var(--ui-space-3); border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius);
       display: flex; flex-direction: column; gap: var(--ui-space-3); min-width: 0; }
     .ui-fr-group:disabled { opacity: 0.6; }
-    .ui-fr-legend { padding: 0 var(--ui-space-1); margin-left: calc(-1 * var(--ui-space-1)); font-weight: 600; font-size: var(--ui-font-size-md); }
+    .ui-fr-legend { padding: 0 var(--ui-space-1); margin-inline-start: calc(-1 * var(--ui-space-1)); font-weight: 600; font-size: var(--ui-font-size-md); }
     .ui-fr-entry { display: flex; flex-direction: column; gap: var(--ui-space-3); padding: var(--ui-space-3); border-radius: var(--ui-radius); background: var(--ui-color-surface-subtle, var(--ui-color-surface)); }
     .ui-fr-entry-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); min-height: 24px; }
     .ui-fr-entry-head h4 { margin: 0; font-size: var(--ui-font-size-sm); font-weight: 600; color: var(--ui-color-text-secondary); }
@@ -256,23 +257,23 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-link { border: 0; background: none; padding: 0 2px; color: var(--ui-color-primary); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
     .ui-fr-link:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); border-radius: 2px; }
     .ui-fr-count, .ui-fr-empty { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); margin: 0; }
-    .ui-fr-summary { padding: var(--ui-space-3); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 55%, transparent); border-left-width: 4px;
+    .ui-fr-summary { padding: var(--ui-space-3); border: 1px solid color-mix(in srgb, var(--ui-color-danger) 55%, transparent); border-inline-start-width: 4px;
       border-radius: var(--ui-radius); background: color-mix(in srgb, var(--ui-color-danger) 8%, var(--ui-color-surface)); }
     /* Focused by the form (tabindex -1) so it's read out; its red frame already marks it, a ring would double it. */
     .ui-fr-summary:focus { outline: none; }
     .ui-fr-summary-title { margin: 0 0 var(--ui-space-1); font-size: var(--ui-font-size-md); font-weight: 600; }
-    .ui-fr-summary ul { margin: 0; padding-left: var(--ui-space-4); display: flex; flex-direction: column; gap: 2px; }
+    .ui-fr-summary ul { margin: 0; padding-inline-start: var(--ui-space-4); display: flex; flex-direction: column; gap: 2px; }
     .ui-fr-summary a { color: var(--ui-color-danger); font-size: var(--ui-font-size-sm); text-underline-offset: 2px; }
     .ui-fr-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); flex-wrap: wrap;
       padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .ui-fr-footer-start, .ui-fr-footer-end { display: flex; align-items: center; gap: var(--ui-space-2); }
-    .ui-fr-footer-end { margin-left: auto; }
+    .ui-fr-footer-end { margin-inline-start: auto; }
     .ui-fr-saved { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .ui-fr-changes { position: relative; font-size: var(--ui-font-size-sm); }
     .ui-fr-changes summary { cursor: pointer; color: var(--ui-color-text-secondary); list-style: none; padding: 4px var(--ui-space-2); border-radius: var(--ui-radius-xs); }
     .ui-fr-changes summary::-webkit-details-marker { display: none; }
     .ui-fr-changes summary:hover { background: var(--ui-color-surface-hover); }
-    .ui-fr-changes ul { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 2; width: min(360px, 80vw); max-height: 260px; overflow: auto; margin: 0; padding: var(--ui-space-2);
+    .ui-fr-changes ul { position: absolute; inset-inline-end: 0; bottom: calc(100% + 6px); z-index: 2; width: min(360px, 80vw); max-height: 260px; overflow: auto; margin: 0; padding: var(--ui-space-2);
       list-style: none; display: flex; flex-direction: column; gap: 6px; background: var(--ui-color-surface-raised, var(--ui-color-surface)); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2); }
     .ui-fr-changes li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; overflow-wrap: anywhere; }
     .ui-fr-changes .what { font-weight: 550; }
@@ -310,6 +311,10 @@ export class UiFormRenderer {
   readonly cancelLabel = input<string | null>(null);
   /** Shows the primary button as busy (e.g. while the host saves). */
   readonly busy = input(false);
+  /** The language to show the form in. Falls back to the form's default language. Switching keeps the answers. */
+  readonly locale = input<string | null>(null);
+  /** Copied onto each submission (`workflowId`, `serviceCode`). */
+  readonly link = input<UiFbSubmissionLink | null>(null);
   /** Fixes "today" (previews and tests). */
   readonly today = input<(() => string) | null>(null);
 
@@ -337,6 +342,11 @@ export class UiFormRenderer {
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
   private readonly fields = viewChildren(UiFbFieldView);
 
+  /** The language in use. */
+  readonly activeLocale = computed(() => fbResolveLocale(this.definition(), this.locale()));
+  protected readonly dir = computed(() => fbLocaleDir(this.definition(), this.activeLocale()));
+  protected readonly lang = computed(() => this.activeLocale());
+
   protected readonly multiPage = computed(() => (this.engine()?.path().length ?? 0) > 1);
   protected readonly summary = computed(() => {
     const e = this.engine();
@@ -347,8 +357,8 @@ export class UiFormRenderer {
   protected readonly primaryLabel = computed(() => {
     const e = this.engine();
     if (!e) return '';
-    if (!e.isLastPage()) return e.definition.settings?.nextLabel || 'Continue';
-    return this.submitLabel() || e.definition.settings?.submitLabel || (e.mode === 'edit' ? 'Save changes' : 'Submit');
+    if (!e.isLastPage()) return e.text(e.definition.settings?.nextLabel) || 'Continue';
+    return this.submitLabel() || e.text(e.definition.settings?.submitLabel) || (e.mode === 'edit' ? 'Save changes' : 'Submit');
   });
 
   constructor() {
@@ -362,9 +372,21 @@ export class UiFormRenderer {
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
         definition, data, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
+        locale: this.locale(), link: this.link(),
       }));
       this.engine.set(e);
       onCleanup(() => e.destroy());
+    });
+    // Language and link follow their inputs without restarting the form, so answers survive.
+    effect(() => {
+      const e = this.engine();
+      const locale = this.locale();
+      if (e) untracked(() => e.setLocale(locale));
+    });
+    effect(() => {
+      const e = this.engine();
+      const link = this.link();
+      if (e) untracked(() => e.setLink(link));
     });
     let first = true;
     effect(() => {
@@ -444,7 +466,7 @@ export class UiFormRenderer {
   }
 
   protected entryLabel(g: UiFbGroup, n: number): string {
-    return (g.repeat?.itemLabel || 'Entry {n}').replace('{n}', String(n + 1));
+    return (this.engine()?.text(g.repeat?.itemLabel) || 'Entry {n}').replace('{n}', String(n + 1));
   }
 
   protected span(el: UiFbElement, cols: number): number {
@@ -458,7 +480,7 @@ export class UiFormRenderer {
     if (v === null || v === undefined || v === '') return 'Empty';
     const id = [...(this.engine()?.index.values() ?? [])].find((x) => x.kind === 'field' && this.engine()?.dataPath(x.id, null) === c.path.replace(/\[\d+\]/g, ''))?.id;
     const field = id ? this.engine()?.field(id) : undefined;
-    return field ? formatValue(field, v) || 'Empty' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+    return field ? formatValue(field, v, this.engine()?.locale(), this.engine()?.defaultLocale) || 'Empty' : typeof v === 'object' ? JSON.stringify(v) : String(v);
   }
 
   protected asField(el: UiFbElement): UiFbField {
@@ -486,7 +508,8 @@ export class UiFormRenderer {
     const e = this.engine();
     if (!e) return;
     const page = e.page();
-    this.announce.set(`Step ${e.step() + 1} of ${e.path().length}${page.title ? `: ${page.title}` : ''}`);
+    const title = e.text(page.title);
+    this.announce.set(`Step ${e.step() + 1} of ${e.path().length}${title ? `: ${title}` : ''}`);
     afterNextRender(() => {
       const el = this.host.nativeElement;
       if (el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' });

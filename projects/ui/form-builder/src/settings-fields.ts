@@ -1,8 +1,9 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiInput, UiSwitch } from '@zouriel/ui/form';
 import { FB_SHARED_STYLES } from './builder-styles';
-import type { UiFbSettings } from './schema';
+import { FbBuilderStore } from './builder-store';
+import type { UiFbLocalizedText, UiFbSettings } from './schema';
 
 /**
  * `ui-fb-settings-fields` — the form-wide options (where labels and errors
@@ -63,9 +64,9 @@ import type { UiFbSettings } from './schema';
           <h3>Buttons and steps</h3>
           <ui-switch size="sm" [ngModel]="s.showProgress !== false" (ngModelChange)="set({ showProgress: $event ? undefined : false })">Show progress on multi-page forms</ui-switch>
           <div class="fb-grid2">
-            <label class="fld"><span class="fb-label">Submit button</span><ui-input size="sm" [ngModel]="s.submitLabel ?? ''" (ngModelChange)="set({ submitLabel: $event || undefined }, 'sl')" placeholder="Submit" /></label>
-            <label class="fld"><span class="fb-label">Next button</span><ui-input size="sm" [ngModel]="s.nextLabel ?? ''" (ngModelChange)="set({ nextLabel: $event || undefined }, 'nl')" placeholder="Continue" /></label>
-            <label class="fld"><span class="fb-label">Back button</span><ui-input size="sm" [ngModel]="s.backLabel ?? ''" (ngModelChange)="set({ backLabel: $event || undefined }, 'bl')" placeholder="Back" /></label>
+            <label class="fld"><span class="fb-label">Submit button</span><ui-input size="sm" [dir]="store?.editDir() ?? null" [ngModel]="text(s.submitLabel)" (ngModelChange)="set({ submitLabel: write(s.submitLabel, $event) }, 'sl')" placeholder="Submit" /></label>
+            <label class="fld"><span class="fb-label">Next button</span><ui-input size="sm" [dir]="store?.editDir() ?? null" [ngModel]="text(s.nextLabel)" (ngModelChange)="set({ nextLabel: write(s.nextLabel, $event) }, 'nl')" placeholder="Continue" /></label>
+            <label class="fld"><span class="fb-label">Back button</span><ui-input size="sm" [dir]="store?.editDir() ?? null" [ngModel]="text(s.backLabel)" (ngModelChange)="set({ backLabel: write(s.backLabel, $event) }, 'bl')" placeholder="Back" /></label>
           </div>
         </section>
   `,
@@ -77,6 +78,10 @@ import type { UiFbSettings } from './schema';
   `],
 })
 export class FbSettingsFields {
+  /** Only inside a builder: the edit language decides which translation of the button labels is shown. */
+  protected readonly store = inject(FbBuilderStore, { optional: true });
+  protected text(t: UiFbLocalizedText | undefined): string { return this.store ? this.store.text(t) : typeof t === 'string' ? t : ''; }
+  protected write(t: UiFbLocalizedText | undefined, v: string): UiFbLocalizedText | undefined { return (this.store ? this.store.setText(t, v) : v) || undefined; }
   readonly settings = input<UiFbSettings>({});
   /** A change to merge into the settings; quick typing in one box shares a `mergeKey`. */
   readonly patch = output<{ patch: Partial<UiFbSettings>; mergeKey?: string }>();

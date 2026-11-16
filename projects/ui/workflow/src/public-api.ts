@@ -14,3 +14,4 @@ export { UiWorkflowGlobalSettings } from './global-settings';
 export { UiWorkflowTasksDrawer } from './tasks-drawer';
 export { UiWorkflowPermissions } from './permissions';
 export { wfDescribeHistory } from './runtime-shared';
+export * from './submission-bridge';

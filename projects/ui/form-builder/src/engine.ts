@@ -2,8 +2,9 @@ import { computed, effect, signal, untracked, type EffectRef, type Injector } fr
 import { evaluateCalc, type UiFbCalcContext } from './calc';
 import { evaluateCondition, isEmptyValue, resolveOperand, type UiFbConditionContext } from './conditions';
 import { optionValueOf, toChoice, type UiFbChoice, type UiFbOptionSourceDef } from './option-sources';
-import { indexDefinition, elementName, migrateDefinition, type UiFbIndex, type UiFbIndexEntry } from './definition';
+import { indexDefinition, elementName, fbSubmissionFields, migrateDefinition, type UiFbIndex, type UiFbIndexEntry } from './definition';
 import { fieldTypeInfo, valueKindOf } from './field-types';
+import { fbDefaultLocale, fbLocaleDir, fbLocales, fbResolveLocale, fbText } from './localize';
 import type {
   UiFbChange,
   UiFbElement,
@@ -11,6 +12,9 @@ import type {
   UiFbFileValue,
   UiFbGroup,
   UiFbPage,
+  UiFbDir,
+  UiFbLocalizedText,
+  UiFbSubmissionLink,
   UiFbToggle,
   UiFbValidatorRule,
   UiFormDefinition,
@@ -40,6 +44,10 @@ export interface UiFormEngineOptions {
   optionSources?: readonly UiFbOptionSourceDef[];
   /** Overrides "today" (for tests and for forms filled in on behalf of a past date). */
   today?: () => string;
+  /** The language to word things in (default: the form's default language). Change it later with `setLocale`. */
+  locale?: string | null;
+  /** Copied onto each submission. */
+  link?: UiFbSubmissionLink | null;
   injector: Injector;
 }
 
@@ -177,7 +185,15 @@ export class UiFormEngine {
 
   private readonly values = signal<Record<string, unknown>>({});
   private readonly rowIds = signal<Record<string, string[]>>({});
-  private readonly asyncResults = signal<Record<string, { hash: string; result: string | null }>>({});
+  private readonly asyncResults = signal<Record<string, { hash: string; result: string | false | null }>>({});
+  private readonly requestedLocale = signal<string | null>(null);
+  private readonly linkSig = signal<UiFbSubmissionLink | null>(null);
+  readonly defaultLocale: string;
+  /** The language in use: the requested one if the form has it, else the form's default. */
+  readonly locale = computed(() => fbResolveLocale(this.definition, this.requestedLocale()));
+  /** Writing direction of the language in use. */
+  readonly dir = computed<UiFbDir>(() => fbLocaleDir(this.definition, this.locale()));
+  readonly locales = computed(() => fbLocales(this.definition));
   /** Fields that have been left at least once (their errors show from then on). */
   readonly touched = signal<ReadonlySet<string>>(new Set());
   /** Pages someone tried to leave or submit (all their errors show). */
@@ -203,6 +219,9 @@ export class UiFormEngine {
   constructor(opts: UiFormEngineOptions) {
     this.definition = migrateDefinition(opts.definition);
     this.index = indexDefinition(this.definition);
+    this.defaultLocale = fbDefaultLocale(this.definition);
+    this.requestedLocale.set(opts.locale ?? null);
+    this.linkSig.set(opts.link ?? null);
     this.mode = opts.mode ?? (opts.data ? 'edit' : 'create');
     this.today = opts.today ?? todayIso;
     const s = this.definition.settings ?? {};
@@ -222,6 +241,21 @@ export class UiFormEngine {
     this.effects.push(effect(() => this.runChecks(this.state().checks), { injector }));
     // The first full picture (calculations included) is the "unchanged" baseline.
     this.baseline = untracked(() => this.data());
+  }
+
+  /** Switches the language. Answers are kept; every message and label is worded again. */
+  setLocale(code: string | null): void {
+    this.requestedLocale.set(code);
+  }
+
+  /** The submission link (workflow id, service code) copied onto each submission. */
+  setLink(link: UiFbSubmissionLink | null): void {
+    this.linkSig.set(link);
+  }
+
+  /** [t] in the language in use (falls back to the form's default language). Reactive. */
+  text(t: UiFbLocalizedText | undefined | null): string {
+    return fbText(t, this.locale(), this.defaultLocale);
   }
 
   destroy(): void {
@@ -287,7 +321,7 @@ export class UiFormEngine {
 
   // ── Reading ─────────────────────────────────────────────────────────────
 
-  readonly state = computed<EvalResult>(() => this.evaluate(this.values(), this.rowIds(), this.asyncResults()));
+  readonly state = computed<EvalResult>(() => this.evaluate(this.values(), this.rowIds(), this.asyncResults(), this.locale()));
 
   /** Indexes (into `definition.pages`) of the pages on the current route. */
   readonly path = computed(() => this.state().path);
@@ -378,11 +412,12 @@ export class UiFormEngine {
 
   /** "Email" — or "Email (Dependant 2)" inside a repeat entry. */
   instanceLabel(id: string, row: string | null): string {
-    const name = elementName(this.index.get(id)?.element);
+    const loc = this.locale();
+    const name = elementName(this.index.get(id)?.element, this.definition, loc);
     const entry = this.index.get(id);
     if (!row || !entry?.repeat) return name;
     const n = this.rows(entry.repeat.id).indexOf(row) + 1;
-    const item = (entry.repeat.repeat?.itemLabel ?? 'Entry {n}').replace('{n}', String(n));
+    const item = (this.text(entry.repeat.repeat?.itemLabel) || 'Entry {n}').replace('{n}', String(n));
     return `${name} (${item})`;
   }
 
@@ -506,11 +541,17 @@ export class UiFormEngine {
       const [row, id] = addr.includes('/') ? addr.split('/') : [null, addr];
       if (this.instanceState(id, row).visible) files[this.dataPath(id, row)] = list;
     }
+    const locale = this.locale();
+    const link = this.linkSig();
     return {
       formId: this.definition.id,
       revision: this.definition.revision ?? null,
+      locale,
       data: this.data(),
       submittedAt: new Date().toISOString(),
+      ...(link?.workflowId ? { workflowId: link.workflowId } : {}),
+      ...(link?.serviceCode ? { serviceCode: link.serviceCode } : {}),
+      fields: fbSubmissionFields(this.definition, locale),
       files,
     };
   }
@@ -532,7 +573,7 @@ export class UiFormEngine {
       if (entry.kind === 'group' && (entry.element as UiFbGroup).repeat) {
         const before = this.initialRows.get(id) ?? [];
         const now = rows[id] ?? [];
-        const label = elementName(entry.element);
+        const label = elementName(entry.element, this.definition, this.locale());
         if (before.length !== now.length) out.push({ path: this.dataPath(id, null), label, from: before.length, to: now.length });
       }
       if (entry.kind !== 'field') continue;
@@ -629,7 +670,7 @@ export class UiFormEngine {
 
   // ── Evaluation ──────────────────────────────────────────────────────────
 
-  private evaluate(values: Record<string, unknown>, rows: Record<string, string[]>, asyncResults: Record<string, { hash: string; result: string | null }>): EvalResult {
+  private evaluate(values: Record<string, unknown>, rows: Record<string, string[]>, asyncResults: Record<string, { hash: string; result: string | false | null }>, locale: string): EvalResult {
     const idx = this.index;
     const def = this.definition;
     const today = this.today();
@@ -637,6 +678,9 @@ export class UiFormEngine {
     const busy = new Set<string>();
     const checks: PendingCheck[] = [];
     const view = this.mode === 'view';
+    const dl = this.defaultLocale;
+    const tx = (t: UiFbLocalizedText | undefined) => fbText(t, locale, dl);
+    const nameOf = (id: string) => elementName(idx.get(id)?.element, def, locale);
 
     /** Runs `fn` once per key; a key that asks about itself gets `fallback` (a loop). */
     const once = <T>(key: string, fallback: T, fn: () => T): T => {
@@ -749,10 +793,10 @@ export class UiFormEngine {
         const f = idx.get(id)?.element as UiFbField | undefined;
         if (!f || view || !visible(id, row) || disabled(id, row) || f.type === 'hidden') return res;
         const v = value(id, row);
-        const label = f.label || f.key;
+        const label = tx(f.label) || f.key;
         const empty = isEmptyValue(v) || (valueKindOf(f.type) === 'boolean' && v !== true);
         if (required(id, row) && empty) {
-          res.errors.push(formatMessage(f.requiredMessage || requiredMessage(f, label), { label }));
+          res.errors.push(formatMessage(tx(f.requiredMessage) || requiredMessage(f, label), { label }));
           return res;
         }
         const rules: UiFbValidatorRule[] = [...(f.validators ?? [])];
@@ -768,7 +812,7 @@ export class UiFormEngine {
           const vctx = {
             field: f,
             value: (ref: string) => ctxBase.value(ref),
-            label: (ref: string) => elementName(idx.get(ref)?.element),
+            label: (ref: string) => nameOf(ref),
             today: () => today,
           };
           const message = (result: UiFbValidatorResult) => {
@@ -776,12 +820,12 @@ export class UiFormEngine {
             const vars: Record<string, unknown> = { label };
             for (const spec of vdef.params ?? []) {
               const pv = params[spec.key];
-              vars[spec.key] = spec.kind === 'field' ? `“${elementName(idx.get(String(pv))?.element)}”`
+              vars[spec.key] = spec.kind === 'field' ? `“${nameOf(String(pv))}”`
                 : spec.kind === 'date' ? describeDateParam(pv)
                 : spec.key === 'comparison' ? comparisonWords(pv)
                 : pv;
             }
-            return formatMessage(rule.message || vdef.defaultMessage, vars);
+            return formatMessage(tx(rule.message) || vdef.defaultMessage, vars);
           };
           const push = (result: UiFbValidatorResult) => {
             if (result === true || result == null) return;
@@ -889,7 +933,8 @@ export class UiFormEngine {
           (result) => {
             if (abort.signal.aborted) return;
             this.inflight.delete(c.key);
-            const msg = result === true || result == null ? null : typeof result === 'string' ? result : formatMessage(c.rule.message || c.def.defaultMessage, { label: c.ctx.field.label, ...(c.rule.params ?? {}) });
+            // Kept raw: a message from the rule is worded when read, in the language then in use.
+            const msg = result === true || result == null ? null : result;
             this.asyncResults.update((r) => ({ ...r, [c.key]: { hash: c.hash, result: msg } }));
           },
           // A check that crashes (e.g. the server is down) doesn't block the form.

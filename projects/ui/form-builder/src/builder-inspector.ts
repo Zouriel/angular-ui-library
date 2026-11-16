@@ -6,7 +6,8 @@ import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiInput, UiNumberInput, UiSwitch, UiTextarea } from '@zouriel/ui/form';
 import { FIELD_ICONS, GROUP_ICON, REPEAT_ICON, STATIC_ICONS, FB_ICONS } from './builder-icons';
 import { FbConditionEditor, FbValueInput } from './builder-condition';
-import { FbCalcEditor, FbChecksEditor, FbOptionsEditor } from './builder-editors';
+import { FbCalcEditor, FbChecksEditor, FbOptionsEditor, FbTransHint } from './builder-editors';
+import { fbText } from './localize';
 import { FbBuilderStore, type UiFbRefOption } from './builder-store';
 import { FB_SHARED_STYLES } from './builder-styles';
 import { FbSettingsFields } from './settings-fields';
@@ -67,7 +68,7 @@ const AUTOCOMPLETE = [
   imports: [
     FbSettingsFields,
     NgTemplateOutlet, FormsModule, HugeiconsIconComponent, UiButton, UiSegmented, UiInput, UiNumberInput, UiSwitch, UiTextarea,
-    FbConditionEditor, FbValueInput, FbOptionsEditor, FbChecksEditor, FbCalcEditor,
+    FbConditionEditor, FbValueInput, FbOptionsEditor, FbChecksEditor, FbCalcEditor, FbTransHint,
   ],
   template: `
     @let sel = store.selected();
@@ -112,16 +113,19 @@ const AUTOCOMPLETE = [
         <div class="fb-stack">
           @if (f.archived) { <p class="fb-warn">This question is archived: new answers can’t be given, old ones are kept. <button type="button" class="fb-link" (click)="store.setArchived(f.id, false)">Restore it</button></p> }
           <label class="fld"><span class="fb-label">{{ f.type === 'hidden' ? 'Name' : 'Question' }}</span>
-            <ui-input size="sm" [ngModel]="f.label" (ngModelChange)="setLabel(f, $event)" placeholder="What do you want to ask?" />
+            <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(f.label)" (ngModelChange)="setLabel(f, $event)" placeholder="What do you want to ask?" />
+            <ui-fb-trans [text]="f.label" />
           </label>
           @if (f.type !== 'hidden') {
             <label class="fld"><span class="fb-label">Help text</span>
-              <ui-textarea size="sm" [ngModel]="f.help ?? ''" (ngModelChange)="store.updateField(f.id, { help: $event || undefined }, 'help:' + f.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional. Shown under the box." />
+              <ui-textarea size="sm" [dir]="store.editDir()" [ngModel]="store.text(f.help)" (ngModelChange)="store.updateField(f.id, { help: store.setText(f.help, $event) || undefined }, 'help:' + f.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional. Shown under the box." />
+              <ui-fb-trans [text]="f.help" />
             </label>
           }
           @if (info.placeholder) {
             <label class="fld"><span class="fb-label">Placeholder</span>
-              <ui-input size="sm" [ngModel]="f.placeholder ?? ''" (ngModelChange)="store.updateField(f.id, { placeholder: $event || undefined }, 'ph:' + f.id)" placeholder="Example text shown in the empty box" />
+              <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(f.placeholder)" (ngModelChange)="store.updateField(f.id, { placeholder: store.setText(f.placeholder, $event) || undefined }, 'ph:' + f.id)" placeholder="Example text shown in the empty box" />
+              <ui-fb-trans [text]="f.placeholder" />
             </label>
           }
           <label class="fld"><span class="fb-label">Type</span>
@@ -276,7 +280,8 @@ const AUTOCOMPLETE = [
 
     <ng-template #captionProp let-f>
       <label class="fld"><span class="fb-label">Text next to it</span>
-        <ui-input size="sm" [ngModel]="f.props?.caption ?? ''" (ngModelChange)="prop(f, 'caption', $event || undefined)" placeholder="I agree" />
+        <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(f.props?.caption)" (ngModelChange)="prop(f, 'caption', store.setText(f.props?.caption, $event) || undefined)" placeholder="I agree" />
+        <ui-fb-trans [text]="f.props?.caption" />
       </label>
     </ng-template>
 
@@ -351,10 +356,12 @@ const AUTOCOMPLETE = [
         <div class="fb-stack">
           @if (g.archived) { <p class="fb-warn">This section is archived. <button type="button" class="fb-link" (click)="store.setArchived(g.id, false)">Restore it</button></p> }
           <label class="fld"><span class="fb-label">Title</span>
-            <ui-input size="sm" [ngModel]="g.title ?? ''" (ngModelChange)="store.setGroupTitle(g.id, $event)" placeholder="e.g. Contact details" />
+            <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(g.title)" (ngModelChange)="store.setGroupTitle(g.id, $event)" placeholder="e.g. Contact details" />
+            <ui-fb-trans [text]="g.title" />
           </label>
           <label class="fld"><span class="fb-label">Description</span>
-            <ui-textarea size="sm" [ngModel]="g.description ?? ''" (ngModelChange)="store.updateGroup(g.id, { description: $event || undefined }, 'desc:' + g.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-textarea size="sm" [dir]="store.editDir()" [ngModel]="store.text(g.description)" (ngModelChange)="store.updateGroup(g.id, { description: store.setText(g.description, $event) || undefined }, 'desc:' + g.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-fb-trans [text]="g.description" />
           </label>
           <div class="fld"><span class="fb-label">Columns inside</span>
             <ui-segmented size="sm" label="Columns" [options]="columns" [value]="'' + (g.columns ?? 1)" (valueChange)="store.updateGroup(g.id, { columns: $event === '1' ? undefined : $any(+$event!) })" />
@@ -371,8 +378,8 @@ const AUTOCOMPLETE = [
                 <label class="fld"><span class="fb-label">At least</span><ui-number-input size="sm" [ngModel]="g.repeat.min ?? 0" (ngModelChange)="repeat(g, { min: $event ?? 0 })" [min]="0" ariaLabel="At least" /></label>
                 <label class="fld"><span class="fb-label">At most</span><ui-number-input size="sm" [ngModel]="g.repeat.max ?? null" (ngModelChange)="repeat(g, { max: $event ?? undefined })" [min]="1" ariaLabel="At most" placeholder="No limit" /></label>
               </div>
-              <label class="fld"><span class="fb-label">Add button</span><ui-input size="sm" [ngModel]="g.repeat.addLabel ?? ''" (ngModelChange)="repeat(g, { addLabel: $event || undefined })" placeholder="Add another" /></label>
-              <label class="fld"><span class="fb-label">Each entry is called</span><ui-input size="sm" [ngModel]="g.repeat.itemLabel ?? ''" (ngModelChange)="repeat(g, { itemLabel: $event || undefined })" placeholder="Entry {n}" />
+              <label class="fld"><span class="fb-label">Add button</span><ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(g.repeat.addLabel)" (ngModelChange)="repeat(g, { addLabel: store.setText(g.repeat.addLabel, $event) || undefined })" placeholder="Add another" /><ui-fb-trans [text]="g.repeat.addLabel" /></label>
+              <label class="fld"><span class="fb-label">Each entry is called</span><ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(g.repeat.itemLabel)" (ngModelChange)="repeat(g, { itemLabel: store.setText(g.repeat.itemLabel, $event) || undefined })" placeholder="Entry {n}" /><ui-fb-trans [text]="g.repeat.itemLabel" />
                 <span class="fb-hint">{{ '{n}' }} becomes the entry’s number.</span></label>
             }
           </section>
@@ -399,9 +406,9 @@ const AUTOCOMPLETE = [
             <ui-segmented size="sm" label="Kind" [options]="staticKinds" [value]="s.type" (valueChange)="store.updateStatic(s.id, { type: $any($event) })" />
           </div>
           @if (s.type === 'heading') {
-            <label class="fld"><span class="fb-label">Heading</span><ui-input size="sm" [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" /></label>
+            <label class="fld"><span class="fb-label">Heading</span><ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(s.text)" (ngModelChange)="store.updateStatic(s.id, { text: store.setText(s.text, $event) }, 'text:' + s.id)" /><ui-fb-trans [text]="s.text" /></label>
           } @else if (s.type === 'paragraph') {
-            <label class="fld"><span class="fb-label">Text</span><ui-textarea size="sm" [ngModel]="s.text ?? ''" (ngModelChange)="store.updateStatic(s.id, { text: $event }, 'text:' + s.id)" [rows]="4" [autosize]="true" [maxRows]="14" /></label>
+            <label class="fld"><span class="fb-label">Text</span><ui-textarea size="sm" [dir]="store.editDir()" [ngModel]="store.text(s.text)" (ngModelChange)="store.updateStatic(s.id, { text: store.setText(s.text, $event) }, 'text:' + s.id)" [rows]="4" [autosize]="true" [maxRows]="14" /><ui-fb-trans [text]="s.text" /></label>
             <div class="fld"><span class="fb-label">Width</span>
               <ui-segmented size="sm" label="Width" [options]="widths" [value]="s.layout?.width ?? 'full'" (valueChange)="store.updateStatic(s.id, { layout: $event === 'full' ? undefined : { width: $any($event) } })" />
             </div>
@@ -418,10 +425,12 @@ const AUTOCOMPLETE = [
       @if (tab() === 'settings') {
         <div class="fb-stack">
           <label class="fld"><span class="fb-label">Page title</span>
-            <ui-input size="sm" [ngModel]="p.title ?? ''" (ngModelChange)="store.updatePage(p.id, { title: $event || undefined }, 'ptitle:' + p.id)" [placeholder]="'Page ' + (i + 1)" />
+            <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(p.title)" (ngModelChange)="store.updatePage(p.id, { title: store.setText(p.title, $event) || undefined }, 'ptitle:' + p.id)" [placeholder]="'Page ' + (i + 1)" />
+            <ui-fb-trans [text]="p.title" />
           </label>
           <label class="fld"><span class="fb-label">Description</span>
-            <ui-textarea size="sm" [ngModel]="p.description ?? ''" (ngModelChange)="store.updatePage(p.id, { description: $event || undefined }, 'pdesc:' + p.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-textarea size="sm" [dir]="store.editDir()" [ngModel]="store.text(p.description)" (ngModelChange)="store.updatePage(p.id, { description: store.setText(p.description, $event) || undefined }, 'pdesc:' + p.id)" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Optional" />
+            <ui-fb-trans [text]="p.description" />
           </label>
           <div class="actions">
             <ui-button size="sm" variant="outline" [disabled]="i === 0" (click)="store.movePage(p.id, -1)"><hugeicons-icon aria-hidden="true" [icon]="leftIcon" [size]="14" [strokeWidth]="1.8" />Earlier</ui-button>
@@ -471,10 +480,12 @@ const AUTOCOMPLETE = [
       @let s = def.settings ?? {};
       <div class="fb-stack">
         <label class="fld"><span class="fb-label">Form title</span>
-          <ui-input size="sm" [ngModel]="def.title" (ngModelChange)="store.updateForm({ title: $event }, 'ftitle')" />
+          <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(def.title)" (ngModelChange)="store.updateForm({ title: store.setText(def.title, $event) }, 'ftitle')" />
+          <ui-fb-trans [text]="def.title" />
         </label>
         <label class="fld"><span class="fb-label">Description</span>
-          <ui-textarea size="sm" [ngModel]="def.description ?? ''" (ngModelChange)="store.updateForm({ description: $event || undefined }, 'fdesc')" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Shown at the top of the form" />
+          <ui-textarea size="sm" [dir]="store.editDir()" [ngModel]="store.text(def.description)" (ngModelChange)="store.updateForm({ description: store.setText(def.description, $event) || undefined }, 'fdesc')" [rows]="2" [autosize]="true" [maxRows]="6" placeholder="Shown at the top of the form" />
+          <ui-fb-trans [text]="def.description" />
         </label>
         <ui-fb-settings-fields [settings]="s" (patch)="store.updateSettings($event.patch, $event.mergeKey)" />
       </div>
@@ -607,7 +618,7 @@ export class FbInspector {
   });
   protected readonly headName = computed(() => {
     const sel = this.store.selected();
-    return sel ? this.store.name(sel.id) : this.store.def().title || 'Untitled form';
+    return sel ? this.store.name(sel.id) : this.store.shown(this.store.def().title) || 'Untitled form';
   });
 
   protected readonly usedBy = computed(() => {
@@ -658,9 +669,11 @@ export class FbInspector {
 
   protected setLabel(f: UiFbField, label: string): void {
     // Keys follow labels until the form has answers or someone named it by hand.
-    const auto = !this.store.hasAnswers(f.id) && (f.key === fbSlug(f.label) || f.key.startsWith(`${fbSlug(f.label)}_`) || f.key === fbSlug(fieldTypeInfo(f.type).defaultLabel));
-    const key = auto && label.trim() ? uniqueKey(this.store.def(), fbSlug(label), f.id) : f.key;
-    this.store.updateField(f.id, { label, key }, `label:${f.id}`);
+    const cur = fbText(f.label, this.store.defaultLocale(), this.store.defaultLocale());
+    const auto = !this.store.hasAnswers(f.id) && (f.key === fbSlug(cur) || f.key.startsWith(`${fbSlug(cur)}_`) || f.key === fbSlug(fieldTypeInfo(f.type).defaultLabel));
+    // The key follows the label in the form's default language only.
+    const key = auto && !this.store.translating() && label.trim() ? uniqueKey(this.store.def(), fbSlug(label), f.id) : f.key;
+    this.store.updateField(f.id, { label: this.store.setText(f.label, label), key }, `label:${f.id}`);
   }
 
   protected changeType(f: UiFbField, type: UiFbFieldType): void {
@@ -718,7 +731,7 @@ export class FbInspector {
 
   /** The field itself as a rule subject, so value inputs know its options and kind. */
   protected selfRef(f: UiFbField): UiFbRefOption {
-    return { id: f.id, label: f.label, kind: valueKindOf(f.type, f.props?.format), where: '' };
+    return { id: f.id, label: this.store.shown(f.label), kind: valueKindOf(f.type, f.props?.format), where: '' };
   }
 
   protected defaultOperand(f: UiFbField): UiFbOperand | undefined {
@@ -787,7 +800,7 @@ export class FbInspector {
 
   protected setRepeat(g: UiFbGroup, on: boolean): void {
     if (on) {
-      const key = g.key ?? uniqueKey(this.store.def(), fbSlug(g.title || 'items'), g.id);
+      const key = g.key ?? uniqueKey(this.store.def(), fbSlug(this.store.shown(g.title) || 'items'), g.id);
       this.store.updateGroup(g.id, { repeat: { min: 1, addLabel: 'Add another', itemLabel: 'Entry {n}' }, key });
     } else {
       this.store.updateGroup(g.id, { repeat: undefined });
@@ -799,7 +812,7 @@ export class FbInspector {
   }
 
   protected setGroupKey(g: UiFbGroup, on: boolean): void {
-    this.store.updateGroup(g.id, { key: on ? uniqueKey(this.store.def(), fbSlug(g.title || 'section'), g.id) : undefined });
+    this.store.updateGroup(g.id, { key: on ? uniqueKey(this.store.def(), fbSlug(this.store.shown(g.title) || 'section'), g.id) : undefined });
   }
 
   // ── Pages ───────────────────────────────────────────────────────────────
@@ -809,7 +822,7 @@ export class FbInspector {
   }
 
   protected laterPages(i: number) {
-    return this.store.def().pages.slice(i + 1).map((p, k) => ({ id: p.id, label: p.title || `Page ${i + k + 2}` }));
+    return this.store.def().pages.slice(i + 1).map((p, k) => ({ id: p.id, label: this.store.shown(p.title) || `Page ${i + k + 2}` }));
   }
 
   protected addJump(p: UiFbPage, i: number): void {

@@ -33,7 +33,7 @@ interface RuleEntry {
           <ul role="list">
             @for (p of store.problems(); track $index) {
               <li>
-                <button type="button" class="problem" [class.err]="p.severity === 'error'" (click)="open.emit(p.targetId)">
+                <button type="button" class="problem" [class.err]="p.severity === 'error'" (click)="openProblem(p)">
                   <hugeicons-icon aria-hidden="true" [icon]="p.severity === 'error' ? errorIcon : warnIcon" [size]="15" [strokeWidth]="1.8" />
                   <span>{{ p.message }}</span>
                 </button>
@@ -119,11 +119,18 @@ export class FbLogicOverview {
   protected readonly searchIcon = FB_ICONS.Search01Icon;
   protected readonly query = signal('');
 
+  /** Goes to what a problem is about; a missing translation also switches to the language that is missing. */
+  protected openProblem(p: { targetId: string; message: string }): void {
+    const code = /translation for:/.test(p.message) ? /\(([^()]+)\) translation/.exec(p.message)?.[1] : undefined;
+    if (code) this.store.setEditLocale(code);
+    this.open.emit(p.targetId);
+  }
+
   protected readonly entries = computed<RuleEntry[]>(() => {
     const def = this.store.def();
     const s = this.store;
     const out: RuleEntry[] = [];
-    const pageName = (p: UiFbPage) => p.title || `Page ${def.pages.indexOf(p) + 1}`;
+    const pageName = (p: UiFbPage) => this.store.shown(p.title) || `Page ${def.pages.indexOf(p) + 1}`;
     for (const p of def.pages) {
       const lines: RuleLine[] = [];
       if (p.visibility) lines.push({ kind: p.visibility.action === 'show' ? 'Shown' : 'Skipped', text: `${p.visibility.action === 'show' ? 'Only when' : 'When'} ${s.describe(p.visibility.when)}` });

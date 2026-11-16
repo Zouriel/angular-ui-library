@@ -1,4 +1,4 @@
-import type { UiFbElement, UiFbValueKind, UiFormDefinition } from '@zouriel/ui/form-builder';
+import { fbDefaultLocale, fbText, type UiFbElement, type UiFbValueKind, type UiFormDefinition } from '@zouriel/ui/form-builder';
 import type {
   UiWfAssignee,
   UiWfEntityDescriptor,
@@ -568,11 +568,12 @@ export function upstreamSteps(def: UiWorkflowDefinition, at: UiWfTokenContext['a
 }
 
 /** The questions of a form (fields on every page, inside groups too), as answer keys and labels. */
-export function formFields(form: UiFormDefinition | undefined | null): { key: string; label: string }[] {
+export function formFields(form: UiFormDefinition | undefined | null, locale?: string): { key: string; label: string }[] {
+  const def = fbDefaultLocale(form);
   const out: { key: string; label: string }[] = [];
   const walk = (els: readonly UiFbElement[], prefix: string) => {
     for (const e of els) {
-      if (e.kind === 'field') out.push({ key: prefix + e.key, label: e.label || e.key });
+      if (e.kind === 'field') out.push({ key: prefix + e.key, label: fbText(e.label, locale ?? def, def) || e.key });
       else if (e.kind === 'group') walk(e.elements, e.key ? `${prefix}${e.key}.` : prefix);
     }
   };

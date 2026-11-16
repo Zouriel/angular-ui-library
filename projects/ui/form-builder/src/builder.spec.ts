@@ -495,3 +495,123 @@ describe('FbCanvas target sizes', () => {
     expect(cs.height).toBe('24px');
   });
 });
+
+describe('FbBuilderStore languages', () => {
+  const bilingual = () => {
+    const s = store(form([
+      f('a', 'select', { label: { en: 'Island', dv: 'ރަށް' }, options: [{ id: 'o1', value: 'male', label: { en: 'Male', dv: 'މާލެ' } }] }),
+      f('b', 'text', { label: 'Name' }),
+    ], { title: { en: 'Survey', dv: 'ސާވޭ' } }));
+    s.addLocale('dv');
+    return s;
+  };
+
+  it('starts with one language and adds Dhivehi as right to left', () => {
+    const s = store(form([f('a', 'text')]));
+    expect(s.multilingual()).toBe(false);
+    expect(s.editLocale()).toBe('en');
+    expect(s.addLocale('dv')).toBe(true);
+    expect(s.addLocale('dv')).toBe(false);
+    expect(s.locales().map((l) => [l.code, l.dir])).toEqual([['en', 'ltr'], ['dv', 'rtl']]);
+    expect(s.def().defaultLocale).toBe('en');
+    s.undo();
+    expect(s.multilingual()).toBe(false);
+  });
+
+  it('reads with no fallback for editors and with fallback for display', () => {
+    const s = bilingual();
+    const b = s.field('b')!;
+    s.setEditLocale('dv');
+    expect(s.editDir()).toBe('rtl');
+    expect(s.text(b.label)).toBe('');
+    expect(s.shown(b.label)).toBe('Name');
+    expect(s.defaultText(b.label)).toBe('Name');
+    expect(s.text(s.field('a')!.label)).toBe('ރަށް');
+    s.setEditLocale('en');
+    expect(s.defaultText(b.label)).toBe('');
+  });
+
+  it('editing another language writes that translation and leaves the default intact', () => {
+    const s = bilingual();
+    s.setEditLocale('dv');
+    const b = s.field('b')!;
+    s.updateField('b', { label: s.setText(b.label, 'ނަން') });
+    expect(s.field('b')!.label).toEqual({ en: 'Name', dv: 'ނަން' });
+    s.setEditLocale('en');
+    s.updateField('b', { label: s.setText(s.field('b')!.label, 'Full name') });
+    expect(s.field('b')!.label).toEqual({ en: 'Full name', dv: 'ނަން' });
+    // Clearing a translation goes back to a plain string.
+    s.setEditLocale('dv');
+    s.updateField('b', { label: s.setText(s.field('b')!.label, '') });
+    expect(s.field('b')!.label).toBe('Full name');
+  });
+
+  it('keeps a section key and a field key when only a translation changes', () => {
+    const g = { ...createGroup(undefined, true), id: 'g', title: 'Dependants' };
+    const s = store(form([g]));
+    s.addLocale('dv');
+    s.setGroupTitle('g', 'Dependants');
+    const key = (s.index().get('g')!.element as UiFbGroup).key;
+    s.setEditLocale('dv');
+    s.setGroupTitle('g', 'ބެލެނިވެރިން');
+    expect((s.index().get('g')!.element as UiFbGroup).key).toBe(key);
+    expect((s.index().get('g')!.element as UiFbGroup).title).toEqual({ en: 'Dependants', dv: 'ބެލެނިވެރިން' });
+  });
+
+  it('removing a language drops its text everywhere and is one undo', () => {
+    const s = bilingual();
+    s.removeLocale('en');
+    expect(s.locales().length).toBe(2);
+    s.removeLocale('dv');
+    const a = s.field('a')!;
+    expect(a.label).toBe('Island');
+    expect(a.options![0].label).toBe('Male');
+    expect(s.def().title).toBe('Survey');
+    expect(s.def().supportedLocales?.map((l) => l.code)).toEqual(['en']);
+    s.undo();
+    expect(s.field('a')!.label).toEqual({ en: 'Island', dv: 'ރަށް' });
+  });
+
+  it('falls back to the default language when the edit language is removed', () => {
+    const s = bilingual();
+    s.setEditLocale('dv');
+    s.removeLocale('dv');
+    expect(s.editLocale()).toBe('en');
+  });
+
+  it('changes the default language and a language direction', () => {
+    const s = bilingual();
+    s.setDefaultLocale('dv');
+    expect(s.defaultLocale()).toBe('dv');
+    expect(s.locales()[0].code).toBe('dv');
+    s.setLocaleDir('en', 'rtl');
+    expect(s.locales().find((l) => l.code === 'en')!.dir).toBe('rtl');
+  });
+
+  it('replaces the whole definition as one undoable edit', () => {
+    const s = store(form([f('a', 'text')]));
+    s.replace(form([f('z', 'text')]));
+    expect(s.index().has('z')).toBe(true);
+    s.undo();
+    expect(s.index().has('a')).toBe(true);
+    expect(s.canUndo()).toBe(false);
+  });
+});
+
+describe('FbCanvas languages', () => {
+  it('lays the canvas out right to left when editing Dhivehi', () => {
+    const fx = TestBed.createComponent(CanvasHost);
+    const s = fx.componentInstance.store;
+    s.load(form([f('a', 'text', { label: { en: 'Name', dv: 'ނަން' } })]));
+    s.addLocale('dv');
+    fx.detectChanges();
+    const paper = () => (fx.nativeElement as HTMLElement).querySelector('.paper') as HTMLElement;
+    expect(paper().getAttribute('dir')).toBe('ltr');
+    expect(paper().textContent).toContain('Name');
+    s.setEditLocale('dv');
+    fx.detectChanges();
+    expect(paper().getAttribute('dir')).toBe('rtl');
+    expect(paper().getAttribute('lang')).toBe('dv');
+    expect(paper().textContent).toContain('ނަން');
+  });
+});

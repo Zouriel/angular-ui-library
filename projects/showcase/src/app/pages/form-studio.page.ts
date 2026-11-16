@@ -14,6 +14,9 @@ import {
   UiFormBuilder,
   UiFormRenderer,
   allFields,
+  fbDefaultLocale,
+  fbLocales,
+  fbText,
   formatValue,
   isEmptyValue,
   provideUiFormHttpSources,
@@ -76,7 +79,7 @@ function comparable(def: UiFormDefinition | null): string {
       <header class="bar">
         <ui-button variant="ghost" size="sm" (click)="open(null)"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />All forms</ui-button>
         <div class="title">
-          <h1>{{ f.draft.title || 'Untitled form' }}</h1>
+          <h1>{{ name(f.draft) }}</h1>
           <ui-chip [tone]="statusTone(f)"><span class="st-long">{{ statusText(f) }}</span><span class="st-short" aria-hidden="true">{{ statusShort(f) }}</span></ui-chip>
         </div>
         <ui-segmented class="tabs" size="sm" label="Section" [options]="tabOptions()" [value]="tab()" (valueChange)="setTab($any($event))" />
@@ -92,7 +95,8 @@ function comparable(def: UiFormDefinition | null): string {
             @for (x of [f.id]; track 'form:' + x) {
               <ui-form-builder #builder class="builder" [showTitle]="false" [globalSettings]="store.settings()"
                 [definition]="f.draft" (definitionChange)="store.setDraft(f.id, $event)"
-                [published]="f.published" [submissionCount]="f.responses.length">
+                [published]="f.published" [submissionCount]="f.responses.length"
+                [revisionStore]="store.revisions" (restored)="restored(f, $event)">
                 <div fbActions class="fb-actions">
                   <ui-button size="sm" [disabled]="!changed(f)" (click)="publish(f)">{{ f.published ? 'Publish changes' : 'Publish' }}</ui-button>
                 </div>
@@ -113,7 +117,10 @@ function comparable(def: UiFormDefinition | null): string {
                 </ui-empty-state>
               } @else {
                 @if (changed(f)) { <p class="note">You’re filling in the published version. Your newer edits show here after you publish them.</p> }
-                <ui-form-renderer [definition]="f.published" [globalSettings]="store.settings()" [uploader]="uploader" (submitted)="saveNew(f, $event)" />
+                @if (locales(f).length > 1) {
+                  <ui-segmented class="lang" size="sm" label="Language" [options]="localeOptions(f)" [value]="fillLocale() || locales(f)[0].code" (valueChange)="fillLocale.set($any($event))" />
+                }
+                <ui-form-renderer [definition]="f.published" [locale]="fillLocale() || locales(f)[0].code" [globalSettings]="store.settings()" [uploader]="uploader" (submitted)="saveNew(f, $event)" />
               }
             </div></div>
           }
@@ -153,7 +160,7 @@ function comparable(def: UiFormDefinition | null): string {
                       <p class="note">Saved with version {{ r.revision }}. It opens in the current version ({{ f.published.revision }}); answers the form no longer asks are kept.</p>
                     }
                     @for (x of [r.id + editing()]; track 'answer:' + x) {
-                      <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [data]="r.data" [mode]="editing() ? 'edit' : 'view'"
+                      <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [data]="r.data" [locale]="r.locale ?? ''" [mode]="editing() ? 'edit' : 'view'"
                         [uploader]="uploader" [cancelLabel]="editing() ? 'Cancel' : ''" (cancelled)="editing.set(false)"
                         (submitted)="saveEdit(f, r, $event)" />
                     }
@@ -170,13 +177,13 @@ function comparable(def: UiFormDefinition | null): string {
               <section class="json">
                 <div class="json-head"><h2>Form</h2><span class="hint">What the builder saves and the renderer reads</span>
                   <ui-button size="sm" variant="secondary" (click)="copy(formJson(f), 'Form JSON copied')">Copy</ui-button>
-                  <ui-button size="sm" variant="secondary" (click)="download(formJson(f), f.draft.title + '.form.json')">Download</ui-button></div>
+                  <ui-button size="sm" variant="secondary" (click)="download(formJson(f), name(f.draft) + '.form.json')">Download</ui-button></div>
                 <pre tabindex="0" aria-label="Form JSON">{{ formJson(f) }}</pre>
               </section>
               <section class="json">
                 <div class="json-head"><h2>Answers</h2><span class="hint">{{ f.responses.length }} saved, newest first</span>
                   <ui-button size="sm" variant="secondary" [disabled]="!f.responses.length" (click)="copy(answersJson(f), 'Answers copied')">Copy</ui-button>
-                  <ui-button size="sm" variant="secondary" [disabled]="!f.responses.length" (click)="download(answersJson(f), f.draft.title + '.answers.json')">Download</ui-button></div>
+                  <ui-button size="sm" variant="secondary" [disabled]="!f.responses.length" (click)="download(answersJson(f), name(f.draft) + '.answers.json')">Download</ui-button></div>
                 <pre tabindex="0" aria-label="Answers JSON">{{ answersJson(f) }}</pre>
               </section>
             </div></div>
@@ -209,7 +216,7 @@ function comparable(def: UiFormDefinition | null): string {
             @for (f of store.sorted(); track f.id) {
               <li class="card">
                 <button class="card-open" (click)="open(f.id)">
-                  <span class="card-title">{{ f.draft.title || 'Untitled form' }}</span>
+                  <span class="card-title">{{ name(f.draft) }}</span>
                   <span class="card-meta">{{ counts(f) }}</span>
                   <span class="when">Edited {{ when(f.updatedAt) }}</span>
                 </button>
@@ -217,8 +224,8 @@ function comparable(def: UiFormDefinition | null): string {
                   <ui-chip [tone]="statusTone(f)">{{ statusText(f) }}</ui-chip>
                   <span class="grow"></span>
                   <!-- The form's name is in hidden text, not aria-label on the host: the real <button> is inside ui-button. -->
-                  <ui-button size="sm" variant="ghost" (click)="duplicate(f.id)">Duplicate<span class="sr-only"> {{ f.draft.title || 'Untitled form' }}</span></ui-button>
-                  <ui-button size="sm" variant="ghost" (click)="toDelete.set(f)">Delete<span class="sr-only"> {{ f.draft.title || 'Untitled form' }}</span></ui-button>
+                  <ui-button size="sm" variant="ghost" (click)="duplicate(f.id)">Duplicate<span class="sr-only"> {{ name(f.draft) }}</span></ui-button>
+                  <ui-button size="sm" variant="ghost" (click)="toDelete.set(f)">Delete<span class="sr-only"> {{ name(f.draft) }}</span></ui-button>
                 </div>
               </li>
             }
@@ -253,7 +260,7 @@ function comparable(def: UiFormDefinition | null): string {
     }
 
     <ui-confirm-dialog [open]="!!toDelete()" (openChange)="!$event && toDelete.set(null)" [destructive]="true"
-      [title]="'Delete “' + (toDelete()?.draft?.title ?? '') + '”?'" [message]="deleteMessage()" confirmLabel="Delete form"
+      [title]="'Delete “' + (toDelete() ? name(toDelete()!.draft) : '') + '”?'" [message]="deleteMessage()" confirmLabel="Delete form"
       (confirm)="deleteForm()" />
     <ui-confirm-dialog [open]="confirmReset()" (openChange)="confirmReset.set($event)" [destructive]="true"
       title="Reset the studio?" message="Every form and answer saved here is deleted, and the sample form comes back." confirmLabel="Reset studio"
@@ -289,6 +296,7 @@ function comparable(def: UiFormDefinition | null): string {
     .body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .builder { flex: 1; min-height: 0; }
     .fb-actions { margin-left: var(--ui-space-2); }
+    .lang { display: block; margin-bottom: var(--ui-space-4); }
     .sheet { max-width: 760px; margin: 0 auto; padding: var(--ui-space-6) var(--ui-space-4); }
     .sheet.wide { max-width: 1080px; display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-4); }
     .json { min-width: 0; display: flex; flex-direction: column; gap: var(--ui-space-2); }
@@ -332,6 +340,8 @@ export class FormStudioPage {
   });
 
   protected readonly editing = signal(false);
+  /** The language chosen on Fill in; empty means the form's own default. */
+  protected readonly fillLocale = signal('');
   protected readonly justSaved = signal(false);
   protected readonly lastId = signal<string | null>(null);
   protected readonly toDelete = signal<StudioForm | null>(null);
@@ -353,6 +363,7 @@ export class FormStudioPage {
   }
 
   protected open(id: string | null, tab: Tab = 'build'): void {
+    this.fillLocale.set('');
     this.editing.set(false);
     this.justSaved.set(false);
     this.router.navigate([], { queryParams: id ? { form: id, tab } : {} });
@@ -373,7 +384,7 @@ export class FormStudioPage {
   }
   protected duplicate(id: string): void {
     const f = this.store.duplicate(id);
-    if (f) this.toast.success(`Saved as “${f.draft.title}”.`);
+    if (f) this.toast.success(`Saved as “${this.name(f.draft)}”.`);
   }
   protected deleteForm(): void {
     const f = this.toDelete();
@@ -409,8 +420,23 @@ export class FormStudioPage {
     this.toast.success(`Version ${def?.revision} is live. Fill in now uses it.`);
   }
 
+  protected name(def: UiFormDefinition): string {
+    return fbText(def.title, null, fbDefaultLocale(def)) || 'Untitled form';
+  }
+  protected locales(f: StudioForm) {
+    return fbLocales(f.published ?? f.draft);
+  }
+  protected localeOptions(f: StudioForm) {
+    return this.locales(f).map((l) => ({ value: l.code, label: l.label }));
+  }
+  /** A version was restored from the history: the rolled-back content is now the draft ("Unpublished changes" shows). */
+  protected restored(f: StudioForm, draft: UiFormDefinition): void {
+    this.store.setDraft(f.id, draft);
+    this.toast.success('Restored as a draft. Publish it when you’re ready.');
+  }
+
   protected saveNew(f: StudioForm, s: UiFormSubmission): void {
-    const r = this.store.addResponse(f.id, s.data, s.revision ?? f.published?.revision ?? 1);
+    const r = this.store.addResponse(f.id, s.data, s.revision ?? f.published?.revision ?? 1, s.locale);
     this.lastId.set(r.id);
     this.justSaved.set(true);
   }
@@ -459,7 +485,7 @@ export class FormStudioPage {
     return JSON.stringify(f.draft, null, 2);
   }
   protected answersJson(f: StudioForm): string {
-    return JSON.stringify(f.responses.map((r) => ({ id: r.id, revision: r.revision, submittedAt: r.submittedAt, updatedAt: r.updatedAt, data: r.data })), null, 2);
+    return JSON.stringify(f.responses.map((r) => ({ id: r.id, revision: r.revision, locale: r.locale, submittedAt: r.submittedAt, updatedAt: r.updatedAt, data: r.data })), null, 2);
   }
   protected async copy(text: string, done: string): Promise<void> {
     try {

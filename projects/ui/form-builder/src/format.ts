@@ -1,13 +1,14 @@
 import { isEmptyValue } from './conditions';
 import { isChoice } from './option-sources';
+import { fbText } from './localize';
 import type { UiFbField, UiFbFileValue } from './schema';
 
 /** An option's label for a stored value, or the value itself (marked) when the option is gone. */
-export function optionLabel(field: UiFbField, value: unknown): string {
+export function optionLabel(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null): string {
   // Sourced answers carry the label they were picked with.
   if (isChoice(value)) return value.label;
   const opt = field.options?.find((o) => o.value === String(value));
-  return opt ? opt.label : `${String(value)} (no longer an option)`;
+  return opt ? fbText(opt.label, locale, defaultLocale) : `${String(value)} (no longer an option)`;
 }
 
 function formatNumber(n: number, field: UiFbField): string {
@@ -31,15 +32,15 @@ export function formatDate(iso: string): string {
 }
 
 /** An answer as people read it: option labels, dates, money, Yes/No, file names. */
-export function formatValue(field: UiFbField, value: unknown): string {
+export function formatValue(field: UiFbField, value: unknown, locale?: string | null, defaultLocale?: string | null): string {
   if (isEmptyValue(value)) return '';
   switch (field.type) {
     case 'select':
     case 'radio':
-      return optionLabel(field, value);
+      return optionLabel(field, value, locale, defaultLocale);
     case 'checkboxes':
     case 'multiselect':
-      return (Array.isArray(value) ? value : [value]).map((v) => optionLabel(field, v)).join(', ');
+      return (Array.isArray(value) ? value : [value]).map((v) => optionLabel(field, v, locale, defaultLocale)).join(', ');
     case 'checkbox':
     case 'toggle':
       return value === true ? 'Yes' : 'No';

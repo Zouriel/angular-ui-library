@@ -9,14 +9,30 @@ import { calcOpInfo, UI_FB_CALC_OPS } from './calc';
 import { FbConditionEditor } from './builder-condition';
 import { FbBuilderStore } from './builder-store';
 import { FB_SHARED_STYLES } from './builder-styles';
+import { fbText } from './localize';
 import { fbSlug, fbUid, indexDefinition } from './definition';
 import { requiredMessage } from './engine';
 import { valueKindOf } from './field-types';
-import type { UiFbCalc, UiFbCalcArg, UiFbCalcOp, UiFbCondition, UiFbField, UiFbGroup, UiFbOption, UiFbValidatorRule } from './schema';
+import type { UiFbCalc, UiFbCalcArg, UiFbCalcOp, UiFbCondition, UiFbField, UiFbGroup, UiFbLocalizedText, UiFbOption, UiFbValidatorRule } from './schema';
 import { comparisonWords, describeDateParam, formatMessage, UI_FB_IMPLICIT_VALIDATOR, type UiFbParamSpec, type UiFbValidatorDef } from './validators';
 import { FB_ICONS } from './builder-icons';
 import { FbSourceSettings } from './builder-source';
 import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
+
+/** `ui-fb-trans` — under a text input while translating: the default language's text, to translate from. */
+@Component({
+  selector: 'ui-fb-trans',
+  template: `@if (store.defaultText(text()); as t) { <span class="trans" [attr.dir]="store.defaultDir()" [attr.lang]="store.defaultLocale()"><span class="code">{{ store.defaultLocale() }}</span> {{ t }}</span> }`,
+  styles: [`
+    :host { display: contents; }
+    .trans { display: block; margin-top: 2px; font-size: calc(12px * var(--ui-font-scale)); color: var(--ui-color-text-secondary); line-height: 1.4; overflow-wrap: anywhere; }
+    .code { text-transform: uppercase; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding-inline-end: var(--ui-space-1); color: var(--ui-color-text-secondary); }
+  `],
+})
+export class FbTransHint {
+  protected readonly store = inject(FbBuilderStore);
+  readonly text = input<UiFbLocalizedText | null | undefined>();
+}
 
 // ── Options ───────────────────────────────────────────────────────────────
 
@@ -43,27 +59,27 @@ import { UI_FB_SOURCE_FIELD_TYPES } from './option-sources';
         @for (o of f.options ?? []; track o.id; let i = $index; let last = $last) {
           <li class="opt" [class.archived]="o.archived">
             <div class="moves">
-              <button type="button" class="fb-icon-btn sm" [disabled]="i === 0" (click)="move(i, -1)" [attr.aria-label]="'Move ' + o.label + ' up'">
+              <button type="button" class="fb-icon-btn sm" [disabled]="i === 0" (click)="move(i, -1)" [attr.aria-label]="'Move ' + store.shown(o.label) + ' up'">
                 <hugeicons-icon aria-hidden="true" [icon]="upIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
-              <button type="button" class="fb-icon-btn sm" [disabled]="last" (click)="move(i, 1)" [attr.aria-label]="'Move ' + o.label + ' down'">
+              <button type="button" class="fb-icon-btn sm" [disabled]="last" (click)="move(i, 1)" [attr.aria-label]="'Move ' + store.shown(o.label) + ' down'">
                 <hugeicons-icon aria-hidden="true" [icon]="downIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
             </div>
             <div class="opt-main">
               <label class="lw"><span class="fb-sr">Option {{ i + 1 }}</span>
-                <ui-input size="sm" [ngModel]="o.label" (ngModelChange)="setLabel(o, $event)" placeholder="Option label" (keydown.enter)="addAfter(i)" /></label>
+                <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(o.label)" (ngModelChange)="setLabel(o, $event)" [placeholder]="store.defaultText(o.label) || 'Option label'" (keydown.enter)="addAfter(i)" /></label>
               @if (showValues()) {
                 <div class="val">
                   <span class="val-lbl">Saved as</span>
-                  <input class="val-in" [value]="o.value" [disabled]="locked(o)" (change)="setValue(o, $any($event.target).value)" [attr.aria-label]="'Saved value of ' + o.label" />
+                  <input class="val-in" [value]="o.value" [disabled]="locked(o)" (change)="setValue(o, $any($event.target).value)" [attr.aria-label]="'Saved value of ' + store.shown(o.label)" />
                   @if (locked(o)) { <span class="lock" title="Answers already use this value, so it can’t change.">locked</span> }
                 </div>
               }
               @if (o.archived) { <span class="arch">Archived: hidden from new answers, kept in old ones. <button type="button" class="fb-link" (click)="restore(o)">Restore</button></span> }
             </div>
             @if (!o.archived) {
-              <button type="button" class="fb-icon-btn danger" (click)="remove(o)" [attr.aria-label]="'Remove ' + o.label"
+              <button type="button" class="fb-icon-btn danger" (click)="remove(o)" [attr.aria-label]="'Remove ' + store.shown(o.label)"
                 [title]="locked(o) ? 'Archive (answers use it)' : 'Remove'">
                 <hugeicons-icon aria-hidden="true" [icon]="removeIcon" [size]="14" [strokeWidth]="1.8" />
               </button>
@@ -166,26 +182,27 @@ export class FbOptionsEditor {
 
   protected setLabel(o: UiFbOption, label: string): void {
     // The saved value follows the label until it's locked or was set by hand.
-    const follows = !this.locked(o) && (o.value === fbSlug(o.label) || /^option_?\d*$/.test(o.value) || o.value.startsWith(fbSlug(o.label) + '_'));
+    const cur = fbText(o.label, this.store.defaultLocale(), this.store.defaultLocale());
+    const follows = !this.store.translating() && !this.locked(o) && (o.value === fbSlug(cur) || /^option_?\d*$/.test(o.value) || o.value.startsWith(fbSlug(cur) + '_'));
     const value = follows ? this.uniqueValue(fbSlug(label), o.id) : o.value;
-    this.write((this.field().options ?? []).map((x) => (x.id === o.id ? { ...x, label, value } : x)), `opt:${o.id}`);
+    this.write((this.field().options ?? []).map((x) => (x.id === o.id ? { ...x, label: this.store.setText(o.label, label), value } : x)), `opt:${o.id}`);
   }
 
   protected setValue(o: UiFbOption, raw: string): void {
-    const value = this.uniqueValue(raw.trim() || fbSlug(o.label), o.id);
+    const value = this.uniqueValue(raw.trim() || fbSlug(this.store.shown(o.label)), o.id);
     this.write((this.field().options ?? []).map((x) => (x.id === o.id ? { ...x, value } : x)));
   }
 
   protected add(): void {
     const n = (this.field().options ?? []).length + 1;
-    const label = `Option ${n}`;
-    this.write([...(this.field().options ?? []), { id: fbUid('opt'), label, value: this.uniqueValue(fbSlug(label)) }]);
+    const base = `Option ${n}`;
+    this.write([...(this.field().options ?? []), { id: fbUid('opt'), label: this.store.setText('', base), value: this.uniqueValue(fbSlug(base)) }]);
   }
 
   protected addAfter(i: number): void {
     const list = [...(this.field().options ?? [])];
-    const label = `Option ${list.length + 1}`;
-    list.splice(i + 1, 0, { id: fbUid('opt'), label, value: this.uniqueValue(fbSlug(label)) });
+    const base = `Option ${list.length + 1}`;
+    list.splice(i + 1, 0, { id: fbUid('opt'), label: this.store.setText('', base), value: this.uniqueValue(fbSlug(base)) });
     this.write(list);
   }
 
@@ -206,7 +223,7 @@ export class FbOptionsEditor {
   }
 
   protected applyPaste(): void {
-    const existing = new Set((this.field().options ?? []).map((o) => o.label.trim().toLowerCase()));
+    const existing = new Set((this.field().options ?? []).map((o) => this.store.shown(o.label).trim().toLowerCase()));
     const list = [...(this.field().options ?? [])];
     for (const line of this.pasted.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)) {
       if (existing.has(line.toLowerCase())) continue;
@@ -216,7 +233,7 @@ export class FbOptionsEditor {
       let v = value;
       let n = 2;
       while (taken.has(v)) v = `${value}_${n++}`;
-      list.push({ id: fbUid('opt'), label: line, value: v });
+      list.push({ id: fbUid('opt'), label: this.store.setText('', line), value: v });
     }
     this.write(list);
     this.pasted = '';
@@ -246,8 +263,8 @@ export class FbOptionsEditor {
           @if (requiredMode() !== 'no') {
             <label class="msg">
               <span class="fb-label">Message when it’s left empty</span>
-              <ui-input size="sm" [ngModel]="f.requiredMessage ?? ''" (ngModelChange)="store.updateField(f.id, { requiredMessage: $event || undefined }, 'reqmsg:' + f.id)"
-                [placeholder]="defaultRequired()" />
+              <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(f.requiredMessage)" (ngModelChange)="store.updateField(f.id, { requiredMessage: store.setText(f.requiredMessage, $event) || undefined }, 'reqmsg:' + f.id)"
+                [placeholder]="store.defaultText(f.requiredMessage) || defaultRequired()" />
             </label>
           }
         </section>
@@ -321,7 +338,7 @@ export class FbOptionsEditor {
             }
             <label class="msg">
               <span class="fb-label">Message</span>
-              <ui-input size="sm" [ngModel]="rule.message ?? ''" (ngModelChange)="patch(rule, { message: $event || undefined }, 'msg')" [placeholder]="preview(rule, d)" />
+              <ui-input size="sm" [dir]="store.editDir()" [ngModel]="store.text(rule.message)" (ngModelChange)="patch(rule, { message: store.setText(rule.message, $event) || undefined }, 'msg')" [placeholder]="store.defaultText(rule.message) || preview(rule, d)" />
             </label>
             <div class="toggles">
               <ui-switch size="sm" [ngModel]="!!rule.when" (ngModelChange)="toggleWhen(rule, $event)">Only check sometimes</ui-switch>
@@ -384,7 +401,7 @@ export class FbChecksEditor {
     const r = this.field().required;
     return r && typeof r === 'object' ? r.when : undefined;
   });
-  protected readonly defaultRequired = computed(() => formatMessage(requiredMessage(this.field(), this.field().label || 'This field'), { label: this.field().label || 'This field' }));
+  protected readonly defaultRequired = computed(() => formatMessage(requiredMessage(this.field(), this.store.shown(this.field().label) || 'This field'), { label: this.store.shown(this.field().label) || 'This field' }));
 
   protected readonly implicitDef = computed(() => {
     const t = UI_FB_IMPLICIT_VALIDATOR[this.field().type];
@@ -486,7 +503,7 @@ export class FbChecksEditor {
 
   /** The default message with this rule's settings filled in. */
   protected preview(rule: UiFbValidatorRule, d: UiFbValidatorDef): string {
-    const vars: Record<string, unknown> = { label: this.field().label || 'This field' };
+    const vars: Record<string, unknown> = { label: this.store.shown(this.field().label) || 'This field' };
     for (const p of d.params ?? []) {
       const v = rule.params?.[p.key] ?? p.default;
       vars[p.key] = p.kind === 'field' ? `“${this.store.name(String(v ?? ''))}”` : p.kind === 'date' ? describeDateParam(v) : p.key === 'comparison' ? comparisonWords(v) : v;
@@ -588,7 +605,7 @@ export class FbCalcEditor {
       if (e.repeat && myRepeat && e.repeat.id !== myRepeat.id) continue;
       if (e.kind === 'group') {
         const g = e.element as UiFbGroup;
-        if (g.repeat && this.calc().op === 'count') out.push({ id: g.id, label: `${g.title || 'Repeating section'} (entries)` });
+        if (g.repeat && this.calc().op === 'count') out.push({ id: g.id, label: `${this.store.shown(g.title) || 'Repeating section'} (entries)` });
         continue;
       }
       const f = e.element as UiFbField;
@@ -596,7 +613,7 @@ export class FbCalcEditor {
       const kind = valueKindOf(f.type, f.props?.format);
       const ok = this.calc().op === 'count' ? true : info.dates ? kind === 'date' : info.text ? true : kind === 'number' || kind === 'boolean';
       if (!ok) continue;
-      out.push({ id: f.id, label: (f.label || f.key) + (e.repeat && !myRepeat ? ' (each entry)' : '') });
+      out.push({ id: f.id, label: (this.store.shown(f.label) || f.key) + (e.repeat && !myRepeat ? ' (each entry)' : '') });
     }
     return out;
   });

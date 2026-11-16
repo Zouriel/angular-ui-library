@@ -28,7 +28,8 @@ import {
 } from './definition';
 import { fieldTypeInfo, valueKindOf, type UiFbValueKind } from './field-types';
 import { formatValue } from './format';
-import type { UiFbCondition, UiFbElement, UiFbField, UiFbGroup, UiFbPage, UiFbSettings, UiFbStatic, UiFormDefinition } from './schema';
+import { fbDefaultDir, fbDefaultLocale, fbLocaleDir, fbLocales, fbSetText, fbText, fbTextIn } from './localize';
+import type { UiFbCondition, UiFbDir, UiFbElement, UiFbField, UiFbGroup, UiFbPage, UiFbSettings, UiFbLocalizedText, UiFbStatic, UiFormDefinition } from './schema';
 import { UI_FB_BUILTIN_VALIDATORS, type UiFbValidatorDef } from './validators';
 import type { UiFbOptionSourceDef } from './option-sources';
 
@@ -74,6 +75,26 @@ function keepRevision(target: UiFormDefinition, current: UiFormDefinition): UiFo
   if (current.revision === undefined) delete next.revision; else next.revision = current.revision;
   return next;
 }
+
+/**
+ * [value] without [code]'s entries in any text map (a map is an object whose keys are locale codes
+ * and whose values are all strings). Maps left with only the default locale collapse to a string.
+ */
+function stripLocale(value: unknown, code: string, def: string): unknown {
+  if (Array.isArray(value)) return value.map((v) => stripLocale(v, code, def));
+  if (!value || typeof value !== 'object') return value;
+  const o = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (k === 'supportedLocales') { out[k] = v; continue; }
+    if (v && typeof v === 'object' && !Array.isArray(v) && code in (v as object) && Object.values(v as object).every((x) => typeof x === 'string')) {
+      const { [code]: _gone, ...rest } = v as Record<string, string>;
+      const keys = Object.keys(rest);
+      out[k] = !keys.length ? '' : keys.length === 1 && keys[0] === def ? rest[def] : rest;
+    } else out[k] = stripLocale(v, code, def);
+  }
+  return out;
+}
 let builderSeq = 0;
 /** Edits to the same setting within this window are undone together (typing a label). */
 const MERGE_MS = 1200;
@@ -96,6 +117,78 @@ export class FbBuilderStore {
   /** An element id, a page id, or null for the form itself. */
   readonly selectedId = signal<string | null>(null);
   readonly pageIndex = signal(0);
+
+  // ── Languages ───────────────────────────────────────────────────────────
+  private readonly editLocaleRaw = signal<string | null>(null);
+  /** The languages of the form, the default one first. */
+  readonly locales = computed(() => fbLocales(this.def()));
+  readonly defaultLocale = computed(() => fbDefaultLocale(this.def()));
+  /** Whether the form has more than one language. */
+  readonly multilingual = computed(() => this.locales().length > 1);
+  /** The language being written now. Falls back to the default when the chosen one is gone. */
+  readonly editLocale = computed(() => {
+    const raw = this.editLocaleRaw();
+    return raw && this.locales().some((l) => l.code === raw) ? raw : this.defaultLocale();
+  });
+  /** Writing direction of the edit language. */
+  /** Direction of the default language (for the hint under a translation input). */
+  readonly defaultDir = computed<UiFbDir>(() => fbLocaleDir(this.def(), this.defaultLocale()));
+  readonly editDir = computed<UiFbDir>(() => fbLocaleDir(this.def(), this.editLocale()));
+  /** Whether the edit language is not the default one (so the default text is shown as a hint). */
+  readonly translating = computed(() => this.editLocale() !== this.defaultLocale());
+
+  setEditLocale(code: string): void {
+    this.editLocaleRaw.set(this.locales().some((l) => l.code === code) ? code : null);
+  }
+
+  /** [t] in the edit language with no fallback: '' when it isn't translated yet. For inputs. */
+  text(t: UiFbLocalizedText | null | undefined): string {
+    return fbTextIn(t, this.editLocale(), this.defaultLocale());
+  }
+
+  /** The default language's text, for the hint under an input while translating ('' when editing the default). */
+  defaultText(t: UiFbLocalizedText | null | undefined): string {
+    return this.translating() ? fbText(t, this.defaultLocale(), this.defaultLocale()) : '';
+  }
+
+  /** [t] as it shows on the canvas: the edit language, falling back to the default. */
+  shown(t: UiFbLocalizedText | null | undefined): string {
+    return fbText(t, this.editLocale(), this.defaultLocale());
+  }
+
+  /** [current] with the edit language's text set to [value]. */
+  setText(current: UiFbLocalizedText | null | undefined, value: string): UiFbLocalizedText {
+    return fbSetText(current, this.editLocale(), value, this.defaultLocale());
+  }
+
+  addLocale(code: string, label?: string, dir?: UiFbDir): boolean {
+    code = code.trim();
+    if (!code || this.locales().some((l) => l.code.toLowerCase() === code.toLowerCase())) return false;
+    const def = this.def();
+    const first = fbLocales(def)[0];
+    const supported = fbLocales(def).map((l) => ({ code: l.code, label: l.label, dir: l.dir }));
+    const entry = { code, ...(label?.trim() ? { label: label.trim() } : {}), dir: dir ?? fbDefaultDir(code) };
+    this.commit({ ...def, defaultLocale: first.code, supportedLocales: [...supported, entry] });
+    return true;
+  }
+
+  removeLocale(code: string): void {
+    const def = this.def();
+    if (code === this.defaultLocale() || !this.locales().some((l) => l.code === code)) return;
+    const next = stripLocale({ ...def, supportedLocales: fbLocales(def).filter((l) => l.code !== code) }, code, this.defaultLocale()) as UiFormDefinition;
+    this.commit(next);
+  }
+
+  setDefaultLocale(code: string): void {
+    const def = this.def();
+    if (!this.locales().some((l) => l.code === code) || code === this.defaultLocale()) return;
+    this.commit({ ...def, defaultLocale: code, supportedLocales: fbLocales(def) });
+  }
+
+  setLocaleDir(code: string, dir: UiFbDir): void {
+    const def = this.def();
+    this.commit({ ...def, supportedLocales: fbLocales(def).map((l) => (l.code === code ? { ...l, dir } : l)) });
+  }
 
   readonly index = computed(() => indexDefinition(this.def()));
   readonly problems = computed(() => [...lintDefinition(this.def()), ...this.sourceProblems()]);
@@ -150,6 +243,15 @@ export class FbBuilderStore {
     this.clearHistory();
     if (this.selectedId() && !indexDefinition(def).has(this.selectedId()!)) this.selectedId.set(null);
     this.pageIndex.set(Math.min(this.pageIndex(), def.pages.length - 1));
+  }
+
+  /** Replaces the whole definition as ONE undoable edit (restoring a revision), keeping the host's `revision`. */
+  replace(raw: UiFormDefinition): void {
+    const def = keepRevision(migrateDefinition(raw), this.def());
+    this.commit(def);
+    const sel = this.selectedId();
+    if (sel && !this.index().has(sel)) this.selectedId.set(null);
+    if (this.pageIndex() >= def.pages.length) this.pageIndex.set(def.pages.length - 1);
   }
 
   /** Forgets undo/redo history (e.g. the host saved and wants a fresh start). */
@@ -282,14 +384,18 @@ export class FbBuilderStore {
    * Retitles a section. Like a question's key following its label, a section's key follows its
    * title while it still has the key it was given automatically and no answers are saved under it.
    */
-  setGroupTitle(id: string, title: string): void {
+  setGroupTitle(id: string, value: string): void {
     const el = this.index().get(id)?.element;
     if (!el || !('kind' in el) || el.kind !== 'group') return;
     const g = el;
-    const slug = fbSlug(g.title || (g.repeat ? 'items' : 'section'));
+    const dl = this.defaultLocale();
+    const title = this.setText(g.title, value);
+    // The key follows the default-language title only.
+    const base = fbTextIn(g.title, dl, dl) || fbText(g.title, dl, dl);
+    const slug = fbSlug(base || (g.repeat ? 'items' : 'section'));
     const stem = (k: string) => k.replace(/_\d+$/, '');
     const auto = !!g.key && !this.hasAnswers(id) && (stem(g.key) === 'items' || stem(g.key) === slug || stem(g.key) === 'section');
-    const key = auto && title.trim() ? uniqueKey(this.def(), fbSlug(title), id) : g.key;
+    const key = auto && !this.translating() && value.trim() ? uniqueKey(this.def(), fbSlug(value), id) : g.key;
     this.updateGroup(id, { title: title || undefined, key }, `title:${id}`);
   }
 
@@ -356,7 +462,7 @@ export class FbBuilderStore {
 
   name(id: string): string {
     const e = this.index().get(id);
-    return e ? elementName(e.element, this.def()) : 'Deleted question';
+    return e ? elementName(e.element, this.def(), this.editLocale()) : 'Deleted question';
   }
 
   field(id: string): UiFbField | null {
@@ -408,18 +514,18 @@ export class FbBuilderStore {
       if (e.id === forId && e.kind === 'field') continue;
       const el = e.element;
       if ('kind' in el && el.archived) continue;
-      const where = elementName(e.page, def);
+      const where = elementName(e.page, def, this.editLocale());
       if (e.kind === 'page') {
-        if (def.pages.length > 1 && e.id !== forId) out.push({ id: e.id, label: elementName(el, def), kind: 'page', where: 'Page' });
+        if (def.pages.length > 1 && e.id !== forId) out.push({ id: e.id, label: elementName(el, def, this.editLocale()), kind: 'page', where: 'Page' });
         continue;
       }
       if (e.repeat && e.repeat.id !== myRepeat?.id) continue;
       if (e.kind === 'group') {
         if (e.id === forId) continue;
-        out.push({ id: e.id, label: elementName(el, def), kind: (el as UiFbGroup).repeat ? 'repeat' : 'group', where });
+        out.push({ id: e.id, label: elementName(el, def, this.editLocale()), kind: (el as UiFbGroup).repeat ? 'repeat' : 'group', where });
       } else if (e.kind === 'field') {
         const f = el as UiFbField;
-        out.push({ id: e.id, label: f.label || f.key, kind: valueKindOf(f.type, f.props?.format), where });
+        out.push({ id: e.id, label: this.shown(f.label) || f.key, kind: valueKindOf(f.type, f.props?.format), where });
       }
     }
     return out;

@@ -47,7 +47,7 @@ export interface FbDeleteRequest {
           <button type="button" role="tab" class="tab" [class.on]="i === store.pageIndex()" [class.over]="dropOver() === 'tab:' + p.id"
             [id]="store.uid + '-tab-' + p.id" [attr.aria-controls]="store.uid + '-page'" [tabindex]="i === store.pageIndex() ? 0 : -1"
             [attr.aria-selected]="i === store.pageIndex()" [attr.data-fb-page-drop]="p.id" (click)="openPage(i)">
-            <span class="tab-name">{{ p.title || 'Page ' + (i + 1) }}</span>
+            <span class="tab-name">{{ store.shown(p.title) || 'Page ' + (i + 1) }}</span>
             @if (p.visibility || p.jumps?.length) { <span class="dot-logic" title="This page has rules"></span><span class="fb-sr">, has rules</span> }
           </button>
         }
@@ -59,20 +59,20 @@ export interface FbDeleteRequest {
 
     <div class="scroll" data-fb-scroll tabindex="-1" role="tabpanel" [id]="store.uid + '-page'"
       [attr.aria-labelledby]="store.uid + '-tab-' + page.id" (click)="backgroundClick($event)">
-      <div class="paper">
+      <div class="paper" [attr.dir]="store.editDir()" [attr.lang]="store.editLocale()">
         <button type="button" class="form-head" [class.selected]="store.selectedId() === null" (click)="store.select(null); $event.stopPropagation()">
-          <span class="form-title">{{ def.title || 'Untitled form' }}</span>
-          @if (def.description) { <span class="form-desc">{{ def.description }}</span> }
+          <span class="form-title">{{ store.shown(def.title) || 'Untitled form' }}</span>
+          @if (store.shown(def.description)) { <span class="form-desc">{{ store.shown(def.description) }}</span> }
         </button>
         @if (def.pages.length > 1) {
           <div class="page-head" [class.selected]="store.selectedId() === page.id">
             <button type="button" class="page-open" (click)="openSettings(page.id, $event)" title="Page settings">
-              <span class="page-title">{{ page.title || 'Page ' + (store.pageIndex() + 1) }}</span>
+              <span class="page-title">{{ store.shown(page.title) || 'Page ' + (store.pageIndex() + 1) }}</span>
               @if (page.visibility) { <span class="fb-chip logic" [title]="pageRule()">{{ page.visibility.action === 'show' ? 'Shown when…' : 'Skipped when…' }}</span> }
               @if (page.jumps?.length) { <span class="fb-chip logic">{{ page.jumps!.length }} jump{{ page.jumps!.length > 1 ? 's' : '' }}</span> }
             </button>
             <ui-menu [items]="pageItems()" (select)="pageAction(page.id, $event)">
-              <button menu-trigger type="button" class="fb-icon-btn page-more" [attr.aria-label]="'Actions for ' + (page.title || 'this page')" title="Page actions">
+              <button menu-trigger type="button" class="fb-icon-btn page-more" [attr.aria-label]="'Actions for ' + (store.shown(page.title) || 'this page')" title="Page actions">
                 <hugeicons-icon aria-hidden="true" [icon]="moreIcon" [size]="16" [strokeWidth]="1.8" />
               </button>
             </ui-menu>
@@ -172,25 +172,25 @@ export interface FbDeleteRequest {
       @let f = asField(el);
       @let info = typeInfo(f.type);
       <div class="card field" tabindex="0" role="group" [attr.aria-current]="store.selectedId() === f.id ? true : null"
-        [attr.aria-label]="(f.label || info.label) + ', ' + info.label + ' field'"
+        [attr.aria-label]="(store.shown(f.label) || info.label) + ', ' + info.label + ' field'"
         (click)="pick(f.id, $event)" (dblclick)="openSettings(f.id, $event)" (pointerdown)="pressStart(f.id, $event)" (contextmenu)="noTouchMenu($event)" (keydown)="keys(f.id, $event)">
         <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: f }" />
         <div class="main">
           <div class="head">
             <span class="type-ico" [title]="info.label"><hugeicons-icon aria-hidden="true" [icon]="fieldIcons[f.type]" [size]="13" [strokeWidth]="1.8" /></span>
-            <span class="label" [class.muted]="!f.label">{{ f.label || 'No label' }}@if (f.required === true) {<span class="req">*</span>}</span>
+            <span class="label" [class.muted]="!store.shown(f.label)">{{ store.shown(f.label) || 'No label' }}@if (f.required === true) {<span class="req">*</span>}</span>
             <ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: f }" />
           </div>
           <div class="mock" aria-hidden="true" [attr.data-type]="f.type">
             @switch (f.type) {
-              @case ('textarea') { <div class="box tall">{{ f.placeholder }}</div> }
-              @case ('select') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : f.placeholder || 'Choose…' }}</div> }
-              @case ('multiselect') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : f.placeholder || 'Choose…' }}</div> }
+              @case ('textarea') { <div class="box tall">{{ store.shown(f.placeholder) }}</div> }
+              @case ('select') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : store.shown(f.placeholder) || 'Choose…' }}</div> }
+              @case ('multiselect') { <div class="box chev">{{ f.source ? 'Search ' + sourceName(f).toLowerCase() + '…' : store.shown(f.placeholder) || 'Choose…' }}</div> }
               @case ('radio') { <ng-container [ngTemplateOutlet]="opts" [ngTemplateOutletContext]="{ $implicit: f, round: true }" /> }
               @case ('checkboxes') { <ng-container [ngTemplateOutlet]="opts" [ngTemplateOutletContext]="{ $implicit: f, round: false }" /> }
-              @case ('checkbox') { <div class="choice"><span class="tick"></span>{{ f.props?.caption || f.label }}</div> }
-              @case ('toggle') { <div class="choice"><span class="switch"></span>{{ f.props?.caption || 'Yes' }}</div> }
-              @case ('date') { <div class="box icon">{{ f.placeholder || 'Select a date' }}<hugeicons-icon aria-hidden="true" [icon]="calIcon" [size]="13" [strokeWidth]="1.8" /></div> }
+              @case ('checkbox') { <div class="choice"><span class="tick"></span>{{ store.shown(f.props?.caption) || store.shown(f.label) }}</div> }
+              @case ('toggle') { <div class="choice"><span class="switch"></span>{{ store.shown(f.props?.caption) || 'Yes' }}</div> }
+              @case ('date') { <div class="box icon">{{ store.shown(f.placeholder) || 'Select a date' }}<hugeicons-icon aria-hidden="true" [icon]="calIcon" [size]="13" [strokeWidth]="1.8" /></div> }
               @case ('time') { <div class="box icon">--:--<hugeicons-icon aria-hidden="true" [icon]="clockIcon" [size]="13" [strokeWidth]="1.8" /></div> }
               @case ('rating') {
                 <div class="stars">@for (s of stars(f); track $index) { <hugeicons-icon aria-hidden="true" [icon]="starIcon" [size]="15" [strokeWidth]="1.6" /> }</div>
@@ -199,11 +199,11 @@ export interface FbDeleteRequest {
               @case ('file') { <div class="box drop"><hugeicons-icon aria-hidden="true" [icon]="fileIcon" [size]="14" [strokeWidth]="1.8" />Drop files or browse</div> }
               @case ('calculated') { <div class="box calc">= {{ store.describeCalc(f) }}</div> }
               @case ('hidden') { <div class="hidden-note">Stored as “{{ f.key }}”, never shown{{ f.defaultValue != null && f.defaultValue !== '' ? ': ' + f.defaultValue : '' }}</div> }
-              @case ('currency') { <div class="box">{{ f.placeholder }}<span class="suffix">{{ f.props?.currency }}</span></div> }
-              @default { <div class="box">{{ f.placeholder }}</div> }
+              @case ('currency') { <div class="box">{{ store.shown(f.placeholder) }}<span class="suffix">{{ f.props?.currency }}</span></div> }
+              @default { <div class="box">{{ store.shown(f.placeholder) }}</div> }
             }
           </div>
-          @if (f.help) { <p class="help">{{ f.help }}</p> }
+          @if (store.shown(f.help)) { <p class="help">{{ store.shown(f.help) }}</p> }
         </div>
         <ng-container [ngTemplateOutlet]="tools" [ngTemplateOutletContext]="{ $implicit: f }" />
       </div>
@@ -212,7 +212,7 @@ export interface FbDeleteRequest {
     <ng-template #opts let-f let-round="round">
       <div class="opts">
         @for (o of liveOptions(f).slice(0, 3); track o.id) {
-          <span class="choice"><span [class]="round ? 'dot' : 'tick'"></span>{{ o.label }}</span>
+          <span class="choice"><span [class]="round ? 'dot' : 'tick'"></span>{{ store.shown(o.label) }}</span>
         }
         @if (liveOptions(f).length > 3) { <span class="more-opts">+{{ liveOptions(f).length - 3 }} more</span> }
       </div>
@@ -225,8 +225,8 @@ export interface FbDeleteRequest {
         <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: s }" />
         <div class="main">
           @switch (s.type) {
-            @case ('heading') { <div class="head"><span class="st-heading">{{ s.text || 'Heading' }}</span><ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: s }" /></div> }
-            @case ('paragraph') { <div class="head"><span class="st-para">{{ s.text || 'Text block' }}</span><ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: s }" /></div> }
+            @case ('heading') { <div class="head"><span class="st-heading">{{ store.shown(s.text) || 'Heading' }}</span><ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: s }" /></div> }
+            @case ('paragraph') { <div class="head"><span class="st-para">{{ store.shown(s.text) || 'Text block' }}</span><ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: s }" /></div> }
             @default { <div class="head"><span class="st-divider"></span><ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: s }" /></div> }
           }
         </div>
@@ -242,7 +242,7 @@ export interface FbDeleteRequest {
           (click)="pick(g.id, $event)" (dblclick)="openSettings(g.id, $event)" (pointerdown)="pressStart(g.id, $event)" (contextmenu)="noTouchMenu($event)" (keydown)="keys(g.id, $event)">
           <ng-container [ngTemplateOutlet]="grip" [ngTemplateOutletContext]="{ $implicit: g }" />
           <span class="type-ico"><hugeicons-icon aria-hidden="true" [icon]="g.repeat ? repeatIcon : groupIcon" [size]="13" [strokeWidth]="1.8" /></span>
-          <span class="label strong">{{ g.title || (g.repeat ? 'Repeating section' : 'Section') }}</span>
+          <span class="label strong">{{ store.shown(g.title) || (g.repeat ? 'Repeating section' : 'Section') }}</span>
           @if (g.repeat) { <span class="fb-chip">{{ repeatText(g) }}</span> }
           <ng-container [ngTemplateOutlet]="badges" [ngTemplateOutletContext]="{ $implicit: g }" />
           <ng-container [ngTemplateOutlet]="tools" [ngTemplateOutletContext]="{ $implicit: g }" />
@@ -284,8 +284,8 @@ export interface FbDeleteRequest {
     .scroll { flex: 1; min-height: 0; overflow: auto; padding: var(--ui-space-4) var(--ui-space-3) var(--ui-space-12); overscroll-behavior: contain; }
     .paper { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--ui-space-3); container: fb-paper / inline-size; }
     .form-head, .page-open { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: var(--ui-space-2) var(--ui-space-3);
-      border: 1px solid transparent; border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text); font: inherit; text-align: left; cursor: pointer; }
-    .page-head { display: flex; align-items: center; gap: var(--ui-space-1); border: 1px solid transparent; border-radius: var(--ui-radius); padding-right: var(--ui-space-1); }
+      border: 1px solid transparent; border-radius: var(--ui-radius); background: transparent; color: var(--ui-color-text); font: inherit; text-align: start; cursor: pointer; }
+    .page-head { display: flex; align-items: center; gap: var(--ui-space-1); border: 1px solid transparent; border-radius: var(--ui-radius); padding-inline-end: var(--ui-space-1); }
     .page-open { flex: 1; min-width: 0; flex-direction: row; align-items: center; gap: var(--ui-space-2); flex-wrap: wrap; padding-top: 4px; padding-bottom: 4px; border: 0; }
     .form-head:hover, .page-head:hover { border-color: var(--ui-color-border); }
     .form-head.selected, .page-head.selected { border-color: var(--ui-color-primary); }
@@ -321,12 +321,12 @@ export interface FbDeleteRequest {
     .grip:active { cursor: grabbing; }
     @media (pointer: coarse) { .grip { width: 32px; height: 36px; margin-inline: 0; opacity: 0.8; } }
     .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
-    .head { display: flex; align-items: center; gap: 6px; min-height: 20px; flex-wrap: wrap; padding-right: 4px; }
+    .head { display: flex; align-items: center; gap: 6px; min-height: 20px; flex-wrap: wrap; padding-inline-end: 4px; }
     .type-ico { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: var(--ui-radius-xs); color: var(--ui-color-text-muted); background: var(--ui-color-surface-hover); }
     .label { font-size: calc(13px * var(--ui-font-scale)); font-weight: 550; color: var(--ui-color-text); min-width: 0; overflow-wrap: anywhere; }
     .label.strong { font-weight: 600; }
     .label.muted { color: var(--ui-color-text-muted); font-style: italic; font-weight: 400; }
-    .req { color: var(--ui-color-danger); margin-left: 3px; }
+    .req { color: var(--ui-color-danger); margin-inline-start: 3px; }
     .badges { display: inline-flex; flex-wrap: wrap; gap: 4px; }
     .help { margin: 0; font-size: 12px; color: var(--ui-color-text-muted); line-height: 1.35; }
     .mock { pointer-events: none; }
@@ -334,8 +334,8 @@ export interface FbDeleteRequest {
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius-xs); background: var(--ui-color-bg);
       font-size: 12px; color: var(--ui-color-text-muted); overflow: hidden; white-space: nowrap; }
     .box.tall { height: 52px; align-items: flex-start; padding-top: 6px; }
-    .box.chev::after { content: ''; margin-left: auto; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
-    .box.icon hugeicons-icon, .box .suffix { margin-left: auto; }
+    .box.chev::after { content: ''; margin-inline-start: auto; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); }
+    .box.icon hugeicons-icon, .box .suffix { margin-inline-start: auto; }
     .box.drop { border-style: dashed; justify-content: center; height: 36px; }
     .box.calc { border-style: dashed; background: transparent; color: var(--ui-color-text-secondary); }
     .opts { display: flex; flex-wrap: wrap; gap: 4px var(--ui-space-3); }
@@ -344,7 +344,7 @@ export interface FbDeleteRequest {
     .dot { border-radius: 50%; }
     .tick { border-radius: 3px; }
     .switch { width: 24px; height: 14px; border-radius: 7px; background: var(--ui-color-track, var(--ui-color-border)); position: relative; }
-    .switch::after { content: ''; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ui-color-text-muted); }
+    .switch::after { content: ''; position: absolute; inset-inline-start: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ui-color-text-muted); }
     .more-opts { font-size: 12px; color: var(--ui-color-text-muted); }
     .stars { display: flex; gap: 2px; color: var(--ui-color-text-muted); }
     .slider { position: relative; display: flex; align-items: center; gap: var(--ui-space-2); height: 20px; }
@@ -356,7 +356,7 @@ export interface FbDeleteRequest {
     .st-heading { font-family: var(--ui-font-display); font-size: calc(15px * var(--ui-font-scale)); font-weight: 600; }
     .st-para { font-size: 12px; color: var(--ui-color-text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .st-divider { flex: 1; min-width: 60px; height: 1px; background: var(--ui-color-border); }
-    .tools { position: absolute; top: -13px; right: 6px; z-index: 2; display: flex; gap: 1px; padding: 1px;
+    .tools { position: absolute; top: -13px; inset-inline-end: 6px; z-index: 2; display: flex; gap: 1px; padding: 1px;
       border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface)); box-shadow: var(--ui-shadow-1); }
     .card.group { flex-direction: column; align-items: stretch; gap: var(--ui-space-2); padding: 0 var(--ui-space-2) var(--ui-space-2); cursor: default;
       background: color-mix(in srgb, var(--ui-color-surface) 55%, var(--ui-color-bg)); }
@@ -606,7 +606,7 @@ export class FbCanvas {
     const items: UiMenuItem[] = [];
     if (entry?.parentId && this.store.index().get(entry.parentId)?.kind === 'group') items.push({ label: 'Move out of the section', value: 'out' });
     this.store.def().pages.forEach((p, i) => {
-      if (p.id !== entry?.page.id) items.push({ label: `Move to ${p.title || 'Page ' + (i + 1)}`, value: `page:${p.id}` });
+      if (p.id !== entry?.page.id) items.push({ label: `Move to ${this.store.shown(p.title) || 'Page ' + (i + 1)}`, value: `page:${p.id}` });
     });
     items.push(el.archived ? { label: 'Restore', value: 'restore' } : { label: 'Archive (hide, keep answers)', value: 'archive' });
     return items;

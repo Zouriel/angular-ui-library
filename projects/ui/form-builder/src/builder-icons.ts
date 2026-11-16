@@ -41,6 +41,8 @@ import Redo02Icon from '@hugeicons/core-free-icons/Redo02Icon';
 import RefreshIcon from '@hugeicons/core-free-icons/RefreshIcon';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import Settings02Icon from '@hugeicons/core-free-icons/Settings02Icon';
+import TranslateIcon from '@hugeicons/core-free-icons/TranslateIcon';
+import HistoryIcon from '@hugeicons/core-free-icons/HistoryIcon';
 import Undo02Icon from '@hugeicons/core-free-icons/Undo02Icon';
 import type { UiFbFieldType, UiFbStaticType } from './schema';
 
@@ -123,6 +125,8 @@ export const FB_ICONS = {
   TextAlignLeftIcon,
   TextIcon,
   ToggleOnIcon,
+  TranslateIcon,
+  HistoryIcon,
   Undo02Icon,
   ViewOffIcon,
 } as const satisfies Record<string, IconSvgObject>;

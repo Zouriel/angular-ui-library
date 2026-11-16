@@ -1,3 +1,4 @@
+import { fbDefaultLocale, fbLocales, fbLocaleName, fbText, fbTextIn } from './localize';
 import { fieldTypeInfo, typesCompatible, valueKindOf } from './field-types';
 import {
   UI_FB_SCHEMA_VERSION,
@@ -9,8 +10,11 @@ import {
   type UiFbFieldType,
   type UiFbGroup,
   type UiFbOperand,
+  type UiFbLocale,
+  type UiFbLocalizedText,
   type UiFbPage,
   type UiFbSettings,
+  type UiFbSubmissionField,
   type UiFbStatic,
   type UiFbStaticType,
   type UiFbToggle,
@@ -55,6 +59,8 @@ export function createDefinition(title = 'Untitled form', defaults?: UiFbSetting
     schemaVersion: UI_FB_SCHEMA_VERSION,
     id: fbUid('form'),
     title,
+    defaultLocale: 'en',
+    supportedLocales: [{ code: 'en' }],
     revision: 0,
     settings: { ...(defaults ?? {}) },
     pages: [createPage()],
@@ -159,17 +165,19 @@ export function allFields(def: UiFormDefinition): UiFbField[] {
   return allElements(def).filter((e): e is UiFbField => e.kind === 'field');
 }
 
-/** A short human name for any element or page. */
-export function elementName(el: UiFbElement | UiFbPage | undefined, def?: UiFormDefinition): string {
+/** A short human name for any element or page, in [locale] (default: the form's default language). */
+export function elementName(el: UiFbElement | UiFbPage | undefined, def?: UiFormDefinition, locale?: string | null): string {
   if (!el) return 'Missing item';
+  const dl = fbDefaultLocale(def);
+  const t = (x: UiFbLocalizedText | undefined) => fbText(x, locale ?? dl, dl);
   if (!('kind' in el)) {
     const i = def ? def.pages.indexOf(el) : -1;
-    return el.title || (i >= 0 ? `Page ${i + 1}` : 'Page');
+    return t(el.title) || (i >= 0 ? `Page ${i + 1}` : 'Page');
   }
-  if (el.kind === 'field') return el.label || el.key;
-  if (el.kind === 'group') return el.title || (el.repeat ? 'Repeating section' : 'Section');
+  if (el.kind === 'field') return t(el.label) || el.key;
+  if (el.kind === 'group') return t(el.title) || (el.repeat ? 'Repeating section' : 'Section');
   if (el.type === 'divider') return 'Divider';
-  return (el.text ?? '').slice(0, 40) || (el.type === 'heading' ? 'Heading' : 'Text block');
+  return t(el.text).slice(0, 40) || (el.type === 'heading' ? 'Heading' : 'Text block');
 }
 
 // ── Immutable edits ───────────────────────────────────────────────────────
@@ -620,6 +628,7 @@ export interface UiFbProblem {
 export function lintDefinition(def: UiFormDefinition): UiFbProblem[] {
   const out: UiFbProblem[] = [];
   const idx = indexDefinition(def);
+  const dl = fbDefaultLocale(def);
   const name = (id: string) => elementName(idx.get(id)?.element, def);
   const keys = new Map<string, string>();
   for (const entry of idx.values()) {
@@ -634,7 +643,7 @@ export function lintDefinition(def: UiFormDefinition): UiFbProblem[] {
       else keys.set(sig, el.id);
     }
     if (el.kind === 'field') {
-      if (!el.label?.trim() && el.type !== 'hidden') out.push({ severity: 'warning', targetId: el.id, message: `A ${fieldTypeInfo(el.type).label.toLowerCase()} field has no label.` });
+      if (!fbText(el.label, dl, dl).trim() && el.type !== 'hidden') out.push({ severity: 'warning', targetId: el.id, message: `A ${fieldTypeInfo(el.type).label.toLowerCase()} field has no label.` });
       // Options from a data source live in the app, so there's nothing typed to check.
       if (fieldTypeInfo(el.type).hasOptions && !el.source) {
         const live = (el.options ?? []).filter((o) => !o.archived);
@@ -680,20 +689,100 @@ export function lintDefinition(def: UiFormDefinition): UiFbProblem[] {
   for (const loop of findCycles(def)) {
     out.push({ severity: 'error', targetId: loop[0], message: `These depend on each other in a loop: ${loop.map((id) => `“${name(id)}”`).join(' → ')} → “${name(loop[0])}”.` });
   }
+  out.push(...lintTranslations(def));
+  return out;
+}
+
+/** One text of an element: what it is called in a warning and its value. */
+type TextSlot = [what: string, text: UiFbLocalizedText | undefined, id?: string];
+
+function elementTexts(el: UiFbElement | UiFbPage): TextSlot[] {
+  if (!('kind' in el)) return [['title', el.title], ['description', el.description]];
+  if (el.kind === 'static') return [['text', el.text]];
+  if (el.kind === 'group') {
+    return [['title', el.title], ['description', el.description], ['add button label', el.repeat?.addLabel], ['entry label', el.repeat?.itemLabel]];
+  }
+  const slots: TextSlot[] = [['label', el.label], ['help text', el.help], ['placeholder', el.placeholder], ['checkbox text', el.props?.caption], ['required message', el.requiredMessage]];
+  (el.options ?? []).filter((o) => !o.archived).forEach((o, i) => slots.push([`option ${i + 1}`, o.label, `o:${o.id}`]));
+  (el.validators ?? []).forEach((v, i) => slots.push([`message of rule ${i + 1}`, v.message, `v:${v.id}`]));
+  return slots;
+}
+
+/** Texts written in the default language but not yet in another supported one. One warning per element and language. */
+export function lintTranslations(def: UiFormDefinition): UiFbProblem[] {
+  const locales = fbLocales(def);
+  if (locales.length < 2) return [];
+  const dl = locales[0].code;
+  const out: UiFbProblem[] = [];
+  const check = (targetId: string, label: string, slots: TextSlot[]) => {
+    for (const l of locales.slice(1)) {
+      const missing = slots
+        .filter(([, t]) => fbText(t, dl, dl).trim() && !fbTextIn(t, l.code, dl).trim())
+        .map(([what]) => what);
+      if (missing.length) {
+        out.push({ severity: 'warning', targetId, message: `“${label}” has no ${l.label} (${l.code}) translation for: ${missing.join(', ')}.` });
+      }
+    }
+  };
+  const first = def.pages[0]?.id ?? '';
+  check(first, fbText(def.title, dl, dl) || 'Form', [['title', def.title], ['description', def.description]]);
+  const s = def.settings;
+  if (s) check(first, 'Form settings', [['submit label', s.submitLabel], ['next label', s.nextLabel], ['back label', s.backLabel]]);
+  const idx = indexDefinition(def);
+  for (const entry of idx.values()) {
+    const el = entry.element;
+    if ('kind' in el && el.archived) continue;
+    const slots = elementTexts(el);
+    if (slots.some(([, t]) => t != null)) check(el.id, elementName(el, def, dl), slots);
+  }
+  return out;
+}
+
+/**
+ * Every field that stores data, with where it sits in a submission's `data`:
+ * `name`, `address.city`, `children[].age` (inside a repeating section).
+ */
+export function fbSubmissionFields(def: UiFormDefinition, locale?: string | null): UiFbSubmissionField[] {
+  const dl = fbDefaultLocale(def);
+  const loc = locale || dl;
+  const out: UiFbSubmissionField[] = [];
+  const visit = (els: UiFbElement[], prefix: string) => {
+    for (const el of els) {
+      if (el.archived) continue;
+      if (el.kind === 'group') {
+        const base = el.key ? `${prefix}${el.key}${el.repeat ? '[]' : ''}.` : prefix;
+        visit(el.elements, base);
+      } else if (el.kind === 'field') {
+        if (el.props?.excludeFromData) continue;
+        out.push({ path: `${prefix}${el.key}`, key: el.key, label: fbText(el.label, loc, dl) || el.key, type: el.type });
+      }
+    }
+  };
+  def.pages.forEach((p) => visit(p.elements, ''));
   return out;
 }
 
 // ── Loading and comparing versions ────────────────────────────────────────
 
-/** Brings a stored definition up to the current schema version and fills in defaults. */
+/** Brings a stored definition up to the current schema version and fills in defaults. Idempotent. */
 export function migrateDefinition(raw: unknown): UiFormDefinition {
   const d = (raw && typeof raw === 'object' ? structuredClone(raw) : {}) as Partial<UiFormDefinition>;
   const pages = Array.isArray(d.pages) && d.pages.length ? d.pages : [createPage()];
+  const defaultLocale = (typeof d.defaultLocale === 'string' && d.defaultLocale) || 'en';
+  const supported: UiFbLocale[] = [];
+  const list = Array.isArray(d.supportedLocales) ? (d.supportedLocales as (UiFbLocale | string)[]) : [];
+  for (const l of list) {
+    const loc: UiFbLocale | null = typeof l === 'string' ? (l ? { code: l } : null) : l && typeof l === 'object' && l.code ? l : null;
+    if (loc && !supported.some((x) => x.code === loc.code)) supported.push(loc);
+  }
+  if (!supported.some((x) => x.code === defaultLocale)) supported.unshift({ code: defaultLocale });
   return {
     ...d,
     schemaVersion: UI_FB_SCHEMA_VERSION,
     id: d.id || fbUid('form'),
     title: d.title ?? 'Untitled form',
+    defaultLocale,
+    supportedLocales: supported,
     settings: d.settings ?? {},
     pages: pages.map((p) => ({ ...p, id: p.id || fbUid('page'), elements: p.elements ?? [] })),
   };
@@ -708,8 +797,22 @@ export interface UiFbDiff {
   typeChanged: { id: string; from: UiFbFieldType; to: UiFbFieldType; compatible: boolean }[];
   optionsRemoved: { id: string; values: string[] }[];
   rulesChanged: string[];
+  /** Elements whose text (or a translation of it) changed. */
+  textChanged: string[];
+  /** Language codes added to / removed from the form. */
+  localesAdded: string[];
+  localesRemoved: string[];
   /** One line per change, for a "what will change" summary. */
   summary: string[];
+}
+
+/** Whether any text of the element, or a translation of it, differs. Options and rules added or removed are reported elsewhere. */
+function textsChanged(a: UiFbElement | UiFbPage, b: UiFbElement | UiFbPage): boolean {
+  const mine = new Map(elementTexts(a).map(([what, t, id]) => [id ?? what, JSON.stringify(t ?? null)]));
+  return elementTexts(b).some(([what, t, id]) => {
+    const key = id ?? what;
+    return mine.has(key) && mine.get(key) !== JSON.stringify(t ?? null);
+  });
 }
 
 function rulesSig(el: UiFbElement): string {
@@ -722,8 +825,12 @@ function rulesSig(el: UiFbElement): string {
 export function diffDefinitions(before: UiFormDefinition, after: UiFormDefinition): UiFbDiff {
   const a = new Map(allElements(before).map((e) => [e.id, e]));
   const b = new Map(allElements(after).map((e) => [e.id, e]));
-  const diff: UiFbDiff = { added: [], removed: [], archived: [], restored: [], renamedKeys: [], typeChanged: [], optionsRemoved: [], rulesChanged: [], summary: [] };
+  const diff: UiFbDiff = { added: [], removed: [], archived: [], restored: [], renamedKeys: [], typeChanged: [], optionsRemoved: [], rulesChanged: [], textChanged: [], localesAdded: [], localesRemoved: [], summary: [] };
   const nm = (e: UiFbElement) => `“${elementName(e)}”`;
+  const la = fbLocales(before).map((l) => l.code);
+  const lb = fbLocales(after).map((l) => l.code);
+  for (const c of lb.filter((c) => !la.includes(c))) { diff.localesAdded.push(c); diff.summary.push(`Added the language ${fbLocaleName(c)} (${c})`); }
+  for (const c of la.filter((c) => !lb.includes(c))) { diff.localesRemoved.push(c); diff.summary.push(`Removed the language ${fbLocaleName(c)} (${c}). Its translations are dropped`); }
   for (const [id, e] of b) {
     const old = a.get(id);
     if (!old) { diff.added.push(id); diff.summary.push(`Added ${nm(e)}`); continue; }
@@ -751,6 +858,7 @@ export function diffDefinitions(before: UiFormDefinition, after: UiFormDefinitio
         diff.summary.push(`Changed the data source settings of ${nm(e)}`);
       }
     }
+    if (textsChanged(old, e)) { diff.textChanged.push(id); diff.summary.push(`Changed the wording or translations of ${nm(e)}`); }
     if (rulesSig(old) !== rulesSig(e)) { diff.rulesChanged.push(id); diff.summary.push(`Changed the rules of ${nm(e)}`); }
   }
   for (const [id, e] of a) {

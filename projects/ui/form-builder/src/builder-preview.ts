@@ -1,5 +1,5 @@
 import { JsonPipe } from '@angular/common';
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
@@ -22,6 +22,9 @@ import { FB_ICONS } from './builder-icons';
     <div class="bar">
       <ui-segmented size="sm" label="Screen size" [options]="devices" [value]="device()" (valueChange)="device.set($any($event))" />
       <ui-segmented size="sm" label="Try it as" [options]="modes" [value]="mode()" (valueChange)="setMode($any($event))" />
+      @if (store.multilingual()) {
+        <ui-segmented size="sm" label="Language" [options]="localeOptions()" [value]="locale()" (valueChange)="locale.set($any($event))" />
+      }
       <ui-button size="sm" variant="ghost" (click)="restart()"><hugeicons-icon aria-hidden="true" [icon]="resetIcon" [size]="14" [strokeWidth]="1.8" />Start again</ui-button>
       <ui-switch class="data-toggle" size="sm" [ngModel]="showData()" (ngModelChange)="showData.set($event)">Show saved data</ui-switch>
     </div>
@@ -39,13 +42,13 @@ import { FB_ICONS } from './builder-icons';
           @if (device() === 'phone') {
             <ui-device-frame [width]="390" [height]="760" class="phone">
               <div class="phone-scroll">
-                <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()"
+                <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
                   (submitted)="submitted($event)" />
               </div>
             </ui-device-frame>
           } @else {
             <div class="desktop">
-              <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()"
+              <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
                 (submitted)="submitted($event)" />
             </div>
           }
@@ -94,6 +97,9 @@ export class FbPreview {
   protected readonly device = signal<'desktop' | 'phone'>(typeof matchMedia !== 'undefined' && matchMedia('(max-width: 720px)').matches ? 'phone' : 'desktop');
   protected readonly mode = signal<'create' | 'edit' | 'view'>('create');
   protected readonly showData = signal(true);
+  /** The language the form is previewed in; starts at the one being edited. */
+  protected readonly locale = linkedSignal(() => this.store.editLocale());
+  protected readonly localeOptions = computed(() => this.store.locales().map((l) => ({ value: l.code, label: l.label })));
   private readonly renderer = viewChild(UiFormRenderer);
   /** The answers as they'd be saved right now, straight from the running form. */
   protected readonly live = computed(() => this.renderer()?.engine()?.data() ?? {});

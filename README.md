@@ -47,6 +47,15 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   series) from a zero baseline, with a tooltip on hover, tap and arrow keys, a table for screen readers, label
   thinning, sideways scrolling inside itself and `--ui-chart-1..4` colours checked in every theme (the twin
   of Flutter's `UiBarChart`).
+- **Form builder languages, history and workflow handoff** (`@zouriel/ui/form-builder`, 0.84.0): form schema 2.
+  Every text can be one string or a map per language (`{ en, dv }`, read with `fbText()`); a form lists its
+  `supportedLocales`, the builder has a language switcher and a Languages dialog, `lintDefinition` warns about
+  missing translations, and `ui-form-renderer [locale]` shows the form in that language and direction (Dhivehi
+  is right to left). `UiFbRevisionStore` with `ui-form-builder [revisionStore]` keeps published versions and
+  restores one as a draft without losing saved answers. `UiFormSubmission` now carries `locale`, `fields` and
+  the host's `workflowId` / `serviceCode`, and `@zouriel/ui/workflow` has a bridge (`wfPickWorkflow`,
+  `wfRouteSubmission`, `wfStartFromSubmission`) that hands a submission to a workflow. `migrateDefinition()`
+  upgrades version 1 forms.
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).

@@ -7,12 +7,16 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
   untracked,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
-import { UiBottomSheet, UiModal, UiSnackbar } from '@zouriel/ui/dialog';
+import { UiBottomSheet, UiDrawer, UiModal, UiSnackbar } from '@zouriel/ui/dialog';
+import { UiFbRevisionPanel } from './builder-revisions';
+import type { UiFbRevisionStore } from './revisions';
+import { FbLanguages } from './builder-languages';
 import { FbCanvas } from './builder-canvas';
 import { FbDnd } from './builder-dnd';
 import { FbInspector } from './builder-inspector';
@@ -55,7 +59,7 @@ interface PendingDelete {
 @Component({
   selector: 'ui-form-builder',
   providers: [FbBuilderStore, FbDnd],
-  imports: [HugeiconsIconComponent, UiButton, UiSegmented, UiModal, UiBottomSheet, UiSnackbar, FbCanvas, FbInspector, FbPalette, FbLogicOverview, FbPreview],
+  imports: [HugeiconsIconComponent, UiButton, UiSegmented, UiModal, UiBottomSheet, UiSnackbar, UiDrawer, UiFbRevisionPanel, FbLanguages, FbCanvas, FbInspector, FbPalette, FbLogicOverview, FbPreview],
   host: {
     class: 'ui-form-builder',
     '[attr.data-layout]': 'layout()',
@@ -65,7 +69,7 @@ interface PendingDelete {
     <header class="top">
       @if (showTitle()) {
         <button type="button" class="title" (click)="openForm()" title="Form settings">
-          <span>{{ store.def().title || 'Untitled form' }}</span>
+          <span>{{ store.shown(store.def().title) || 'Untitled form' }}</span>
         </button>
       }
       <ui-segmented class="views" size="sm" label="View" [options]="views" [value]="view()" (valueChange)="setView($any($event))" />
@@ -76,6 +80,17 @@ interface PendingDelete {
         <button type="button" class="fb-icon-btn" [disabled]="!store.canRedo()" (click)="store.redo()" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">
           <hugeicons-icon aria-hidden="true" [icon]="redoIcon" [size]="16" [strokeWidth]="1.8" />
         </button>
+        @if (store.multilingual()) {
+          <ui-segmented class="locales" size="sm" label="Language you are editing" [options]="localeOptions()" [value]="store.editLocale()" (valueChange)="store.setEditLocale($any($event))" />
+        }
+        <button type="button" class="fb-icon-btn lang-btn" [class.wide]="!store.multilingual()" (click)="languagesOpen.set(true)" aria-label="Languages" title="Languages">
+          <hugeicons-icon aria-hidden="true" [icon]="languagesIcon" [size]="16" [strokeWidth]="1.8" />@if (!store.multilingual()) {<span class="lang-word">Languages</span>}
+        </button>
+        @if (revisionStore()) {
+          <button type="button" class="fb-icon-btn lang-btn wide" (click)="historyOpen.set(true)" aria-label="History" title="Revision history">
+            <hugeicons-icon aria-hidden="true" [icon]="historyIcon" [size]="16" [strokeWidth]="1.8" /><span class="lang-word">History</span>
+          </button>
+        }
         @if (errorCount()) {
           <button type="button" class="issues" (click)="setView('logic')" [attr.aria-label]="errorCount() + ' problems to fix'">
             <hugeicons-icon aria-hidden="true" [icon]="alertIcon" [size]="14" [strokeWidth]="1.8" />{{ errorCount() }}
@@ -137,6 +152,16 @@ interface PendingDelete {
       </ui-modal>
     }
 
+    <ui-modal [open]="languagesOpen()" (openChange)="languagesOpen.set($event)" title="Languages" size="md">
+      <ui-fb-languages />
+    </ui-modal>
+
+    @if (revisionStore(); as rs) {
+      <ui-drawer [open]="historyOpen()" (openChange)="historyOpen.set($event)" side="right" title="History">
+        <ui-fb-revisions [store]="rs" [formId]="store.def().id" [current]="store.def()" (restore)="onRestore($event)" />
+      </ui-drawer>
+    }
+
     <ui-modal [open]="!!pendingDelete()" (openChange)="!$event && pendingDelete.set(null)" [title]="deleteTitle()" size="sm">
       @if (pendingDelete(); as p) {
         <div class="confirm">
@@ -191,7 +216,7 @@ interface PendingDelete {
       border: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); border-radius: var(--ui-radius); }
     .top { display: flex; align-items: center; gap: var(--ui-space-2) var(--ui-space-3); flex-wrap: wrap; padding: 6px var(--ui-space-3); flex: none;
       background: var(--ui-color-surface); border-bottom: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
-    .title { min-width: 0; max-width: 32ch; padding: 4px 6px; margin-left: -6px; border: 0; border-radius: var(--ui-radius-xs); background: transparent;
+    .title { min-width: 0; max-width: 32ch; padding: 4px 6px; margin-inline-start: -6px; border: 0; border-radius: var(--ui-radius-xs); background: transparent;
       color: var(--ui-color-text); font: inherit; font-size: calc(14px * var(--ui-font-scale)); font-weight: 600; cursor: pointer; text-align: left; }
     .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Hover only where there is a pointer: a tap on a phone must not leave the pill behind. */
@@ -201,6 +226,8 @@ interface PendingDelete {
     /* Wraps instead of overflowing, so the host's own buttons (Publish…) never leave the screen. */
     .top-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 2px; min-width: 0; max-width: 100%; margin-left: auto; }
     .top-tools .add { margin-left: var(--ui-space-2); }
+    .locales { margin-inline-start: var(--ui-space-2); }
+    .lang-btn.wide { display: inline-flex; flex-direction: row; align-items: center; width: auto; padding: 0 var(--ui-space-2); gap: var(--ui-space-1); font: inherit; font-size: 12px; white-space: nowrap; }
     .issues { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; margin: 0 4px; border: 0; border-radius: 12px; cursor: pointer;
       background: color-mix(in srgb, var(--ui-color-danger) 14%, transparent); color: var(--ui-color-danger); font: inherit; font-size: 12px; font-weight: 600; }
     .issues:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
@@ -273,6 +300,16 @@ export class UiFormBuilder {
   /** Show the form's title in the top bar. Turn off when the host's own header already names the form. */
   readonly showTitle = input(true);
 
+  /** Where the form's earlier published versions are kept. With one, a History button opens them and rolls one back into a draft. */
+  readonly revisionStore = input<UiFbRevisionStore | null>(null);
+  /** A past revision was loaded as the new draft (it is already in `definition`; nothing is published). */
+  readonly restored = output<UiFormDefinition>();
+
+  protected readonly languagesIcon = FB_ICONS.TranslateIcon;
+  protected readonly historyIcon = FB_ICONS.HistoryIcon;
+  protected readonly languagesOpen = signal(false);
+  protected readonly historyOpen = signal(false);
+  protected readonly localeOptions = computed(() => this.store.locales().map((l) => ({ value: l.code, label: l.label })));
   protected readonly addIcon = FB_ICONS.Add01Icon;
   protected readonly undoIcon = FB_ICONS.Undo02Icon;
   protected readonly redoIcon = FB_ICONS.Redo02Icon;
@@ -344,6 +381,13 @@ export class UiFormBuilder {
   redo(): void { this.store.redo(); }
   /** Forgets undo/redo history, e.g. after the host saves and wants a fresh start. */
   clearHistory(): void { this.store.clearHistory(); }
+
+  protected onRestore(d: UiFormDefinition): void {
+    this.store.replace(d);
+    this.historyOpen.set(false);
+    this.showToast('Loaded the earlier version as a draft');
+    this.restored.emit(this.store.def());
+  }
 
   protected setView(v: View): void {
     // The undo toast belongs to the view it was raised in; elsewhere it would cover that view's own buttons.

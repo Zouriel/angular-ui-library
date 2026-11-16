@@ -3,6 +3,7 @@
  * settings fields, the renderer's field view and the source picker) are internal and not exported.
  */
 export * from './schema';
+export * from './localize';
 export * from './field-types';
 export * from './definition';
 export * from './conditions';
@@ -17,3 +18,5 @@ export * from './format';
 export type { UiFbUploader } from './renderer-field';
 export * from './form-renderer';
 export * from './form-builder';
+export * from './revisions';
+export * from './builder-revisions';

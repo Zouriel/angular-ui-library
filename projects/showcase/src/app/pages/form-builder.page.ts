@@ -7,6 +7,10 @@ import { UiSwitch } from '@zouriel/ui/form';
 import {
   UiFormBuilder,
   UiFormRenderer,
+  UiFbMemoryRevisionStore,
+  fbCreateRevision,
+  fbLocales,
+  fbLocaleDir,
   provideUiFormHttpSources,
   provideUiFormOptionSources,
   UiFormGlobalSettingsEditor,
@@ -65,7 +69,8 @@ const STUDENT_ID: UiFbValidatorDef = {
       <doc-section name="Builder" selector="ui-form-builder" [api]="builderApi"
         summary="Add a field by clicking it in the palette (it goes after the selection) or dragging it onto the page; narrower than 1100px the palette moves behind an Add button, and on phones into a bottom sheet. Select a card to get its toolbar (settings, move, duplicate, delete, more); double-click, press Enter or hold it on a touch screen to open its settings. On a focused card, Alt+Up/Down moves it, Ctrl/Cmd+D duplicates it and Delete removes it. Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z undo and redo. Pages have a ⋯ menu to move or delete them. Logic lists every rule in plain words and anything to fix; Preview fills the form in at desktop or phone width. Pass the published version and its answer count so the builder protects saved answers: it archives instead of deleting, locks stored option values and remembers renamed keys. It lays itself out by its own width, so give it a height.">
         <div class="builder-frame">
-          <ui-form-builder #builder [(definition)]="form" [globalSettings]="globalSettings()" [published]="published()" [submissionCount]="answered() ? 12 : 0">
+          <ui-form-builder #builder [(definition)]="form" [globalSettings]="globalSettings()" [published]="published()" [submissionCount]="answered() ? 12 : 0"
+            [revisionStore]="revisions" (restored)="publishNote.set('Loaded an earlier version as a draft. Publish it to make it live.')">
             <div fbActions class="actions">
               <ui-button size="sm" (click)="publish()">{{ published() ? 'Publish changes' : 'Publish' }}</ui-button>
             </div>
@@ -146,6 +151,18 @@ const submission = engine.submit();             // null when something is wrong 
 engine.destroy();" />
       </doc-section>
 
+      <doc-section name="Languages" selector="UiFbLocalizedText"
+        summary="Every text a person reads (questions, help, options, titles, messages, button labels) is either a plain string or a map from language code to text. A form with one language stays plain strings; supportedLocales and defaultLocale turn on more. In the builder, add a language from Languages in the top bar, write everything in the default language first, then pick the other language in the switcher to translate each text with the default shown underneath. Right-to-left languages such as Dhivehi (Thaana) lay the canvas, the form and its inputs out right to left. Data keys and option values are never translated. A text with no translation shows in the default language, and the builder lists missing translations under Logic.">
+        <doc-demo [code]="languagesCode">
+          <div class="bar">
+            <ui-segmented [options]="langOptions" [value]="lang()" (valueChange)="lang.set($any($event))" label="Language" size="sm" />
+          </div>
+          <div class="frame" [attr.dir]="langDir()" [attr.lang]="lang()">
+            <ui-form-renderer [definition]="form" [locale]="lang()" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="JSON format" selector="UiFormDefinition" summary="What the builder saves and the renderer reads. Every element has an id that never changes; fields also have a key, the name their answer is saved under. Rules refer to ids, never labels or keys, so renaming never breaks them. A renamed key is remembered in keyHistory so answers saved under the old name still load." [shapes]="definitionShape">
         <doc-demo>
           <p class="plain">The form in the builder above, as it would be stored. It updates as you edit.</p>
@@ -193,7 +210,12 @@ export class FormBuilderPage {
   protected readonly published = signal<UiFormDefinition | null>(null);
   protected readonly answered = signal(false);
   protected readonly publishNote = signal('');
+  /** Where earlier published versions are kept: the builder's History button lists them and rolls one back into a draft. */
+  protected readonly revisions = new UiFbMemoryRevisionStore();
   protected readonly mode = signal<UiFormMode>('create');
+  protected readonly lang = signal('en');
+  protected readonly langOptions = fbLocales(SAMPLE_FORM).map((l) => ({ value: l.code, label: l.label }));
+  protected readonly langDir = computed(() => fbLocaleDir(SAMPLE_FORM, this.lang()));
   protected readonly last = signal<UiFormSubmission | null>(null);
   protected readonly modes = [
     { value: 'create', label: 'New answers' },
@@ -216,8 +238,10 @@ export class FormBuilderPage {
       return;
     }
     const changes = this.builder()?.changes()?.summary.length ?? 0;
+    const previous = this.published();
     this.form = { ...this.form, revision: (this.form.revision ?? 0) + 1 };
     this.published.set(structuredClone(this.form));
+    this.revisions.saveRevision(fbCreateRevision(this.form, previous));
     this.publishNote.set(`Published revision ${this.form.revision}${changes ? ` with ${changes} change${changes > 1 ? 's' : ''}` : ''}.`);
   }
 
@@ -258,6 +282,9 @@ update(id: string, s: UiFormSubmission) {
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra searchable lists for Options → Data source, on top of provideUiFormOptionSources.' },
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'App-wide settings from ui-form-global-settings; their lists become data sources.' },
     { name: 'showTitle', type: 'boolean', default: 'true', desc: 'Show the form title in the top bar. Turn off when your own header already names the form.' },
+    { name: 'revisionStore', type: 'UiFbRevisionStore | null', default: 'null', desc: 'Where earlier published versions are kept. With one, a History button opens the list: see what each version changed and roll one back, which loads it as a new draft (one undo step; nothing goes live until you publish). Save each version with fbCreateRevision(definition, previous) when you publish. UiFbMemoryRevisionStore is a ready-made in-memory one.' },
+    { name: 'restored', type: 'UiFormDefinition', default: '—', desc: 'A past version was loaded as the draft. It is already in `definition`.' },
+    { name: 'Languages (top bar)', type: 'UI', default: '—', desc: 'Add or remove languages (Dhivehi is offered, or type any code), choose the default language and each language’s direction. With more than one language a switcher picks the language being edited; text in other languages shows the default text beneath its box. Stored in `defaultLocale` and `supportedLocales`.' },
     { name: '[fbActions]', type: 'slot', default: '—', desc: 'Your buttons (Save, Publish) in the builder’s top bar.' },
     { name: 'problems()', type: 'method', default: '—', desc: 'Signal of UiFbProblem[] ({ severity, targetId, message }): missing keys, loops between rules, rules pointing at deleted questions, backward jumps. Check for errors before publishing.' },
     { name: 'changes()', type: 'method', default: '—', desc: 'Signal of UiFbDiff | null: what changed since published (added, archived, renamed keys, type changes, removed options, changed rules, and summary lines).' },
@@ -274,6 +301,8 @@ update(id: string, s: UiFormSubmission) {
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra lists, on top of provideUiFormOptionSources. Use the same ones the builder had.' },
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'Makes the lists from ui-form-global-settings searchable.' },
     { name: 'uploader', type: 'UiFbUploader | null', default: 'null', desc: '(file, field) => Promise<UiFbFileValue>: uploads files as they are picked. Without it, the File objects come back in submission.files.' },
+    { name: 'locale', type: 'string | null', default: 'null', desc: 'The language to show the form in (`en`, `dv`, or `dv-MV` for the same language). Unknown codes fall back to the form’s default language. Changing it keeps the answers, and right-to-left languages lay the form out right to left.' },
+    { name: 'link', type: 'UiFbSubmissionLink | null', default: 'null', desc: '{ workflowId?, serviceCode? } copied onto each submission so a workflow knows which process the answers belong to. Never stored in the form.' },
     { name: 'submitLabel', type: 'string | null', default: 'null', desc: 'Last button’s text. Otherwise the form’s setting, then “Submit” (“Save changes” in edit mode).' },
     { name: 'cancelLabel', type: 'string | null', default: 'null', desc: 'Shows a Cancel button with this text.' },
     { name: 'busy', type: 'boolean', default: 'false', desc: 'Shows the submit button as busy while you save.' },
@@ -285,7 +314,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'engine()', type: 'method', default: '—', desc: 'Signal of the running UiFormEngine: data(), dirty(), changes() and the rest (see below).' },
   ];
   protected readonly rendererOutputs: ApiRow[] = [
-    { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, data, submittedAt, files } once everything on the route is valid.' },
+    { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, locale, data, submittedAt, workflowId?, serviceCode?, fields, files } once everything on the route is valid. locale is the language it was filled in; fields lists each answer’s path, key, label (in that language) and type; workflowId and serviceCode come from the link input.' },
     { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The data as it would be saved, after every change.' },
     { name: 'dirtyChange', type: 'boolean', default: '—', desc: 'Whether the answers differ from what the form opened with.' },
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
@@ -364,9 +393,25 @@ interface UiFbSourcePage { items: UiFbSourceItem[]; hasMore?: boolean; total?: n
     { name: 'submit()', type: 'method', default: '—', desc: 'UiFormSubmission, or null (it then moves to the first page with problems).' },
     { name: 'destroy()', type: 'method', default: '—', desc: 'Stops its effects and pending checks.' },
   ];
+  protected readonly languagesCode = `// Every user-facing text: one string, or a map by language code.
+type UiFbLocalizedText = string | Record<string, string>;
+
+const form: UiFormDefinition = {
+  schemaVersion: 2, id: 'f', title: { en: 'Survey', dv: 'ސާވޭ' },
+  defaultLocale: 'en',
+  supportedLocales: [{ code: 'en', label: 'English' }, { code: 'dv', label: 'ދިވެހި', dir: 'rtl' }],
+  pages: [{ id: 'p', elements: [{ kind: 'field', id: 'a', type: 'text', key: 'name', label: { en: 'Name', dv: 'ނަން' } }] }],
+};
+
+fbText(label, 'dv', 'en')        // the text in dv, else en, else the first one written
+<ui-form-renderer [definition]="form" [locale]="'dv'" />   // answers survive switching language`;
+
   protected readonly definitionShape = `interface UiFormDefinition {
-  schemaVersion: number;   // UI_FB_SCHEMA_VERSION (1)
-  id: string; title: string; description?: string;
+  schemaVersion: number;   // UI_FB_SCHEMA_VERSION (2); older forms are upgraded by migrateDefinition
+  id: string; title: UiFbLocalizedText; description?: UiFbLocalizedText;
+  defaultLocale?: string;  // 'en' when missing
+  supportedLocales?: { code: string; label?: string; dir?: 'ltr' | 'rtl' }[];   // the default one included
+  // Every text below marked UiFbLocalizedText may be a plain string or { [locale]: string }.
   revision?: number;       // bump when you publish; recorded on each submission
   settings?: UiFbSettings;
   pages: UiFbPage[];
@@ -375,10 +420,10 @@ interface UiFbSettings {
   labelPlacement?: 'top' | 'inside' | 'left' | 'hidden';   errorPlacement?: 'below' | 'inside';
   validateOn?: 'blur' | 'submit';                          clearHidden?: 'onSubmit' | 'never';
   errorSummary?: boolean;   requiredMarker?: 'asterisk' | 'optional' | 'none';
-  submitLabel?: string; nextLabel?: string; backLabel?: string; showProgress?: boolean;
+  submitLabel?: UiFbLocalizedText; nextLabel?: UiFbLocalizedText; backLabel?: UiFbLocalizedText; showProgress?: boolean;
 }
 interface UiFbPage {
-  id: string; title?: string; description?: string;
+  id: string; title?: UiFbLocalizedText; description?: UiFbLocalizedText;
   visibility?: UiFbVisibility;
   jumps?: { id: string; when: UiFbCondition; to: string }[];   // to: a later page id, or 'end'
   elements: UiFbElement[];
@@ -386,13 +431,13 @@ interface UiFbPage {
 type UiFbElement = UiFbField | UiFbGroup | UiFbStatic;
 interface UiFbField {
   kind: 'field'; id: string; type: UiFbFieldType; key: string; keyHistory?: string[];
-  label: string; help?: string; placeholder?: string; defaultValue?: unknown;
-  readOnly?: boolean; required?: UiFbToggle; requiredMessage?: string; disabled?: UiFbToggle;
+  label: UiFbLocalizedText; help?: UiFbLocalizedText; placeholder?: UiFbLocalizedText; defaultValue?: unknown;
+  readOnly?: boolean; required?: UiFbToggle; requiredMessage?: UiFbLocalizedText; disabled?: UiFbToggle;
   visibility?: UiFbVisibility;
-  options?: { id: string; value: string; label: string; archived?: boolean }[];
+  options?: { id: string; value: string; label: UiFbLocalizedText; archived?: boolean }[];   // value is never translated
   source?: { type: string; params?: Record<string, { const: unknown } | { ref: string }> };
   props?: UiFbFieldProps;   // min, max, step, decimals, currency, rows, maxRating, accept, multiple, caption, format, …
-  validators?: { id: string; type: string; params?: Record<string, unknown>; message?: string;
+  validators?: { id: string; type: string; params?: Record<string, unknown>; message?: UiFbLocalizedText;
                  when?: UiFbCondition; severity?: 'error' | 'warning' }[];
   calc?: UiFbCalc;          // { op, args: ({ ref } | { const } | { calc })[], decimals? }
   setValue?: { id: string; when: UiFbCondition; value: UiFbOperand }[];
@@ -400,14 +445,14 @@ interface UiFbField {
   archived?: boolean;
 }
 interface UiFbGroup {
-  kind: 'group'; id: string; title?: string; description?: string;
+  kind: 'group'; id: string; title?: UiFbLocalizedText; description?: UiFbLocalizedText;
   key?: string; keyHistory?: string[];   // answers nest under key (required when it repeats)
   columns?: 1 | 2 | 3;
-  repeat?: { min?: number; max?: number; addLabel?: string; itemLabel?: string };   // itemLabel: 'Entry {n}'
+  repeat?: { min?: number; max?: number; addLabel?: UiFbLocalizedText; itemLabel?: UiFbLocalizedText };   // itemLabel: 'Entry {n}'
   visibility?: UiFbVisibility; disabled?: UiFbToggle; layout?: { width? };
   elements: UiFbElement[]; archived?: boolean;
 }
-interface UiFbStatic { kind: 'static'; id: string; type: 'heading' | 'paragraph' | 'divider'; text?: string; visibility?; layout?; archived?: boolean }
+interface UiFbStatic { kind: 'static'; id: string; type: 'heading' | 'paragraph' | 'divider'; text?: UiFbLocalizedText; visibility?; layout?; archived?: boolean }
 
 type UiFbFieldType = 'text' | 'textarea' | 'email' | 'phone' | 'url' | 'number' | 'currency' | 'date' | 'time'
   | 'select' | 'radio' | 'checkboxes' | 'multiselect' | 'checkbox' | 'toggle' | 'rating' | 'slider'
@@ -424,10 +469,24 @@ type UiFbOperand = { const: unknown } | { ref: string } | { today: number };   /
 // a keyed section is an object; a repeating section is a list of objects.
 interface UiFormSubmission {
   formId: string; revision: number | null; data: Record<string, unknown>;
+  locale: string;                                       // the language it was filled in
+  workflowId?: string; serviceCode?: string;            // copied from the renderer's [link]
+  fields: { path: string; key: string; label: string; type: UiFbFieldType }[];   // what each answer is, labels in locale
   submittedAt: string; files: Record<string, File[]>;   // picked files with no uploader, by data path
 }`;
 
   protected readonly reference: { title: string; rows: ApiRow[] }[] = [
+    {
+      title: 'Languages and revisions',
+      rows: [
+        { name: 'fbText(text, locale?, defaultLocale?)', type: 'string', default: '—', desc: 'A UiFbLocalizedText in a language: that language, else the same base language, else the default, else the first text written.' },
+        { name: 'fbTextIn(text, locale, defaultLocale?) / fbSetText(text, locale, value, defaultLocale?)', type: 'string / UiFbLocalizedText', default: '—', desc: 'Read exactly one language (blank when missing), or write one. A text stays a plain string until a second language is written.' },
+        { name: 'fbLocales(def) / fbDefaultLocale(def) / fbResolveLocale(def, requested?) / fbLocaleDir(def, locale?)', type: 'various', default: '—', desc: 'The form’s languages with label and direction filled in (default first), its default, the language a request resolves to, and a language’s direction.' },
+        { name: 'fbLocaleName(code) / fbDefaultDir(code)', type: 'string / ‘ltr’ | ‘rtl’', default: '—', desc: 'A language’s own name (ދިވެހި for dv) and its usual direction (Dhivehi, Arabic, Hebrew, Persian and Urdu are right to left).' },
+        { name: 'UiFbRevisionStore', type: 'interface', default: '—', desc: 'listRevisions(formId), getRevision(formId, n), saveRevision(entry), rollback(formId, n, current?). Each may return a Promise. Pass one to the builder as revisionStore.' },
+        { name: 'fbCreateRevision(definition, previous?, meta?) / UiFbMemoryRevisionStore', type: 'UiFbRevision / class', default: '—', desc: 'The snapshot to store when you publish (with a summary of what changed), and an in-memory store for demos and small apps.' },
+      ],
+    },
     { title: 'Creating and editing definitions', rows: [
       { name: 'createDefinition(title?, defaults?)', type: 'UiFormDefinition', default: '—', desc: 'A new one-page form; defaults are copied into its settings.' },
       { name: 'createPage(title?) / createField(type, def?, label?) / createGroup(def?, repeat?) / createStatic(type)', type: 'element', default: '—', desc: 'New elements with fresh ids. Pass def so the field or section gets a key that is unique in it.' },

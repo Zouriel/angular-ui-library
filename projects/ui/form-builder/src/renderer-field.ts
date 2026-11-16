@@ -54,15 +54,15 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
       @if (labelPos() === 'top' || labelPos() === 'left') {
         <div class="ui-fbf-head">
           @if (grouped() || viewing()) {
-            <span class="ui-fbf-label" [id]="ids().label">{{ f.label }}<ng-container [ngTemplateOutlet]="markerTpl" /></span>
+            <span class="ui-fbf-label" [id]="ids().label">{{ label() }}<ng-container [ngTemplateOutlet]="markerTpl" /></span>
           } @else {
-            <label class="ui-fbf-label" [for]="ids().control" [id]="ids().label">{{ f.label }}<ng-container [ngTemplateOutlet]="markerTpl" /></label>
+            <label class="ui-fbf-label" [for]="ids().control" [id]="ids().label">{{ label() }}<ng-container [ngTemplateOutlet]="markerTpl" /></label>
           }
         </div>
       }
       @if (labelPos() === 'hidden') {
-        @if (grouped()) { <span class="sr-only" [id]="ids().label">{{ f.label }}</span> }
-        @else { <label class="sr-only" [for]="ids().control" [id]="ids().label">{{ f.label }}</label> }
+        @if (grouped()) { <span class="sr-only" [id]="ids().label">{{ label() }}</span> }
+        @else { <label class="sr-only" [for]="ids().control" [id]="ids().label">{{ label() }}</label> }
       }
       <div class="ui-fbf-body">
         @if (viewing()) {
@@ -71,7 +71,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
           <div class="ui-fbf-control" (focusout)="blurred($event)" [attr.role]="grouped() ? 'group' : null"
             [attr.aria-labelledby]="grouped() ? ids().label : null">
             @if (labelPos() === 'inside') {
-              <label class="ui-fbf-float" [for]="ids().control" [id]="ids().label">{{ f.label }}<ng-container [ngTemplateOutlet]="markerTpl" /></label>
+              <label class="ui-fbf-float" [for]="ids().control" [id]="ids().label">{{ label() }}<ng-container [ngTemplateOutlet]="markerTpl" /></label>
             }
             @if (f.source && (f.type === 'select' || f.type === 'multiselect')) {
               @if (sourceDef(); as src) {
@@ -98,15 +98,15 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
                 <ui-time-picker [invalid]="showError()" [ngModel]="st.value ?? ''" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('select') {
-                <ui-select [options]="options()" [placeholder]="placeholder() || 'Choose…'" [label]="f.label" [invalid]="showError()"
+                <ui-select [options]="options()" [placeholder]="placeholder() || 'Choose…'" [label]="label()" [invalid]="showError()"
                   [ngModel]="st.value ?? ''" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('radio') {
-                <ui-radio-group [options]="options()" [label]="f.label" [orientation]="f.props?.orientation ?? 'vertical'"
+                <ui-radio-group [options]="options()" [label]="label()" [orientation]="f.props?.orientation ?? 'vertical'"
                   [ngModel]="st.value ?? null" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('checkboxes') {
-                <ui-checkbox-group [options]="options()" [label]="f.label" [orientation]="f.props?.orientation ?? 'vertical'" [selectAll]="!!f.props?.selectAll"
+                <ui-checkbox-group [options]="options()" [label]="label()" [orientation]="f.props?.orientation ?? 'vertical'" [selectAll]="!!f.props?.selectAll"
                   [ngModel]="list()" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('multiselect') {
@@ -114,16 +114,16 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
                   [ngModel]="list()" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('checkbox') {
-                <ui-checkbox [invalid]="showError()" [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ f.props?.caption || f.label }}</ui-checkbox>
+                <ui-checkbox [invalid]="showError()" [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ caption() || label() }}</ui-checkbox>
               }
               @case ('toggle') {
-                <ui-switch [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ f.props?.caption || 'Yes' }}</ui-switch>
+                <ui-switch [ngModel]="st.value === true" (ngModelChange)="set($event)" [disabled]="st.disabled">{{ caption() || 'Yes' }}</ui-switch>
               }
               @case ('rating') {
-                <ui-rating [max]="f.props?.maxRating ?? 5" [label]="f.label" [ngModel]="st.value ?? 0" (ngModelChange)="set($event)" [disabled]="st.disabled" />
+                <ui-rating [max]="f.props?.maxRating ?? 5" [label]="label()" [ngModel]="st.value ?? 0" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('slider') {
-                <ui-slider [min]="f.props?.min ?? 0" [max]="f.props?.max ?? 10" [step]="f.props?.step ?? 1" [label]="f.label"
+                <ui-slider [min]="f.props?.min ?? 0" [max]="f.props?.max ?? 10" [step]="f.props?.step ?? 1" [label]="label()"
                   [ngModel]="st.value ?? f.props?.min ?? 0" (ngModelChange)="set($event)" [disabled]="st.disabled" />
               }
               @case ('file') {
@@ -164,7 +164,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
               </span>
             }
           </div>
-          @if (f.help) { <p class="ui-fbf-help" [id]="ids().help">{{ f.help }}</p> }
+          @if (help()) { <p class="ui-fbf-help" [id]="ids().help">{{ help() }}</p> }
           @if (showError()) {
             <p class="ui-fbf-error" [class.sr-only]="errInside()" [id]="ids().error">
               <hugeicons-icon [icon]="errorIcon" [size]="14" [strokeWidth]="2" aria-hidden="true" />
@@ -184,7 +184,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     <ng-template #numberTpl>
       <ui-number-input [min]="f.props?.min" [max]="f.props?.max" [step]="f.props?.step ?? 1" [precision]="f.props?.decimals ?? null"
         [suffix]="f.type === 'currency' ? (f.props?.currency ?? '') : (f.props?.suffix ?? '')" [steppers]="f.type !== 'currency'"
-        [placeholder]="placeholder()" [ariaLabel]="f.label" [invalid]="showError()"
+        [placeholder]="placeholder()" [ariaLabel]="label()" [invalid]="showError()"
         [ngModel]="st.value ?? null" (ngModelChange)="set($event)" [disabled]="st.disabled" />
     </ng-template>
   `,
@@ -194,8 +194,8 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     .ui-fbf-head { display: flex; flex-direction: column; gap: 2px; }
     .ui-fbf-label { font-size: var(--ui-font-size-sm); font-weight: 550; color: var(--ui-color-text); line-height: 1.35; overflow-wrap: anywhere; }
     .ui-fbf-help, .ui-fbf-error, .ui-fbf-warning { overflow-wrap: anywhere; }
-    .ui-fbf-req { color: var(--ui-color-danger); margin-left: 3px; }
-    .ui-fbf-opt { color: var(--ui-color-text-muted); font-weight: 400; margin-left: 5px; }
+    .ui-fbf-req { color: var(--ui-color-danger); margin-inline-start: 3px; }
+    .ui-fbf-opt { color: var(--ui-color-text-muted); font-weight: 400; margin-inline-start: 5px; }
     .ui-fbf-help { margin: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); line-height: 1.35; }
     .ui-fbf-body { display: flex; flex-direction: column; gap: var(--ui-space-1); min-width: 0; }
     .ui-fbf-control { position: relative; min-width: 0; }
@@ -236,7 +236,7 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
 
     /* Label inside the box: sits where the text goes, floats up on focus or once filled. */
     .ui-fbf[data-label="inside"] .ui-fbf-float {
-      position: absolute; left: calc(var(--ui-space-3) + 1px); top: 50%; transform: translateY(-50%); z-index: 1;
+      position: absolute; inset-inline-start: calc(var(--ui-space-3) + 1px); top: 50%; transform: translateY(-50%); z-index: 1;
       max-width: calc(100% - var(--ui-space-6)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       font-size: var(--ui-font-size-md); color: var(--ui-color-text-muted); pointer-events: none;
       transform-origin: left top; transition: transform var(--ui-motion-fast) var(--ui-ease-decelerate, ease-out), color var(--ui-motion-fast);
@@ -258,9 +258,9 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     .ui-fbf[data-label="inside"]:has(ui-textarea) .ui-fbf-control:focus-within .ui-fbf-float { transform: translateY(-8px) scale(0.8); }
 
     /* Error inside the box: a short line at the right edge; the full text is announced. */
-    .ui-fbf.err-inside.is-invalid .ui-input, .ui-fbf.err-inside.is-invalid .ui-number, .ui-fbf.err-inside.is-invalid .ui-textarea { padding-right: min(46%, 220px); }
+    .ui-fbf.err-inside.is-invalid .ui-input, .ui-fbf.err-inside.is-invalid .ui-number, .ui-fbf.err-inside.is-invalid .ui-textarea { padding-inline-end: min(46%, 220px); }
     .ui-fbf-err-in {
-      position: absolute; right: var(--ui-space-2); top: 50%; transform: translateY(-50%); max-width: min(44%, 210px);
+      position: absolute; inset-inline-end: var(--ui-space-2); top: 50%; transform: translateY(-50%); max-width: min(44%, 210px);
       display: flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: var(--ui-radius-xs);
       background: color-mix(in srgb, var(--ui-color-danger) 12%, var(--ui-color-surface));
       color: var(--ui-color-danger); font-size: 12px; line-height: 1.3; pointer-events: auto;
@@ -268,8 +268,9 @@ const GROUP_TYPES = new Set(['radio', 'checkboxes', 'checkbox', 'toggle', 'ratin
     .ui-fbf-err-in > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ui-fbf-err-in hugeicons-icon { flex: none; }
     /* Clear of the number input's side-by-side steppers (2 x 24px plus dividers, ~49px); currency fields hide them. */
-    .ui-fbf:has(ui-number-input .steppers) .ui-fbf-err-in { right: 58px; }
+    .ui-fbf:has(ui-number-input .steppers) .ui-fbf-err-in { inset-inline-end: 58px; }
     .ui-fbf:has(ui-textarea) .ui-fbf-err-in { top: auto; bottom: var(--ui-space-2); transform: none; }
+    .ui-fr-host[dir='rtl'] .ui-fbf[data-label="inside"] .ui-fbf-float { transform-origin: right top; }
     @media (prefers-reduced-motion: reduce) { .ui-fbf-float { transition: none !important; } }
   `,
 })
@@ -317,11 +318,14 @@ export class UiFbFieldView {
   protected readonly error = computed(() => this.state().errors[0] ?? '');
   protected readonly warningsShown = computed(() => (this.engine().errorsShown(this.field().id, this.row()) ? this.state().warnings : []));
   protected readonly hasValue = computed(() => !isEmptyValue(this.state().value));
-  protected readonly placeholder = computed(() => (this.labelPos() === 'inside' ? '' : this.field().placeholder ?? ''));
+  protected readonly label = computed(() => this.engine().text(this.field().label));
+  protected readonly help = computed(() => this.engine().text(this.field().help));
+  protected readonly caption = computed(() => this.engine().text(this.field().props?.caption));
+  protected readonly placeholder = computed(() => (this.labelPos() === 'inside' ? '' : this.engine().text(this.field().placeholder)));
   protected readonly text = computed(() => (this.state().value == null ? '' : String(this.state().value)));
   protected readonly list = computed(() => (Array.isArray(this.state().value) ? (this.state().value as string[]) : []));
   protected readonly files = computed(() => (Array.isArray(this.state().value) ? (this.state().value as UiFbFileValue[]) : []));
-  protected readonly display = computed(() => formatValue(this.field(), this.state().value));
+  protected readonly display = computed(() => formatValue(this.field(), this.state().value, this.engine().locale(), this.engine().defaultLocale));
 
   protected readonly inputType = computed(() => ({ email: 'email', phone: 'tel', url: 'url' } as Record<string, 'email' | 'tel' | 'url'>)[this.field().type] ?? 'text');
   protected readonly inputmode = computed(() => ({ email: 'email', phone: 'tel', url: 'url' } as Record<string, string>)[this.field().type]);
@@ -335,13 +339,14 @@ export class UiFbFieldView {
    */
   protected readonly options = computed(() => {
     const f = this.field();
-    const live = (f.options ?? []).filter((o) => !o.archived).map((o) => ({ label: o.label, value: o.value }));
+    const tx = (t: Parameters<UiFormEngine['text']>[0]) => this.engine().text(t);
+    const live = (f.options ?? []).filter((o) => !o.archived).map((o) => ({ label: tx(o.label), value: o.value }));
     const v = this.state().value;
     const chosen = (Array.isArray(v) ? v : isEmptyValue(v) ? [] : [v]).map(String);
     for (const c of chosen) {
       if (live.some((o) => o.value === c)) continue;
       const old = f.options?.find((o) => o.value === c);
-      live.push({ label: `${old?.label ?? c} (no longer offered)`, value: c });
+      live.push({ label: `${old ? tx(old.label) : c} (no longer offered)`, value: c });
     }
     return live;
   });
@@ -375,7 +380,7 @@ export class UiFbFieldView {
       const ids = this.ids();
       const st = this.state();
       const shown = this.showError();
-      const help = !!this.field().help;
+      const help = !!this.help();
       const grouped = this.grouped();
       const root = this.host.nativeElement.querySelector('.ui-fbf-control');
       if (!root) return;

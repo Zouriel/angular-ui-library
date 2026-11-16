@@ -7,7 +7,7 @@ describe('public API', () => {
       'UiWorkflowBuilder', 'UiWorkflowPanel', 'UiWorkflowAudit', 'UiWorkflowStateBadge', 'UiWorkflowTasksDrawer', 'UiWorkflowPermissions',
       'UiWorkflowGlobalSettings', 'UiWorkflowHttpApi', 'provideUiWorkflow', 'UI_WORKFLOW_API', 'UI_WORKFLOW_CLOCK', 'createWorkflow', 'createStep',
       'insertStep', 'moveStep', 'removeStep', 'indexSteps', 'listSteps', 'tokensAt', 'describeTrigger', 'describeStep', 'autoLayout', 'wfStatesFrom',
-      'wfDescribeHistory',
+      'wfDescribeHistory', 'wfSubmissionPayload', 'wfPickWorkflow', 'wfRouteSubmission', 'wfStartFromSubmission', 'wfSubmissionRegistry',
     ]) expect(api, name).toHaveProperty(name);
   });
 

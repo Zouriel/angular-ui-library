@@ -57,3 +57,22 @@ describe('workflow builder page', () => {
     for (const name of ["name: 'readOnly'", "name: '(dirtyChange)'", "name: '[wfActions]'"]) expect(src).toContain(name);
   });
 });
+
+describe('form → workflow page', () => {
+  const src = read('form-workflow.page.ts');
+
+  it('links the form to the workflow from the host and keeps routing out of the form', () => {
+    expect(src).toContain('[link]="link"');
+    expect(src).toContain('wfRouteSubmission');
+    expect(src).toContain('wfPickWorkflow');
+    // The form definition on this page carries no workflow wiring.
+    const form = src.slice(src.indexOf('const LEAVE_FORM'), src.indexOf('const WORKFLOW_ID'));
+    expect(form).not.toMatch(/workflow|approval|queue|webhook|serviceCode/i);
+  });
+
+  it('documents every bridge function it demonstrates', () => {
+    for (const name of ['wfSubmissionPayload', 'wfPickWorkflow', 'wfStartFromSubmission', 'wfRouteSubmission', 'wfSubmissionRegistry']) {
+      expect(src).toContain(`name: '${name}`);
+    }
+  });
+});
