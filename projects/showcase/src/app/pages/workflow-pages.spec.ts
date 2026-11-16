@@ -52,6 +52,12 @@ describe('workflow components page', () => {
 });
 
 describe('workflow builder page', () => {
+  it('documents the people kinds, separation of duties, paused clocks and public processing time', () => {
+    const src = read('workflow-builder.page.ts');
+    for (const text of ['department', 'makerChecker', 'pauseOnStatus', 'resumeOnEvent', 'publicProcessingTime', 'Separation of duties', 'Public processing time']) expect(src).toContain(text);
+    expect(read('workflow-components.page.ts')).toContain('Usual processing time');
+  });
+
   it('documents readOnly, (dirtyChange) and [wfActions]', () => {
     const src = read('workflow-builder.page.ts');
     for (const name of ["name: 'readOnly'", "name: '(dirtyChange)'", "name: '[wfActions]'"]) expect(src).toContain(name);

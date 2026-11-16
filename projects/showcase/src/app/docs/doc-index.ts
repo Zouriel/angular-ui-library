@@ -240,6 +240,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'workflow-builder': [
     { name: 'How it fits together', anchor: 'how-it-fits-together' },
     { name: 'Builder', anchor: 'builder' },
+    { name: 'More workflow settings', anchor: 'more-settings' },
   ],
   'workflow-components': [
     { name: 'Workflow panel', anchor: 'panel' },

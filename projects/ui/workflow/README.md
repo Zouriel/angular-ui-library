@@ -237,6 +237,35 @@ Below 1100px the palette moves into a dialog; on phones the settings open in a b
 | `api` | `UiWorkflowApi \| null` | The engine API. Needs `updatePermissions` to save; `me` is optional. |
 | `(saved)` | `UiWfDefinitionSummary` | After a workflow's permissions were saved (the new version). |
 
+## People, separation of duties, paused clocks and public time
+
+Four optional additions to the format (spec v1; a definition that uses none of them is stored as
+before). The builder edits them; the engine enforces them.
+
+- **Departments, portals and queues.** Besides roles and groups, an assignee can be
+  `{ "department": key }`, `{ "portal": key }` or `{ "queue": key }`: everyone in the department,
+  everyone who works the portal, everyone serving the queue. The registry lists them as
+  `departments`, `portals` and `queues` (`{ key, label, description? }`); the "Add…" list offers
+  "A department › Licensing department", "A portal › Citizen portal" and "A queue › Front desk queue"
+  only when the registry has any. They work wherever an assignee does.
+- **Separation of duties.** An approval step has a "Separation of duties" section writing
+  `makerChecker: { excludeInitiator, excludePreviousApprover, requiredRole }`: the person who started
+  it, or whoever decided the approval before, cannot approve, and only people holding `requiredRole`
+  (a registry role) may. Turning everything off removes the key. A refused person gets the engine's
+  `segregationOfDuties` error, shown with the engine's own message.
+- **Pausing a time limit.** A lifecycle state with a time limit can list `pauseOnStatus` (other
+  states of the lifecycle, by id), `pauseOnEvent` and `resumeOnEvent` (registry signals). Time spent
+  paused does not count. Empty lists are removed. The audit log reads "Time limit paused in
+  <state>" and "Time limit running again in <state>" (`lifecycle.slaPaused`, `lifecycle.slaResumed`).
+- **Public processing time.** The workflow's settings have "Public processing time"
+  (`publicProcessingTime: { estimate, display }`, estimate up to 200 characters). When the lifecycle
+  has one with `display: true`, the record view (`UiWfRecord.publicProcessingTime`) carries the text
+  and the workflow panel shows "Usual processing time: ...". It changes no time limit.
+
+The builder does not check these before the engine does (it only shows the engine's problems:
+`unknownDepartment`, `unknownPortal`, `unknownQueue`, `slaPauseSelf`, `slaNeverResumes`,
+`publicTimeMissing`, `publicTimeTooLong`).
+
 ## Working with definitions in code
 
 The helpers the builder uses are exported for apps that generate or inspect workflows:

@@ -56,6 +56,11 @@ const DOCS_USER = 'hana';
         <doc-demo [code]="builderCode"></doc-demo>
       </doc-section>
 
+      <doc-section name="More workflow settings" anchor="more-settings" selector="spec v1, optional fields"
+        summary="Four settings that are all optional, so a workflow that does not use them is stored exactly as before. Assignees can also be a department, a portal or a queue, when the app registers any (departments, portals and queues in the registry), and work everywhere a group does. An approval has a Separation of duties section: the person who started it, or whoever approved the step before, cannot approve, and a required role limits who may decide. A lifecycle state's time limit can pause while the record is in other states, or after an app event, and start again on another event; time spent paused does not count. A workflow's settings have Public processing time, a sentence for people outside the office (up to 200 characters) and a switch for whether the app may show it; the record view then carries it and the workflow panel shows Usual processing time. The engine does the enforcing; the builder only edits and shows these.">
+        <doc-demo lang="json" [code]="newFieldsCode"></doc-demo>
+      </doc-section>
+
       <aside class="studio-cta">
         <div>
           <strong>Running workflows in your app</strong>
@@ -104,6 +109,19 @@ providers: [
   // Optional: count "due in" and "ago" from the server's clock instead of the browser's.
   // provideUiWorkflowClock(() => Date.now() + serverOffsetMs),
 ]`;
+
+  protected readonly newFieldsCode = `// an assignee: { "department": key } | { "portal": key } | { "queue": key }
+// registry: "departments": [{ "key": "licensing", "label": "Licensing department" }], "portals": [...], "queues": [...]
+
+// on an approval step
+"makerChecker": { "excludeInitiator": true, "excludePreviousApprover": true, "requiredRole": "head" }
+
+// on a lifecycle state (state ids; registry signal keys)
+"sla": { "within": "P5D", "calendar": "working", "steps": [],
+         "pauseOnStatus": ["waiting"], "pauseOnEvent": ["documentsRequested"], "resumeOnEvent": ["documentsReceived"] }
+
+// on the workflow (automations and lifecycles)
+"publicProcessingTime": { "estimate": "5 working days", "display": true }`;
 
   protected readonly builderCode = `<ui-workflow-builder [(definition)]="workflow" [published]="published" [persist]="true" (saved)="reload()" />`;
 
