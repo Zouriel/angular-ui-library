@@ -64,6 +64,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 - **The answers are called values everywhere** (`@zouriel/ui/form-builder`, 0.84.2): `<ui-form-renderer [values]>`,
   `engine.values()` (and `UiFormEngineOptions.values`, `engine.valuePath()`), `props.excludeFromValues`
   (upgraded from `excludeFromData` by `migrateDefinition`), and `wfFormAnswers` returns `{ values }`. Breaking, no aliases.
+- **Workflow assignees, checks and time limits** (`@zouriel/ui/workflow`, 0.85.0): a step can be given to a
+  department, a portal or a work queue as well as a role, group or person; an approval can require that the
+  person who approves is not the one who did the previous step (maker-checker); a time limit can pause while
+  the record sits in chosen states or waits on a signal; and a workflow can state its usual processing time
+  for the public. All optional; existing definitions behave as before.
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).
