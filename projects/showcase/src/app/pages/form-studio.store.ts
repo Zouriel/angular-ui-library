@@ -6,7 +6,7 @@ import { SAMPLE_ANSWERS, SAMPLE_FORM } from './form-builder.sample';
 export interface StudioResponse {
   id: string;
   revision: number;
-  data: Record<string, unknown>;
+  values: Record<string, unknown>;
   submittedAt: string;
   updatedAt?: string;
   /** The language the form was filled in. */
@@ -23,7 +23,7 @@ export interface StudioForm {
   updatedAt: string;
 }
 
-const KEY = 'zui-form-studio-v1';
+const KEY = 'zui-form-studio-v2';
 const SETTINGS_KEY = 'zui-form-studio-settings-v1';
 const REVISIONS_KEY = 'zui-form-studio-revisions-v1';
 
@@ -154,15 +154,15 @@ export class FormStudioStore {
     return out;
   }
 
-  addResponse(id: string, data: Record<string, unknown>, revision: number, locale?: string): StudioResponse {
-    const r: StudioResponse = { id: fbUid('resp'), revision, data, submittedAt: new Date().toISOString(), ...(locale ? { locale } : {}) };
+  addResponse(id: string, values: Record<string, unknown>, revision: number, locale?: string): StudioResponse {
+    const r: StudioResponse = { id: fbUid('resp'), revision, values, submittedAt: new Date().toISOString(), ...(locale ? { locale } : {}) };
     this.patch(id, (f) => ({ ...f, responses: [r, ...f.responses] }));
     return r;
   }
 
-  updateResponse(id: string, responseId: string, data: Record<string, unknown>, revision: number): void {
+  updateResponse(id: string, responseId: string, values: Record<string, unknown>, revision: number): void {
     const updatedAt = new Date().toISOString();
-    this.patch(id, (f) => ({ ...f, responses: f.responses.map((r) => (r.id === responseId ? { ...r, data, revision, updatedAt } : r)) }));
+    this.patch(id, (f) => ({ ...f, responses: f.responses.map((r) => (r.id === responseId ? { ...r, values, revision, updatedAt } : r)) }));
   }
 
   removeResponse(id: string, responseId: string): void {
@@ -234,7 +234,7 @@ export class FormStudioStore {
       id: 'form_sample',
       draft,
       published: structuredClone(draft),
-      responses: [{ id: 'resp_sample', revision: 2, data: structuredClone(SAMPLE_ANSWERS), submittedAt: now, locale: 'en' }],
+      responses: [{ id: 'resp_sample', revision: 2, values: structuredClone(SAMPLE_ANSWERS), submittedAt: now, locale: 'en' }],
       createdAt: now,
       updatedAt: now,
     }];

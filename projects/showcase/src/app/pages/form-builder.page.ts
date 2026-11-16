@@ -60,7 +60,7 @@ const STUDENT_ID: UiFbValidatorDef = {
             <li><strong>Build.</strong> Bind <code>[(definition)]</code> on ui-form-builder and save it when it changes or on your Save button.</li>
             <li><strong>Publish.</strong> Check <code>problems()</code> for errors, bump <code>revision</code>, store a copy as the published version, and pass it back as <code>published</code> with its answer count, so the builder protects saved answers.</li>
             <li><strong>Fill in.</strong> Give ui-form-renderer the published version. <code>(submitted)</code> emits <code>&#123; formId, revision, values, submittedAt, files &#125;</code>; store <code>values</code> with <code>revision</code>.</li>
-            <li><strong>Edit or view.</strong> Pass the stored <code>data</code> back. It opens in edit mode with a change list (or <code>mode="view"</code> for read-only text). Unknown keys and old answers are kept.</li>
+            <li><strong>Edit or view.</strong> Pass the stored <code>values</code> back. It opens in edit mode with a change list (or <code>mode="view"</code> for read-only text). Unknown keys and old answers are kept.</li>
             <li><strong>Share lists.</strong> Store the JSON from ui-form-global-settings and pass it to both components as <code>globalSettings</code>. Answers from searchable lists are saved as <code>&#123; value, label &#125;</code>.</li>
           </ol>
         </doc-demo>
@@ -84,15 +84,15 @@ const STUDENT_ID: UiFbValidatorDef = {
       </doc-section>
 
       <doc-section name="Renderer" selector="ui-form-renderer" [api]="rendererApi" [outputs]="rendererOutputs"
-        summary="Fills in a definition. Problems show when a question is left (or only on Continue, per form), and all of a page’s problems are listed at the top, with links, when someone tries to move on. Hidden questions never block submitting. Give it saved data to edit (it tracks dirty() and lists the changes next to Save) or to view, where every page shows at once as text. It emits JSON ready to store.">
+        summary="Fills in a definition. Problems show when a question is left (or only on Continue, per form), and all of a page’s problems are listed at the top, with links, when someone tries to move on. Hidden questions never block submitting. Give it saved values to edit (it tracks dirty() and lists the changes next to Save) or to view, where every page shows at once as text. It emits JSON ready to store.">
         <doc-demo code="<ui-form-renderer [definition]=&quot;form&quot; (submitted)=&quot;save($event)&quot; />
-<ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; (submitted)=&quot;update($event.values)&quot; />
-<ui-form-renderer [definition]=&quot;form&quot; [data]=&quot;saved&quot; mode=&quot;view&quot; />">
+<ui-form-renderer [definition]=&quot;form&quot; [values]=&quot;saved&quot; (submitted)=&quot;update($event.values)&quot; />
+<ui-form-renderer [definition]=&quot;form&quot; [values]=&quot;saved&quot; mode=&quot;view&quot; />">
           <div class="bar">
             <ui-segmented [options]="modes" [value]="mode()" (valueChange)="mode.set($any($event))" label="Mode" size="sm" />
           </div>
           <div class="frame">
-            <ui-form-renderer [definition]="form" [data]="mode() === 'create' ? null : answers" [mode]="mode()" (submitted)="last.set($event)" />
+            <ui-form-renderer [definition]="form" [values]="mode() === 'create' ? null : answers" [mode]="mode()" (submitted)="last.set($event)" />
           </div>
           @if (last(); as s) { <pre class="out" tabindex="0" aria-label="Submitted JSON">{{ s | json }}</pre> }
         </doc-demo>
@@ -143,8 +143,8 @@ providers: [provideUiFormHttpSources({
       </doc-section>
 
       <doc-section name="Running a form without UI" selector="UiFormEngine" [api]="engineApi" apiTitle="Members"
-        summary="The engine ui-form-renderer runs: rules, checks, calculations and data shaping as signals, with no DOM. Use it to work out answers in a test, pre-fill a form in code, or drive your own UI. It needs an Angular Injector because it uses effects; the renderer’s engine() gives you the one it is running.">
-        <doc-demo lang="ts" code="const engine = new UiFormEngine({ definition, data: saved, injector });
+        summary="The engine ui-form-renderer runs: rules, checks, calculations and the saved values as signals, with no DOM. Use it to work out answers in a test, pre-fill a form in code, or drive your own UI. It needs an Angular Injector because it uses effects; the renderer’s engine() gives you the one it is running.">
+        <doc-demo lang="ts" code="const engine = new UiFormEngine({ definition, values: saved, injector });
 engine.setValue('f_name', null, 'Aminath');   // element id, repeat entry (null outside repeats), answer
 engine.instanceState('f_inst', null).visible;  // what the rules say right now
 const submission = engine.submit();             // null when something is wrong (errors are then shown)
@@ -264,7 +264,7 @@ save(s: UiFormSubmission) {
   api.saveAnswers({ formId: s.formId, revision: s.revision, values: s.values });
 }
 
-// 5. Edit (template: <ui-form-renderer [definition]="live()" [data]="answer.data" (submitted)="update(answer.id, $event)">)
+// 5. Edit (template: <ui-form-renderer [definition]="live()" [values]="answer.values" (submitted)="update(answer.id, $event)">)
 update(id: string, s: UiFormSubmission) {
   api.updateAnswers(id, { revision: s.revision, values: s.values });
 }`;
@@ -295,8 +295,8 @@ update(id: string, s: UiFormSubmission) {
 
   protected readonly rendererApi: ApiRow[] = [
     { name: 'definition', type: 'UiFormDefinition (required)', default: '—', desc: 'The form to fill in. Usually the published version.' },
-    { name: 'data', type: 'Record<string, unknown> | null', default: 'null', desc: 'Saved answers to edit or view. Unknown keys and answers to questions hidden at the time are kept.' },
-    { name: 'mode', type: "'create' | 'edit' | 'view' | null", default: 'edit with data, else create', desc: 'Edit labels the button “Save changes” and lists changes. View shows every page at once as text and never validates.' },
+    { name: 'values', type: 'Record<string, unknown> | null', default: 'null', desc: 'Saved answers to edit or view. Unknown keys and answers to questions hidden at the time are kept.' },
+    { name: 'mode', type: "'create' | 'edit' | 'view' | null", default: 'edit with values, else create', desc: 'Edit labels the button “Save changes” and lists changes. View shows every page at once as text and never validates.' },
     { name: 'validators', type: 'readonly UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks, on top of provideUiFormValidators.' },
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra lists, on top of provideUiFormOptionSources. Use the same ones the builder had.' },
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'Makes the lists from ui-form-global-settings searchable.' },
@@ -311,12 +311,12 @@ update(id: string, s: UiFormSubmission) {
     { name: 'showActions', type: 'boolean', default: 'true', desc: 'Show the buttons. Turn off to drive it with your own (submit()).' },
     { name: 'today', type: '(() => string) | null', default: 'null', desc: 'Fixes today (YYYY-MM-DD) for date rules and ages, e.g. for forms filled in on behalf of a past date.' },
     { name: 'submit()', type: 'method', default: '—', desc: 'Checks every page on the route; emits and returns the submission, or returns null and shows the problems.' },
-    { name: 'reset()', type: 'method', default: '—', desc: 'Starts over from the data the form was given (or blank), on the first page.' },
-    { name: 'engine()', type: 'method', default: '—', desc: 'Signal of the running UiFormEngine: data(), dirty(), changes() and the rest (see below).' },
+    { name: 'reset()', type: 'method', default: '—', desc: 'Starts over from the values the form was given (or blank), on the first page.' },
+    { name: 'engine()', type: 'method', default: '—', desc: 'Signal of the running UiFormEngine: values(), dirty(), changes() and the rest (see below).' },
   ];
   protected readonly rendererOutputs: ApiRow[] = [
     { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, locale, values, submittedAt, workflowId?, serviceCode?, fields, files } once everything on the route is valid. locale is the language it was filled in; fields lists each answer’s path, key, label (in that language) and type; workflowId and serviceCode come from the link input.' },
-    { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The data as it would be saved, after every change.' },
+    { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The values as they would be saved, after every change.' },
     { name: 'dirtyChange', type: 'boolean', default: '—', desc: 'Whether the answers differ from what the form opened with.' },
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
   ];
@@ -383,9 +383,9 @@ interface UiFbSourcePage { items: UiFbSourceItem[]; hasMore?: boolean; total?: n
   signal?: AbortSignal;          // aborted when the answer changes again
 }`;
   protected readonly engineApi: ApiRow[] = [
-    { name: 'new UiFormEngine(options)', type: 'UiFormEngineOptions', default: '—', desc: '{ definition, injector, data?, mode?, validators?, optionSources?, today?, locale?, strings?, link? }. Built-in checks are always included.' },
+    { name: 'new UiFormEngine(options)', type: 'UiFormEngineOptions', default: '—', desc: '{ definition, injector, values?, mode?, validators?, optionSources?, today?, locale?, strings?, link? }. Built-in checks are always included.' },
     { name: 'strings() / setStrings(overrides)', type: 'Signal<UiFbStrings> / method', default: '—', desc: 'The engine’s and renderer’s own words in the language in use (built-in table plus the strings option). Messages are worded again when the language or the overrides change.' },
-    { name: 'data() / dirty() / changes()', type: 'method', default: '—', desc: 'Signals: the answers as they would be saved; whether they differ from data; the differences as UiFbChange[] ({ path, label, from, to }).' },
+    { name: 'values() / dirty() / changes()', type: 'method', default: '—', desc: 'Signals: the answers as they would be saved; whether they differ from the values it was opened with; the differences as UiFbChange[] ({ path, label, from, to }).' },
     { name: 'setValue(id, row, value)', type: 'method', default: '—', desc: 'Sets an answer. row is the repeat entry id from rows(groupId), or null.' },
     { name: 'instanceState(id, row)', type: 'method', default: '—', desc: 'UiFbInstanceState: { visible, disabled, required, value, errors, warnings, pending }.' },
     { name: 'rows / addRow / removeRow / restoreRow / moveRow', type: 'method', default: '—', desc: 'Entries of a repeating section. removeRow returns what restoreRow needs to put it back.' },

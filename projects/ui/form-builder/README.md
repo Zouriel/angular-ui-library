@@ -23,7 +23,7 @@ themselves (except option sources, through hooks you provide).
 | JSON | Type | Made by | Read by |
 | --- | --- | --- | --- |
 | A form | `UiFormDefinition` | `ui-form-builder` | `ui-form-renderer`, `UiFormEngine` |
-| One set of answers | `Record<string, unknown>` (`submission.data`) | `ui-form-renderer` | `ui-form-renderer` (to edit or view) |
+| One set of answers | `Record<string, unknown>` (`submission.values`) | `ui-form-renderer` | `ui-form-renderer` (to edit or view) |
 | App-wide settings | `UiFormGlobalSettings` | `ui-form-global-settings` | builder and renderer (`globalSettings`) |
 
 **1. Create or load a form.**
@@ -56,7 +56,7 @@ publish() {
 Pass that copy back as `published`, with its answer count as `submissionCount`, so
 the builder protects saved answers (see "Changing a form that already has answers").
 
-**4. Fill it in.** Store `submission.data` with `submission.revision`:
+**4. Fill it in.** Store `submission.values` with `submission.revision`:
 
 ```html
 <ui-form-renderer [definition]="live" [globalSettings]="settings" (submitted)="api.saveAnswers($event)" />
@@ -69,7 +69,7 @@ the builder protects saved answers (see "Changing a form that already has answer
   formId: 'scholarship-2027',
   revision: 4,                    // the form's revision when it was filled in (null if never set)
   submittedAt: '2026-10-13T09:30:00.000Z',
-  data: {                         // the JSON to store
+  values: {                       // the answers, as JSON to store
     full_name: 'Aminath Shareef',  // keys are the fields' keys
     study_status: 'full_time',     // choices store the option's value
     subjects: ['maths', 'physics'],// multiple choice: a list of values
@@ -78,22 +78,22 @@ the builder protects saved answers (see "Changing a form that already has answer
     student_record: { value: 'S240117', label: 'Aminath Shareef' }, // option sources: { value, label }
     transcript: [{ name: 'a.pdf', size: 1200, type: 'application/pdf', url: '…' }], // files: UiFbFileValue[]
   },
-  files: {},                      // picked File objects when there is no uploader, keyed by data path
+  files: {},                      // picked File objects when there is no uploader, keyed by path in `values`
 }
 ```
 
-Calculated fields are included unless `props.excludeFromData` is set. Answers
+Calculated fields are included unless `props.excludeFromValues` is set. Answers
 to questions hidden by rules are left out when submitting, unless the form's
 `clearHidden` setting is `'never'`.
 
-**5. Edit or view saved answers.** Pass the stored data back:
+**5. Edit or view saved answers.** Pass the stored values back:
 
 ```html
-<ui-form-renderer [definition]="live" [data]="answer.data" (submitted)="api.updateAnswers(answer.id, $event.data)" />
-<ui-form-renderer [definition]="live" [data]="answer.data" mode="view" />
+<ui-form-renderer [definition]="live" [values]="answer.values" (submitted)="api.updateAnswers(answer.id, $event.values)" />
+<ui-form-renderer [definition]="live" [values]="answer.values" mode="view" />
 ```
 
-With `data`, the mode is `edit` unless you say otherwise: the button reads "Save
+With `values`, the mode is `edit` unless you say otherwise: the button reads "Save
 changes", the form tracks `dirty()` and lists `changes()` (from → to) next to it.
 Keys it doesn't know about are kept, and so are answers to questions that were
 already hidden when it opened. Options that were removed still show, marked
@@ -264,14 +264,14 @@ used list asks first. The settings are plain JSON (`UiFormGlobalSettings`:
 ## Filling forms in
 
 ```html
-<ui-form-renderer [definition]="form" [data]="saved" (submitted)="store($event)" />
+<ui-form-renderer [definition]="form" [values]="saved" (submitted)="store($event)" />
 ```
 
 | Input | Default | |
 | --- | --- | --- |
 | `definition` | required | The form. |
-| `data` | `null` | Saved answers to edit or view. |
-| `mode` | `edit` with data, else `create` | `'create' \| 'edit' \| 'view'`. |
+| `values` | `null` | Saved answers to edit or view. |
+| `mode` | `edit` with values, else `create` | `'create' \| 'edit' \| 'view'`. |
 | `validators`, `optionSources`, `globalSettings` | `[]`, `[]`, `null` | Same as the builder's. |
 | `uploader` | `null` | `(file, field) => Promise<UiFbFileValue>`: upload as files are picked. Without it, the `File`s come back in `submission.files`. |
 | `submitLabel`, `cancelLabel` | `null` | Button text. A cancel label adds a Cancel button. |
@@ -279,18 +279,18 @@ used list asks first. The settings are plain JSON (`UiFormGlobalSettings`:
 | `showTitle`, `showActions` | `true` | Hide the title, or the buttons (drive it with `submit()`). |
 | `today` | `null` | `() => 'YYYY-MM-DD'`: fixes today for date rules and ages. |
 
-Outputs: `submitted` (`UiFormSubmission`), `valueChange` (the data as it would be
+Outputs: `submitted` (`UiFormSubmission`), `valueChange` (the values as they would be
 saved, after every change), `dirtyChange` (`boolean`), `cancelled`. Methods:
 `submit()` (validates everything, emits and returns the submission, or `null`),
-`reset()` (back to the data it was given, on the first page), and `engine()` (the
-running `UiFormEngine`: `data()`, `dirty()`, `changes()`…).
+`reset()` (back to the values it was given, on the first page), and `engine()` (the
+running `UiFormEngine`: `values()`, `dirty()`, `changes()`…).
 
 - **Validation** follows "reward early, punish late". A field is checked when
   it's left, and once it shows an error it updates as you type (or only on
   Continue, by form setting). **Continue** and **Submit** check the whole page and
   list every problem at the top, with links to the fields.
 - **Hidden questions** don't block submitting. Their answers are left out of the
-  data (or kept, by form setting).
+  values (or kept, by form setting).
 
 ## Changing a form that already has answers
 
@@ -315,7 +315,7 @@ revision it was made with.
 | --- | --- |
 | `[(definition)]` | `UiFormDefinition`, two-way. Every edit writes back. Setting another form, or different content, loads it and clears undo. The same form handed back with only `revision` changed (a published copy stored back) keeps undo. |
 | `published` | `UiFormDefinition \| null`: the version people answer now. |
-| `submissionCount` | `number`: its answers. Above zero, saved data is protected. |
+| `submissionCount` | `number`: its answers. Above zero, saved values are protected. |
 | `validators`, `optionSources`, `globalSettings` | Extra checks and lists, on top of the providers. |
 | `[fbActions]` | Content slot for your buttons in the top bar. |
 | `problems()` | `UiFbProblem[]` (`{ severity, targetId, message }`): missing keys, rule loops, rules pointing at deleted questions, backward jumps. |
@@ -325,15 +325,15 @@ revision it was made with.
 
 ## Running a form without UI
 
-`UiFormEngine` is what the renderer runs: the same rules, checks and data
+`UiFormEngine` is what the renderer runs: the same rules, checks and value
 shaping, as signals. It needs an Angular `Injector` (it uses effects), so use it
 inside an Angular app or test (`TestBed.inject(Injector)`).
 
 ```ts
-const engine = new UiFormEngine({ definition, data, injector, validators, optionSources });
+const engine = new UiFormEngine({ definition, values, injector, validators, optionSources });
 engine.setValue('f_name', null, 'Aminath');   // element id, repeat row (null outside repeats), value
 engine.submit();                              // UiFormSubmission, or null with errors shown
-engine.data(); engine.dirty(); engine.changes();
+engine.values(); engine.dirty(); engine.changes();
 engine.destroy();
 ```
 

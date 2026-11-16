@@ -61,6 +61,9 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   locale, with English and Dhivehi tables (`UiFbStrings`, `fbStrings()`); change any of them with
   `<ui-form-renderer [strings]>` or `provideUiFormStrings()`. Breaking: a submission's answers are now
   `UiFormSubmission.values` (was `data`), and `UiWfSubmissionPayload.values` in the workflow bridge.
+- **The answers are called values everywhere** (`@zouriel/ui/form-builder`, 0.84.2): `<ui-form-renderer [values]>`,
+  `engine.values()` (and `UiFormEngineOptions.values`, `engine.valuePath()`), `props.excludeFromValues`
+  (upgraded from `excludeFromData` by `migrateDefinition`), and `wfFormAnswers` returns `{ values }`. Breaking, no aliases.
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).

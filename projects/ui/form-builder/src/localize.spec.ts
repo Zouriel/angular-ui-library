@@ -35,6 +35,29 @@ function engine(d: UiFormDefinition, opts: { locale?: string; link?: UiFbSubmiss
   return e;
 }
 
+describe('migrateDefinition excludeFromData', () => {
+  const stored = { schemaVersion: 2, id: 'a', title: 'T', pages: [{ id: 'p', elements: [
+    { kind: 'field', id: 'f', type: 'calculated', key: 'total', label: 'Total', props: { excludeFromData: true, decimals: 2 } },
+    { kind: 'group', id: 'g', key: 'kids', elements: [{ kind: 'field', id: 'h', type: 'calculated', key: 'x', label: 'X', props: { excludeFromData: true } }] },
+  ] }] };
+  const propsOf = (d: unknown, path: number[]): Record<string, unknown> => {
+    let el = (d as { pages: { elements: Record<string, unknown>[] }[] }).pages[0].elements[path[0]];
+    if (path.length > 1) el = (el['elements'] as Record<string, unknown>[])[path[1]];
+    return el['props'] as Record<string, unknown>;
+  };
+
+  it('upgrades the old key on every field, nested groups included, and drops it', () => {
+    const d = migrateDefinition(stored);
+    expect(propsOf(d, [0])).toEqual({ decimals: 2, excludeFromValues: true });
+    expect(propsOf(d, [1, 0])).toEqual({ excludeFromValues: true });
+  });
+
+  it('is idempotent', () => {
+    const once = migrateDefinition(stored);
+    expect(migrateDefinition(once)).toEqual(once);
+  });
+});
+
 describe('migrateDefinition v1 to v2', () => {
   const v1 = { schemaVersion: 1, id: 'a', title: 'Old', pages: [{ id: 'p', title: 'One', elements: [{ kind: 'field', id: 'f', type: 'text', key: 'k', label: 'K', custom: 1 }] }], extra: { keep: true } };
 
@@ -88,7 +111,7 @@ describe('UiFormEngine languages', () => {
     const e = engine(bilingual());
     e.setValue('name', null, 'Aisha');
     e.setLocale('dv');
-    expect(e.data()['name']).toBe('Aisha');
+    expect(e.values()['name']).toBe('Aisha');
     expect(e.instanceState('name', null).errors).toEqual([]);
   });
 

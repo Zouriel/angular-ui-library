@@ -739,7 +739,7 @@ export function lintTranslations(def: UiFormDefinition): UiFbProblem[] {
 }
 
 /**
- * Every field that stores data, with where it sits in a submission's `data`:
+ * Every field that stores an answer, with where it sits in a submission's `values`:
  * `name`, `address.city`, `children[].age` (inside a repeating section).
  */
 export function fbSubmissionFields(def: UiFormDefinition, locale?: string | null): UiFbSubmissionField[] {
@@ -753,7 +753,7 @@ export function fbSubmissionFields(def: UiFormDefinition, locale?: string | null
         const base = el.key ? `${prefix}${el.key}${el.repeat ? '[]' : ''}.` : prefix;
         visit(el.elements, base);
       } else if (el.kind === 'field') {
-        if (el.props?.excludeFromData) continue;
+        if (el.props?.excludeFromValues) continue;
         out.push({ path: `${prefix}${el.key}`, key: el.key, label: fbText(el.label, loc, dl) || el.key, type: el.type });
       }
     }
@@ -784,8 +784,18 @@ export function migrateDefinition(raw: unknown): UiFormDefinition {
     defaultLocale,
     supportedLocales: supported,
     settings: d.settings ?? {},
-    pages: pages.map((p) => ({ ...p, id: p.id || fbUid('page'), elements: p.elements ?? [] })),
+    pages: pages.map((p) => ({ ...p, id: p.id || fbUid('page'), elements: renameStoredProps(p.elements ?? []) })),
   };
+}
+
+/** Upgrades the old `props.excludeFromData` (renamed `excludeFromValues`) on every field, groups included. */
+function renameStoredProps(els: UiFbElement[]): UiFbElement[] {
+  return els.map((el) => {
+    if (el.kind === 'group') return { ...el, elements: renameStoredProps(el.elements ?? []) };
+    if (el.kind !== 'field' || !el.props || !('excludeFromData' in el.props)) return el;
+    const { excludeFromData, ...rest } = el.props as typeof el.props & { excludeFromData?: boolean };
+    return { ...el, props: excludeFromData === undefined || rest.excludeFromValues !== undefined ? rest : { ...rest, excludeFromValues: excludeFromData } };
+  });
 }
 
 export interface UiFbDiff {

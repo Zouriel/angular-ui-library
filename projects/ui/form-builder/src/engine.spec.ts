@@ -10,14 +10,14 @@ function def(elements: UiFbElement[], extra: Partial<UiFormDefinition> = {}): Ui
   return { schemaVersion: 1, id: 'form1', title: 'T', revision: 3, pages: [{ id: 'p1', elements }], ...extra };
 }
 
-function engine(d: UiFormDefinition, data?: Record<string, unknown> | null, validators: UiFbValidatorDef[] = []) {
-  const e = new UiFormEngine({ definition: d, data, validators, today: () => '2026-10-11', injector: TestBed.inject(Injector) });
+function engine(d: UiFormDefinition, values?: Record<string, unknown> | null, validators: UiFbValidatorDef[] = []) {
+  const e = new UiFormEngine({ definition: d, values, validators, today: () => '2026-10-11', injector: TestBed.inject(Injector) });
   TestBed.tick();
   return e;
 }
 
 describe('UiFormEngine', () => {
-  it('shows a field only when its rule holds, and leaves hidden answers out of the data', () => {
+  it('shows a field only when its rule holds, and leaves hidden answers out of the values', () => {
     const e = engine(def([
       f('married', 'toggle'),
       f('spouse', 'text', { visibility: { action: 'show', when: { ref: 'married', op: 'isTrue' } } }),
@@ -26,9 +26,9 @@ describe('UiFormEngine', () => {
     e.setValue('married', null, true);
     expect(e.instanceState('spouse', null).visible).toBe(true);
     e.setValue('spouse', null, 'Sam');
-    expect(e.data()).toEqual({ married: true, spouse: 'Sam' });
+    expect(e.values()).toEqual({ married: true, spouse: 'Sam' });
     e.setValue('married', null, false);
-    expect(e.data()).toEqual({ married: false });
+    expect(e.values()).toEqual({ married: false });
   });
 
   it('makes a field required only under a condition, and hidden required fields never block', () => {
@@ -81,7 +81,7 @@ describe('UiFormEngine', () => {
     expect(e.instanceState('note', r1).visible).toBe(false);
     expect(e.instanceState('note', r2).visible).toBe(true);
     expect(e.instanceState('total', null).value).toBe(30);
-    expect(e.data()).toEqual({
+    expect(e.values()).toEqual({
       items: [{ qty: 2, price: 5, line: 10 }, { qty: 20, price: 1, line: 20, note: null }],
       total: 30,
     });
@@ -101,13 +101,13 @@ describe('UiFormEngine', () => {
     expect(e.mode).toBe('edit');
     expect(e.rawValue('name', null)).toBe('Ada');
     // Re-saving moves the answer to the new key and keeps everything it doesn't know about.
-    expect(e.data()).toEqual({ full_name: 'Ada', show: false, secret: 'kept', gone: 'old', legacy_field: 42 });
+    expect(e.values()).toEqual({ full_name: 'Ada', show: false, secret: 'kept', gone: 'old', legacy_field: 42 });
     expect(e.dirty()).toBe(false);
     // Once the person reveals the field (it's rendered) and hides it again, it's their choice: it's cleared.
     e.setValue('show', null, true);
     expect(e.instanceState('secret', null).visible).toBe(true);
     e.setValue('show', null, false);
-    expect(e.data()['secret']).toBeUndefined();
+    expect(e.values()['secret']).toBeUndefined();
     expect(e.dirty()).toBe(true);
     expect(e.changes()).toEqual([{ path: 'secret', label: 'SECRET', from: 'kept', to: null }]);
   });
@@ -181,7 +181,7 @@ describe('UiFormEngine', () => {
 
   it('shows only values in view mode and never validates', () => {
     const e = engine(def([f('a', 'text', { required: true })]), { a: '' }, []);
-    const v = new UiFormEngine({ definition: def([f('a', 'text', { required: true })]), data: { a: '' }, mode: 'view', injector: TestBed.inject(Injector) });
+    const v = new UiFormEngine({ definition: def([f('a', 'text', { required: true })]), values: { a: '' }, mode: 'view', injector: TestBed.inject(Injector) });
     expect(e.instanceState('a', null).errors.length).toBe(1);
     expect(v.instanceState('a', null)).toMatchObject({ errors: [], disabled: true });
   });

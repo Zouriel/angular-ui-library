@@ -70,15 +70,15 @@ describe('UiFormEngine strings', () => {
 
   it('words comparison and relative date messages', () => {
     const d = def([f('a', 'number', { label: 'A' }), f('b', 'number', { label: 'B', validators: [{ id: 'c', type: 'compareField', params: { comparison: 'gt', field: 'a' } }] })]);
-    const e = engine(d, { data: { a: 5, b: 1 } });
+    const e = engine(d, { values: { a: 5, b: 1 } });
     expect(e.instanceState('b', null).errors).toEqual(['B must be more than “A”.']);
-    expect(engine(d, { data: { a: 5, b: 1 }, locale: 'dv' }).instanceState('b', null).errors[0]).toContain(UI_FB_STRINGS_DV.compareGt);
+    expect(engine(d, { values: { a: 5, b: 1 }, locale: 'dv' }).instanceState('b', null).errors[0]).toContain(UI_FB_STRINGS_DV.compareGt);
   });
 
   it('takes a message by language from a registered check', () => {
     const check: UiFbValidatorDef = { type: 'taken', label: 'Taken', defaultMessage: { en: 'Taken.', dv: 'ނެގިފައި.' }, validate: () => false };
     const d = def([f('a', 'text', { validators: [{ id: 'r', type: 'taken' }] })]);
-    const e = engine(d, { validators: [check], data: { a: 'x' } });
+    const e = engine(d, { validators: [check], values: { a: 'x' } });
     expect(e.instanceState('a', null).errors).toEqual(['Taken.']);
     e.setLocale('dv');
     expect(e.instanceState('a', null).errors).toEqual(['ނެގިފައި.']);
@@ -94,13 +94,13 @@ describe('UiFormEngine strings', () => {
 
 @Component({
   imports: [UiFormRenderer],
-  template: `<ui-form-renderer [definition]="def()" [locale]="locale()" [strings]="strings()" [data]="data()" [mode]="mode()" />`,
+  template: `<ui-form-renderer [definition]="def()" [locale]="locale()" [strings]="strings()" [values]="values()" [mode]="mode()" />`,
 })
 class Host {
   def = signal<UiFormDefinition>(def([]));
   locale = signal<string | null>(null);
   strings = signal<UiFbStringOverrides | null>(null);
-  data = signal<Record<string, unknown> | null>(null);
+  values = signal<Record<string, unknown> | null>(null);
   mode = signal<'create' | 'edit' | 'view' | null>(null);
 }
 
@@ -140,7 +140,7 @@ describe('UiFormRenderer strings', () => {
   });
 
   it('shows the last page words and Yes/No in Dhivehi', async () => {
-    const { el } = await render(def([f('c', 'checkbox', { label: 'C' }), f('t', 'toggle', { label: 'T' })]), (h) => { h.locale.set('dv'); h.data.set({ c: true, t: false }); h.mode.set('view'); });
+    const { el } = await render(def([f('c', 'checkbox', { label: 'C' }), f('t', 'toggle', { label: 'T' })]), (h) => { h.locale.set('dv'); h.values.set({ c: true, t: false }); h.mode.set('view'); });
     const values = Array.from(el.querySelectorAll('.ui-fbf-value')).map((v) => v.textContent!.trim());
     expect(values).toEqual([UI_FB_STRINGS_DV.yes, UI_FB_STRINGS_DV.no]);
     const create = await render(def([f('a', 'text')]), (h) => h.locale.set('dv'));

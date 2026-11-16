@@ -183,7 +183,7 @@ const AUTOCOMPLETE = [
                   <label class="fld"><span class="fb-label">After it</span><ui-input size="sm" [ngModel]="f.props?.suffix ?? ''" (ngModelChange)="prop(f, 'suffix', $event || undefined)" placeholder="e.g. years" /></label>
                 </div>
               }
-              <ui-switch size="sm" [ngModel]="!!f.props?.excludeFromData" (ngModelChange)="prop(f, 'excludeFromData', $event || undefined)">Show it, but don’t save it</ui-switch>
+              <ui-switch size="sm" [ngModel]="!!f.props?.excludeFromValues" (ngModelChange)="prop(f, 'excludeFromValues', $event || undefined)">Show it, but don’t save it</ui-switch>
             }
           }
 

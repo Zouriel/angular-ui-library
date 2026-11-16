@@ -152,19 +152,19 @@ describe('FbBuilderStore', () => {
 
 @Component({
   imports: [UiFormRenderer],
-  template: `<ui-form-renderer [definition]="def()" [data]="data()" [mode]="mode()" (submitted)="got.push($event)" />`,
+  template: `<ui-form-renderer [definition]="def()" [values]="values()" [mode]="mode()" (submitted)="got.push($event)" />`,
 })
 class RendererHost {
   def = signal<UiFormDefinition>(form([]));
-  data = signal<Record<string, unknown> | null>(null);
+  values = signal<Record<string, unknown> | null>(null);
   mode = signal<'create' | 'edit' | 'view' | null>(null);
   got: UiFormSubmission[] = [];
 }
 
-async function renderForm(def: UiFormDefinition, data: Record<string, unknown> | null = null, mode: 'create' | 'edit' | 'view' | null = null) {
+async function renderForm(def: UiFormDefinition, values: Record<string, unknown> | null = null, mode: 'create' | 'edit' | 'view' | null = null) {
   const fx = TestBed.createComponent(RendererHost);
   fx.componentInstance.def.set(def);
-  fx.componentInstance.data.set(data);
+  fx.componentInstance.values.set(values);
   fx.componentInstance.mode.set(mode);
   fx.detectChanges();
   await fx.whenStable();

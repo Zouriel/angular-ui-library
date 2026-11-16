@@ -38,7 +38,7 @@ export type UiFormMode = 'create' | 'edit' | 'view';
 export interface UiFormEngineOptions {
   definition: UiFormDefinition;
   /** Saved answers to open for editing or viewing. */
-  data?: Record<string, unknown> | null;
+  values?: Record<string, unknown> | null;
   mode?: UiFormMode;
   /** App-registered checks (built-ins are always included). */
   validators?: readonly UiFbValidatorDef[];
@@ -185,9 +185,9 @@ export class UiFormEngine {
   private readonly validatorDefs: Map<string, UiFbValidatorDef>;
   private readonly sourceDefs: Map<string, UiFbOptionSourceDef>;
   private readonly today: () => string;
-  private readonly initialData: Record<string, unknown>;
+  private readonly savedValues: Record<string, unknown>;
 
-  private readonly values = signal<Record<string, unknown>>({});
+  private readonly answers = signal<Record<string, unknown>>({});
   private readonly rowIds = signal<Record<string, string[]>>({});
   private readonly asyncResults = signal<Record<string, { hash: string; result: string | false | null }>>({});
   private readonly requestedLocale = signal<string | null>(null);
@@ -230,7 +230,7 @@ export class UiFormEngine {
     this.requestedLocale.set(opts.locale ?? null);
     this.linkSig.set(opts.link ?? null);
     this.stringOverrides.set(opts.strings ?? null);
-    this.mode = opts.mode ?? (opts.data ? 'edit' : 'create');
+    this.mode = opts.mode ?? (opts.values ? 'edit' : 'create');
     this.today = opts.today ?? todayIso;
     const s = this.definition.settings ?? {};
     this.settings = {
@@ -241,14 +241,14 @@ export class UiFormEngine {
     };
     this.validatorDefs = new Map([...UI_FB_BUILTIN_VALIDATORS, ...(opts.validators ?? [])].map((d) => [d.type, d]));
     this.sourceDefs = new Map((opts.optionSources ?? []).map((d) => [d.type, d]));
-    this.initialData = isObj(opts.data) ? structuredClone(opts.data) : {};
+    this.savedValues = isObj(opts.values) ? structuredClone(opts.values) : {};
     this.load();
 
     const injector = opts.injector;
     this.effects.push(effect(() => this.applySetValues(), { injector }));
     this.effects.push(effect(() => this.runChecks(this.state().checks), { injector }));
     // The first full picture (calculations included) is the "unchanged" baseline.
-    this.baseline = untracked(() => this.data());
+    this.baseline = untracked(() => this.values());
   }
 
   /** Switches the language. Answers are kept; every message and label is worded again. */
@@ -323,8 +323,8 @@ export class UiFormEngine {
         }
       }
     };
-    for (const p of this.definition.pages) loadEls(p.elements, this.initialData, null);
-    this.values.set(values);
+    for (const p of this.definition.pages) loadEls(p.elements, this.savedValues, null);
+    this.answers.set(values);
     this.rowIds.set(rows);
   }
 
@@ -334,7 +334,7 @@ export class UiFormEngine {
 
   // ── Reading ─────────────────────────────────────────────────────────────
 
-  readonly state = computed<EvalResult>(() => this.evaluate(this.values(), this.rowIds(), this.asyncResults(), this.locale()));
+  readonly state = computed<EvalResult>(() => this.evaluate(this.answers(), this.rowIds(), this.asyncResults(), this.locale()));
 
   /** Indexes (into `definition.pages`) of the pages on the current route. */
   readonly path = computed(() => this.state().path);
@@ -355,7 +355,7 @@ export class UiFormEngine {
   }
 
   rawValue(id: string, row: string | null): unknown {
-    return this.values()[addrOf(id, row)];
+    return this.answers()[addrOf(id, row)];
   }
 
   /** The registered source a field searches, if it has one and the app provides it. */
@@ -440,7 +440,7 @@ export class UiFormEngine {
     if (this.mode === 'view') return;
     const f = this.field(id);
     const v = f ? coerceValue(f, value) : value;
-    this.values.update((vals) => ({ ...vals, [addrOf(id, row)]: v }));
+    this.answers.update((vals) => ({ ...vals, [addrOf(id, row)]: v }));
   }
 
   markTouched(id: string, row: string | null): void {
@@ -470,7 +470,7 @@ export class UiFormEngine {
       if (el.kind === 'group') walk(el.elements);
     });
     walk(g.elements);
-    this.values.update((v) => ({ ...v, ...defaults }));
+    this.answers.update((v) => ({ ...v, ...defaults }));
     this.rowIds.update((r) => ({ ...r, [groupId]: [...(r[groupId] ?? []), id] }));
     return id;
   }
@@ -479,16 +479,16 @@ export class UiFormEngine {
   removeRow(groupId: string, rowId: string): UiFbRemovedRow | null {
     if (!this.canRemoveRow(groupId)) return null;
     const index = this.rows(groupId).indexOf(rowId);
-    const values = Object.fromEntries(Object.entries(this.values()).filter(([k]) => k.startsWith(`${rowId}/`)));
+    const values = Object.fromEntries(Object.entries(this.answers()).filter(([k]) => k.startsWith(`${rowId}/`)));
     this.rowIds.update((r) => ({ ...r, [groupId]: (r[groupId] ?? []).filter((x) => x !== rowId) }));
-    this.values.update((v) => Object.fromEntries(Object.entries(v).filter(([k]) => !k.startsWith(`${rowId}/`))));
+    this.answers.update((v) => Object.fromEntries(Object.entries(v).filter(([k]) => !k.startsWith(`${rowId}/`))));
     return { groupId, rowId, index, values };
   }
 
   /** Puts a removed entry back where it was, answers and all. */
   restoreRow(removed: UiFbRemovedRow): void {
     if (this.rows(removed.groupId).includes(removed.rowId)) return;
-    this.values.update((v) => ({ ...v, ...removed.values }));
+    this.answers.update((v) => ({ ...v, ...removed.values }));
     this.rowIds.update((r) => {
       const list = [...(r[removed.groupId] ?? [])];
       list.splice(Math.min(removed.index, list.length), 0, removed.rowId);
@@ -552,7 +552,7 @@ export class UiFormEngine {
     for (const [addr, list] of this.files) {
       if (!list.length) continue;
       const [row, id] = addr.includes('/') ? addr.split('/') : [null, addr];
-      if (this.instanceState(id, row).visible) files[this.dataPath(id, row)] = list;
+      if (this.instanceState(id, row).visible) files[this.valuePath(id, row)] = list;
     }
     const locale = this.locale();
     const link = this.linkSig();
@@ -560,7 +560,7 @@ export class UiFormEngine {
       formId: this.definition.id,
       revision: this.definition.revision ?? null,
       locale,
-      values: this.data(),
+      values: this.values(),
       submittedAt: new Date().toISOString(),
       ...(link?.workflowId ? { workflowId: link.workflowId } : {}),
       ...(link?.serviceCode ? { serviceCode: link.serviceCode } : {}),
@@ -572,14 +572,14 @@ export class UiFormEngine {
   // ── Output ──────────────────────────────────────────────────────────────
 
   /** The answers as they would be saved right now. */
-  readonly data = computed<Record<string, unknown>>(() => this.buildData());
+  readonly values = computed<Record<string, unknown>>(() => this.buildValues());
 
-  readonly dirty = computed(() => !deepEqual(this.data(), this.baseline));
+  readonly dirty = computed(() => !deepEqual(this.values(), this.baseline));
 
   /** Each answer that differs from what the form was opened with. */
   readonly changes = computed<UiFbChange[]>(() => {
     const out: UiFbChange[] = [];
-    const vals = this.values();
+    const vals = this.answers();
     const rows = this.rowIds();
     const states = this.state().states;
     for (const [id, entry] of this.index) {
@@ -587,7 +587,7 @@ export class UiFormEngine {
         const before = this.initialRows.get(id) ?? [];
         const now = rows[id] ?? [];
         const label = elementName(entry.element, this.definition, this.locale());
-        if (before.length !== now.length) out.push({ path: this.dataPath(id, null), label, from: before.length, to: now.length });
+        if (before.length !== now.length) out.push({ path: this.valuePath(id, null), label, from: before.length, to: now.length });
       }
       if (entry.kind !== 'field') continue;
       const field = entry.element as UiFbField;
@@ -600,14 +600,14 @@ export class UiFormEngine {
         const from = this.initialValues.get(addr);
         const o = this.output(field, addr, states.get(addr) ?? HIDDEN, vals);
         const to = o.include ? o.value : null;
-        if (!deepEqual(toJson(from), toJson(to))) out.push({ path: this.dataPath(id, row), label: this.instanceLabel(id, row), from: toJson(from), to: toJson(to) });
+        if (!deepEqual(toJson(from), toJson(to))) out.push({ path: this.valuePath(id, row), label: this.instanceLabel(id, row), from: toJson(from), to: toJson(to) });
       }
     }
     return out;
   });
 
-  /** Where a field's answer sits in the data, e.g. `dependants[1].name`. */
-  dataPath(id: string, row: string | null): string {
+  /** Where a field's answer sits in the values, e.g. `dependants[1].name`. */
+  valuePath(id: string, row: string | null): string {
     const entry = this.index.get(id);
     if (!entry) return id;
     const parts: string[] = [];
@@ -623,13 +623,13 @@ export class UiFormEngine {
 
   /**
    * A hidden answer is kept when it was saved before and the person never saw
-   * it in this session — rules changing later must not wipe old data.
+   * it in this session — rules changing later must not wipe old answers.
    */
   private keepHidden(addr: string): boolean {
     return this.settings.clearHidden === 'never' || (this.mode !== 'create' && this.loaded.has(addr) && !this.everShown.has(addr));
   }
 
-  /** Whether a field's answer goes into the data, and as what. */
+  /** Whether a field's answer goes into the values, and as what. */
   private output(el: UiFbField, addr: string, st: UiFbInstanceState, vals: Record<string, unknown>): { include: boolean; value: unknown } {
     let value = el.type === 'calculated' ? st.value : vals[addr];
     // An untouched yes/no shows as "no", so that's what gets saved.
@@ -639,11 +639,11 @@ export class UiFormEngine {
     return { include: false, value: undefined };
   }
 
-  private buildData(): Record<string, unknown> {
+  private buildValues(): Record<string, unknown> {
     const states = this.state().states;
-    const vals = this.values();
+    const vals = this.answers();
     const rows = this.rowIds();
-    const out = structuredClone(this.initialData);
+    const out = structuredClone(this.savedValues);
     const clears = this.settings.clearHidden !== 'never';
     const keepHidden = (addr: string) => this.keepHidden(addr);
     const write = (els: UiFbElement[], obj: Record<string, unknown>, row: string | null) => {
@@ -653,7 +653,7 @@ export class UiFormEngine {
         const st = states.get(addr) ?? HIDDEN;
         if (el.kind === 'field') {
           (el.keyHistory ?? []).forEach((k) => { if (k !== el.key) delete obj[k]; });
-          if (el.type === 'calculated' && el.props?.excludeFromData) { delete obj[el.key]; continue; }
+          if (el.type === 'calculated' && el.props?.excludeFromValues) { delete obj[el.key]; continue; }
           const o = this.output(el, addr, st, vals);
           if (o.include) obj[el.key] = o.value;
           else delete obj[el.key];
@@ -985,7 +985,7 @@ export class UiFormEngine {
         }
       }
     }
-    if (Object.keys(updates).length) untracked(() => this.values.update((v) => ({ ...v, ...updates })));
+    if (Object.keys(updates).length) untracked(() => this.answers.update((v) => ({ ...v, ...updates })));
   }
 
   /** A condition context over a finished evaluation (for effects). */

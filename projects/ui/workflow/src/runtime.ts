@@ -58,11 +58,11 @@ const WF_REMARKS_TOO_LONG = `Remarks can be at most ${WF_REMARKS_MAX.toLocaleStr
  * answers nobody touched: defaults and prefilled values). Null with a message when they can't be sent:
  * picked files need an upload address on the form, as the engine takes JSON only.
  */
-export function wfFormAnswers(s: UiFormSubmission): { data: Record<string, unknown> } | { error: string } {
+export function wfFormAnswers(s: UiFormSubmission): { values: Record<string, unknown> } | { error: string } {
   if (Object.values(s.files).some((f) => f.length)) {
     return { error: 'The files picked in this form can’t be sent: the form needs an upload address for them.' };
   }
-  return { data: s.values };
+  return { values: s.values };
 }
 
 // ── State badge ───────────────────────────────────────────────────────────
@@ -247,7 +247,7 @@ export class WfDecideDialog {
       if (!s) return;
       const a = wfFormAnswers(s);
       if ('error' in a) { this.error.set(a.error); return; }
-      data = a.data;
+      data = a.values;
     }
     if (wfCommentRequired(t, outcome) && !this.comment().trim()) {
       this.commentMissing.set(true);
@@ -600,7 +600,7 @@ export class WfRecordActions extends WfWithApi {
       if (!s) return;
       const a = wfFormAnswers(s);
       if ('error' in a) { this.pendingError.set(a.error); return; }
-      input = a.data;
+      input = a.values;
     }
     if (p.remarks === 'required' && !this.remark().trim()) {
       this.remarkMissing.set(true);

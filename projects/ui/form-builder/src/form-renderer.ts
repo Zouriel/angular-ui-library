@@ -36,7 +36,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
 /**
  * `ui-form-renderer` — fills in a form built with `ui-form-builder`.
  *
- * Give it a definition, and (to edit or view saved answers) the saved `data`.
+ * Give it a definition, and (to edit or view saved answers) the saved `values`.
  * It emits `submitted` with JSON ready to store: `{ formId, revision, values, … }`.
  */
 @Component({
@@ -296,8 +296,8 @@ export class UiFormRenderer {
 
   readonly definition = input.required<UiFormDefinition>();
   /** Saved answers to edit or view. */
-  readonly data = input<Record<string, unknown> | null>(null);
-  /** Defaults to `edit` when `data` is given, otherwise `create`. */
+  readonly values = input<Record<string, unknown> | null>(null);
+  /** Defaults to `edit` when `values` are given, otherwise `create`. */
   readonly mode = input<UiFormMode | null>(null);
   /** Extra app checks, on top of the ones from `provideUiFormValidators`. */
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
@@ -339,7 +339,7 @@ export class UiFormRenderer {
   protected readonly nextIcon = FB_ICONS.ArrowRight01Icon;
   protected readonly downIcon = FB_ICONS.ArrowDown01Icon;
 
-  /** The running form. Hosts can read `data()`, `dirty()`, `changes()` from it. */
+  /** The running form. Hosts can read `values()`, `dirty()`, `changes()` from it. */
   readonly engine = signal<UiFormEngine | null>(null);
   protected readonly announce = signal('');
   /** The repeat entry removed last, for its Undo. */
@@ -376,13 +376,13 @@ export class UiFormRenderer {
     effect((onCleanup) => {
       this.resetTick();
       const definition = this.definition();
-      const data = this.data();
+      const values = this.values();
       const mode = this.mode();
       const validators = [...this.registered, ...this.validators()];
       const optionSources = [...this.registeredSources, ...sourcesFromSettings(this.globalSettings(), this.http), ...this.optionSources()];
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
-        definition, data, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
+        definition, values, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
         locale: this.locale(), link: this.link(), strings: untracked(() => this.stringOverrides()),
       }));
       this.engine.set(e);
@@ -408,14 +408,14 @@ export class UiFormRenderer {
     effect(() => {
       const e = this.engine();
       if (!e) return;
-      const data = e.data();
+      const values = e.values();
       const dirty = e.dirty();
       if (first) { first = false; return; }
-      untracked(() => { this.valueChange.emit(data); this.dirtyChange.emit(dirty); });
+      untracked(() => { this.valueChange.emit(values); this.dirtyChange.emit(dirty); });
     });
   }
 
-  /** Starts over from the data the form was given (or blank), back on the first page. */
+  /** Starts over from the values the form was given (or blank), back on the first page. */
   reset(): void {
     this.resetTick.update((n) => n + 1);
   }
@@ -495,7 +495,7 @@ export class UiFormRenderer {
   protected show(c: UiFbChange, v: unknown): string {
     const w = this.s();
     if (v === null || v === undefined || v === '') return w.empty;
-    const id = [...(this.engine()?.index.values() ?? [])].find((x) => x.kind === 'field' && this.engine()?.dataPath(x.id, null) === c.path.replace(/\[\d+\]/g, ''))?.id;
+    const id = [...(this.engine()?.index.values() ?? [])].find((x) => x.kind === 'field' && this.engine()?.valuePath(x.id, null) === c.path.replace(/\[\d+\]/g, ''))?.id;
     const field = id ? this.engine()?.field(id) : undefined;
     return field ? formatValue(field, v, this.engine()?.locale(), this.engine()?.defaultLocale, w) || w.empty : typeof v === 'object' ? JSON.stringify(v) : String(v);
   }

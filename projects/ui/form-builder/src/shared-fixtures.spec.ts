@@ -51,8 +51,8 @@ function runEngine(file: string): void {
     for (const c of fx.cases as Json[]) {
       it(c.name, async () => {
         const definition: UiFormDefinition = c.definition ?? (c.definitionFile ? load(c.definitionFile) : fx.definition ?? load(fx.definitionFile));
-        const data = c.data ?? (c.dataFile ? load(c.dataFile) : undefined);
-        const e = new UiFormEngine({ definition, data, mode: c.mode as UiFormMode | undefined, today: () => c.today, locale: c.locale, link: c.link, injector: TestBed.inject(Injector) });
+        const values = c.values ?? (c.valuesFile ? load(c.valuesFile) : undefined);
+        const e = new UiFormEngine({ definition, values, mode: c.mode as UiFormMode | undefined, today: () => c.today, locale: c.locale, link: c.link, injector: TestBed.inject(Injector) });
         const tick = () => { TestBed.tick(); TestBed.tick(); };
         tick();
         const at = (addr: string): [string, string | null] => {
@@ -119,7 +119,7 @@ function runEngine(file: string): void {
           per('warnings', (id, row) => e.instanceState(id, row).warnings);
           per('errorsShown', (id, row) => e.errorsShown(id, row));
           per('display', (id, row) => formatValue(e.field(id)!, e.instanceState(id, row).value, e.locale(), e.defaultLocale));
-          per('dataPath', (id, row) => e.dataPath(id, row));
+          per('valuePath', (id, row) => e.valuePath(id, row));
           per('instanceLabel', (id, row) => e.instanceLabel(id, row));
           per('sourceParams', (id, row) => {
             const out: Record<string, unknown> = {};
@@ -133,9 +133,9 @@ function runEngine(file: string): void {
             const got = e.pageErrors(Number(p)).map((it) => ({ field: name(it.id, it.row), label: it.label, message: it.message }));
             expect(got, `${where}: pageErrors of page ${p}`).toEqual(want);
           }
-          if ('data' in x) expect(norm(e.data()), `${where}: data`).toEqual(x.data);
-          for (const [k, v] of Object.entries(x.dataHas ?? {})) expect(norm(e.data()[k]), `${where}: data.${k}`).toEqual(v);
-          for (const k of x.dataLacks ?? []) expect(k in e.data(), `${where}: data lacks ${k}`).toBe(false);
+          if ('values' in x) expect(norm(e.values()), `${where}: values`).toEqual(x.values);
+          for (const [k, v] of Object.entries(x.valuesHas ?? {})) expect(norm(e.values()[k]), `${where}: values.${k}`).toEqual(v);
+          for (const k of x.valuesLacks ?? []) expect(k in e.values(), `${where}: values lack ${k}`).toBe(false);
           if ('dirty' in x) expect(e.dirty(), `${where}: dirty`).toBe(x.dirty);
           if ('changes' in x) expect(norm(e.changes()), `${where}: changes`).toEqual(x.changes);
         }

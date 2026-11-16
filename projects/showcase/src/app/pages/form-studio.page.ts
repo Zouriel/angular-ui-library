@@ -160,7 +160,7 @@ function comparable(def: UiFormDefinition | null): string {
                       <p class="note">Saved with version {{ r.revision }}. It opens in the current version ({{ f.published.revision }}); answers the form no longer asks are kept.</p>
                     }
                     @for (x of [r.id + editing()]; track 'answer:' + x) {
-                      <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [data]="r.data" [locale]="r.locale ?? ''" [mode]="editing() ? 'edit' : 'view'"
+                      <ui-form-renderer [definition]="f.published ?? f.draft" [globalSettings]="store.settings()" [values]="r.values" [locale]="r.locale ?? ''" [mode]="editing() ? 'edit' : 'view'"
                         [uploader]="uploader" [cancelLabel]="editing() ? 'Cancel' : ''" (cancelled)="editing.set(false)"
                         (submitted)="saveEdit(f, r, $event)" />
                     }
@@ -461,7 +461,7 @@ export class FormStudioPage {
   /** The first text answer names the row (usually the person's name). */
   protected headline(f: StudioForm, r: StudioResponse): string {
     for (const fld of allFields(f.published ?? f.draft)) {
-      const v = r.data[fld.key];
+      const v = r.values[fld.key];
       if (typeof v === 'string' && v.trim() && ['text', 'email'].includes(fld.type)) return v;
     }
     return 'Answer';
@@ -469,7 +469,7 @@ export class FormStudioPage {
   protected subline(f: StudioForm, r: StudioResponse): string {
     const parts: string[] = [];
     for (const fld of allFields(f.published ?? f.draft)) {
-      const v = r.data[fld.key];
+      const v = r.values[fld.key];
       if (isEmptyValue(v) || (typeof v === 'object' && !Array.isArray(v))) continue;
       const text = formatValue(fld, v);
       if (text && text !== this.headline(f, r)) parts.push(text);
@@ -485,7 +485,7 @@ export class FormStudioPage {
     return JSON.stringify(f.draft, null, 2);
   }
   protected answersJson(f: StudioForm): string {
-    return JSON.stringify(f.responses.map((r) => ({ id: r.id, revision: r.revision, locale: r.locale, submittedAt: r.submittedAt, updatedAt: r.updatedAt, data: r.data })), null, 2);
+    return JSON.stringify(f.responses.map((r) => ({ id: r.id, revision: r.revision, locale: r.locale, submittedAt: r.submittedAt, updatedAt: r.updatedAt, values: r.values })), null, 2);
   }
   protected async copy(text: string, done: string): Promise<void> {
     try {

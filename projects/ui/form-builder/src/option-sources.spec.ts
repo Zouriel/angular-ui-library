@@ -189,12 +189,12 @@ describe('UiFbSourcePicker', () => {
 
 @Component({
   imports: [UiFormRenderer],
-  template: `<ui-form-renderer [definition]="def" [optionSources]="sources" [data]="data" (submitted)="sent = $event" />`,
+  template: `<ui-form-renderer [definition]="def" [optionSources]="sources" [values]="values" (submitted)="sent = $event" />`,
 })
 class FormHost {
   def!: UiFormDefinition;
   sources: UiFbOptionSourceDef[] = [];
-  data: Record<string, unknown> | null = null;
+  values: Record<string, unknown> | null = null;
   sent: UiFormSubmission | null = null;
 }
 
@@ -215,7 +215,7 @@ describe('sourced fields in ui-form-renderer', () => {
     const fx = TestBed.createComponent(FormHost);
     fx.componentInstance.def = def;
     fx.componentInstance.sources = [cities];
-    fx.componentInstance.data = { country: 'mv' };
+    fx.componentInstance.values = { country: 'mv' };
     fx.detectChanges();
     await fx.whenStable();
     fx.detectChanges();
@@ -240,7 +240,7 @@ describe('sourced fields in ui-form-renderer', () => {
     fx.detectChanges();
     await fx.whenStable();
     fx.detectChanges();
-    expect(engine.data()['city']).toBeNull();
+    expect(engine.values()['city']).toBeNull();
   });
 });
 

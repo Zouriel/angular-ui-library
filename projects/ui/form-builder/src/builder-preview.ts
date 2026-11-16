@@ -42,13 +42,13 @@ import { FB_ICONS } from './builder-icons';
           @if (device() === 'phone') {
             <ui-device-frame [width]="390" [height]="760" class="phone">
               <div class="phone-scroll">
-                <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
+                <ui-form-renderer [definition]="store.def()" [values]="values()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
                   (submitted)="submitted($event)" />
               </div>
             </ui-device-frame>
           } @else {
             <div class="desktop">
-              <ui-form-renderer [definition]="store.def()" [data]="data()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
+              <ui-form-renderer [definition]="store.def()" [values]="values()" [mode]="mode()" [validators]="store.validatorDefs()" [optionSources]="store.optionSourceDefs()" [locale]="locale()"
                 (submitted)="submitted($event)" />
             </div>
           }
@@ -102,7 +102,7 @@ export class FbPreview {
   protected readonly localeOptions = computed(() => this.store.locales().map((l) => ({ value: l.code, label: l.label })));
   private readonly renderer = viewChild(UiFormRenderer);
   /** The answers as they'd be saved right now, straight from the running form. */
-  protected readonly live = computed(() => this.renderer()?.engine()?.data() ?? {});
+  protected readonly live = computed(() => this.renderer()?.engine()?.values() ?? {});
   protected readonly last = signal<UiFormSubmission | null>(null);
   protected readonly dataText = signal('{}');
 
@@ -115,7 +115,7 @@ export class FbPreview {
     }
   });
   protected readonly dataError = computed(() => this.parsed().error ?? '');
-  protected readonly data = computed(() => (this.mode() === 'create' ? null : this.parsed().ok ?? {}));
+  protected readonly values = computed(() => (this.mode() === 'create' ? null : this.parsed().ok ?? {}));
 
   protected setMode(m: 'create' | 'edit' | 'view'): void {
     // Moving to edit/view starts from what was just filled in, which is the natural thing to test.

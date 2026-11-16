@@ -5,7 +5,7 @@
  *
  * Identity: every element has an immutable `id` (generated, never shown). Fields
  * also have an editable `key` — the property name their answer is stored under
- * in the submitted data. Rules, calculations and jumps always point at ids, so
+ * in the submitted values. Rules, calculations and jumps always point at ids, so
  * renaming a key never breaks logic; a renamed key is remembered in `keyHistory`
  * so answers saved under the old name still load.
  */
@@ -189,7 +189,7 @@ export interface UiFbCalc {
 
 export interface UiFbOption {
   id: string;
-  /** Stored in the submitted data. Locked once a form has answers. */
+  /** Stored in the submitted values. Locked once a form has answers. */
   value: string;
   label: UiFbLocalizedText;
   /** Hidden from new answers but still understood in old ones. */
@@ -223,8 +223,8 @@ export interface UiFbFieldProps {
   caption?: UiFbLocalizedText;
   /** For calculated fields: how the result is shown. */
   format?: 'number' | 'currency' | 'text';
-  /** For calculated fields: leave the result out of the submitted data. */
-  excludeFromData?: boolean;
+  /** For calculated fields: leave the result out of the submitted values. */
+  excludeFromValues?: boolean;
 }
 
 /** A param's value: fixed, or another question's answer (for lists that depend on each other). */
@@ -378,7 +378,7 @@ export interface UiFbSubmissionLink {
   serviceCode?: string;
 }
 
-/** Emitted when a form is submitted. `values` is the JSON to store. */
+/** Emitted when a form is submitted. `values` holds the answers, as JSON to store. */
 export interface UiFormSubmission {
   formId: string;
   revision: number | null;
@@ -395,7 +395,7 @@ export interface UiFormSubmission {
   files: Record<string, File[]>;
 }
 
-/** One difference between the data a form was opened with and its current data. */
+/** One difference between the values a form was opened with and its current values. */
 export interface UiFbChange {
   path: string;
   label: string;
