@@ -750,6 +750,9 @@ export function describeAssignees(list: readonly (UiWfAssignee | UiWfRecipient)[
   const names = list.map((a) => {
     if ('role' in a) return ctx.registry?.roles?.find((r) => r.key === a.role)?.label ?? a.role;
     if ('group' in a) return ctx.registry?.groups?.find((g) => g.key === a.group)?.label ?? a.group;
+    if ('department' in a) return ctx.registry?.departments?.find((g) => g.key === a.department)?.label ?? a.department;
+    if ('portal' in a) return ctx.registry?.portals?.find((g) => g.key === a.portal)?.label ?? a.portal;
+    if ('queue' in a) return ctx.registry?.queues?.find((g) => g.key === a.queue)?.label ?? a.queue;
     if ('user' in a) return ctx.userName?.(a.user) ?? a.user;
     if ('field' in a) return ctx.tokens ? tokenLabel(ctx.tokens, a.field) : a.field;
     if ('managerOf' in a) return a.managerOf === 'initiator' ? 'manager of whoever started it' : a.managerOf === 'assignees' ? 'their managers' : `manager of ${ctx.tokens ? tokenLabel(ctx.tokens, a.managerOf) : a.managerOf}`;

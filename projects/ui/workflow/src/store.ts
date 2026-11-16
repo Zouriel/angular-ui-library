@@ -199,7 +199,10 @@ export class WfBuilderStore {
   // ── Edits ───────────────────────────────────────────────────────────
 
   patch(patch: Partial<UiWorkflowDefinition>, mergeKey?: string): void {
-    this.commit({ ...this.def(), ...patch }, mergeKey);
+    const next = { ...this.def(), ...patch } as unknown as Record<string, unknown>;
+    // A cleared setting leaves no key behind, so an unused feature serialises as it always did.
+    for (const k of Object.keys(patch)) if (next[k] === undefined) delete next[k];
+    this.commit(next as unknown as UiWorkflowDefinition, mergeKey);
   }
 
   setTrigger(trigger: UiWfTrigger, mergeKey?: string): void {

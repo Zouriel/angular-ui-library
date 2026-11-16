@@ -162,6 +162,8 @@ export interface UiWfRecord {
   /** Why the record is in `incident` (masked); null otherwise. Older engines omit it. */
   error?: string | null;
   stateEnteredAt: string | null;
+  /** What people are told about how long this usually takes; present only when the lifecycle has one it lets the app show. */
+  publicProcessingTime?: string;
   transitions: UiWfTransitionOption[];
   tasks: UiWfTask[];
   instances: UiWfInstance[];

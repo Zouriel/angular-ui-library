@@ -47,6 +47,9 @@ export type UiWfConditionRule = Omit<UiFbConditionRule, 'op' | 'value' | 'value2
 export type UiWfAssignee =
   | { role: string }
   | { group: string }
+  | { department: string }
+  | { portal: string }
+  | { queue: string }
   | { user: string }
   | { field: string }
   | { managerOf: string }
@@ -153,7 +156,17 @@ export interface UiWfApprovalStep extends UiWfHumanBase {
   rule: { type: 'any' | 'all' | 'count' | 'percent'; value?: number };
   /** When a remark is required: never (it is always offered), when rejecting, or always. */
   requireComment?: 'never' | 'reject' | 'always';
+  /** Separation of duties (spec §5). Absent or empty: no rule. */
+  makerChecker?: UiWfMakerChecker;
   outcomes: { approved: UiWfStep[]; rejected: UiWfStep[]; timedOut: UiWfStep[] };
+}
+
+/** Who may not decide an approval: the person who started it, whoever decided the approval before, anyone without a role. */
+export interface UiWfMakerChecker {
+  excludeInitiator?: boolean;
+  excludePreviousApprover?: boolean;
+  /** A registry role key: only people who hold it may decide. */
+  requiredRole?: string;
 }
 
 export interface UiWfTaskOutcome {
@@ -280,7 +293,20 @@ export interface UiWfState {
   onEnter?: UiWfStep[];
   onExit?: UiWfStep[];
   keepRunsOnExit?: boolean;
-  sla?: { within: string; calendar?: UiWfCalendar; steps: UiWfStep[] };
+  sla?: UiWfSla;
+}
+
+/** A state's time limit. The clock can be paused while the record is in other states or after signals. */
+export interface UiWfSla {
+  within: string;
+  calendar?: UiWfCalendar;
+  steps: UiWfStep[];
+  /** State ids of the same lifecycle that pause the clock. */
+  pauseOnStatus?: string[];
+  /** Signal keys that pause the clock. */
+  pauseOnEvent?: string[];
+  /** Signal keys that start it again. */
+  resumeOnEvent?: string[];
 }
 
 export interface UiWfTransition {
@@ -363,6 +389,13 @@ export interface UiWfVariable {
   default?: unknown;
 }
 
+export interface UiWfPublicProcessingTime {
+  /** Text people read, up to 200 characters. */
+  estimate: string;
+  /** Whether the app may show it to the public. */
+  display: boolean;
+}
+
 export interface UiWorkflowDefinition {
   specVersion: 1;
   id: string;
@@ -376,6 +409,8 @@ export interface UiWorkflowDefinition {
   steps?: UiWfStep[];
   lifecycle?: UiWfLifecycle;
   variables?: UiWfVariable[];
+  /** What people outside the office are told about how long this usually takes (spec §4). */
+  publicProcessingTime?: UiWfPublicProcessingTime;
   settings?: {
     concurrency?: 'perRecordSerial' | 'parallel' | 'skipIfRunning';
     owners?: UiWfAssignee[];
@@ -457,6 +492,9 @@ export interface UiWorkflowRegistry {
   channels?: UiWfLabelled[];
   roles?: UiWfLabelled[];
   groups?: UiWfLabelled[];
+  departments?: UiWfLabelled[];
+  portals?: UiWfLabelled[];
+  queues?: UiWfLabelled[];
 }
 
 /** `GET /schema`: the registry plus what each step type outputs. */

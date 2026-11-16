@@ -4,7 +4,7 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
 import { UiModal } from '@zouriel/ui/dialog';
 import { UiDatePicker } from '@zouriel/ui/datepicker';
-import { UiInput, UiNumberInput, UiTokenInput, type UiTokenRun } from '@zouriel/ui/form';
+import { UiCheckbox, UiInput, UiNumberInput, UiTokenInput, type UiTokenRun } from '@zouriel/ui/form';
 import { UiFormBuilder, createDefinition, operatorInfo, operatorsFor, type UiFbOperator, type UiFormDefinition } from '@zouriel/ui/form-builder';
 import type { UiWorkflowApi, UiWfUser } from './api';
 import { describeAssignees, optionLabel, tokenLabel, valueKindOfField, type UiWfToken } from './definition';
@@ -194,11 +194,51 @@ export class WfDurationInput {
   }
 }
 
+// ── Check list ────────────────────────────────────────────────────────────
+
+/**
+ * `ui-wf-check-list` — choose any number of options by ticking them. Reports the ticked values in
+ * the options' order. A stored value that is no longer an option stays ticked ("(not available)"),
+ * so nothing is dropped silently; unticking removes it.
+ */
+@Component({
+  selector: 'ui-wf-check-list',
+  imports: [FormsModule, UiCheckbox],
+  template: `
+    <div class="list" role="group" [attr.aria-label]="label()">
+      @for (o of shown(); track o.value) {
+        <ui-checkbox size="sm" [ngModel]="value().includes(o.value)" (ngModelChange)="toggle(o.value, $event)">{{ o.label }}</ui-checkbox>
+      }
+    </div>
+  `,
+  styles: [`
+    :host { display: block; min-width: 0; }
+    .list { display: flex; flex-wrap: wrap; gap: var(--ui-space-1) var(--ui-space-3); padding: var(--ui-space-1) 0; }
+  `],
+})
+export class WfCheckList {
+  readonly options = input<readonly WfOption[]>([]);
+  readonly value = input<readonly string[]>([]);
+  readonly label = input('Options');
+  readonly valueChange = output<string[]>();
+  protected readonly shown = computed<WfOption[]>(() => {
+    const opts = this.options();
+    const stale = this.value().filter((v) => !opts.some((o) => o.value === v)).map((v) => ({ value: v, label: `${v} (not available)` }));
+    return [...opts, ...stale];
+  });
+
+  protected toggle(v: string, on: boolean): void {
+    const ticked = new Set(this.value());
+    if (on) ticked.add(v); else ticked.delete(v);
+    this.valueChange.emit(this.shown().map((o) => o.value).filter((x) => ticked.has(x)));
+  }
+}
+
 // ── People ────────────────────────────────────────────────────────────────
 
 /**
  * `ui-wf-assignees` — who a task is for, who may apply a transition, or who gets a message: roles,
- * groups, people, a person stored on the record, someone's manager, or whoever started the run.
+ * groups, departments, portals, queues, people, a person stored on the record, someone's manager, or whoever started the run.
  */
 @Component({
   selector: 'ui-wf-assignees',
@@ -287,6 +327,9 @@ export class WfAssigneesEditor {
     return [
       ...(reg?.roles ?? []).map((r) => ({ value: `role:${r.key}`, label: `Everyone with a role › ${r.label}` })),
       ...(reg?.groups ?? []).map((g) => ({ value: `group:${g.key}`, label: `A group › ${g.label}` })),
+      ...(reg?.departments ?? []).map((g) => ({ value: `department:${g.key}`, label: `A department › ${g.label}` })),
+      ...(reg?.portals ?? []).map((g) => ({ value: `portal:${g.key}`, label: `A portal › ${g.label}` })),
+      ...(reg?.queues ?? []).map((g) => ({ value: `queue:${g.key}`, label: `A queue › ${g.label}` })),
       ...users.map((t) => ({ value: `field:${t.path}`, label: `A person on the record › ${t.group} › ${t.label}` })),
       { value: 'initiator', label: 'Whoever started it' },
       { value: 'managerOf:initiator', label: 'The manager of whoever started it' },
@@ -322,7 +365,7 @@ export class WfAssigneesEditor {
     const [kind, ...rest] = v.split(':');
     const key = rest.join(':');
     const next: UiWfAssignee | UiWfRecipient =
-      kind === 'role' ? { role: key } : kind === 'group' ? { group: key } : kind === 'field' ? { field: key } : kind === 'managerOf' ? { managerOf: key } : { initiator: true };
+      kind === 'role' ? { role: key } : kind === 'group' ? { group: key } : kind === 'department' ? { department: key } : kind === 'portal' ? { portal: key } : kind === 'queue' ? { queue: key } : kind === 'field' ? { field: key } : kind === 'managerOf' ? { managerOf: key } : { initiator: true };
     this.push(next);
   }
 
