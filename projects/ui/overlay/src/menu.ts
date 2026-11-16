@@ -2,7 +2,7 @@ import {
   CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition,
 } from '@angular/cdk/overlay';
 import {
-  Component, ElementRef, effect, inject, input, model, output, viewChild,
+  booleanAttribute, Component, ElementRef, effect, inject, input, model, output, viewChild,
 } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
@@ -18,10 +18,14 @@ export interface UiMenuItem {
  * trigger with `[menu-trigger]`; pass `items` and listen to `(select)`.
  * Arrow keys move focus, Enter activates, Escape closes (WAI-ARIA menu). Choosing an item or
  * pressing Escape puts focus back on the trigger; Tab closes the menu and moves on from the trigger.
+ * The trigger's first button (or link, or focusable element) gets `aria-haspopup` and `aria-expanded`
+ * and takes focus back, so a component that draws its own button (`ui-sidebar-account`) works too.
+ * `block` makes the menu and its trigger take the full width (a sidebar footer's account button).
  */
 @Component({
   selector: 'ui-menu',
   imports: [CdkOverlayOrigin, CdkConnectedOverlay],
+  host: { '[class.ui-block]': 'block()' },
   template: `
     <span #trigger class="trigger" cdkOverlayOrigin #origin="cdkOverlayOrigin" (click)="toggle()">
       <ng-content select="[menu-trigger]" />
@@ -58,6 +62,8 @@ export interface UiMenuItem {
   `,
   styles: `
     .trigger { display: inline-flex; }
+    :host(.ui-block) { display: block; }
+    :host(.ui-block) .trigger { display: block; }
     .ui-menu {
       display: flex; flex-direction: column; min-width: 180px;
       padding: var(--ui-space-1);
@@ -94,6 +100,8 @@ export class UiMenu {
   select = output<UiMenuItem>();
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
+  /** Take the full width, and so does the trigger (0.86.0). */
+  block = input(false, { transform: booleanAttribute });
 
   private panel = viewChild<ElementRef<HTMLElement>>('panel');
   private trigger = viewChild.required<ElementRef<HTMLElement>>('trigger');

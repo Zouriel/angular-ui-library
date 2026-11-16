@@ -457,7 +457,8 @@ interface UiToastAction {
     { name: 'items', type: 'UiMenuItem[]', default: '[]', desc: 'Menu items. Disabled ones are skipped by the arrow keys.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
-    { name: '[menu-trigger]', type: 'slot', default: '—', desc: 'The element that toggles the menu on click; focus returns to it on close.' },
+    { name: 'block', type: 'boolean', default: 'false', desc: 'The menu and its trigger take the full width, e.g. ui-sidebar-account in a sidebar footer (0.86.0).' },
+    { name: '[menu-trigger]', type: 'slot', default: '—', desc: 'The element that toggles the menu on click; focus returns to it on close. Its first button (or link, or focusable element) gets aria-haspopup and aria-expanded, so a component that draws its own button works too.' },
   ];
   protected readonly menuOut: ApiRow[] = [
     { name: 'select', type: 'UiMenuItem', default: '—', desc: 'Chosen item.' },

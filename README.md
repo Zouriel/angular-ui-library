@@ -83,6 +83,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   re-exported from `@zouriel/ui/guidance`), so they don't pull the tour into the first paint.
 - **Filter** (`@zouriel/ui/filter`, 0.59.0): `ui-filter` (one Filter button, a panel of sections as a bottom
   sheet on phones or a popover wider), `ui-filter-chips`, and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer`
+- **Sidebar account** (`@zouriel/ui/layout`, 0.86.0): `ui-sidebar-account` is the signed-in person for a sidebar's
+  `[sidebar-footer]`: avatar, name, subtitle, an optional badge (Read-only) and hint, and an unfold chevron, as one
+  full-width button that emits `(activate)` or serves as the `menu-trigger` of `ui-menu block` (new `block` input);
+  `collapsed` shows only the avatar with a tooltip. The twin of Flutter's `UiSidebarAccount`.
 - **App shell, feature card, Google authorization** (0.37): `ui-sidebar-layout` puts the sidebar on
   the start side (right in RTL), takes its words from `provideUiStrings`, and with `[bar]="false"`
   and `fill` becomes a full-height chat-style shell driven by the app's own top bar (`compact()`,

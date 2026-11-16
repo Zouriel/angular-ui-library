@@ -43,6 +43,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Splitter', anchor: 'splitter' },
     { name: 'Panel section', anchor: 'panel-section' },
     { name: 'Sidebar layout', anchor: 'sidebar-layout' },
+    { name: 'Sidebar account', anchor: 'sidebar-account' },
     { name: 'Swipe screens', anchor: 'swipe-screens' },
     { name: 'Divider', anchor: 'divider' },
   ],

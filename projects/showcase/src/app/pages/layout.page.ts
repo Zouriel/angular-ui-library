@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
-import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen } from '@zouriel/ui/layout';
+import { UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiPanelSection, UiSidebarLayout, UiSidebarAccount, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen } from '@zouriel/ui/layout';
+import { UiMenu, type UiMenuItem } from '@zouriel/ui/overlay';
 import { UiMap, type UiMapArea } from '@zouriel/ui/map';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
 import { UiSideNav } from '@zouriel/ui/navigation';
@@ -10,7 +11,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-layout',
   imports: [
-    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen, UiMap,
+    UiGrid, UiStack, UiSpacer, UiAspectRatio, UiScrollArea, UiSplitter, UiDivider, UiBadge, UiPanelSection, UiButton, UiSegmented, UiSideNav, UiSidebarLayout, UiSidebarAccount, UiMenu, UiFloatingPanel, UiSwipeScreens, UiSwipeScreen, UiMap,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -176,6 +177,46 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Sidebar account" anchor="sidebar-account" selector="ui-sidebar-account (activate)" [api]="accountApi"
+        summary="The signed-in person at the bottom of a sidebar, for [sidebar-footer] (0.86.0): avatar (the photo, or initials without one), name, a subtitle such as job title · section, an optional badge (Read-only) and a small hint line (Switch test account), with an unfold chevron saying it opens something. It is one real button the full width of the footer: Tab focuses it, Enter and Space press it, it has a focus ring, hover and pressed states, and disabled. Screen readers hear the name, subtitle and badge as its name and the hint as its description. Long names and subtitles end in an ellipsis; in RTL everything mirrors. (activate) opens your switcher or drawer; inside ui-menu (block) as the menu-trigger it opens the menu instead, says so with aria-haspopup and aria-expanded, is tinted while open, and gets focus back when the menu closes. collapsed shows only the avatar with the name and subtitle as a tooltip, for a sidebar narrowed to an icon rail (ui-sidebar-layout has no rail mode of its own, so the app sets it).">
+        <doc-demo code="<ui-sidebar-layout [bar]=&quot;false&quot; fill>
+  <ui-side-nav sidebar [groups]=&quot;nav&quot; />
+  <ui-sidebar-account sidebar-footer name=&quot;Aishath Mohamed&quot; subtitle=&quot;Clerk · Secretariat&quot;
+                      badge=&quot;Read-only&quot; badgeTone=&quot;warning&quot; hint=&quot;Switch test account&quot;
+                      [collapsed]=&quot;rail()&quot; (activate)=&quot;switcherOpen.set(true)&quot; />
+  …
+</ui-sidebar-layout>">
+          <div class="row">
+            <ui-segmented size="sm" label="Sidebar" [options]="accountModes" [value]="accountRail() ? 'rail' : 'full'" (valueChange)="accountRail.set($event === 'rail')" />
+            <ui-segmented size="sm" label="Direction" [options]="dirs" [value]="accountDir()" (valueChange)="accountDir.set($any($event))" />
+            <ui-segmented size="sm" label="Account" [options]="accountKinds" [value]="accountKind()" (valueChange)="accountKind.set($any($event))" />
+          </div>
+          <div class="shell-host app" style="height: 300px" [attr.dir]="accountDir()">
+            <ui-sidebar-layout [breakpoint]="0" [sidebarWidth]="accountRail() ? '76px' : '240px'" [bar]="false" fill mainLandmark="false">
+              @if (!accountRail()) { <ui-side-nav sidebar [groups]="shellNav" [(active)]="shellActive" /> }
+              <ui-sidebar-account sidebar-footer [name]="accountDir() === 'rtl' ? 'އައިޝަތު މުހައްމަދު' : 'Aishath Mohamed Ibrahim Didi'"
+                                  [subtitle]="accountDir() === 'rtl' ? 'ކްލާކް · ސެކްރެޓޭރިއެޓް' : 'Senior Clerk · Secretariat of the Addu City Council'"
+                                  [badge]="accountKind() === 'readonly' ? (accountDir() === 'rtl' ? 'ކިޔުމަށް' : 'Read-only') : null" badgeTone="warning"
+                                  [hint]="accountDir() === 'rtl' ? 'ޓެސްޓް އެކައުންޓް ބަދަލުކުރޭ' : 'Switch test account'"
+                                  [disabled]="accountKind() === 'disabled'" [collapsed]="accountRail()" (activate)="accountPresses.set(accountPresses() + 1)" />
+              <div class="app-msgs">
+                <p class="pane-text">Pressed {{ accountPresses() }} time{{ accountPresses() === 1 ? '' : 's' }}: an app opens its account switcher here.</p>
+              </div>
+            </ui-sidebar-layout>
+          </div>
+        </doc-demo>
+        <doc-demo code="<ui-menu sidebar-footer block [items]=&quot;accountItems&quot; (select)=&quot;onAccount($event)&quot;>
+  <ui-sidebar-account menu-trigger name=&quot;Ali Hassan&quot; subtitle=&quot;Director · Planning&quot; />
+</ui-menu>">
+          <div class="panel-host" style="max-width: 260px; padding: var(--ui-space-3)">
+            <ui-menu block [items]="accountItems" (select)="accountPicked.set($event.label)">
+              <ui-sidebar-account menu-trigger name="Ali Hassan" subtitle="Director · Planning" />
+            </ui-menu>
+          </div>
+          <p class="pane-text">Last chosen: {{ accountPicked() || 'nothing yet' }}</p>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Swipe screens" anchor="swipe-screens" selector="ui-swipe-screens [(index)] · ui-swipe-screen" [api]="swipeApi"
         summary="Full-height screens side by side (0.44.0), moved between with a horizontal swipe: a chat with its map one swipe away. Screen i+1 sits at the inline end (to the right; to the left in RTL). The screens follow the finger and snap on release: a fling faster than 400 px/s moves one screen that way, otherwise past half the width moves one, else they settle back; under reduced motion the snap is instant. Only clearly horizontal drags are taken, so lists inside scroll as usual. On the first screen a drag that starts within leadingEdgeExclusion (24px) of the leading edge is left alone, for an app drawer that opens from there. A screen with edgeSwipeOnly keeps its drags (a map pans and zooms): only a drag starting on its leading edge (edgeWidth, 24px) swipes back. Setting index animates there. Every screen stays alive off screen; screens out of view are inert and hidden from screen readers, and the screen that comes into view is announced by its label. There is no page indicator: add your own buttons that set index. Swipe the chat to the left to see the map; drag from the map's left edge to come back.">
         <doc-demo lang="html" [code]="SWIPE_CODE">
@@ -328,6 +369,31 @@ export class LayoutPage {
     { label: 'Past chats', items: Array.from({ length: 20 }, (_, i) => ({ label: `Conversation ${i + 1}`, value: `Conversation ${i + 1}` })) },
   ];
   protected readonly shellNav = [{ label: 'Workspace', items: [{ label: 'Dashboard', value: 'Dashboard' }, { label: 'Events', value: 'Events' }, { label: 'Guests', value: 'Guests' }] }];
+  protected readonly accountModes = [{ value: 'full', label: 'Full' }, { value: 'rail', label: 'Rail' }];
+  protected readonly accountKinds = [{ value: 'readonly', label: 'Read-only' }, { value: 'plain', label: 'Plain' }, { value: 'disabled', label: 'Disabled' }];
+  protected readonly accountRail = signal(false);
+  protected readonly accountDir = signal<'ltr' | 'rtl'>('ltr');
+  protected readonly accountKind = signal<'readonly' | 'plain' | 'disabled'>('readonly');
+  protected readonly accountPresses = signal(0);
+  protected readonly accountPicked = signal('');
+  protected readonly accountItems: UiMenuItem[] = [
+    { label: 'Profile', value: 'profile' },
+    { label: 'Switch account', value: 'switch' },
+    { label: 'Sign out', value: 'sign-out', danger: true },
+  ];
+  protected readonly accountApi: ApiRow[] = [
+    { name: 'name', type: 'string (required)', default: '—', desc: 'The person\'s name; the avatar\'s initials when there is no photo.' },
+    { name: 'subtitle', type: 'string', default: '—', desc: 'Second line, e.g. job title · section.' },
+    { name: 'src', type: 'string', default: '—', desc: 'Photo URL; initials without one or when it fails to load.' },
+    { name: 'badge', type: 'string', default: '—', desc: 'A short label after the name (Read-only); part of the accessible name.' },
+    { name: 'badgeTone', type: 'UiStatus', default: "'neutral'", desc: 'The badge\'s colour (warning, success, …).' },
+    { name: 'hint', type: 'string', default: '—', desc: 'A small third line saying what it does (Switch test account); the button\'s description.' },
+    { name: 'showChevron', type: 'boolean', default: 'true', desc: 'The unfold chevron at the end.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Dimmed and not pressable.' },
+    { name: 'collapsed', type: 'boolean', default: 'false', desc: 'Only the avatar, the name and subtitle in a tooltip: for a sidebar narrowed to a rail.' },
+    { name: '(activate)', type: 'void', default: '—', desc: 'Pressed: click, Enter or Space. As a ui-menu menu-trigger, the menu opens on the same press.' },
+    { name: 'ui-menu block', type: 'boolean', default: 'false', desc: 'On ui-menu (0.86.0): the menu and its trigger take the full width, for an account button in a footer.' },
+  ];
   protected readonly sidebarApi: ApiRow[] = [
     { name: 'breakpoint', type: 'number', default: '860', desc: 'Widest viewport (px) that still uses the drawer.' },
     { name: 'sidebarWidth', type: 'string', default: "'248px'", desc: 'Sidebar width, any CSS length.' },

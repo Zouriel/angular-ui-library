@@ -104,7 +104,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `feedback`, `progress` | empty state, result, loading overlay; progress bar, progress circle, meter |
 | `link` | link, kbd, inline code, blockquote |
 | `data` | tree, tree table, timeline, description list, code block |
-| `layout` | grid, stack, container, spacer, splitter, sidebar layout, panel section, scroll area, aspect ratio, resize handle |
+| `layout` | grid, stack, container, spacer, splitter, sidebar layout, sidebar account, panel section, scroll area, aspect ratio, resize handle |
 | `media` | carousel, gallery, image picker, device frame |
 | `sortable` | `ui-section-list` (rows put in order by a drag handle or the arrow keys, with hide, edit and remove buttons; locked rows keep their place) and `ui-reorder-grid` (square photo tiles: hold and drag with a finger, tap for your own menu, a cover star, an optional x) |
 | `canvas` | transform box with snapping, vector path editor (pen, points, brushes), image editor (crop, erase, restore) |
@@ -250,6 +250,33 @@ page scrolls. `ui-drawer` has the same structure with `[drawer-header]` and `[dr
 the title bar, the fixed header, the scrolling body, the fixed footer (left and right drawers pad it
 by `env(safe-area-inset-bottom)`). Leave the slots empty and both look exactly as before (the sidebar's
 `[sidebar]` content now scrolls in an inner `.sb-bd` instead of the aside itself).
+
+## Sidebar account (`ui-sidebar-account`, 0.86.0)
+
+The signed-in person at the bottom of the sidebar, opening a switcher or an account menu:
+
+```html
+<ui-sidebar-layout [bar]="false" fill>
+  <ui-side-nav sidebar [groups]="nav" />
+  <ui-sidebar-account sidebar-footer [name]="user.name" subtitle="Clerk · Secretariat"
+                      badge="Read-only" badgeTone="warning" hint="Switch test account"
+                      (activate)="switcherOpen.set(true)" />
+  …
+</ui-sidebar-layout>
+
+<!-- or opening a menu: -->
+<ui-menu sidebar-footer block [items]="accountItems" (select)="onAccount($event)">
+  <ui-sidebar-account menu-trigger [name]="user.name" [subtitle]="user.role" />
+</ui-menu>
+```
+
+Inputs: `name` (required), `subtitle`, `src` (initials without it), `badge` + `badgeTone`, `hint`, `showChevron`
+(default true), `disabled`, `collapsed`. It is one `<button>` the width of the footer: its accessible name is the
+name, subtitle and badge, the hint is its description, and `(activate)` fires on click, Enter and Space. Inside
+`ui-menu` it is the trigger: the menu puts `aria-haspopup` and `aria-expanded` on its button (tinted while open)
+and gives focus back to it; `block` (0.86.0) makes the menu and its trigger full width. `collapsed` shows only the
+avatar with the name and subtitle as a tooltip, for a sidebar narrowed to an icon rail (`ui-sidebar-layout` has no
+rail mode, so the app sets it). Flutter: `UiSidebarAccount(onPressed:, expanded:)`.
 
 ## A document as the whole page (`fill`, 0.41.1)
 
