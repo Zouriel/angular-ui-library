@@ -65,6 +65,9 @@ actions: UiRowAction<Row>[] = [
   { label: 'Email', run: (row) => this.email(row), disabled: (row) => !row.email, ariaLabel: (row) => 'Email ' + row.name },
 ];">
           <ui-table [columns]="cols" [data]="rows" [selectable]="true" [actions]="actions" (selectionChange)="sel.set($event.length)" />
+          <p class="hint">Rows that open something (0.87.0): click a row, or Tab to its first cell and press Enter.</p>
+          <ui-table [columns]="cols" [data]="rows" [activatable]="true" [rowLabel]="openLabel" (rowActivate)="openedRow.set($any($event).name)" />
+          <p class="hint">Opened: {{ openedRow() ?? 'nothing yet' }}</p>
           <ui-text variant="caption">{{ sel() }} selected · {{ lastAction() }}</ui-text>
         </doc-demo>
         <doc-demo code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;[]&quot; emptyText=&quot;No people match this filter&quot; />">
@@ -763,6 +766,8 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
 const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
 
   protected readonly tableApi: ApiRow[] = [
+    { name: 'activatable', type: 'boolean', default: 'false', desc: 'Rows open something (0.87.0): the first cell becomes a real button (keyboard, screen readers) and a click anywhere else in the row activates it too; row actions and links in cells keep working. Use with (rowActivate).' },
+    { name: 'rowLabel', type: '((row: T) => string) | null', default: 'null', desc: "The row button's accessible name ('Open HR-REQ-12'); null: its cell text." },
     { name: 'columns', type: 'UiColumn<T>[]', default: '[]', desc: 'Column definitions (see Data shapes).' },
     { name: 'data', type: 'T[]', default: '[]', desc: 'Row objects. Selection is tracked by object reference.' },
     { name: 'selectable', type: 'boolean', default: 'false', desc: 'Show a checkbox per row and a select-all box.' },
@@ -841,7 +846,12 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'emailRetry', type: 'void', default: '—', desc: 'Retry pressed.' },
     { name: 'messengerPress', type: 'UiMessengerApp', default: '—', desc: 'A messenger button pressed.' },
   ];
-  protected readonly tableOut: ApiRow[] = [{ name: 'selectionChange', type: 'T[]', default: '—', desc: 'Selected rows (by reference), after each checkbox change.' }];
+  protected readonly tableOut: ApiRow[] = [
+    { name: 'selectionChange', type: 'T[]', default: '—', desc: 'Selected rows (by reference), after each checkbox change.' },
+    { name: 'rowActivate', type: 'T', default: '—', desc: 'A row was activated (with activatable): a click on it outside its buttons, links and fields and not while selecting text, or Enter/Space on its first-cell button (0.87.0).' },
+  ];
+  protected readonly openedRow = signal<string | null>(null);
+  protected readonly openLabel = (r: Record<string, unknown>) => `Open ${r['name']}`;
   protected readonly listApi: ApiRow[] = [
     { name: 'list: bordered', type: 'boolean', default: 'false', desc: 'Outer border + row dividers.' },
     { name: 'item: interactive', type: 'boolean', default: 'false', desc: 'Render the row as a button.' },

@@ -173,6 +173,18 @@ type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 
             <ui-button size="sm">Small</ui-button><ui-button>Medium</ui-button><ui-button size="lg">Large</ui-button><ui-button size="xl">Start visit</ui-button>
           </div>
         </doc-demo>
+        <doc-demo code="<!-- A button that goes somewhere is a link (0.87.0) -->
+<ui-button href=&quot;/forms&quot;>Apply now</ui-button>
+<ui-button href=&quot;/buttons&quot; variant=&quot;ghost&quot;>Buttons</ui-button>  <!-- the open page: aria-current -->
+<ui-button href=&quot;/forms&quot; [disabled]=&quot;true&quot;>Closed</ui-button>
+<ui-icon-button href=&quot;/overview&quot; label=&quot;Home&quot;>…</ui-icon-button>">
+          <div class="row items-center">
+            <ui-button href="/forms">Apply now</ui-button>
+            <ui-button href="/buttons" variant="ghost">Buttons</ui-button>
+            <ui-button href="/data" variant="ghost">Data</ui-button>
+            <ui-button href="/forms" [disabled]="true">Closed</ui-button>
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Hold button" anchor="hold-button" selector="ui-hold-button" [api]="holdApi" [outputs]="holdOut"
@@ -673,6 +685,9 @@ export class ButtonsPage {
   ];
   protected readonly holdOut: ApiRow[] = [{ name: 'confirmed', type: 'void', default: '—', desc: 'Held to the end, or confirmed in the dialog.' }];
   protected readonly buttonApi: ApiRow[] = [
+    { name: 'href', type: 'string | null', default: 'null', desc: 'Makes it a link (0.87.0): an <a> with the same look. A plain click on an app-internal href goes through the link navigator (provideUiLinkNavigator, or provideUiRouterLinks() from @zouriel/ui/router); disabled drops the href and sets aria-disabled.' },
+    { name: 'target', type: 'string | null', default: 'null', desc: "With href: link target; '_blank' adds rel=noopener noreferrer and is left to the browser." },
+    { name: 'current', type: 'boolean | null', default: 'null', desc: 'With href: the page it opens is the one shown, aria-current=page and a selected look; null asks the navigator (isCurrent).' },
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style.' },
     { name: 'tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: "A plan tier's metal: its sheen, contrast label, edge and focus ring; platinum catches a sweep of light on hover. Wins over variant. See Plans." },
@@ -695,6 +710,9 @@ export class ButtonsPage {
     { name: 'type', type: "'button' | 'submit' | 'reset'", default: "'button'", desc: 'Native button type.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
     { name: 'round', type: 'boolean', default: 'false', desc: 'Fully circular (pill).' },
+    { name: 'href', type: 'string | null', default: 'null', desc: 'Makes it a link (0.87.0): an <a> with the same look. A plain click on an app-internal href goes through the link navigator (provideUiLinkNavigator, or provideUiRouterLinks() from @zouriel/ui/router); disabled drops the href and sets aria-disabled.' },
+    { name: 'target', type: 'string | null', default: 'null', desc: "With href: link target; '_blank' adds rel=noopener noreferrer and is left to the browser." },
+    { name: 'current', type: 'boolean | null', default: 'null', desc: 'With href: the page it opens is the one shown, aria-current=page and a selected look; null asks the navigator (isCurrent).' },
     { name: 'glass', type: 'boolean', default: 'false', desc: 'Opt-in glass.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners (ignored when round).' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The icon. Give it aria-hidden; label names the button.' },

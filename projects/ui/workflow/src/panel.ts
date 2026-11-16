@@ -8,8 +8,10 @@ import { UiStepBody, UiStepper, type UiStep } from '@zouriel/ui/navigation';
 import type { UiWfAuditEntry, UiWfRecord, UiWorkflowApi } from './api';
 import { WF_ICONS } from './icons';
 import { WfRecordActions, WfRunView, UiWorkflowStateBadge } from './runtime';
-import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfErrorText, wfParkedTimerName, wfReadableError, wfRunStatusLabel, wfRunStatusTone, wfStatePassed } from './runtime-shared';
+import { WfWithApi, wfActorLabel, wfAuditJson, wfDescribeHistory, wfParkedTimerName, wfReadableError, wfRunStatusLabel, wfRunStatusTone, wfStatePassed } from './runtime-shared';
 import { WF_SHARED_STYLES } from './styles';
+import { WfErrorNote } from './error-note';
+import { UiTourAnchor, UiTourAnchors } from '@zouriel/ui';
 
 /**
  * How `ui-workflow-panel` sits on the page:
@@ -101,7 +103,7 @@ const RUNS_POLL_MS = 15_000;
  */
 @Component({
   selector: 'ui-workflow-panel',
-  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiAlert, UiButton, UiDrawer, UiModal, UiStepper, UiStepBody, UiWorkflowStateBadge, WfRecordActions, WfRunView],
+  imports: [HugeiconsIconComponent, NgTemplateOutlet, UiAlert, UiButton, UiDrawer, UiModal, UiStepper, UiStepBody, UiTourAnchor, UiWorkflowStateBadge, WfErrorNote, WfRecordActions, WfRunView],
   host: { '[attr.data-layout]': 'layout()' },
   template: `
     <!-- The record's workflows still running or stopped, each opening its steps (and, for people who may, try again, skip or cancel). -->
@@ -129,7 +131,7 @@ const RUNS_POLL_MS = 15_000;
     <ng-template #body let-mode>
       @if (record() && error()) {
         <!-- A reload failed: what is shown may be out of date. -->
-        <p class="wf-error stale" role="alert">{{ error() }} What is shown may be out of date. <button type="button" class="wf-link" (click)="reload()">Try again</button></p>
+        <ui-wf-error class="stale" [text]="error()" [detail]="errorDetail()"> What is shown may be out of date. <button type="button" class="wf-link" (click)="reload()">Try again</button></ui-wf-error>
       }
       @if (record(); as r) {
         @if (r.status === 'incident') {
@@ -168,7 +170,7 @@ const RUNS_POLL_MS = 15_000;
               }
             </ol>
           }
-          <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="r.state ? emptyText() : ''" />
+          <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [anchorPrefix]="anchorPrefix()" [emptyText]="r.state ? emptyText() : ''" />
           <ng-container *ngTemplateOutlet="runsTpl" />
           @if (showHistory()) {
             <section>
@@ -200,7 +202,7 @@ const RUNS_POLL_MS = 15_000;
                   </ol>
                 }
                 @if (state === 'active') {
-                  <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
+                  <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [anchorPrefix]="anchorPrefix()" [emptyText]="emptyText()" />
                   <ng-container *ngTemplateOutlet="runsTpl" />
                 } @else if (state === 'todo' && !st.entries.length) {
                   <span class="wf-hint">Not reached yet</span>
@@ -220,7 +222,7 @@ const RUNS_POLL_MS = 15_000;
             @if (showHistory() && (historyError() || historyNote())) { <p class="wf-hint">{{ historyError() ? 'The history could not be loaded.' : historyNote() }}</p> }
           } @else {
             <ui-stepper class="steps" tone="success" [label]="title()" [steps]="stepLabels()" [active]="path().active" />
-            <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [emptyText]="emptyText()" />
+            <ui-wf-record-actions class="now" [record]="r" [entity]="entity()" [entityId]="entityId()" [api]="client()" (changed)="moved($event)" (reload)="reload()" [anchorPrefix]="anchorPrefix()" [emptyText]="emptyText()" />
             <ng-container *ngTemplateOutlet="runsTpl" />
             @if (showHistory() && historyError()) { <p class="wf-hint">The history could not be loaded.</p> }
             @if (showHistory() && history().length) {
@@ -236,7 +238,7 @@ const RUNS_POLL_MS = 15_000;
           }
         }
       } @else if (error()) {
-        <p class="wf-error" role="alert">{{ error() }}</p>
+        <ui-wf-error [text]="error()" [detail]="errorDetail()" />
       } @else {
         <p class="wf-hint">Loading…</p>
       }
@@ -256,12 +258,12 @@ const RUNS_POLL_MS = 15_000;
         <ng-container *ngTemplateOutlet="body; context: { $implicit: 'compact' }" />
       }
       @default {
-        <button type="button" class="rail" [attr.data-edge]="edge()" [attr.aria-expanded]="open()" [attr.aria-label]="railLabel()"
+        <button type="button" class="rail" [uiTourAnchor]="anchor('open')" [attr.data-edge]="edge()" [attr.aria-expanded]="open()" [attr.aria-label]="railLabel()"
           (pointerenter)="hoverIn($event)" (pointerleave)="hoverOut($event)" (click)="toggle()">
           <ui-stepper variant="dots" tone="success" [orientation]="edge() === 'bottom' ? 'horizontal' : 'vertical'"
             [steps]="stepLabels()" [active]="path().active" aria-hidden="true" />
         </button>
-        <ui-drawer [open]="open()" (openChange)="open.set($event)" [side]="edge()" [title]="title()" [modal]="!hoverOpened()"
+        <ui-drawer [open]="open()" (openChange)="open.set($event)" [side]="edge()" [title]="title()" [modal]="!hoverOpened() && !revealed()"
           (panelEnter)="hoverIn()" (panelLeave)="hoverOut()">
           <div class="in-drawer">
             <ng-container *ngTemplateOutlet="body; context: { $implicit: edge() === 'bottom' ? 'horizontal' : 'vertical' }" />
@@ -367,6 +369,14 @@ export class UiWorkflowPanel extends WfWithApi {
   /** Whether the drawer is open (drawer layouts). Two-way. */
   readonly open = model(false);
   /**
+   * Tour anchors for the panel's controls (0.87.0), so an app's `UiTourService` tour can point at them:
+   * `<prefix>.open` (a drawer layout's rail), `<prefix>.move.<transition key>`, `<prefix>.manual.<key>`,
+   * `<prefix>.reset`, `<prefix>.task-entry` (the "Waiting for" tasks), and in the dialogs
+   * `<prefix>.confirm` and `<prefix>.task.<outcome key>`. In the drawer layouts a tour that points at a
+   * control inside opens the drawer first (non-modal, so the tour stays on top). Null: no anchors.
+   */
+  readonly anchorPrefix = input<string | null>(null);
+  /**
    * Fired whenever the record's workflow changed as the panel saw it: a move made in the panel, and
    * any reload that finds a new state or status or runs that started, finished or stopped (after a
    * decision, a manual start, a retry, skip or cancel, or the panel looking again while runs go on).
@@ -383,6 +393,10 @@ export class UiWorkflowPanel extends WfWithApi {
     this.history().length >= WF_PANEL_HISTORY_TAKE ? `Showing the latest ${WF_PANEL_HISTORY_TAKE} entries.` : '');
   /** The drawer was opened by hovering the rail: it stays non-modal and closes when the pointer leaves. */
   protected readonly hoverOpened = signal(false);
+  /** The drawer was opened by a tour to show a control inside it: non-modal, and it stays until closed. */
+  protected readonly revealed = signal(false);
+  /** A tour anchor id under the prefix, or null without one. */
+  protected readonly anchor = (name: string) => (this.anchorPrefix() ? `${this.anchorPrefix()}.${name}` : null);
   private seq = 0;
   private closeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -479,7 +493,24 @@ export class UiWorkflowPanel extends WfWithApi {
       }));
     });
     // Closing by any route (Escape, the close button, a tap outside) ends a hover-opened peek.
-    effect(() => { if (!this.open()) untracked(() => this.hoverOpened.set(false)); });
+    effect(() => { if (!this.open()) untracked(() => { this.hoverOpened.set(false); this.revealed.set(false); }); });
+    // A tour pointing into the closed drawer opens it (drawer layouts with an anchor prefix).
+    const anchors = inject(UiTourAnchors);
+    effect((onCleanup) => {
+      const prefix = this.anchorPrefix();
+      const drawer = this.layout() === 'side-drawer' || this.layout() === 'bottom-drawer';
+      if (!prefix || !drawer) return;
+      onCleanup(anchors.registerRevealer(`${prefix}.`, (id) => {
+        const name = id.slice(prefix.length + 1);
+        // The rail is on screen already; the dialogs only open from the person's own press.
+        if (name === 'open' || name === 'confirm' || name.startsWith('task.') || this.open()) return false;
+        clearTimeout(this.closeTimer);
+        this.hoverOpened.set(false);
+        this.revealed.set(true);
+        this.open.set(true);
+        return true;
+      }));
+    });
     // While a run is still going, look again now and then (not while the page is hidden).
     const destroy = inject(DestroyRef);
     let poll: ReturnType<typeof setInterval> | null = null;
@@ -524,7 +555,7 @@ export class UiWorkflowPanel extends WfWithApi {
         this.openRuns.set(new Set([...this.openRuns(), ...stopped]));
       }
     } catch (e) {
-      if (n === this.seq) this.error.set(wfErrorText(e, 'Could not load the record’s workflow.'));
+      if (n === this.seq) this.error.set(this.failed(e, 'Could not load the record’s workflow.'));
     }
   }
 
@@ -549,7 +580,7 @@ export class UiWorkflowPanel extends WfWithApi {
       this.recordSkipping.set(false);
       await this.reload();
     } catch (e) {
-      if (shown === this.shownKey) this.recordActError.set(wfErrorText(e, 'That did not work.'));
+      if (shown === this.shownKey) this.recordActError.set(this.failed(e, 'That did not work.'));
     } finally {
       this.recordBusy.set(false);
     }

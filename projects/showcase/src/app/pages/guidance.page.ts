@@ -290,6 +290,7 @@ interface UiTourLabels { back?: string; next?: string; done?: string; skip?: str
     { name: 'UiBottomNavItem.anchor · ui-tab [anchor]', type: 'string', default: 'undefined', desc: 'Anchors for buttons the library builds itself: one bottom-nav destination or one tab.' },
     { name: 'UiTourService.start(spec)', type: 'Promise<UiTourOutcome>', default: '—', desc: 'Runs a tour (1 to 5 steps). A tour already running ends with closed; no step on the page resolves closed at once.' },
     { name: 'UiTourService.stop()', type: 'void', default: '—', desc: 'Ends the running tour with closed.' },
+    { name: 'UiTourAnchors.registerRevealer(prefix, reveal)', type: '() => void', default: '—', desc: "Something that can bring hidden anchors on screen (a closed drawer). start() asks it for each missing anchor id with that prefix, waits up to a second for them, then leaves out what is still missing (0.87.0; ui-workflow-panel and ui-workflow-tasks-drawer register one with anchorPrefix)." },
     { name: 'UiTourService.active', type: 'Signal<string | null>', default: 'null', desc: 'The id of the tour on screen.' },
     { name: 'spec.turnOff', type: 'boolean', default: 'true', desc: 'Show the Turn off tips action.' },
     { name: 'spec.labels', type: 'UiTourLabels', default: 'built-in', desc: 'Words for this tour; by default the built-in tourBack, tourNext, tourDone, tourSkip, tourStep and tipsOff.' },

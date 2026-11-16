@@ -411,6 +411,15 @@ export interface UiStrings {
   dateFormat: string;
   dateFormatShort: string;
   monthYearFormat: string;
+  /** Workflow components (0.87.0): an engine that can't be reached or answered with an error that isn't
+   *  its own (a missing route, a server error), and the disclosure holding the technical detail. */
+  workflowUnavailable: string;
+  technicalDetails: string;
+  /** `ui-skip-link` (0.87.0). */
+  skipToContent: string;
+  /** `ui-date-time-picker` (0.87.0): the names of its two parts. */
+  dateLabel: string;
+  timeLabel: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -628,6 +637,11 @@ export const defaultUiStrings: UiStrings = {
   dateFormat: '',
   dateFormatShort: '',
   monthYearFormat: '',
+  workflowUnavailable: "Workflows aren't available right now. Try again later.",
+  technicalDetails: 'Technical details',
+  skipToContent: 'Skip to content',
+  dateLabel: 'Date',
+  timeLabel: 'Time',
 };
 
 /**
@@ -851,6 +865,11 @@ export const uiStringsDv: UiStrings = {
   dateFormat: '{d} {month} {y}',
   dateFormatShort: '{d} {month} {y}',
   monthYearFormat: '{month} {y}',
+  workflowUnavailable: 'ވޯކްފްލޯތައް މިވަގުތު ނުލިބޭ. ފަހުން އަލުން މަސައްކަތްކޮށްލައްވާ.',
+  technicalDetails: 'ޓެކްނިކަލް ތަފްސީލު',
+  skipToContent: 'ކޮންޓެންޓަށް ދާން',
+  dateLabel: 'ތާރީޚު',
+  timeLabel: 'ގަޑި',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown

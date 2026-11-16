@@ -737,6 +737,35 @@ import { UiBarChart, type UiBarChartSeries } from '@zouriel/ui/chart';
   and checked per theme for colour-blind separation. A theme of your own should set them too.
 - The twin of Flutter's `UiBarChart`.
 
+## Links, tours and server answers (0.87.0)
+
+- **Link buttons and the link navigator.** `ui-button` and `ui-icon-button` take `href` (and `target`): an `<a>` with
+  the button look, no href while `disabled`. Library links (`ui-link`, link buttons, breadcrumbs, feature cards)
+  hand a plain click on an app-internal href to the app's navigator and mark the open page (`aria-current="page"`):
+
+  ```ts
+  import { provideUiRouterLinks } from '@zouriel/ui/router';
+  providers: [provideRouter(routes), provideUiRouterLinks()]   // { exact: false } for section links
+  ```
+
+  Or `provideUiLinkNavigator(() => ({ navigate(href) {…}, isCurrent(href) {…} }))`. Under a `<base href>` write hrefs
+  relative to it (`media/12`), so open-in-new-tab works too. `current` (on `ui-link`, link buttons) overrides it.
+- **`ui-skip-link`** (`@zouriel/ui/link`): first in the root template; `target` is the main content's id (`main`).
+- **`ui-date-time-picker`** (`@zouriel/ui/datepicker`): value `YYYY-MM-DDTHH:MM`; `defaultTime` (`09:00`) when a day
+  is picked first; `min`/`max`, `step`, `dateLabel`/`timeLabel`.
+- **`ui-table` row activation:** `[activatable]="true" (rowActivate)="open($event)"`, `rowLabel` names the row's
+  button ("Open HR-12"). Row actions and links in cells keep working.
+- **`ui-form-renderer`:** `prefill` fills a new submission (still Submit, no change list, defaults kept);
+  `serverErrors` (`{ 'address.city': 'Unknown city.' }`, from a 422 with any `data.` prefix removed) puts messages on
+  their fields and in the summary until the answer changes; `(serverErrorsUnmatched)` reports the rest. The engine
+  has the same as `prefill` and `setServerErrors()` (shared fixtures `engine-prefill.json`, `engine-server.json`).
+- **Workflow components:** `anchorPrefix="wf"` gives tour anchors `wf.open`, `wf.move.<transition>`,
+  `wf.manual.<key>`, `wf.reset`, `wf.task-entry`, `wf.confirm`, `wf.task.<outcome>` (tasks drawer: `open`,
+  `task-entry`, `stopped`, `task.<outcome>`). A tour step pointing into a closed drawer opens it first
+  (`UiTourAnchors.registerRevealer`). An engine that can't be reached, or a 404/5xx answer that isn't the engine's
+  (no `code`), shows `workflowUnavailable` with the raw text only in a closed "Technical details"
+  (`UiWfApiError` code `unreachable`, `detail`).
+
 ## Plans and tier metals (`@zouriel/ui/plans`, 0.52.0)
 
 Pricing pages, with the plan tiers as library tokens: gold, platinum and the new premium (a deep

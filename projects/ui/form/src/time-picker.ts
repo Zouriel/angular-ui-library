@@ -12,6 +12,7 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
       [class.no-radius]="!radius()"
       [attr.data-size]="size()"
       [attr.step]="step()"
+      [attr.aria-label]="ariaLabel()"
       [attr.aria-invalid]="invalid() || null"
       [value]="value()"
       [disabled]="disabled()"
@@ -47,6 +48,8 @@ export class UiTimePicker implements ControlValueAccessor {
   step = input(60);
   invalid = input(false);
   radius = input<boolean>(this.config.radius);
+  /** The field's accessible name, when no label names it (0.87.0: `ui-date-time-picker`'s "Time"). */
+  ariaLabel = input<string | null>(null);
 
   protected readonly value = signal('');
   protected readonly disabled = signal(false);

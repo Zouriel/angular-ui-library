@@ -493,6 +493,7 @@ export class WorkflowSettingsPage {
     { name: 'showHistory', type: 'boolean', default: 'true', desc: 'Show what happened in each state (the latest 500 entries; what came before a reset is grouped apart).' },
     { name: 'emptyText', type: 'string', default: "'Nothing for you to do here right now.'", desc: 'Said in the current state when this person has nothing to do; empty hides it.' },
     { name: 'open', type: 'model<boolean>', default: 'false', desc: 'Whether the drawer is open (drawer layouts). Two-way.' },
+    { name: 'anchorPrefix', type: 'string | null', default: 'null', desc: "Tour anchors on its controls (0.87.0): <p>.open (a drawer layout's rail), <p>.move.<transition key>, <p>.manual.<key>, <p>.reset, <p>.task-entry, and in the dialogs <p>.confirm and <p>.task.<outcome key>. In the drawer layouts a UiTourService tour pointing inside opens the drawer first (non-modal). An engine that can't be reached (or a 404/5xx page that isn't the engine's) shows 'Workflows aren't available right now' with the raw text in a closed Technical details." },
     WorkflowComponentsPage.apiRow,
   ];
   protected readonly panelOutputs: ApiRow[] = [
@@ -510,6 +511,7 @@ export class WorkflowSettingsPage {
     { name: 'refreshSeconds', type: 'number', default: '60', desc: 'How often the count refreshes (0: only on open, close and decisions).' },
     { name: 'pageSize', type: 'number', default: '25', desc: 'Tasks per page in the drawer.' },
     { name: 'scope', type: "'mine' | 'all'", default: "'mine'", desc: "The signed-in person's tasks, or everyone's (for admins; give it a label such as 'All tasks'). The count follows it." },
+    { name: 'anchorPrefix', type: 'string | null', default: 'null', desc: 'Tour anchors (0.87.0): <p>.open (the button), <p>.task-entry (tasks in the list), <p>.stopped, <p>.task.<outcome key> (decision buttons). A tour pointing at the list opens the drawer.' },
     WorkflowComponentsPage.apiRow,
   ];
   protected readonly drawerOutputs: ApiRow[] = [{ name: '(decided)', type: 'UiWfTask', desc: 'After a task was decided in the drawer.' }];

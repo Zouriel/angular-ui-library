@@ -12,7 +12,7 @@ import {
 } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
-import { UiDatePicker, UiCalendar, UiDateRangePicker } from '@zouriel/ui/datepicker';
+import { UiDatePicker, UiCalendar, UiDateRangePicker, UiDateTimePicker } from '@zouriel/ui/datepicker';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";
@@ -43,7 +43,7 @@ const TOKEN = `interface UiTokenRun {
 @Component({
   selector: 'page-forms',
   imports: [
-    ReactiveFormsModule, FormsModule, UiButton, UiIconButton, HugeiconsIconComponent, UiTokenInput,
+    ReactiveFormsModule, FormsModule, UiDateTimePicker, UiButton, UiIconButton, HugeiconsIconComponent, UiTokenInput,
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
     UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput, UiHandleField,
@@ -294,6 +294,14 @@ phone = new FormControl<string | null>('+9607771234');
         summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids, which focus the month or year in view and keep one tab stop: arrow keys move (Up/Down by a row of three), Home/End go to the first and last cell, PageUp/PageDown change the year (month grid) or the page of 12 years (year grid), Enter or Space picks. min/max limit which days can be picked. Month and day names come from the built-in strings (Dhivehi in uiStringsDv) or Intl in the app's LOCALE_ID, and the weeks start on the locale's first day (Sunday in en-US and in uiStringsDv); in RTL the grid, the arrows and the arrow keys read right to left (0.46.0).">
         <doc-demo code="<ui-date-picker formControlName=&quot;date&quot; />">
           <ui-date-picker formControlName="date" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Date and time picker" selector="ui-date-time-picker" [api]="dateTimeApi"
+        summary="A day and a time of day in one field (0.87.0). Value type: a local date-time string 'YYYY-MM-DDTHH:MM' (with seconds when step is under 60), or null. A ui-date-picker and a ui-time-picker side by side in a role=group, named Date and Time for screen readers (built-in strings, Dhivehi in uiStringsDv); they stack when the box is narrower than 320px. Picking a day before a time takes defaultTime, shown in the time field at once; clearing the time keeps the day at defaultTime. min and max (a date-time or a date) limit the calendar's days.">
+        <doc-demo code="<ui-date-time-picker [(ngModel)]=&quot;publishAt&quot; min=&quot;2026-11-01&quot; />">
+          <ui-date-time-picker [(ngModel)]="publishAt" />
+          <p class="hint">Value: {{ publishAt ?? 'null' }}</p>
         </doc-demo>
       </doc-section>
 
@@ -680,10 +688,23 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'rejected', type: 'File[]', default: '—', desc: 'Dropped files that did not match accept.' },
     { name: 'remove', type: 'void', default: '—', desc: 'The Remove button under the picture was clicked (removable).' },
   ];
+  protected publishAt: string | null = null;
+  protected readonly dateTimeApi: ApiRow[] = [
+    { name: 'ngModel / formControl', type: 'string | null', default: 'null', desc: "Local date-time 'YYYY-MM-DDTHH:MM' (':SS' with step < 60)." },
+    { name: 'defaultTime', type: 'string', default: "'09:00'", desc: 'The time a day takes when it is picked first, and when the time is cleared.' },
+    { name: 'min / max', type: 'string | null', default: 'null', desc: 'A date-time or a date; its day limits the calendar.' },
+    { name: 'step', type: 'number', default: '60', desc: 'Seconds granularity of the time (1 shows seconds).' },
+    { name: 'dateLabel / timeLabel', type: 'string | null', default: 'null', desc: 'Accessible names of the two parts; null: the built-in "Date" / "Time".' },
+    { name: 'placeholder', type: 'string', default: "'Select a date'", desc: "The date field's placeholder." },
+    { name: 'invalid', type: 'boolean', default: 'false', desc: 'Danger borders and aria-invalid on both parts.' },
+    { name: 'size / radius', type: SIZE + ' / boolean', default: "'md' / UiConfig.radius", desc: 'As the other fields.' },
+  ];
   protected readonly dateApi: ApiRow[] = [
     { name: 'placeholder', type: 'string', default: "'Select a date'", desc: 'Placeholder.' },
     { name: 'min', type: 'string | null', default: 'null', desc: 'Earliest pickable day (ISO); earlier days show but are disabled.' },
     { name: 'max', type: 'string | null', default: 'null', desc: 'Latest pickable day (ISO).' },
+    { name: 'invalid', type: 'boolean', default: 'false', desc: 'Danger border and aria-invalid (0.87.0).' },
+    { name: 'ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name when no label names the field (0.87.0).' },
     { name: 'size', type: SIZE, default: "'md'", desc: 'Control height.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];

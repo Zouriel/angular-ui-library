@@ -38,7 +38,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 </ui-navbar>">
           <ui-navbar [glass]="false" label="Demo navbar">
             <ui-text navbar-brand variant="label">Acme</ui-text>
-            <ui-button variant="ghost" size="sm">Dashboard</ui-button>
+            <ui-button variant="ghost" size="sm" href="/navigation">Navigation</ui-button>
+            <ui-button variant="ghost" size="sm" href="/data">Data</ui-button>
             <ui-button navbar-actions variant="primary" size="sm">Sign in</ui-button>
           </ui-navbar>
         </doc-demo>
@@ -171,7 +172,7 @@ export class NavigationPage {
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass surface.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: '[navbar-brand]', type: 'slot', default: '—', desc: 'Left: logo or product name.' },
-    { name: '(default)', type: 'slot', default: '—', desc: 'Middle: links.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Middle: links. ui-link or ui-button with href mark the open page themselves (aria-current, a selected look) through the link navigator (provideUiRouterLinks, 0.87.0).' },
     { name: '[navbar-actions]', type: 'slot', default: '—', desc: 'Right: buttons. A wrapping div or span lays its children out in a row with a gap.' },
   ];
   protected readonly tabsApi: ApiRow[] = [

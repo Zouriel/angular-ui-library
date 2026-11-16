@@ -36,8 +36,8 @@ describe('shared fixtures', () => {
   it('are all present', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.json')).sort();
     expect(files).toEqual([
-      'calc.json', 'conditions.json', 'definition.json', 'describe.json', 'engine-locale.json', 'engine-rules.json',
-      'engine-scholarship.json', 'form-strings.json', 'http-sources.json', 'localize.json', 'migrate.json', 'scholarship.answers.json',
+      'calc.json', 'conditions.json', 'definition.json', 'describe.json', 'engine-locale.json', 'engine-prefill.json',
+      'engine-rules.json', 'engine-scholarship.json', 'engine-server.json', 'form-strings.json', 'http-sources.json', 'localize.json', 'migrate.json', 'scholarship.answers.json',
       'scholarship.definition.json', 'slug.json', 'submission-fields.json', 'values.json',
     ]);
   });
@@ -52,7 +52,7 @@ function runEngine(file: string): void {
       it(c.name, async () => {
         const definition: UiFormDefinition = c.definition ?? (c.definitionFile ? load(c.definitionFile) : fx.definition ?? load(fx.definitionFile));
         const values = c.values ?? (c.valuesFile ? load(c.valuesFile) : undefined);
-        const e = new UiFormEngine({ definition, values, mode: c.mode as UiFormMode | undefined, today: () => c.today, locale: c.locale, link: c.link, injector: TestBed.inject(Injector) });
+        const e = new UiFormEngine({ definition, values, prefill: c.prefill, mode: c.mode as UiFormMode | undefined, today: () => c.today, locale: c.locale, link: c.link, injector: TestBed.inject(Injector) });
         const tick = () => { TestBed.tick(); TestBed.tick(); };
         tick();
         const at = (addr: string): [string, string | null] => {
@@ -77,6 +77,7 @@ function runEngine(file: string): void {
           else if ('goTo' in step) e.goTo(step.goTo);
           else if ('setLocale' in step) e.setLocale(step.setLocale);
           else if ('setLink' in step) e.setLink(step.setLink);
+          else if ('serverErrors' in step) expect(norm(e.setServerErrors(step.serverErrors)), `${where}: unmatched`).toEqual(step.unmatched);
           else if ('submitLacks' in step) {
             const s = e.submit();
             expect(s, `${where}: submit`).not.toBeNull();
@@ -138,6 +139,7 @@ function runEngine(file: string): void {
           for (const k of x.valuesLacks ?? []) expect(k in e.values(), `${where}: values lack ${k}`).toBe(false);
           if ('dirty' in x) expect(e.dirty(), `${where}: dirty`).toBe(x.dirty);
           if ('changes' in x) expect(norm(e.changes()), `${where}: changes`).toEqual(x.changes);
+          if ('serverUnmatched' in x) expect(norm(e.serverUnmatched()), `${where}: serverUnmatched`).toEqual(x.serverUnmatched);
         }
       });
     }
@@ -147,6 +149,8 @@ function runEngine(file: string): void {
 runEngine('engine-scholarship.json');
 runEngine('engine-rules.json');
 runEngine('engine-locale.json');
+runEngine('engine-prefill.json');
+runEngine('engine-server.json');
 
 // ── Rules, calculations and wording ─────────────────────────────────────────────────────────
 

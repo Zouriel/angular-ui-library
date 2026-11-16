@@ -28,6 +28,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
   'typography': [
     { name: 'Text', anchor: 'text' },
     { name: 'Link', anchor: 'link' },
+    { name: 'Skip link', anchor: 'skip-link' },
     { name: 'kbd', anchor: 'kbd' },
     { name: 'Inline code', anchor: 'inline-code' },
     { name: 'Blockquote', anchor: 'blockquote' },
@@ -90,6 +91,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Color picker', anchor: 'color-picker' },
     { name: 'File upload', anchor: 'file-upload' },
     { name: 'Date picker', anchor: 'date-picker' },
+    { name: 'Date and time picker', anchor: 'date-and-time-picker' },
     { name: 'Calendar', anchor: 'calendar' },
     { name: 'Date range picker', anchor: 'date-range-picker' },
     { name: 'Choice grid', anchor: 'choice-grid' },

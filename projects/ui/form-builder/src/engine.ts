@@ -40,6 +40,14 @@ export interface UiFormEngineOptions {
   /** Saved answers to open for editing or viewing. */
   values?: Record<string, unknown> | null;
   mode?: UiFormMode;
+  /**
+   * Starting answers for a new submission (create mode only; ignored when editing or viewing): the
+   * form opens with them filled in, but stays a new submission (no change list, the normal Submit
+   * label), defaults still apply to fields without one, and keys that aren't fields of the form are
+   * not carried into the values. Use it for answers known in advance (a signed-in person's details)
+   * or to put answers back into a newer version of a form (0.87.0).
+   */
+  prefill?: Record<string, unknown> | null;
   /** App-registered checks (built-ins are always included). */
   validators?: readonly UiFbValidatorDef[];
   /** App-registered option sources, for dropdowns and multi-selects that search a list. */
@@ -82,6 +90,12 @@ export interface UiFbRemovedRow {
   rowId: string;
   index: number;
   values: Record<string, unknown>;
+}
+
+/** A server error whose data path matched no field of the form (0.87.0). */
+export interface UiFbServerErrorItem {
+  path: string;
+  message: string;
 }
 
 export interface UiFbErrorItem {
@@ -186,6 +200,11 @@ export class UiFormEngine {
   private readonly sourceDefs: Map<string, UiFbOptionSourceDef>;
   private readonly today: () => string;
   private readonly savedValues: Record<string, unknown>;
+  private readonly prefill: Record<string, unknown> | null;
+  /** Errors from a server by field address, with the message (see `setServerErrors`). */
+  private readonly serverErrs = signal<ReadonlyMap<string, string>>(new Map());
+  /** Server errors that matched no field: shown above the form. */
+  readonly serverUnmatched = signal<readonly UiFbServerErrorItem[]>([]);
 
   private readonly answers = signal<Record<string, unknown>>({});
   private readonly rowIds = signal<Record<string, string[]>>({});
@@ -242,6 +261,7 @@ export class UiFormEngine {
     this.validatorDefs = new Map([...UI_FB_BUILTIN_VALIDATORS, ...(opts.validators ?? [])].map((d) => [d.type, d]));
     this.sourceDefs = new Map((opts.optionSources ?? []).map((d) => [d.type, d]));
     this.savedValues = isObj(opts.values) ? structuredClone(opts.values) : {};
+    this.prefill = this.mode === 'create' && isObj(opts.prefill) ? structuredClone(opts.prefill) : null;
     this.load();
 
     const injector = opts.injector;
@@ -282,15 +302,17 @@ export class UiFormEngine {
     const values: Record<string, unknown> = {};
     const rows: Record<string, string[]> = {};
     const fresh = this.mode === 'create';
+    // A new submission may start from given answers (prefill); they never count as saved ("loaded").
+    const useStored = !fresh || this.prefill !== null;
     // `isNew`: nothing was saved here before, so defaults apply (always for hidden values).
     const loadEls = (els: UiFbElement[], src: Record<string, unknown> | undefined, row: string | null, isNew = fresh) => {
       for (const el of els) {
         if (el.kind === 'field') {
           const addr = addrOf(el.id, row);
           const stored = pick(src, [el.key, ...(el.keyHistory ?? [])]);
-          if (stored !== undefined && !fresh) {
+          if (stored !== undefined && useStored) {
             values[addr] = coerceValue(el, stored);
-            this.loaded.add(addr);
+            if (!fresh) this.loaded.add(addr);
           } else if (el.defaultValue !== undefined && (isNew || el.type === 'hidden')) {
             values[addr] = coerceValue(el, structuredClone(el.defaultValue));
           }
@@ -299,14 +321,15 @@ export class UiFormEngine {
           const keys = el.key ? [el.key, ...(el.keyHistory ?? [])] : [];
           const sub = el.key ? pick(src, keys) : src;
           if (el.repeat) {
-            const items = !fresh && Array.isArray(sub) ? sub : [];
+            const items = useStored && Array.isArray(sub) ? sub : [];
             const ids = items.map((item) => {
               const id = this.newRowId();
-              this.rowBase.set(id, isObj(item) ? item : {});
-              loadEls(el.elements, isObj(item) ? item : undefined, id, false);
+              // A prefilled entry is new: only its fields' answers are taken, and defaults fill the rest.
+              this.rowBase.set(id, isObj(item) && !fresh ? item : {});
+              loadEls(el.elements, isObj(item) ? item : undefined, id, fresh);
               return id;
             });
-            if (items.length) this.loaded.add(addrOf(el.id, row));
+            if (items.length && !fresh) this.loaded.add(addrOf(el.id, row));
             // New forms start with the minimum number of entries (at least one).
             const min = fresh ? Math.max(1, el.repeat.min ?? 0) : el.repeat.min ?? 0;
             while (ids.length < min) {
@@ -317,13 +340,13 @@ export class UiFormEngine {
             rows[el.id] = ids;
             this.initialRows.set(el.id, [...ids]);
           } else {
-            if (el.key && sub !== undefined) this.loaded.add(addrOf(el.id, row));
+            if (el.key && sub !== undefined && !fresh) this.loaded.add(addrOf(el.id, row));
             loadEls(el.elements, el.key ? (isObj(sub) ? sub : undefined) : src, row, isNew);
           }
         }
       }
     };
-    for (const p of this.definition.pages) loadEls(p.elements, this.savedValues, null);
+    for (const p of this.definition.pages) loadEls(p.elements, fresh ? (this.prefill ?? undefined) : this.savedValues, null);
     this.answers.set(values);
     this.rowIds.set(rows);
   }
@@ -334,7 +357,57 @@ export class UiFormEngine {
 
   // ── Reading ─────────────────────────────────────────────────────────────
 
-  readonly state = computed<EvalResult>(() => this.evaluate(this.answers(), this.rowIds(), this.asyncResults(), this.locale()));
+  readonly state = computed<EvalResult>(() => this.withServerErrors(this.evaluate(this.answers(), this.rowIds(), this.asyncResults(), this.locale()), this.serverErrs()));
+
+  /** Adds the server's messages to the fields they belong to, after the form's own (while the field shows). */
+  private withServerErrors(result: EvalResult, server: ReadonlyMap<string, string>): EvalResult {
+    if (!server.size || this.mode === 'view') return result;
+    const states = new Map(result.states);
+    for (const [addr, message] of server) {
+      const st = states.get(addr);
+      if (!st?.visible || st.errors.includes(message)) continue;
+      states.set(addr, { ...st, errors: [...st.errors, message] });
+    }
+    return { ...result, states };
+  }
+
+  /**
+   * Shows errors from a server (a 422 keyed by data path, e.g. `full_name`, `address.city`,
+   * `dependants[1].name`) on the fields they name, like the form's own errors: their pages show all
+   * their errors at once and the form moves to the first such page on its route. A field's message
+   * goes away as soon as its answer changes; until then it counts as an error (submit refuses it).
+   * Paths that name no field are returned and kept in `serverUnmatched`. `null` or `{}` clears them
+   * (0.87.0).
+   */
+  setServerErrors(errors: Readonly<Record<string, string | readonly string[]>> | null): UiFbServerErrorItem[] {
+    const byAddr = new Map<string, string>();
+    const unmatched: UiFbServerErrorItem[] = [];
+    const where = new Map<string, { addr: string; page: number }>();
+    this.definition.pages.forEach((_, i) => {
+      for (const inst of this.instancesOn(i)) where.set(this.valuePath(inst.id, inst.row), { addr: inst.addr, page: i });
+    });
+    const pages = new Set<number>();
+    for (const [path, value] of Object.entries(errors ?? {})) {
+      const message = String((Array.isArray(value) ? value[0] : value) ?? '').trim();
+      if (!message) continue;
+      const hit = where.get(path);
+      if (!hit) { unmatched.push({ path, message }); continue; }
+      if (!byAddr.has(hit.addr)) byAddr.set(hit.addr, message);
+      pages.add(hit.page);
+    }
+    this.serverErrs.set(byAddr);
+    this.serverUnmatched.set(unmatched);
+    if (pages.size) {
+      this.attempted.update((s) => {
+        const n = new Set(s);
+        pages.forEach((i) => n.add(this.definition.pages[i].id));
+        return n;
+      });
+      const first = this.path().find((i) => pages.has(i));
+      if (first !== undefined) this.pageIndex.set(first);
+    }
+    return unmatched;
+  }
 
   /** Indexes (into `definition.pages`) of the pages on the current route. */
   readonly path = computed(() => this.state().path);
@@ -440,7 +513,10 @@ export class UiFormEngine {
     if (this.mode === 'view') return;
     const f = this.field(id);
     const v = f ? coerceValue(f, value) : value;
-    this.answers.update((vals) => ({ ...vals, [addrOf(id, row)]: v }));
+    const addr = addrOf(id, row);
+    this.answers.update((vals) => ({ ...vals, [addr]: v }));
+    // A changed answer is no longer the one the server refused.
+    if (this.serverErrs().has(addr)) this.serverErrs.update((m) => { const n = new Map(m); n.delete(addr); return n; });
   }
 
   markTouched(id: string, row: string | null): void {

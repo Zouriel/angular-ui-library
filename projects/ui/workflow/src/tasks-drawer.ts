@@ -1,6 +1,6 @@
 import { Component, DestroyRef, computed, effect, inject, input, model, output, signal, untracked } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import type { UiSize } from '@zouriel/ui';
+import { UiTourAnchor, UiTourAnchors, type UiSize } from '@zouriel/ui';
 import { UiBadge } from '@zouriel/ui/badge';
 import { UiButton } from '@zouriel/ui/button';
 import { UiDrawer } from '@zouriel/ui/dialog';
@@ -27,10 +27,10 @@ const COUNT_TAKE = 100;
  */
 @Component({
   selector: 'ui-workflow-tasks-drawer',
-  imports: [HugeiconsIconComponent, UiBadge, UiButton, UiDrawer, WfRunView, WfTaskInbox],
+  imports: [HugeiconsIconComponent, UiBadge, UiButton, UiDrawer, UiTourAnchor, WfRunView, WfTaskInbox],
   template: `
     @if (showButton()) {
-      <ui-button class="trigger" [size]="size()" [variant]="variant()" (click)="open.set(true)">
+      <ui-button class="trigger" [size]="size()" [variant]="variant()" (click)="open.set(true)" [uiTourAnchor]="anchor('open')">
         <hugeicons-icon aria-hidden="true" [icon]="icons.InboxIcon" [size]="size() === 'sm' ? 14 : 16" [strokeWidth]="1.8" />
         <span class="label">{{ label() }}</span>
         @if (total() > 0) {
@@ -56,7 +56,7 @@ const COUNT_TAKE = 100;
               <p class="wf-hint">They need someone to try again or skip what stopped them.</p>
               <ul>
                 @for (run of stopped(); track run.id) {
-                  <li><button type="button" class="stop" (click)="openRun.set(run)">
+                  <li><button type="button" class="stop" (click)="openRun.set(run)" [uiTourAnchor]="anchor('stopped')">
                     <span class="st">{{ stoppedLabel(run) }}</span>
                     <span class="se">{{ readable(run.error) || 'Stopped' }}</span>
                   </button></li>
@@ -64,7 +64,7 @@ const COUNT_TAKE = 100;
               </ul>
             </section>
           }
-          <ui-wf-task-inbox class="inbox" [api]="client()" [scope]="scope()" [pageSize]="pageSize()" (decided)="onDecided($event)" />
+          <ui-wf-task-inbox class="inbox" [api]="client()" [scope]="scope()" [pageSize]="pageSize()" [anchorPrefix]="anchorPrefix()" (decided)="onDecided($event)" />
         }
       }
     </ui-drawer>
@@ -106,6 +106,13 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
   readonly scope = input<'mine' | 'all'>('mine');
   /** After a task was decided in the drawer. */
   readonly decided = output<UiWfTask>();
+  /**
+   * Tour anchors (0.87.0): `<prefix>.open` (the button), `<prefix>.task-entry` (the tasks in the list),
+   * `<prefix>.stopped` (stopped workflows) and `<prefix>.task.<outcome key>` (a task's decision buttons).
+   * A tour pointing at the list opens the drawer first. Null: no anchors.
+   */
+  readonly anchorPrefix = input<string | null>(null);
+  protected readonly anchor = (name: string) => (this.anchorPrefix() ? `${this.anchorPrefix()}.${name}` : null);
 
   protected readonly icons = WF_ICONS;
   protected readonly readable = wfReadableError;
@@ -172,6 +179,18 @@ export class UiWorkflowTasksDrawer extends WfWithApi {
       destroy.onDestroy(() => document.removeEventListener('visibilitychange', onVisibility));
     }
     destroy.onDestroy(stop);
+    // A tour pointing at the list (its tasks, its stopped workflows) opens the drawer.
+    const anchors = inject(UiTourAnchors);
+    effect((onCleanup) => {
+      const prefix = this.anchorPrefix();
+      if (!prefix) return;
+      onCleanup(anchors.registerRevealer(`${prefix}.`, (id) => {
+        const name = id.slice(prefix.length + 1);
+        if ((name !== 'task-entry' && name !== 'stopped') || this.open()) return false;
+        this.open.set(true);
+        return true;
+      }));
+    });
   }
 
   /** Reloads the count (also called after a decision). */

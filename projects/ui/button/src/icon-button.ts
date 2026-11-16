@@ -1,5 +1,6 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize, type UiButtonSize } from '@zouriel/ui';
+import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, type UiSize, type UiButtonSize } from '@zouriel/ui';
 import type { UiButtonVariant } from './button';
 
 /**
@@ -8,7 +9,30 @@ import type { UiButtonVariant } from './button';
  */
 @Component({
   selector: 'ui-icon-button',
+  imports: [NgTemplateOutlet],
   template: `
+    <ng-template #inner>
+      <ng-content />
+      @if (badge() !== null) { <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span> }
+    </ng-template>
+    @if (href() !== null) {
+      <a
+        class="ui-icon-btn"
+        [class.glass]="glass()"
+        [class.no-radius]="!radius()"
+        [class.round]="round()"
+        [attr.href]="disabled() ? null : href()"
+        [attr.target]="target()"
+        [attr.rel]="target() === '_blank' ? 'noopener noreferrer' : null"
+        [attr.aria-disabled]="disabled() || null"
+        [attr.aria-current]="isCurrent() ? 'page' : null"
+        [attr.data-variant]="variant()"
+        [attr.data-size]="size()"
+        [attr.aria-label]="name()"
+        (click)="follow($event)">
+        <ng-container [ngTemplateOutlet]="inner" />
+      </a>
+    } @else {
     <button
       class="ui-icon-btn"
       [class.glass]="glass()"
@@ -19,9 +43,9 @@ import type { UiButtonVariant } from './button';
       [attr.data-size]="size()"
       [attr.aria-label]="name()"
       [disabled]="disabled()">
-      <ng-content />
-      @if (badge() !== null) { <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span> }
+      <ng-container [ngTemplateOutlet]="inner" />
     </button>
+    }
   `,
   styles: `
     :host { display: inline-flex; }
@@ -48,6 +72,10 @@ import type { UiButtonVariant } from './button';
     .ui-icon-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-icon-btn:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-icon-btn:disabled { opacity: .5; cursor: not-allowed; }
+    a.ui-icon-btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+    a.ui-icon-btn { box-sizing: border-box; text-decoration: none; }
+    a.ui-icon-btn[aria-disabled="true"] { pointer-events: none; }
+    .ui-icon-btn[aria-current="page"]:is([data-variant="ghost"], [data-variant="outline"], [data-variant="link"]) { background: var(--ui-color-selected); color: var(--ui-color-primary); }
     .ui-icon-btn.no-radius { border-radius: 0; }
     .ui-icon-btn.round { border-radius: var(--ui-radius-pill); }
     .ui-icon-btn.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight); }
@@ -100,6 +128,22 @@ export class UiIconButton {
   badgeTone = input<'danger' | 'primary'>('danger');
   /** What screen readers hear for the badge ("2 unread"); null: the badge text. Added to the name. */
   badgeLabel = input<string | null>(null);
+  /** Makes it a link to `href` (0.87.0), like `ui-button`'s `href`. */
+  href = input<string | null>(null);
+  target = input<string | null>(null);
+  /** With `href`: marks the page that is open. Null: ask the link navigator. */
+  current = input<boolean | null>(null);
+  private readonly navigator = injectUiLinkNavigator();
+  protected readonly isCurrent = computed(() => {
+    const own = this.current();
+    if (own !== null) return own;
+    const href = this.href();
+    return href !== null && !!this.navigator?.isCurrent?.(href);
+  });
+  protected follow(event: MouseEvent): void {
+    if (this.disabled()) { event.preventDefault(); return; }
+    uiFollowLink(this.navigator, this.href(), event, this.target());
+  }
   /** The aria-label with the badge after it: "Chat, 2 unread". */
   protected readonly name = computed(() => {
     const badge = this.badge();

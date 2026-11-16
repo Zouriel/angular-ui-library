@@ -11,6 +11,7 @@ import { DestroyRef, Directive, ElementRef, Injectable, effect, inject, input, u
 export class UiTourAnchors {
   private readonly doc = inject(DOCUMENT);
   private readonly anchors = new Map<string, Set<HTMLElement>>();
+  private readonly revealers = new Set<{ prefix: string; reveal: (id: string) => boolean }>();
 
   /** Adds an element under an id; returns the function that removes it. */
   register(id: string, el: HTMLElement): () => void {
@@ -21,6 +22,24 @@ export class UiTourAnchors {
       set!.delete(el);
       if (!set!.size && this.anchors.get(id) === set) this.anchors.delete(id);
     };
+  }
+
+  /**
+   * Adds a revealer (0.87.0): something that can bring hidden anchors on screen, such as a closed drawer
+   * holding them (`ui-workflow-panel` with `anchorPrefix`). A tour asks it, for each anchor id starting with
+   * `prefix` that it can't find, to show it; `reveal` returns whether it did. Returns the remover.
+   */
+  registerRevealer(prefix: string, reveal: (id: string) => boolean): () => void {
+    const entry = { prefix, reveal };
+    this.revealers.add(entry);
+    return () => this.revealers.delete(entry);
+  }
+
+  /** Asks the revealers for `id`'s prefix to bring it on screen; true when one of them did something. */
+  reveal(id: string): boolean {
+    let any = false;
+    for (const r of [...this.revealers]) if (id.startsWith(r.prefix) && r.reveal(id)) any = true;
+    return any;
   }
 
   /** The element for an anchor id that is on the page and drawn (has a size), or null. */

@@ -121,19 +121,27 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
         </thead>
         <tbody>
           @for (row of sorted(); track $index) {
-            <tr [class.selected]="current().has(row)">
+            <tr [class.selected]="current().has(row)" [class.activatable]="activatable()" (click)="rowClick($event, row)">
               @if (selectable()) {
                 <td class="sel">
                   <input type="checkbox" [checked]="current().has(row)"
                          [attr.aria-label]="format(strings.selectRow, { n: $index + 1 })" (change)="toggleRow(row)" />
                 </td>
               }
-              @for (col of columns(); track col.key) {
-                @if (cellTemplates().get(col.key); as tpl) {
-                  <td [attr.data-align]="col.align || 'left'" [class.nowrap]="col.nowrap"><ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row, row: row, value: row[col.key] }" /></td>
-                } @else {
-                  <td [attr.data-align]="col.align || 'left'" [class.nowrap]="col.nowrap">{{ cell(row, col) }}</td>
-                }
+              @for (col of columns(); track col.key; let first = $first) {
+                <ng-template #content>
+                  @if (cellTemplates().get(col.key); as tpl) {
+                    <ng-container [ngTemplateOutlet]="tpl" [ngTemplateOutletContext]="{ $implicit: row, row: row, value: row[col.key] }" />
+                  } @else { {{ cell(row, col) }} }
+                </ng-template>
+                <td [attr.data-align]="col.align || 'left'" [class.nowrap]="col.nowrap">
+                  @if (first && activatable()) {
+                    <!-- The row's one control for the keyboard and screen readers; a click anywhere else in the row does the same. -->
+                    <button type="button" class="row-open" [attr.aria-label]="rowLabel()?.(row) ?? null" (click)="activate($event, row)"><ng-container [ngTemplateOutlet]="content" /></button>
+                  } @else {
+                    <ng-container [ngTemplateOutlet]="content" />
+                  }
+                </td>
               }
               @if (actions().length) {
                 <td class="acts"><div class="acts-in">
@@ -177,6 +185,12 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--ui-color-surface-hover); }
     tbody tr.selected { background: var(--ui-color-selected); }
+    /* Activatable rows (0.87.0): the whole row is the target; its first cell holds the real button. */
+    tbody tr.activatable { cursor: pointer; }
+    .row-open { display: inline; padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: inherit; cursor: pointer;
+      border-radius: var(--ui-radius-xs); }
+    tbody tr.activatable:hover .row-open { text-decoration: underline; text-underline-offset: 2px; }
+    .row-open:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
     /* 24px tall hit box (WCAG 2.5.8); the negative margins give the extra height back to the cell's padding. */
     .sort { display: inline-flex; align-items: center; gap: var(--ui-space-1); background: none; border: none; color: inherit; font: inherit; cursor: pointer; padding: 0;
       min-height: 24px; min-width: 24px; margin-block: calc(var(--ui-space-1) * -1); vertical-align: middle; }
@@ -220,6 +234,16 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
   emptyText = input('No data');
   radius = input<boolean>(this.config.radius);
   selectionChange = output<T[]>();
+  /**
+   * Rows open something (0.87.0): a click on a row (outside its buttons, links and fields, and not while
+   * selecting text) emits `rowActivate`, and the first cell becomes a real button for the keyboard and
+   * screen readers (Enter or Space). Set it with `(rowActivate)`: an output can't tell whether anyone listens.
+   */
+  activatable = input(false);
+  /** The row button's accessible name ("Open HR-REQ-0012"); null: its cell text. */
+  rowLabel = input<((row: T) => string) | null>(null);
+  /** A row was activated (with `activatable`). */
+  rowActivate = output<T>();
   /** Custom cells projected as `<ng-template uiCell="key">`. */
   private readonly cells = contentChildren(UiCell);
   protected readonly cellTemplates = computed(() => {
@@ -227,6 +251,20 @@ export class UiTable<T extends Record<string, unknown> = Record<string, unknown>
     for (const c of this.cells()) map.set(c.key(), c.template as unknown as TemplateRef<UiCellContext<T>>);
     return map;
   });
+
+  protected activate(event: Event, row: T): void {
+    event.stopPropagation();
+    this.rowActivate.emit(row);
+  }
+
+  /** A click on the row itself, not on something in it that does its own thing, and not a text selection. */
+  protected rowClick(event: MouseEvent, row: T): void {
+    if (!this.activatable() || event.defaultPrevented) return;
+    const target = event.target as Element | null;
+    if (target?.closest('a, button, input, select, textarea, label, summary, [role="button"], [role="link"], [contenteditable=""], [contenteditable="true"]')) return;
+    if ((globalThis.getSelection?.()?.toString() ?? '') !== '') return;
+    this.rowActivate.emit(row);
+  }
 
   protected readonly sortKey = signal<string | null>(null);
   protected readonly sortDir = signal<SortDir>(null);

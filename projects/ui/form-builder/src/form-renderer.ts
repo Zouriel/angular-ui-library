@@ -17,7 +17,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
-import { UiFormEngine, type UiFbRemovedRow, type UiFormMode } from './engine';
+import { UiFormEngine, type UiFbRemovedRow, type UiFbServerErrorItem, type UiFormMode } from './engine';
 import { formatValue } from './format';
 import { UiFbFieldView, type UiFbUploader } from './renderer-field';
 import type { UiFbChange, UiFbElement, UiFbField, UiFbGroup, UiFbSubmissionLink, UiFormDefinition, UiFormSubmission } from './schema';
@@ -84,10 +84,13 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           </div>
         }
 
-        @if (summary().length) {
+        @if (summary().length || unmatched().length) {
+          @let count = summary().length + unmatched().length;
           <div class="ui-fr-summary" role="alert" tabindex="-1" #summaryBox [attr.aria-labelledby]="uid + '-sum'">
-            <h3 class="ui-fr-summary-title" [id]="uid + '-sum'">{{ summary().length === 1 ? s().problemOne : fmt(s().problemMany, { n: summary().length }) }}</h3>
+            <h3 class="ui-fr-summary-title" [id]="uid + '-sum'">{{ count === 1 ? s().problemOne : fmt(s().problemMany, { n: count }) }}</h3>
             <ul>
+              <!-- Server errors that name no field: said here, with nothing to jump to. -->
+              @for (item of unmatched(); track item.path) { <li class="ui-fr-summary-plain">{{ item.message }}</li> }
               @for (item of summary(); track item.addr) {
                 <li><a [href]="'#' + uid + '-' + item.addr" (click)="$event.preventDefault(); focusField(item.addr)">{{ item.message }}</a></li>
               }
@@ -265,6 +268,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-summary-title { margin: 0 0 var(--ui-space-1); font-size: var(--ui-font-size-md); font-weight: 600; }
     .ui-fr-summary ul { margin: 0; padding-inline-start: var(--ui-space-4); display: flex; flex-direction: column; gap: 2px; }
     .ui-fr-summary a { color: var(--ui-color-danger); font-size: var(--ui-font-size-sm); text-underline-offset: 2px; }
+    .ui-fr-summary-plain { color: var(--ui-color-danger); font-size: var(--ui-font-size-sm); }
     .ui-fr-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); flex-wrap: wrap;
       padding-top: var(--ui-space-3); border-top: 1px solid var(--ui-color-border-subtle, var(--ui-color-border)); }
     .ui-fr-footer-start, .ui-fr-footer-end { display: flex; align-items: center; gap: var(--ui-space-2); }
@@ -297,6 +301,20 @@ export class UiFormRenderer {
   readonly definition = input.required<UiFormDefinition>();
   /** Saved answers to edit or view. */
   readonly values = input<Record<string, unknown> | null>(null);
+  /**
+   * Starting answers for a new submission (create mode): filled in without making it an edit (no
+   * change list, the normal Submit label); defaults still apply to fields without one. E.g. details
+   * from a sign-in, or the answers given to an older version of the form (0.87.0).
+   */
+  readonly prefill = input<Record<string, unknown> | null>(null);
+  /**
+   * Errors from the server by data path (`full_name`, `address.city`, `dependants[1].name`; a 422's
+   * `errors`, with any request prefix such as `data.` taken off). Shown on their fields like the
+   * form's own errors and listed in the error summary; a field's message goes away when its answer
+   * changes. Paths that match no field are listed at the top of the summary and reported by
+   * `serverErrorsUnmatched`. Give a new object for each response (0.87.0).
+   */
+  readonly serverErrors = input<Readonly<Record<string, string | readonly string[]>> | null>(null);
   /** Defaults to `edit` when `values` are given, otherwise `create`. */
   readonly mode = input<UiFormMode | null>(null);
   /** Extra app checks, on top of the ones from `provideUiFormValidators`. */
@@ -330,6 +348,8 @@ export class UiFormRenderer {
   /** The answers as they'd be saved, after every change. */
   readonly valueChange = output<Record<string, unknown>>();
   readonly dirtyChange = output<boolean>();
+  /** After `serverErrors` were applied: the ones that matched no field (empty when all did). */
+  readonly serverErrorsUnmatched = output<UiFbServerErrorItem[]>();
 
   protected readonly uid = `fr${++rendererSeq}`;
   protected readonly addIcon = FB_ICONS.Add01Icon;
@@ -359,6 +379,8 @@ export class UiFormRenderer {
   protected readonly s = computed(() => this.engine()?.strings() ?? UI_FB_STRINGS_EN);
   protected readonly fmt = fbFormat;
   protected readonly multiPage = computed(() => (this.engine()?.path().length ?? 0) > 1);
+  /** Server errors that name no field (shown when the form has an error summary). */
+  protected readonly unmatched = computed(() => (this.engine()?.settings.errorSummary ? this.engine()?.serverUnmatched() ?? [] : []));
   protected readonly summary = computed(() => {
     const e = this.engine();
     if (!e || !e.settings.errorSummary) return [];
@@ -377,12 +399,13 @@ export class UiFormRenderer {
       this.resetTick();
       const definition = this.definition();
       const values = this.values();
+      const prefill = this.prefill();
       const mode = this.mode();
       const validators = [...this.registered, ...this.validators()];
       const optionSources = [...this.registeredSources, ...sourcesFromSettings(this.globalSettings(), this.http), ...this.optionSources()];
       const today = this.today();
       const e = untracked(() => new UiFormEngine({
-        definition, values, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
+        definition, values, prefill, mode: mode ?? undefined, validators, optionSources, injector: this.injector, today: today ?? undefined,
         locale: this.locale(), link: this.link(), strings: untracked(() => this.stringOverrides()),
       }));
       this.engine.set(e);
@@ -403,6 +426,19 @@ export class UiFormRenderer {
       const e = this.engine();
       const link = this.link();
       if (e) untracked(() => e.setLink(link));
+    });
+    // Server errors go onto the running form (again after it restarts); the summary takes focus.
+    effect(() => {
+      const e = this.engine();
+      const errors = this.serverErrors();
+      if (!e) return;
+      untracked(() => {
+        const unmatched = e.setServerErrors(errors);
+        if (errors && Object.keys(errors).length) {
+          this.serverErrorsUnmatched.emit(unmatched);
+          this.showSummary();
+        }
+      });
     });
     let first = true;
     effect(() => {

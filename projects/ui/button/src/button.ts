@@ -1,5 +1,6 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, HostAttributeToken, computed, inject, input } from '@angular/core';
-import { UI_CONFIG, type UiSize, type UiButtonSize, type UiTier } from '@zouriel/ui';
+import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, type UiSize, type UiButtonSize, type UiTier } from '@zouriel/ui';
 import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 
 export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'destructive' | 'brand' | 'accent';
@@ -10,8 +11,44 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
  */
 @Component({
   selector: 'ui-button',
-  imports: [UiShutterLoader],
+  imports: [UiShutterLoader, NgTemplateOutlet],
   template: `
+    <ng-template #inner>
+      @if (fill() !== null) {
+        <span class="fill" aria-hidden="true" [style.width.%]="fill()! * 100" [style.transition-duration.ms]="fillDuration()"></span>
+      }
+      @if (loading()) {
+        @if (config.spinner === 'shutter') { <ui-shutter-loader class="shutter" decorative /> }
+        @else { <span class="spin" aria-hidden="true"></span> }
+      }
+      <ng-content />
+      @if (badge() !== null) {
+        <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span>
+        @if (!(ariaLabel() ?? staticLabel)) { <span class="sr-only">, {{ badgeLabel() ?? badge() }}</span> }
+      }
+    </ng-template>
+    @if (href() !== null) {
+      <!-- A button that goes somewhere is a link (0.87.0): same look, the link's semantics. Off, it has no href. -->
+      <a
+        class="ui-btn"
+        [class.glass]="glass()"
+        [class.no-radius]="!radius()"
+        [class.block]="block()"
+        [attr.href]="disabled() ? null : href()"
+        [attr.target]="target()"
+        [attr.rel]="target() === '_blank' ? 'noopener noreferrer' : null"
+        [attr.aria-disabled]="disabled() || null"
+        [attr.aria-current]="isCurrent() ? 'page' : null"
+        [attr.data-variant]="tier() ? null : variant()"
+        [attr.data-tier]="tier()"
+        [attr.data-size]="size()"
+        [attr.aria-label]="name()"
+        [attr.aria-describedby]="ariaDescribedby() ?? null"
+        [class.filling]="fill() !== null" [class.badged]="badge() !== null"
+        (click)="follow($event)">
+        <ng-container [ngTemplateOutlet]="inner" />
+      </a>
+    } @else {
     <button
       class="ui-btn"
       [class.glass]="glass()"
@@ -26,19 +63,9 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       [class.filling]="fill() !== null" [class.badged]="badge() !== null"
       [disabled]="disabled() || loading()"
       [attr.aria-busy]="loading() || null">
-      @if (fill() !== null) {
-        <span class="fill" aria-hidden="true" [style.width.%]="fill()! * 100" [style.transition-duration.ms]="fillDuration()"></span>
-      }
-      @if (loading()) {
-        @if (config.spinner === 'shutter') { <ui-shutter-loader class="shutter" decorative /> }
-        @else { <span class="spin" aria-hidden="true"></span> }
-      }
-      <ng-content />
-      @if (badge() !== null) {
-        <span class="ui-badge" aria-hidden="true" [attr.data-tone]="badgeTone()">{{ badge() }}</span>
-        @if (!(ariaLabel() ?? staticLabel)) { <span class="sr-only">, {{ badgeLabel() ?? badge() }}</span> }
-      }
+      <ng-container [ngTemplateOutlet]="inner" />
     </button>
+    }
   `,
   styles: `
     :host { display: inline-flex; }
@@ -67,6 +94,15 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     .ui-btn:focus-visible:not(:disabled) { outline: none; box-shadow: var(--ui-focus-ring); }
     .ui-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    a.ui-btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+    /* A link button: no underline (variant link keeps its own), and no hover or press while off. */
+    a.ui-btn { box-sizing: border-box; text-decoration: none; }
+    a.ui-btn[data-variant="link"] { text-decoration: underline; }
+    a.ui-btn[aria-disabled="true"] { pointer-events: none; }
+    /* The page that is open (0.87.0): a selected item's look on quiet buttons, a heavier label on filled ones. */
+    .ui-btn[aria-current="page"] { font-weight: 600; }
+    .ui-btn[aria-current="page"]:is([data-variant="ghost"], [data-variant="outline"]) { background: var(--ui-color-selected); color: var(--ui-color-primary); }
+    .ui-btn[aria-current="page"][data-variant="link"] { color: var(--ui-color-text); text-decoration-thickness: 2px; }
     /* Loading is disabled too, but keeps its full colour: the spinner says "busy", the dimming "off". */
     .ui-btn[aria-busy="true"] { opacity: 1; cursor: progress; }
     .ui-btn.no-radius { border-radius: 0; }
@@ -223,6 +259,27 @@ export class UiButton {
   badgeTone = input<'danger' | 'primary'>('danger');
   /** What screen readers hear for the badge ("2 unread"); null: the badge text. Added to the name. */
   badgeLabel = input<string | null>(null);
+  /**
+   * Makes the button a link to `href` (0.87.0): an `<a>` with the same look. A plain click on an
+   * app-internal href goes through the app's link navigator (`provideUiLinkNavigator` /
+   * `provideUiRouterLinks()`); off (`disabled`), it has no href. Null: a real `<button>`.
+   */
+  href = input<string | null>(null);
+  /** Link target with `href` (`_blank` adds a safe `rel`). */
+  target = input<string | null>(null);
+  /** With `href`: the page it opens is the one shown (`aria-current="page"`, a selected look). Null: ask the link navigator. */
+  current = input<boolean | null>(null);
+  private readonly navigator = injectUiLinkNavigator();
+  protected readonly isCurrent = computed(() => {
+    const own = this.current();
+    if (own !== null) return own;
+    const href = this.href();
+    return href !== null && !!this.navigator?.isCurrent?.(href);
+  });
+  protected follow(event: MouseEvent): void {
+    if (this.disabled()) { event.preventDefault(); return; }
+    uiFollowLink(this.navigator, this.href(), event, this.target());
+  }
   /** The aria-label: the given one, with the badge after it ("Chat, 2 unread"). Without a given one
    *  the visible text names the button and a hidden ", 2 unread" follows it. */
   protected readonly name = computed(() => {

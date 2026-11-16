@@ -1,4 +1,5 @@
-import { Directive, computed, input } from '@angular/core';
+import { Directive, computed, input, signal } from '@angular/core';
+import { defaultUiStrings, injectUiStrings, type UiStrings } from '@zouriel/ui';
 import { UiWfApiError, injectWorkflowApi, injectWorkflowClock, type UiWfAuditEntry, type UiWfInstance, type UiWfRecord, type UiWfTask, type UiWorkflowApi } from './api';
 
 /**
@@ -27,12 +28,19 @@ export function wfDateTime(iso: string | null | undefined): string {
 }
 
 /** The message to show for a failed call: the engine's message and its details, else `fallback`. */
-export function wfErrorText(e: unknown, fallback: string): string {
+export function wfErrorText(e: unknown, fallback: string, strings: Pick<UiStrings, 'workflowUnavailable'> = defaultUiStrings): string {
+  // Never the raw text of something that isn't the engine (a 404 page, a proxy error): a plain sentence (0.87.0).
+  if (e instanceof UiWfApiError && e.code === 'unreachable') return strings.workflowUnavailable;
   if (e instanceof UiWfApiError) {
     const details = Array.isArray(e.details) ? (e.details as { message?: string }[]).map((d) => d.message).filter(Boolean) : [];
     return details.length ? `${e.message} ${details.join(' ')}` : e.message;
   }
   return fallback;
+}
+
+/** The technical text of an error, for a closed "Technical details" disclosure (null: none). */
+export function wfErrorDetail(e: unknown): string | null {
+  return e instanceof UiWfApiError ? e.detail : null;
 }
 
 /** Parses an audit entry's JSON field; a broken one reads as empty rather than throwing. */
@@ -282,6 +290,15 @@ export abstract class WfWithApi {
   private readonly provided = injectWorkflowApi();
   protected readonly client = computed(() => this.api() ?? this.provided);
   protected readonly clock = injectWorkflowClock();
+  /** The library's built-in words (the engine-unavailable sentence, "Technical details"). */
+  protected readonly uiStrings = injectUiStrings();
+  /** The technical detail of the last failure, for the "Technical details" disclosure under it. */
+  protected readonly errorDetail = signal<string | null>(null);
+  /** What to show for a failed call (and its detail kept in `errorDetail`). */
+  protected failed(e: unknown, fallback: string): string {
+    this.errorDetail.set(wfErrorDetail(e));
+    return wfErrorText(e, fallback, this.uiStrings);
+  }
   protected readonly ago = (iso: string | null | undefined) => wfAgo(iso, this.clock());
   protected readonly when = (iso: string | null | undefined) => (iso ? `${wfDateTime(iso)} (${wfAgo(iso, this.clock())})` : '');
 }

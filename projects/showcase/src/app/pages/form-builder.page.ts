@@ -96,6 +96,16 @@ const STUDENT_ID: UiFbValidatorDef = {
           </div>
           @if (last(); as s) { <pre class="out" tabindex="0" aria-label="Submitted JSON">{{ s | json }}</pre> }
         </doc-demo>
+        <doc-demo code="<ui-form-renderer [definition]=&quot;form&quot; [prefill]=&quot;fromSignIn&quot; [serverErrors]=&quot;errors()&quot; (submitted)=&quot;send($event)&quot; />
+// on a 422: errors.set(response.errors with 'data.' taken off the paths)">
+          <div class="bar">
+            <ui-button size="sm" variant="outline" (click)="serverErrors.set({ full_name: 'The name must match your ID card.', office_note: 'Applications for this post closed yesterday.' })">Pretend the server refused it</ui-button>
+            <ui-button size="sm" variant="ghost" (click)="serverErrors.set(null)">Clear</ui-button>
+          </div>
+          <div class="frame">
+            <ui-form-renderer [definition]="form" [prefill]="prefill" [serverErrors]="serverErrors()" (submitted)="last.set($event)" />
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="App checks" selector="provideUiFormValidators" [api]="validatorApi" apiTitle="UiFbValidatorDef"
@@ -296,6 +306,8 @@ update(id: string, s: UiFormSubmission) {
   protected readonly rendererApi: ApiRow[] = [
     { name: 'definition', type: 'UiFormDefinition (required)', default: '—', desc: 'The form to fill in. Usually the published version.' },
     { name: 'values', type: 'Record<string, unknown> | null', default: 'null', desc: 'Saved answers to edit or view. Unknown keys and answers to questions hidden at the time are kept.' },
+    { name: 'prefill', type: 'Record<string, unknown> | null', default: 'null', desc: 'Starting answers for a new submission (create mode, 0.87.0): filled in, but still Submit and no change list; defaults apply to fields without one; keys that are not fields are dropped; repeat arrays become new entries. E.g. details from a sign-in, or answers carried over to a newer version of the form.' },
+    { name: 'serverErrors', type: 'Record<string, string | string[]> | null', default: 'null', desc: "Errors from the server by data path ('full_name', 'address.city', 'dependants[1].name'; a 422's errors with any request prefix removed), 0.87.0. Shown on their fields like the form's own and listed in the summary (which takes focus); a field's message goes away when its answer changes and blocks submitting until then. Paths matching no field are listed first in the summary. Give a new object per response." },
     { name: 'mode', type: "'create' | 'edit' | 'view' | null", default: 'edit with values, else create', desc: 'Edit labels the button “Save changes” and lists changes. View shows every page at once as text and never validates.' },
     { name: 'validators', type: 'readonly UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks, on top of provideUiFormValidators.' },
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra lists, on top of provideUiFormOptionSources. Use the same ones the builder had.' },
@@ -319,7 +331,10 @@ update(id: string, s: UiFormSubmission) {
     { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The values as they would be saved, after every change.' },
     { name: 'dirtyChange', type: 'boolean', default: '—', desc: 'Whether the answers differ from what the form opened with.' },
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
+    { name: 'serverErrorsUnmatched', type: 'UiFbServerErrorItem[]', default: '—', desc: 'After serverErrors were applied: the { path, message } that matched no field (0.87.0).' },
   ];
+  protected readonly prefill = { full_name: 'Aisha Ali', email: 'aisha@example.mv' };
+  protected readonly serverErrors = signal<Record<string, string> | null>(null);
   protected readonly validatorApi: ApiRow[] = [
     { name: 'type', type: 'string', default: '—', desc: 'Stored in the form JSON. Keep it stable.' },
     { name: 'label / description', type: 'string', default: '—', desc: 'What admins see in the “Add a check” list.' },

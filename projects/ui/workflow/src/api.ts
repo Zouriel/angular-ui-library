@@ -338,11 +338,37 @@ export interface UiWfAuditQuery {
   take?: number;
 }
 
-/** A refusal from the engine, e.g. `{ code: 'notAllowed', message: 'You are not allowed to “Approve”.' }`. */
+/**
+ * A refusal from the engine, e.g. `{ code: 'notAllowed', message: 'You are not allowed to “Approve”.' }`.
+ * Code `unreachable` (0.87.0): the engine couldn't be reached, or something other than the engine answered
+ * (a missing route, a server error page); `message` is then a plain sentence and `detail` the technical
+ * text (method, path, status, what came back) for a "Technical details" disclosure, never shown open.
+ */
 export class UiWfApiError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string, readonly details?: unknown) {
+  constructor(readonly status: number, readonly code: string, message: string, readonly details?: unknown, readonly detail: string | null = null) {
     super(message);
   }
+}
+
+/** The English sentence of an `unreachable` error; the components show `UiStrings.workflowUnavailable`. */
+export const WF_UNREACHABLE_MESSAGE = "Workflows aren't available right now. Try again later.";
+
+/** A body as short plain text: tags dropped, whitespace collapsed, at most 300 characters. */
+function wfPlainText(text: string): string {
+  const plain = text.replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return plain.length > 300 ? `${plain.slice(0, 299)}…` : plain;
+}
+
+/**
+ * Whether a failed answer came from something other than the engine: no engine `code` in a JSON body and a
+ * status that means a missing route or a broken server, or a body that isn't JSON at all (401 and 403 keep
+ * their own messages).
+ */
+export function wfIsUnreachable(status: number, json: unknown): boolean {
+  const engine = !!json && typeof json === 'object' && typeof (json as { code?: unknown }).code === 'string';
+  if (engine) return false;
+  if (status === 401 || status === 403) return false;
+  return json === null || typeof json !== 'object' || [404, 405, 408, 429].includes(status) || status >= 500;
 }
 
 /**
@@ -500,15 +526,25 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
 
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const f = this.options.fetch ?? ((i: string, init: RequestInit) => fetch(i, init));
-    const res = await f(this.base + path, {
-      method,
-      headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), Accept: 'application/json', ...this.headers() },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await f(this.base + path, {
+        method,
+        headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), Accept: 'application/json', ...this.headers() },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (err) {
+      // Offline, refused, blocked: nothing answered at all.
+      throw new UiWfApiError(0, 'unreachable', WF_UNREACHABLE_MESSAGE, undefined, `${method} ${path}: no answer - ${err instanceof Error ? err.message : String(err)}`);
+    }
     if (res.status === 204) return undefined as T;
     const text = await res.text();
     let json: unknown = null;
     try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+    if (!res.ok && wfIsUnreachable(res.status, json)) {
+      const said = json && typeof json === 'object' && typeof (json as { message?: unknown }).message === 'string' ? (json as { message: string }).message : wfPlainText(text);
+      throw new UiWfApiError(res.status, 'unreachable', WF_UNREACHABLE_MESSAGE, undefined, `${method} ${path}: HTTP ${res.status}${said ? ` - ${said}` : ''}`);
+    }
     if (!res.ok) {
       const e = (json ?? {}) as { code?: string; message?: string; details?: unknown };
       const fallback = res.status === 403 ? 'You are not allowed to do that.' : res.status === 401 ? 'Please sign in.' : `The server answered ${res.status}.`;
@@ -587,7 +623,8 @@ export class UiWorkflowHttpApi implements UiWorkflowApi {
   async exportAudit(q: UiWfAuditQuery & { format: 'csv' | 'json' }) {
     const f = this.options.fetch ?? ((i: string, init: RequestInit) => fetch(i, init));
     const res = await f(this.auditExportUrl(q), { method: 'GET', headers: { ...this.headers() } });
-    if (!res.ok) throw new UiWfApiError(res.status, `http${res.status}`, res.status === 403 ? 'You are not allowed to export the audit log.' : `The server answered ${res.status}.`);
+    if (res.status === 403) throw new UiWfApiError(403, 'http403', 'You are not allowed to export the audit log.');
+    if (!res.ok) throw new UiWfApiError(res.status, 'unreachable', WF_UNREACHABLE_MESSAGE, undefined, `GET /audit/export: HTTP ${res.status}`);
     return res.blob();
   }
   verifyAudit(fromSeq?: number) { return this.call<UiWfAuditVerification>('POST', `/audit/verify${qs({ fromSeq })}`); }

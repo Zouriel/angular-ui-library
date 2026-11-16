@@ -37,6 +37,8 @@ function iso(y: number, m: number, d: number): string {
         class="ui-date"
         readonly
         aria-haspopup="dialog"
+        [attr.aria-label]="ariaLabel()"
+        [attr.aria-invalid]="invalid() || null"
         [attr.aria-expanded]="open()"
         [attr.placeholder]="placeholderText()"
         [value]="display()"
@@ -139,6 +141,8 @@ function iso(y: number, m: number, d: number): string {
     .ui-date:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ui-date::placeholder { color: var(--ui-color-text-muted); }
     .ui-date:disabled { opacity: .5; cursor: not-allowed; }
+    .ui-date[aria-invalid="true"] { border-color: var(--ui-color-danger); }
+    .ui-date[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-danger); }
     .wrap:has(.ui-date:disabled) .cal { opacity: .5; }
     .wrap.no-radius .ui-date { border-radius: 0; }
     .wrap[data-size="sm"] .ui-date { height: var(--ui-size-sm); font-size: var(--ui-font-size-sm); }
@@ -207,6 +211,10 @@ export class UiDatePicker implements ControlValueAccessor {
   protected readonly format = uiFormatString;
   size = input<UiSize>('md');
   radius = input<boolean>(this.config.radius);
+  /** The field's accessible name, when no label names it (0.87.0: `ui-date-time-picker`'s "Date"). */
+  ariaLabel = input<string | null>(null);
+  /** Shows the field as wrong (a danger border, `aria-invalid`) (0.87.0). */
+  invalid = input(false);
   /** Earliest selectable day, as ISO `YYYY-MM-DD`. Days before it are shown but cannot be picked. */
   min = input<string | null>(null);
   /** Latest selectable day, as ISO `YYYY-MM-DD`. */

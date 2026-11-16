@@ -1,5 +1,5 @@
 import { Component, ElementRef, computed, inject, input, output } from '@angular/core';
-import { injectUiStrings, UiDirectionService, uiIsRtl } from '@zouriel/ui';
+import { injectUiLinkNavigator, injectUiStrings, UiDirectionService, uiFollowLink, uiIsRtl } from '@zouriel/ui';
 
 export interface UiBreadcrumb {
   label: string;
@@ -7,7 +7,10 @@ export interface UiBreadcrumb {
   value?: string;
 }
 
-/** `ui-breadcrumbs` — hierarchical trail. Emits `(navigate)` for items without href. */
+/**
+ * `ui-breadcrumbs` — hierarchical trail. Emits `(navigate)` for items without href; items with one are
+ * links, followed through the app's link navigator when there is one (`provideUiLinkNavigator`, 0.87.0).
+ */
 @Component({
   selector: 'ui-breadcrumbs',
   template: `
@@ -18,7 +21,7 @@ export interface UiBreadcrumb {
             @if (last) {
               <span class="crumb current" aria-current="page">{{ item.label }}</span>
             } @else if (item.href) {
-              <a class="crumb" [href]="item.href">{{ item.label }}</a>
+              <a class="crumb" [href]="item.href" (click)="follow($event, item.href)">{{ item.label }}</a>
             } @else {
               <button type="button" class="crumb link" (click)="navigate.emit(item)">{{ item.label }}</button>
             }
@@ -57,4 +60,9 @@ export class UiBreadcrumbs {
     return uiIsRtl(this.host.nativeElement) && mirrored[s] ? mirrored[s] : s;
   });
   navigate = output<UiBreadcrumb>();
+  private readonly navigator = injectUiLinkNavigator();
+
+  protected follow(event: MouseEvent, href: string): void {
+    uiFollowLink(this.navigator, href, event);
+  }
 }

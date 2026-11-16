@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiCell, UiTable, UiRowAction, type UiColumn } from './table';
 
 /**
@@ -264,5 +264,75 @@ describe('UiTable crowded columns', () => {
     expect(statusTd.classList.contains('nowrap')).toBe(true);
     expect(nameTd.classList.contains('nowrap')).toBe(false);
     expect(css).toMatch(/th\.nowrap\[[^\]]*\], td\.nowrap\[[^\]]*\] \{ white-space: nowrap; \}/);
+  });
+});
+
+/** 0.87.0: rows that open something, without breaking the buttons and links inside them. */
+describe('UiTable row activation', () => {
+  type Req = Record<string, unknown> & { ref: string; title: string };
+  const rows: Req[] = [{ ref: 'HR-1', title: 'Clerk' }, { ref: 'HR-2', title: 'Driver' }];
+
+  @Component({
+    imports: [UiTable, UiCell],
+    template: `
+      <ui-table [columns]="cols" [data]="rows" [activatable]="activatable" [rowLabel]="label" [actions]="actions" (rowActivate)="opened.push($event.ref)">
+        <ng-template uiCell="title" let-row><a href="#x" class="cell-link">{{ row.title }}</a></ng-template>
+      </ui-table>
+    `,
+  })
+  class Host {
+    cols: UiColumn<Req>[] = [{ key: 'ref', header: 'Reference' }, { key: 'title', header: 'Title' }];
+    rows = rows;
+    activatable = true;
+    label = (r: Req) => `Open ${r.ref}`;
+    actions: UiRowAction<Req>[] = [{ label: 'Remove', run: (r) => this.removed.push(r.ref) }];
+    opened: string[] = [];
+    removed: string[] = [];
+  }
+
+  function render(activatable = true) {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.activatable = activatable;
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    return { host: fixture.componentInstance, el, row: (i: number) => el.querySelectorAll('tbody tr')[i] as HTMLTableRowElement };
+  }
+
+  it('puts a real, named button in the first cell; it activates its row (keyboard: a native button)', () => {
+    const { host, row } = render();
+    const open = row(1).querySelector('td:first-child button.row-open') as HTMLButtonElement;
+    expect(open).not.toBeNull();
+    expect(open.type).toBe('button');
+    expect(open.getAttribute('aria-label')).toBe('Open HR-2');
+    expect(open.textContent?.trim()).toBe('HR-2');
+    open.click();
+    expect(host.opened).toEqual(['HR-2']);
+  });
+
+  it('a click anywhere else in the row activates it, but not on a row action, a link in a cell, or while selecting text', () => {
+    const { host, row } = render();
+    (row(0).querySelectorAll('td')[1] as HTMLElement).click();
+    expect(host.opened).toEqual(['HR-1']);
+    (row(0).querySelector('.act') as HTMLButtonElement).click();
+    expect(host.removed).toEqual(['HR-1']);
+    (row(0).querySelector('.cell-link') as HTMLAnchorElement).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    const spy = vi.spyOn(globalThis, 'getSelection').mockReturnValue({ toString: () => 'Clerk' } as Selection);
+    (row(1).querySelectorAll('td')[1] as HTMLElement).click();
+    spy.mockRestore();
+    expect(host.opened).toEqual(['HR-1']);
+  });
+
+  it('without activatable: no row button and row clicks do nothing', () => {
+    const { host, el, row } = render(false);
+    expect(el.querySelector('.row-open')).toBeNull();
+    expect(row(0).querySelector('td')?.textContent?.trim()).toBe('HR-1');
+    (row(0).querySelectorAll('td')[1] as HTMLElement).click();
+    expect(host.opened).toEqual([]);
+  });
+
+  it('shows activatable rows as clickable and the row button with a focus ring', () => {
+    const styles = ((UiTable as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles).join('\n').replace(/\[_ngcontent-%COMP%\]/g, '').replace(/\s+/g, ' ');
+    expect(styles).toMatch(/tr\.activatable \{[^}]*cursor: pointer/);
+    expect(styles).toMatch(/\.row-open:focus-visible \{[^}]*box-shadow: var\(--ui-focus-ring\)/);
   });
 });

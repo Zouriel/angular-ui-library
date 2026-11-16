@@ -5,7 +5,8 @@ import { UiInput, UiSearchInput } from '@zouriel/ui/form';
 import type { UiWfDefinitionSummary, UiWfPermissionChange, UiWfPermissionsSummary, UiWorkflowApi } from './api';
 import { describeAssignees, indexSteps, stepInfo, stepName, tokensAt, type UiWfToken } from './definition';
 import { WfAssigneesEditor } from './editors';
-import { WfWithApi, wfErrorText } from './runtime-shared';
+import { WfWithApi } from './runtime-shared';
+import { WfErrorNote } from './error-note';
 import type { UiWfAssignee, UiWorkflowDefinition, UiWorkflowRegistry } from './schema';
 import { WF_SHARED_STYLES } from './styles';
 
@@ -96,7 +97,7 @@ interface WorkflowPermissions {
  */
 @Component({
   selector: 'ui-workflow-permissions',
-  imports: [FormsModule, UiButton, UiInput, UiSearchInput, WfAssigneesEditor],
+  imports: [FormsModule, UiButton, UiInput, UiSearchInput, WfAssigneesEditor, WfErrorNote],
   template: `
     <div class="head">
       <ui-search-input class="search" size="sm" placeholder="Find a workflow or step" label="Find a workflow or step" [ngModel]="query()" (ngModelChange)="query.set($event)" />
@@ -105,7 +106,7 @@ interface WorkflowPermissions {
     @if (loading()) {
       <p class="wf-hint">Loading…</p>
     } @else if (loadError()) {
-      <p class="wf-error" role="alert">{{ loadError() }}</p>
+      <ui-wf-error [text]="loadError()" [detail]="errorDetail()" />
     } @else if (!client()) {
       <p class="wf-hint">No workflow API is connected: pass <code>[api]</code> or add <code>provideUiWorkflow({{ '{' }} baseUrl {{ '}' }})</code> to the app.</p>
     } @else {
@@ -256,7 +257,7 @@ export class UiWorkflowPermissions extends WfWithApi {
       this.conflicts.set({});
       if (!this.canEdit()) this.lookUpNames(api, list.flatMap((w) => w.rows));
     } catch (e) {
-      this.loadError.set(wfErrorText(e, 'Could not load the workflows.'));
+      this.loadError.set(this.failed(e, 'Could not load the workflows.'));
     } finally {
       this.loading.set(false);
     }
@@ -340,7 +341,7 @@ export class UiWorkflowPermissions extends WfWithApi {
       this.errors.update((e) => ({ ...e, [id]: '' }));
       this.savedText.update((t) => ({ ...t, [id]: `Reloaded: version ${d.summary.version} is in use.` }));
     } catch (e) {
-      this.errors.update((x) => ({ ...x, [id]: wfErrorText(e, 'Could not reload this workflow.') }));
+      this.errors.update((x) => ({ ...x, [id]: this.failed(e, 'Could not reload this workflow.') }));
     } finally {
       this.busy.set(null);
     }
@@ -372,7 +373,7 @@ export class UiWorkflowPermissions extends WfWithApi {
       }
       summary = await api.updatePermissions(id, changes, this.notes()[id]?.trim() || undefined);
     } catch (e) {
-      this.errors.update((x) => ({ ...x, [id]: wfErrorText(e, 'Saving failed.') }));
+      this.errors.update((x) => ({ ...x, [id]: this.failed(e, 'Saving failed.') }));
       this.busy.set(null);
       return;
     }

@@ -4,7 +4,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowRight02Icon from '@hugeicons/core-free-icons/ArrowRight02Icon';
-import { UI_CONFIG, uiWatchTheme } from '@zouriel/ui';
+import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, uiWatchTheme } from '@zouriel/ui';
 import { uiLuminance, uiParseColor, uiParseColorAlpha, uiResolveFeatureColors, type UiFeatureCardColors, type UiFeatureColorTheme } from './feature-colors';
 
 export type UiFeatureTone = 'primary' | 'accent' | 'brand' | 'neutral';
@@ -331,6 +331,7 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
 })
 export class UiFeatureCard {
   private config = inject(UI_CONFIG);
+  private readonly navigator = injectUiLinkNavigator();
   protected readonly arrow = ArrowRight02Icon;
 
   title = input.required<string>();
@@ -443,5 +444,7 @@ export class UiFeatureCard {
       return;
     }
     this.action.emit(e);
+    // An app-internal href goes through the app's link navigator (a router), unless the app handled the click.
+    uiFollowLink(this.navigator, this.href(), e, this.target());
   }
 }

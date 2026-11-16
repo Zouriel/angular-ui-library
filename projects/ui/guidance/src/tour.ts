@@ -64,6 +64,8 @@ export class UiTourService {
   private readonly anchors = inject(UiTourAnchors);
   private readonly running = signal<string | null>(null);
   private stopCurrent: ((o: UiTourOutcome) => void) | null = null;
+  /** Counts starts, so a start still waiting for revealed anchors knows when it was overtaken. */
+  private starts = 0;
   /** The id of the tour on screen, or null. */
   readonly active: Signal<string | null> = this.running.asReadonly();
 
@@ -84,14 +86,40 @@ export class UiTourService {
    */
   start(spec: UiTourSpec): Promise<UiTourOutcome> {
     this.stopCurrent?.('closed');
+    const token = ++this.starts;
     let steps = spec.steps;
     if (steps.length > UI_TOUR_MAX_STEPS) {
       console.warn(`uiTour "${spec.id}": ${steps.length} steps; a tour has at most ${UI_TOUR_MAX_STEPS}, the rest are left out.`);
       steps = steps.slice(0, UI_TOUR_MAX_STEPS);
     }
-    steps = steps.filter((s) => this.findAnchor(s.anchor));
-    if (!steps.length) return Promise.resolve('closed');
+    // Anchors in something closed (a drawer) can be brought on screen by its revealer first (0.87.0).
+    const hidden = steps.filter((s) => !this.findAnchor(s.anchor) && this.anchors.reveal(s.anchor));
+    if (hidden.length) {
+      const all = steps;
+      this.running.set(spec.id);
+      // A newer start, or stop(), while waiting wins: this one then ends as closed.
+      return this.waitFor(hidden.map((s) => s.anchor)).then(() => (token === this.starts ? this.run(spec, all.filter((s) => this.findAnchor(s.anchor))) : 'closed'));
+    }
+    return this.run(spec, steps.filter((s) => this.findAnchor(s.anchor)));
+  }
 
+  /** Resolves once every anchor is on screen, or after a second (whatever is there by then is used). */
+  private waitFor(ids: string[]): Promise<void> {
+    let waited = 0;
+    return new Promise((resolve) => {
+      const check = () => {
+        if (ids.every((id) => this.findAnchor(id)) || waited >= 1000) resolve();
+        else { waited += 16; setTimeout(check, 16); }
+      };
+      check();
+    });
+  }
+
+  private run(spec: UiTourSpec, steps: readonly UiTourStep[]): Promise<UiTourOutcome> {
+    if (!steps.length) {
+      this.running.set(null);
+      return Promise.resolve('closed');
+    }
     return new Promise<UiTourOutcome>((resolve) => {
       const ref: OverlayRef = this.overlay.create({
         positionStrategy: this.overlay.position().global().top('0').left('0'),
@@ -121,7 +149,9 @@ export class UiTourService {
 
   /** Ends the running tour with `closed` (e.g. the page is leaving). */
   stop(): void {
+    this.starts++;
     this.stopCurrent?.('closed');
+    this.running.set(null);
   }
 }
 

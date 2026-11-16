@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
 import { UiText } from '@zouriel/ui/text';
-import { UiLink, UiKbd, UiInlineCode, UiBlockquote } from '@zouriel/ui/link';
+import { UiLink, UiKbd, UiInlineCode, UiBlockquote, UiSkipLink } from '@zouriel/ui/link';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-typography',
-  imports: [UiText, UiLink, UiKbd, UiInlineCode, UiBlockquote, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiLink, UiKbd, UiInlineCode, UiBlockquote, UiSkipLink, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Getting started" title="Typography & content"
       lead="ui-text is the text primitive: it renders the right semantic tag for each variant, so headings and paragraphs stay meaningful to screen readers and search engines. ui-link, ui-kbd, ui-inline-code and ui-blockquote (from @zouriel/ui/link) cover links and inline content.">
@@ -36,13 +36,26 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
       </doc-section>
 
       <doc-section name="Link" selector="ui-link" [api]="linkApi"
-        summary="Themed anchor, underlined at rest so it never relies on colour alone. It renders a plain href (no routerLink), so an internal href loads the page fresh; for in-app routing put a routerLink on your own anchor. external adds target=_blank, rel=noopener noreferrer, an arrow icon and screen-reader text saying it opens in a new tab.">
+        summary="Themed anchor, underlined at rest so it never relies on colour alone. A plain click on an app-internal href goes through the app's link navigator (0.87.0): provideUiRouterLinks() from @zouriel/ui/router hands it to the Angular Router (or give your own with provideUiLinkNavigator); without one it is a plain link. Modified clicks (new tab) and external links are left to the browser. current marks the open page (aria-current=page: the text colour, heavier, a solid underline); left null, the navigator's isCurrent decides, so navbar links mark themselves. external adds target=_blank, rel=noopener noreferrer, an arrow icon and screen-reader text saying it opens in a new tab.">
         <doc-demo code="<ui-link href=&quot;/x&quot;>internal</ui-link>
 <ui-link href=&quot;https://angular.dev&quot; [external]=&quot;true&quot;>external</ui-link>
-<ui-link href=&quot;/x&quot; tone=&quot;muted&quot;>muted</ui-link>">
+<ui-link href=&quot;/x&quot; tone=&quot;muted&quot;>muted</ui-link>
+<ui-link href=&quot;/typography&quot;>this page</ui-link>  <!-- current: aria-current=page -->
+
+// app.config.ts
+providers: [provideRouter(routes), provideUiRouterLinks()]">
           <ui-text variant="body">An <ui-link href="/buttons">internal link</ui-link>, an
             <ui-link href="https://angular.dev" [external]="true">external one</ui-link>, a
-            <ui-link href="/forms" tone="muted">muted one</ui-link> and a <ui-link href="/overlays" tone="plain">plain one</ui-link>.</ui-text>
+            <ui-link href="/forms" tone="muted">muted one</ui-link>, a <ui-link href="/overlays" tone="plain">plain one</ui-link> and a link to
+            <ui-link href="/typography" [current]="true">this page</ui-link>.</ui-text>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Skip link" selector="ui-skip-link" [api]="skipApi"
+        summary="'Skip to content' (0.87.0): put it first in the app's root template. Hidden until a keyboard reaches it (it stays in the tab order), then shown at the top-start corner above everything. Activating it moves focus to the element with the target id (giving it tabindex=-1 when it has none) and scrolls it into view, without a page load, so it also works under a base href. The words come from the built-in strings (Dhivehi in uiStringsDv). Tab into this demo to see it.">
+        <doc-demo code="<ui-skip-link />   <!-- … -->   <main id=&quot;main&quot;>…</main>">
+          <ui-skip-link target="skip-demo" label="Skip to the demo text" />
+          <ui-text variant="body" id="skip-demo">Focus lands here.</ui-text>
         </doc-demo>
       </doc-section>
 
@@ -87,6 +100,13 @@ type TextTag =
     { name: 'href', type: 'string', default: '—', desc: 'Target URL, set as a plain href.' },
     { name: 'external', type: 'boolean', default: 'false', desc: 'Open in a new tab with safe rel, an arrow icon and hidden "(opens in a new tab)" text.' },
     { name: 'tone', type: "'primary' | 'muted' | 'plain'", default: "'primary'", desc: 'Color. plain inherits the surrounding text colour.' },
+    { name: 'current', type: 'boolean | null', default: 'null', desc: "The open page: aria-current=page and the current look. Null asks the link navigator's isCurrent (0.87.0)." },
+    { name: 'provideUiLinkNavigator(f)', type: 'Provider', default: '—', desc: '{ navigate(href, event?), isCurrent?(href) }: how library links (ui-link, ui-button href, breadcrumbs, feature cards) move around the app (0.87.0).' },
+    { name: 'provideUiRouterLinks(opts?)', type: 'Provider', default: '—', desc: "@zouriel/ui/router: the navigator for the Angular Router. Under a base href write hrefs relative to it ('media/12') or with it. { exact: false } also marks section links on the pages under them." },
+  ];
+  protected readonly skipApi: ApiRow[] = [
+    { name: 'target', type: 'string', default: "'main'", desc: 'The id of the element holding the main content.' },
+    { name: 'label', type: 'string | null', default: 'null', desc: 'The words; null: the built-in "Skip to content".' },
   ];
   protected readonly quoteApi: ApiRow[] = [
     { name: 'cite', type: 'string', default: '—', desc: 'Optional citation line.' },
