@@ -269,3 +269,24 @@ describe('segregationOfDuties errors', () => {
     expect(wfErrorText(new UiWfApiError(403, 'segregationOfDuties', msg), 'The decision could not be saved.')).toBe(msg);
   });
 });
+
+describe('removing a state another state pauses on', () => {
+  it('takes it out of pauseOnStatus and drops the emptied list', async () => {
+    const { removeState } = await import('./definition');
+    const state = (id: string, sla?: object) => ({ id, key: id, label: id, category: 'active', ...(sla ? { sla } : {}) });
+    const def = {
+      specVersion: 1, id: 'd', key: 'd', kind: 'lifecycle', title: 'T',
+      lifecycle: {
+        field: 'status', transitions: [],
+        states: [
+          state('a', { within: 'P1D', steps: [], pauseOnStatus: ['b', 'c'] }),
+          state('x', { within: 'P1D', steps: [], pauseOnStatus: ['b'] }),
+          state('b'), state('c'),
+        ],
+      },
+    } as never;
+    const out = removeState(def, 'b') as { lifecycle: { states: { id: string; sla?: Record<string, unknown> }[] } };
+    expect(out.lifecycle.states.find((s) => s.id === 'a')!.sla).toEqual({ within: 'P1D', steps: [], pauseOnStatus: ['c'] });
+    expect(out.lifecycle.states.find((s) => s.id === 'x')!.sla).toEqual({ within: 'P1D', steps: [] });
+  });
+});

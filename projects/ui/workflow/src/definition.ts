@@ -899,7 +899,13 @@ export function removeState(def: UiWorkflowDefinition, id: string): UiWorkflowDe
     return {
       ...lc,
       ...(reset ? { reset } : {}),
-      states: lc.states.filter((s) => s.id !== id),
+      // A time limit that paused on the removed state no longer names it (the list goes when it was the last).
+      states: lc.states.filter((s) => s.id !== id).map((s) => {
+        if (!s.sla?.pauseOnStatus?.includes(id)) return s;
+        const { pauseOnStatus, ...sla } = s.sla;
+        const rest = pauseOnStatus.filter((x) => x !== id);
+        return { ...s, sla: rest.length ? { ...sla, pauseOnStatus: rest } : sla };
+      }),
       transitions: lc.transitions
         .filter((t) => t.to !== id)
         .map((t) => (t.from === '*' ? t : { ...t, from: t.from.filter((f) => f !== id) }))
