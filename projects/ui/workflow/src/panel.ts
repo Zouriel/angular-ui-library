@@ -160,6 +160,7 @@ const RUNS_POLL_MS = 15_000;
               <span class="wf-hint">No lifecycle for this record type.</span>
             }
           </div>
+          @if (r.publicProcessingTime) { <p class="wf-hint usual">Usual processing time: {{ r.publicProcessingTime }}</p> }
           @if (r.states.length > 1) {
             <ol class="track" aria-label="Lifecycle">
               @for (s of r.states; track s.key) {
@@ -186,6 +187,7 @@ const RUNS_POLL_MS = 15_000;
             <span class="since">since {{ ago(r.stateEnteredAt) }}</span>
             @if (r.status === 'outOfSync') { <span class="wf-chip" data-tone="warning">Out of sync</span> }
           </div>
+          @if (r.publicProcessingTime) { <p class="wf-hint usual">Usual processing time: {{ r.publicProcessingTime }}</p> }
           @if (mode === 'vertical') {
             <ui-stepper class="steps" orientation="vertical" tone="success" [label]="title()" [steps]="stepLabels()" [active]="path().active">
               <ng-template uiStepBody let-i="index" let-state="state">

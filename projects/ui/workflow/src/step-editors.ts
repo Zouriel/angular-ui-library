@@ -37,6 +37,7 @@ import type {
   UiWfTemplate,
   UiWfWaitStep,
   UiWfWaitUntil,
+  UiWfMakerChecker,
   UiWfWebhookStep,
 } from './schema';
 import { WfBuilderStore } from './store';
@@ -83,6 +84,16 @@ export const WF_TONE_OPTIONS: WfOption[] = [
             <label class="lw"><span class="wf-label">Remarks</span>
               <ui-wf-select [options]="opts.approvalRemarks" [value]="approval().requireComment || 'never'" label="Remarks" (valueChange)="patch({ requireComment: $event })" /></label>
             <p class="wf-hint">People can always add remarks; they show in the history and later steps can read them.</p>
+            <section class="wf-section wf-stack">
+              <h4 class="wf-section-title">Separation of duties</h4>
+              <p class="wf-hint">Stops one person from both asking and approving.</p>
+              <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!approval().makerChecker?.excludeInitiator" (ngModelChange)="setMakerChecker({ excludeInitiator: $event || undefined })" /> The person who started it cannot approve</label>
+              <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!approval().makerChecker?.excludePreviousApprover" (ngModelChange)="setMakerChecker({ excludePreviousApprover: $event || undefined })" /> Whoever approved the step before cannot approve this one</label>
+              @if (roleOptions().length) {
+                <label class="lw"><span class="wf-label">Must hold the role</span>
+                  <ui-wf-select [options]="roleOptions()" [value]="approval().makerChecker?.requiredRole ?? ''" label="Must hold the role" (valueChange)="setMakerChecker({ requiredRole: $event || undefined })" /></label>
+              }
+            </section>
           </div>
         }
         @case ('task') {
@@ -554,6 +565,19 @@ export class WfStepEditor {
   });
   /** The For each this step is inside (innermost), whose current item "Update record" can change. */
   protected readonly loopItem = computed(() => forEachItemsAt(this.store.def(), this.store.registry(), { stepId: this.step().id }).at(-1) ?? null);
+
+  /** "Any role" first, then the registry's roles; a stored role the registry no longer lists stays visible. */
+  protected readonly roleOptions = computed<WfOption[]>(() => {
+    const roles = this.store.registry()?.roles ?? [];
+    return roles.length ? [{ value: '', label: 'Any role' }, ...roles.map((r) => ({ value: r.key, label: r.label }))] : [];
+  });
+
+  /** Changes one makerChecker setting; with nothing left on, the key goes away (never `{}`). */
+  protected setMakerChecker(p: Partial<UiWfMakerChecker>): void {
+    const next = { ...(this.approval().makerChecker ?? {}), ...p } as Record<string, unknown>;
+    for (const k of Object.keys(next)) if (next[k] === undefined || next[k] === false || next[k] === '') delete next[k];
+    this.patch({ makerChecker: Object.keys(next).length ? next : undefined });
+  }
 
   protected patch(patch: Partial<UiWfStep> | Record<string, unknown>, mergeKey?: string): void {
     this.store.updateStep(this.step().id, patch as Record<string, unknown>, mergeKey ? `${this.step().id}:${mergeKey}` : undefined);

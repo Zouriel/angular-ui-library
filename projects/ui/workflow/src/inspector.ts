@@ -3,13 +3,16 @@ import { FormsModule } from '@angular/forms';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiCheckbox, UiInput, UiNumberInput, UiSelect, UiSwitch, UiTextarea, UiTimePicker, type UiSelectOption } from '@zouriel/ui/form';
 import { describeTrigger, fieldOf, indexSteps, stepName, updateLifecycle, wfId, wfKey, wfStatesFrom } from './definition';
-import { WfAssigneesEditor, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
+import { WfAssigneesEditor, WfCheckList, WfConditionEditor, WfDurationInput, WfFormField, WfValueInput } from './editors';
 import { WF_ICONS, WF_STEP_ICONS, WF_TRIGGER_ICONS } from './icons';
-import type { UiWfConditionGroup, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
+import type { UiWfConditionGroup, UiWfPublicProcessingTime, UiWfSla, UiWfState, UiWfTransition, UiWfTrigger, UiWfTriggerType, UiWfVariable, UiWorkflowDefinition } from './schema';
 import { WfSelect, type WfOption } from './select';
 import { WF_TONE_OPTIONS, WfStepEditor } from './step-editors';
 import { WfBuilderStore } from './store';
 import { WF_SHARED_STYLES } from './styles';
+
+/** The longest estimate the format allows (spec §4). */
+export const WF_PUBLIC_TIME_MAX = 200;
 
 const TRIGGER_TYPES: { type: UiWfTriggerType; label: string; hint: string; needsLifecycle?: boolean }[] = [
   { type: 'fieldChanged', label: 'A field changes', hint: 'e.g. status becomes Submitted' },
@@ -261,6 +264,14 @@ export class WfTriggerEditor {
       </section>
 
       <section class="wf-section wf-stack">
+        <h4 class="wf-section-title">Public processing time</h4>
+        <label class="lw"><span class="wf-label">What people are told</span>
+          <ui-input size="sm" [ngModel]="def().publicProcessingTime?.estimate ?? ''" (ngModelChange)="setPublicTime({ estimate: $event })" placeholder="e.g. 5 working days" /></label>
+        <label class="wf-row small"><ui-switch size="sm" [ngModel]="!!def().publicProcessingTime?.display" (ngModelChange)="setPublicTime({ display: $event })" /> Show this to the public</label>
+        <p class="wf-hint">Shown to people outside the office, for example on the service page. It does not change any time limit.</p>
+      </section>
+
+      <section class="wf-section wf-stack">
         <h4 class="wf-section-title">Variables</h4>
         @for (v of def().variables ?? []; track v.id; let i = $index) {
           <div class="var">
@@ -315,6 +326,14 @@ export class WfWorkflowEditor {
 
   protected patch(p: Partial<UiWorkflowDefinition>, mergeKey?: string): void {
     this.store.patch(p, mergeKey ? `wf:${mergeKey}` : undefined);
+  }
+
+  /** Changes the public processing time; a blank estimate with the switch off removes the key. */
+  protected setPublicTime(p: Partial<UiWfPublicProcessingTime>): void {
+    const cur = this.def().publicProcessingTime;
+    const next: UiWfPublicProcessingTime = { estimate: cur?.estimate ?? '', display: cur?.display ?? false, ...p };
+    next.estimate = next.estimate.slice(0, WF_PUBLIC_TIME_MAX);
+    this.patch({ publicProcessingTime: !next.estimate.trim() && !next.display ? undefined : next }, 'publicTime');
   }
 
   protected setLifecycleField(field: string): void {
@@ -373,7 +392,7 @@ export class WfWorkflowEditor {
 /** A lifecycle state: its name and stored value, kind, colour, and what runs on entering or leaving it. */
 @Component({
   selector: 'ui-wf-state-editor',
-  imports: [FormsModule, UiInput, UiTextarea, UiSwitch, WfDurationInput, WfSelect],
+  imports: [FormsModule, UiInput, UiTextarea, UiSwitch, WfCheckList, WfDurationInput, WfSelect],
   template: `
     @if (state(); as s) {
       <div class="wf-stack">
@@ -400,6 +419,17 @@ export class WfWorkflowEditor {
             @if (s.sla; as sla) {
               <div><span class="wf-label">Longer than</span><ui-wf-duration [value]="sla.within" label="Time limit" (valueChange)="patch({ sla: { ...sla, within: $event } })" /></div>
               <label class="wf-row small"><ui-switch size="sm" [ngModel]="sla.calendar === 'working'" (ngModelChange)="patch({ sla: { ...sla, calendar: $event ? 'working' : undefined } })" /> Count working time only</label>
+              @if (otherStates().length) {
+                <div><span class="wf-label">Pause the clock while the record is in</span>
+                  <ui-wf-check-list [options]="otherStates()" [value]="sla.pauseOnStatus ?? []" label="Pause the clock while the record is in" (valueChange)="setSla('pauseOnStatus', $event)" /></div>
+              }
+              @if (signalOptions().length) {
+                <div><span class="wf-label">Pause the clock when</span>
+                  <ui-wf-check-list [options]="signalOptions()" [value]="sla.pauseOnEvent ?? []" label="Pause the clock when" (valueChange)="setSla('pauseOnEvent', $event)" /></div>
+                <div><span class="wf-label">Start it again when</span>
+                  <ui-wf-check-list [options]="signalOptions()" [value]="sla.resumeOnEvent ?? []" label="Start it again when" (valueChange)="setSla('resumeOnEvent', $event)" /></div>
+              }
+              <p class="wf-hint">Time spent paused does not count towards the limit.</p>
             }
           </section>
         }
@@ -420,6 +450,20 @@ export class WfStateEditor {
   protected readonly state = this.store.selectedState;
   protected readonly field = computed(() => fieldOf(this.store.registry(), this.store.def().entity, this.store.def().lifecycle?.field));
   protected readonly keyOptions = computed<WfOption[]>(() => (this.field()?.options ?? []).map((o) => ({ value: '' + o.value, label: `${o.label} (${o.value})` })));
+
+  /** The lifecycle's other states, the ones that can pause this state's clock. */
+  protected readonly otherStates = computed<WfOption[]>(() =>
+    (this.store.def().lifecycle?.states ?? []).filter((x) => x.id !== this.state()?.id).map((x) => ({ value: x.id, label: x.label })));
+  protected readonly signalOptions = computed<WfOption[]>(() => (this.store.registry()?.signals ?? []).map((x) => ({ value: x.key, label: x.label })));
+
+  /** Sets one of the clock's lists; an empty list removes the key (never `[]`). */
+  protected setSla(key: 'pauseOnStatus' | 'pauseOnEvent' | 'resumeOnEvent', list: string[]): void {
+    const sla = this.state()?.sla;
+    if (!sla) return;
+    const next: UiWfSla = { ...sla, [key]: list.length ? list : undefined };
+    if (!list.length) delete next[key];
+    this.patch({ sla: next });
+  }
 
   protected patch(p: Partial<UiWfState>, mergeKey?: string): void {
     const s = this.state();
