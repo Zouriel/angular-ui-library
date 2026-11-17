@@ -36,3 +36,13 @@ export function uiNativeDir(dir: UiTextDir | null | undefined, text: string): Ui
 
 /** Elements inside a field's slot that take their own clicks (anything else focuses the field). */
 export const UI_SLOT_INTERACTIVE = 'button, a[href], input, select, textarea, label, [tabindex], [contenteditable], [role=button]';
+
+/**
+ * Whether a press inside a field's slot landed on a control that takes it. A disabled one does not
+ * (0.87.1): a greyed Send button in a composer swallowed the tap, so on a phone the keyboard never
+ * came up when a finger landed on that end of the box. It now counts as the slot's empty space.
+ */
+export function uiSlotControlTakes(target: Element | null, slot: HTMLElement): boolean {
+  const hit = target?.closest(UI_SLOT_INTERACTIVE);
+  return !!hit && slot.contains(hit) && !hit.matches(':disabled, [aria-disabled="true"]');
+}

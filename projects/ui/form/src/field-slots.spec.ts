@@ -20,6 +20,9 @@ globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {
     <ui-input [dir]="dir()">
       <span input-leading class="icon">@</span>
     </ui-input>
+    <ui-input class="go">
+      <button input-trailing type="button" class="off" disabled>Go</button>
+    </ui-input>
     <ui-textarea class="plain" />
   `,
 })
@@ -62,7 +65,7 @@ describe('text field slots', () => {
     const plain = el.querySelector('ui-textarea.plain textarea') as HTMLTextAreaElement;
     expect(plain.style.paddingInlineStart).toBe('');
     expect(plain.style.paddingInlineEnd).toBe('');
-    const input = el.querySelector('ui-input input') as HTMLInputElement;
+    const input = el.querySelector('ui-input:not(.go) input') as HTMLInputElement;
     expect(input.style.paddingInlineStart).toContain('30px');
     expect(input.style.paddingInlineEnd).toBe('');
   });
@@ -81,6 +84,32 @@ describe('text field slots', () => {
     const buttonPress = down(ta.querySelector('.send')!);
     expect(buttonPress.defaultPrevented).toBe(false);
     expect(document.activeElement).not.toBe(textarea);
+  });
+
+  it('a press on a disabled slot button focuses the field (a greyed Send no longer swallows the tap)', async () => {
+    const { el, ta, textarea } = await setup();
+    const down = (target: Element) => {
+      const e = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      target.dispatchEvent(e);
+      return e;
+    };
+    const send = ta.querySelector('.send') as HTMLButtonElement;
+    // Enabled: the button keeps the press (the positive control for the cases below).
+    expect(down(send).defaultPrevented).toBe(false);
+    expect(document.activeElement).not.toBe(textarea);
+    send.disabled = true;
+    expect(down(send).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(textarea);
+    textarea.blur();
+    send.disabled = false;
+    send.setAttribute('aria-disabled', 'true');
+    expect(down(send).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(textarea);
+    // The input's slots follow the same rule.
+    const input = el.querySelector('ui-input.go input') as HTMLInputElement;
+    const off = el.querySelector('ui-input .off') as HTMLButtonElement;
+    expect(down(off).defaultPrevented).toBe(true);
+    expect(document.activeElement).toBe(input);
   });
 
   it('passes dir to the native field and lays the slots out in the resolved direction', async () => {

@@ -1,7 +1,7 @@
 import { Component, DestroyRef, ElementRef, HostAttributeToken, afterNextRender, afterRenderEffect, computed, forwardRef, inject, input, signal, viewChild } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { UI_CONFIG, type UiSize } from '@zouriel/ui';
-import { UI_SLOT_INTERACTIVE, uiNativeDir, uiResolvedDir, type UiTextDir } from './text-dir';
+import { uiNativeDir, uiSlotControlTakes, uiResolvedDir, type UiTextDir } from './text-dir';
 
 /**
  * `ui-textarea` — multi-line text field (CVA).
@@ -12,7 +12,8 @@ import { UI_SLOT_INTERACTIVE, uiNativeDir, uiResolvedDir, type UiTextDir } from 
  * Content slots: project `[textarea-leading]` and `[textarea-trailing]` (an icon, a `ui-icon-button`
  * to attach or send). They sit inside the border at the inline start and end, aligned to the last
  * line (they stay at the bottom while autosize grows), and the text keeps clear of them. They swap
- * sides in RTL. A click on a slot's empty space focuses the field; buttons in it take their own.
+ * sides in RTL. A click on a slot's empty space focuses the field, as does one on a
+ * disabled button (0.87.1: a greyed Send); working buttons take their own.
  *
  * Font: set `--ui-field-font` on it (e.g. `style="--ui-field-font: Faruma, 'Noto Sans Thaana'"`) to type,
  * and show the placeholder, in an app font; it defaults to the theme's `--ui-font-default`.
@@ -165,12 +166,10 @@ export class UiTextarea implements ControlValueAccessor {
     this.field().nativeElement.focus();
   }
 
-  /** A press on a slot's empty space (or a plain icon) focuses the field; buttons keep their own. */
+  /** A press on a slot's empty space (or a plain icon) focuses the field, and so does one on a disabled
+   *  button (0.87.1); working buttons keep their own. */
   protected slotDown(e: PointerEvent): void {
-    const target = e.target as Element | null;
-    const slot = e.currentTarget as HTMLElement;
-    const hit = target?.closest(UI_SLOT_INTERACTIVE);
-    if (hit && slot.contains(hit)) return;
+    if (uiSlotControlTakes(e.target as Element | null, e.currentTarget as HTMLElement)) return;
     e.preventDefault(); // keep the caret where it was rather than blurring first
     if (!this.disabled()) this.field().nativeElement.focus();
   }
