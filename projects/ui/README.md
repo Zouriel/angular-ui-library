@@ -737,6 +737,11 @@ import { UiBarChart, type UiBarChartSeries } from '@zouriel/ui/chart';
   and checked per theme for colour-blind separation. A theme of your own should set them too.
 - The twin of Flutter's `UiBarChart`.
 
+## Blob toast shadow (0.88.1)
+
+- No web change: this release fixes the Flutter twin, whose host cut the blob toast's shadow off at the toast's box.
+  On the web nothing above `ui-blob-toast` clips its `drop-shadow`.
+
 ## Blob toast, toast update and promise (0.88.0)
 
 - **Blob toast** (`@zouriel/ui/dialog`). `toast.blob('Changes Saved', { tone: 'success', message: '...' })`, or
