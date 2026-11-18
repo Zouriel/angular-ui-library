@@ -6,3 +6,4 @@ export * from './confirm-dialog';
 export * from './bottom-sheet';
 export * from './task-progress';
 export * from './action-sheet';
+export * from './blob-toast';

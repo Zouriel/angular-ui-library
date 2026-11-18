@@ -112,6 +112,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Backdrop', anchor: 'backdrop' },
     { name: 'Bottom sheet', anchor: 'bottom-sheet' },
     { name: 'Toast', anchor: 'toast' },
+    { name: 'Blob toast', anchor: 'blob-toast' },
     { name: 'Snackbar', anchor: 'snackbar' },
     { name: 'Command palette', anchor: 'command-palette' },
   ],

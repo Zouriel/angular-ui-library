@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, TemplateRef, inject, signal, viewChild } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowDown01Icon from '@hugeicons/core-free-icons/ArrowDown01Icon';
 import FileAddIcon from '@hugeicons/core-free-icons/FileAddIcon';
@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { UiFormField, UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, type UiMenuItem, type UiHintCloseReason, type UiHintPlacement } from '@zouriel/ui/overlay';
-import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBottomSheet, UiSnackbar, UiSnackbarService, UiActionSheet } from '@zouriel/ui/dialog';
+import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBlobToast, UiBottomSheet, UiSnackbar, UiSnackbarService, UiActionSheet, type UiToast } from '@zouriel/ui/dialog';
 import { UiCommandPalette, type UiCommand } from '@zouriel/ui/command-palette';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -24,7 +24,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
   selector: 'page-overlays',
   imports: [ UiFormField, UiInput, FormsModule, UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
     UiText, UiButton, UiIconButton, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
-    DocPage, DocSection, DocDemo,
+    DocPage, DocSection, DocDemo, UiBlobToast,
   ],
   template: `
     <doc-page eyebrow="Components" title="Overlays & dialogs"
@@ -185,6 +185,53 @@ this.toast.show({ message: 'Layer deleted', duration: 6000, action: { label: 'Un
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Blob toast" selector="UiToastService.blob · update · promise" [api]="blobApi"
+        summary="A toast drawn as one liquid shape (0.88.0): a dark pill with the tone's icon and the title, which grows a card beneath it for the message, your own content and a full-width action. The pill stays on top as a tab and joins the card with curved shoulders. It uses the inverted surface the snackbar uses (near-black on a light theme, near-white on a dark one) and colours the icon, title and action by tone. Call blob(title, options), or show({ variant: 'blob' }); with no message, content or action it stays a pill. update(id, changes) changes a showing toast: the card closes to the pill, the title and colour change there, and it opens again. promise(promise, { loading, success, error }) shows a loading pill with a spinner and turns it into the success or error toast when the promise settles. Blob toasts sit in the same stack as the others, on the host's side (the pill in the middle for a centred host). One blob toast opens its card by itself; when more than one is showing they stay pills, and each opens while the pointer or focus is on it, or on a click or tap of its pill (the host's blobExpand: 'auto', the default; 'always' opens every one, 'hover' none by itself). Clicking the pill of an open toast, or of one with no card, dismisses it."
+        [shapes]="BLOB">
+        <doc-demo lang="ts" code="toast = inject(UiToastService);
+
+this.toast.blob('Changes Saved', { tone: 'success', message: 'Changes saved successfully to the database.' });
+this.toast.blob('New Update Available', { message: 'Version 2.4 is ready.', action: { label: 'Share Now', run: () => share() } });
+
+// a loading pill that becomes a success card, or an error card
+this.toast.promise(book(), {
+  loading: 'Booking Flight',
+  success: (b) => ({ title: 'Booking Confirmed', content: this.flightTpl, action: { label: 'View Details', run: () => open(b) } }),
+  error: { title: 'Something Went Wrong', message: 'The booking did not go through.' },
+});
+
+// or by hand
+const id = this.toast.blob('Uploading', { loading: true });
+this.toast.update(id, { loading: false, tone: 'success', title: 'File Uploaded', message: 'report.pdf is in your files.' });">
+          <div class="blob-stage">
+            <ui-blob-toast [toast]="blobDemo()" side="center" (act)="blobState('saved')" (dismiss)="blobState('saved')" />
+          </div>
+          <div class="row">
+            <ui-button variant="outline" (click)="blobState('saved')">Success</ui-button>
+            <ui-button variant="outline" (click)="blobState('error')">Error</ui-button>
+            <ui-button variant="outline" (click)="blobState('warning')">Warning</ui-button>
+            <ui-button variant="outline" (click)="blobState('info')">Info with action</ui-button>
+            <ui-button variant="outline" (click)="blobBooking()">Promise with custom content</ui-button>
+            <ui-button variant="outline" (click)="blobState('pill')">Pill only</ui-button>
+          </div>
+          <div class="row">
+            <ui-button (click)="toast.blob('Changes Saved', { tone: 'success', message: 'Changes saved successfully to the database. Please refresh the page to see the changes.' })">Show in the stack</ui-button>
+            <ui-button (click)="blobStackPromise()">Promise in the stack</ui-button>
+            <ui-button variant="outline" (click)="blobStackThree()">Three at once (hover to open)</ui-button>
+          </div>
+          <ng-template #flight>
+            <div class="flight">
+              <div class="flight-head"><strong>Maldivian</strong><span>Q2 204</span></div>
+              <div class="flight-route">
+                <span>MLE</span>
+                <svg viewBox="0 0 160 30" preserveAspectRatio="none" aria-hidden="true"><path d="M4 26 Q80 -14 156 26" /></svg>
+                <span>GAN</span>
+              </div>
+            </div>
+          </ng-template>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Snackbar" selector="UiSnackbarService · ui-snackbar-host · ui-snackbar" [api]="snackApi" [shapes]="SNACK"
         summary="A short note about something the person just did, with at most one action: Deleted with Undo, Grouped, Keyframe added. It is a compact inverted bar centred at the bottom of the screen, the one the form builder uses. Only one shows at a time; a new one replaces it. Render <ui-snackbar-host /> once near the app root (this site does) and call the service: show('Saved'), or show({ message, title?, action?, duration? }). It leaves after 4 s, or 10 s when it has an action so there is time to reach Undo, and holds while the pointer or focus is on it. offset lifts it above a bottom bar. Screen readers hear it through an always-present polite live region. Use toasts instead for messages that should stack or carry a tone, such as errors. Editors that place it themselves (the form builder does) can use the bare ui-snackbar.">
         <doc-demo lang="ts + html" code="import { UiSnackbarService, UiSnackbarHost } from '@zouriel/ui/dialog';
@@ -282,6 +329,13 @@ onKey(e: KeyboardEvent) {
     .chat-foot { display: flex; flex-direction: column; gap: var(--ui-space-1); }
     .hint-demo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); padding-top: var(--ui-space-12); }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
+    .blob-stage { display: flex; justify-content: center; align-items: flex-start; min-height: 240px; padding: var(--ui-space-6) var(--ui-space-4); margin-bottom: var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-bg); border: 1px solid var(--ui-color-border); }
+    .blob-stage ui-blob-toast { width: 100%; max-width: 340px; }
+    .flight { display: flex; flex-direction: column; gap: var(--ui-space-2); }
+    .flight-head { display: flex; justify-content: space-between; }
+    .flight-head strong { color: var(--ui-color-bg); font-weight: 600; }
+    .flight-route { display: flex; align-items: flex-end; gap: var(--ui-space-2); font-weight: 600; color: var(--ui-color-bg); }
+    .flight-route svg { flex: 1; min-width: 0; height: 30px; fill: none; stroke: var(--ui-toast-tone); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1 6; }
     .floating { position: fixed; z-index: calc(var(--ui-z-overlay) + 1); left: 50%; top: 50%; transform: translate(-50%, -50%);
       padding: var(--ui-space-4); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border);
       box-shadow: var(--ui-shadow-3); }
@@ -400,6 +454,58 @@ interface UiToastAction {
   label: string;
   run: () => void;   // the toast is dismissed after it runs
 }`;
+  protected readonly BLOB = `type UiToastVariant = 'card' | 'blob';
+interface UiToastOptions {
+  message?: string;              // the card's text; without it (and content, action) the toast stays a pill
+  title?: string;                // the pill's text
+  tone?: UiToastTone;            // colours the icon, title and action; default 'info'
+  duration?: number;             // ms; default 4000, or 0 while loading
+  action?: UiToastAction;        // a full-width button at the bottom of the card
+  variant?: UiToastVariant;      // default 'card'
+  loading?: boolean;             // a spinner for the icon and a muted title
+  content?: TemplateRef<unknown>; // your content in the card; implicit context: the toast
+}
+type UiToastState = string | Partial<UiToastOptions>;   // a title, or any options
+interface UiToastPromiseStates<T> {
+  loading: UiToastState;
+  success: UiToastState | ((value: T) => UiToastState);
+  error: UiToastState | ((error: unknown) => UiToastState);
+}`;
+  private readonly flightTpl = viewChild<TemplateRef<unknown>>('flight');
+  private readonly BLOB_STATES: Record<string, Partial<UiToast>> = {
+    saved: { tone: 'success', title: 'Changes Saved', message: 'Changes saved successfully to the database. Please refresh the page to see the changes.' },
+    error: { tone: 'danger', title: 'Something Went Wrong', message: 'We could not reach the server. Check your connection and try again.' },
+    warning: { tone: 'warning', title: 'Storage Almost Full', message: 'You have used 92% of your storage. Remove some files or upgrade your plan.' },
+    info: { tone: 'info', title: 'New Update Available', message: 'Version 2.4 is ready, with faster search and a new look.', action: { label: 'Share Now', run: () => {} } },
+    pill: { tone: 'success', title: 'Link Copied' },
+  };
+  private blobToast(patch: Partial<UiToast>): UiToast {
+    return { id: 0, message: '', tone: 'info', duration: 0, variant: 'blob', loading: false, ...patch };
+  }
+  protected readonly blobDemo = signal<UiToast>(this.blobToast(this.BLOB_STATES['saved']));
+  private blobTimer: ReturnType<typeof setTimeout> | null = null;
+  protected blobState(name: string): void {
+    if (this.blobTimer) clearTimeout(this.blobTimer);
+    this.blobDemo.set(this.blobToast(this.BLOB_STATES[name]));
+  }
+  protected blobBooking(): void {
+    this.blobState('pill');
+    this.blobDemo.set(this.blobToast({ loading: true, title: 'Booking Flight' }));
+    this.blobTimer = setTimeout(() => this.blobDemo.set(this.blobToast({ tone: 'success', title: 'Booking Confirmed', content: this.flightTpl(), action: { label: 'View Details', run: () => {} } })), 2200);
+  }
+  protected blobStackThree(): void {
+    this.toast.blob('Changes Saved', { tone: 'success', message: 'Changes saved successfully to the database.', duration: 9000 });
+    this.toast.blob('Storage Almost Full', { tone: 'warning', message: 'You have used 92% of your storage.', duration: 9000 });
+    this.toast.blob('New Update Available', { message: 'Version 2.4 is ready.', action: { label: 'Share Now', run: () => {} }, duration: 9000 });
+  }
+  protected blobStackPromise(): void {
+    const booking = new Promise<string>((resolve) => setTimeout(() => resolve('Q2 204'), 2200));
+    void this.toast.promise(booking, {
+      loading: 'Booking Flight',
+      success: () => ({ title: 'Booking Confirmed', content: this.flightTpl(), action: { label: 'View Details', run: () => {} }, duration: 8000 }),
+      error: { title: 'Something Went Wrong', message: 'The booking did not go through.' },
+    });
+  }
   protected readonly modal = signal(false);
   protected readonly drawer = signal(false);
   protected readonly chatsDrawer = signal(false);
@@ -549,6 +655,18 @@ interface UiToastAction {
     { name: 'service.pause(id) / resume(id)', type: '(number) => void', default: '—', desc: 'Hold or restart the countdown. The host calls these on hover and focus.' },
     { name: 'service.toasts', type: 'Signal<UiToast[]>', default: '[]', desc: 'The live queue.' },
     { name: 'opts.action', type: 'UiToastAction', default: '—', desc: 'One button in the toast, e.g. Undo. Running it dismisses the toast.' },
+    { name: 'opts.loading', type: 'boolean', default: 'false', desc: "A spinner in place of the tone's icon; the toast then stays until updated or dismissed unless you give a duration (0.88.0)." },
+    { name: 'service.update(id, changes)', type: '(number, Partial<UiToastOptions>) => void', default: '—', desc: 'Change a showing toast in place and restart its countdown (0.88.0). See Blob toast.' },
+  ];
+  protected readonly blobApi: ApiRow[] = [
+    { name: 'service.blob(title, opts?)', type: '(string, Omit<UiToastOptions, "title" | "variant">) => number', default: '—', desc: "Show a blob toast; the same as show({ ...opts, title, variant: 'blob' }). Returns its id." },
+    { name: 'service.update(id, changes)', type: '(number, Partial<UiToastOptions>) => void', default: '—', desc: 'Change a showing toast: tone, title, message, action, content or loading. A blob toast closes to its pill, changes there and opens again. The countdown restarts with changes.duration, else 4000 ms when the toast stops loading, else what it had. Pass undefined to clear the title, action or content.' },
+    { name: 'service.promise(promise, states)', type: '<T>(Promise<T>, UiToastPromiseStates<T>) => Promise<T>', default: '—', desc: 'A loading pill that becomes the success toast (tone success) when the promise resolves, or the error toast (tone danger) when it rejects. Each state is a title or options; success and error can be functions of the result. Returns the same promise.' },
+    { name: 'opts.content', type: 'TemplateRef<unknown>', default: '—', desc: "Your own content in the card, between the message and the action. It inherits the muted text colour; --ui-toast-tone holds the tone's colour for accents." },
+    { name: 'opts.action', type: 'UiToastAction', default: '—', desc: "A full-width pill button at the bottom of the card, in a tint of the tone. Running it dismisses the toast." },
+    { name: '--ui-toast-tone', type: 'CSS custom property (read)', default: '—', desc: "Set by the toast: the tone's colour adjusted to read on the dark surface. Use it in custom content." },
+    { name: 'host: blobExpand', type: "'auto' | 'always' | 'hover'", default: "'auto'", desc: "When blob toasts open their card. auto: a lone blob toast opens by itself; with more than one showing they stay pills and open under the pointer, focus, or a click or tap of the pill. always: each opens by itself. hover: none opens by itself." },
+    { name: 'ui-blob-toast', type: 'component: toast, side, expanded', default: "side 'center', expanded true", desc: "The view the host renders, for placing one yourself (as the preview here does): [toast] takes a UiToast, side 'left' | 'center' | 'right' puts the pill on that side of the card, and [expanded]=\"false\" keeps the card closed until hover, focus or a click on the pill; (act) and (dismiss) fire from the action and the pill." },
   ];
   protected readonly undoToast = () => this.toast.success('Restored');
   protected readonly snackbar = inject(UiSnackbarService);

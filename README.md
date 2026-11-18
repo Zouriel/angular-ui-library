@@ -83,6 +83,9 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   re-exported from `@zouriel/ui/guidance`), so they don't pull the tour into the first paint.
 - **Filter** (`@zouriel/ui/filter`, 0.59.0): `ui-filter` (one Filter button, a panel of sections as a bottom
   sheet on phones or a popover wider), `ui-filter-chips`, and the parts `ui-filter-button`, `ui-filter-panel`, `ui-filter-footer`
+- **Blob toast** (`@zouriel/ui/dialog`, 0.88.0): `toast.blob(title, { tone, message, action, content })` draws a toast as
+  one liquid shape, a dark pill that grows a card beneath it; `toast.update(id, changes)` changes a showing toast, and
+  `toast.promise(promise, { loading, success, error })` turns a loading pill into a success or error card.
 - **Sidebar account** (`@zouriel/ui/layout`, 0.86.0): `ui-sidebar-account` is the signed-in person for a sidebar's
   `[sidebar-footer]`: avatar, name, subtitle, an optional badge (Read-only) and hint, and an unfold chevron, as one
   full-width button that emits `(activate)` or serves as the `menu-trigger` of `ui-menu block` (new `block` input);

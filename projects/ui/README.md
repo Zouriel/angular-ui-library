@@ -737,6 +737,24 @@ import { UiBarChart, type UiBarChartSeries } from '@zouriel/ui/chart';
   and checked per theme for colour-blind separation. A theme of your own should set them too.
 - The twin of Flutter's `UiBarChart`.
 
+## Blob toast, toast update and promise (0.88.0)
+
+- **Blob toast** (`@zouriel/ui/dialog`). `toast.blob('Changes Saved', { tone: 'success', message: '...' })`, or
+  `show({ variant: 'blob' })`, shows a toast as one liquid shape: a dark pill with the tone's icon and the title, which
+  grows a card beneath it for the message, your own `content` template and a full-width `action`, joined by curved
+  shoulders. With only a title it stays a pill. It sits on the inverted surface the snackbar uses and colours the icon,
+  title and action by tone (`--ui-toast-tone`, readable by custom content). Clicking the pill of an open toast dismisses it.
+- **One opens, several wait** (`ui-toast-host [blobExpand]`, default `'auto'`): a lone blob toast opens its card by
+  itself; when more than one is showing they stay pills and open under the pointer, focus, or a click or tap of the
+  pill. `'always'` opens every one, `'hover'` none by itself.
+- **`update(id, changes)`** changes a showing toast in place and restarts its countdown. A blob toast closes to its
+  pill, changes title and colour there, and opens again.
+- **`promise(promise, { loading, success, error })`** shows a loading pill and turns it into the success or error
+  toast when the promise settles; each state is a title or options, and success / error can be functions of the result.
+- **`loading: true`** on any toast puts a spinner in place of the icon and keeps the toast until it is updated or
+  dismissed. `message` is now optional.
+- `ui-blob-toast` is exported for placing one yourself. The twin of Flutter's `UiBlobToast`.
+
 ## Links, tours and server answers (0.87.0)
 
 - **Link buttons and the link navigator.** `ui-button` and `ui-icon-button` take `href` (and `target`): an `<a>` with
