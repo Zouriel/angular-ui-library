@@ -12,14 +12,21 @@ import { UI_LONG_PRESS_MS, UiSelectable, UiSelectionBar, type UiSelectionAction 
 @Component({
   imports: [UiSelectable],
   template: `<div class="scroller" style="height: 200px; overflow: auto">
-    <ui-selectable label="Beach" [selected]="selected()" [selecting]="selecting()" (tap)="taps.push(1)" (longPress)="longs.push(1)">
+    <ui-selectable label="Beach" [selected]="selected()" [selecting]="selecting()" [order]="order()" [dimmed]="dimmed()"
+      (tap)="taps.push(1)" (longPress)="longs.push(1)">
       <img src="a.png" alt="" />
+      @if (showSlots()) { <span tile-top-end class="slot-te">0:24</span> }
+      @if (showSlots()) { <span tile-bottom-start class="slot-bs">12</span> }
+      @if (showSlots()) { <span tile-bottom-end class="slot-be">HD</span> }
     </ui-selectable>
   </div>`,
 })
 class TileHost {
   selected = signal(false);
   selecting = signal(false);
+  order = signal<number | null>(null);
+  dimmed = signal(false);
+  showSlots = signal(false);
   taps: number[] = [];
   longs: number[] = [];
 }
@@ -33,6 +40,7 @@ const ACTIONS: UiSelectionAction[] = [
 @Component({
   imports: [UiSelectionBar],
   template: `<ui-selection-bar [count]="count()" [total]="total()" [actions]="actions()" [canSelectAll]="canAll()" [canClear]="canClear()"
+    [cancelLabel]="cancelLabel()" [docked]="docked()" [maxWidth]="maxWidth()"
     (selectAll)="log.push('all')" (clear)="log.push('clear')" (cancel)="log.push('cancel')" (action)="log.push($event)" />`,
 })
 class BarHost {
@@ -41,6 +49,9 @@ class BarHost {
   actions = signal<UiSelectionAction[]>([...ACTIONS, { id: 'print', label: 'Print', enabled: false }]);
   canAll = signal(true);
   canClear = signal(true);
+  cancelLabel = signal<string | null>(null);
+  docked = signal(false);
+  maxWidth = signal<number | null>(null);
   log: string[] = [];
 }
 
@@ -216,6 +227,40 @@ describe('ui-selectable', () => {
     fx.detectChanges();
     expect(el.getAttribute('aria-checked')).toBe('true');
   });
+
+  it('projects corner overlay slots with logical insets, renders 1-based order badge, applies dimmed state, and gives .tile a raised placeholder background', async () => {
+    const { fx, el, host } = await make();
+    const css = (UiSelectable as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('');
+    expect(css).toMatch(/\.tile[^{]*\{[^}]*background:\s*var\(--ui-color-surface-raised\)/);
+    expect(css).toMatch(/\.corner[^{]*\{[^}]*pointer-events:\s*none/);
+    expect(css).toMatch(/\.corner--top-end[^{]*\{[^}]*top:\s*var\(--ui-space-1\)[^}]*inset-inline-end:\s*var\(--ui-space-1\)/);
+    expect(css).toMatch(/\.corner--bottom-start[^{]*\{[^}]*bottom:\s*var\(--ui-space-1\)[^}]*inset-inline-start:\s*var\(--ui-space-1\)/);
+    expect(css).toMatch(/\.corner--bottom-end[^{]*\{[^}]*bottom:\s*var\(--ui-space-1\)[^}]*inset-inline-end:\s*var\(--ui-space-1\)/);
+    expect(css).toMatch(/\.dimmed[^{]*\{[^}]*opacity:\s*0\.45/);
+
+    expect(el.querySelector('.order')).toBeNull();
+    expect(el.classList.contains('dimmed')).toBe(false);
+
+    host.showSlots.set(true);
+    host.order.set(3);
+    host.dimmed.set(true);
+    fx.detectChanges();
+
+    expect(el.classList.contains('dimmed')).toBe(true);
+    expect(el.querySelector('.corner--top-end .slot-te')?.textContent).toBe('0:24');
+    expect(el.querySelector('.corner--bottom-start .slot-bs')?.textContent).toBe('12');
+    expect(el.querySelector('.corner--bottom-end .slot-be')?.textContent).toBe('HD');
+    const orderBadge = el.querySelector('.corner--top-end ui-badge.order')!;
+    expect(orderBadge).not.toBeNull();
+    expect(orderBadge.textContent?.trim()).toBe('3');
+    expect(orderBadge.querySelector('.ui-badge')?.getAttribute('data-tone')).toBe('primary');
+
+    host.order.set(null);
+    host.dimmed.set(false);
+    fx.detectChanges();
+    expect(el.querySelector('.order')).toBeNull();
+    expect(el.classList.contains('dimmed')).toBe(false);
+  });
 });
 
 describe('ui-selection-bar', () => {
@@ -325,5 +370,29 @@ describe('ui-selection-bar', () => {
     fx.detectChanges();
     expect(byText(el, uiStringsDv.clearSelection)).toBeDefined();
     expect(byText(el, uiStringsDv.cancelSelection)).toBeDefined();
+  });
+
+  it('renders a ghost button for cancelLabel ("Done") included in width measurement, and supports docked mode with maxWidth', async () => {
+    const { fx, el, host } = await make((h) => {
+      h.cancelLabel.set('Done');
+      h.docked.set(true);
+      h.maxWidth.set(1120);
+    });
+    expect(el.classList.contains('docked')).toBe(true);
+    const barEl = el.querySelector<HTMLElement>('.bar')!;
+    expect(barEl.style.maxWidth).toBe('1120px');
+    expect(el.querySelector('ui-icon-button.cancel')).toBeNull();
+    const doneBtn = el.querySelector<HTMLElement>('ui-button.cancel button')!;
+    expect(doneBtn).not.toBeNull();
+    expect(doneBtn.textContent?.trim()).toBe('Done');
+    expect(doneBtn.getAttribute('data-variant')).toBe('ghost');
+    expect(el.querySelector('.measure .m-cancel')?.textContent?.trim()).toBe('Done');
+    expect(el.querySelector('.measure .m-icon')).toBeNull();
+
+    doneBtn.click();
+    expect(host.log).toEqual(['cancel']);
+
+    const css = (UiSelectionBar as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles.join('');
+    expect(css).toMatch(/\.docked[^{]*\{[^}]*position:\s*fixed[^}]*z-index:\s*var\(--ui-z-docked\)[^}]*background:\s*var\(--ui-color-surface\)[^}]*border-top:\s*1px solid var\(--ui-color-border\)/);
   });
 });
