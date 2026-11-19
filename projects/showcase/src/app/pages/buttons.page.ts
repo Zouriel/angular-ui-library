@@ -7,13 +7,16 @@ import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import TextBoldIcon from '@hugeicons/core-free-icons/TextBoldIcon';
 import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
 import BubbleChatIcon from '@hugeicons/core-free-icons/BubbleChatIcon';
+import Camera01Icon from '@hugeicons/core-free-icons/Camera01Icon';
+import ImageUploadIcon from '@hugeicons/core-free-icons/ImageUploadIcon';
 import { uiBadgeCount } from '@zouriel/ui';
 import { UiFabHold } from '@zouriel/ui/hold-button';
+import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { UiText } from '@zouriel/ui/text';
 import { UiSwitch } from '@zouriel/ui/form';
 import {
-  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab,
-  type UiSegmentedOption, type UiFabPlacement,
+  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab, UiSpeedDial,
+  type UiSegmentedOption, type UiFabPlacement, type UiSpeedDialAction,
 } from '@zouriel/ui/button';
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
@@ -129,7 +132,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, UiMessengerSwitch, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, UiMessengerSwitch, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold, UiSpeedDial, UiShutterLoader,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -496,6 +499,7 @@ async addBirthday() {   // from a (click)
           <div class="fab-frame">
             <span class="muted">clicks: {{ fabClicks() }}</span>
             <ui-fab label="New item" (click)="fabClicks.set(fabClicks() + 1)"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="22" [strokeWidth]="1.8" /></ui-fab>
+            <ui-fab label="New item (inverted)" tone="inverted" position="bottom-start" (click)="fabClicks.set(fabClicks() + 1)"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="22" [strokeWidth]="1.8" /></ui-fab>
             <ui-fab label="New item (small)" size="sm" position="top-right"><hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="18" [strokeWidth]="1.8" /></ui-fab>
           </div>
         </doc-demo>
@@ -531,6 +535,49 @@ async addBirthday() {   // from a (click)
           </div>
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Speed dial" anchor="speed-dial" selector="ui-speed-dial" [api]="speedDialApi" [outputs]="speedDialOut"
+        shapes="// from @zouriel/ui/button
+interface UiSpeedDialAction {
+  id: string;
+  label: string;
+  icon: IconSvgObject;
+  disabled?: boolean;
+}"
+        summary="A floating action button that expands into smaller round action FABs stacked above the trigger, each with a label pill to its inline-start side. Without projected content it draws a + that rotates 45° into an × when open; project a ui-shutter-loader and it automatically stays still at rest (no rotation) and plays one burst on open and on close. Dismisses on an outside tap or Escape (restoring focus to the trigger), wires aria-expanded and aria-controls onto the real trigger button, marks the closed action stack inert, and calms motion under reduced motion. Flutter twin: UiSpeedDial.">
+        <doc-demo lang="html" code="<ui-speed-dial
+  label=&quot;Add media&quot;
+  closeLabel=&quot;Close add media options&quot;
+  tone=&quot;inverted&quot;
+  [actions]=&quot;mediaActions&quot;
+  [(open)]=&quot;dialOpen&quot;
+  (action)=&quot;onMediaAction($event)&quot;
+>
+  <ui-shutter-loader size=&quot;lg&quot; [decorative]=&quot;true&quot; [still]=&quot;true&quot; />
+</ui-speed-dial>">
+          <div class="fab-frame fab-dial-frame">
+            <span class="muted">open: {{ dialOpen() }} · last action: {{ dialAction() }}</span>
+            <ui-speed-dial
+              label="Add media"
+              closeLabel="Close add media options"
+              actionsLabel="Add media options"
+              tone="inverted"
+              [actions]="dialActions"
+              [(open)]="dialOpen"
+              (action)="dialAction.set($event)"
+            >
+              @if (dialTrigger() === 'shutter') {
+                <ui-shutter-loader size="lg" [decorative]="true" [still]="true" />
+              } @else {
+                <hugeicons-icon aria-hidden="true" [icon]="icons.add" [size]="22" [strokeWidth]="2" />
+              }
+            </ui-speed-dial>
+          </div>
+          <div class="row fab-acts">
+            <ui-segmented label="Speed dial trigger (demo)" size="sm" [options]="dialTriggerOptions" [value]="dialTrigger()" (valueChange)="dialTrigger.set($any($event ?? 'shutter'))" />
+          </div>
+        </doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `
@@ -547,13 +594,28 @@ async addBirthday() {   // from a (click)
       border-top: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; box-shadow: var(--ui-shadow-3); color: var(--ui-color-text-muted);
       font-size: var(--ui-font-size-sm); transition: height var(--ui-motion-base) var(--ui-ease-standard); }
     .fab-phone { height: 240px; max-width: 390px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+    .fab-dial-frame { height: 240px; max-width: 390px; box-sizing: border-box; }
     .fab-acts { margin-top: var(--ui-space-3); }
     /* Room above the badges so they don't touch the demo's top edge. */
     .badge-row { padding-top: var(--ui-space-2); }
   `,
 })
 export class ButtonsPage {
-  protected readonly icons = { settings: Settings02Icon, add: Add01Icon, remove: Delete02Icon, bold: TextBoldIcon, sos: Alert02Icon, chat: BubbleChatIcon };
+  protected readonly icons = {
+    settings: Settings02Icon, add: Add01Icon, remove: Delete02Icon, bold: TextBoldIcon, sos: Alert02Icon, chat: BubbleChatIcon,
+    camera: Camera01Icon, upload: ImageUploadIcon,
+  };
+  protected readonly dialOpen = signal(false);
+  protected readonly dialAction = signal('—');
+  protected readonly dialTrigger = signal<'shutter' | 'plus'>('shutter');
+  protected readonly dialTriggerOptions: UiSegmentedOption[] = [
+    { value: 'shutter', label: 'Shutter trigger' },
+    { value: 'plus', label: '+ → × trigger' },
+  ];
+  protected readonly dialActions: UiSpeedDialAction[] = [
+    { id: 'upload', label: 'Add photos & videos', icon: ImageUploadIcon },
+    { id: 'camera', label: 'Open the camera', icon: Camera01Icon },
+  ];
   protected readonly unread = signal(2);
   protected readonly badgeText = computed(() => uiBadgeCount(this.unread()));
   protected readonly fabClicks = signal(0);
@@ -775,11 +837,12 @@ export class ButtonsPage {
   ];
   protected readonly fabApi: ApiRow[] = [
     { name: 'label', type: 'string (required)', default: '—', desc: 'Accessible name (aria-label).' },
-    { name: 'position', type: "UiFabPlacement: 'top-start' | 'top-center' | 'top-end' | 'bottom-start' | 'bottom-center' | 'bottom-end' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'", default: "'bottom-right'", desc: 'Where it is fixed: start/end follow the reading direction (0.44.0), the others are physical corners. 24px from the edges plus the safe area.' },
-    { name: 'tone', type: "'primary' | 'danger'", default: "'primary'", desc: 'danger (0.44.0): the high-visibility SOS style, danger fill with a ring and a halo.' },
+    { name: 'position', type: "UiFabPlacement | 'static'", default: "'bottom-right'", desc: "Where it is fixed (start/end follow reading direction, or physical corners; 24px from edges plus safe area), or 'static' to lay out inline in a container." },
+    { name: 'tone', type: "'primary' | 'danger' | 'inverted'", default: "'primary'", desc: "danger (0.44.0): high-visibility SOS style with ring and halo; inverted: high-contrast fill with inverse ink, 1px hairline ring and shadow in light and dark." },
     { name: 'text', type: 'string | null', default: 'null', desc: 'A visible word beside the icon, making it a pill (0.44.0). Keep it in label too.' },
     { name: 'topOffset', type: 'number', default: '0', desc: 'Px below the top edge for top placements, on top of the 24px gap and the safe area: an app bar\'s height (0.44.0).' },
     { name: 'bottomOffset', type: 'number', default: '0', desc: 'Px above the bottom edge for bottom placements, on top of the 24px gap and the safe area: a bottom sheet\'s peek or a bottom navigation; eased when it changes (0.47.1, Flutter UiFabHost.bottomOffset).' },
+    { name: 'expanded / controls', type: 'boolean | null / string | null', default: 'null', desc: 'Forwarded to aria-expanded and aria-controls on the native button (used by ui-speed-dial).' },
     { name: 'hold', type: 'number | null', default: '—', desc: 'With UiFabHold (@zouriel/ui/hold-button): hold this many ms to activate; a tap opens the confirm dialog. null: a plain fab (0.44.0).' },
     { name: 'holdHint / confirmTitle / confirmMessage / confirmLabel / destructive', type: 'string / boolean', default: 'the strings', desc: 'As on ui-hold-button: the hint read with it and the tap fallback\'s dialog (with UiFabHold).' },
     { name: '(confirmed)', type: 'void', default: '—', desc: 'Held to the end, or confirmed in the dialog (with UiFabHold). Use it instead of (click).' },
@@ -787,5 +850,22 @@ export class ButtonsPage {
     { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: 'Diameter: 40px or 52px.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable interaction.' },
     { name: '(content)', type: 'slot', default: '—', desc: 'The icon. Give it aria-hidden; label names the button.' },
+  ];
+  protected readonly speedDialApi: ApiRow[] = [
+    { name: 'actions', type: 'readonly UiSpeedDialAction[]', default: '[]', desc: 'Actions stacked above the trigger (index 0 sits closest to the trigger).' },
+    { name: 'label', type: 'string (required)', default: '—', desc: 'Accessible name of the trigger while closed.' },
+    { name: 'closeLabel', type: 'string | null', default: 'null', desc: 'Accessible name of the trigger while open; defaults to label.' },
+    { name: 'actionsLabel', type: 'string | null', default: 'null', desc: 'Accessible name of the open actions group; defaults to label.' },
+    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way ([(open)]). Whether the action stack is expanded.' },
+    { name: 'position', type: "UiFabPlacement | 'static'", default: "'bottom-end'", desc: 'Screen placement (same as ui-fab) or static for inline layout.' },
+    { name: 'tone', type: "'primary' | 'danger' | 'inverted'", default: "'primary'", desc: 'Tone applied to both trigger and action FABs.' },
+    { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: 'Trigger diameter; action FABs are always sm.' },
+    { name: 'rotateIcon', type: 'boolean | null', default: 'null', desc: 'Rotate the trigger icon 45° when open; null rotates automatically unless a ui-shutter-loader is projected.' },
+    { name: 'bottomOffset / topOffset / aboveOverlays / disabled', type: 'as ui-fab', default: '0 / 0 / false / false', desc: 'Edge offsets, overlay layering, and disabled state.' },
+    { name: '(content)', type: 'slot', default: '+ icon', desc: 'Optional custom trigger icon (e.g. a ui-shutter-loader, which stays still and plays once on open and close).' },
+  ];
+  protected readonly speedDialOut: ApiRow[] = [
+    { name: 'action', type: 'string', default: '—', desc: 'Emits the chosen action id after closing the dial.' },
+    { name: 'openChange', type: 'boolean', default: '—', desc: 'Emitted when the dial opens or closes.' },
   ];
 }

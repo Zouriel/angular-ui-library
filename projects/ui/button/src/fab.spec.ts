@@ -7,15 +7,17 @@ import { UiFab, type UiFabPlacement, type UiFabTone } from './fab';
 
 @Component({
   imports: [UiFab],
-  template: `<ui-fab label="SOS, call for help" [position]="position()" [tone]="tone()" [text]="text()" [aboveOverlays]="above()" [topOffset]="offset()" [bottomOffset]="bottomOffset()"><span class="icon">!</span></ui-fab>`,
+  template: `<ui-fab label="SOS, call for help" [position]="position()" [tone]="tone()" [text]="text()" [aboveOverlays]="above()" [topOffset]="offset()" [bottomOffset]="bottomOffset()" [expanded]="expanded()" [controls]="controls()"><span class="icon">!</span></ui-fab>`,
 })
 class Host {
-  position = signal<UiFabPlacement>('bottom-right');
+  position = signal<UiFabPlacement | 'static'>('bottom-right');
   tone = signal<UiFabTone>('primary');
   text = signal<string | null>(null);
   above = signal(false);
   offset = signal(0);
   bottomOffset = signal(0);
+  expanded = signal<boolean | null>(null);
+  controls = signal<string | null>(null);
 }
 
 function setup() {
@@ -117,5 +119,42 @@ describe('ui-fab (0.44.0)', () => {
     h.position.set('top-end');
     tick();
     expect(getComputedStyle(btn()).top).not.toContain('bottom-offset');
+  });
+
+  it('inverted tone uses high-contrast fill, inverse ink, a 1px hairline ring and shadow', () => {
+    const { h, btn, tick } = setup();
+    h.tone.set('inverted');
+    tick();
+    expect(btn().getAttribute('data-tone')).toBe('inverted');
+    const s = getComputedStyle(btn());
+    expect(s.getPropertyValue('background')).toBe('var(--ui-color-text)');
+    expect(s.color).toContain('--ui-color-bg');
+    expect(s.boxShadow).toContain('0 0 0 1px color-mix(in srgb, var(--ui-color-bg) 35%, var(--ui-color-text))');
+    expect(s.boxShadow).toContain('var(--ui-shadow-2)');
+  });
+
+  it('static position lays out inline rather than fixed to the viewport', () => {
+    const { h, btn, tick } = setup();
+    expect(getComputedStyle(btn()).position).toBe('fixed');
+    h.position.set('static');
+    tick();
+    expect(btn().getAttribute('data-position')).toBe('static');
+    const s = getComputedStyle(btn());
+    expect(s.position).toBe('relative');
+    expect(s.zIndex).toBe('auto');
+  });
+
+  it('forwards expanded and controls onto the native button and exposes focus()', () => {
+    const { f, h, btn, tick } = setup();
+    expect(btn().hasAttribute('aria-expanded')).toBe(false);
+    expect(btn().hasAttribute('aria-controls')).toBe(false);
+    h.expanded.set(true);
+    h.controls.set('dial-actions');
+    tick();
+    expect(btn().getAttribute('aria-expanded')).toBe('true');
+    expect(btn().getAttribute('aria-controls')).toBe('dial-actions');
+    const fab = f.debugElement.children[0].componentInstance as UiFab;
+    fab.focus();
+    expect(document.activeElement).toBe(btn());
   });
 });
