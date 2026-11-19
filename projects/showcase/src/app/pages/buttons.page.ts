@@ -15,9 +15,10 @@ import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { UiText } from '@zouriel/ui/text';
 import { UiSwitch } from '@zouriel/ui/form';
 import {
-  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab, UiSpeedDial,
-  type UiSegmentedOption, type UiFabPlacement, type UiSpeedDialAction,
+  UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiSegmented, UiFab,
+  type UiSegmentedOption, type UiFabPlacement,
 } from '@zouriel/ui/button';
+import { UiSpeedDial, type UiSpeedDialAction } from '@zouriel/ui/speed-dial';
 import { UiDropdownButton, type UiDropdownItem } from '@zouriel/ui/dropdown-button';
 import { UiHoldButton } from '@zouriel/ui/hold-button';
 import {

@@ -6,7 +6,7 @@ import {
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Add01Icon from '@hugeicons/core-free-icons/Add01Icon';
 import { UI_SHUTTER_STILL, UiShutterLoader } from '@zouriel/ui/shutter-loader';
-import { UiFab, type UiFabPlacement, type UiFabTone } from './fab';
+import { UiFab, type UiFabPlacement, type UiFabTone } from '@zouriel/ui/button';
 
 let speedDialSeq = 0;
 

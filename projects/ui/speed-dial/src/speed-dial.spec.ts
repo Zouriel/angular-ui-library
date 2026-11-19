@@ -6,7 +6,7 @@ import ImageUploadIcon from '@hugeicons/core-free-icons/ImageUploadIcon';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
 import { UiSpeedDial, type UiSpeedDialAction } from './speed-dial';
-import type { UiFabPlacement, UiFabTone } from './fab';
+import type { UiFabPlacement, UiFabTone } from '@zouriel/ui/button';
 
 const ACTIONS: UiSpeedDialAction[] = [
   { id: 'upload', label: 'Add photos & videos', icon: ImageUploadIcon as IconSvgObject },

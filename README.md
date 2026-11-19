@@ -31,7 +31,9 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   Breaking in 0.33.1: `UiDropdownButton` / `UiDropdownItem` moved from `@zouriel/ui/button` to
   `@zouriel/ui/dropdown-button`, so importing a button no longer brings in the CDK overlay.
   Breaking in 0.35.1: `UiMenubar` / `UiMenubarMenu` moved from `@zouriel/ui/navigation` to
-  `@zouriel/ui/menubar`, for the same reason. `UiChatBubble` has its own entry,
+  `@zouriel/ui/menubar`, for the same reason. Breaking in 0.90.0: `UiSpeedDial` / `UiSpeedDialAction`
+  moved from `@zouriel/ui/button` to `@zouriel/ui/speed-dial`, so importing a button no longer brings
+  in the speed dial (about 13 kB) on every page. `UiChatBubble` has its own entry,
   `@zouriel/ui/chat-bubble` (still re-exported from `@zouriel/ui/data`).
 - **Sign in with Google** (`@zouriel/ui/google-sign-in`, 0.36): `ui-google-sign-in` wraps Google
   Identity Services' own button and emits the ID token; `ui-google-button` is the same button drawn
