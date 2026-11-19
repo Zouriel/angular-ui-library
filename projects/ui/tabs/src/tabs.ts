@@ -6,7 +6,10 @@ import type { IconSvgObject } from '@hugeicons/angular';
 import { uiLogicalKey, injectUiStrings, UiTourAnchor } from '@zouriel/ui';
 
 /** Horizontal alignment of the tab buttons along the strip. */
-export type UiTabsAlign = 'start' | 'center';
+export type UiTabsAlign = 'start' | 'center' | 'fill';
+
+/** How the strip is drawn: `line` (underline + rule) or `glow` (a moving accent glow). */
+export type UiTabsAppearance = 'line' | 'glow';
 
 let tabSeq = 0;
 
@@ -77,9 +80,19 @@ export class UiTab {
     <div
       class="tablist"
       [class.center]="align() === 'center'"
+      [class.fill]="align() === 'fill'"
+      [class.glow]="appearance() === 'glow'"
       [class.strip-only]="stripOnly()"
       role="tablist"
       [attr.aria-label]="labelText()">
+      @if (appearance() === 'glow') {
+        <span
+          class="tab-glow"
+          aria-hidden="true"
+          [style.width.px]="glowWidth()"
+          [style.transform]="'translateX(' + glowX() + 'px)'">
+        </span>
+      }
       @for (tab of tabs(); track tab.tabId; let i = $index) {
         <button
           type="button"
@@ -118,6 +131,7 @@ export class UiTab {
     /* More tabs than fit is normal on a phone, so the strip SCROLLS rather than pushing the page
        sideways — a tablist wide enough to overflow the viewport takes the whole layout with it. */
     .tablist {
+      position: relative;
       display: flex;
       gap: var(--ui-space-1);
       border-bottom: 1px solid var(--ui-color-border);
@@ -133,11 +147,25 @@ export class UiTab {
     .tablist::-webkit-scrollbar { display: none; }
     /* Safe centering along the full-width bottom rule: auto inline margins split leftover room
        when tabs fit and collapse to 0 when they overflow, so tab 0 stays reachable by scroll. */
-    .tablist.center .tab:first-child { margin-inline-start: auto; }
-    .tablist.center .tab:last-child { margin-inline-end: auto; }
+    .tablist.center .tab:first-child, .tablist.center .tab:first-of-type { margin-inline-start: auto; }
+    .tablist.center .tab:last-child, .tablist.center .tab:last-of-type { margin-inline-end: auto; }
     .tablist.strip-only { margin-bottom: 0; }
+    /* Fill gives each tab the same share of the full strip. */
+    .tablist.fill { overflow-x: hidden; }
+    .tablist.fill .tab { flex: 1 1 0; min-width: 0; justify-content: center; }
+    .tablist.fill .tab__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    /* Glow has one indicator that slides between tabs, rather than separate glows fading in place. */
+    .tablist.glow { border-bottom: none; }
+    .tablist.glow .tab { margin-bottom: 0; border-bottom-color: transparent; }
+    .tab-glow {
+      position: absolute; z-index: 0; left: 0; bottom: 0; height: var(--ui-space-6);
+      pointer-events: none; opacity: 1;
+      background: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--ui-color-primary) 46%, transparent), transparent 72%);
+      transition: transform var(--ui-motion-base) var(--ui-ease-standard), width var(--ui-motion-base) var(--ui-ease-standard);
+    }
+    @media (prefers-reduced-motion: reduce) { .tab-glow { transition: none; } }
     .tab {
-      position: relative; appearance: none; border: none; background: transparent;
+      position: relative; z-index: 1; appearance: none; border: none; background: transparent;
       padding: var(--ui-space-2) var(--ui-space-3); margin-bottom: -1px;
       color: var(--ui-color-text-muted); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
       cursor: pointer; border-bottom: 2px solid transparent;
@@ -175,10 +203,14 @@ export class UiTabs {
   selectedIndex = model(0);
   /** Horizontal alignment of the tabs along the full-width bottom rule. */
   align = input<UiTabsAlign>('start');
+  /** `line` keeps the existing underline and rule; `glow` uses a moving accent glow. */
+  appearance = input<UiTabsAppearance>('line');
   /** Default: the built-in `tabs` (Tabs), which follows the app's language. */
   label = input<string | undefined>(undefined);
   protected readonly labelText = computed(() => this.label() ?? this.strings.tabs);
   protected readonly stripOnly = signal(false);
+  protected readonly glowX = signal(0);
+  protected readonly glowWidth = signal(0);
   readonly tabs = contentChildren(UiTab);
 
   constructor() {
@@ -193,6 +225,15 @@ export class UiTabs {
       const empty = tabs.length > 0 && tabs.every((t) => !t.hasPanelContent());
       this.stripOnly.set(empty);
       tabs.forEach((t) => t.stripOnly.set(empty));
+
+      const appearance = this.appearance();
+      const selected = this.selectedIndex();
+      this.align();
+      if (appearance !== 'glow') return;
+      const button = this.host.nativeElement.querySelectorAll<HTMLElement>('.tab').item(selected);
+      if (!button) return;
+      this.glowX.set(button.offsetLeft);
+      this.glowWidth.set(button.offsetWidth);
     });
   }
 
@@ -203,7 +244,7 @@ export class UiTabs {
    */
   private revealSelected(index: number): void {
     const strip = this.host.nativeElement.querySelector('.tablist');
-    const tab = strip?.children.item(index) as HTMLElement | null;
+    const tab = strip?.querySelectorAll<HTMLElement>('.tab').item(index);
     if (!strip || !tab) return;
     if (strip.scrollWidth <= strip.clientWidth) return;
     tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
