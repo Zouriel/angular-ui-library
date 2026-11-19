@@ -88,9 +88,9 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
       </doc-section>
 
       <doc-section name="Context menu" selector="[uiContextMenu]" [api]="ctxApi" [outputs]="ctxOut" [shapes]="MENU_ITEM"
-        summary="Directive. Right-click menu opened at the pointer; it flips and shifts so it never runs off the edge. The first item gets focus on open, ArrowUp/Down, Home and End move between items. Escape or choosing an item closes it and gives focus back to what had it before; an outside click or scrolling the page also closes it. The directive value is the items array.">
-        <doc-demo code="<div [uiContextMenu]=&quot;items&quot; (contextSelect)=&quot;run($event)&quot;>Right-click</div>">
-          <div class="ctx" [uiContextMenu]="menuItems" (contextSelect)="toast.info($event.label)">Right-click me</div>
+        summary="Directive. Right-click, the context-menu key / Shift+F10, or a 500ms touch long-press opens it at the pointer; moving 10px, scrolling, lifting early, or a second finger cancels the hold. With openOnClick, an ordinary click/tap and Enter/Space also open it. The menu flips and shifts inside the screen, focuses its first item, and returns focus after Escape or a choice.">
+        <doc-demo code="<div tabindex=&quot;0&quot; [uiContextMenu]=&quot;items&quot; [openOnClick]=&quot;true&quot; (contextSelect)=&quot;run($event)&quot;>Open menu</div>">
+          <div class="ctx" tabindex="0" [uiContextMenu]="menuItems" [openOnClick]="true" (contextSelect)="toast.info($event.label)">Click, hold, or right-click me</div>
         </doc-demo>
       </doc-section>
 
@@ -571,6 +571,7 @@ interface UiToastPromiseStates<T> {
   ];
   protected readonly ctxApi: ApiRow[] = [
     { name: 'uiContextMenu', type: 'UiMenuItem[]', default: '[]', desc: 'Items (the directive value). Read when the menu opens.' },
+    { name: 'openOnClick', type: 'boolean', default: 'false', desc: 'Also open from an ordinary click/tap and Enter/Space.' },
   ];
   protected readonly ctxOut: ApiRow[] = [{ name: 'contextSelect', type: 'UiMenuItem', default: '—', desc: 'Chosen item.' }];
   protected readonly modalApi: ApiRow[] = [

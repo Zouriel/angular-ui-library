@@ -6,14 +6,11 @@ import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
 import Cancel01Icon from '@hugeicons/core-free-icons/Cancel01Icon';
 import CheckmarkSquare02Icon from '@hugeicons/core-free-icons/CheckmarkSquare02Icon';
 import RemoveSquareIcon from '@hugeicons/core-free-icons/RemoveSquareIcon';
-import { injectUiStrings, uiFormatString } from '@zouriel/ui';
+import { UI_LONG_PRESS_MS, UI_LONG_PRESS_SLOP, injectUiStrings, uiFormatString } from '@zouriel/ui';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
-/** How long a finger must stay down for a long press (ms). */
-export const UI_LONG_PRESS_MS = 500;
-/** How far it may move before the press stops counting as a long press (px). */
-export const UI_LONG_PRESS_SLOP = 10;
+export { UI_LONG_PRESS_MS, UI_LONG_PRESS_SLOP } from '@zouriel/ui';
 /** How long a tap waits for a second one when `doubleTapEnabled` is on, and how far apart they may land. */
 export const UI_DOUBLE_TAP_MS = 280;
 export const UI_DOUBLE_TAP_SLOP = 24;

@@ -95,6 +95,13 @@ import type { UiButtonVariant } from './button';
     /* Icons follow the button's colour when it is filled; ghost and outline ones take --ui-color-icon. */
     .ui-icon-btn:not([data-variant="ghost"]):not([data-variant="outline"]):not([data-variant="link"]) { --ui-color-icon: currentColor; }
     .ui-icon-btn[data-variant="ghost"], .ui-icon-btn[data-variant="link"] { background: transparent; border-color: transparent; }
+    /* On media (inside a [data-on-media] scope): light ink and a translucent light hover. */
+    :host-context([data-on-media]) .ui-icon-btn:is([data-variant="ghost"], [data-variant="link"]):not([aria-current="page"]) {
+      color: var(--ui-media-on-scrim); --ui-color-icon: var(--ui-media-on-scrim); }
+    :host-context([data-on-media]) .ui-icon-btn:is([data-variant="ghost"], [data-variant="link"]):not([aria-current="page"]) ::ng-deep svg {
+      filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-media-scrim) 45%, transparent)); }
+    :host-context([data-on-media]) .ui-icon-btn:is([data-variant="ghost"], [data-variant="link"]):not([aria-current="page"]):hover:not(:disabled) {
+      background: color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); }
     .ui-icon-btn[data-variant="brand"] { background: var(--ui-gradient-brand, var(--ui-color-primary)); color: var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast)); border-color: transparent; }
     .ui-icon-btn[data-variant="brand"]:hover:not(:disabled) { background: var(--ui-gradient-brand, var(--ui-color-primary)); box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ui-gradient-brand-contrast, var(--ui-color-primary-contrast)) 12%, transparent); }
     /* badge (0.44.0): a count bubble at the top-end corner, the bottom nav's badge look. Hidden from

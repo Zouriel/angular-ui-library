@@ -8,3 +8,4 @@ export * from './scrim';
 export * from './selection';
 export * from './masonry-grid';
 export * from './like';
+export * from './cover-hero';

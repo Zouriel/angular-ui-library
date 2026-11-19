@@ -135,6 +135,14 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
     .ui-btn[data-variant="link"] { background: transparent; border-color: transparent; color: var(--ui-color-primary); text-decoration: underline; padding: 0; height: auto;
       min-height: 24px; min-width: 24px; }
     .ui-btn[data-variant="link"]:hover:not(:disabled) { background: transparent; color: var(--ui-color-primary-hover); }
+    /* On media (inside a [data-on-media] scope, e.g. ui-cover-hero): ghost and link read as light ink over the picture. */
+    :host-context([data-on-media]) .ui-btn:is([data-variant="ghost"], [data-variant="link"]):not([aria-current="page"]) {
+      color: var(--ui-media-on-scrim); --ui-color-icon: var(--ui-media-on-scrim);
+      text-shadow: 0 1px 4px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent); }
+    :host-context([data-on-media]) .ui-btn:is([data-variant="ghost"], [data-variant="link"]):not([aria-current="page"]) ::ng-deep svg {
+      filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-media-scrim) 45%, transparent)); }
+    :host-context([data-on-media]) .ui-btn[data-variant="ghost"]:not([aria-current="page"]):hover:not(:disabled) { background: color-mix(in srgb, var(--ui-media-on-scrim) 16%, transparent); }
+    :host-context([data-on-media]) .ui-btn[data-variant="link"]:not([aria-current="page"]):hover:not(:disabled) { background: transparent; color: color-mix(in srgb, var(--ui-media-on-scrim) 82%, transparent); }
     /* Signature CTA — the theme's own purple→gold sweep (falls back to a primary→hover gradient
        on themes that don't define one), pill-shaped so it reads as a distinct "hero action" rather
        than a bigger version of the ordinary primary button. Reserve it for the one action per view

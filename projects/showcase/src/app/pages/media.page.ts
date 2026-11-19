@@ -2,7 +2,9 @@ import { Component, computed, signal } from '@angular/core';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
-import { UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiCarousel, UiCoverHero, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiText } from '@zouriel/ui/text';
+import type { UiMenuItem } from '@zouriel/ui/overlay';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
 import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
 import { UiFilter, UiFilterChips, uiFilterPrune, type UiFilterSection, type UiFilterValue } from '@zouriel/ui/filter';
@@ -18,11 +20,12 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiIconButton, HugeiconsIconComponent, UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiButton, UiIconButton, UiText, HugeiconsIconComponent, UiCarousel, UiCoverHero, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .scrim-demo ui-scrim { position: absolute; inset-inline: 0; bottom: 0; }
+    .cover-demo { max-width: 760px; }
     .pv-title { margin: 0; font-size: var(--ui-font-size-lg); font-weight: 600; }
     .pv-meta { margin: 0; opacity: 0.9; }
     .pt-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -127,6 +130,20 @@ function grad(a: string, b: string): string {
             <img [src]="scrimPicture" alt="White to sky blue gradient" />
             <ui-scrim><p class="pv-title">Aisha and Ali</p><p class="pv-meta">Over a white picture, still readable.</p></ui-scrim>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Cover hero" selector="ui-cover-hero" [api]="coverApi" [outputs]="coverOut"
+        summary="A full-width cover picture with a bottom fade into the page, subtle top and logical start-side scrims, and slots for the top controls, title/metadata, and actions. Nested ui-text, ghost/link buttons, icon buttons, and ui-editable-text automatically use light on-media ink and soft shadows. A non-empty coverMenu makes the bare cover open Change/Remove actions on click/tap, right-click, 500ms touch hold, Enter/Space, or the context-menu key. Missing and failed pictures fall back to the page surface.">
+        <doc-demo [code]="coverCode">
+          <ui-cover-hero class="cover-demo" [src]="coverPicture" [coverMenu]="coverMenu" (coverMenuSelect)="coverChoice.set($event.label)">
+            <ui-button hero-top-start variant="ghost" size="sm">Your events</ui-button>
+            <ui-icon-button hero-top-end label="Options" variant="ghost" size="sm"><hugeicons-icon [icon]="viewIcon" /></ui-icon-button>
+            <ui-text variant="h2" as="h3">Eid party</ui-text>
+            <ui-text variant="caption">Saturday 12 December · Malé</ui-text>
+            <ui-button hero-actions>Share with client</ui-button>
+          </ui-cover-hero>
+          <p class="note">Cover action: {{ coverChoice() }}</p>
         </doc-demo>
       </doc-section>
 
@@ -317,6 +334,30 @@ export class MediaPage {
   protected readonly picked = signal(0);
   protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
   protected readonly scrimPicture = grad('#ffffff', '#cfe8ff');
+  protected readonly coverPicture = grad('#7a4fa0', '#66c2a5');
+  protected readonly coverChoice = signal('none yet');
+  protected readonly coverMenu: UiMenuItem[] = [
+    { label: 'Change cover', value: 'change' },
+    { label: 'Remove cover', value: 'remove', danger: true },
+  ];
+  protected readonly coverCode = `<ui-cover-hero [src]="cover" [coverMenu]="coverMenu" (coverMenuSelect)="changeCover($event)">
+  <ui-button hero-top-start variant="ghost">Your events</ui-button>
+  <ui-icon-button hero-top-end label="Options" variant="ghost">…</ui-icon-button>
+  <ui-text variant="h2">Eid party</ui-text>
+  <ui-text variant="caption">Saturday 12 December · Malé</ui-text>
+  <ui-button hero-actions>Share with client</ui-button>
+</ui-cover-hero>`;
+  protected readonly coverApi: ApiRow[] = [
+    { name: 'src', type: 'string | null', default: 'null', desc: 'Decorative cover URL; missing or broken uses the page surface.' },
+    { name: 'minHeight', type: 'number | null', default: '272 / 320 wide', desc: 'Minimum height in px; null uses the responsive default.' },
+    { name: 'fadeBottom · scrimTop · scrimStart', type: 'boolean', default: 'true', desc: 'Bottom-to-page fade and subtle contrast layers.' },
+    { name: 'coverMenu', type: 'readonly UiMenuItem[]', default: '[]', desc: 'Non-empty makes the cover an accessible menu trigger.' },
+    { name: 'coverActionLabel', type: 'string', default: "'Change cover image'", desc: 'Accessible name of the editable cover.' },
+    { name: '[hero-top-start] / [hero-top-end]', type: 'slots', default: '—', desc: 'Controls at the logical top corners.' },
+    { name: '(default)', type: 'slot', default: '—', desc: 'Title and metadata, width-limited to 85% / 69%.' },
+    { name: '[hero-actions]', type: 'slot', default: '—', desc: 'Primary actions above the bottom fade.' },
+  ];
+  protected readonly coverOut: ApiRow[] = [{ name: 'coverMenuSelect', type: 'UiMenuItem', default: '—', desc: 'The selected cover action.' }];
   protected readonly posterGridApi: ApiRow[] = [
     { name: 'posters', type: 'UiPoster[]', default: '[]', desc: 'The tiles: picture, accessible label, fallback colours, optional dot.' },
     { name: 'ratio', type: 'number', default: '0.75', desc: 'Width / height of every tile.' },
