@@ -1,15 +1,19 @@
 import {
-  Component, ElementRef, contentChildren, effect, inject, input, model, signal, computed,
+  Component, ElementRef, afterRenderEffect, contentChildren, effect, inject, input, model, signal, computed,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { uiLogicalKey, injectUiStrings, UiTourAnchor } from '@zouriel/ui';
 
+/** Horizontal alignment of the tab buttons along the strip. */
+export type UiTabsAlign = 'start' | 'center';
+
 let tabSeq = 0;
 
 /**
  * `ui-tab` — a single tab + its panel. Provide a `label` and project the panel
- * content. Inactive panels stay in the DOM but are hidden (`[hidden]`).
+ * content. Leave the body empty on every tab for strip-only mode (no panel gap).
+ * Inactive panels stay in the DOM but are hidden (`[hidden]`).
  *
  * An optional HugeIcons `icon` draws before the label. With `iconOnly` the label is not shown, but it
  * is still the tab's accessible name and its tooltip, so a screen reader and a hovering mouse both get
@@ -17,19 +21,11 @@ let tabSeq = 0;
  */
 @Component({
   selector: 'ui-tab',
-  template: `
-    <div
-      role="tabpanel"
-      [id]="panelId"
-      [attr.aria-labelledby]="tabId"
-      [hidden]="!active()"
-      tabindex="0">
-      <ng-content />
-    </div>
-  `,
+  template: `<div role="tabpanel" [id]="panelId" [attr.aria-labelledby]="tabId" [hidden]="!active() || stripOnly()" tabindex="0"><ng-content /></div>`,
   styles: `:host { display: block; }`,
 })
 export class UiTab {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   label = input.required<string>();
   disabled = input(false);
   /** A HugeIcons icon drawn before the label. */
@@ -50,8 +46,24 @@ export class UiTab {
     return b === null || b === undefined || b === '' || b === 0 || b === '0' ? null : String(b);
   });
   readonly active = signal(false);
+  /** @internal Set by the parent when no tab has panel content. */
+  readonly stripOnly = signal(false);
   readonly tabId = `ui-tab-${tabSeq}`;
   readonly panelId = `ui-tabpanel-${tabSeq++}`;
+
+  /** @internal */
+  panelEl(): HTMLElement | null {
+    return this.host.nativeElement.querySelector('[role="tabpanel"]');
+  }
+
+  /** @internal True when any element or non-whitespace text is projected into the tab panel. */
+  hasPanelContent(): boolean {
+    const el = this.panelEl();
+    if (!el) return false;
+    return Array.from(el.childNodes).some(
+      (n) => n.nodeType === 1 || (n.nodeType === 3 && !!n.textContent?.trim()),
+    );
+  }
 }
 
 /**
@@ -62,7 +74,12 @@ export class UiTab {
   selector: 'ui-tabs',
   imports: [HugeiconsIconComponent, UiTourAnchor],
   template: `
-    <div class="tablist" role="tablist" [attr.aria-label]="labelText()">
+    <div
+      class="tablist"
+      [class.center]="align() === 'center'"
+      [class.strip-only]="stripOnly()"
+      role="tablist"
+      [attr.aria-label]="labelText()">
       @for (tab of tabs(); track tab.tabId; let i = $index) {
         <button
           type="button"
@@ -70,7 +87,7 @@ export class UiTab {
           class="tab"
           [uiTourAnchor]="tab.anchor()"
           [id]="tab.tabId"
-          [attr.aria-controls]="tab.panelId"
+          [attr.aria-controls]="stripOnly() ? null : tab.panelId"
           [attr.aria-selected]="selectedIndex() === i"
           [attr.tabindex]="selectedIndex() === i ? 0 : -1"
           [disabled]="tab.disabled()"
@@ -114,6 +131,11 @@ export class UiTab {
       -ms-overflow-style: none;
     }
     .tablist::-webkit-scrollbar { display: none; }
+    /* Safe centering along the full-width bottom rule: auto inline margins split leftover room
+       when tabs fit and collapse to 0 when they overflow, so tab 0 stays reachable by scroll. */
+    .tablist.center .tab:first-child { margin-inline-start: auto; }
+    .tablist.center .tab:last-child { margin-inline-end: auto; }
+    .tablist.strip-only { margin-bottom: 0; }
     .tab {
       position: relative; appearance: none; border: none; background: transparent;
       padding: var(--ui-space-2) var(--ui-space-3); margin-bottom: -1px;
@@ -151,9 +173,12 @@ export class UiTabs {
   protected readonly strings = injectUiStrings();
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   selectedIndex = model(0);
+  /** Horizontal alignment of the tabs along the full-width bottom rule. */
+  align = input<UiTabsAlign>('start');
   /** Default: the built-in `tabs` (Tabs), which follows the app's language. */
   label = input<string | undefined>(undefined);
   protected readonly labelText = computed(() => this.label() ?? this.strings.tabs);
+  protected readonly stripOnly = signal(false);
   readonly tabs = contentChildren(UiTab);
 
   constructor() {
@@ -162,6 +187,12 @@ export class UiTabs {
       const sel = this.selectedIndex();
       tabs.forEach((t, i) => t.active.set(i === sel));
       this.revealSelected(sel);
+    });
+    afterRenderEffect(() => {
+      const tabs = this.tabs();
+      const empty = tabs.length > 0 && tabs.every((t) => !t.hasPanelContent());
+      this.stripOnly.set(empty);
+      tabs.forEach((t) => t.stripOnly.set(empty));
     });
   }
 

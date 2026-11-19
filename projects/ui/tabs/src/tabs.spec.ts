@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { UiTab, UiTabs } from './tabs';
@@ -90,5 +90,56 @@ describe('UiTab badge (0.79.0)', () => {
     const inbox = render(3)[2];
     expect(inbox.querySelector('.tab__badge')?.textContent?.trim()).toBe('2');
     expect(inbox.getAttribute('aria-label')).toBe('Inbox, 2');
+  });
+});
+
+@Component({
+  imports: [UiTabs, UiTab],
+  template: `
+    <ui-tabs [align]="align()" label="Albums">
+      <ui-tab label="Ceremony" />
+      <ui-tab label="Reception" />
+      <ui-tab label="Portraits" />
+    </ui-tabs>
+  `,
+})
+class StripOnlyHost {
+  readonly align = signal<'start' | 'center'>('center');
+}
+
+describe('UiTabs align & strip-only mode', () => {
+  const css = () => ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+
+  it('adds .center class when align="center" with logical auto-margin centering rules', () => {
+    const fixture = TestBed.createComponent(StripOnlyHost);
+    fixture.detectChanges();
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector('.tablist') as HTMLElement;
+    expect(tablist.classList.contains('center')).toBe(true);
+    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:first-child[^{]*\{[^}]*margin-inline-start:\s*auto/);
+    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:last-child[^{]*\{[^}]*margin-inline-end:\s*auto/);
+
+    fixture.componentInstance.align.set('start');
+    fixture.detectChanges();
+    expect(tablist.classList.contains('center')).toBe(false);
+  });
+
+  it('collapses panel margin and hides empty tabpanels in strip-only mode, while keeping panels when present', () => {
+    const stripFixture = TestBed.createComponent(StripOnlyHost);
+    stripFixture.detectChanges();
+    stripFixture.detectChanges();
+    const stripEl = stripFixture.nativeElement as HTMLElement;
+    const stripTablist = stripEl.querySelector('.tablist') as HTMLElement;
+    expect(stripTablist.classList.contains('strip-only')).toBe(true);
+    expect(css()).toMatch(/\.tablist\.strip-only[^{]*\{[^}]*margin-bottom:\s*0/);
+    const stripPanels = [...stripEl.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    expect(stripPanels.every((p) => p.hidden)).toBe(true);
+    const stripTab = stripEl.querySelector<HTMLButtonElement>('[role="tab"]')!;
+    expect(stripTab.getAttribute('aria-controls')).toBeNull();
+
+    const fullFixture = TestBed.createComponent(Host);
+    fullFixture.detectChanges();
+    const fullEl = fullFixture.nativeElement as HTMLElement;
+    expect(fullEl.querySelector('.tablist')!.classList.contains('strip-only')).toBe(false);
+    expect(fullEl.querySelector<HTMLButtonElement>('[role="tab"]')!.getAttribute('aria-controls')).not.toBeNull();
   });
 });
