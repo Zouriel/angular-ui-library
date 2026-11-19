@@ -23,6 +23,7 @@ import TextIcon from '@hugeicons/core-free-icons/TextIcon';
 import Image01Icon from '@hugeicons/core-free-icons/Image01Icon';
 import Layers01Icon from '@hugeicons/core-free-icons/Layers01Icon';
 import SquareIcon from '@hugeicons/core-free-icons/SquareIcon';
+import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
 import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
@@ -191,6 +192,20 @@ channels = computed<UiMessengerChannel[]>(() => [
           </ui-list>
           <ui-text variant="caption">Selected: {{ current() }}</ui-text>
         </doc-demo>
+        <doc-demo code="<ui-list [bordered]=&quot;true&quot;>
+  <ui-list-item [interactive]=&quot;true&quot; title=&quot;Feed photos&quot; hint=&quot;3 of 6 selected for the album feed&quot;>
+    <hugeicons-icon item-leading [icon]=&quot;Image01Icon&quot; [size]=&quot;18&quot; />
+  </ui-list-item>
+</ui-list>">
+          <ui-list [bordered]="true">
+            <ui-list-item [interactive]="true" title="Feed photos" hint="3 of 6 selected for the album feed">
+              <hugeicons-icon item-leading aria-hidden="true" [icon]="imageIcon" [size]="18" [strokeWidth]="1.8" />
+            </ui-list-item>
+            <ui-list-item [interactive]="true" title="Colours" hint="Reply pages & QR table card — long hints ellipsize cleanly on one line">
+              <hugeicons-icon item-leading aria-hidden="true" [icon]="settingsIcon" [size]="18" [strokeWidth]="1.8" />
+            </ui-list-item>
+          </ui-list>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
@@ -283,6 +298,25 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
               <hugeicons-icon stat-icon aria-hidden="true" [icon]="icons.users" [size]="16" [strokeWidth]="1.8" />
             </ui-stat-card>
           </div>
+        </doc-demo>
+        <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [interactive]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
+  <ui-avatar name=&quot;Aisha Ibrahim&quot; [dimension]=&quot;64&quot; />
+  <ui-text variant=&quot;label&quot; [truncate]=&quot;true&quot;>Aisha Ibrahim</ui-text>
+  <ui-text variant=&quot;caption&quot;>24 photos</ui-text>
+</ui-card>">
+          <div class="cols3">
+            <ui-card padding="sm" [gap]="1" align="center" [interactive]="true" ariaLabel="Aisha Ibrahim, 24 photos" (activate)="cardHits.set(cardHits() + 1)">
+              <ui-avatar name="Aisha Ibrahim" [dimension]="64" />
+              <ui-text variant="label" [truncate]="true">Aisha Ibrahim</ui-text>
+              <ui-text variant="caption">24 photos</ui-text>
+            </ui-card>
+            <ui-card padding="sm" [gap]="1" align="center" [interactive]="true" [disabled]="true" ariaLabel="Ali Zahir, 8 photos" (activate)="cardHits.set(cardHits() + 1)">
+              <ui-avatar name="Ali Zahir" [dimension]="64" />
+              <ui-text variant="label" [truncate]="true">Ali Zahir</ui-text>
+              <ui-text variant="caption">8 photos</ui-text>
+            </ui-card>
+          </div>
+          <ui-text variant="caption">Activated {{ cardHits() }} times</ui-text>
         </doc-demo>
       </doc-section>
 
@@ -410,6 +444,7 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
           <div class="row">
             <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge><ui-badge tone="success">success</ui-badge>
             <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
+            <ui-badge tone="media"><hugeicons-icon [icon]="playIcon" [size]="12" [strokeWidth]="2" />0:24</ui-badge>
           </div>
           <!-- 0.47.8: premium tiers, the same metal in every theme. -->
           <div class="row">
@@ -854,10 +889,12 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   protected readonly openLabel = (r: Record<string, unknown>) => `Open ${r['name']}`;
   protected readonly listApi: ApiRow[] = [
     { name: 'list: bordered', type: 'boolean', default: 'false', desc: 'Outer border + row dividers.' },
+    { name: 'item: title', type: 'string | null', default: 'null', desc: 'Structured medium-weight row title.' },
+    { name: 'item: hint', type: 'string | null', default: 'null', desc: 'Muted single-line ellipsized description below the title.' },
     { name: 'item: interactive', type: 'boolean', default: 'false', desc: 'Render the row as a button.' },
     { name: 'item: selected', type: 'boolean', default: 'false', desc: 'Selected styling (interactive items only).' },
     { name: 'item: disabled', type: 'boolean', default: 'false', desc: 'Disable the button (interactive items only).' },
-    { name: 'item: [item-leading] / [item-trailing]', type: 'slot', default: '—', desc: 'Content before and after the main text.' },
+    { name: 'item: [item-leading] / [item-hint] / [item-trailing]', type: 'slot', default: '—', desc: 'Content before, under, and after the main text.' },
   ];
   protected readonly listOut: ApiRow[] = [{ name: 'item: activate', type: 'void', default: '—', desc: 'Interactive item clicked, or activated with Enter or Space.' }];
   protected readonly treeApi: ApiRow[] = [
@@ -887,11 +924,17 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'item: title', type: 'string (required)', default: '—', desc: 'Header label.' },
     { name: 'item: open', type: 'WritableSignal<boolean>', default: 'false', desc: 'Read or set from a template reference (#item) to open an item in code.' },
   ];
+  protected readonly cardHits = signal(0);
   protected readonly cardApi: ApiRow[] = [
     { name: 'card: padding', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Padding of the header, body and footer.' },
+    { name: 'card: gap', type: '0 | 1 | 2 | 3 | 4 | 6 | 8 | null', default: 'null', desc: 'Vertical spacing step between body children (enables flex column).' },
+    { name: 'card: align', type: "'stretch' | 'start' | 'center' | 'end' | null", default: 'null', desc: 'Cross-axis body alignment (and text-align).' },
     { name: 'card: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
     { name: 'card: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
-    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Hover lift and a focus ring around the whole card, for cards that are a clickable target.' },
+    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Button semantics, hover lift, focus ring, and Enter/Space activation.' },
+    { name: 'card: ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name for an interactive card.' },
+    { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive card.' },
+    { name: 'card: (activate)', type: 'output<void>', default: '—', desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.' },
     { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
     { name: 'stat: label', type: 'string', default: "''", desc: 'Caption above the value.' },
     { name: 'stat: value', type: 'string | number', default: "''", desc: 'The KPI value.' },
@@ -908,9 +951,12 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'newTab', type: 'boolean', default: 'false', desc: 'Open the listing in a new tab.' },
   ];
 
+  protected readonly playIcon = PlayIcon;
+  protected readonly imageIcon = Image01Icon;
+  protected readonly settingsIcon = Settings01Icon;
   protected readonly cropBox: UiAvatarCrop = { x: 0.55, y: 0.2, w: 0.2, h: 0.3 };
   protected readonly badgeApi: ApiRow[] = [
-    { name: 'badge: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
+    { name: 'badge: tone', type: STATUS + " | 'media'", default: "'neutral'", desc: "Colour; 'media' draws a translucent dark scrim pill over photos/video." },
     { name: 'badge: tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.' },
     { name: 'badge: dot', type: 'boolean', default: 'false', desc: 'Bare 8px status dot. It has no text, so give the host role="img" and an aria-label.' },
     { name: 'chip: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },

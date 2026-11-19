@@ -1,6 +1,8 @@
 import { Component, computed, signal } from '@angular/core';
+import { UiBadge } from '@zouriel/ui/badge';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
 import { UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
@@ -18,7 +20,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiButton, UiIconButton, HugeiconsIconComponent, UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiBadge, UiButton, UiIconButton, HugeiconsIconComponent, UiCarousel, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -131,15 +133,16 @@ function grad(a: string, b: string): string {
       </doc-section>
 
       <doc-section name="Selectable" selector="ui-selectable" [api]="selectableApi" [outputs]="selectableOut"
-        summary="Wraps one grid tile for long-press multi-select, like a phone gallery. A click, tap, Enter or Space emits (tap): the app opens the tile, or toggles it while selecting. Holding a finger or mouse down for 500ms emits (longPress) (with a short vibration where the browser allows it); moving more than 10px, any scroll, or a second finger going down anywhere (a pinch) cancels it, so a finger that scrolls or pinches never selects, and the click after a long press is swallowed. The phone's own long-press menu and callout are suppressed. From the keyboard, the context-menu key or Shift+F10 is the long press. While selecting, a round mark sits in the top corner: an empty ring over a small scrim, or filled with the primary colour and a check, readable on white and black pictures; a selected tile shrinks a little with a primary outline and tint. It is a button named by its label, and a checkbox while selecting. In the demo: press and hold a photo, tap more, then Save to gallery for a fake job.">
+        summary="Wraps one grid tile for long-press multi-select, like a phone gallery. A click, tap, Enter or Space emits (tap): the app opens the tile, or toggles it while selecting. Holding a finger or mouse down for 500ms emits (longPress) (with a short vibration where the browser allows it); moving more than 10px, any scroll, or a second finger going down anywhere (a pinch) cancels it, so a finger that scrolls or pinches never selects, and the click after a long press is swallowed. The phone's own long-press menu and callout are suppressed. From the keyboard, the context-menu key or Shift+F10 is the long press. While selecting, a round mark sits in the top corner: an empty ring over a small scrim, or filled with the primary colour and a check, readable on white and black pictures; a selected tile shrinks a little with a primary outline and tint. Project non-interactive overlays into [tile-top-end], [tile-bottom-start] and [tile-bottom-end]; pass [order] for a 1-based primary badge in top-end and [dimmed] when a selection limit is reached. It is a button named by its label, and a checkbox while selecting. In the demo: press and hold a photo, tap more, then Save to gallery for a fake job.">
         <doc-demo code="<ui-selectable [label]=&quot;'Photo ' + (i + 1)&quot; [selected]=&quot;picked.has(i)&quot; [selecting]=&quot;picked.size > 0&quot;
   (tap)=&quot;picked.size ? toggle(i) : open(i)&quot; (longPress)=&quot;toggle(i)&quot;>
   <img [src]=&quot;photo.src&quot; alt=&quot;&quot; />
+  <ui-badge tile-top-end tone=&quot;media&quot;>0:24</ui-badge>
 </ui-selectable>">
           <div class="sel-wrap">
             <div class="sel-top">
               @if (selPicked().size) {
-                <ui-selection-bar [count]="selPicked().size" [total]="photos.length" [actions]="selActions"
+                <ui-selection-bar [count]="selPicked().size" [total]="photos.length" [actions]="selActions" cancelLabel="Done"
                   (selectAll)="selectAllPhotos()" (clear)="clearPhotos()" (cancel)="clearPhotos()" (action)="act($event)" />
               } @else {
                 <p class="note" style="margin: 0">{{ selNote() }}</p>
@@ -150,12 +153,30 @@ function grad(a: string, b: string): string {
                 <ui-selectable [label]="'Photo ' + ($index + 1)" [selected]="selPicked().has($index)" [selecting]="selPicked().size > 0"
                   (tap)="selPicked().size ? togglePhoto($index) : selNote.set('Opened photo ' + ($index + 1) + '.')" (longPress)="togglePhoto($index)">
                   <img [src]="p" alt="" />
+                  @if ($index % 4 === 1) {
+                    <ui-badge tile-top-end tone="media"><hugeicons-icon [icon]="playIcon" [size]="12" [strokeWidth]="2" />0:24</ui-badge>
+                  }
                 </ui-selectable>
               }
             </div>
           </div>
           <ui-task-progress-dialog [(open)]="jobOpen" [title]="jobTitle()" [done]="jobDone()" [total]="jobTotal()" [detail]="jobDetail()"
             [(stopping)]="jobStopping" />
+        </doc-demo>
+        <doc-demo code="<ui-selectable [selecting]=&quot;true&quot; [selected]=&quot;order > 0&quot; [order]=&quot;order || null&quot; [dimmed]=&quot;!order && ordered.length >= 3&quot; (tap)=&quot;toggleOrdered(i)&quot;>
+  <img [src]=&quot;photo.src&quot; alt=&quot;&quot; />
+</ui-selectable>">
+          <p class="note" style="margin: 0 0 var(--ui-space-2)">Ordered cover picker (pick up to 3):</p>
+          <div class="like-grid">
+            @for (p of photos.slice(0, 6); track $index) {
+              @let ord = orderedIndex($index);
+              <ui-selectable [label]="'Cover candidate ' + ($index + 1)" [selecting]="true" [selected]="ord > 0"
+                [order]="ord > 0 ? ord : null" [dimmed]="ord === 0 && orderedIds().length >= 3"
+                (tap)="toggleOrdered($index)">
+                <img [src]="p" alt="" />
+              </ui-selectable>
+            }
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -164,7 +185,7 @@ function grad(a: string, b: string): string {
         <doc-demo code="<ui-selectable [doubleTapEnabled]=&quot;true&quot; (tap)=&quot;open(i)&quot; (doubleTap)=&quot;like(i); burst.play($event.x, $event.y)&quot;>
   <img [src]=&quot;photo.src&quot; alt=&quot;&quot; />
   <ui-heart-burst #burst />
-  <ui-like-count class=&quot;corner&quot; [count]=&quot;photo.likes&quot; [liked]=&quot;photo.liked&quot; />
+  <ui-like-count tile-bottom-start [count]=&quot;photo.likes&quot; [liked]=&quot;photo.liked&quot; />
 </ui-selectable>
 <ui-like-button [liked]=&quot;photo.liked&quot; [count]=&quot;photo.likes&quot; (likedChange)=&quot;setLiked(i, $event)&quot; />">
           <div class="like-grid">
@@ -173,7 +194,7 @@ function grad(a: string, b: string): string {
                 (tap)="likeOpen.set($index)" (doubleTap)="setLiked($index, !likes()[$index].liked); burst.play($event.x, $event.y)">
                 <img [src]="p" alt="" />
                 <ui-heart-burst #burst />
-                <ui-like-count class="like-corner" [count]="likes()[$index].count" [liked]="likes()[$index].liked" />
+                <ui-like-count tile-bottom-start [count]="likes()[$index].count" [liked]="likes()[$index].liked" />
               </ui-selectable>
             }
           </div>
@@ -220,7 +241,7 @@ function grad(a: string, b: string): string {
       </doc-section>
 
       <doc-section name="Selection bar" selector="ui-selection-bar" [api]="selectionBarApi" [outputs]="selectionBarOut"
-        summary="The bar shown while selecting: Cancel (an X) at the start, &quot;12 selected&quot;, a Select all toggle that reads Clear once count reaches total (canSelectAll / canClear false hide a side), then the actions. Actions are disabled while nothing is selected or when enabled is false; danger draws the destructive style. When the labels don't all fit (a 360px phone with three actions) the toggle and the actions with an icon become icon buttons that keep their label as their accessible name and tooltip, and if &quot;12 selected&quot; still doesn't fit the number shows alone, so nothing overflows at 320px. Count changes are announced politely. The demo is in Selectable above."
+        summary="The bar shown while selecting: Cancel (an X, or a ghost button when cancelLabel such as &quot;Done&quot; is given) at the start, &quot;12 selected&quot;, a Select all toggle that reads Clear once count reaches total (canSelectAll / canClear false hide a side), then the actions. With [docked]=&quot;true&quot; it fixes itself to the bottom of the viewport with a surface background, top hairline, safe-area inset padding, and optional [maxWidth]. Actions are disabled while nothing is selected or when enabled is false; danger draws the destructive style. When the labels don't all fit (a 360px phone with three actions) the toggle and the actions with an icon become icon buttons that keep their label as their accessible name and tooltip, and if &quot;12 selected&quot; still doesn't fit the number shows alone, so nothing overflows at 320px. Count changes are announced politely. The demo is in Selectable above."
         [shapes]="'interface UiSelectionAction { id: string; label: string; icon?: IconSvgObject; danger?: boolean; enabled?: boolean; }'"></doc-section>
 
       <doc-section name="Filter" selector="ui-filter" [api]="filterApi"
@@ -302,6 +323,7 @@ export class MediaPage {
     <strong>{{ p.label }}</strong> <span>Sat 12 Dec · Malé</span>
   </ng-template>
 </ui-poster-grid>`;
+  protected readonly playIcon = PlayIcon;
   protected readonly viewIcon = ViewIcon;
   protected readonly viewed = signal(-1);
   protected readonly posterActionCode = `<ui-poster-grid [posters]="posters" (select)="open($event)">
@@ -427,11 +449,23 @@ export class MediaPage {
     this.jobOpen.set(false);
     this.jobStopping.set(false);
   }
+  protected readonly orderedIds = signal<readonly number[]>([0, 2]);
+  protected orderedIndex(i: number): number {
+    return this.orderedIds().indexOf(i) + 1;
+  }
+  protected toggleOrdered(i: number): void {
+    const cur = this.orderedIds();
+    if (cur.includes(i)) this.orderedIds.set(cur.filter((x) => x !== i));
+    else if (cur.length < 3) this.orderedIds.set([...cur, i]);
+  }
   protected readonly selectableApi: ApiRow[] = [
     { name: 'selected', type: 'boolean', default: 'false', desc: 'Whether this tile is selected.' },
     { name: 'selecting', type: 'boolean', default: 'false', desc: 'Selection mode: the marks show.' },
     { name: 'label', type: 'string | null', default: 'null', desc: "The tile's accessible name." },
     { name: 'borderRadius', type: 'string | null', default: 'null', desc: "The tile's corners (any CSS radius); the theme's radius when null." },
+    { name: 'order', type: 'number | null', default: 'null', desc: 'Optional 1-based selection index rendered as a primary badge in the top-end corner.' },
+    { name: 'dimmed', type: 'boolean', default: 'false', desc: 'Dims unselected tiles (0.45 opacity) when a maximum selection limit is reached.' },
+    { name: '[tile-top-end], [tile-bottom-start], [tile-bottom-end]', type: 'slots', default: '—', desc: 'Logical corner overlay slots (space1 inset, pointer-events: none) for video duration pills or like counts.' },
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'The tile (a picture).' },
   ];
   protected readonly selectableOut: ApiRow[] = [
@@ -542,6 +576,9 @@ export class MediaPage {
     { name: 'actions', type: 'UiSelectionAction[]', default: '[]', desc: 'The buttons at the end.' },
     { name: 'canSelectAll', type: 'boolean', default: 'true', desc: 'Show Select all.' },
     { name: 'canClear', type: 'boolean', default: 'true', desc: 'Show Clear once everything is selected.' },
+    { name: 'cancelLabel', type: 'string | null', default: 'null', desc: 'Optional text for the cancel button (e.g. "Done"); renders a ghost ui-button instead of the X icon.' },
+    { name: 'docked', type: 'boolean', default: 'false', desc: 'Fixes the bar to the bottom of the viewport with surface fill, top border, and safe-area inset padding.' },
+    { name: 'maxWidth', type: 'number | null', default: 'null', desc: 'Optional maximum width (px) for the inner bar row.' },
   ];
   protected readonly selectionBarOut: ApiRow[] = [
     { name: 'cancel', type: 'void', default: '—', desc: 'The X: leave selecting.' },

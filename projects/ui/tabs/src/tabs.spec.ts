@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { UiTab, UiTabs } from './tabs';
@@ -90,5 +90,136 @@ describe('UiTab badge (0.79.0)', () => {
     const inbox = render(3)[2];
     expect(inbox.querySelector('.tab__badge')?.textContent?.trim()).toBe('2');
     expect(inbox.getAttribute('aria-label')).toBe('Inbox, 2');
+  });
+});
+
+@Component({
+  imports: [UiTabs, UiTab],
+  template: `
+    <ui-tabs [align]="align()" label="Albums">
+      <ui-tab label="Ceremony" />
+      <ui-tab label="Reception" />
+      <ui-tab label="Portraits" />
+    </ui-tabs>
+  `,
+})
+class StripOnlyHost {
+  readonly align = signal<'start' | 'center'>('center');
+}
+
+describe('UiTabs align & strip-only mode', () => {
+  const css = () => ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+
+  it('adds .center class when align="center" with logical auto-margin centering rules', () => {
+    const fixture = TestBed.createComponent(StripOnlyHost);
+    fixture.detectChanges();
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector('.tablist') as HTMLElement;
+    expect(tablist.classList.contains('center')).toBe(true);
+    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:first-child[^{]*\{[^}]*margin-inline-start:\s*auto/);
+    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:last-child[^{]*\{[^}]*margin-inline-end:\s*auto/);
+
+    fixture.componentInstance.align.set('start');
+    fixture.detectChanges();
+    expect(tablist.classList.contains('center')).toBe(false);
+  });
+
+  it('collapses panel margin and hides empty tabpanels in strip-only mode, while keeping panels when present', () => {
+    const stripFixture = TestBed.createComponent(StripOnlyHost);
+    stripFixture.detectChanges();
+    stripFixture.detectChanges();
+    const stripEl = stripFixture.nativeElement as HTMLElement;
+    const stripTablist = stripEl.querySelector('.tablist') as HTMLElement;
+    expect(stripTablist.classList.contains('strip-only')).toBe(true);
+    expect(css()).toMatch(/\.tablist\.strip-only[^{]*\{[^}]*margin-bottom:\s*0/);
+    const stripPanels = [...stripEl.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    expect(stripPanels.every((p) => p.hidden)).toBe(true);
+    const stripTab = stripEl.querySelector<HTMLButtonElement>('[role="tab"]')!;
+    expect(stripTab.getAttribute('aria-controls')).toBeNull();
+
+    const fullFixture = TestBed.createComponent(Host);
+    fullFixture.detectChanges();
+    const fullEl = fullFixture.nativeElement as HTMLElement;
+    expect(fullEl.querySelector('.tablist')!.classList.contains('strip-only')).toBe(false);
+    expect(fullEl.querySelector<HTMLButtonElement>('[role="tab"]')!.getAttribute('aria-controls')).not.toBeNull();
+  });
+});
+
+@Component({
+  imports: [UiTabs, UiTab],
+  template: `
+    <ui-tabs
+      [appearance]="appearance()"
+      [align]="align()"
+      [selectedIndex]="selected()"
+      (selectedIndexChange)="selected.set($event)"
+      label="Albums">
+      <ui-tab label="Ceremony" />
+      <ui-tab label="Reception" />
+      <ui-tab label="A very long portraits album label that cannot fit" />
+    </ui-tabs>
+  `,
+})
+class GlowHost {
+  readonly appearance = signal<'line' | 'glow'>('glow');
+  readonly align = signal<'start' | 'center' | 'fill'>('fill');
+  readonly selected = signal(0);
+}
+
+describe('UiTabs glow appearance & fill alignment', () => {
+  const css = () => ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+
+  function make() {
+    const fixture = TestBed.createComponent(GlowHost);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('keeps line as the default appearance and does not render a glow', () => {
+    const fixture = make();
+    fixture.componentInstance.appearance.set('line');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.tab-glow')).toBeNull();
+    expect(el.querySelector('.tablist')!.classList.contains('glow')).toBe(false);
+  });
+
+  it('glow removes both lines and moves one soft indicator to the selected tab', () => {
+    const fixture = make();
+    const el = fixture.nativeElement as HTMLElement;
+    const list = el.querySelector('.tablist') as HTMLElement;
+    const tabs = [...el.querySelectorAll<HTMLElement>('.tab')];
+    tabs.forEach((tab, i) => {
+      Object.defineProperty(tab, 'offsetLeft', { configurable: true, value: i * 100 });
+      Object.defineProperty(tab, 'offsetWidth', { configurable: true, value: 100 });
+    });
+
+    fixture.componentInstance.selected.set(1);
+    fixture.detectChanges();
+    const glow = el.querySelector<HTMLElement>('.tab-glow')!;
+    expect(list.classList.contains('glow')).toBe(true);
+    expect(el.querySelectorAll('.tab-glow').length).toBe(1);
+    expect(glow.style.transform).toBe('translateX(100px)');
+    expect(glow.style.width).toBe('100px');
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true');
+
+    tabs[2].click();
+    fixture.detectChanges();
+    expect(glow.style.transform).toBe('translateX(200px)');
+    expect(tabs[2].getAttribute('aria-selected')).toBe('true');
+    expect(css()).toMatch(/\.tablist\.glow[^{}]*\{[^}]*border-bottom:\s*none/);
+    expect(css()).toMatch(/\.tablist\.glow[^{}]*\.tab[^{}]*\{[^}]*border-bottom-color:\s*transparent/);
+    expect(css()).toMatch(/\.tab-glow[^{}]*\{[^}]*radial-gradient[^}]*transition:[^}]*transform/);
+    expect(css()).toMatch(/prefers-reduced-motion:\s*reduce[^{}]*\{[^}]*\.tab-glow[^{}]*\{[^}]*transition:\s*none/);
+  });
+
+  it('fill gives every tab an equal flex share and truncates long labels', () => {
+    const fixture = make();
+    const list = (fixture.nativeElement as HTMLElement).querySelector('.tablist') as HTMLElement;
+    expect(list.classList.contains('fill')).toBe(true);
+    expect(css()).toMatch(/\.tablist\.fill[^{}]*\.tab[^{}]*\{[^}]*flex:\s*1 1 0/);
+    expect(css()).toMatch(/\.tablist\.fill[^{}]*\.tab__label[^{}]*\{[^}]*text-overflow:\s*ellipsis/);
+    fixture.componentInstance.align.set('start');
+    fixture.detectChanges();
+    expect(list.classList.contains('fill')).toBe(false);
   });
 });

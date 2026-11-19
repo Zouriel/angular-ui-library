@@ -7,6 +7,7 @@ import Cancel01Icon from '@hugeicons/core-free-icons/Cancel01Icon';
 import CheckmarkSquare02Icon from '@hugeicons/core-free-icons/CheckmarkSquare02Icon';
 import RemoveSquareIcon from '@hugeicons/core-free-icons/RemoveSquareIcon';
 import { injectUiStrings, uiFormatString } from '@zouriel/ui';
+import { UiBadge } from '@zouriel/ui/badge';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiTooltip } from '@zouriel/ui/overlay';
 
@@ -37,8 +38,19 @@ export const UI_DOUBLE_TAP_SLOP = 24;
  */
 @Component({
   selector: 'ui-selectable',
+  imports: [UiBadge],
   template: `
     <div class="tile" [style.border-radius]="borderRadius()"><ng-content /></div>
+    <span class="corner corner--top-end">
+      @if (order(); as ord) {
+        @if (ord > 0) {
+          <ui-badge class="order" tone="primary">{{ ord }}</ui-badge>
+        }
+      }
+      <ng-content select="[tile-top-end]" />
+    </span>
+    <span class="corner corner--bottom-start"><ng-content select="[tile-bottom-start]" /></span>
+    <span class="corner corner--bottom-end"><ng-content select="[tile-bottom-end]" /></span>
     @if (selecting()) {
       <span class="mark" [class.checked]="selected()" aria-hidden="true">
         @if (selected()) {
@@ -54,6 +66,7 @@ export const UI_DOUBLE_TAP_SLOP = 24;
     '[attr.aria-label]': 'label() || null',
     '[class.selecting]': 'selecting()',
     '[class.on]': 'selecting() && selected()',
+    '[class.dimmed]': 'dimmed()',
     '(click)': 'onClick($event)',
     '(keydown)': 'onKey($event)',
     '(pointerdown)': 'onDown($event)',
@@ -69,10 +82,13 @@ export const UI_DOUBLE_TAP_SLOP = 24;
       position: relative; display: block; cursor: pointer; outline: none;
       -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
       -webkit-tap-highlight-color: transparent;
+      transition: opacity var(--ui-motion-fast) var(--ui-ease-standard);
     }
+    :host(.dimmed) { opacity: 0.45; }
     :host ::ng-deep img { -webkit-user-drag: none; -webkit-touch-callout: none; }
     .tile {
       position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: var(--ui-radius);
+      background: var(--ui-color-surface-raised);
       transition: transform var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-fast) var(--ui-ease-standard);
     }
     /* The outline and tint lie over the content, so a picture can't cover them. */
@@ -84,6 +100,14 @@ export const UI_DOUBLE_TAP_SLOP = 24;
     :host(.on) .tile { transform: scale(0.9); }
     :host(.on) .tile::after { border-color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 18%, transparent); }
     :host(:focus-visible) .tile { box-shadow: var(--ui-focus-ring); }
+    .corner {
+      position: absolute; z-index: 1; pointer-events: none;
+      display: inline-flex; align-items: center; gap: var(--ui-space-1);
+    }
+    .corner:empty { display: none; }
+    .corner--top-end { top: var(--ui-space-1); inset-inline-end: var(--ui-space-1); }
+    .corner--bottom-start { bottom: var(--ui-space-1); inset-inline-start: var(--ui-space-1); }
+    .corner--bottom-end { bottom: var(--ui-space-1); inset-inline-end: var(--ui-space-1); }
     .mark {
       position: absolute; top: var(--ui-space-2); inset-inline-start: var(--ui-space-2);
       width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%;
@@ -96,7 +120,7 @@ export const UI_DOUBLE_TAP_SLOP = 24;
       transition: background var(--ui-motion-fast) var(--ui-ease-standard);
     }
     .mark.checked { background: var(--ui-color-primary); }
-    @media (prefers-reduced-motion: reduce) { .tile, .tile::after, .mark { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { :host, .tile, .tile::after, .mark { transition: none; } }
     :host-context(.ui-no-anim) .tile, :host-context(.ui-no-anim) .tile::after, :host-context(.ui-no-anim) .mark { transition: none; }
   `,
 })
@@ -108,6 +132,10 @@ export class UiSelectable {
   readonly label = input<string | null>(null);
   /** The tile's corners (any CSS radius); the theme's radius when null. */
   readonly borderRadius = input<string | null>(null);
+  /** Optional 1-based selection order badge shown in the top-end corner (e.g. 1..6 for ordered photo pickers). */
+  readonly order = input<number | null>(null);
+  /** Dim unselected tiles when a maximum selection count has been reached (0.45 opacity). */
+  readonly dimmed = input(false);
   /** A click, tap, Enter or Space (open, or toggle while selecting). */
   readonly tap = output<void>();
   /** Press and hold (start selecting); also the context-menu key and Shift+F10. */
@@ -310,11 +338,18 @@ export interface UiSelectionAction {
 @Component({
   selector: 'ui-selection-bar',
   imports: [HugeiconsIconComponent, UiButton, UiIconButton, UiTooltip],
+  host: {
+    '[class.docked]': 'docked()',
+  },
   template: `
-    <div class="bar" #bar [class.compact]="compact()">
-      <ui-icon-button class="cancel" variant="ghost" size="sm" [label]="strings.cancelSelection" (click)="cancel.emit()">
-        <hugeicons-icon [icon]="icons.cancel" [size]="16" [strokeWidth]="1.8" />
-      </ui-icon-button>
+    <div class="bar" #bar [class.compact]="compact()" [style.max-width.px]="maxWidth()">
+      @if (cancelText(); as cl) {
+        <ui-button class="cancel" variant="ghost" size="sm" (click)="cancel.emit()">{{ cl }}</ui-button>
+      } @else {
+        <ui-icon-button class="cancel" variant="ghost" size="sm" [label]="strings.cancelSelection" (click)="cancel.emit()">
+          <hugeicons-icon [icon]="icons.cancel" [size]="16" [strokeWidth]="1.8" />
+        </ui-icon-button>
+      }
       <span class="count" #countBox>
         <span aria-hidden="true">{{ short() ? count() : countText() }}</span>
         <span class="sr" aria-live="polite" aria-atomic="true">{{ countText() }}</span>
@@ -344,7 +379,11 @@ export interface UiSelectionAction {
     </div>
     <!-- The labelled layout, laid out off screen to learn whether it fits. -->
     <div class="measure" #measure aria-hidden="true" inert>
-      <span class="m-icon"></span>
+      @if (cancelText(); as cl) {
+        <span class="m-btn m-cancel">{{ cl }}</span>
+      } @else {
+        <span class="m-icon"></span>
+      }
       <span class="m-count">{{ countText() }}</span>
       @if (toggleLabel(); as tl) { <span class="m-btn">{{ tl }}</span> }
       @for (a of actions(); track a.id) { <span class="m-btn" [class.m-with-icon]="!!a.icon">{{ a.label }}</span> }
@@ -352,9 +391,19 @@ export interface UiSelectionAction {
   `,
   styles: `
     :host { display: block; position: relative; min-width: 0; }
+    :host(.docked) {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: var(--ui-z-docked);
+      background: var(--ui-color-surface);
+      border-top: 1px solid var(--ui-color-border);
+      padding: var(--ui-space-2) var(--ui-space-3) calc(var(--ui-space-2) + env(safe-area-inset-bottom, 0px));
+      box-sizing: border-box;
+    }
     .bar {
       display: flex; align-items: center; gap: var(--ui-space-1);
       padding: var(--ui-space-1); min-height: calc(var(--ui-size-md) + var(--ui-space-2)); box-sizing: border-box;
+      margin-inline: auto; width: 100%;
       font-family: var(--ui-font-default); color: var(--ui-color-text);
     }
     .bar > * { flex: none; }
@@ -394,12 +443,22 @@ export class UiSelectionBar {
   readonly canSelectAll = input(true);
   /** Show Clear once everything is selected. */
   readonly canClear = input(true);
+  /** Optional text for the cancel button (e.g. "Done"); renders a ghost `ui-button` instead of the X icon button. */
+  readonly cancelLabel = input<string | null>(null);
+  /** Wraps the bar in a fixed bottom-docked surface with a top hairline and safe-area bottom inset padding. */
+  readonly docked = input(false);
+  /** Optional maximum width (px) for the inner bar row when docked or in a wide container. */
+  readonly maxWidth = input<number | null>(null);
   readonly selectAll = output<void>();
   readonly clear = output<void>();
   readonly cancel = output<void>();
   /** The id of the action pressed. */
   readonly action = output<string>();
 
+  protected readonly cancelText = computed(() => {
+    const c = this.cancelLabel()?.trim();
+    return c ? c : null;
+  });
   protected readonly all = computed(() => {
     const t = this.total();
     return t != null && t > 0 && this.count() >= t;
@@ -414,6 +473,7 @@ export class UiSelectionBar {
   readonly short = signal(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly barEl = viewChild.required<ElementRef<HTMLElement>>('bar');
   private readonly measureEl = viewChild.required<ElementRef<HTMLElement>>('measure');
   private readonly countBox = viewChild.required<ElementRef<HTMLElement>>('countBox');
   private readonly countMeasure = computed(() => this.measureEl().nativeElement.querySelector<HTMLElement>('.m-count'));
@@ -424,7 +484,10 @@ export class UiSelectionBar {
       // Re-measure when anything that changes the labelled width changes.
       this.countText();
       this.toggleLabel();
+      this.cancelText();
       this.actions();
+      this.maxWidth();
+      this.docked();
       this.compact();
       this.measure();
     });
@@ -437,7 +500,10 @@ export class UiSelectionBar {
 
   /** Decides compact / short from the room there is (runs on resize and when the content changes). */
   measure(): void {
-    const room = this.host.nativeElement.clientWidth;
+    const barRoom = this.barEl().nativeElement.clientWidth;
+    const hostRoom = barRoom > 0 ? barRoom : this.host.nativeElement.clientWidth;
+    const cap = this.maxWidth();
+    const room = cap !== null && cap > 0 && hostRoom > cap ? cap : hostRoom;
     const needed = this.measureEl().nativeElement.scrollWidth;
     this.compact.set(room > 0 && needed > room);
     const box = this.countBox().nativeElement.clientWidth;
