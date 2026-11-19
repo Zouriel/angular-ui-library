@@ -1,24 +1,33 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { UiText, type TextTag, type TextVariant } from './text';
+import { UiText, type TextTag, type TextVariant, type UiTextAlign, type UiTextTone } from './text';
 
 @Component({
   imports: [UiText],
-  template: `<ui-text [variant]="variant()" [as]="tag()">Hello</ui-text>`,
+  template: `<ui-text [variant]="variant()" [as]="tag()" [truncate]="truncate()" [align]="align()" [tone]="tone()">Hello</ui-text>`,
 })
 class Host {
   variant = signal<TextVariant>('body');
   tag = signal<TextTag | undefined>(undefined);
+  truncate = signal(false);
+  align = signal<UiTextAlign | null>(null);
+  tone = signal<UiTextTone>('default');
 }
 
-function render(variant: TextVariant, as?: TextTag) {
+const css = () => ((UiText as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+
+function render(variant: TextVariant, as?: TextTag, opts?: { truncate?: boolean; align?: UiTextAlign | null; tone?: UiTextTone }) {
   const fixture = TestBed.createComponent(Host);
   fixture.componentInstance.variant.set(variant);
   fixture.componentInstance.tag.set(as);
+  if (opts?.truncate !== undefined) fixture.componentInstance.truncate.set(opts.truncate);
+  if (opts?.align !== undefined) fixture.componentInstance.align.set(opts.align);
+  if (opts?.tone !== undefined) fixture.componentInstance.tone.set(opts.tone);
   fixture.detectChanges();
-  const el = (fixture.nativeElement as HTMLElement).querySelector('ui-text')!.firstElementChild as HTMLElement;
-  return { fixture, el };
+  const hostEl = (fixture.nativeElement as HTMLElement).querySelector('ui-text') as HTMLElement;
+  const el = hostEl.firstElementChild as HTMLElement;
+  return { fixture, hostEl, el };
 }
 
 describe('UiText', () => {
@@ -58,5 +67,31 @@ describe('UiText', () => {
     fixture.componentInstance.tag.set(undefined);
     fixture.detectChanges();
     expect(tag()).toBe('H2');
+  });
+
+  it('applies truncate class and ellipsis styling when truncate is true', () => {
+    const plain = render('label');
+    expect(plain.el.classList.contains('truncate')).toBe(false);
+    expect(plain.hostEl.classList.contains('is-truncated')).toBe(false);
+
+    const clipped = render('label', undefined, { truncate: true });
+    expect(clipped.el.classList.contains('truncate')).toBe(true);
+    expect(clipped.hostEl.classList.contains('is-truncated')).toBe(true);
+    expect(css()).toMatch(/\.t\.truncate[^{]*\{[^}]*text-overflow:\s*ellipsis/);
+    expect(css()).toMatch(/\.t\.truncate[^{]*\{[^}]*white-space:\s*nowrap/);
+  });
+
+  it('applies logical text-align when align is set and omits it when null', () => {
+    expect(render('body').hostEl.style.textAlign).toBe('');
+    expect(render('body', undefined, { align: 'center' }).hostEl.style.textAlign).toBe('center');
+    expect(render('caption', undefined, { align: 'end' }).hostEl.style.textAlign).toBe('end');
+  });
+
+  it('sets data-tone for muted and on-media tones and styles them from tokens', () => {
+    expect(render('body').el.getAttribute('data-tone')).toBeNull();
+    expect(render('body', undefined, { tone: 'muted' }).el.getAttribute('data-tone')).toBe('muted');
+    expect(render('h2', undefined, { tone: 'on-media' }).el.getAttribute('data-tone')).toBe('on-media');
+    expect(css()).toMatch(/\.t\[data-tone=["']?muted["']?\][^{]*\{[^}]*var\(--ui-color-text-muted\)/);
+    expect(css()).toMatch(/\.t\[data-tone=["']?on-media["']?\][^{]*\{[^}]*var\(--ui-media-on-scrim\)/);
   });
 });

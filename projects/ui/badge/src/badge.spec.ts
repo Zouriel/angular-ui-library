@@ -34,4 +34,13 @@ describe('UiBadge tier', () => {
       expect(r).toContain(`var(--ui-tier-${tier}-border)`);
     }
   });
+
+  it('supports media tone as a translucent dark scrim pill and lets tier win over it', () => {
+    expect(pill({ tone: 'media' }).getAttribute('data-tone')).toBe('media');
+    expect(pill({ tone: 'media', tier: 'gold' }).getAttribute('data-tone')).toBe('gold');
+    const r = rule('media');
+    expect(r).toContain('var(--ui-media-scrim)');
+    expect(r).toContain('var(--ui-media-on-scrim)');
+    expect(r).toContain('backdrop-filter');
+  });
 });

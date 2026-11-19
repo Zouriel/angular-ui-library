@@ -32,6 +32,14 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
           <ui-text variant="body"><ui-text variant="label" inline>Label, inline</ui-text> beside <ui-text variant="code" inline>code, inline</ui-text></ui-text>
           <ui-text variant="quote">A blockquote variant for pull quotes.</ui-text>
           <ui-text variant="body" font="var(--ui-font-mono)">Body with a font override.</ui-text>
+          <div style="max-width: 200px">
+            <ui-text variant="label" [truncate]="true">A long single-line label that truncates cleanly with an ellipsis</ui-text>
+          </div>
+          <ui-text variant="body" tone="muted" align="center">Centered muted body copy.</ui-text>
+          <div style="padding: var(--ui-space-3); border-radius: var(--ui-radius); background: var(--ui-media-bg)">
+            <ui-text variant="h4" as="p" tone="on-media">On-media heading</ui-text>
+            <ui-text variant="caption" tone="on-media">On-media caption over dark photography</ui-text>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -94,6 +102,9 @@ type TextTag =
     { name: 'variant', type: 'TextVariant', default: "'body'", desc: 'Style, and the semantic tag unless as is set.' },
     { name: 'as', type: 'TextTag', default: '—', desc: "Element to render instead of the variant's own tag; the variant still sets the look." },
     { name: 'font', type: 'string', default: '—', desc: 'CSS font-family override; the token applies when unset.' },
+    { name: 'truncate', type: 'boolean', default: 'false', desc: 'Clip to a single line with an ellipsis.' },
+    { name: 'align', type: "'start' | 'center' | 'end' | null", default: 'null', desc: 'Logical text alignment.' },
+    { name: 'tone', type: "'default' | 'muted' | 'on-media'", default: "'default'", desc: 'Colour tone: default, muted, or light ink with shadow over media.' },
     { name: 'inline', type: 'attribute', default: '—', desc: 'Present: display inline instead of block.' },
   ];
   protected readonly linkApi: ApiRow[] = [

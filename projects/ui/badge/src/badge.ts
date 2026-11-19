@@ -1,6 +1,9 @@
 import { Component, input } from '@angular/core';
 import type { UiBadgeTier, UiStatus } from '@zouriel/ui';
 
+/** Badge tone: any status tone or `'media'` for a translucent dark scrim pill over photos/video. */
+export type UiBadgeTone = UiStatus | 'media';
+
 /** `ui-badge` — small status/count label. */
 @Component({
   selector: 'ui-badge',
@@ -31,13 +34,20 @@ import type { UiBadgeTier, UiStatus } from '@zouriel/ui';
     .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: var(--ui-color-success-contrast); border-color: transparent; }
     .ui-badge[data-tone="warning"] { background: var(--ui-color-warning); color: var(--ui-color-warning-contrast); border-color: transparent; }
     .ui-badge[data-tone="danger"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
+    .ui-badge[data-tone="media"] {
+      background: color-mix(in srgb, var(--ui-media-scrim) 62%, transparent);
+      color: var(--ui-media-on-scrim);
+      border-color: transparent;
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+    }
     .ui-badge[data-tone="gold"] { background: var(--ui-gradient-tier-gold); color: var(--ui-tier-gold-contrast); border-color: var(--ui-tier-gold-border); }
     .ui-badge[data-tone="platinum"] { background: var(--ui-gradient-tier-platinum); color: var(--ui-tier-platinum-contrast); border-color: var(--ui-tier-platinum-border); }
     .ui-badge[data-tone="premium"] { background: var(--ui-gradient-tier-premium); color: var(--ui-tier-premium-contrast); border-color: var(--ui-tier-premium-border); }
   `,
 })
 export class UiBadge {
-  tone = input<UiStatus>('neutral');
+  tone = input<UiBadgeTone>('neutral');
   /** A plan tier's metal: gold, platinum or premium (violet), the same in every theme. Wins over `tone`. */
   tier = input<UiBadgeTier | null>(null);
   /** Render as a bare status dot (no content). */

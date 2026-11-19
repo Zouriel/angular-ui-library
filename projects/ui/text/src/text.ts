@@ -10,6 +10,12 @@ export type TextTag =
   | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   | 'p' | 'div' | 'span' | 'small' | 'code' | 'blockquote';
 
+/** Logical text alignment on `ui-text`. */
+export type UiTextAlign = 'start' | 'center' | 'end';
+
+/** Colour tone on `ui-text`: default, muted, or high-contrast light ink over media. */
+export type UiTextTone = 'default' | 'muted' | 'on-media';
+
 /** The tag each variant renders when `as` is not set. */
 const VARIANT_TAG: Record<TextVariant, TextTag> = {
   h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', h6: 'h6',
@@ -33,30 +39,42 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
 @Component({
   selector: 'ui-text',
   imports: [NgTemplateOutlet],
+  host: {
+    '[style.text-align]': 'align()',
+    '[class.is-truncated]': 'truncate()',
+  },
   template: `
     @switch (tag()) {
-      @case ('h1') { <h1 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h1> }
-      @case ('h2') { <h2 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h2> }
-      @case ('h3') { <h3 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h3> }
-      @case ('h4') { <h4 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h4> }
-      @case ('h5') { <h5 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h5> }
-      @case ('h6') { <h6 [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h6> }
-      @case ('div') { <div [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></div> }
-      @case ('span') { <span [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></span> }
-      @case ('small') { <small [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></small> }
-      @case ('code') { <code [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></code> }
-      @case ('blockquote') { <blockquote [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></blockquote> }
-      @default { <p [class]="cls()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></p> }
+      @case ('h1') { <h1 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h1> }
+      @case ('h2') { <h2 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h2> }
+      @case ('h3') { <h3 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h3> }
+      @case ('h4') { <h4 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h4> }
+      @case ('h5') { <h5 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h5> }
+      @case ('h6') { <h6 [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></h6> }
+      @case ('div') { <div [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></div> }
+      @case ('span') { <span [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></span> }
+      @case ('small') { <small [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></small> }
+      @case ('code') { <code [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></code> }
+      @case ('blockquote') { <blockquote [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></blockquote> }
+      @default { <p [class]="cls()" [attr.data-tone]="toneAttr()" [style.font-family]="font()"><ng-container [ngTemplateOutlet]="content" /></p> }
     }
     <ng-template #content><ng-content /></ng-template>
   `,
   styles: `
     :host { color: var(--ui-color-text); display: block; }
     :host([inline]) { display: inline; }
+    :host(.is-truncated) { min-width: 0; max-width: 100%; }
     .t {
       margin: 0;
       font-family: var(--ui-font-default); /* used when [font] is not set */
       line-height: 1.35;
+    }
+    .t.truncate {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .v-h1, .v-h2, .v-h3 { font-family: var(--ui-font-display); }
     .v-h1, .v-h2, .v-h3, .v-h4, .v-h5, .v-h6 { text-wrap: balance; }
@@ -85,6 +103,16 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
       color: var(--ui-color-text-secondary); line-height: 1.45;
       font-style: italic;
     }
+    .t[data-tone="muted"] { color: var(--ui-color-text-muted); }
+    .t[data-tone="on-media"] {
+      color: var(--ui-media-on-scrim);
+      text-shadow: 0 1px 4px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent);
+    }
+    .t.v-caption[data-tone="on-media"],
+    .t.v-h6[data-tone="on-media"] {
+      color: color-mix(in srgb, var(--ui-media-on-scrim) 90%, transparent);
+      text-shadow: 0 1px 3px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent);
+    }
   `,
 })
 export class UiText {
@@ -97,7 +125,14 @@ export class UiText {
   as = input<TextTag>();
   /** Optional font-family override; the CSS token fills in when undefined. */
   font = input<string>();
+  /** Clip to a single line with an ellipsis. */
+  truncate = input(false);
+  /** Logical text alignment. */
+  align = input<UiTextAlign | null>(null);
+  /** Colour tone: default, muted, or high-contrast light ink over photos/media. */
+  tone = input<UiTextTone>('default');
 
   protected readonly tag = computed<TextTag>(() => this.as() ?? VARIANT_TAG[this.variant()] ?? 'p');
-  protected readonly cls = computed(() => 't v-' + this.variant());
+  protected readonly cls = computed(() => 't v-' + this.variant() + (this.truncate() ? ' truncate' : ''));
+  protected readonly toneAttr = computed(() => this.tone() === 'default' ? null : this.tone());
 }

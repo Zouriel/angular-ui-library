@@ -40,7 +40,16 @@ export class UiList {
     <!-- Single set of projection slots, stamped into whichever wrapper is active. -->
     <ng-template #body>
       <span class="lead"><ng-content select="[item-leading]" /></span>
-      <span class="main"><ng-content /></span>
+      <span class="main">
+        @if (title() !== null) {
+          <span class="title">{{ title() }}</span>
+        }
+        <ng-content />
+        @if (hint() !== null) {
+          <span class="hint">{{ hint() }}</span>
+        }
+        <span class="hint"><ng-content select="[item-hint]" /></span>
+      </span>
       <span class="trail"><ng-content select="[item-trailing]" /></span>
     </ng-template>
   `,
@@ -72,7 +81,15 @@ export class UiList {
     .ui-list-item.interactive.selected:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-selected), var(--ui-color-surface-hover)); }
     .ui-list-item:disabled { opacity: .5; cursor: not-allowed; }
     .lead:empty, .trail:empty { display: none; }
+    .hint:empty { display: none; }
     .main { flex: 1; min-width: 0; }
+    .title { display: block; font-weight: 500; }
+    .hint {
+      display: block; margin-top: 2px;
+      font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .hint:first-child { margin-top: 0; }
     /* A flex box like .lead: as a block, a trailing icon sat on a text line box and added its descender
        space, so rows with a chevron were 4px taller than rows without (38 vs 34px in one settings list). */
     .trail { flex: none; display: inline-flex; align-items: center; color: var(--ui-color-text-muted); }
@@ -80,6 +97,10 @@ export class UiList {
   `,
 })
 export class UiListItem {
+  /** Optional primary row label rendered in medium weight above any hint. */
+  title = input<string | null>(null);
+  /** Optional muted single-line ellipsized description below the title/body. */
+  hint = input<string | null>(null);
   interactive = input(false);
   selected = input(false);
   disabled = input(false);
