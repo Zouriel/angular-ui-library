@@ -8,6 +8,7 @@ import { UiCard, type UiCardAlign, type UiCardGap } from './card';
   template: `
     <ui-card
       [interactive]="interactive()"
+      [pressable]="pressable()"
       [disabled]="disabled()"
       [ariaLabel]="ariaLabel()"
       [gap]="gap()"
@@ -21,6 +22,7 @@ import { UiCard, type UiCardAlign, type UiCardGap } from './card';
 })
 class Host {
   interactive = signal(false);
+  pressable = signal(false);
   disabled = signal(false);
   ariaLabel = signal<string | null>(null);
   gap = signal<UiCardGap | null>(null);
@@ -44,9 +46,22 @@ describe('UiCard', () => {
     expect(fixture.componentInstance.activations()).toBe(0);
   });
 
-  it('adds button semantics, ariaLabel, and click/Enter/Space activation when interactive', () => {
+  it('keeps an interactive card visual only, so it can sit inside a link or button', () => {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.interactive.set(true);
+    fixture.detectChanges();
+    const card = (fixture.nativeElement as HTMLElement).querySelector('.ui-card') as HTMLElement;
+    expect(card.classList.contains('interactive')).toBe(true);
+    expect(card.getAttribute('role')).toBeNull();
+    expect(card.getAttribute('tabindex')).toBeNull();
+    card.click();
+    card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', cancelable: true }));
+    expect(fixture.componentInstance.activations()).toBe(0);
+  });
+
+  it('adds button semantics, ariaLabel, and click/Enter/Space activation when pressable', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.pressable.set(true);
     fixture.componentInstance.ariaLabel.set('Aisha, 12 photos');
     fixture.detectChanges();
     const card = (fixture.nativeElement as HTMLElement).querySelector('.ui-card') as HTMLElement;
@@ -74,7 +89,7 @@ describe('UiCard', () => {
 
   it('disables focus, semantics and activation when disabled is true', () => {
     const fixture = TestBed.createComponent(Host);
-    fixture.componentInstance.interactive.set(true);
+    fixture.componentInstance.pressable.set(true);
     fixture.componentInstance.disabled.set(true);
     fixture.detectChanges();
     const card = (fixture.nativeElement as HTMLElement).querySelector('.ui-card') as HTMLElement;

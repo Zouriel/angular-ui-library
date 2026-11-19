@@ -299,18 +299,18 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             </ui-stat-card>
           </div>
         </doc-demo>
-        <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [interactive]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
+        <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [pressable]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
   <ui-avatar name=&quot;Aisha Ibrahim&quot; [dimension]=&quot;64&quot; />
   <ui-text variant=&quot;label&quot; [truncate]=&quot;true&quot;>Aisha Ibrahim</ui-text>
   <ui-text variant=&quot;caption&quot;>24 photos</ui-text>
 </ui-card>">
           <div class="cols3">
-            <ui-card padding="sm" [gap]="1" align="center" [interactive]="true" ariaLabel="Aisha Ibrahim, 24 photos" (activate)="cardHits.set(cardHits() + 1)">
+            <ui-card padding="sm" [gap]="1" align="center" [pressable]="true" ariaLabel="Aisha Ibrahim, 24 photos" (activate)="cardHits.set(cardHits() + 1)">
               <ui-avatar name="Aisha Ibrahim" [dimension]="64" />
               <ui-text variant="label" [truncate]="true">Aisha Ibrahim</ui-text>
               <ui-text variant="caption">24 photos</ui-text>
             </ui-card>
-            <ui-card padding="sm" [gap]="1" align="center" [interactive]="true" [disabled]="true" ariaLabel="Ali Zahir, 8 photos" (activate)="cardHits.set(cardHits() + 1)">
+            <ui-card padding="sm" [gap]="1" align="center" [pressable]="true" [disabled]="true" ariaLabel="Ali Zahir, 8 photos" (activate)="cardHits.set(cardHits() + 1)">
               <ui-avatar name="Ali Zahir" [dimension]="64" />
               <ui-text variant="label" [truncate]="true">Ali Zahir</ui-text>
               <ui-text variant="caption">8 photos</ui-text>
@@ -931,9 +931,10 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'card: align', type: "'stretch' | 'start' | 'center' | 'end' | null", default: 'null', desc: 'Cross-axis body alignment (and text-align).' },
     { name: 'card: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
     { name: 'card: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
-    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Button semantics, hover lift, focus ring, and Enter/Space activation.' },
-    { name: 'card: ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name for an interactive card.' },
-    { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive card.' },
+    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Hover lift only, for a card wrapped in a link or button (the wrapper stays the button).' },
+    { name: 'card: pressable', type: 'boolean', default: 'false', desc: 'The card itself is the button: role=button, focusable, hover lift, Enter/Space and click emit activate.' },
+    { name: 'card: ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name for a pressable card.' },
+    { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive or pressable card.' },
     { name: 'card: (activate)', type: 'output<void>', default: '—', desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.' },
     { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
     { name: 'stat: label', type: 'string', default: "''", desc: 'Caption above the value.' },

@@ -18,13 +18,13 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       class="ui-card"
       [class.glass]="glass()"
       [class.no-radius]="!radius()"
-      [class.interactive]="interactive()"
-      [class.disabled]="interactive() && disabled()"
+      [class.interactive]="interactive() || pressable()"
+      [class.disabled]="(interactive() || pressable()) && disabled()"
       [attr.data-pad]="padding()"
-      [attr.role]="interactive() ? 'button' : null"
-      [attr.tabindex]="interactive() && !disabled() ? 0 : null"
-      [attr.aria-label]="interactive() ? ariaLabel() : null"
-      [attr.aria-disabled]="interactive() && disabled() ? 'true' : null"
+      [attr.role]="pressable() ? 'button' : null"
+      [attr.tabindex]="pressable() && !disabled() ? 0 : null"
+      [attr.aria-label]="pressable() ? ariaLabel() : null"
+      [attr.aria-disabled]="pressable() && disabled() ? 'true' : null"
       (click)="onClick($event)"
       (keydown)="onKeydown($event)"
     >
@@ -109,24 +109,28 @@ export class UiCard {
   align = input<UiCardAlign | null>(null);
   glass = input<boolean>(this.config.glass);
   radius = input<boolean>(this.config.radius);
-  /** Opt-in interactive card: hover lift, button semantics, focus ring, and Enter/Space activation. */
+  /** Opt-in hover lift for cards that are themselves a clickable target, such as a card wrapped in
+   *  an `<a>` or `<button>`. Visual only: the wrapping element stays the button. */
   interactive = input(false);
-  /** Accessible name when `interactive` is true. */
+  /** The card itself is the button: hover lift, `role="button"`, focusable, Enter/Space and click
+   *  emit `activate`. Use it instead of wrapping the card in a button, never together with one. */
+  pressable = input(false);
+  /** Accessible name when `pressable` is true. */
   ariaLabel = input<string | null>(null);
-  /** Disables activation, focus and hover lift on an interactive card. */
+  /** Disables activation, focus and hover lift on an interactive or pressable card. */
   disabled = input(false);
-  /** Emitted when an enabled interactive card is clicked or activated with Enter or Space. */
+  /** Emitted when an enabled pressable card is clicked or activated with Enter or Space. */
   activate = output<void>();
 
   protected onClick(e: MouseEvent): void {
-    if (!this.interactive() || this.disabled()) return;
+    if (!this.pressable() || this.disabled()) return;
     const target = e.target as Element | null;
     if (target && target !== e.currentTarget && target.closest('a[href], button, input, select, textarea')) return;
     this.activate.emit();
   }
 
   protected onKeydown(e: KeyboardEvent): void {
-    if (!this.interactive() || this.disabled()) return;
+    if (!this.pressable() || this.disabled()) return;
     if (e.target !== e.currentTarget) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
