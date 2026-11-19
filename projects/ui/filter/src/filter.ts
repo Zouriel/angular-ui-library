@@ -163,7 +163,7 @@ export class UiFilterPanel {
     <ui-button variant="ghost" [disabled]="count() === 0" (click)="clearAll.emit()">{{ strings.filterClearAll }}</ui-button>
     <ui-button variant="primary" (click)="done.emit()">{{ doneLabel() }}</ui-button>
   `,
-  styles: `:host { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }`,
+  styles: `:host { display: flex; flex: 1 1 auto; width: 100%; box-sizing: border-box; align-items: center; justify-content: space-between; gap: var(--ui-space-2); }`,
 })
 export class UiFilterFooter {
   protected readonly strings = injectUiStrings();

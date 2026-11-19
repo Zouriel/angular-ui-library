@@ -108,6 +108,9 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
         <doc-demo [code]="formModalCode">
           <ui-button variant="outline" (click)="formModal.set(true)">Form fields inside modal</ui-button>
         </doc-demo>
+        <doc-demo [code]="responsiveModalCode">
+          <ui-button variant="outline" (click)="responsiveModal.set(true)">Responsive sheet-or-modal</ui-button>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Drawer" selector="ui-drawer" [api]="drawerApi" [outputs]="drawerOut"
@@ -305,6 +308,14 @@ onKey(e: KeyboardEvent) {
       <ui-form-field label="Phone"><ui-phone-input defaultCountry="GB" [(ngModel)]="modalPhone" /></ui-form-field>
       <ui-form-field label="Roles"><ui-multi-select [options]="modalRoles" [(ngModel)]="modalSelectedRoles" /></ui-form-field>
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="formModal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="formModal.set(false)">Save</ui-button></div>
+    </ui-modal>
+    <ui-modal [(open)]="responsiveModal" title="Feed photos" [sheetBelow]="768">
+      <ui-text variant="body">Below 768px this opens as a bottom sheet; wider screens show a centred modal, sharing one template and footer.</ui-text>
+      <ui-text modal-footer-start variant="caption" as="span">{{ pickedCount() }} / 6</ui-text>
+      <div modal-footer>
+        <ui-button variant="ghost" size="sm" [disabled]="pickedCount() === 0" (click)="pickedCount.set(0)">Clear</ui-button>
+        <ui-button size="sm" (click)="responsiveModal.set(false)">Save</ui-button>
+      </div>
     </ui-modal>
     <ui-drawer [(open)]="drawer" side="end" title="Drawer"><ui-text variant="body">An end-anchored sheet: the right in LTR, the left in RTL.</ui-text></ui-drawer>
     <ui-drawer [(open)]="formDrawer" side="bottom" title="Why cancel?">
@@ -529,6 +540,16 @@ interface UiToastPromiseStates<T> {
   <ui-form-field label="Roles"><ui-multi-select [options]="roles" [(ngModel)]="selectedRoles" /></ui-form-field>
   <div modal-footer><ui-button variant="ghost" size="sm">Cancel</ui-button><ui-button size="sm">Save</ui-button></div>
 </ui-modal>`;
+  protected readonly responsiveModal = signal(false);
+  protected readonly pickedCount = signal(3);
+  protected readonly responsiveModalCode = `<ui-modal [(open)]="open" title="Feed photos" [sheetBelow]="768">
+  <ui-text variant="body">Pick up to six photos.</ui-text>
+  <ui-text modal-footer-start variant="caption" as="span">3 / 6</ui-text>
+  <div modal-footer>
+    <ui-button variant="ghost" size="sm">Clear</ui-button>
+    <ui-button size="sm">Save</ui-button>
+  </div>
+</ui-modal>`;
   protected readonly drawer = signal(false);
   protected readonly chatsDrawer = signal(false);
   /** The bottom drawer with a field: rests on the on-screen keyboard (0.41.3). */
@@ -599,11 +620,14 @@ interface UiToastPromiseStates<T> {
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the dialog is showing.' },
     { name: 'title', type: 'string', default: 'undefined', desc: 'Header title, also the dialog\'s accessible name. Without it there is no header or close button, so give the dialog a way out in its content.' },
     { name: 'size', type: "'sm' | 'md' | 'lg' | 'full'", default: "'md'", desc: 'Max width: 360, 480 or 720px. full fills the screen with no padding.' },
+    { name: 'sheetBelow', type: 'number | null', default: 'null', desc: 'Below this viewport width (px), renders as a ui-bottom-sheet with the same body and footer slots.' },
+    { name: 'sheetSnaps', type: 'readonly number[]', default: '[0, 0.88]', desc: 'Resting snaps used when sheetBelow switches the modal to a bottom sheet.' },
     { name: 'closeOnBackdrop', type: 'boolean', default: 'true', desc: 'Click backdrop to close.' },
     { name: 'closeOnEscape', type: 'boolean', default: 'true', desc: 'Esc to close.' },
     { name: 'glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Glass panel.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Body; scrolls when it is taller than the dialog.' },
+    { name: '[modal-footer-start]', type: 'slot', default: '—', desc: 'Optional start-aligned footer metadata (e.g. a counter), routed to the sheet footer when sheetBelow is active.' },
     { name: '[modal-footer]', type: 'slot', default: '—', desc: 'Footer actions, right-aligned. A wrapping div lays its children out in a row with a gap.' },
   ];
   protected readonly drawerApi: ApiRow[] = [
@@ -656,6 +680,7 @@ interface UiToastPromiseStates<T> {
     { name: 'glass', type: 'boolean', default: 'false', desc: 'See-through surface for a sheet over a map (0.41.2); solid without backdrop-filter or under reduced transparency / more contrast. Not set by UiConfig.glass. See Map › Map page.' },
     { name: 'glassStrength', type: "'clear' | 'frosted'", default: "'clear'", desc: 'How see-through glass is (0.41.3): clear lets a map in the theme\'s brightness plainly show through, text AA over such a map; frosted is near-opaque, AA over any backdrop.' },
     { name: '[sheet-actions]', type: 'slot', default: '—', desc: 'Header controls.' },
+    { name: '[sheet-footer-start]', type: 'slot', default: '—', desc: 'Optional start-aligned content inside the sticky footer bar (e.g. a selection counter).' },
     { name: '[sheet-footer]', type: 'slot', default: '—', desc: 'A footer pinned to the bottom of the visible sheet at every open snap (0.44.0): a primary action bar. Counts in coverChange; a snap too short for it is raised to fit. On a glass sheet it is always frosted, whatever glassStrength, so the body scrolling under it never shows through (0.44.2).' },
     { name: 'data-sheet-nodrag', type: 'attribute', default: '—', desc: 'On content that keeps its own drags.' },
     { name: 'close()', type: 'method', default: '—', desc: 'Close it (snap 0). If focus is inside, it goes back to where it came from first.' },

@@ -1,7 +1,8 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Component, DestroyRef, ElementRef, PLATFORM_ID, effect, inject, input, model, viewChild } from '@angular/core';
+import { DOCUMENT, NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
+import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, signal, untracked, viewChild } from '@angular/core';
 import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
+import { UiBottomSheet } from './bottom-sheet';
 import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
 
 let modalSeq = 0;
@@ -10,12 +11,36 @@ let modalSeq = 0;
  * `ui-modal` — centered dialog with backdrop. Traps focus (CDK a11y), locks
  * body scroll while open, closes on Escape / backdrop click, and animates with
  * the shared scale + backdrop-fade animations.
+ *
+ * With `sheetBelow` (px), switches to `ui-bottom-sheet` below that viewport width
+ * with one template, one `[(open)]`, and `[modal-footer-start]` / `[modal-footer]`
+ * routed into the sheet's footer automatically.
  */
 @Component({
   selector: 'ui-modal',
-  imports: [CdkTrapFocus],
+  imports: [CdkTrapFocus, NgTemplateOutlet, UiBottomSheet],
   template: `
-    @if (open()) {
+    <ng-template #bodyTpl><ng-content /></ng-template>
+    <ng-template #footerStartTpl><ng-content select="[modal-footer-start]" /></ng-template>
+    <ng-template #footerTpl><ng-content select="[modal-footer]" /></ng-template>
+    @if (asSheet()) {
+      <div #layer class="ui-layer">
+        <ui-bottom-sheet
+          [snaps]="sheetSnaps()"
+          [snap]="sheetSnap()"
+          (snapChange)="onSheetSnap($event)"
+          [backdrop]="true"
+          [closeOnBackdrop]="closeOnBackdrop()"
+          [closeOnEscape]="closeOnEscape()"
+          [closable]="true"
+          [title]="title() ?? ''"
+          [hasHeader]="!!title()">
+          <ng-container [ngTemplateOutlet]="bodyTpl" />
+          <ng-container ngProjectAs="[sheet-footer-start]"><ng-container [ngTemplateOutlet]="footerStartTpl" /></ng-container>
+          <ng-container ngProjectAs="[sheet-footer]"><ng-container [ngTemplateOutlet]="footerTpl" /></ng-container>
+        </ui-bottom-sheet>
+      </div>
+    } @else if (open()) {
       <div #layer class="ui-layer">
       <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="onBackdrop()"></div>
       <div
@@ -40,8 +65,8 @@ let modalSeq = 0;
               <button class="x" type="button" [attr.aria-label]="strings.close" (click)="open.set(false)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </header>
           }
-          <div class="bd"><ng-content /></div>
-          <footer class="ft"><ng-content select="[modal-footer]" /></footer>
+          <div class="bd"><ng-container [ngTemplateOutlet]="bodyTpl" /></div>
+          <footer class="ft"><ng-container [ngTemplateOutlet]="footerStartTpl" /><ng-container [ngTemplateOutlet]="footerTpl" /></footer>
           <!-- Where focus lands on open unless the content marks an element cdkFocusInitial (which comes
                first in the document, so it wins): the panel itself, rather than the close button, which
                showed a focus ring on every open that followed a key press. Tab then reaches the controls. -->
@@ -83,8 +108,9 @@ let modalSeq = 0;
     .title { min-width: 0; overflow-wrap: anywhere; text-wrap: balance; font-weight: 600; font-size: var(--ui-font-size-md); letter-spacing: var(--ui-tracking-tight); }
     /* Only the body scrolls, so the header and footer stay put on long content. */
     .bd { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: var(--ui-space-3) var(--ui-space-4); display: flex; flex-direction: column; gap: var(--ui-space-3); }
-    .ft { flex: none; padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; gap: var(--ui-space-2); justify-content: flex-end; }
+    .ft { flex: none; padding: var(--ui-space-3) var(--ui-space-4); border-top: 1px solid var(--ui-color-border); display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); justify-content: flex-end; }
     .ft:empty { display: none; }
+    :where(.ft) ::ng-deep > [modal-footer-start] { margin-inline-end: auto; }
     /*
       A footer's gap is between .ft's OWN children, and consumers overwhelmingly project one wrapper
       div holding every button — so .ft had a single child, the gap applied to nothing, and the
@@ -123,6 +149,10 @@ export class UiModal {
   title = input<string>();
   /** `full` fills the screen, with no padding around the content — for editors opened over a page. */
   size = input<'sm' | 'md' | 'lg' | 'full'>('md');
+  /** Below this viewport width (px), renders as a `ui-bottom-sheet` instead of a centred modal. */
+  sheetBelow = input<number | null>(null);
+  /** Resting snaps used when `sheetBelow` switches the modal to a bottom sheet. */
+  sheetSnaps = input<readonly number[]>([0, 0.88]);
   closeOnBackdrop = input(true);
   closeOnEscape = input(true);
   glass = input<boolean>(this.config.glass);
@@ -131,6 +161,9 @@ export class UiModal {
 
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
+  private readonly isBelow = signal(false);
+  protected readonly asSheet = computed(() => this.sheetBelow() !== null && this.isBelow());
+  protected readonly sheetSnap = signal(0);
 
   /** The layer this instance last moved to <body>; kept after close so destroy can still find it. */
   private moved: HTMLElement | null = null;
@@ -138,6 +171,37 @@ export class UiModal {
   private locked = false;
 
   constructor() {
+    effect((onCleanup) => {
+      const bp = this.sheetBelow();
+      if (!this.browser || bp === null || bp <= 0) {
+        this.isBelow.set(false);
+        return;
+      }
+      const mq = this.doc.defaultView?.matchMedia?.(`(max-width: ${bp - 0.02}px)`);
+      if (!mq) {
+        this.isBelow.set(false);
+        return;
+      }
+      this.isBelow.set(mq.matches);
+      const onChange = (e: MediaQueryListEvent) => this.isBelow.set(e.matches);
+      mq.addEventListener?.('change', onChange);
+      onCleanup(() => mq.removeEventListener?.('change', onChange));
+    });
+
+    effect(() => {
+      const open = this.open();
+      const snaps = this.sheetSnaps();
+      if (!this.asSheet()) return;
+      untracked(() => {
+        if (!open) {
+          this.sheetSnap.set(0);
+        } else if ((snaps[this.sheetSnap()] ?? 0) <= 0) {
+          const firstOpen = snaps.findIndex((s) => s > 0);
+          this.sheetSnap.set(firstOpen >= 0 ? firstOpen : Math.max(0, snaps.length - 1));
+        }
+      });
+    });
+
     // Opens on its own layer at the end of <body>. Rendered where it is declared, a dialog inside a
     // sticky bar, a card or anything with a transform or backdrop-filter is positioned against that
     // box instead of the screen and comes out clipped or squashed. Angular still removes the layer
@@ -179,5 +243,10 @@ export class UiModal {
   }
   protected onEscape(): void {
     if (this.closeOnEscape()) this.open.set(false);
+  }
+  protected onSheetSnap(index: number): void {
+    this.sheetSnap.set(index);
+    const snaps = this.sheetSnaps();
+    if ((snaps[index] ?? 0) <= 0 && this.open()) this.open.set(false);
   }
 }

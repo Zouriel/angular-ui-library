@@ -100,7 +100,7 @@ interface Drag {
   },
   template: `
     @if (backdrop() && isOpen()) {
-      <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="snap.set(0)"></div>
+      <div class="backdrop" animate.enter="ui-backdrop-enter" (animate.leave)="backdropLeave($event)" (click)="onBackdrop()"></div>
     }
     <section #sheet class="sheet" role="dialog" [attr.aria-modal]="modal() ? 'true' : null" [attr.aria-label]="title() || null"
       [attr.inert]="isOpen() ? null : ''" [style.height.px]="maxHeight()" [style.transform]="'translateY(' + translate() + 'px)'"
@@ -125,7 +125,7 @@ interface Drag {
         (touchstart)="onTouchStart($event, true)" (touchmove)="onTouchMove($event)" (touchend)="onTouchEnd($event)" (touchcancel)="onTouchEnd($event)">
         <ng-content />
       </div>
-      <div #foot class="ft"><ng-content select="[sheet-footer]" /></div>
+      <div #foot class="ft"><ng-content select="[sheet-footer-start]" /><ng-content select="[sheet-footer]" /></div>
     </section>
   `,
   styles: `
@@ -181,8 +181,13 @@ interface Drag {
        by --ui-sheet-live-hidden, which follows a drag), over the body's bottom padding. */
     .ft { position: absolute; left: 0; right: 0; bottom: var(--ui-sheet-live-hidden, 0px); z-index: 1; box-sizing: border-box;
       padding: var(--ui-space-3) var(--ui-space-4) calc(var(--ui-space-3) + env(safe-area-inset-bottom));
-      border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface); }
+      border-top: 1px solid var(--ui-color-border); background: var(--ui-color-surface);
+      display: flex; align-items: center; flex-wrap: wrap; gap: var(--ui-space-2); justify-content: flex-end; }
     .ft:empty { display: none; }
+    :where(.ft) ::ng-deep > :where([sheet-footer-start], [modal-footer-start]) { margin-inline-end: auto; }
+    :where(.ft) ::ng-deep > :where(div[sheet-footer], span[sheet-footer], div[modal-footer], span[modal-footer]) {
+      flex: 1 1 auto; display: flex; align-items: center; flex-wrap: wrap;
+      gap: var(--ui-space-2); justify-content: flex-end; }
     /* With a footer the body's scroll box ends at the footer's top (0.44.2), so nothing ever scrolls under
        its buttons (on glass, frosting alone left the text readable through them in light themes). */
     :host(.has-footer) .bd { padding-bottom: var(--ui-space-3); margin-bottom: calc(var(--ui-sheet-live-hidden, 0px) + var(--ui-sheet-footer, 0px)); }
@@ -243,6 +248,10 @@ export class UiBottomSheet {
   /** Space kept free above its tallest snap, in px — a header that stays reachable. */
   topInset = input(0);
   backdrop = input(false);
+  /** Tap on the backdrop closes the sheet (only applies when `backdrop` is true). */
+  closeOnBackdrop = input(true);
+  /** Escape closes (or collapses) the sheet while focus is inside. */
+  closeOnEscape = input(true);
   closable = input(true);
   /** Show the header row even without a title, for the close button and `[sheet-actions]`. */
   hasHeader = input(false);
@@ -475,8 +484,13 @@ export class UiBottomSheet {
     this.snap.set(0);
   }
 
+  protected onBackdrop(): void {
+    if (this.closeOnBackdrop()) this.snap.set(0);
+  }
+
   /** Escape closes it, or collapses a `persistent` sheet to its smallest snap and does nothing there. */
   protected onEscape(): void {
+    if (!this.closeOnEscape()) return;
     if (this.persistent() && this.index() === this.lowest()) return;
     this.close();
   }
