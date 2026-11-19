@@ -39,6 +39,8 @@ export interface UiStrings {
   uploadReplace: string;
   /** File upload with a picture in it: the button under it that takes the picture away. */
   uploadRemove: string;
+  /** File upload: the optional camera action above the dropzone. */
+  uploadTakePhoto: string;
   /** Hold button: what holding does (read with the button), and its confirm dialog. */
   holdHint: string;
   confirmTitle: string;
@@ -440,6 +442,7 @@ export const defaultUiStrings: UiStrings = {
   uploadHint: 'or drag & drop',
   uploadReplace: 'Click to change',
   uploadRemove: 'Remove',
+  uploadTakePhoto: 'Take a photo',
   holdHint: 'Press and hold to confirm',
   confirmTitle: 'Are you sure?',
   confirm: 'Confirm',
@@ -668,6 +671,7 @@ export const uiStringsDv: UiStrings = {
   uploadHint: 'ނުވަތަ ދަމައިގެން ލާ',
   uploadReplace: 'ކްލިކްކޮށް ބަދަލު ކުރޭ',
   uploadRemove: 'ނައްތާލާ',
+  uploadTakePhoto: 'ފޮޓޯއެއް ނަގާ',
   holdHint: 'ކަށަވަރުކުރަން ފިތާލައިގެން ހިފަހައްޓާ',
   confirmTitle: 'ޔަގީންތޯ؟',
   confirm: 'ކަށަވަރުކުރޭ',

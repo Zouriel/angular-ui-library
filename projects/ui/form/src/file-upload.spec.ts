@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { UiFileUpload, fileMatchesAccept } from './file-upload';
 
 const file = (name: string, type: string) => new File(['x'], name, { type });
@@ -24,6 +25,19 @@ class Host { off = false; got: File[] = []; bad: File[] = []; }
   template: `<ui-file-upload accept="image/*" [multiple]="true" [showFiles]="false" (filesSelected)="got = $event" />`,
 })
 class QuietHost { got: File[] = []; }
+
+@Component({
+  imports: [UiFileUpload],
+  template: `<ui-file-upload accept="image/*" [capture]="capture()" [cameraAction]="cameraAction()" [cameraLabel]="cameraLabel()"
+    [disabled]="disabled()" (filesSelected)="got = $event" />`,
+})
+class CameraHost {
+  capture = signal<'user' | 'environment' | boolean | null>('environment');
+  cameraAction = signal<'user' | 'environment' | null>('environment');
+  cameraLabel = signal<string | undefined>(undefined);
+  disabled = signal(false);
+  got: File[] = [];
+}
 
 describe('ui-file-upload', () => {
   function drop(el: HTMLElement, files: File[]) {
@@ -62,6 +76,51 @@ describe('ui-file-upload', () => {
     drop(fx.nativeElement, [file('a.png', 'image/png')]);
     expect(fx.componentInstance.got).toEqual([]);
     expect((fx.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input[type=file]')!.disabled).toBe(true);
+  });
+
+  it('binds capture on the normal picker input', () => {
+    const fx = TestBed.createComponent(CameraHost);
+    fx.detectChanges();
+    const input = (fx.nativeElement as HTMLElement).querySelector<HTMLInputElement>('input.picker-native')!;
+    expect(input.getAttribute('capture')).toBe('environment');
+    fx.componentInstance.capture.set(true);
+    fx.detectChanges();
+    expect(input.getAttribute('capture')).toBe('');
+    fx.componentInstance.capture.set(false);
+    fx.detectChanges();
+    expect(input.hasAttribute('capture')).toBe(false);
+  });
+
+  it('cameraAction opens an image camera input and emits its file through filesSelected', () => {
+    const fx = TestBed.createComponent(CameraHost);
+    fx.detectChanges();
+    const root = fx.nativeElement as HTMLElement;
+    const camera = root.querySelector<HTMLInputElement>('input.camera-native')!;
+    expect(camera.accept).toBe('image/*');
+    expect(camera.getAttribute('capture')).toBe('environment');
+    const click = vi.spyOn(camera, 'click');
+    (root.querySelector('ui-button.camera button') as HTMLButtonElement).click();
+    expect(click).toHaveBeenCalledOnce();
+    Object.defineProperty(camera, 'files', { value: [file('photo.jpg', 'image/jpeg')] });
+    camera.dispatchEvent(new Event('change'));
+    expect(fx.componentInstance.got.map((f) => f.name)).toEqual(['photo.jpg']);
+    expect(root.querySelector('ui-button.camera')!.textContent).toContain('Take a photo');
+  });
+
+  it('camera action is disabled with the upload and cameraLabel replaces its words', () => {
+    const fx = TestBed.createComponent(CameraHost);
+    fx.componentInstance.disabled.set(true);
+    fx.componentInstance.cameraLabel.set('Open camera');
+    fx.detectChanges();
+    const root = fx.nativeElement as HTMLElement;
+    const camera = root.querySelector<HTMLInputElement>('input.camera-native')!;
+    const button = root.querySelector<HTMLButtonElement>('ui-button.camera button')!;
+    expect(camera.disabled).toBe(true);
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain('Open camera');
+    Object.defineProperty(camera, 'files', { value: [file('ignored.jpg', 'image/jpeg')] });
+    camera.dispatchEvent(new Event('change'));
+    expect(fx.componentInstance.got).toEqual([]);
   });
 });
 

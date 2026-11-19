@@ -278,9 +278,12 @@ phone = new FormControl<string | null>('+9607771234');
       </doc-section>
 
       <doc-section name="File upload" selector="ui-file-upload" [api]="uploadApi" [outputs]="uploadOut"
-        summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected). With preview set (a picture already uploaded) the same box shows that picture and clicking it picks a replacement; removable adds a Remove button under it (0.79.0).">
+        summary="Drag-and-drop or click dropzone (a native file input underneath, so it is keyboard-reachable) that lists the chosen files with their sizes. Emits (filesSelected) with a File[] (only the first file unless multiple). Not a form control: it has no value or ngModel, but it has a disabled input. accept filters the file dialog, and dropped files are checked against it the same way; files that don't match go to (rejected). capture passes a camera hint to the normal picker; cameraAction adds a full-width Take a photo button above the dropzone and sends the captured image through the same output. With preview set (a picture already uploaded) the same box shows that picture and clicking it picks a replacement; removable adds a Remove button under it (0.79.0).">
         <doc-demo code="<ui-file-upload [multiple]=&quot;true&quot; accept=&quot;image/*&quot; (filesSelected)=&quot;onFiles($event)&quot; />">
           <ui-file-upload [multiple]="true" accept="image/*" />
+        </doc-demo>
+        <doc-demo title="Camera capture" code="<ui-file-upload accept=&quot;image/*&quot; cameraAction=&quot;environment&quot; hint=&quot;&quot; (filesSelected)=&quot;onPhoto($event)&quot; />">
+          <ui-file-upload accept="image/*" cameraAction="environment" hint="" [showFiles]="false" />
         </doc-demo>
         <doc-demo title="With a picture in it" code="<ui-file-upload accept=&quot;image/*&quot; [preview]=&quot;coverUrl()&quot; [removable]=&quot;true&quot; (filesSelected)=&quot;useCover($event)&quot; (remove)=&quot;coverUrl.set(null)&quot; />">
           <div class="upload-preview-demo">
@@ -669,6 +672,9 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
   protected readonly uploadApi: ApiRow[] = [
     { name: 'multiple', type: 'boolean', default: 'false', desc: 'Allow multiple files.' },
     { name: 'accept', type: 'string', default: '—', desc: 'Accept filter (e.g. image/*); also shown under the hint.' },
+    { name: 'capture', type: "'user' | 'environment' | boolean | null", default: 'null', desc: "Native capture hint on the dropzone's file input." },
+    { name: 'cameraAction', type: "'user' | 'environment' | null", default: 'null', desc: 'Shows a primary full-width camera button above the dropzone and emits its image through filesSelected.' },
+    { name: 'cameraLabel', type: 'string', default: "strings.uploadTakePhoto ('Take a photo')", desc: 'Camera button words.' },
     { name: 'acceptLabel', type: 'string', default: '—', desc: 'Text shown for the accepted types instead of accept, e.g. "PNG, JPEG or WebP".' },
     { name: 'label', type: 'string', default: "strings.uploadLabel ('Click to upload')", desc: 'The action, in bold. Translate here or app-wide with provideUiStrings.' },
     { name: 'hint', type: 'string', default: "strings.uploadHint ('or drag & drop')", desc: "What follows it; '' hides it (a phone has nothing to drag)." },

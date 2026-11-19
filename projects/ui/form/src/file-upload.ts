@@ -1,8 +1,10 @@
 import { Component, input, output, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import Camera01Icon from '@hugeicons/core-free-icons/Camera01Icon';
 import CloudUploadIcon from '@hugeicons/core-free-icons/CloudUploadIcon';
 import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import { injectUiStrings } from '@zouriel/ui';
+import { UiButton } from '@zouriel/ui/button';
 
 /**
  * `ui-file-upload` — drag-and-drop / click dropzone. Emits `(filesSelected)`. Dropped files are checked
@@ -10,13 +12,21 @@ import { injectUiStrings } from '@zouriel/ui';
  */
 @Component({
   selector: 'ui-file-upload',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, UiButton],
   template: `
+    @if (cameraAction()) {
+      <input #cameraInput type="file" class="native camera-native" tabindex="-1" aria-hidden="true" accept="image/*" [disabled]="disabled()"
+             [attr.capture]="cameraAction()" (change)="onPick($event)" />
+      <ui-button class="camera" variant="primary" [block]="true" [disabled]="disabled()" (click)="cameraInput.click()">
+        <hugeicons-icon [icon]="cameraIcon" [size]="16" [strokeWidth]="1.8" />{{ cameraLabel() ?? strings.uploadTakePhoto }}
+      </ui-button>
+    }
     <label class="dz" [class.over]="dragOver()" [class.no-radius]="!radius()" [class.disabled]="disabled()"
            [class.has-preview]="!!preview()" [class.fit-contain]="previewFit() === 'contain'"
            [style.--upload-aspect]="preview() ? previewAspect() : null"
            (dragover)="onDragOver($event)" (dragleave)="dragOver.set(false)" (drop)="onDrop($event)">
-      <input type="file" class="native" [disabled]="disabled()" [multiple]="multiple()" [attr.accept]="accept()" (change)="onPick($event)"
+      <input type="file" class="native picker-native" [disabled]="disabled()" [multiple]="multiple()" [attr.accept]="accept()"
+             [attr.capture]="capture() === true ? '' : capture() === false ? null : capture()" (change)="onPick($event)"
              [attr.aria-label]="preview() ? (previewAlt() ? previewAlt() + '. ' : '') + (replaceLabel() ?? strings.uploadReplace) : null" />
       @if (preview(); as src) {
         <img class="preview" [src]="src" [attr.alt]="previewAlt() ?? ''" />
@@ -42,6 +52,7 @@ import { injectUiStrings } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
+    .camera { display: block; margin-bottom: var(--ui-space-2); }
     .dz { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-1);
       padding: var(--ui-space-6) var(--ui-space-4); text-align: center; cursor: pointer;
       border: 1px dashed var(--ui-control-border); border-radius: var(--ui-radius); background: var(--ui-color-surface);
@@ -81,9 +92,16 @@ import { injectUiStrings } from '@zouriel/ui';
 export class UiFileUpload {
   protected readonly uploadIcon = CloudUploadIcon;
   protected readonly removeIcon = Delete02Icon;
+  protected readonly cameraIcon = Camera01Icon;
 
   multiple = input(false);
   accept = input<string>();
+  /** Native capture hint on the dropzone's file input. */
+  capture = input<'user' | 'environment' | boolean | null>(null);
+  /** When set, shows an image-only camera action using this facing mode. */
+  cameraAction = input<'user' | 'environment' | null>(null);
+  /** Camera action words; defaults to strings.uploadTakePhoto. */
+  cameraLabel = input<string | undefined>(undefined);
   /** What to show for the accepted types, when `accept` itself reads badly (e.g. "PNG, JPEG or WebP"). */
   acceptLabel = input<string>();
   /** The action, in bold; defaults to the built-in uploadLabel string ("Click to upload"). */
@@ -130,6 +148,7 @@ export class UiFileUpload {
     if (ok.length) this.commit(ok);
   }
   protected onPick(e: Event): void {
+    if (this.disabled()) return;
     this.commit(Array.from((e.target as HTMLInputElement).files ?? []));
   }
   private commit(list: File[]): void {
