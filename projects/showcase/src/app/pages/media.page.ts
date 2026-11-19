@@ -224,12 +224,12 @@ function grad(a: string, b: string): string {
         [shapes]="'interface UiSelectionAction { id: string; label: string; icon?: IconSvgObject; danger?: boolean; enabled?: boolean; }'"></doc-section>
 
       <doc-section name="Filter" selector="ui-filter" [api]="filterApi"
-        summary="One compact Filter button for a toolbar, however many filters there are: a filter icon, the words and, while filters are on, a count bubble (read as &quot;Filter, 2 on&quot;). It opens a panel of sections. On a screen under narrowAt (600px) the panel is a modal bottom sheet with its footer pinned; wider, a 340px popover under the button whose body scrolls between its title and footer. Each section is a titled group: its &quot;all&quot; row (allLabel, e.g. Everyone) first, then its options with counts; multiple sections have checkboxes (any chosen option passes), the others radios, and from searchAt options (8) a search field narrows the rows. Rows are 44px tall. Every tap changes [(value)] at once so the page behind updates; the footer's Show N (resultCount) or Done closes it, Clear all turns everything off. Escape and a tap outside close it too, focus goes back to the button. To add a filter, add a section: the toolbar keeps its one button. ui-filter-chips shows the filters that are on as removable chips with Clear all, for under the toolbar; uiFilterPrune drops choices the sections no longer offer, so a stale choice never empties the page. ui-filter-button, ui-filter-panel and ui-filter-footer are the parts, for your own container."
+        summary="One compact Filter button for a toolbar, however many filters there are: a filter icon, the words and, while filters are on, a count bubble or countStyle='inline' text such as Filter (2); both read as &quot;Filter, 2 on&quot;. It opens a panel of sections. On a screen under narrowAt (600px) the panel is a modal bottom sheet with its footer pinned; wider, a 340px popover under the button whose body scrolls between its title and footer. Each section is a titled group: its &quot;all&quot; row (allLabel, e.g. Everyone) first, then its options with counts; multiple sections have checkboxes (any chosen option passes), the others radios, and from searchAt options (8) a search field narrows the rows. Rows are 44px tall. Every tap changes [(value)] at once so the page behind updates; the footer's Show N (resultCount) or Done closes it, Clear all turns everything off. Escape and a tap outside close it too, focus goes back to the button. To add a filter, add a section: the toolbar keeps its one button. ui-filter-chips shows the filters that are on as removable chips with Clear all, for under the toolbar; uiFilterPrune drops choices the sections no longer offer, so a stale choice never empties the page. ui-filter-button, ui-filter-panel and ui-filter-footer are the parts, for your own container."
         [shapes]="'interface UiFilterOption { id: string; label: string; count?: number | null; }\ninterface UiFilterSection { id: string; title: string; options: UiFilterOption[]; multiple?: boolean; allLabel?: string; allCount?: number | null; searchAt?: number; }\ntype UiFilterValue = Record<string, string[]>;  // section id -> chosen option ids; missing or [] = everything\nuiFilterCount(value) · uiActiveFilters(sections, value) · uiFilterPrune(sections, value) · uiFilterToggle(section, value, id) · uiFilterSet(value, section, ids) · uiFilterRemove(value, section, id)'">
-        <doc-demo code="<ui-filter [sections]=&quot;sections&quot; [(value)]=&quot;filter&quot; [resultCount]=&quot;shown().length&quot; />
+        <doc-demo code="<ui-filter [sections]=&quot;sections&quot; [(value)]=&quot;filter&quot; [resultCount]=&quot;shown().length&quot; countStyle=&quot;inline&quot; />
 <ui-filter-chips [sections]=&quot;sections&quot; [(value)]=&quot;filter&quot; />">
           <div class="flt-bar">
-            <ui-filter [sections]="fltSections()" [(value)]="fltValue" [resultCount]="fltShown().length" />
+            <ui-filter [sections]="fltSections()" [(value)]="fltValue" [resultCount]="fltShown().length" countStyle="inline" />
             <span class="flt-note">{{ fltShown().length }} of {{ fltItems.length }}</span>
           </div>
           <ui-filter-chips class="flt-chips" [sections]="fltSections()" [(value)]="fltValue" />
@@ -526,12 +526,13 @@ export class MediaPage {
     { name: 'value', type: 'UiFilterValue (model)', default: '{}', desc: 'Chosen option ids by section id, two-way; changes on every tap.' },
     { name: 'resultCount', type: 'number | null', default: 'null', desc: 'How many pass: the footer reads Show N; null: Done.' },
     { name: 'label / title', type: 'string', default: "'' (Filter)", desc: "The button's words / the panel's title (default the label)." },
+    { name: 'countStyle', type: "'badge' | 'inline'", default: "'badge'", desc: 'Corner count bubble, or inline text such as Filter (2).' },
     { name: 'size', type: "'sm' | 'md'", default: "'sm'", desc: 'The button size (44px to the touch either way).' },
     { name: 'narrowAt', type: 'number', default: '600', desc: 'Below this width (px) the panel is a bottom sheet, else a popover.' },
     { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Whether the panel is open.' },
     { name: 'disabled · glass · radius', type: 'boolean', default: 'false · UiConfig', desc: 'The button off; the popover see-through; square corners.' },
     { name: 'ui-filter-chips: sections, value (model), label', type: '', default: '', desc: 'The filters that are on as chips (× turns one off) and Clear all; nothing while none is on.' },
-    { name: 'ui-filter-button: count, label, size, disabled', type: '', default: '', desc: 'Only the button, for your own panel.' },
+    { name: 'ui-filter-button: count, countStyle, label, size, disabled', type: '', default: '', desc: 'Only the button, for your own panel.' },
     { name: 'ui-filter-panel: sections, value (model)', type: '', default: '', desc: 'Only the sections, for your own container.' },
     { name: 'ui-filter-footer: count, resultCount → clearAll, done', type: '', default: '', desc: 'Only the footer.' },
   ];

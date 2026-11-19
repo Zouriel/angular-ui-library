@@ -60,9 +60,13 @@ describe('filter model', () => {
 
 @Component({
   imports: [UiFilterButton],
-  template: `<ui-filter-button [count]="count()" />`,
+  template: `<ui-filter-button [count]="count()" [countStyle]="countStyle()" [label]="label()" />`,
 })
-class ButtonHost { count = signal(0); }
+class ButtonHost {
+  count = signal(0);
+  countStyle = signal<'badge' | 'inline'>('badge');
+  label = signal('');
+}
 
 describe('ui-filter-button', () => {
   it('reads Filter, with a count bubble and "Filter, 2 on" while filters are on', () => {
@@ -87,6 +91,27 @@ describe('ui-filter-button', () => {
     fx.detectChanges();
     const btn = (fx.nativeElement as HTMLElement).querySelector('button')!;
     expect(btn.getAttribute('aria-label')).toBe(`${uiStringsDv.filter}, 1 ހިންގާފައި`);
+  });
+
+  it('renders the count inline with no overhanging badge and keeps the active-count name', () => {
+    const fx = TestBed.createComponent(ButtonHost);
+    fx.componentInstance.countStyle.set('inline');
+    fx.componentInstance.count.set(2);
+    fx.detectChanges();
+    const btn = (fx.nativeElement as HTMLElement).querySelector('button')!;
+    expect(btn.textContent).toContain('Filter (2)');
+    expect(btn.querySelector('.ui-badge')).toBeNull();
+    expect(btn.getAttribute('aria-label')).toBe('Filter, 2 on');
+
+    fx.componentInstance.label.set('Narrow');
+    fx.detectChanges();
+    expect(btn.textContent).toContain('Narrow (2)');
+    expect(btn.getAttribute('aria-label')).toBe('Narrow, 2 on');
+
+    fx.componentInstance.count.set(0);
+    fx.detectChanges();
+    expect(btn.textContent).toContain('Narrow');
+    expect(btn.textContent).not.toContain('(0)');
   });
 });
 
@@ -174,12 +199,13 @@ describe('ui-filter-panel', () => {
 
 @Component({
   imports: [UiFilter],
-  template: `<ui-filter [sections]="sections" [(value)]="value" [(open)]="open" [resultCount]="7" />`,
+  template: `<ui-filter [sections]="sections" [(value)]="value" [(open)]="open" [resultCount]="7" [countStyle]="countStyle()" />`,
 })
 class FilterHost {
   sections = [PEOPLE, KIND];
   value = signal<UiFilterValue>({ who: ['ali'] });
   open = signal(false);
+  countStyle = signal<'badge' | 'inline'>('badge');
 }
 
 describe('ui-filter', () => {
@@ -214,6 +240,16 @@ describe('ui-filter', () => {
     (pop.querySelectorAll('ui-filter-footer button')[1] as HTMLButtonElement).click();
     fx.detectChanges();
     expect(fx.componentInstance.open()).toBe(false);
+  });
+
+  it('forwards countStyle to its filter button', () => {
+    const fx = TestBed.createComponent(FilterHost);
+    fx.componentInstance.countStyle.set('inline');
+    fx.detectChanges();
+    const btn = (fx.nativeElement as HTMLElement).querySelector('ui-filter-button button')!;
+    expect(btn.textContent).toContain('Filter (1)');
+    expect(btn.querySelector('.ui-badge')).toBeNull();
+    expect(btn.getAttribute('aria-label')).toBe('Filter, 1 on');
   });
 
   it('is a modal bottom sheet on a narrow screen', () => {

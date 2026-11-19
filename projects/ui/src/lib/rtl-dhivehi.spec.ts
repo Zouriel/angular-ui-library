@@ -34,7 +34,7 @@ describe('uiStringsDv (0.46.0)', () => {
       const en = defaultUiStrings[k];
       const dv = uiStringsDv[k];
       if (typeof en === 'string') {
-        if (k === 'locale' || k === 'dateFormat' || k === 'dateFormatShort' || k === 'monthYearFormat') continue;
+        if (k === 'locale' || k === 'dateFormat' || k === 'dateFormatShort' || k === 'monthYearFormat' || k === 'filterCountInline') continue;
         expect(typeof dv, k).toBe('string');
         expect((dv as string).length, k).toBeGreaterThan(0);
         expect(placeholders(dv as string), k).toEqual(placeholders(en));

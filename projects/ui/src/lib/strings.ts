@@ -370,6 +370,8 @@ export interface UiStrings {
   filter: string;
   /** Filter: added to the button's name while filters are on (`{n}` of them): "Filter, 2 on". */
   filterOn: string;
+  /** Filter: the visible inline count (`{label}`, `{n}`): "Filter (2)". */
+  filterCountInline: string;
   /** Filter: the panel's and the chips' button that turns every filter off. */
   filterClearAll: string;
   /** Filter: the panel's close button when the app gives a result count (`{n}`). */
@@ -613,6 +615,7 @@ export const defaultUiStrings: UiStrings = {
   taskStopping: 'Stopping…',
   filter: 'Filter',
   filterOn: '{n} on',
+  filterCountInline: '{label} ({n})',
   filterClearAll: 'Clear all',
   filterShow: 'Show {n}',
   filterDone: 'Done',
@@ -840,6 +843,7 @@ export const uiStringsDv: UiStrings = {
   taskStopping: 'ހުއްޓުވަނީ…',
   filter: 'ފިލްޓަރ',
   filterOn: '{n} ހިންގާފައި',
+  filterCountInline: '{label} ({n})',
   filterClearAll: 'ހުރިހާ ފޮހެލާ',
   filterShow: '{n} ދައްކާ',
   filterDone: 'ނިމުނީ',

@@ -18,8 +18,9 @@ let filterSeq = 0;
 
 /**
  * `ui-filter-button`: the one compact "Filter" button a toolbar needs however many filters there
- * are. A filter icon and the label; while filters are on, a count bubble ("2") that screen readers
- * hear as "Filter, 2 on". Click it to open a panel (ui-filter does that for you).
+ * are. A filter icon and the label; while filters are on, a count bubble ("2") or inline count
+ * ("Filter (2)") that screen readers hear as "Filter, 2 on". Click it to open a panel
+ * (ui-filter does that for you).
  */
 @Component({
   selector: 'ui-filter-button',
@@ -28,13 +29,13 @@ let filterSeq = 0;
     <ui-button
       [variant]="count() > 0 ? 'secondary' : 'outline'"
       [size]="size()"
-      [badge]="count() > 0 ? (count() > 9 ? '9+' : '' + count()) : null"
+      [badge]="countStyle() === 'badge' && count() > 0 ? (count() > 9 ? '9+' : '' + count()) : null"
       badgeTone="primary"
-      [ariaLabel]="label() || strings.filter"
-      [badgeLabel]="onLabel()"
+      [ariaLabel]="countStyle() === 'inline' && count() > 0 ? accessibleLabel() : baseLabel()"
+      [badgeLabel]="countStyle() === 'badge' ? onLabel() : null"
       [disabled]="disabled()">
       <hugeicons-icon [icon]="icon" [size]="16" [strokeWidth]="1.8" />
-      {{ label() || strings.filter }}
+      {{ visibleLabel() }}
     </ui-button>
   `,
   styles: `:host { display: inline-flex; }`,
@@ -46,10 +47,17 @@ export class UiFilterButton {
   readonly count = input(0);
   /** The visible words; default the strings' filter ("Filter"). */
   readonly label = input('');
+  /** Show the active count as the existing corner badge, or inline in the button label. */
+  readonly countStyle = input<'badge' | 'inline'>('badge');
   readonly size = input<'sm' | 'md'>('sm');
   readonly disabled = input(false);
   /** Read after the name while filters are on: "Filter, 2 on". */
   protected readonly onLabel = computed(() => uiFormatString(this.strings.filterOn, { n: this.count() }));
+  protected readonly baseLabel = computed(() => this.label() || this.strings.filter);
+  protected readonly accessibleLabel = computed(() => `${this.baseLabel()}, ${this.onLabel()}`);
+  protected readonly visibleLabel = computed(() => this.countStyle() === 'inline' && this.count() > 0
+    ? uiFormatString(this.strings.filterCountInline, { label: this.baseLabel(), n: this.count() })
+    : this.baseLabel());
 }
 
 /**
@@ -194,7 +202,7 @@ export class UiFilterFooter {
   imports: [CdkOverlayOrigin, CdkConnectedOverlay, UiFilterButton, UiFilterPanel, UiFilterFooter, UiBottomSheet],
   template: `
     <span class="origin" cdkOverlayOrigin #origin="cdkOverlayOrigin" #trigger>
-      <ui-filter-button [count]="count()" [label]="label()" [size]="size()" [disabled]="disabled()" (click)="toggle()" />
+      <ui-filter-button [count]="count()" [countStyle]="countStyle()" [label]="label()" [size]="size()" [disabled]="disabled()" (click)="toggle()" />
     </span>
 
     <ng-template
@@ -249,6 +257,8 @@ export class UiFilter {
   readonly resultCount = input<number | null>(null);
   /** The button's words; default "Filter". */
   readonly label = input('');
+  /** Show the active count as a corner badge, or inline in the button label. */
+  readonly countStyle = input<'badge' | 'inline'>('badge');
   /** The panel's title; default the button's words. */
   readonly title = input('');
   readonly size = input<'sm' | 'md'>('sm');
