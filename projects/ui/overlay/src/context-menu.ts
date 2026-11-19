@@ -3,7 +3,8 @@ import { ComponentPortal } from '@angular/cdk/portal';
 import {
   Component, Directive, ElementRef, OnDestroy, inject, input, output, signal, viewChild,
 } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { DOCUMENT } from '@angular/common';
+import { UI_CONFIG, UI_LONG_PRESS_MS, UI_LONG_PRESS_SLOP } from '@zouriel/ui';
 import type { UiMenuItem } from './menu';
 
 /** Internal panel rendered in the context-menu overlay. */
@@ -73,28 +74,124 @@ export class UiContextMenuPanel {
 }
 
 /**
- * `uiContextMenu` — opens a menu at the pointer on right-click (CDK Overlay).
+ * `uiContextMenu` — opens a menu at the pointer on right-click, on a 500 ms touch long-press, and from the keyboard
+ * (the context-menu key or Shift+F10, at the element). With `[openOnClick]` a plain primary click or tap opens it too
+ * (Enter/Space on a focused host then opens it as well). CDK Overlay.
  * Bind the items and listen to `(contextSelect)`.
  */
 @Directive({
   selector: '[uiContextMenu]',
-  host: { '(contextmenu)': 'open($event)' },
+  host: {
+    '(contextmenu)': 'onContextMenu($event)',
+    '(click)': 'onClick($event)',
+    '(pointerdown)': 'onDown($event)',
+    '(pointermove)': 'onMove($event)',
+    '(pointerup)': 'cancelPress()',
+    '(pointercancel)': 'cancelPress()',
+    '(keydown)': 'onKey($event)',
+  },
 })
 export class UiContextMenu implements OnDestroy {
   private overlay = inject(Overlay);
-  items = input<UiMenuItem[]>([], { alias: 'uiContextMenu' });
+  private readonly document = inject(DOCUMENT);
+  items = input<readonly UiMenuItem[]>([], { alias: 'uiContextMenu' });
   contextSelect = output<UiMenuItem>();
+  /** Also open on a plain primary click or tap (default off: right-click, long-press and keyboard only). */
+  openOnClick = input(false);
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private press: { x: number; y: number; id: number } | null = null;
+  /** A long press just opened the menu: the click that follows its release must not toggle anything. */
+  private swallowClick = false;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cancelOnScroll = () => this.cancelPress();
+  private readonly cancelOnOtherPointer = (event: PointerEvent) => {
+    if (this.press && event.pointerId !== this.press.id) this.cancelPress();
+  };
   private ref: OverlayRef | null = null;
   /** What had focus before the menu opened; a keyboard close (Escape or choosing) gives it back. */
   private returnTo: HTMLElement | null = null;
 
-  protected open(e: MouseEvent): void {
+  protected onContextMenu(e: MouseEvent): void {
+    if (!this.items().length) return;
+    if (this.swallowClick) { e.preventDefault(); e.stopPropagation(); return; }
+    if (this.press) {
+      this.cancelPress();
+      this.swallowClick = true;
+    }
     e.preventDefault();
+    this.open(e.clientX, e.clientY);
+  }
+
+  protected onClick(e: MouseEvent): void {
+    if (this.swallowClick) { this.swallowClick = false; e.preventDefault(); e.stopPropagation(); return; }
+    if (!this.openOnClick() || !this.items().length || e.button !== 0) return;
+    // Keyboard activation arrives as a click with no pointer position: anchor it to the element.
+    if (e.detail === 0) { this.openAtElement(); return; }
+    this.open(e.clientX, e.clientY);
+  }
+
+  protected onDown(e: PointerEvent): void {
+    this.cancelPress();
+    this.swallowClick = false;
+    if (!this.items().length || e.pointerType !== 'touch' || e.button !== 0 || !e.isPrimary) return;
+    this.press = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    this.pressTimer = setTimeout(() => {
+      const p = this.press;
+      this.cancelPress();
+      if (!p) return;
+      this.swallowClick = true;
+      try {
+        (this.document.defaultView?.navigator as Navigator | undefined)?.vibrate?.(10);
+      } catch {
+        /* vibration not allowed */
+      }
+      this.open(p.x, p.y);
+    }, UI_LONG_PRESS_MS);
+    this.document.addEventListener('scroll', this.cancelOnScroll, { capture: true, passive: true });
+    this.document.addEventListener('pointerdown', this.cancelOnOtherPointer, { capture: true, passive: true });
+  }
+
+  protected onMove(e: PointerEvent): void {
+    const p = this.press;
+    if (p && e.pointerId === p.id && Math.hypot(e.clientX - p.x, e.clientY - p.y) > UI_LONG_PRESS_SLOP) this.cancelPress();
+  }
+
+  protected cancelPress(): void {
+    if (this.pressTimer !== null) clearTimeout(this.pressTimer);
+    this.pressTimer = null;
+    this.press = null;
+    this.document.removeEventListener('scroll', this.cancelOnScroll, { capture: true });
+    this.document.removeEventListener('pointerdown', this.cancelOnOtherPointer, { capture: true });
+  }
+
+  protected onKey(e: KeyboardEvent): void {
+    if (!this.items().length) return;
+    if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+      e.preventDefault();
+      this.openAtElement();
+    } else if (this.openOnClick() && (e.key === 'Enter' || e.key === ' ') && !this.hasNativeKeyboardClick()) {
+      e.preventDefault();
+      this.openAtElement();
+    }
+  }
+
+  private hasNativeKeyboardClick(): boolean {
+    const el = this.host.nativeElement;
+    return el instanceof HTMLButtonElement || el instanceof HTMLAnchorElement || el instanceof HTMLInputElement;
+  }
+
+  private openAtElement(): void {
+    const r = this.host.nativeElement.getBoundingClientRect();
+    this.open(r.left + r.width / 2, r.top + r.height / 2);
+  }
+
+  protected open(x: number, y: number): void {
+    if (!this.items().length) return;
     this.close();
     this.returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     // Anchored to the pointer, but flips and pushes so it never runs off the right or bottom edge.
     const positionStrategy = this.overlay.position()
-      .flexibleConnectedTo({ x: e.clientX, y: e.clientY })
+      .flexibleConnectedTo({ x, y })
       .withPositions([
         { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'top' },
         { originX: 'start', originY: 'top', overlayX: 'end', overlayY: 'top' },
@@ -105,11 +202,17 @@ export class UiContextMenu implements OnDestroy {
       .withViewportMargin(8);
     this.ref = this.overlay.create({ positionStrategy, scrollStrategy: this.overlay.scrollStrategies.close() });
     const panel = this.ref.attach(new ComponentPortal(UiContextMenuPanel)).instance;
-    panel.items.set(this.items());
+    panel.items.set([...this.items()]);
     panel.onPick = (item) => { this.contextSelect.emit(item); this.close(true); };
     panel.onClose = () => this.close(true);
     panel.focusFirst();
-    setTimeout(() => this.ref?.outsidePointerEvents().subscribe(() => this.close()));
+    setTimeout(() => this.ref?.outsidePointerEvents().subscribe((ev) => {
+      if (this.swallowClick && (ev.type === 'click' || ev.type === 'contextmenu')) {
+        if (ev.type === 'click') this.swallowClick = false;
+        return;
+      }
+      this.close();
+    }));
   }
 
   private close(restoreFocus = false): void {
@@ -119,5 +222,5 @@ export class UiContextMenu implements OnDestroy {
     this.returnTo = null;
     if (restoreFocus && target?.isConnected) target.focus();
   }
-  ngOnDestroy(): void { this.close(); }
+  ngOnDestroy(): void { this.cancelPress(); this.close(); }
 }

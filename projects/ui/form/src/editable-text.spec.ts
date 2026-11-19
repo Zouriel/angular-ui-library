@@ -42,3 +42,49 @@ describe('UiEditableText flush (0.82.0)', () => {
     expect(css()).toMatch(/\.view \{[^}]*padding: 2px var\(--ui-space-2\)/);
   });
 });
+
+@Component({
+  imports: [ReactiveFormsModule, UiEditableText],
+  template: `<ui-editable-text [formControl]="name" [variant]="variant" [block]="block" [onMedia]="onMedia" />`,
+})
+class VariantHost {
+  name = new FormControl('Eid party');
+  variant: 'body' | 'h2' = 'body';
+  block = false;
+  onMedia = false;
+}
+
+describe('UiEditableText variant, block, onMedia (0.89.0)', () => {
+  function mk(patch: Partial<VariantHost>) {
+    const f = TestBed.createComponent(VariantHost);
+    Object.assign(f.componentInstance, patch);
+    f.detectChanges();
+    return (f.nativeElement as HTMLElement).querySelector('ui-editable-text') as HTMLElement;
+  }
+
+  it('variant is exposed on the host and drives the heading look of text and field', () => {
+    expect(mk({}).getAttribute('data-variant')).toBe('body');
+    const el = mk({ variant: 'h2' });
+    expect(el.getAttribute('data-variant')).toBe('h2');
+    expect(css()).toMatch(/\[data-variant=["']?h2["']?\]\s*\{[^}]*--ee-size:\s*var\(--ui-font-size-h2\);\s*--ee-weight:\s*700/);
+    expect(css()).toMatch(/\.view\s*\{[^}]*font-size:\s*var\(--ee-size,/);
+    expect(css()).toMatch(/\.edit\s*\{[^}]*font-size:\s*var\(--ee-size,/);
+  });
+
+  it('block fills the row', () => {
+    expect(mk({}).classList.contains('block')).toBe(false);
+    expect(mk({ block: true }).classList.contains('block')).toBe(true);
+    expect(css()).toMatch(/\.block\s*\{\s*display:\s*block;\s*width:\s*100%/);
+    expect(css()).toMatch(/\.block\s+\.view,\s*\.block\s+\.edit\s*\{\s*width:\s*100%/);
+  });
+
+  it('onMedia sets light ink, a translucent hover and a light pencil; the field stays opaque', () => {
+    expect(mk({}).classList.contains('on-media')).toBe(false);
+    expect(mk({ onMedia: true }).classList.contains('on-media')).toBe(true);
+    expect(css()).toMatch(/\.on-media\s+\.view[^{]*\{\s*color:\s*var\(--ui-media-on-scrim\)/);
+    expect(css()).toMatch(/\.on-media\s+\.view:hover:not\(:disabled\)[^{]*\{\s*background:\s*color-mix\(in srgb,\s*var\(--ui-media-scrim\)/);
+    expect(css()).toMatch(/\.on-media\s+\.pencil[^{]*\{\s*color:\s*var\(--ui-media-on-scrim\)/);
+    expect(css()).toMatch(/\.edit\s*\{[^}]*background:\s*var\(--ui-color-surface\)/);
+    expect(css()).toContain('[data-on-media]');
+  });
+});

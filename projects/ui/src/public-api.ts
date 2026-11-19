@@ -15,3 +15,4 @@ export * from './lib/theme-watch';
 export * from './lib/badge';
 export * from './lib/tour-anchor';
 export * from './lib/link-navigator';
+export * from './lib/press';

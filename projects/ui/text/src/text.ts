@@ -104,12 +104,15 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
       font-style: italic;
     }
     .t[data-tone="muted"] { color: var(--ui-color-text-muted); }
-    .t[data-tone="on-media"] {
+    .t[data-tone="on-media"],
+    :host-context([data-on-media]) .t:not([data-tone]) {
       color: var(--ui-media-on-scrim);
       text-shadow: 0 1px 4px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent);
     }
     .t.v-caption[data-tone="on-media"],
-    .t.v-h6[data-tone="on-media"] {
+    .t.v-h6[data-tone="on-media"],
+    :host-context([data-on-media]) .t.v-caption:not([data-tone]),
+    :host-context([data-on-media]) .t.v-h6:not([data-tone]) {
       color: color-mix(in srgb, var(--ui-media-on-scrim) 90%, transparent);
       text-shadow: 0 1px 3px color-mix(in srgb, var(--ui-media-scrim) 55%, transparent);
     }
