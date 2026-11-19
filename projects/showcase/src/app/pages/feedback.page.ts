@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 import { UI_CONFIG, defaultUiConfig } from '@zouriel/ui';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import FolderAddIcon from '@hugeicons/core-free-icons/FolderAddIcon';
@@ -59,8 +59,8 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Shutter loader" selector="ui-shutter-loader" [api]="shutterApi"
-        summary="A loading mark shaped like a camera shutter: six blades click shut three times, then rest open (a 2.1 s loop, under three flashes a second). Drawn in the current text colour, so inside a button it takes the label colour; color sets another. Announced like ui-spinner (role=status, 'Loading…' unless label says otherwise); decorative hides it when something nearby already says it is busy. Under reduced motion, and with animations off, the blades stay still and the mark gently fades in and out instead.">
+      <doc-section name="Shutter loader" selector="ui-shutter-loader" [api]="shutterApi" [outputs]="shutterOut"
+        summary="A loading mark shaped like a camera shutter: six blades click shut three times, then rest open (a 2.1 s loop, under three flashes a second). Drawn in the current text colour, so inside a button it takes the label colour; color sets another. Announced like ui-spinner (role=status, 'Loading…' unless label says otherwise); decorative hides it when something nearby already says it is busy. Under reduced motion, and with animations off, the blades stay still and the mark gently fades in and out instead. Set still to draw the open mark at rest with no animation loop, and call play() (via viewChild) to run one burst cycle.">
         <doc-demo code="<ui-shutter-loader size=&quot;lg&quot; color=&quot;var(--ui-color-primary)&quot; />
 <ui-shutter-loader [size]=&quot;48&quot; label=&quot;Loading photos&quot; />">
           <div class="row items-center">
@@ -87,6 +87,16 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
                 </div>
               </div>
             }
+          </div>
+        </doc-demo>
+        <ui-text variant="label" class="shutter-cap">Still, play once</ui-text>
+        <ui-text variant="body" class="shutter-note">Set still to keep the mark open at rest with no animation frames running (for example, as the icon of a floating button). Call play() via viewChild to run one 2.1 s burst cycle (or one breathe under reduced motion), then return to rest and emit cycleEnd.</ui-text>
+        <doc-demo code="<ui-shutter-loader #shutter [size]=&quot;32&quot; still decorative (cycleEnd)=&quot;onDone()&quot; />
+<ui-button size=&quot;sm&quot; variant=&quot;outline&quot; (click)=&quot;shutter.play()&quot;>Play</ui-button>">
+          <div class="row items-center">
+            <ui-shutter-loader #stillShutter [size]="32" color="var(--ui-color-primary)" still decorative (cycleEnd)="stillCycles.set(stillCycles() + 1)" />
+            <ui-button size="sm" variant="outline" (click)="playStill()">Play</ui-button>
+            @if (stillCycles()) { <ui-text variant="caption">Played {{ stillCycles() }}×</ui-text> }
           </div>
         </doc-demo>
         <ui-text variant="label" class="shutter-cap">App-wide: provideUiConfig({{ '{' }} spinner: 'shutter' {{ '}' }})</ui-text>
@@ -219,6 +229,9 @@ export class FeedbackPage {
   protected readonly showWarning = signal(true);
   protected readonly RESULT = `type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | '500';`;
   protected readonly ALERT = `type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';`;
+  private readonly stillShutter = viewChild<UiShutterLoader>('stillShutter');
+  protected readonly stillCycles = signal(0);
+  protected playStill(): void { this.stillShutter()?.play(); }
   protected readonly shutterOverlay = signal(false);
   protected runShutterOverlay(): void { this.shutterOverlay.set(true); setTimeout(() => this.shutterOverlay.set(false), 2100); }
   protected readonly shutterThemes = [{ name: 'Light', theme: 'oxblood' }, { name: 'Dark', theme: 'oxblood-dark' }];
@@ -227,6 +240,10 @@ export class FeedbackPage {
     { name: 'color', type: 'string', default: 'currentColor', desc: 'Any CSS colour; by default the text colour around it.' },
     { name: 'label', type: 'string', default: "'Loading…'", desc: 'Accessible name (aria-label); not shown.' },
     { name: 'decorative', type: 'boolean', default: 'false', desc: 'Hidden from screen readers, for when something nearby already says it is busy.' },
+    { name: 'still', type: 'boolean', default: 'false', desc: 'Drawn open and still with no animation loop; call play() on the component to run one burst cycle.' },
+  ];
+  protected readonly shutterOut: ApiRow[] = [
+    { name: 'cycleEnd', type: 'void', default: '—', desc: 'Emitted once when a one-shot play() cycle finishes and returns to rest.' },
   ];
   protected runLoading(): void { this.loading.set(true); setTimeout(() => this.loading.set(false), 1500); }
 

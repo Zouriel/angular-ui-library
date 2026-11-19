@@ -1,3 +1,4 @@
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { provideUiConfig } from '@zouriel/ui';
@@ -225,5 +226,173 @@ describe('spinner: config switch', () => {
     o.detectChanges();
     expect(o.nativeElement.querySelector('ui-shutter-loader')).not.toBeNull();
     expect(o.nativeElement.querySelector('.spin')).toBeNull();
+  });
+});
+
+describe('UiShutterLoader still / play once', () => {
+  const originalRaf = globalThis.requestAnimationFrame;
+  const originalCancel = globalThis.cancelAnimationFrame;
+  let clock = 1000;
+  let nextId = 1;
+  let rafCalls = 0;
+  let pending = new Map<number, FrameRequestCallback>();
+
+  function step(ms: number) {
+    clock += ms;
+    const run = [...pending.values()];
+    pending.clear();
+    for (const cb of run) cb(clock);
+  }
+
+  beforeEach(() => {
+    reduceMotion(false);
+    clock = 1000;
+    nextId = 1;
+    rafCalls = 0;
+    pending = new Map();
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCalls++;
+      const id = nextId++;
+      pending.set(id, cb);
+      return id;
+    }) as typeof requestAnimationFrame;
+    globalThis.cancelAnimationFrame = ((id: number) => {
+      pending.delete(id);
+    }) as typeof cancelAnimationFrame;
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+    globalThis.requestAnimationFrame = originalRaf;
+    globalThis.cancelAnimationFrame = originalCancel;
+  });
+
+  it('still renders the rest frame and schedules no animation frames, even under reduced motion', () => {
+    const fixture = TestBed.createComponent(UiShutterLoader);
+    fixture.componentRef.setInput('still', true);
+    rafCalls = 0;
+    pending.clear();
+    fixture.detectChanges();
+    TestBed.inject(ApplicationRef).tick();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(rafCalls).toBe(0);
+    expect(pending.size).toBe(0);
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(el.querySelector('svg > g')!.hasAttribute('opacity')).toBe(false);
+
+    reduceMotion(true);
+    const fixtureReduced = TestBed.createComponent(UiShutterLoader);
+    fixtureReduced.componentRef.setInput('still', true);
+    rafCalls = 0;
+    pending.clear();
+    fixtureReduced.detectChanges();
+    TestBed.inject(ApplicationRef).tick();
+    const elReduced = fixtureReduced.nativeElement as HTMLElement;
+    expect(rafCalls).toBe(0);
+    expect(pending.size).toBe(0);
+    expectClose(drawn(elReduced), REF_OPEN, 2);
+    expect(elReduced.querySelector('svg > g')!.hasAttribute('opacity')).toBe(false);
+  });
+
+  it('play() runs one cycle, emits cycleEnd once, returns to rest and stops scheduling frames', () => {
+    const { cmp, el } = make({ still: true });
+    TestBed.inject(ApplicationRef).tick();
+    let ends = 0;
+    cmp.cycleEnd.subscribe(() => ends++);
+    expect(pending.size).toBe(0);
+    const callsBeforePlay = rafCalls;
+
+    cmp.play();
+    expect(rafCalls).toBe(callsBeforePlay + 1);
+    expect(pending.size).toBe(1);
+
+    step(0); // t = 0
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(pending.size).toBe(1);
+
+    step(90); // t = 0.09 s: first click shut
+    expectClose(drawn(el), REF_SHUT, 2);
+    expect(ends).toBe(0);
+
+    step(1410); // t = 1.5 s: open, resting until 2.1 s
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(ends).toBe(0);
+    expect(pending.size).toBe(1);
+
+    step(600); // t = 2.1 s: cycle complete
+    expect(ends).toBe(1);
+    expect(pending.size).toBe(0);
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(el.querySelector('svg > g')!.hasAttribute('opacity')).toBe(false);
+
+    const callsAtEnd = rafCalls;
+    step(500);
+    expect(rafCalls).toBe(callsAtEnd);
+    expect(ends).toBe(1);
+  });
+
+  it('calling play() during a running one-shot restarts it and emits cycleEnd once', () => {
+    const { cmp, el } = make({ still: true });
+    TestBed.inject(ApplicationRef).tick();
+    let ends = 0;
+    cmp.cycleEnd.subscribe(() => ends++);
+
+    cmp.play();
+    step(0);
+    step(1000); // t = 1.0 s into first play
+    expect(ends).toBe(0);
+
+    cmp.play(); // restart
+    step(16); // new t = 0
+    step(90); // new t = 0.09 s: shut again
+    expectClose(drawn(el), REF_SHUT, 2);
+
+    step(1200); // past original 2.1 s end time
+    expect(ends).toBe(0);
+    expect(pending.size).toBe(1);
+
+    step(810); // new t = 2.1 s
+    expect(ends).toBe(1);
+    expect(pending.size).toBe(0);
+    expectClose(drawn(el), REF_OPEN, 2);
+  });
+
+  it('under reduced motion, play() breathes once (1 -> 0.55 -> 1) then stops and emits cycleEnd', () => {
+    reduceMotion(true);
+    const { cmp, el } = make({ still: true });
+    TestBed.inject(ApplicationRef).tick();
+    const mark = el.querySelector('svg > g')!;
+    let ends = 0;
+    cmp.cycleEnd.subscribe(() => ends++);
+
+    cmp.play();
+    step(0);
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(mark.hasAttribute('opacity')).toBe(false);
+
+    step(1050); // t = 1.05 s: mid-breathe
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(Number(mark.getAttribute('opacity'))).toBeCloseTo(0.55, 3);
+    expect(ends).toBe(0);
+
+    step(1050); // t = 2.1 s: back to full opacity and stopped
+    expect(ends).toBe(1);
+    expect(pending.size).toBe(0);
+    expectClose(drawn(el), REF_OPEN, 2);
+    expect(mark.hasAttribute('opacity')).toBe(false);
+  });
+
+  it('default (still = false) still joins the loop and repeats across cycles', () => {
+    const { cmp, el } = make();
+    TestBed.inject(ApplicationRef).tick();
+    let ends = 0;
+    cmp.cycleEnd.subscribe(() => ends++);
+    expect(pending.size).toBe(1);
+
+    step(0);
+    step(2190); // 2.1 s + 0.09 s: second cycle's first click
+    expect(pending.size).toBe(1);
+    expect(ends).toBe(0);
+    expectClose(drawn(el), REF_SHUT, 2);
   });
 });

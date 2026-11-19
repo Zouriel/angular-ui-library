@@ -1,4 +1,4 @@
-import { Component, DestroyRef, booleanAttribute, ElementRef, PLATFORM_ID, afterNextRender, computed, inject, input, viewChild } from '@angular/core';
+import { Component, DestroyRef, booleanAttribute, ElementRef, PLATFORM_ID, afterRenderEffect, computed, inject, input, output, viewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { type UiSize, injectUiStrings } from '@zouriel/ui';
 
@@ -82,7 +82,9 @@ const live = new Set<UiShutterLoader>();
 let frame = 0;
 function tick(now: number) {
   frame = 0;
-  for (const s of live) s.frame(now);
+  for (const s of [...live]) {
+    if (live.has(s)) s.frame(now);
+  }
   if (live.size) frame = requestAnimationFrame(tick);
 }
 function join(s: UiShutterLoader) {
@@ -108,6 +110,9 @@ function leave(s: UiShutterLoader) {
  *
  * `provideUiConfig({ spinner: 'shutter' })` makes every `ui-spinner` and every built-in busy mark
  * in the library (buttons, loading overlay, sign-in buttons, map, lightbox) draw this instead.
+ *
+ * With `still`, the mark sits open and still with no animation loop (and does not breathe under
+ * reduced motion); call `play()` (via `viewChild`) to run one cycle and listen to `cycleEnd`.
  */
 @Component({
   selector: 'ui-shutter-loader',
@@ -146,6 +151,10 @@ export class UiShutterLoader {
   label = input<string | undefined>(undefined);
   /** Hidden from screen readers, for when something nearby already says it's busy. */
   decorative = input(false, { transform: booleanAttribute });
+  /** Drawn at rest (open, still) with no animation loop; call `play()` to run one burst cycle. */
+  still = input(false, { transform: booleanAttribute });
+  /** Emitted once when a one-shot `play()` cycle finishes and returns to rest. */
+  cycleEnd = output<void>();
 
   protected readonly openPaths = OPEN_PATHS;
   protected readonly labelText = computed(() => this.label() ?? this.strings.loading);
@@ -153,23 +162,72 @@ export class UiShutterLoader {
   protected readonly sizePx = computed(() => { const s = this.size(); return typeof s === 'number' ? s : UI_SHUTTER_SIZES[s]; });
 
   private readonly mark = viewChild<ElementRef<SVGGElement>>('mark');
+  private readonly browser: boolean;
   private readonly reduceQuery: MediaQueryList | null;
   private start = -1;
+  private oneShot = false;
   private drawnA = UI_SHUTTER_A0;
   private drawnOpacity = 1;
 
   constructor() {
-    const browser = isPlatformBrowser(inject(PLATFORM_ID));
+    this.browser = isPlatformBrowser(inject(PLATFORM_ID));
     const win = this.host.nativeElement.ownerDocument?.defaultView;
-    this.reduceQuery = browser && typeof win?.matchMedia === 'function' ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
-    if (browser) afterNextRender(() => join(this));
-    inject(DestroyRef).onDestroy(() => leave(this));
+    this.reduceQuery = this.browser && typeof win?.matchMedia === 'function' ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    if (this.browser) {
+      afterRenderEffect(() => {
+        if (this.still()) {
+          if (!this.oneShot) {
+            this.start = -1;
+            leave(this);
+            this.drawRest();
+          }
+        } else {
+          this.oneShot = false;
+          this.start = -1;
+          join(this);
+        }
+      });
+    }
+    inject(DestroyRef).onDestroy(() => {
+      this.oneShot = false;
+      leave(this);
+    });
+  }
+
+  /** Plays one burst cycle (2.1 s, or one opacity breathe under reduced motion) while `still`, then rests and emits `cycleEnd`. Calling while running restarts it. */
+  play(): void {
+    if (!this.still()) return;
+    this.oneShot = true;
+    this.start = -1;
+    if (this.browser) join(this);
   }
 
   /** @internal Called by the shared frame loop with the frame's timestamp (ms). */
   frame(now: number): void {
     if (this.start < 0) this.start = now;
-    this.drawAt((now - this.start) / 1000);
+    const elapsed = (now - this.start) / 1000;
+    if (this.oneShot && elapsed >= UI_SHUTTER_CYCLE) {
+      this.oneShot = false;
+      this.start = -1;
+      leave(this);
+      this.drawRest();
+      this.cycleEnd.emit();
+      return;
+    }
+    this.drawAt(elapsed);
+  }
+
+  private drawRest(): void {
+    const g = this.mark()?.nativeElement;
+    if (!g) return;
+    if (this.drawnA !== UI_SHUTTER_A0) {
+      g.querySelectorAll('path').forEach((p, i) => p.setAttribute('d', OPEN_PATHS[i]));
+      this.drawnA = UI_SHUTTER_A0;
+    }
+    if (this.drawnOpacity !== 1) {
+      g.removeAttribute('opacity');
+      this.drawnOpacity = 1;
+    }
   }
 
   /** True under prefers-reduced-motion and when the library's animations are off (`.ui-no-anim`). */
