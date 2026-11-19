@@ -65,6 +65,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Split button', anchor: 'split-button' },
     { name: 'Dropdown button', anchor: 'dropdown-button' },
     { name: 'FAB', anchor: 'fab' },
+    { name: 'Speed dial', anchor: 'speed-dial' },
   ],
   'forms': [
     { name: 'Forms integration', anchor: 'forms-integration' },

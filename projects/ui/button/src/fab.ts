@@ -1,4 +1,4 @@
-import { Component, booleanAttribute, input, signal } from '@angular/core';
+import { Component, ElementRef, booleanAttribute, input, signal, viewChild } from '@angular/core';
 
 let fabSeq = 0;
 
@@ -12,17 +12,24 @@ export type UiFabPlacement =
   | 'bottom-start' | 'bottom-center' | 'bottom-end'
   | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
-/** A fab's colour (0.44.0): 'primary', or 'danger' with a high-visibility ring and halo (an SOS button). */
-export type UiFabTone = 'primary' | 'danger';
+/**
+ * A fab's colour:
+ * - `'primary'` (default): primary fill with contrast ink.
+ * - `'danger'` (0.44.0): high-visibility SOS style with danger fill, raised-surface ring and halo.
+ * - `'inverted'`: high-contrast ink fill (`--ui-color-text`) with inverse ink (`--ui-color-bg`),
+ *   1 px hairline ring and shadow across both light and dark themes.
+ */
+export type UiFabTone = 'primary' | 'danger' | 'inverted';
 
 /**
- * `ui-fab` — floating action button, fixed to a screen corner (or centred at the top or bottom).
- * `label` is required (a11y).
+ * `ui-fab` — floating action button, fixed to a screen corner (or centred at the top or bottom),
+ * or laid out inline in a container when `position="static"`. `label` is required (a11y).
  *
  * - `position`: a corner or a centred top/bottom spot, offset from the edge by `--ui-space-6` plus
- *   the device's safe area, so a top fab sits below the status bar and notch, never over them.
- * - `tone` (0.44.0): 'danger' is the high-visibility style for an SOS button: the danger colour, a
- *   3px raised-surface ring and a soft danger halo outside it, over the usual shadow.
+ *   the device's safe area, so a top fab sits below the status bar and notch, never over them; or
+ *   `'static'` to lay it out in normal flow (e.g. inside `ui-speed-dial`).
+ * - `tone`: `'danger'` (0.44.0) is the high-visibility style for an SOS button; `'inverted'` is
+ *   a high-contrast inverted fill with a 1 px hairline ring and elevated shadow in light and dark.
  * - `text` (0.44.0): a visible word beside the icon ("SOS"), making it a pill. Keep it in `label`
  *   too (the accessible name should contain the visible text).
  * - `aboveOverlays` (0.44.0): stays above bottom sheets, drawers and modal backdrops
@@ -33,6 +40,8 @@ export type UiFabTone = 'primary' | 'danger';
  * - `bottomOffset` (0.47.1, Flutter `UiFabHost.bottomOffset`): px added above the bottom edge for the
  *   bottom placements, so a fab floats above a bottom sheet's peek or a bottom navigation; it moves
  *   smoothly when it changes (a sheet opening).
+ * - `expanded` / `controls`: ARIA disclosure attributes (`aria-expanded`, `aria-controls`) forwarded
+ *   directly onto the inner `<button>` (used by `ui-speed-dial`).
  * - Hold to activate (0.44.0): add `[hold]="2000"` (ms) with `UiFabHold` from
  *   `@zouriel/ui/hold-button` imported, and listen to `(confirmed)`. A fill in the contrast colour
  *   grows across it from the inline start while it is held; a tap, a quick Enter or Space, or a
@@ -42,9 +51,10 @@ export type UiFabTone = 'primary' | 'danger';
 @Component({
   selector: 'ui-fab',
   template: `
-    <button type="button" class="ui-fab" [attr.data-position]="position()" [attr.data-size]="size()" [attr.data-tone]="tone()"
+    <button #btn type="button" class="ui-fab" [attr.data-position]="position()" [attr.data-size]="size()" [attr.data-tone]="tone()"
             [attr.data-extended]="text() ? '' : null" [attr.data-above]="aboveOverlays() ? '' : null"
-            [attr.aria-label]="label()" [attr.aria-describedby]="holdHint() ? hintId : null" [disabled]="disabled()"
+            [attr.aria-label]="label()" [attr.aria-expanded]="expanded() === null ? null : expanded()"
+            [attr.aria-controls]="controls()" [attr.aria-describedby]="holdHint() ? hintId : null" [disabled]="disabled()"
             [class.filling]="holdFill() !== null" [style.--ui-fab-top-offset.px]="topOffset()" [style.--ui-fab-bottom-offset.px]="bottomOffset()">
       @if (holdFill() !== null) {
         <span class="fill" aria-hidden="true" [style.width.%]="holdFill()! * 100" [style.transition-duration.ms]="holdFillDuration()"></span>
@@ -82,8 +92,19 @@ export type UiFabTone = 'primary' | 'danger';
     }
     .ui-fab[data-tone="danger"]:hover:not(:disabled) { background: var(--ui-color-danger-hover); }
     .ui-fab[data-tone="danger"]:focus-visible { box-shadow: 0 0 0 3px var(--ui-color-surface-raised), var(--ui-focus-ring), var(--ui-shadow-2); }
+    /* tone inverted: high-contrast fill with inverse ink, a 1px hairline ring and shadow in both light and dark. */
+    .ui-fab[data-tone="inverted"] {
+      background: var(--ui-color-text); color: var(--ui-color-bg);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-color-bg) 35%, var(--ui-color-text)), var(--ui-shadow-2);
+    }
+    .ui-fab[data-tone="inverted"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ui-color-text) 88%, var(--ui-color-bg)); }
+    .ui-fab[data-tone="inverted"]:focus-visible {
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-color-bg) 35%, var(--ui-color-text)), var(--ui-focus-ring), var(--ui-shadow-2);
+    }
     /* aboveOverlays: over sheets, drawers and backdrops, under windows and toasts. */
     .ui-fab[data-above] { z-index: calc(var(--ui-z-overlay) + 1); }
+    /* static: laid out inline inside a container (such as ui-speed-dial) instead of fixed to the viewport. */
+    .ui-fab[data-position="static"] { position: relative; inset: auto; z-index: auto; }
     /* Offset from the edge plus the device's safe area (notches, status bar, home indicator). */
     .ui-fab[data-position^="top"] { top: calc(var(--ui-fab-edge) + env(safe-area-inset-top, 0px) + var(--ui-fab-top-offset, 0px)); }
     .ui-fab[data-position^="bottom"] { bottom: calc(var(--ui-fab-edge) + env(safe-area-inset-bottom, 0px) + var(--ui-fab-bottom-offset, 0px)); }
@@ -111,11 +132,13 @@ export type UiFabTone = 'primary' | 'danger';
   `,
 })
 export class UiFab {
+  private readonly btn = viewChild<ElementRef<HTMLButtonElement>>('btn');
+
   label = input.required<string>();
-  position = input<UiFabPlacement>('bottom-right');
+  position = input<UiFabPlacement | 'static'>('bottom-right');
   size = input<'sm' | 'md'>('md');
   disabled = input(false);
-  /** 'danger': the high-visibility SOS style (0.44.0). */
+  /** `'danger'` (0.44.0): high-visibility SOS style; `'inverted'`: high-contrast fill with a 1 px hairline ring. */
   tone = input<UiFabTone>('primary');
   /** A visible word beside the icon, making it a pill (0.44.0); null for the round button. */
   text = input<string | null>(null);
@@ -125,6 +148,10 @@ export class UiFab {
   topOffset = input(0);
   /** Px above the bottom edge (plus the safe area and the 24px gap) for bottom placements: a bottom sheet's peek (0.47.1). */
   bottomOffset = input(0);
+  /** Forwarded to `aria-expanded` on the native button when non-null (used by `ui-speed-dial`). */
+  expanded = input<boolean | null>(null);
+  /** Forwarded to `aria-controls` on the native button when non-null (used by `ui-speed-dial`). */
+  controls = input<string | null>(null);
 
   /** Set by UiFabHold: the hold fill (0 to 1, null for none) and how long it takes to get there. */
   readonly holdFill = signal<number | null>(null);
@@ -132,4 +159,9 @@ export class UiFab {
   /** Set by UiFabHold: what holding does, read with the button. */
   readonly holdHint = signal<string | null>(null);
   protected readonly hintId = `ui-fab-hint-${fabSeq++}`;
+
+  /** Moves keyboard focus to the inner native `<button>`. */
+  focus(): void {
+    this.btn()?.nativeElement.focus();
+  }
 }

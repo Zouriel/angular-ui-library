@@ -1,6 +1,13 @@
-import { Component, DestroyRef, booleanAttribute, ElementRef, PLATFORM_ID, afterRenderEffect, computed, inject, input, output, viewChild } from '@angular/core';
+import { Component, DestroyRef, InjectionToken, booleanAttribute, ElementRef, PLATFORM_ID, afterRenderEffect, computed, inject, input, output, viewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { type UiSize, injectUiStrings } from '@zouriel/ui';
+
+/**
+ * When provided as `true` on an ancestor (such as `ui-speed-dial`), any descendant
+ * `ui-shutter-loader` stays open and still at rest and runs one-shot bursts only when `play()` is
+ * called, even without `[still]="true"`.
+ */
+export const UI_SHUTTER_STILL = new InjectionToken<boolean>('UI_SHUTTER_STILL');
 
 /*
  * The shutter: a camera iris (a ring and six blades) that clicks shut three times and rests.
@@ -162,6 +169,8 @@ export class UiShutterLoader {
   protected readonly sizePx = computed(() => { const s = this.size(); return typeof s === 'number' ? s : UI_SHUTTER_SIZES[s]; });
 
   private readonly mark = viewChild<ElementRef<SVGGElement>>('mark');
+  private readonly forceStill = inject(UI_SHUTTER_STILL, { optional: true }) ?? false;
+  private readonly isStill = computed(() => this.still() || this.forceStill);
   private readonly browser: boolean;
   private readonly reduceQuery: MediaQueryList | null;
   private start = -1;
@@ -175,7 +184,7 @@ export class UiShutterLoader {
     this.reduceQuery = this.browser && typeof win?.matchMedia === 'function' ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
     if (this.browser) {
       afterRenderEffect(() => {
-        if (this.still()) {
+        if (this.isStill()) {
           if (!this.oneShot) {
             this.start = -1;
             leave(this);
@@ -196,7 +205,7 @@ export class UiShutterLoader {
 
   /** Plays one burst cycle (2.1 s, or one opacity breathe under reduced motion) while `still`, then rests and emits `cycleEnd`. Calling while running restarts it. */
   play(): void {
-    if (!this.still()) return;
+    if (!this.isStill()) return;
     this.oneShot = true;
     this.start = -1;
     if (this.browser) join(this);
