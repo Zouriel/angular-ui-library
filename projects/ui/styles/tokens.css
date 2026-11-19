@@ -166,6 +166,7 @@
   --ui-z-docked: 10;
   --ui-z-overlay: 1000;
   --ui-z-window: 1100;
+  --ui-z-popover: 1150;
   --ui-z-toast: 1200;
 
   /* Typography */
@@ -612,6 +613,12 @@ hugeicons-icon {
 [data-theme="winterLight"] ::selection {
   background: #c9d6ff;
   color: #0f1433;
+}
+
+/* CDK connected overlays (menus, popovers, comboboxes, phone-input lists) sit above dialogs,
+   sheets and floating windows and below toasts, regardless of stylesheet load order. */
+:root .cdk-overlay-container {
+  z-index: var(--ui-z-popover);
 }
 
 /* Animation-first product: reduced-motion CALMS rather than eliminates. We keep the motion

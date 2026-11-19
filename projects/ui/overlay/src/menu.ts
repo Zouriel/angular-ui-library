@@ -151,7 +151,7 @@ export class UiMenu {
     else if (e.key === 'ArrowUp') { e.preventDefault(); els[(current - 1 + els.length) % els.length]?.focus(); }
     else if (e.key === 'Home') { e.preventDefault(); els[0]?.focus(); }
     else if (e.key === 'End') { e.preventDefault(); els[els.length - 1]?.focus(); }
-    else if (e.key === 'Escape') { e.preventDefault(); this.close(); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); }
     // Not prevented: with focus back on the trigger, the browser's own Tab moves on from there.
     else if (e.key === 'Tab') this.close();
   }

@@ -224,7 +224,7 @@ export class UiCombobox implements ControlValueAccessor {
     if (e.key === 'ArrowDown') { e.preventDefault(); if (!this.open()) this.openPanel(); this.activeIndex.update((i) => Math.min(items.length - 1, i + 1)); this.revealActive(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); this.activeIndex.update((i) => Math.max(0, i - 1)); this.revealActive(); }
     else if (e.key === 'Enter') { if (!this.open()) return; e.preventDefault(); const opt = items[this.activeIndex()]; if (opt) this.select(opt); }
-    else if (e.key === 'Escape') { this.open.set(false); }
+    else if (e.key === 'Escape' && this.open()) { e.preventDefault(); e.stopPropagation(); this.open.set(false); }
   }
 
   protected select(opt: UiComboboxOption): void {

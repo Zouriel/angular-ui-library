@@ -11,7 +11,8 @@ import Edit02Icon from '@hugeicons/core-free-icons/Edit02Icon';
 import SentIcon from '@hugeicons/core-free-icons/SentIcon';
 import { UiText } from '@zouriel/ui/text';
 import { FormsModule } from '@angular/forms';
-import { UiFormField, UiInput } from '@zouriel/ui/form';
+import { UiFormField, UiInput, UiPhoneInput } from '@zouriel/ui/form';
+import { UiMultiSelect, type UiComboboxOption } from '@zouriel/ui/combobox';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiBackdrop, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, type UiMenuItem, type UiHintCloseReason, type UiHintPlacement } from '@zouriel/ui/overlay';
 import { UiModal, UiDrawer, UiConfirmDialog, UiToastService, UiBlobToast, UiBottomSheet, UiSnackbar, UiSnackbarService, UiActionSheet, type UiToast } from '@zouriel/ui/dialog';
@@ -22,7 +23,7 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
 
 @Component({
   selector: 'page-overlays',
-  imports: [ UiFormField, UiInput, FormsModule, UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
+  imports: [ UiFormField, UiInput, UiPhoneInput, UiMultiSelect, FormsModule, UiBottomSheet, UiBackdrop, UiCommandPalette, HugeiconsIconComponent,
     UiText, UiButton, UiIconButton, UiTooltip, UiHint, UiPopover, UiMenu, UiContextMenu, UiModal, UiDrawer, UiConfirmDialog, UiSnackbar,
     DocPage, DocSection, DocDemo, UiBlobToast,
   ],
@@ -103,6 +104,9 @@ const MENU_ITEM = "interface UiMenuItem {\n  label: string;\n  value: string;\n 
   <div modal-footer><ui-button>Save</ui-button></div>
 </ui-modal>">
           <ui-button (click)="modal.set(true)">Open modal</ui-button>
+        </doc-demo>
+        <doc-demo [code]="formModalCode">
+          <ui-button variant="outline" (click)="formModal.set(true)">Form fields inside modal</ui-button>
         </doc-demo>
       </doc-section>
 
@@ -296,6 +300,11 @@ onKey(e: KeyboardEvent) {
     <ui-modal [(open)]="modal" title="Modal title">
       <ui-text variant="body">Traps focus, locks scroll, closes on Esc / backdrop.</ui-text>
       <div modal-footer><ui-button variant="ghost" size="sm" (click)="modal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="modal.set(false)">Save</ui-button></div>
+    </ui-modal>
+    <ui-modal [(open)]="formModal" title="Add guest">
+      <ui-form-field label="Phone"><ui-phone-input defaultCountry="GB" [(ngModel)]="modalPhone" /></ui-form-field>
+      <ui-form-field label="Roles"><ui-multi-select [options]="modalRoles" [(ngModel)]="modalSelectedRoles" /></ui-form-field>
+      <div modal-footer><ui-button variant="ghost" size="sm" (click)="formModal.set(false)">Cancel</ui-button><ui-button size="sm" (click)="formModal.set(false)">Save</ui-button></div>
     </ui-modal>
     <ui-drawer [(open)]="drawer" side="end" title="Drawer"><ui-text variant="body">An end-anchored sheet: the right in LTR, the left in RTL.</ui-text></ui-drawer>
     <ui-drawer [(open)]="formDrawer" side="bottom" title="Why cancel?">
@@ -507,6 +516,19 @@ interface UiToastPromiseStates<T> {
     });
   }
   protected readonly modal = signal(false);
+  protected readonly formModal = signal(false);
+  protected modalPhone: string | null = null;
+  protected modalSelectedRoles: string[] = ['vip'];
+  protected readonly modalRoles: UiComboboxOption[] = [
+    { label: 'VIP', value: 'vip' },
+    { label: 'Family', value: 'family' },
+    { label: 'Host', value: 'host' },
+  ];
+  protected readonly formModalCode = `<ui-modal [(open)]="open" title="Add guest">
+  <ui-form-field label="Phone"><ui-phone-input defaultCountry="GB" [(ngModel)]="phone" /></ui-form-field>
+  <ui-form-field label="Roles"><ui-multi-select [options]="roles" [(ngModel)]="selectedRoles" /></ui-form-field>
+  <div modal-footer><ui-button variant="ghost" size="sm">Cancel</ui-button><ui-button size="sm">Save</ui-button></div>
+</ui-modal>`;
   protected readonly drawer = signal(false);
   protected readonly chatsDrawer = signal(false);
   /** The bottom drawer with a field: rests on the on-screen keyboard (0.41.3). */

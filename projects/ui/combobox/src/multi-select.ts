@@ -188,7 +188,7 @@ export class UiMultiSelect implements ControlValueAccessor {
       const opt = this.open() ? items[this.activeIndex()] : undefined;
       if (opt) { e.preventDefault(); this.toggle(opt.value); }
     }
-    else if (e.key === 'Escape') { this.open.set(false); }
+    else if (e.key === 'Escape' && this.open()) { e.preventDefault(); e.stopPropagation(); this.open.set(false); }
     else if (e.key === 'Backspace' && !this.query() && this.value().length) { this.toggle(this.value()[this.value().length - 1]); }
   }
 
