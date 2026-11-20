@@ -22,6 +22,7 @@ const GUTTER = 16;
   template: `
     <img class="frame-image" [src]="src()" [alt]="alt()" draggable="false" [style.object-position]="position().x + '% ' + position().y + '%'" (load)="imageLoaded($event)" (error)="loadError.emit()" />
     @if (active() && layout(); as l) {
+      <div #layer class="layer" popover="manual">
       <div class="scrim" aria-hidden="true" [style.clip-path]="scrimClip(l)"></div>
       @if (circle()) {
         <div class="circle-scrim" aria-hidden="true" [class.grown]="l.grown" [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.width" [style.height.px]="l.height"></div>
@@ -39,6 +40,7 @@ const GUTTER = 16;
         <ui-button size="sm" (click)="saveEdit()">Save</ui-button>
       </div>
       <span class="sr" aria-live="polite">{{ announcement() }}</span>
+      </div>
     }
   `,
   styles: `
@@ -46,6 +48,8 @@ const GUTTER = 16;
     :host(.active) { overflow: visible; }
     :host(.circle), :host(.circle) .frame-image { border-radius: 50%; }
     .frame-image { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+    /* The editor lives in the browser's top layer (popover), so no page element can paint over it. */
+    .layer { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: none; color: inherit; overflow: visible; }
     .scrim { position: fixed; inset: 0; z-index: var(--ui-z-overlay); background: var(--ui-color-overlay);
     }
     .circle-scrim { position: fixed; z-index: var(--ui-z-overlay); pointer-events: none; background: var(--ui-color-overlay);
@@ -77,6 +81,7 @@ export class UiReposition {
 
   private readonly host: ElementRef<HTMLElement>;
   private readonly dragSurface = viewChild<ElementRef<HTMLElement>>('dragSurface');
+  private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
   private readonly actionsBar = viewChild<ElementRef<HTMLElement>>('actionsBar');
   private readonly actionsWidth = signal(0);
   private readonly natural = signal({ width: 0, height: 0 });
@@ -111,6 +116,10 @@ export class UiReposition {
 
   constructor(host: ElementRef<HTMLElement>) {
     this.host = host;
+    effect(() => {
+      const layer = this.layer()?.nativeElement;
+      if (layer && !layer.matches?.(':popover-open')) layer.showPopover?.();
+    });
     effect(() => {
       const el = this.actionsBar()?.nativeElement;
       if (el) untracked(() => this.actionsWidth.set(el.offsetWidth));

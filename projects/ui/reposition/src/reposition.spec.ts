@@ -106,4 +106,16 @@ describe('UiReposition', () => {
     expect(parseFloat(bright.style.height)).toBeGreaterThanOrEqual(120);
     expect(editor.style.width).toBe('100px');
   });
+  it('renders the editor in the top layer (popover) so a z-indexed page element cannot cover the bar', () => {
+    const shown: HTMLElement[] = [];
+    (HTMLElement.prototype as any).showPopover = function (this: HTMLElement) { shown.push(this); };
+    try {
+      const { editor } = setup();
+      const layer = editor.querySelector('.layer') as HTMLElement;
+      expect(layer.getAttribute('popover')).toBe('manual');
+      expect(shown).toContain(layer);
+      for (const sel of ['.scrim', '.bright', '.actions']) expect(layer.querySelector(sel), sel).not.toBeNull();
+      expect(editor.querySelectorAll(':scope > .scrim, :scope > .actions').length).toBe(0);
+    } finally { delete (HTMLElement.prototype as any).showPopover; }
+  });
 });
