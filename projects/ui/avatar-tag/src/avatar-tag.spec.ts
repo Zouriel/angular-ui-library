@@ -24,6 +24,9 @@ function rule(sel: string): string {
 describe('uiAvatarTagLetter', () => {
   it('takes the first letter, upper case, and ? for no name', () => {
     expect(uiAvatarTagLetter('coco Palm')).toBe('C');
+    expect(uiAvatarTagLetter('@lensqa')).toBe('L');
+    expect(uiAvatarTagLetter('#1 Studio')).toBe('1');
+    expect(uiAvatarTagLetter('@@ ')).toBe('?');
     expect(uiAvatarTagLetter('  étoile')).toBe('É');
     expect(uiAvatarTagLetter('')).toBe('?');
     expect(uiAvatarTagLetter(null)).toBe('?');

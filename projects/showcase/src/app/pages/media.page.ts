@@ -1,5 +1,5 @@
 import { Component, computed, signal } from '@angular/core';
-import { UiBadge } from '@zouriel/ui/badge';
+import { UiAvatar, UiBadge } from '@zouriel/ui/badge';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
@@ -23,7 +23,7 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiBadge, UiButton, UiIconButton, UiText, HugeiconsIconComponent, UiCarousel, UiCoverHero, UiReposition, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiAvatar, UiBadge, UiButton, UiIconButton, UiText, HugeiconsIconComponent, UiCarousel, UiCoverHero, UiReposition, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -149,6 +149,9 @@ function grad(a: string, b: string): string {
           <ui-reposition class="reposition-demo" [src]="coverPicture" [position]="repositionPosition()" [active]="repositionEditing()"
                          (save)="repositionPosition.set($event); repositionEditing.set(false)" (cancel)="repositionEditing.set(false)" />
           <ui-button size="sm" (click)="repositionEditing.set(true)">Reposition photo</ui-button>
+          <ui-avatar id="avatar-reposition" size="sm" [src]="coverPicture" name="Eid" [position]="avatarPosition()" [repositionable]="avatarEditing()"
+                     (positionSave)="avatarPosition.set($event); avatarEditing.set(false)" (repositionCancel)="avatarEditing.set(false)" />
+          <ui-button size="sm" variant="secondary" id="avatar-reposition-go" (click)="avatarEditing.set(true)">Reposition avatar</ui-button>
           <p class="note">Saved focal point: {{ repositionPosition().x }}, {{ repositionPosition().y }}</p>
         </doc-demo>
       </doc-section>
@@ -156,13 +159,15 @@ function grad(a: string, b: string): string {
       <doc-section name="Cover hero" selector="ui-cover-hero" [api]="coverApi" [outputs]="coverOut"
         summary="A full-width cover picture with a bottom fade into the page, subtle top and logical start-side scrims, and slots for the top controls, title/metadata, and actions. Nested ui-text, ghost/link buttons, icon buttons, and ui-editable-text automatically use light on-media ink and soft shadows. A non-empty coverMenu makes the bare cover open Change/Remove actions on click/tap, right-click, 500ms touch hold, Enter/Space, or the context-menu key. Missing and failed pictures fall back to the page surface.">
         <doc-demo [code]="coverCode">
-          <ui-cover-hero class="cover-demo" [src]="coverPicture" [coverMenu]="coverMenu" (coverMenuSelect)="coverChoice.set($event.label)">
+          <ui-cover-hero class="cover-demo" [src]="coverPicture" [coverMenu]="coverMenu" (coverMenuSelect)="coverChoice.set($event.label)"
+                         [position]="coverPosition()" [repositionable]="coverEditing()" (positionSave)="coverPosition.set($event); coverEditing.set(false)" (repositionCancel)="coverEditing.set(false)">
             <ui-button hero-top-start variant="ghost" size="sm">Your events</ui-button>
             <ui-icon-button hero-top-end label="Options" variant="ghost" size="sm"><hugeicons-icon [icon]="viewIcon" /></ui-icon-button>
             <ui-text variant="h2" as="h3">Eid party</ui-text>
             <ui-text variant="caption">Saturday 12 December · Malé</ui-text>
             <ui-button hero-actions>Share with client</ui-button>
           </ui-cover-hero>
+          <ui-button size="sm" id="cover-reposition" (click)="coverEditing.set(true)">Reposition cover</ui-button>
           <p class="note">Cover action: {{ coverChoice() }}</p>
         </doc-demo>
       </doc-section>
@@ -387,6 +392,10 @@ merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex *
   protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
   protected readonly scrimPicture = grad('#ffffff', '#cfe8ff');
   protected readonly coverPicture = grad('#7a4fa0', '#66c2a5');
+  protected readonly coverEditing = signal(false);
+  protected readonly coverPosition = signal<UiRepositionPosition>({ x: 50, y: 50 });
+  protected readonly avatarEditing = signal(false);
+  protected readonly avatarPosition = signal<UiRepositionPosition>({ x: 50, y: 50 });
   protected readonly repositionEditing = signal(false);
   protected readonly repositionPosition = signal<UiRepositionPosition>({ x: 50, y: 50 });
   protected readonly repositionApi: ApiRow[] = [

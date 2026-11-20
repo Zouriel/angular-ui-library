@@ -3,6 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { UiAvatar, uiAvatarCropLayout } from './avatar';
 
 describe('UiAvatar', () => {
+  it('skips leading marks in a handle when taking initials', () => {
+    const fixture = TestBed.createComponent(UiAvatar);
+    fixture.componentRef.setInput('name', '@lensqa');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.initials')?.textContent?.trim()).toBe('L');
+  });
+
   it('shows initials from the first and last name', () => {
     const fixture = TestBed.createComponent(UiAvatar);
     fixture.componentRef.setInput('name', 'Ada King Lovelace');

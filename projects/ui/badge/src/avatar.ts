@@ -114,9 +114,10 @@ export class UiAvatar {
   protected readonly initials = computed(() => {
     const n = (this.name() ?? '').trim();
     if (!n) return '?';
-    const parts = n.split(/\s+/);
-    const first = parts[0]?.[0] ?? '';
-    const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+    const parts = n.split(/\s+/).map((w) => w.replace(/^[^\p{L}\p{N}]+/u, '')).filter(Boolean);
+    if (!parts.length) return '?';
+    const first = Array.from(parts[0])[0];
+    const last = parts.length > 1 ? Array.from(parts[parts.length - 1])[0] : '';
     return (first + last).toUpperCase();
   });
 }

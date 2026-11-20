@@ -16,6 +16,7 @@ import { UiReposition, type UiRepositionPosition } from '@zouriel/ui/reposition'
     '[attr.data-on-media]': "hasImage() ? '' : null",
     '[class.no-image]': '!hasImage()',
     '[class.editable]': 'editable()',
+    '[class.repositioning]': 'repositionable() && hasImage()',
     '[class.fade-bottom]': 'fadeBottom() && hasImage()',
     '[class.scrim-top]': 'scrimTop() && hasImage()',
     '[class.scrim-start]': 'scrimStart() && hasImage()',
@@ -114,15 +115,22 @@ import { UiReposition, type UiRepositionPosition } from '@zouriel/ui/reposition'
 
     .top { position: relative; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between;
       gap: var(--ui-space-3); padding: var(--ui-space-3) var(--ui-space-4); pointer-events: none; }
-    .top-slot { display: flex; align-items: center; gap: var(--ui-space-2); pointer-events: auto; }
+    .top-slot { display: flex; align-items: center; gap: var(--ui-space-2); pointer-events: none; }
+    .top-slot ::ng-deep > * { pointer-events: auto; }
     .top-slot:last-child { margin-inline-start: auto; }
     .bottom { position: relative; z-index: 2; align-self: end; display: flex; flex-direction: column;
       gap: var(--ui-space-2); padding: var(--ui-space-4) var(--ui-space-4) var(--ui-space-6); pointer-events: none; }
     .body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-1); max-width: 85%; }
     @media (min-width: 600px) { .body { max-width: 69%; } }
     .body:empty, .actions:empty { display: none; }
-    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); pointer-events: auto; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ui-space-2); pointer-events: none; }
+    .actions ::ng-deep > * { pointer-events: auto; }
     :host:not(.editable) .body { pointer-events: auto; }
+    /* While repositioning, the hero chrome gets out of the way so a drag works anywhere and the whole photo shows. */
+    .top, .bottom, .start-shade, .top-shade, .bottom-fade { transition: opacity var(--ui-motion-base) ease; }
+    :host(.repositioning) :is(.top, .bottom, .start-shade, .top-shade, .bottom-fade) { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--ui-motion-base) ease, visibility 0s linear var(--ui-motion-base); }
+    :host(.repositioning) :is(.top, .bottom) ::ng-deep * { pointer-events: none !important; }
+    @media (prefers-reduced-motion: reduce) { .top, .bottom, .start-shade, .top-shade, .bottom-fade { transition: none !important; } }
     :host(.editable) .body ::ng-deep :is(a, button, input, textarea, select, [role="button"], [tabindex], ui-button, ui-icon-button, ui-editable-text) {
       pointer-events: auto;
     }

@@ -8,9 +8,9 @@ export type UiAvatarTagVariant = 'overlay' | 'plain';
 /** `sm` for a feed post's header, `xs` for the corner of a small tile. */
 export type UiAvatarTagSize = 'sm' | 'xs';
 
-/** The first letter of a name, upper case, for the round fallback; '?' for no name. */
+/** The first letter or digit of a name (leading marks like '@' or '#' skipped), upper case, for the round fallback; '?' for none. */
 export function uiAvatarTagLetter(name: string | null | undefined): string {
-  const n = (name ?? '').trim();
+  const n = (name ?? '').trim().replace(/^[^\p{L}\p{N}]+/u, '');
   if (!n) return '?';
   return Array.from(n)[0].toLocaleUpperCase();
 }

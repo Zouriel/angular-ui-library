@@ -10,7 +10,7 @@ import { UiCoverHero } from './cover-hero';
   template: `
     <ui-cover-hero [src]="src()" [coverMenu]="menu()" coverActionLabel="Change cover image"
                    [fadeBottom]="fade()" [scrimTop]="top()" [scrimStart]="start()" [minHeight]="min()"
-                   [position]="position()"
+                   [position]="position()" [repositionable]="repo()"
                    (coverMenuSelect)="picked.push($event.value)">
       <ui-button hero-top-start variant="ghost" id="back">Back</ui-button>
       <ui-button hero-top-end variant="ghost" id="opts">Options</ui-button>
@@ -24,6 +24,7 @@ class Host {
   menu = signal<UiMenuItem[]>([]);
   fade = signal(true); top = signal(true); start = signal(true); min = signal<number | null>(null);
   position = signal({ x: 50, y: 50 });
+  repo = signal(false);
   picked: string[] = [];
 }
 
@@ -129,5 +130,26 @@ describe('UiCoverHero (0.89.0)', () => {
     expect(css(UiCoverHero as never)).toContain('--ui-media-on-scrim');
     expect(css(UiCoverHero as never)).toContain('ui-editable-text');
     expect(css(UiCoverHero as never)).toMatch(/\[dir=["']?rtl["']?\]/);
+  });
+  it('while repositioning the hero chrome is hidden and cannot take pointer events; it returns afterwards', () => {
+    const { f, hero } = mk();
+    const pe = (sel: string) => getComputedStyle(hero().querySelector<HTMLElement>(sel)!).pointerEvents;
+    const vis = (sel: string) => getComputedStyle(hero().querySelector<HTMLElement>(sel)!).visibility;
+    f.componentInstance.repo.set(true); f.detectChanges();
+    expect(hero().classList.contains('repositioning')).toBe(true);
+    for (const sel of ['.top', '.bottom', '#title', '#back', '#share']) expect(pe(sel), sel).toBe('none');
+    expect(vis('.bottom')).toBe('hidden');
+    f.componentInstance.repo.set(false); f.detectChanges();
+    expect(hero().classList.contains('repositioning')).toBe(false);
+    expect(vis('.bottom')).not.toBe('hidden');
+    expect(pe('#share')).toBe('auto');
+  });
+
+  it('an empty actions slot container takes no pointer events, while a projected child does', () => {
+    const { hero } = mk();
+    const el = hero().querySelector<HTMLElement>('.actions')!;
+    expect(getComputedStyle(el).pointerEvents).toBe('none');
+    expect(getComputedStyle(hero().querySelector<HTMLElement>('#share')!).pointerEvents).toBe('auto');
+    expect(getComputedStyle(hero().querySelector<HTMLElement>('.top-slot')!).pointerEvents).toBe('none');
   });
 });

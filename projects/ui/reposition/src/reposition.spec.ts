@@ -47,7 +47,7 @@ describe('UiReposition', () => {
     bright.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 1, clientX: 50, clientY: 50 }));
     bright.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 80, clientY: 80 }));
     fixture.detectChanges();
-    expect(bright.getAttribute('aria-valuetext')).toBe('Photo position 10 percent horizontal, 50 percent vertical');
+    expect(bright.getAttribute('aria-valuetext')).toBe('Photo position 15 percent horizontal, 50 percent vertical'); // the 100px frame is shown at the 120px minimum
     bright.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1, clientX: 800, clientY: 80 }));
     fixture.detectChanges();
     expect(bright.getAttribute('aria-valuetext')).toBe('Photo position 0 percent horizontal, 50 percent vertical');
@@ -78,5 +78,32 @@ describe('UiReposition', () => {
     f.detectChanges();
     expect(errors).toBe(1);
     expect(() => f.detectChanges()).not.toThrow();
+  });
+  it('keeps the Save/Cancel bar inside the viewport with a 16px gutter for a frame at the left edge', () => {
+    const { fixture, editor } = setup();
+    editor.getBoundingClientRect = () => ({ x: 4, y: 20, left: 4, top: 20, right: 104, bottom: 120, width: 100, height: 100, toJSON: () => ({}) });
+    const bar = editor.querySelector('.actions') as HTMLElement;
+    Object.defineProperty(bar, 'offsetWidth', { value: 170, configurable: true });
+    fixture.componentInstance.active.set(false); fixture.detectChanges();
+    fixture.componentInstance.active.set(true); fixture.detectChanges();
+    const image = editor.querySelector('.frame-image') as HTMLImageElement;
+    image.dispatchEvent(new Event('load')); fixture.detectChanges();
+    const el = editor.querySelector('.actions') as HTMLElement;
+    // left is the bar's own left edge (no centring transform), and it keeps the gutter
+    expect(getComputedStyle(el).transform).not.toContain('translate');
+    expect(parseFloat(el.style.left)).toBeGreaterThanOrEqual(16);
+    expect(parseFloat(el.style.left) + 170).toBeLessThanOrEqual(innerWidth - 16);
+  });
+
+  it('enlarges a tiny frame to at least 120px as an overlay and leaves the host size alone', () => {
+    const { fixture, editor } = setup();
+    editor.getBoundingClientRect = () => ({ x: 100, y: 100, left: 100, top: 100, right: 136, bottom: 136, width: 36, height: 36, toJSON: () => ({}) });
+    fixture.componentInstance.active.set(false); fixture.detectChanges();
+    fixture.componentInstance.active.set(true); fixture.detectChanges();
+    (editor.querySelector('.frame-image') as HTMLImageElement).dispatchEvent(new Event('load')); fixture.detectChanges();
+    const bright = editor.querySelector('.bright') as HTMLElement;
+    expect(parseFloat(bright.style.width)).toBeGreaterThanOrEqual(120);
+    expect(parseFloat(bright.style.height)).toBeGreaterThanOrEqual(120);
+    expect(editor.style.width).toBe('100px');
   });
 });

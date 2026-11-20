@@ -3,9 +3,13 @@ import { UiButton } from '@zouriel/ui/button';
 
 export interface UiRepositionPosition { x: number; y: number }
 
-interface Layout { left: number; top: number; width: number; height: number; imageWidth: number; imageHeight: number; imageLeft: number; imageTop: number; actionsTop: number }
+interface Layout { left: number; top: number; width: number; height: number; imageWidth: number; imageHeight: number; imageLeft: number; imageTop: number; actionsTop: number; actionsLeft: number; grown: boolean }
 
 const clamp = (n: number) => Math.max(0, Math.min(100, n));
+/** Smallest editing frame (px) while repositioning, so a tiny avatar can still be dragged on a phone. */
+const MIN_FRAME = 120;
+/** Gutter (px) kept between the Save/Cancel bar and the viewport edge. */
+const GUTTER = 16;
 
 /** `ui-reposition` — an in-place cover-photo focal-point editor for rectangular or round frames. */
 @Component({
@@ -20,17 +24,17 @@ const clamp = (n: number) => Math.max(0, Math.min(100, n));
     @if (active() && layout(); as l) {
       <div class="scrim" aria-hidden="true" [style.clip-path]="scrimClip(l)"></div>
       @if (circle()) {
-        <div class="circle-scrim" aria-hidden="true" [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.width" [style.height.px]="l.height"></div>
+        <div class="circle-scrim" aria-hidden="true" [class.grown]="l.grown" [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.width" [style.height.px]="l.height"></div>
       }
-      <div class="photo ghost" aria-hidden="true" [class.circle]="circle()" [style.left.px]="l.imageLeft" [style.top.px]="l.imageTop" [style.width.px]="l.imageWidth" [style.height.px]="l.imageHeight">
+      <div class="photo ghost" aria-hidden="true" [class.circle]="circle()" [class.grown]="l.grown" [style.left.px]="l.imageLeft" [style.top.px]="l.imageTop" [style.width.px]="l.imageWidth" [style.height.px]="l.imageHeight">
         <img [src]="src()" draggable="false" />
       </div>
-      <div #dragSurface class="bright" [class.circle]="circle()" [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.width" [style.height.px]="l.height"
+      <div #dragSurface class="bright" [class.circle]="circle()" [class.grown]="l.grown" [style.left.px]="l.left" [style.top.px]="l.top" [style.width.px]="l.width" [style.height.px]="l.height"
            role="application" tabindex="0" aria-label="Reposition photo" [attr.aria-valuetext]="announcement()"
            (pointerdown)="pointerDown($event)" (pointermove)="pointerMove($event)" (pointerup)="pointerUp($event)" (pointercancel)="pointerUp($event)">
         <img [src]="src()" draggable="false" [style.left.px]="l.imageLeft - l.left" [style.top.px]="l.imageTop - l.top" [style.width.px]="l.imageWidth" [style.height.px]="l.imageHeight" />
       </div>
-      <div class="actions" [style.left.px]="l.left + l.width / 2" [style.top.px]="l.actionsTop">
+      <div #actionsBar class="actions" [style.left.px]="l.actionsLeft" [style.top.px]="l.actionsTop">
         <ui-button variant="secondary" size="sm" (click)="cancelEdit()">Cancel</ui-button>
         <ui-button size="sm" (click)="saveEdit()">Save</ui-button>
       </div>
@@ -53,9 +57,12 @@ const clamp = (n: number) => Math.max(0, Math.min(100, n));
     .bright.circle { border-radius: 50%; }
     .bright img { position: absolute; max-width: none; pointer-events: none; }
     .bright:focus-visible { box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
-    .actions { position: fixed; z-index: calc(var(--ui-z-overlay) + 2); display: flex; gap: var(--ui-space-2); transform: translate(-50%, 0); padding: var(--ui-space-2); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
+    .actions { position: fixed; z-index: calc(var(--ui-z-overlay) + 2); display: flex; gap: var(--ui-space-2); padding: var(--ui-space-2); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised); box-shadow: var(--ui-shadow-2); }
     .sr { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    @media (prefers-reduced-motion: reduce) { .photo, .bright { transition: none; } }
+    @media (prefers-reduced-motion: no-preference) {
+      .grown { animation: ui-reposition-grow var(--ui-motion-base) ease-out; }
+    }
+    @keyframes ui-reposition-grow { from { opacity: 0; transform: scale(.7); } }
   `,
 })
 export class UiReposition {
@@ -70,6 +77,8 @@ export class UiReposition {
 
   private readonly host: ElementRef<HTMLElement>;
   private readonly dragSurface = viewChild<ElementRef<HTMLElement>>('dragSurface');
+  private readonly actionsBar = viewChild<ElementRef<HTMLElement>>('actionsBar');
+  private readonly actionsWidth = signal(0);
   private readonly natural = signal({ width: 0, height: 0 });
   protected readonly draft = signal<UiRepositionPosition>({ x: 50, y: 50 });
   private wasActive = false;
@@ -77,9 +86,16 @@ export class UiReposition {
 
   protected readonly layout = computed<Layout | null>(() => {
     if (!this.active()) return null;
-    const frame = this.host.nativeElement.getBoundingClientRect();
+    const rect = this.host.nativeElement.getBoundingClientRect();
     const image = this.natural();
-    if (!frame.width || !frame.height || !image.width || !image.height) return null;
+    if (!rect.width || !rect.height || !image.width || !image.height) return null;
+    // A frame smaller than MIN_FRAME is shown enlarged around its centre, as an overlay (the host never resizes).
+    const grow = Math.max(1, MIN_FRAME / Math.min(rect.width, rect.height));
+    const w = rect.width * grow, h = rect.height * grow;
+    const vw = innerWidth, vh = innerHeight;
+    const left = grow > 1 ? Math.max(8, Math.min(vw - 8 - w, rect.left + (rect.width - w) / 2)) : rect.left;
+    const top = grow > 1 ? Math.max(8, Math.min(vh - 8 - h, rect.top + (rect.height - h) / 2)) : rect.top;
+    const frame = { left, top, width: w, height: h, bottom: top + h };
     const scale = Math.max(frame.width / image.width, frame.height / image.height);
     const imageWidth = image.width * scale, imageHeight = image.height * scale;
     const p = this.draft();
@@ -87,12 +103,18 @@ export class UiReposition {
     const imageTop = frame.top + (frame.height - imageHeight) * p.y / 100;
     const below = frame.bottom + 8;
     const actionsTop = below + 48 <= innerHeight ? below : Math.max(8, frame.top - 56);
-    return { left: frame.left, top: frame.top, width: frame.width, height: frame.height, imageWidth, imageHeight, imageLeft, imageTop, actionsTop };
+    const barWidth = this.actionsWidth() || 168;
+    const actionsLeft = Math.max(GUTTER, Math.min(vw - GUTTER - barWidth, frame.left + frame.width / 2 - barWidth / 2));
+    return { left: frame.left, top: frame.top, width: frame.width, height: frame.height, imageWidth, imageHeight, imageLeft, imageTop, actionsTop, actionsLeft, grown: grow > 1 };
   });
   protected readonly announcement = computed(() => `Photo position ${Math.round(this.draft().x)} percent horizontal, ${Math.round(this.draft().y)} percent vertical`);
 
   constructor(host: ElementRef<HTMLElement>) {
     this.host = host;
+    effect(() => {
+      const el = this.actionsBar()?.nativeElement;
+      if (el) untracked(() => this.actionsWidth.set(el.offsetWidth));
+    });
     effect(() => {
       const active = this.active();
       const current = this.position();
