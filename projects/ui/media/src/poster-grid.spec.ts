@@ -2,7 +2,8 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { UiAvatarTag } from '@zouriel/ui/avatar-tag';
 import { UiIconButton } from '@zouriel/ui/button';
-import { UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster } from './poster-grid';
+import { UI_DRAG_MOUSE_SLOP, UI_LONG_PRESS_MS, UI_LONG_PRESS_SLOP } from '@zouriel/ui/drag';
+import { UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, uiPosterFallback, type UiPoster, type UiPosterDrop } from './poster-grid';
 import { UiPosterView } from './poster-view';
 import { UiScrim } from './scrim';
 
@@ -385,5 +386,161 @@ describe('ui-poster-view', () => {
     expect(css).toMatch(/var\(--ui-media-scrim\) 88%, transparent\) 100%/);
     
     expect(css).toMatch(/color:\s*var\(--ui-media-on-scrim\)/);
+  });
+});
+
+@Component({
+  imports: [UiPosterGrid],
+  template: `<ui-poster-grid [posters]="posters" [canDrop]="canDrop" (select)="picked.push($event)" (tileDrop)="drops.push($event)" />`,
+})
+class DragHost {
+  posters: UiPoster[] = [
+    { label: 'Photographer event', draggable: true },
+    { label: 'My wedding' },
+    { label: 'Locked party' },
+    { label: 'Beach trip' },
+  ];
+  picked: number[] = [];
+  drops: UiPosterDrop[] = [];
+  canDrop = (_d: UiPoster, t: UiPoster) => t.label !== 'Locked party';
+}
+
+function box(left: number, top: number, w: number, h: number): DOMRect {
+  return { left, top, width: w, height: h, right: left + w, bottom: top + h, x: left, y: top, toJSON: () => ({}) } as DOMRect;
+}
+function ptr(type: string, x: number, y: number, pointerType = 'mouse'): Event {
+  const e = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(e, { clientX: { value: x }, clientY: { value: y }, pointerType: { value: pointerType }, pointerId: { value: 1 }, button: { value: 0 } });
+  return e;
+}
+
+describe('UiPosterGrid drag a tile onto a tile', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    document.querySelectorAll('.ui-drag-ghost, .ui-drag-live').forEach((el) => el.remove());
+  });
+
+  function setup() {
+    const f = TestBed.createComponent(DragHost);
+    f.detectChanges();
+    const lis = Array.from(f.nativeElement.querySelectorAll('li')) as HTMLElement[];
+    lis.forEach((li, i) => (li.getBoundingClientRect = () => box(0, i * 100, 100, 80)));
+    const tiles = Array.from(f.nativeElement.querySelectorAll('.tile')) as HTMLElement[];
+    return { f, host: f.componentInstance, lis, tiles };
+  }
+  const startMouse = (tile: HTMLElement) => {
+    tile.dispatchEvent(ptr('pointerdown', 20, 20));
+    document.dispatchEvent(ptr('pointermove', 20 + UI_DRAG_MOUSE_SLOP + 2, 20));
+  };
+
+  it('drops the dragged tile on a valid one and emits both posters', () => {
+    const { f, host, lis, tiles } = setup();
+    startMouse(tiles[0]);
+    f.detectChanges();
+    // Valid targets are marked, the refused one and nothing else dims.
+    expect(lis[1].classList.contains('drag-valid')).toBe(true);
+    expect(lis[2].classList.contains('drag-dim')).toBe(true);
+    document.dispatchEvent(ptr('pointermove', 50, 120));
+    f.detectChanges();
+    expect(lis[1].classList.contains('ui-drop-target--over')).toBe(true);
+    document.dispatchEvent(ptr('pointerup', 50, 120));
+    f.detectChanges();
+    expect(host.drops.length).toBe(1);
+    expect(host.drops[0].dragged.label).toBe('Photographer event');
+    expect(host.drops[0].target.label).toBe('My wedding');
+    expect([host.drops[0].draggedIndex, host.drops[0].targetIndex]).toEqual([0, 1]);
+    expect(lis[1].classList.contains('drag-valid')).toBe(false);
+    expect(host.picked).toEqual([]);
+  });
+
+  it('refuses an invalid target, and its own tile', () => {
+    const { f, host, tiles } = setup();
+    startMouse(tiles[0]);
+    document.dispatchEvent(ptr('pointermove', 50, 220)); // Locked party
+    f.detectChanges();
+    document.dispatchEvent(ptr('pointerup', 50, 220));
+    f.detectChanges();
+    startMouse(tiles[0]);
+    document.dispatchEvent(ptr('pointermove', 50, 40)); // itself
+    document.dispatchEvent(ptr('pointerup', 50, 40));
+    f.detectChanges();
+    expect(host.drops).toEqual([]);
+  });
+
+  it('dropping outside every tile cancels with no event', () => {
+    const { f, host, tiles } = setup();
+    startMouse(tiles[0]);
+    document.dispatchEvent(ptr('pointermove', 500, 900));
+    document.dispatchEvent(ptr('pointerup', 500, 900));
+    f.detectChanges();
+    expect(host.drops).toEqual([]);
+    expect(document.querySelector('.ui-drag-ghost')).toBeNull();
+  });
+
+  it('a tap on a draggable tile still opens it, and a drag does not also open the tile it ends on', () => {
+    vi.useFakeTimers();
+    const { f, host, tiles } = setup();
+    tiles[0].dispatchEvent(ptr('pointerdown', 20, 20));
+    document.dispatchEvent(ptr('pointerup', 20, 20));
+    tiles[0].click();
+    expect(host.picked).toEqual([0]);
+    startMouse(tiles[0]);
+    document.dispatchEvent(ptr('pointermove', 50, 120));
+    document.dispatchEvent(ptr('pointerup', 50, 120));
+    tiles[0].click(); // the click the browser sends after the drag
+    f.detectChanges();
+    expect(host.picked).toEqual([0]);
+    vi.advanceTimersByTime(5);
+    tiles[0].click();
+    expect(host.picked).toEqual([0, 0]);
+  });
+
+  it('touch: moving the finger scrolls (no drag); holding still drags', () => {
+    vi.useFakeTimers();
+    const { f, host, tiles } = setup();
+    tiles[0].dispatchEvent(ptr('pointerdown', 20, 20, 'touch'));
+    document.dispatchEvent(ptr('pointermove', 20, 20 + UI_LONG_PRESS_SLOP + 4, 'touch'));
+    vi.advanceTimersByTime(UI_LONG_PRESS_MS + 50);
+    f.detectChanges();
+    expect(document.querySelector('.ui-drag-ghost')).toBeNull();
+    document.dispatchEvent(ptr('pointerup', 20, 40, 'touch'));
+
+    tiles[0].dispatchEvent(ptr('pointerdown', 20, 20, 'touch'));
+    vi.advanceTimersByTime(UI_LONG_PRESS_MS + 2);
+    f.detectChanges();
+    expect(document.querySelector('.ui-drag-ghost')).not.toBeNull();
+    document.dispatchEvent(ptr('pointermove', 50, 320, 'touch'));
+    document.dispatchEvent(ptr('pointerup', 50, 320, 'touch'));
+    f.detectChanges();
+    expect(host.drops.map((d) => d.target.label)).toEqual(['Beach trip']);
+  });
+
+  it('keyboard: Space picks up, arrows choose, Enter drops; Escape cancels; announces', () => {
+    const { f, host, tiles } = setup();
+    const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+    tiles[0].dispatchEvent(space);
+    f.detectChanges();
+    expect(space.defaultPrevented).toBe(true);
+    expect(document.querySelector('.ui-drag-live')?.textContent).toContain('Picked up Photographer event');
+    tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(host.drops.length).toBe(1);
+    expect(host.drops[0].target.label).toBe('Beach trip');
+
+    tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    tiles[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(host.drops.length).toBe(1);
+  });
+
+  it('tiles that are not draggable do nothing on drag or Space', () => {
+    const { f, host, tiles } = setup();
+    startMouse(tiles[1]);
+    f.detectChanges();
+    expect(document.querySelector('.ui-drag-ghost')).toBeNull();
+    tiles[1].dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.ui-drag-live')).toBeNull();
+    expect(host.drops).toEqual([]);
   });
 });

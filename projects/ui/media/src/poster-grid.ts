@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, Directive, TemplateRef, computed, contentChild, inject, input, output, signal } from '@angular/core';
+import { Component, Directive, TemplateRef, computed, contentChild, inject, input, output, signal, viewChildren } from '@angular/core';
+import { UiDragItem, UiDragService, UiDropTarget } from '@zouriel/ui/drag';
 import { UiScrim } from './scrim';
 
 /** A small dot over a poster's corner: something the grid must say without words (unread, unfinished). */
@@ -19,6 +20,16 @@ export interface UiPoster {
   /** Fallback gradient stops, e.g. a design's colours. Without them the theme's primary and accent. */
   colors?: string[];
   mark?: UiPosterMark | null;
+  /** Opts the tile in to being dragged onto another tile (see `ui-poster-grid` `tileDrop`). Off by default. */
+  draggable?: boolean;
+}
+
+/** What a `tileDrop` carries, and what `canDrop` is asked about: the dragged tile and the one it was dropped on. */
+export interface UiPosterDrop {
+  dragged: UiPoster;
+  target: UiPoster;
+  draggedIndex: number;
+  targetIndex: number;
 }
 
 /** Context of a `uiPosterDetails` template: the poster and its index. */
@@ -94,17 +105,33 @@ export function uiPosterFallback(colors?: string[] | null): string {
  */
 @Component({
   selector: 'ui-poster-grid',
-  imports: [NgTemplateOutlet, UiScrim],
+  imports: [NgTemplateOutlet, UiScrim, UiDragItem, UiDropTarget],
   template: `
     <ul class="grid" role="list" [style.--ui-poster-ratio]="ratio()">
       @for (p of posters(); track $index) {
-        <li>
+        <li
+          [uiDragItem]="payloads()[$index]"
+          [uiDragLabel]="p.label"
+          [uiDragDisabled]="!p.draggable"
+          [uiDragDescription]="''"
+          [tabindex]="-1"
+          (dragEnd)="dragEnded()"
+          [uiDropTarget]="p.label"
+          [uiDropAccepts]="accepters()[$index]"
+          [uiDropDisabled]="!dragEnabled()"
+          (dropped)="dropped($event, $index)"
+          [class.draggable]="!!p.draggable"
+          [class.drag-valid]="session() && isValid($index)"
+          [class.drag-dim]="session() && !isValid($index) && !isSource($index)"
+        >
           @if (p.href) {
-            <a class="tile" [attr.href]="p.href" [attr.aria-label]="details() ? null : name(p)" (click)="clicked($event, $index)">
+            <a class="tile" [attr.href]="p.href" [attr.aria-label]="details() ? null : name(p)"
+              [attr.aria-description]="p.draggable ? dragHint : null" (click)="clicked($event, $index)" (keydown)="tileKey($event, $index)" (keyup)="tileKeyUp($event, $index)">
               <ng-container [ngTemplateOutlet]="body" [ngTemplateOutletContext]="{ $implicit: p, index: $index }" />
             </a>
           } @else {
-            <button type="button" class="tile" [attr.aria-label]="details() ? null : name(p)" (click)="select.emit($index)">
+            <button type="button" class="tile" [attr.aria-label]="details() ? null : name(p)"
+              [attr.aria-description]="p.draggable ? dragHint : null" (click)="clicked($event, $index)" (keydown)="tileKey($event, $index)" (keyup)="tileKeyUp($event, $index)">
               <ng-container [ngTemplateOutlet]="body" [ngTemplateOutletContext]="{ $implicit: p, index: $index }" />
             </button>
           }
@@ -148,7 +175,17 @@ export function uiPosterFallback(colors?: string[] | null): string {
     @container (min-width: 544px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ui-space-3); } }
     @container (min-width: 992px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     @container (min-width: 1280px) { .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-    li { min-width: 0; position: relative; }
+    li { min-width: 0; position: relative; outline: none; border-radius: var(--ui-radius);
+      transition: opacity var(--ui-motion-base) var(--ui-ease-standard); }
+    /* A tile that can be dragged: a touch long-press must not select text or open a menu. */
+    li.draggable .tile { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+    /* While dragging: valid targets get an accent outline, the others step back; the one under the
+       pointer gets the full ring (the drag library's own square ring on the li is turned off). */
+    li.ui-drop-target--over { box-shadow: none; }
+    li.drag-valid .tile { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-color-accent) 55%, transparent); }
+    li.drag-valid.ui-drop-target--over .tile { box-shadow: 0 0 0 2px var(--ui-color-bg), 0 0 0 4px var(--ui-color-accent); transform: scale(1.02); }
+    li.drag-dim { opacity: 0.45; }
+    @media (prefers-reduced-motion: reduce) { li.drag-valid.ui-drop-target--over .tile { transform: none; } li { transition: none; } }
     .tile { position: relative; isolation: isolate; display: block; width: 100%; padding: 0; border: none; cursor: pointer; font: inherit; text-align: start;
       color: inherit; text-decoration: none;
       aspect-ratio: var(--ui-poster-ratio, 0.75); overflow: hidden; border-radius: var(--ui-radius);
@@ -195,10 +232,69 @@ export class UiPosterGrid {
   /** A plain click on a link tile is left to `select` (no browser navigation), for client-side routing. */
   readonly handleClicks = input(false);
   readonly select = output<number>();
+  /**
+   * Decides whether `dragged` may be dropped on `target` (a tile never accepts itself). Default: any
+   * other tile. Only tiles with `draggable: true` can be dragged at all.
+   */
+  readonly canDrop = input<(dragged: UiPoster, target: UiPoster) => boolean>(() => true);
+  /**
+   * A tile was dragged onto another valid tile: a long press then drag on a phone, a mouse drag on a
+   * desktop, or Space to pick up, arrows to choose and Enter to drop from the keyboard. Dropping
+   * anywhere else cancels without an event.
+   */
+  readonly tileDrop = output<UiPosterDrop>();
 
   protected readonly details = contentChild(UiPosterDetails);
   protected readonly corner = contentChild(UiPosterCorner);
   protected readonly action = contentChild(UiPosterAction);
+
+  private readonly drag = inject(UiDragService);
+  private readonly items = viewChildren(UiDragItem);
+  private swallow = false;
+  protected readonly dragHint = 'Press Space to pick up and drag onto another tile; Enter opens it.';
+
+  /** True when at least one tile can be dragged: only then do tiles take part in dragging at all. */
+  protected readonly dragEnabled = computed(() => this.posters().some((p) => !!p.draggable));
+  protected readonly payloads = computed(() => this.posters().map((poster, index) => ({ grid: this as unknown, poster, index })));
+  protected readonly accepters = computed(() => {
+    const posters = this.posters();
+    return posters.map((target, targetIndex) => (payload: unknown) => {
+      const d = payload as { grid: unknown; poster: UiPoster; index: number } | null;
+      if (!d || d.grid !== this || d.index === targetIndex) return false;
+      return this.canDrop()(d.poster, target);
+    });
+  });
+  /** The drag in progress, when it came from this grid. */
+  protected readonly session = computed(() => {
+    const s = this.drag.active();
+    return s && (s.payload as { grid?: unknown }).grid === this ? s : null;
+  });
+  protected isSource(i: number): boolean {
+    return (this.session()?.payload as { index?: number } | undefined)?.index === i;
+  }
+  protected isValid(i: number): boolean {
+    const s = this.session();
+    return !!s && this.accepters()[i](s.payload);
+  }
+  protected dropped(payload: unknown, targetIndex: number): void {
+    const d = payload as { poster: UiPoster; index: number };
+    this.tileDrop.emit({ dragged: d.poster, target: this.posters()[targetIndex], draggedIndex: d.index, targetIndex });
+  }
+  /** A drag that ends over a tile must not also open it: the click that follows is swallowed. */
+  protected dragEnded(): void {
+    this.swallow = true;
+    setTimeout(() => (this.swallow = false), 0);
+  }
+  /** Space picks a draggable tile up (Enter still opens it); the drag service then owns the keys. */
+  protected tileKey(e: KeyboardEvent, i: number): void {
+    if (e.key !== ' ' || !this.posters()[i]?.draggable || this.drag.active()) return;
+    e.preventDefault();
+    this.items()[i]?.startKeyboardDrag();
+  }
+  protected tileKeyUp(e: KeyboardEvent, i: number): void {
+    // A button fires its click on Space's key-up in some browsers; a draggable tile uses Space to pick up.
+    if (e.key === ' ' && this.posters()[i]?.draggable) e.preventDefault();
+  }
 
   protected readonly broken = signal(new Set<string>());
   protected readonly position = computed(() => (this.focus() === 'top' ? '50% 0' : '50% 50%'));
@@ -207,6 +303,14 @@ export class UiPosterGrid {
     return p.mark ? `${p.label}, ${p.mark.label}` : p.label;
   }
   protected clicked(e: MouseEvent, i: number): void {
+    if (this.swallow) {
+      e.preventDefault();
+      return;
+    }
+    if (!(e.currentTarget as HTMLElement).matches('a')) {
+      this.select.emit(i);
+      return;
+    }
     const modified = e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
     if (modified) return;
     if (this.handleClicks()) e.preventDefault();

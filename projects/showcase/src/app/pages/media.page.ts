@@ -4,7 +4,7 @@ import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import ViewIcon from '@hugeicons/core-free-icons/ViewIcon';
-import { UiCarousel, UiCoverHero, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiSelectionAction } from '@zouriel/ui/media';
+import { UiCarousel, UiCoverHero, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, type UiCarouselSlide, type UiGalleryImage, type UiImagePickerItem, type UiPoster, type UiPosterDrop, type UiSelectionAction } from '@zouriel/ui/media';
 import { UiText } from '@zouriel/ui/text';
 import type { UiMenuItem } from '@zouriel/ui/overlay';
 import { UiTaskProgressDialog } from '@zouriel/ui/dialog';
@@ -112,6 +112,12 @@ function grad(a: string, b: string): string {
             </ng-template>
           </ui-poster-grid>
           <p class="note">Last picked: {{ posters[picked()].label }} · Last viewed: {{ viewed() < 0 ? 'none' : posters[viewed()].label }}</p>
+        </doc-demo>
+        <doc-demo [code]="posterDragCode">
+          <ui-poster-grid [posters]="dragPosters" focus="top" [canDrop]="canMerge" (select)="picked.set($event)" (tileDrop)="merged.set($event)">
+            <ng-template uiPosterDetails let-p><span class="pt-title">{{ p.label }}</span></ng-template>
+          </ui-poster-grid>
+          <p class="note">{{ merged() ? merged()!.dragged.label + ' merged into ' + merged()!.target.label : 'Drag "From the photographer" onto one of your own events (long press on a phone; Space, arrows, Enter from the keyboard). "Office dinner" is locked.' }}</p>
         </doc-demo>
       </doc-section>
 
@@ -355,6 +361,18 @@ export class MediaPage {
   protected readonly playIcon = PlayIcon;
   protected readonly viewIcon = ViewIcon;
   protected readonly viewed = signal(-1);
+  protected readonly merged = signal<UiPosterDrop | null>(null);
+  protected readonly dragPosters: UiPoster[] = [
+    { src: grad('#3d5afe', '#e5484d'), label: 'From the photographer', draggable: true },
+    { src: grad('#2faa6e', '#d9a521'), label: 'Aisha and Ali' },
+    { src: null, label: 'Office dinner', colors: ['#5b2a86', '#e5484d'] },
+    { src: grad('#d9a521', '#3d5afe'), label: 'Housewarming' },
+  ];
+  protected readonly canMerge = (_d: UiPoster, t: UiPoster) => t.label !== 'Office dinner';
+  protected readonly posterDragCode = `<ui-poster-grid [posters]="posters" [canDrop]="canMerge" (tileDrop)="merge($event)" />
+// posters: [{ label: 'From the photographer', src, draggable: true }, { label: 'Aisha and Ali', src }, ...]
+canMerge = (dragged: UiPoster, target: UiPoster) => !target.locked;
+merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex */ }`;
   protected readonly posterActionCode = `<ui-poster-grid [posters]="posters" (select)="open($event)">
   <ng-template uiPosterDetails let-p><strong>{{ p.label }}</strong></ng-template>
   <ng-template uiPosterAction let-p let-i="index">
@@ -363,7 +381,7 @@ export class MediaPage {
     </ui-icon-button>
   </ng-template>
 </ui-poster-grid>`;
-  protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
+  protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; draggable?: boolean; }\ninterface UiPosterDrop { dragged: UiPoster; target: UiPoster; draggedIndex: number; targetIndex: number; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
   protected readonly viewOpen = signal(false);
   protected readonly picked = signal(0);
   protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
@@ -413,11 +431,15 @@ export class MediaPage {
     { name: 'ratio', type: 'number', default: '0.75', desc: 'Width / height of every tile.' },
     { name: 'focus', type: "'top' | 'center'", default: "'center'", desc: "Which part of a picture survives the crop; 'top' keeps a poster's heading." },
     { name: 'handleClicks', type: 'boolean', default: 'false', desc: 'A plain click on a link tile goes to (select) only (no browser navigation), for client-side routing.' },
+    { name: 'canDrop', type: '(dragged: UiPoster, target: UiPoster) => boolean', default: '() => true', desc: 'Whether a dragged tile may be dropped on this one (a tile never accepts itself). Only tiles with draggable: true can be dragged; grids without any behave as before. While dragging, valid tiles get an accent outline, the rest dim, and the one under the pointer gets a clear ring. Touch: long press, then drag (scrolling and tapping are unchanged); mouse: drag; keyboard: Space picks up (Enter still opens), arrows choose, Enter drops, Escape cancels, with a live-region announcement. Built on uiDragItem and uiDropTarget.' },
     { name: '<ng-template uiPosterDetails>', type: 'slot', default: '—', desc: 'Details drawn on every tile over a compact scrim; context: the poster ($implicit) and index.' },
     { name: '<ng-template uiPosterCorner>', type: 'slot', default: '—', desc: "Something small (a ui-avatar-tag, size xs) over each picture's top-start corner, inside it with a space2 inset; no taps of its own. Context: the poster ($implicit) and index. 0.74.0." },
     { name: '<ng-template uiPosterAction>', type: 'slot', default: '—', desc: "One small action (a ui-icon-button, size sm or md) at each picture's top-end corner on a round scrim backdrop, outside the tile's link or button: its own tab stop, and it never selects the tile. A mark's dot moves beside it. Context: the poster ($implicit) and index. 0.77.0." },
   ];
-  protected readonly posterGridOut: ApiRow[] = [{ name: 'select', type: 'number', default: '—', desc: 'The index of the tile that was activated.' }];
+  protected readonly posterGridOut: ApiRow[] = [
+    { name: 'select', type: 'number', default: '—', desc: 'The index of the tile that was activated.' },
+    { name: 'tileDrop', type: 'UiPosterDrop', default: '—', desc: 'A draggable tile was dropped on a valid one: { dragged, target, draggedIndex, targetIndex }. Dropping anywhere else cancels with no event.' },
+  ];
   protected readonly posterViewApi: ApiRow[] = [
     { name: 'open', type: 'boolean', default: 'false', desc: 'Two-way (`[(open)]`). Whether the view is showing.' },
     { name: 'src', type: 'string | null', default: 'null', desc: 'The picture.' },
