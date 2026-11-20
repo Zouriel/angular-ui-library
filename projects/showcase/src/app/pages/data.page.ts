@@ -971,6 +971,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'avatar: dimension', type: 'number | null', default: 'null', desc: 'Any pixel size (96, 128 for a profile photo); overrides size, and the initials scale with it.' },
     { name: 'avatar: crop', type: 'UiAvatarCrop | null', default: 'null', desc: 'A box of the image as fractions of its width and height ({ x, y, w, h }, each 0 to 1) that fills the avatar, centred; a box that is not square in pixels is covered by its larger side. Leave null for the whole image. The image is read on load to keep it undistorted and stays hidden until then.' },
     { name: 'avatar: cropPadding', type: 'number', default: '0.25', desc: 'Room added around the crop box on every side, as a fraction of its size, kept inside the image; 0 fits the box exactly.' },
+    { name: 'avatar: position / repositionable', type: 'UiRepositionPosition / boolean', default: 'center / false', desc: 'Saved cover focal point and shared in-place editing state; save emits positionSave and cancel emits repositionCancel.' },
     { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Rounded square instead of a circle.' },
     { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational only; trim the list yourself.' },
     { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-1)', desc: 'How far grouped avatars overlap.' },

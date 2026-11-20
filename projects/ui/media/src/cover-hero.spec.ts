@@ -10,6 +10,7 @@ import { UiCoverHero } from './cover-hero';
   template: `
     <ui-cover-hero [src]="src()" [coverMenu]="menu()" coverActionLabel="Change cover image"
                    [fadeBottom]="fade()" [scrimTop]="top()" [scrimStart]="start()" [minHeight]="min()"
+                   [position]="position()"
                    (coverMenuSelect)="picked.push($event.value)">
       <ui-button hero-top-start variant="ghost" id="back">Back</ui-button>
       <ui-button hero-top-end variant="ghost" id="opts">Options</ui-button>
@@ -22,6 +23,7 @@ class Host {
   src = signal<string | null>('cover.jpg');
   menu = signal<UiMenuItem[]>([]);
   fade = signal(true); top = signal(true); start = signal(true); min = signal<number | null>(null);
+  position = signal({ x: 50, y: 50 });
   picked: string[] = [];
 }
 
@@ -84,6 +86,14 @@ describe('UiCoverHero (0.89.0)', () => {
     f.componentInstance.min.set(400);
     f.detectChanges();
     expect(hero().style.getPropertyValue('--ui-cover-min-height')).toBe('400px');
+  });
+
+  it('renders the saved focal position through the shared reposition frame', () => {
+    const { f, hero } = mk();
+    f.componentInstance.position.set({ x: 20, y: 80 });
+    f.detectChanges();
+    const reposition = hero().querySelector<HTMLElement>('ui-reposition')!;
+    expect(reposition.querySelector<HTMLImageElement>('.frame-image')!.style.objectPosition).toBe('20% 80%');
   });
 
   it('without a menu the cover is not a button and nothing opens', () => {

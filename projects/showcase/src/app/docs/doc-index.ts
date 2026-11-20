@@ -192,6 +192,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Poster grid', anchor: 'poster-grid' },
     { name: 'Poster view', anchor: 'poster-view' },
     { name: 'Scrim', anchor: 'scrim' },
+    { name: 'Reposition', anchor: 'reposition' },
     { name: 'Cover hero', anchor: 'cover-hero' },
     { name: 'Selectable', anchor: 'selectable' },
     { name: 'Likes', anchor: 'likes' },

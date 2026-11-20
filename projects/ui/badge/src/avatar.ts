@@ -1,5 +1,6 @@
-import { Component, computed, input, linkedSignal } from '@angular/core';
+import { Component, computed, input, linkedSignal, output } from '@angular/core';
 import type { UiButtonSize } from '@zouriel/ui';
+import { UiReposition, type UiRepositionPosition } from '@zouriel/ui/reposition';
 
 /** A rectangle inside an image, as fractions (0-1) of its width and height. */
 export interface UiAvatarCrop { x: number; y: number; w: number; h: number }
@@ -38,6 +39,7 @@ export function uiAvatarCropLayout(crop: UiAvatarCrop | null | undefined, paddin
  */
 @Component({
   selector: 'ui-avatar',
+  imports: [UiReposition],
   template: `
     <span class="ui-avatar" [attr.data-size]="size()" [class.square]="square()"
           [style.width.px]="dimension() ?? null" [style.height.px]="dimension() ?? null"
@@ -48,7 +50,9 @@ export function uiAvatarCropLayout(crop: UiAvatarCrop | null | undefined, paddin
                [style.visibility]="aspect() ? null : 'hidden'"
                [style.width.%]="c.width" [style.height.%]="c.height" [style.left.%]="c.left" [style.top.%]="c.top" />
         } @else {
-          <img [src]="src()" [alt]="alt() || name() || ''" (error)="failed.set(true)" (load)="onLoad($event)" />
+          <ui-reposition [src]="src()!" [alt]="alt() || name() || ''" [position]="position()"
+                         [active]="repositionable()" [circle]="!square()"
+                         (save)="positionSave.emit($event)" (cancel)="repositionCancel.emit()" (loadError)="failed.set(true)" />
         }
       } @else {
         <span class="initials" aria-hidden="true">{{ initials() }}</span>
@@ -72,6 +76,7 @@ export function uiAvatarCropLayout(crop: UiAvatarCrop | null | undefined, paddin
     .ui-avatar[data-size="xl"] { width: var(--ui-size-xl); height: var(--ui-size-xl); font-size: calc(21px * var(--ui-font-scale)); }
     .ui-avatar { box-sizing: border-box; flex: none; position: relative; }
     img { width: 100%; height: 100%; object-fit: cover; }
+    ui-reposition { width: 100%; height: 100%; }
     img.cropped { position: absolute; max-width: none; object-fit: fill; }
   `,
 })
@@ -87,6 +92,12 @@ export class UiAvatar {
   crop = input<UiAvatarCrop | null>(null);
   /** How much of the box's size to add on every side so the whole face and hair show. */
   cropPadding = input(0.25);
+  /** Focal point used when the image is cover-cropped. */
+  position = input<UiRepositionPosition>({ x: 50, y: 50 });
+  /** Put the avatar into its in-place reposition mode (ignored with a legacy crop box). */
+  repositionable = input(false);
+  readonly positionSave = output<UiRepositionPosition>();
+  readonly repositionCancel = output<void>();
   protected readonly Math = Math;
   /** The image failed to load; show initials instead. Resets when `src` changes. */
   protected readonly failed = linkedSignal({ source: this.src, computation: () => false });

@@ -14,6 +14,7 @@ import Delete02Icon from '@hugeicons/core-free-icons/Delete02Icon';
 import Download04Icon from '@hugeicons/core-free-icons/Download04Icon';
 import Share08Icon from '@hugeicons/core-free-icons/Share08Icon';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
+import { UiReposition, type UiRepositionPosition } from '@zouriel/ui/reposition';
 
 function grad(a: string, b: string): string {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -22,12 +23,13 @@ function grad(a: string, b: string): string {
 
 @Component({
   selector: 'page-media',
-  imports: [UiBadge, UiButton, UiIconButton, UiText, HugeiconsIconComponent, UiCarousel, UiCoverHero, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
+  imports: [UiBadge, UiButton, UiIconButton, UiText, HugeiconsIconComponent, UiCarousel, UiCoverHero, UiReposition, UiGallery, UiImagePicker, UiPosterAction, UiPosterCorner, UiPosterDetails, UiPosterGrid, UiPosterView, UiScrim, UiSelectable, UiSelectionBar, UiMasonryGrid, UiMasonryTile, UiLikeCount, UiHeartBurst, UiLikeButton, UiAvatarTag, UiTaskProgressDialog, UiFilter, UiFilterChips, DocPage, DocSection, DocDemo],
   styles: `.note { margin: var(--ui-space-2) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .scrim-demo { position: relative; max-width: 360px; aspect-ratio: 3 / 4; border-radius: var(--ui-radius); overflow: hidden; }
     .scrim-demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .scrim-demo ui-scrim { position: absolute; inset-inline: 0; bottom: 0; }
     .cover-demo { max-width: 760px; }
+    .reposition-demo { width: min(100%, 420px); height: 180px; border-radius: var(--ui-radius); }
     .pv-title { margin: 0; font-size: var(--ui-font-size-lg); font-weight: 600; }
     .pv-meta { margin: 0; opacity: 0.9; }
     .pt-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -132,6 +134,16 @@ function grad(a: string, b: string): string {
             <img [src]="scrimPicture" alt="White to sky blue gradient" />
             <ui-scrim><p class="pv-title">Aisha and Ali</p><p class="pv-meta">Over a white picture, still readable.</p></ui-scrim>
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Reposition" selector="ui-reposition" [api]="repositionApi" [outputs]="repositionOut"
+        summary="Edits the focal point of any cover-cropped photo in place. Active mode dims the page around the frame, shows the overflow photo faintly, and keeps the frame bright. Drag with mouse, touch or pen; use arrow keys, Enter to save, or Escape to cancel. It opens no modal or route.">
+        <doc-demo code="<ui-reposition [src]=&quot;photo&quot; [position]=&quot;position()&quot; [active]=&quot;editing()&quot; (save)=&quot;save($event)&quot; (cancel)=&quot;editing.set(false)&quot; />">
+          <ui-reposition class="reposition-demo" [src]="coverPicture" [position]="repositionPosition()" [active]="repositionEditing()"
+                         (save)="repositionPosition.set($event); repositionEditing.set(false)" (cancel)="repositionEditing.set(false)" />
+          <ui-button size="sm" (click)="repositionEditing.set(true)">Reposition photo</ui-button>
+          <p class="note">Saved focal point: {{ repositionPosition().x }}, {{ repositionPosition().y }}</p>
         </doc-demo>
       </doc-section>
 
@@ -357,6 +369,18 @@ export class MediaPage {
   protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
   protected readonly scrimPicture = grad('#ffffff', '#cfe8ff');
   protected readonly coverPicture = grad('#7a4fa0', '#66c2a5');
+  protected readonly repositionEditing = signal(false);
+  protected readonly repositionPosition = signal<UiRepositionPosition>({ x: 50, y: 50 });
+  protected readonly repositionApi: ApiRow[] = [
+    { name: 'src', type: 'string', default: 'required', desc: 'Photo URL.' },
+    { name: 'position', type: 'UiRepositionPosition', default: '{ x: 50, y: 50 }', desc: 'Saved focal point, in 0–100 percentages.' },
+    { name: 'active', type: 'boolean', default: 'false', desc: 'Shows the in-place editor.' },
+    { name: 'circle', type: 'boolean', default: 'false', desc: 'Uses a round frame and scrim cutout.' },
+  ];
+  protected readonly repositionOut: ApiRow[] = [
+    { name: 'save', type: 'UiRepositionPosition', default: '—', desc: 'The new focal point.' },
+    { name: 'cancel', type: 'void', default: '—', desc: 'Discard the draft and retain position.' },
+  ];
   protected readonly coverChoice = signal('none yet');
   protected readonly coverMenu: UiMenuItem[] = [
     { label: 'Change cover', value: 'change' },
@@ -375,11 +399,15 @@ export class MediaPage {
     { name: 'fadeBottom · scrimTop · scrimStart', type: 'boolean', default: 'true', desc: 'Bottom-to-page fade and subtle contrast layers.' },
     { name: 'coverMenu', type: 'readonly UiMenuItem[]', default: '[]', desc: 'Non-empty makes the cover an accessible menu trigger.' },
     { name: 'coverActionLabel', type: 'string', default: "'Change cover image'", desc: 'Accessible name of the editable cover.' },
+    { name: 'position / repositionable', type: 'UiRepositionPosition / boolean', default: 'center / false', desc: 'Saved focal point and in-place editing state.' },
     { name: '[hero-top-start] / [hero-top-end]', type: 'slots', default: '—', desc: 'Controls at the logical top corners.' },
     { name: '(default)', type: 'slot', default: '—', desc: 'Title and metadata, width-limited to 85% / 69%.' },
     { name: '[hero-actions]', type: 'slot', default: '—', desc: 'Primary actions above the bottom fade.' },
   ];
-  protected readonly coverOut: ApiRow[] = [{ name: 'coverMenuSelect', type: 'UiMenuItem', default: '—', desc: 'The selected cover action.' }];
+  protected readonly coverOut: ApiRow[] = [
+    { name: 'coverMenuSelect', type: 'UiMenuItem', default: '—', desc: 'The selected cover action.' },
+    { name: 'positionSave / repositionCancel', type: 'UiRepositionPosition / void', default: '—', desc: 'Save or discard the reposition draft.' },
+  ];
   protected readonly posterGridApi: ApiRow[] = [
     { name: 'posters', type: 'UiPoster[]', default: '[]', desc: 'The tiles: picture, accessible label, fallback colours, optional dot.' },
     { name: 'ratio', type: 'number', default: '0.75', desc: 'Width / height of every tile.' },

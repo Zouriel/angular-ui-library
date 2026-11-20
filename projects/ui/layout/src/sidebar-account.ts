@@ -4,6 +4,7 @@ import UnfoldMoreIcon from '@hugeicons/core-free-icons/UnfoldMoreIcon';
 import type { UiStatus } from '@zouriel/ui';
 import { UiAvatar, UiBadge } from '@zouriel/ui/badge';
 import { UiTooltip } from '@zouriel/ui/overlay';
+import type { UiRepositionPosition } from '@zouriel/ui/reposition';
 
 let hintSeq = 0;
 
@@ -42,6 +43,7 @@ let hintSeq = 0;
           class="avatar"
           [src]="src() || undefined"
           [name]="name()"
+          [position]="position()"
           alt=""
           aria-hidden="true"
         />
@@ -183,6 +185,8 @@ export class UiSidebarAccount {
   subtitle = input<string | null | undefined>(undefined);
   /** Profile photo URL; without one (or if it fails to load) the avatar shows initials. */
   src = input<string | null | undefined>(undefined);
+  /** Focal point used when the profile photo is cover-cropped. */
+  position = input<UiRepositionPosition>({ x: 50, y: 50 });
   /** A short label after the name, e.g. "Read-only". */
   badge = input<string | null | undefined>(undefined);
   /** The badge's colour. */

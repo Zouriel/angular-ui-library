@@ -10,6 +10,16 @@ describe('UiAvatar', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.initials')?.textContent?.trim()).toBe('AL');
   });
 
+  it('renders a saved focal point through a circular shared reposition frame', () => {
+    const fixture = TestBed.createComponent(UiAvatar);
+    fixture.componentRef.setInput('src', '/face.jpg');
+    fixture.componentRef.setInput('position', { x: 80, y: 20 });
+    fixture.detectChanges();
+    const reposition = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('ui-reposition')!;
+    expect(reposition.classList.contains('circle')).toBe(true);
+    expect(reposition.querySelector<HTMLImageElement>('.frame-image')!.style.objectPosition).toBe('80% 20%');
+  });
+
   it('falls back to initials when the image fails, and tries again for a new src', () => {
     const fixture = TestBed.createComponent(UiAvatar);
     const el = fixture.nativeElement as HTMLElement;

@@ -1,5 +1,6 @@
 import { Component, computed, effect, input, output, signal, untracked } from '@angular/core';
 import { UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
+import { UiReposition, type UiRepositionPosition } from '@zouriel/ui/reposition';
 
 /**
  * `ui-cover-hero` — a full-width cover picture with on-media chrome and a bottom fade into the page.
@@ -10,7 +11,7 @@ import { UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
  */
 @Component({
   selector: 'ui-cover-hero',
-  imports: [UiContextMenu],
+  imports: [UiContextMenu, UiReposition],
   host: {
     '[attr.data-on-media]': "hasImage() ? '' : null",
     '[class.no-image]': '!hasImage()',
@@ -32,13 +33,15 @@ import { UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
         (contextSelect)="coverMenuSelect.emit($event)"
       >
         @if (hasImage()) {
-          <img [src]="src()" alt="" draggable="false" (error)="broken.set(true)" />
+          <ui-reposition [src]="src()!" [position]="position()" [active]="repositionable()" [alt]="''"
+                         (save)="positionSave.emit($event)" (cancel)="repositionCancel.emit()" (loadError)="broken.set(true)" />
         }
       </button>
     } @else {
       <div class="cover" aria-hidden="true">
         @if (hasImage()) {
-          <img [src]="src()" alt="" draggable="false" (error)="broken.set(true)" />
+          <ui-reposition [src]="src()!" [position]="position()" [active]="repositionable()" [alt]="''"
+                         (save)="positionSave.emit($event)" (cancel)="repositionCancel.emit()" (loadError)="broken.set(true)" />
         }
       </div>
     }
@@ -75,7 +78,7 @@ import { UiContextMenu, type UiMenuItem } from '@zouriel/ui/overlay';
     button.cover { cursor: pointer; font: inherit; color: inherit;
       user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     button.cover:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); }
-    .cover img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+    .cover ui-reposition { display: block; width: 100%; height: 100%; }
 
     .start-shade, .top-shade, .bottom-fade { position: absolute; z-index: 1; pointer-events: none; }
     .start-shade { inset: 0; }
@@ -142,6 +145,12 @@ export class UiCoverHero {
   readonly coverActionLabel = input('Change cover image');
   /** The selected cover action. */
   readonly coverMenuSelect = output<UiMenuItem>();
+  /** Saved focal point for the cover image (CSS object-position percentages). */
+  readonly position = input<UiRepositionPosition>({ x: 50, y: 50 });
+  /** Put the cover into its in-place reposition mode. */
+  readonly repositionable = input(false);
+  readonly positionSave = output<UiRepositionPosition>();
+  readonly repositionCancel = output<void>();
 
   protected readonly broken = signal(false);
   protected readonly hasImage = computed(() => !!this.src() && !this.broken());

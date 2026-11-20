@@ -1,5 +1,6 @@
 import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
+import type { UiRepositionPosition } from '@zouriel/ui/reposition';
 
 /** Where the tag sits: `overlay` on a photo (a dark see-through pill), `plain` on an ordinary surface. */
 export type UiAvatarTagVariant = 'overlay' | 'plain';
@@ -33,7 +34,7 @@ export function uiAvatarTagLetter(name: string | null | undefined): string {
     <span class="tag" [attr.data-variant]="variant()" [attr.data-size]="size()" [class.glass]="glass()" aria-hidden="true">
       <span class="pic">
         @if (src() && !failed()) {
-          <img [src]="src()" alt="" (error)="failed.set(true)" />
+          <img [src]="src()" alt="" (error)="failed.set(true)" [style.object-position]="position().x + '% ' + position().y + '%'" />
         } @else {
           <span class="letter">{{ letter() }}</span>
         }
@@ -84,6 +85,8 @@ export class UiAvatarTag {
   readonly name = input('');
   /** The picture's URL. Decorative; the first letter shows without it or when it fails. */
   readonly src = input<string | null | undefined>(null);
+  /** Focal point used when the tiny photo is cover-cropped. */
+  readonly position = input<UiRepositionPosition>({ x: 50, y: 50 });
   /** Words read before the name, e.g. "At" for "At Coco Palm". Not shown. */
   readonly prefix = input<string | null | undefined>(null);
   readonly variant = input<UiAvatarTagVariant>('overlay');
