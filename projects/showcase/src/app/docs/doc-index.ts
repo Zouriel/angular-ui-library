@@ -182,6 +182,10 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Section list', anchor: 'section-list' },
     { name: 'Reorder grid', anchor: 'reorder-grid' },
   ],
+  'drag': [
+    { name: 'Drag item & drop target', anchor: 'drag-item-drop-target' },
+    { name: 'Drop target API', anchor: 'drop-target-api' },
+  ],
   'media': [
     { name: 'Carousel', anchor: 'carousel' },
     { name: 'Gallery', anchor: 'gallery' },

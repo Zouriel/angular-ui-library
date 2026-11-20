@@ -202,6 +202,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Charts', route: 'charts', entries: '/chart', items: ['bar-chart'] },
     { title: 'Plans', route: 'plans', entries: '/plans, /button', items: ['plan-card', 'plan-grid', 'plan-compare', 'button tier'] },
     { title: 'Sortable', route: 'sortable', entries: '/sortable', items: ['section-list', 'reorder-grid'] },
+    { title: 'Drag & drop', route: 'drag', entries: '/drag', items: ['uiDragItem', 'uiDropTarget'] },
     { title: 'Media', route: 'media', entries: '/media, /avatar-tag', items: ['carousel', 'gallery', 'image-picker', 'avatar-tag'] },
     { title: 'Map', route: 'map', entries: '/map (lazy, needs leaflet)', items: ['map'] },
     { title: 'Window system', route: 'window', entries: '/window', items: ['window', 'UiWindowManager', 'uiDraggable', 'uiResizable'] },
