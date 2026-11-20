@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { UiDragService } from '@zouriel/ui/drag';
 import { UiSwipe } from './swipe';
 
 /**
@@ -144,6 +145,23 @@ describe('UiSwipe', () => {
     );
     fixture.detectChanges();
     expect(host.went).toEqual([]);
+  });
+
+  it('ignores a finger that is dragging a library drag item, but a plain swipe still fires', () => {
+    const target = el('plain');
+    const service = TestBed.inject(UiDragService);
+    const handle: Parameters<UiDragService['startPointerDrag']>[0] = {
+      element: target, getPayload: () => 'x', getLabel: () => 'x', setDragging: () => undefined,
+      notifyStart: () => undefined, notifyCancel: () => undefined, notifyEnd: () => undefined,
+    };
+    target.dispatchEvent(touch('touchstart', [{ x: 200, y: 200 }], 0));
+    service.startPointerDrag(handle, 200, 200);
+    target.dispatchEvent(touch('touchmove', [{ x: 100, y: 200 }], 200));
+    target.dispatchEvent(touch('touchend', [{ x: 100, y: 200 }], 210));
+    expect(host.went).toEqual([]);
+    service.cancel();
+    drag(-80);
+    expect(host.went).toEqual(['left']);
   });
 
   it('answers while the finger is still down, without waiting for it to lift', () => {

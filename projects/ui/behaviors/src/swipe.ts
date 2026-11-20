@@ -1,4 +1,5 @@
 import { Directive, ElementRef, inject, input, output } from '@angular/core';
+import { UiDragService } from '@zouriel/ui/drag';
 import { isSwipe } from './gestures';
 
 /** How close to the edge of the screen a gesture may begin before we leave it to the browser. */
@@ -51,6 +52,7 @@ interface Point {
  *   <li><b>Anything scrollable sideways</b> under the finger keeps its own drag: a tab strip, a
  *       carousel, a wide table. Reaching the end of one is not permission to leave the page.</li>
  *   <li><b>Fields, sliders and editable text</b>, which are dragged for their own reasons.</li>
+ *   <li><b>A drag-and-drop in progress</b> ({@link UiDragService}): the finger belongs to the dragged tile.</li>
  *   <li><b>The mouse</b>, unless asked for. A mouse drag across a page is a text selection, and
  *       whoever has one also has the whole navigation on screen.</li>
  * </ul>
@@ -72,6 +74,7 @@ interface Point {
 })
 export class UiSwipe {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly drag = inject(UiDragService);
 
   /** Turns the gesture off without unmounting it — for a page with nowhere to go, say. */
   readonly disabled = input(false, { alias: 'uiSwipeDisabled' });
@@ -170,7 +173,7 @@ export class UiSwipe {
   // --- the gesture itself ---------------------------------------------------------------------
 
   private begin(id: number, x: number, y: number, at: number, target: EventTarget | null): void {
-    if (this.disabled()) return;
+    if (this.disabled() || this.drag.active()) return;
     if (this.declines(x, target)) return;
     this.from = { id, x, y, at };
     this.last = null;
@@ -178,6 +181,11 @@ export class UiSwipe {
 
   /** Judged while the finger is still down, and fired the moment it qualifies. */
   private judge(from: Point, now: Point): void {
+    // A library drag (a poster tile, a sortable row) owns this finger: never also turn the page.
+    if (this.drag.active()) {
+      this.clear();
+      return;
+    }
     const dx = now.x - from.x;
     const dy = now.y - from.y;
     if (!isSwipe(dx, dy, now.at - from.at, this.host.nativeElement.clientWidth)) return;

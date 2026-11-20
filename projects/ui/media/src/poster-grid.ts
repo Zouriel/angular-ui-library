@@ -22,6 +22,8 @@ export interface UiPoster {
   mark?: UiPosterMark | null;
   /** Opts the tile in to being dragged onto another tile (see `ui-poster-grid` `tileDrop`). Off by default. */
   draggable?: boolean;
+  /** Focal point of the cropped picture, CSS object-position percentages (default 50/50; overrides the grid's `focus`). */
+  position?: { x: number; y: number } | null;
 }
 
 /** What a `tileDrop` carries, and what `canDrop` is asked about: the dragged tile and the one it was dropped on. */
@@ -149,7 +151,7 @@ export function uiPosterFallback(colors?: string[] | null): string {
     </ul>
     <ng-template #body let-p let-i="index">
       @if (p.src && !broken().has(p.src)) {
-        <img [src]="p.src" alt="" loading="lazy" decoding="async" [style.object-position]="position()" (error)="fail(p.src)" />
+        <img [src]="p.src" alt="" loading="lazy" decoding="async" [style.object-position]="posStyle(p)" (error)="fail(p.src)" />
       } @else {
         <span class="fallback" [style.background]="fallback(p)"></span>
       }
@@ -298,6 +300,11 @@ export class UiPosterGrid {
 
   protected readonly broken = signal(new Set<string>());
   protected readonly position = computed(() => (this.focus() === 'top' ? '50% 0' : '50% 50%'));
+
+  protected posStyle(p: UiPoster): string {
+    const q = p.position;
+    return q ? `${q.x}% ${q.y}%` : this.position();
+  }
 
   protected name(p: UiPoster): string {
     return p.mark ? `${p.label}, ${p.mark.label}` : p.label;

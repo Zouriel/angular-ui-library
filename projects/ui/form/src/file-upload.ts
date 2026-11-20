@@ -29,7 +29,7 @@ import { UiButton } from '@zouriel/ui/button';
              [attr.capture]="capture() === true ? '' : capture() === false ? null : capture()" (change)="onPick($event)"
              [attr.aria-label]="preview() ? (previewAlt() ? previewAlt() + '. ' : '') + (replaceLabel() ?? strings.uploadReplace) : null" />
       @if (preview(); as src) {
-        <img class="preview" [src]="src" [attr.alt]="previewAlt() ?? ''" />
+        <img class="preview" [src]="src" [attr.alt]="previewAlt() ?? ''" [style.object-position]="previewPosition() ? previewPosition()!.x + '% ' + previewPosition()!.y + '%' : null" />
         <span class="replace"><hugeicons-icon [icon]="uploadIcon" [size]="16" [strokeWidth]="1.8" />{{ replaceLabel() ?? strings.uploadReplace }}</span>
       } @else {
         <span class="icon" aria-hidden="true"><hugeicons-icon [icon]="uploadIcon" [size]="22" [strokeWidth]="1.8" /></span>
@@ -124,6 +124,8 @@ export class UiFileUpload {
   previewFit = input<'cover' | 'contain'>('cover');
   /** The box's shape while it shows a picture, CSS aspect-ratio (e.g. '16 / 9', '1'). */
   previewAspect = input<string>('16 / 9');
+  /** Focal point of the cropped (cover) preview, CSS object-position percentages (default centre). */
+  previewPosition = input<{ x: number; y: number } | null | undefined>(null);
   replaceLabel = input<string | undefined>(undefined);
   /** Shows a Remove button under the picture (the uploadRemove string, or `removeLabel`) that emits `(remove)`. */
   removable = input(false);

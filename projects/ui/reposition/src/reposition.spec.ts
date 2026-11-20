@@ -66,4 +66,17 @@ describe('UiReposition', () => {
     expect(fixture.componentInstance.cancelled).toBe(1);
     expect((editor.querySelector('.bright') as HTMLElement).getAttribute('aria-valuetext')).toContain('40 percent horizontal, 25 percent vertical');
   });
+
+  it('changing src to an already-failed image emits loadError once and throws nothing', () => {
+    const f = TestBed.createComponent(Host);
+    let errors = 0;
+    const ref = f.debugElement.children[0].componentInstance as UiReposition;
+    ref.loadError.subscribe(() => errors++);
+    f.detectChanges();
+    const img = (f.nativeElement as HTMLElement).querySelector('.frame-image') as HTMLImageElement;
+    img.dispatchEvent(new Event('error'));
+    f.detectChanges();
+    expect(errors).toBe(1);
+    expect(() => f.detectChanges()).not.toThrow();
+  });
 });

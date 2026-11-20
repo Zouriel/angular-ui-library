@@ -337,7 +337,7 @@ function grad(a: string, b: string): string {
 export class MediaPage {
   protected readonly slides: UiCarouselSlide[] = [
     { image: grad('#3d5afe', '#e5484d'), alt: 'Blue to red gradient', caption: 'Slide one' },
-    { image: grad('#2faa6e', '#d9a521'), alt: 'Green to amber gradient', caption: 'Slide two' },
+    { image: grad('#2faa6e', '#d9a521'), alt: 'Green to amber gradient', caption: 'Slide two', position: { x: 50, y: 20 } },
     { image: grad('#8a8f98', '#3d5afe'), alt: 'Grey to blue gradient', caption: 'Slide three' },
   ];
   protected readonly images: UiGalleryImage[] = [
@@ -347,7 +347,7 @@ export class MediaPage {
   protected readonly slide = signal(0);
   protected readonly posters: UiPoster[] = [
     { src: grad('#3d5afe', '#e5484d'), label: 'Aisha and Ali', mark: { tone: 'primary', label: 'New' } },
-    { src: grad('#2faa6e', '#d9a521'), label: 'Eid get-together' },
+    { src: grad('#2faa6e', '#d9a521'), label: 'Eid get-together', position: { x: 50, y: 20 } },
     { src: null, label: 'Hawwa turns 30', colors: ['#5b2a86', '#e5484d'], mark: { tone: 'warning', label: 'Not finished' } },
     { src: grad('#8a8f98', '#3d5afe'), label: 'Graduation' },
     { src: null, label: 'Office dinner' },
@@ -381,7 +381,7 @@ merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex *
     </ui-icon-button>
   </ng-template>
 </ui-poster-grid>`;
-  protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; draggable?: boolean; }\ninterface UiPosterDrop { dragged: UiPoster; target: UiPoster; draggedIndex: number; targetIndex: number; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
+  protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; draggable?: boolean; position?: { x: number; y: number } | null; }\ninterface UiPosterDrop { dragged: UiPoster; target: UiPoster; draggedIndex: number; targetIndex: number; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
   protected readonly viewOpen = signal(false);
   protected readonly picked = signal(0);
   protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
@@ -431,6 +431,7 @@ merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex *
     { name: 'ratio', type: 'number', default: '0.75', desc: 'Width / height of every tile.' },
     { name: 'focus', type: "'top' | 'center'", default: "'center'", desc: "Which part of a picture survives the crop; 'top' keeps a poster's heading." },
     { name: 'handleClicks', type: 'boolean', default: 'false', desc: 'A plain click on a link tile goes to (select) only (no browser navigation), for client-side routing.' },
+    { name: 'poster.position', type: '{ x: number; y: number } | null', default: 'null', desc: "A poster's own focal point for its cropped picture (percent, like CSS object-position; the position ui-reposition saves). Without it the grid's focus is used, so nothing changes by default." },
     { name: 'canDrop', type: '(dragged: UiPoster, target: UiPoster) => boolean', default: '() => true', desc: 'Whether a dragged tile may be dropped on this one (a tile never accepts itself). Only tiles with draggable: true can be dragged; grids without any behave as before. While dragging, valid tiles get an accent outline, the rest dim, and the one under the pointer gets a clear ring. Touch: long press, then drag (scrolling and tapping are unchanged); mouse: drag; keyboard: Space picks up (Enter still opens), arrows choose, Enter drops, Escape cancels, with a live-region announcement. Built on uiDragItem and uiDropTarget.' },
     { name: '<ng-template uiPosterDetails>', type: 'slot', default: '—', desc: 'Details drawn on every tile over a compact scrim; context: the poster ($implicit) and index.' },
     { name: '<ng-template uiPosterCorner>', type: 'slot', default: '—', desc: "Something small (a ui-avatar-tag, size xs) over each picture's top-start corner, inside it with a space2 inset; no taps of its own. Context: the poster ($implicit) and index. 0.74.0." },
@@ -483,7 +484,7 @@ merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex *
     { name: 'more', type: 'void', default: '—', desc: 'Scrolled near the end with hasMore on; the next page is wanted.' },
   ];
   protected readonly carouselApi: ApiRow[] = [
-    { name: 'slides', type: 'UiCarouselSlide[]', default: '[]', desc: 'Slides: image, alt text and an optional caption (clamped to three lines).' },
+    { name: 'slides', type: 'UiCarouselSlide[]', default: '[]', desc: 'Slides: image, alt text and an optional caption (clamped to three lines). A slide\'s optional position { x, y } (percent, default 50/50) is the focal point of its cropped image, like CSS object-position.' },
     { name: 'autoplay', type: 'number', default: '0', desc: 'Auto-advance interval (ms); 0 = off.' },
     { name: 'index', type: 'number', default: '0', desc: 'Two-way (`[(index)]`). The slide showing; bind it to draw your own position marker.' },
     { name: 'dots', type: 'boolean', default: 'true', desc: 'Built-in dots. Turn off when drawing your own.' },

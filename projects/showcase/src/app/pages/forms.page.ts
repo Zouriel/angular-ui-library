@@ -693,6 +693,7 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'preview', type: 'string | null', default: 'null', desc: "A picture already uploaded (URL). The same box then shows it, and clicking or dropping on it picks a replacement (0.79.0)." },
     { name: 'previewAlt', type: 'string', default: '—', desc: 'What the picture shows (alt text; also starts the picker\'s name).' },
     { name: 'previewFit', type: "'cover' | 'contain'", default: "'cover'", desc: "cover fills the box (photos); contain shows all of it with room around (logos, transparent pictures)." },
+    { name: 'previewPosition', type: '{ x: number; y: number } | null', default: 'null', desc: 'Focal point of the cropped (cover) preview, in percent like CSS object-position (what ui-reposition saves). Default is the centre.' },
     { name: 'previewAspect', type: 'string', default: "'16 / 9'", desc: "The box's shape while it shows a picture (CSS aspect-ratio, e.g. '1')." },
     { name: 'replaceLabel', type: 'string', default: "strings.uploadReplace ('Click to change')", desc: 'The label on the picture.' },
     { name: 'removable', type: 'boolean', default: 'false', desc: 'A Remove button under the picture that emits (remove).' },

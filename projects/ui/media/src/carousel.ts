@@ -5,6 +5,8 @@ export interface UiCarouselSlide {
   image: string;
   alt?: string;
   caption?: string;
+  /** Focal point of the cropped image, CSS object-position percentages (default 50/50). */
+  position?: { x: number; y: number } | null;
 }
 
 /** How far a finger has to travel, as a share of the width, before letting go turns the slide. */
@@ -40,7 +42,7 @@ const INTENT_PX = 8;
       >
         @for (s of slides(); track $index) {
           <div class="slide">
-            <img [src]="s.image" [alt]="s.alt || ''" draggable="false" />
+            <img [src]="s.image" [alt]="s.alt || ''" draggable="false" [style.object-position]="s.position ? s.position.x + '% ' + s.position.y + '%' : null" />
             @if (s.caption) { <div class="caption">{{ s.caption }}</div> }
           </div>
         }
