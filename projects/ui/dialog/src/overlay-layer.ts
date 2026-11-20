@@ -37,3 +37,25 @@ export function unlockBodyScroll(doc: Document): void {
 export function detachLayer(el: HTMLElement | null, doc: Document): void {
   if (el && el.parentNode === doc.body) el.remove();
 }
+
+/**
+ * Sends a dialog body back to its top when its content is swapped for other content (the nodes it
+ * holds are replaced, not just added to: a growing list keeps its place). No animation. Returns a stop
+ * function. Used by `ui-modal` and `ui-bottom-sheet`, whose body is reused while an app changes what
+ * it projects.
+ */
+export function resetScrollOnSwap(el: HTMLElement): () => void {
+  if (typeof MutationObserver === 'undefined') return () => undefined;
+  const real = (list: NodeList) => Array.from(list).some((n) => n.nodeType === 1);
+  const mo = new MutationObserver((records) => {
+    let removed = false;
+    let added = false;
+    for (const r of records) {
+      removed ||= real(r.removedNodes);
+      added ||= real(r.addedNodes);
+    }
+    if (removed && added) el.scrollTop = 0;
+  });
+  mo.observe(el, { childList: true });
+  return () => mo.disconnect();
+}

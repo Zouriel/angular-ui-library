@@ -3,7 +3,7 @@ import { DOCUMENT, NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, computed, effect, inject, input, model, signal, untracked, viewChild } from '@angular/core';
 import { UI_ANIM, UI_CONFIG, uiLeaveHidden, injectUiStrings } from '@zouriel/ui';
 import { UiBottomSheet } from './bottom-sheet';
-import { detachLayer, lockBodyScroll, unlockBodyScroll } from './overlay-layer';
+import { detachLayer, lockBodyScroll, resetScrollOnSwap, unlockBodyScroll } from './overlay-layer';
 
 let modalSeq = 0;
 
@@ -34,7 +34,8 @@ let modalSeq = 0;
           [closeOnEscape]="closeOnEscape()"
           [closable]="true"
           [title]="title() ?? ''"
-          [hasHeader]="!!title()">
+          [hasHeader]="!!title()"
+          [resetScroll]="resetScroll()">
           <ng-container [ngTemplateOutlet]="bodyTpl" />
           <ng-container ngProjectAs="[sheet-footer-start]"><ng-container [ngTemplateOutlet]="footerStartTpl" /></ng-container>
           <ng-container ngProjectAs="[sheet-footer]"><ng-container [ngTemplateOutlet]="footerTpl" /></ng-container>
@@ -65,7 +66,7 @@ let modalSeq = 0;
               <button class="x" type="button" [attr.aria-label]="strings.close" (click)="open.set(false)"><svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </header>
           }
-          <div class="bd"><ng-container [ngTemplateOutlet]="bodyTpl" /></div>
+          <div #bd class="bd"><ng-container [ngTemplateOutlet]="bodyTpl" /></div>
           <footer class="ft"><ng-container [ngTemplateOutlet]="footerStartTpl" /><ng-container [ngTemplateOutlet]="footerTpl" /></footer>
           <!-- Where focus lands on open unless the content marks an element cdkFocusInitial (which comes
                first in the document, so it wins): the panel itself, rather than the close button, which
@@ -153,6 +154,11 @@ export class UiModal {
   sheetBelow = input<number | null>(null);
   /** Resting snaps used when `sheetBelow` switches the modal to a bottom sheet. */
   sheetSnaps = input<readonly number[]>([0, 0.88]);
+  /**
+   * Scroll the body back to the top (no animation) when the title changes or the projected content is
+   * swapped for other content, so reused modals never open the new content part-way down. Off keeps it.
+   */
+  resetScroll = input(true);
   closeOnBackdrop = input(true);
   closeOnEscape = input(true);
   glass = input<boolean>(this.config.glass);
@@ -161,6 +167,7 @@ export class UiModal {
 
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly layer = viewChild<ElementRef<HTMLElement>>('layer');
+  private readonly bd = viewChild<ElementRef<HTMLElement>>('bd');
   private readonly isBelow = signal(false);
   protected readonly asSheet = computed(() => this.sheetBelow() !== null && this.isBelow());
   protected readonly sheetSnap = signal(0);
@@ -171,6 +178,19 @@ export class UiModal {
   private locked = false;
 
   constructor() {
+    effect((onCleanup) => {
+      const el = this.bd()?.nativeElement;
+      if (!this.browser || !el || !this.resetScroll()) return;
+      onCleanup(resetScrollOnSwap(el));
+    });
+    effect(() => {
+      this.title();
+      untracked(() => {
+        const el = this.bd()?.nativeElement;
+        if (el && this.resetScroll()) el.scrollTop = 0;
+      });
+    });
+
     effect((onCleanup) => {
       const bp = this.sheetBelow();
       if (!this.browser || bp === null || bp <= 0) {

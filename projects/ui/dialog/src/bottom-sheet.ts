@@ -1,6 +1,7 @@
 import { FocusTrap, FocusTrapFactory } from '@angular/cdk/a11y';
 import { isPlatformBrowser } from '@angular/common';
 import { UI_ANIM, uiLeaveHidden, injectUiStrings, type UiGlassStrength } from '@zouriel/ui';
+import { resetScrollOnSwap } from './overlay-layer';
 import {
   Component, DestroyRef, booleanAttribute, ElementRef, NgZone, PLATFORM_ID, afterNextRender, computed, effect, inject, input, model, output, signal,
   untracked, viewChild,
@@ -243,6 +244,11 @@ export class UiBottomSheet {
   /** Index into `snaps` the sheet rests at. */
   snap = model(0);
   title = input('');
+  /**
+   * Scroll the body back to the top (no animation) when the sheet opens, when `title` changes and when the
+   * projected content is swapped for other content. Turn off to keep the scroll position across those.
+   */
+  resetScroll = input(true);
   /** Space kept free below the sheet, in px — a toolbar it sits on top of. */
   offset = input(0);
   /** Space kept free above its tallest snap, in px — a header that stays reachable. */
@@ -348,6 +354,20 @@ export class UiBottomSheet {
   private lastIndex = -1;
 
   constructor() {
+    if (this.browser) {
+      // Swapping what the sheet projects (an app reusing one sheet) must not leave the new content half scrolled.
+      effect((onCleanup) => {
+        if (!this.resetScroll()) return;
+        onCleanup(resetScrollOnSwap(this.body().nativeElement));
+      });
+      effect(() => {
+        this.title();
+        const open = this.isOpen();
+        untracked(() => {
+          if (open && this.resetScroll()) this.body().nativeElement.scrollTop = 0;
+        });
+      });
+    }
     if (this.browser) {
       const onResize = () => {
         const vv = window.visualViewport;
