@@ -424,6 +424,17 @@ export interface UiStrings {
   /** `ui-date-time-picker` (0.87.0): the names of its two parts. */
   dateLabel: string;
   timeLabel: string;
+  /** `ui-assistance-bar` & `ui-language-switch`: accessibility toolbar and read-aloud controls. */
+  assistance: string;
+  textSize: string;
+  textSizeDefault: string;
+  textSizeLarge: string;
+  textSizeLarger: string;
+  readPageAloud: string;
+  readAloud: string;
+  stopReading: string;
+  getHelp: string;
+  language: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -648,6 +659,16 @@ export const defaultUiStrings: UiStrings = {
   skipToContent: 'Skip to content',
   dateLabel: 'Date',
   timeLabel: 'Time',
+  assistance: 'Assistance',
+  textSize: 'Text size',
+  textSizeDefault: 'Default',
+  textSizeLarge: 'Large',
+  textSizeLarger: 'Larger',
+  readPageAloud: 'Read this page aloud',
+  readAloud: 'Read aloud',
+  stopReading: 'Stop reading',
+  getHelp: 'Get help',
+  language: 'Language',
 };
 
 /**
@@ -878,6 +899,16 @@ export const uiStringsDv: UiStrings = {
   skipToContent: 'ކޮންޓެންޓަށް ދާން',
   dateLabel: 'ތާރީޚު',
   timeLabel: 'ގަޑި',
+  assistance: 'އެހީތެރިކަން',
+  textSize: 'ލިޔުމުގެ ސައިޒު',
+  textSizeDefault: 'އާދައިގެ',
+  textSizeLarge: 'ބޮޑު',
+  textSizeLarger: 'އިތުރަށް ބޮޑު',
+  readPageAloud: 'މި ޞަފްޙާ ކިޔައިދޭ',
+  readAloud: 'އަޑުހަރުކޮށް ކިޔާ',
+  stopReading: 'ކިޔުން ހުއްޓާލާ',
+  getHelp: 'އެހީ ހޯދާ',
+  language: 'ބަސް',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown
