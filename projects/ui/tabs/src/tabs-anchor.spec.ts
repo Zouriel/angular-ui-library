@@ -4,6 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UiTourService } from '@zouriel/ui/guidance';
 import { UiTab, UiTabs } from './tabs';
 
+// These tests set the viewport size; put the real one back after each, or every spec that runs later
+// in the same worker inherits a phone-sized window (it made window.spec and drag.spec fail at random).
+const realViewport = {
+  width: Object.getOwnPropertyDescriptor(window, 'innerWidth'),
+  height: Object.getOwnPropertyDescriptor(window, 'innerHeight'),
+};
+const restoreViewport = () => {
+  if (realViewport.width) Object.defineProperty(window, 'innerWidth', realViewport.width);
+  if (realViewport.height) Object.defineProperty(window, 'innerHeight', realViewport.height);
+};
+
 // 0.75.1: `ui-tab [anchor]` lets a tour point at one tab, whose button `ui-tabs` builds itself.
 
 @Component({
@@ -38,6 +49,7 @@ describe('UiTab anchor', () => {
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 768 });
   });
   afterEach(() => {
+    restoreViewport();
     TestBed.inject(UiTourService).stop();
     vi.useRealTimers();
     HTMLElement.prototype.getBoundingClientRect = realRect;
