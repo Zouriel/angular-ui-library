@@ -98,6 +98,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Calendar', anchor: 'calendar' },
     { name: 'Date range picker', anchor: 'date-range-picker' },
     { name: 'Slot picker', anchor: 'slot-picker' },
+    { name: 'Signature pad', anchor: 'signature-pad' },
     { name: 'Choice grid', anchor: 'choice-grid' },
     { name: 'Handle field', anchor: 'handle-field' },
     { name: 'Anchor picker', anchor: 'anchor-picker' },
@@ -181,6 +182,9 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Grouped bars', anchor: 'grouped-bars' },
     { name: 'Value labels', anchor: 'value-labels' },
     { name: 'No data', anchor: 'no-data' },
+    { name: 'Line chart', anchor: 'line-chart' },
+    { name: 'Multi-series line', anchor: 'multi-series-line' },
+    { name: 'Donut chart', anchor: 'donut-chart' },
   ],
   'plans': [
     { name: 'Plan cards', anchor: 'plan-cards' },
