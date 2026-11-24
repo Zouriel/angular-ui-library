@@ -54,7 +54,7 @@ describe('UiThemeService', () => {
   });
 
   it('goes to dark from a theme with no pair (a legacy skin, an app theme, an unknown -dark name)', () => {
-    for (const t of ['lightTeal', 'darkOrange', 'my-brand', 'brand-dark']) {
+    for (const t of ['lightTeal', 'darkOrange', 'addu', 'addu-ink', 'my-brand', 'brand-dark']) {
       service.set(t);
       service.toggle();
       expect(service.theme(), t).toBe('dark');
@@ -68,7 +68,7 @@ describe('theme roster', () => {
     const legacy = [...UI_LEGACY_THEMES];
     expect(current.filter((t) => (legacy as string[]).includes(t))).toEqual([]);
     expect([...current, ...legacy].sort()).toEqual(stylesheetThemes());
-    expect(current.length + legacy.length).toBe(31);
+    expect(current.length + legacy.length).toBe(33);
   });
 
   it('names exactly the old palette skins and the Winter aliases as legacy', () => {

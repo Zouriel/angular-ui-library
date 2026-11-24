@@ -1,0 +1,314 @@
+/*
+ * UI Library — "addu" theme (Addu City Digital Hub, "Beyond the Equator" brand).
+ *
+ * One light theme, taken from the Figma file's "Color" variables and its 20 text styles.
+ * The Figma file has no dark mode, so there is no night theme.
+ *
+ * Include AFTER tokens.css, then UiThemeService.set('addu') or <html data-theme="addu">.
+ * Apps self-host Figtree, Lexend and (for Dhivehi) MV Faseyha / MV Waheed.
+ *
+ *   @import '@zouriel/ui/styles/tokens.css';
+ *   @import '@zouriel/ui/styles/theme-addu.css';
+ *
+ * Portal colour: set data-portal on the SAME element as data-theme (normally <html>):
+ *   <html data-theme="addu" data-portal="visit">
+ * ConnectAddu is the default and needs no attribute.
+ *
+ * Contrast (WCAG 2.x):
+ *   text 16.7:1 on the canvas, muted text 5.3:1 or more on every surface, primary 7.0:1 or more,
+ *   success and danger 4.75:1 or more, white on every filled role 5.7:1 or more, control outlines
+ *   (ink-400) 3.5:1 on white.
+ * Raw brand colours that fail as text (coral/500 3.6:1 on white, lime/300, sun/400) are kept for
+ * fills only, as maldives does with Coral.
+ */
+
+[data-theme="addu"] {
+  color-scheme: light;
+  --ui-glass-sheet-floor: 0.75;
+  --ui-glass-sheet-ceiling: 1;
+  --ui-glass-clear-floor: 0.35;
+  --ui-glass-clear-ceiling: 1;
+
+  /* ── Primitives: the Figma "Color" collection, names kept ── */
+  --ui-addu-ink-900: #001540;
+  --ui-addu-ink-700: #23315e;
+  --ui-addu-ink-500: #56618a;
+  --ui-addu-ink-400: #7f89ad; /* control outlines at 3.5:1 */
+  --ui-addu-ink-300: #a2a9c4;
+  --ui-addu-mist-50: #f6f8fc;
+  --ui-addu-mist-100: #edf1f8;
+  --ui-addu-mist-200: #dde3ef;
+  --ui-addu-mist-300: #c5cde0;
+  --ui-addu-blue-800: #1a2f86;
+  --ui-addu-blue-700: #2747b3;
+  --ui-addu-blue-600: #3e62d1;
+  --ui-addu-blue-300: #7fa2e6; /* brand/blue-300 */
+  --ui-addu-blue-100: #e4eafb;
+  --ui-addu-lime-300: #b6e56b;
+  --ui-addu-lime-100: #eaf7d6; /* brand/lime-100 */
+  --ui-addu-lilac-200: #d9ccf4; /* brand/lilac-200 */
+  --ui-addu-coral-500: #e4593a;
+  --ui-addu-coral-100: #fbe3da;
+  --ui-addu-sun-400: #f2b441;
+  --ui-addu-portal-connect: #2747b3;
+  --ui-addu-portal-visit: #2a7354;
+  --ui-addu-portal-referendum: #5b4b9a;
+  --ui-addu-portal-ready: #b33c29;
+
+  /* ── Canvas: white cards on Mist ── */
+  --ui-color-bg: #f6f8fc; /* --ui-addu-mist-50 */
+  --ui-color-surface: #ffffff;
+  --ui-color-surface-raised: #ffffff;
+  --ui-color-surface-subtle: #edf1f8; /* --ui-addu-mist-100 */
+  --ui-color-surface-hover: #edf1f8;
+  --ui-color-elevated-hover: #edf1f8;
+  --ui-color-text: #001540; /* --ui-addu-ink-900 */
+  --ui-color-text-secondary: #23315e; /* --ui-addu-ink-700 */
+  --ui-color-text-muted: #56618a; /* --ui-addu-ink-500 */
+  --ui-color-text-disabled: #a2a9c4; /* --ui-addu-ink-300 */
+  --ui-color-text-inverse: #ffffff;
+  --ui-color-border: #dde3ef; /* --ui-addu-mist-200 */
+  --ui-color-border-subtle: #edf1f8; /* --ui-addu-mist-100 */
+  --ui-color-border-strong: #c5cde0; /* --ui-addu-mist-300 */
+  --ui-color-border-focus: #2747b3; /* --ui-addu-blue-700 */
+
+  /* ── Roles ── */
+  --ui-color-primary: #2747b3; /* --ui-addu-blue-700 */
+  --ui-color-primary-hover: #1a2f86; /* --ui-addu-blue-800 */
+  --ui-color-primary-active: #14256b;
+  --ui-color-primary-contrast: #ffffff;
+  /* The Figma "Button / soft": a pale blue fill with deep blue text. */
+  --ui-color-secondary: #e4eafb; /* --ui-addu-blue-100 */
+  --ui-color-secondary-hover: #d3dcf7;
+  --ui-color-secondary-contrast: #1a2f86; /* --ui-addu-blue-800 */
+  /* Lime is the brand accent. Ink text on it (12.2:1); never white. */
+  --ui-color-accent: #b6e56b; /* --ui-addu-lime-300 */
+  --ui-color-accent-contrast: #001540; /* --ui-addu-ink-900 */
+  --ui-color-accent-subtle: #eaf7d6; /* --ui-addu-lime-100 */
+  --ui-color-accent-strong: #4a6b0f; /* lime deepened for text: 5.5:1 or more */
+  --ui-color-info: #2747b3; /* --ui-addu-blue-700 */
+  --ui-color-info-contrast: #ffffff;
+  --ui-color-success: #2a7354;
+  --ui-color-success-contrast: #ffffff;
+  --ui-color-warning: #8a5a00; /* sun/400 deepened for text; the raw sun stays for fills */
+  --ui-color-warning-contrast: #ffffff;
+  --ui-color-danger: #b33c29; /* coral/500 is 3.6:1 on white, so the deeper red carries text */
+  --ui-color-danger-hover: #952f1f;
+  --ui-color-danger-contrast: #ffffff;
+  --ui-color-selected: rgba(39, 71, 179, 0.1);
+  /* Status subtle fills behind soft badges, alerts and verification results. */
+  --ui-color-success-subtle: #eaf7d6; /* --ui-addu-lime-100, success text on it 5.0:1 */
+  --ui-color-warning-subtle: #fdf1d9; /* pale amber, warning text on it 5.2:1 */
+  --ui-color-danger-subtle: #fbe3da; /* --ui-addu-coral-100 */
+  --ui-color-info-subtle: #e4eafb; /* --ui-addu-blue-100 */
+  --ui-color-neutral-subtle: #edf1f8; /* --ui-addu-mist-100 */
+  --ui-color-warning-fill: #f2b441; /* --ui-addu-sun-400, amber icon disc */
+  --ui-color-track: #dde3ef; /* --ui-addu-mist-200 */
+  --ui-color-overlay: rgba(0, 21, 64, 0.45);
+
+  /* WCAG 1.4.11 requires 3:1 for control outlines; ink-400 (#7f89ad) holds 3.5:1 on white. */
+  --ui-control-border: #7f89ad; /* --ui-addu-ink-400 */
+  --ui-switch-track: #7f89ad; /* --ui-addu-ink-400 */
+  --ui-skeleton-base: #dde3ef; /* --ui-addu-mist-200 */
+  --ui-skeleton-highlight: #edf1f8; /* --ui-addu-mist-100 */
+  --ui-rating-fill: #b8860b;
+  --ui-cursor-color: #001540; /* --ui-addu-ink-900 */
+  --ui-section-label-bracket: #b6e56b; /* --ui-addu-lime-300 */
+  --ui-scroll-progress-track: rgba(0, 21, 64, 0.06);
+
+  /* The Figma "Brand gradient": blue to lilac to lime. Ink text on it. */
+  --ui-gradient-brand: linear-gradient(90deg, #7fa2e6 0%, #d9ccf4 55%, #eaf7d6 100%);
+  --ui-gradient-brand-contrast: var(--ui-addu-ink-900);
+  --ui-gradient-hero: linear-gradient(160deg, #001540 0%, #1a2f86 60%, #2747b3 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(39, 71, 179, 0.1) 0%, rgba(39, 71, 179, 0) 100%);
+  --ui-glow-amber: 0 8px 24px rgba(39, 71, 179, 0.18);
+
+  /* The Figma file has no effect styles: surfaces are flat with a 1px border. Shadows stay soft
+     and ink-tinted for the things that float (menus, dialogs, toasts). */
+  --ui-glass-bg: rgba(255, 255, 255, 0.9);
+  --ui-glass-border: rgba(0, 21, 64, 0.1);
+  --ui-shadow-1: 0 1px 2px rgba(0, 21, 64, 0.06);
+  --ui-shadow-2: 0 6px 20px rgba(0, 21, 64, 0.08);
+  --ui-shadow-3: 0 16px 44px rgba(0, 21, 64, 0.14);
+
+  /* ── Shape: Figma corners are 8, 12, 16, 24 and pill ── */
+  --ui-radius-xs: 8px;
+  --ui-radius-sm: 8px;
+  --ui-radius: 12px; /* callouts, alerts, menus */
+  --ui-button-radius: var(--ui-radius-pill); /* buttons are full pills */
+  --ui-field-radius: 8px; /* inputs, selects, the number stepper */
+  --ui-control-border-width: 1.5px;
+  --ui-radius-lg: 16px; /* cards, dialogs, sheets */
+  --ui-radius-xl: 24px; /* hero panels and large callouts */
+
+  /* ── Size: Figma buttons are 44px, fields 48px, small controls 36px ── */
+  --ui-size-sm: 36px;
+  --ui-size-md: 44px;
+  --ui-size-lg: 48px;
+  --ui-size-xl: 56px;
+  --ui-field-size: 48px; /* a field at size md is 48, a button 44 */
+
+  /* ── Type: Lexend headings, Figtree reading text ── */
+  --ui-font-default: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-font-display: "Lexend", "Figtree", system-ui, sans-serif;
+  --ui-font-size-sm: 13px; /* Body/XS, Label/S */
+  --ui-font-size-md: 15px; /* Body/M */
+  --ui-font-size-lg: 17px; /* Body/L, Heading/H4 */
+  --ui-font-size-h1: 2.5rem; /* Title/40 */
+  --ui-font-size-h2: 2rem; /* Title/32 */
+  --ui-font-size-h3: 1.5rem; /* Heading/H3 24 */
+  --ui-font-size-h5: 1rem; /* Label/L 16 */
+  --ui-font-size-h6: 0.8125rem; /* Label/S 13 */
+  --ui-tracking-tight: -0.012em;
+  --ui-tracking-tighter: -0.02em;
+  --ui-font-size-display-xl: 3.75rem; /* Display/XL 60 */
+  --ui-font-size-display-lg: 2.75rem; /* Display/L 44 */
+  --ui-font-size-title: 1.75rem; /* Title/28 */
+  --ui-font-size-subtitle: 1.25rem; /* Heading/20, Body/XL */
+  --ui-font-size-stat: 3.5rem; /* Stat/Numeral 56 */
+  --ui-font-weight-heading: 500; /* Lexend Medium on every heading */
+  --ui-font-weight-control: 600; /* Label/M SemiBold on buttons and field labels */
+  --ui-line-height-body: 1.55;
+  --ui-line-height-heading: 1.2;
+  --ui-space-5: 20px;
+  --ui-space-7: 28px;
+  --ui-space-10: 40px;
+  --ui-card-pad-sm: 16px;
+  --ui-card-pad-md: 20px;
+  --ui-card-pad-lg: 28px;
+
+  --ui-map-route-primary: var(--ui-addu-blue-700);
+
+  --ui-chart-1: #2747b3;
+  --ui-chart-2: #2a7354;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #5b4b9a;
+  --ui-chart-5: #b33c29;
+  --ui-chart-6: #56618a;
+}
+
+/* Dhivehi: Thaana typefaces, wherever the page or a subtree is in Dhivehi. */
+[data-theme="addu"]:lang(dv),
+[data-theme="addu"] :lang(dv) {
+  --ui-font-default: "MV Faseyha", "Faruma", "MV Boli", sans-serif;
+  --ui-font-display: "MV Waheed", "MV Faseyha", "Faruma", sans-serif;
+  --ui-tracking-tight: 0;
+  --ui-tracking-tighter: 0;
+}
+
+/* Compact density must still win over the theme's own sizes (the theme loads after tokens.css). */
+[data-theme="addu"][data-density="compact"] {
+  --ui-size-sm: 32px;
+  --ui-size-md: 40px;
+  --ui-size-lg: 44px;
+  --ui-field-size: 44px;
+  --ui-font-size-sm: 12px;
+  --ui-font-size-md: 14px;
+  --ui-font-size-lg: 16px;
+}
+
+/* ── Portal colour. ConnectAddu is the default above. ── */
+[data-theme="addu"][data-portal="visit"] {
+  --ui-color-primary: #2a7354;
+  --ui-color-primary-hover: #1f5a41;
+  --ui-color-primary-active: #174633;
+  --ui-color-secondary: #e2f1ea;
+  --ui-color-secondary-hover: #d0e8dd;
+  --ui-color-secondary-contrast: #1f5a41;
+  --ui-color-border-focus: #2a7354;
+  --ui-color-info: #2a7354;
+  --ui-color-selected: rgba(42, 115, 84, 0.1);
+}
+[data-theme="addu"][data-portal="referendum"] {
+  --ui-color-primary: #5b4b9a;
+  --ui-color-primary-hover: #473a7c;
+  --ui-color-primary-active: #382d63;
+  --ui-color-secondary: #ece8f6;
+  --ui-color-secondary-hover: #ded7f0;
+  --ui-color-secondary-contrast: #473a7c;
+  --ui-color-border-focus: #5b4b9a;
+  --ui-color-info: #5b4b9a;
+  --ui-color-selected: rgba(91, 75, 154, 0.1);
+}
+[data-theme="addu"][data-portal="ready"] {
+  --ui-color-primary: #b33c29;
+  --ui-color-primary-hover: #952f1f;
+  --ui-color-primary-active: #782417;
+  --ui-color-secondary: #f9e5e1;
+  --ui-color-secondary-hover: #f3d3cc;
+  --ui-color-secondary-contrast: #952f1f;
+  --ui-color-border-focus: #b33c29;
+  --ui-color-info: #b33c29;
+  --ui-color-selected: rgba(179, 60, 41, 0.1);
+}
+
+/* ── Admin portal. Measured on the work queue (AD1) and the form builder (AD2): the canvas is
+   mist/100, not mist/50, and cards, tiles and the table have a 12px corner, not 16. ── */
+[data-theme="addu"][data-portal="admin"] {
+  --ui-color-bg: var(--ui-addu-mist-100);
+  --ui-color-surface-subtle: var(--ui-addu-mist-50); /* the table header row */
+  --ui-radius-lg: 12px;
+}
+
+/*
+ * "addu-ink": the design's dark surfaces, as a theme island. Not a dark mode: it is for the parts
+ * Figma draws on ink/900 inside a light page: the admin sidebar, the site footer, the top utility
+ * bar, dark callouts and the rule box.
+ *   <ui-theme-provider theme="addu-ink"> … </ui-theme-provider>
+ * White text is 17.8:1 on ink/900; muted text (ink/300) is 7.6:1.
+ */
+[data-theme="addu-ink"] {
+  color-scheme: dark;
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.43;
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
+
+  --ui-color-bg: #001540;
+  --ui-color-surface: #001540;
+  --ui-color-surface-raised: #0d2150;
+  --ui-color-surface-subtle: #001540;
+  --ui-color-surface-hover: rgba(255, 255, 255, 0.08);
+  --ui-color-elevated-hover: rgba(255, 255, 255, 0.08);
+  --ui-color-text: #ffffff;
+  --ui-color-text-secondary: #dde3ef;
+  --ui-color-text-muted: #a2a9c4;
+  --ui-color-border: rgba(255, 255, 255, 0.14);
+  --ui-color-border-strong: #a2a9c4;
+  --ui-color-border-focus: #ffffff;
+  --ui-color-primary: #ffffff;
+  --ui-color-primary-hover: #edf1f8;
+  --ui-color-primary-contrast: #001540;
+  --ui-color-secondary: #1f3157; /* white at 12% over #001540 */
+  --ui-color-secondary-contrast: #ffffff;
+  --ui-color-accent: #b6e56b;
+  --ui-color-accent-contrast: #001540;
+  --ui-color-success: #b6e56b;
+  --ui-color-warning: #f2b441;
+  --ui-color-danger: #ff9d85;
+  /* The open page in the sidebar: white at 12% over ink, measured as #1f3157. */
+  --ui-color-selected: rgba(255, 255, 255, 0.12);
+  --ui-color-track: rgba(255, 255, 255, 0.14);
+
+  --ui-radius-xs: 8px;
+  --ui-radius-sm: 8px;
+  --ui-radius: 8px;
+  --ui-radius-lg: 12px;
+  --ui-font-default: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ui-font-display: "Lexend", "Figtree", system-ui, sans-serif;
+  --ui-font-size-sm: 13px;
+  --ui-font-size-md: 15px;
+  --ui-font-size-lg: 17px;
+
+  --ui-chart-1: #7fa2e6;
+  --ui-chart-2: #b6e56b;
+  --ui-chart-3: #f2b441;
+  --ui-chart-4: #d9ccf4;
+  --ui-chart-5: #ff9d85;
+  --ui-chart-6: #a2a9c4;
+}
+
+[data-theme="addu"] ::selection {
+  background: #e4eafb;
+  color: #001540;
+}

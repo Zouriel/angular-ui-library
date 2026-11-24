@@ -325,6 +325,8 @@ Load the global styles once (e.g. in `angular.json` styles or your global styles
 @import '@zouriel/ui/styles/theme-dark-orange.css';
 /* optional: the Maldives sea skins, maldives and maldives-dark (loads Poppins) */
 @import '@zouriel/ui/styles/theme-maldives.css';
+/* optional: the Addu City Digital Hub theme (addu) and dark surface island (addu-ink) */
+@import '@zouriel/ui/styles/theme-addu.css';
 /* optional, legacy: the ten colour palettes */
 @import '@zouriel/ui/styles/theme-palettes.css';
 /* optional: FX utility classes (.ui-glow, .ui-gradient-text, .ui-underline)
@@ -391,6 +393,7 @@ this.theme.toggle();           // glacier <-> glacier-dark, dark <-> light
 | Navy (default) | `dark` (also `navy-dark`): Midnight Navy canvas, Powder Blue ink and secondary, Sunflower primary; `light` (also `navy`): Mist canvas, Midnight ink, a deepened Sunflower primary | `tokens.css` |
 | Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
 | Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins; `maldives-dark`: the same sea at night (deep ocean canvas, Foam ink, Lagoon primary, Coral accent). A day/night toggle switches between the two names | `theme-maldives.css` |
+| Addu | `addu`: Addu City Digital Hub light theme (Mist canvas, Ink text, Blue primary, Lime accent; Figtree & Lexend; `data-portal` overrides); `addu-ink`: dark surface island for `ui-theme-provider` | `theme-addu.css` |
 | Liquid | `rugged` / `rugged-dark` (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue, Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood), `graphite` / `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa, Raspberry), `violet` / `violet-dark` (Mist, Ink, Electric Violet). Glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` | `theme-liquid.css` |
 
 **Legacy themes** still work exactly as before, but new work should use a current theme:
