@@ -122,7 +122,7 @@ let nextWidgetId = 0;
         }
       </button>
     }
-    @if (dragging()) {
+    @if (dragging() && dismissible()) {
       <div class="drop" aria-hidden="true">
         <hugeicons-icon aria-hidden="true" [icon]="cancelIcon" [size]="22" />
       </div>
@@ -479,6 +479,11 @@ export class UiChatWidget implements OnDestroy {
   readonly label = input('Ask the Assistant');
   readonly hint = input('Questions, or help with an application');
   readonly teaser = input('');
+  /**
+   * Draggable launcher only: show the X drop zone while dragging, and hide the bubble when it is dropped there
+   * (`dismissed` fires). Turn it off where the assistant must stay reachable from the page itself.
+   */
+  readonly dismissible = input(true);
 
   readonly dismissed = output<void>();
   readonly teaserDismissed = output<void>();
@@ -518,6 +523,13 @@ export class UiChatWidget implements OnDestroy {
       if (isOpen === this.wasOpen) return;
       this.wasOpen = isOpen;
       if (isOpen) {
+        // Opened from elsewhere on the page after the bubble was dismissed: bring the bubble back to its corner,
+        // so the panel opens beside a bubble instead of floating where the bubble was dropped.
+        if (this.hidden()) {
+          this.hidden.set(false);
+          this.headX.set(null);
+          this.headY.set(null);
+        }
         queueMicrotask(() => {
           this.panel()?.nativeElement.focus();
           this.syncObserver();
@@ -626,7 +638,7 @@ export class UiChatWidget implements OnDestroy {
     const h = this.head();
     const w = this.winWidth();
     const ht = this.winHeight();
-    if (this.dragging() && Math.hypot(h.x + 32 - w / 2, h.y + 32 - (ht - 56)) < 56) {
+    if (this.dragging() && this.dismissible() && Math.hypot(h.x + 32 - w / 2, h.y + 32 - (ht - 56)) < 56) {
       this.hidden.set(true);
       this.dismissed.emit();
     } else if (this.dragging()) {

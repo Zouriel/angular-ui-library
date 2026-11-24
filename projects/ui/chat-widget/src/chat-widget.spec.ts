@@ -36,6 +36,7 @@ const setViewport = (width: number, height: number) => {
       [position]="position()"
       [unread]="unread()"
       [launcher]="launcher()"
+      [dismissible]="dismissible()"
       title="Help Assistant"
       subtitle="Usually replies instantly"
       notice="Answers come from an AI and cite their source."
@@ -88,6 +89,7 @@ class Host {
   picked = '';
   sent: string[] = [];
   pickedFiles: File[] = [];
+  readonly dismissible = signal(true);
   dismissedCount = 0;
   teaserDismissedCount = 0;
   lastPos: UiChatHeadPosition | null = null;
@@ -192,6 +194,52 @@ describe('ui-chat-widget & pieces', () => {
       expect(panel.classList).not.toContain('opens-down');
       // bubble at y 820 (900 - 80), 64 tall; panel 600 tall (min(600, 900 - 112)) ends at 884
       expect(panel.style.top).toBe('284px');
+    });
+  });
+
+  describe('draggable drop-to-dismiss', () => {
+    afterEach(restoreViewport);
+
+    // Window 1280 x 900: the bubble starts at (1200, 820); the X drop zone is centred at (640, 844).
+    const setup = (dismissible: boolean) => {
+      setViewport(1280, 900);
+      const f = TestBed.createComponent(Host);
+      f.componentInstance.launcher.set('draggable');
+      f.componentInstance.dismissible.set(dismissible);
+      f.detectChanges();
+      return f;
+    };
+    const dragToX = (f: ReturnType<typeof setup>) => {
+      const launcher = (f.nativeElement as HTMLElement).querySelector('.launcher')!;
+      launcher.dispatchEvent(new PointerEvent('pointerdown', { clientX: 1232, clientY: 852, pointerId: 1 }));
+      launcher.dispatchEvent(new PointerEvent('pointermove', { clientX: 640, clientY: 844, pointerId: 1 }));
+      f.detectChanges();
+      const dropShown = !!(f.nativeElement as HTMLElement).querySelector('.drop');
+      launcher.dispatchEvent(new PointerEvent('pointerup', { clientX: 640, clientY: 844, pointerId: 1 }));
+      f.detectChanges();
+      return dropShown;
+    };
+
+    it('hides the bubble on the X, and opening from the page brings it back to its corner', () => {
+      const f = setup(true);
+      expect(dragToX(f)).toBe(true);
+      const el = f.nativeElement as HTMLElement;
+      expect(el.querySelector('.launcher')).toBeNull();
+      expect(f.componentInstance.dismissedCount).toBe(1);
+
+      f.componentInstance.open.set(true);
+      f.detectChanges();
+      const launcher = el.querySelector('.launcher') as HTMLElement;
+      expect(launcher).not.toBeNull();
+      expect(launcher.style.left).toBe('1200px');
+      expect(launcher.style.top).toBe('820px');
+    });
+
+    it('with dismissible off, shows no X and keeps the bubble when dropped there', () => {
+      const f = setup(false);
+      expect(dragToX(f)).toBe(false);
+      expect((f.nativeElement as HTMLElement).querySelector('.launcher')).not.toBeNull();
+      expect(f.componentInstance.dismissedCount).toBe(0);
     });
   });
 
