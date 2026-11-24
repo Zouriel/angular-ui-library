@@ -39,7 +39,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Floating panel" anchor="floating-panel" selector="ui-floating-panel" [api]="floatApi"
+      <doc-section name="Floating panel" anchor="floating-panel" selector="ui-floating-panel" [api]="floatApi" [outputs]="floatOut"
         summary="A raised surface floating over the bottom (or top) of its positioned parent: the details card over a map. Non-modal: it takes no focus and blocks nothing outside its own box, so what is around it stays usable and draggable. It sits 16px in from the edges plus the device's safe-area insets, up to 480px wide and centred, so it fits a 390px phone with a 16px gutter. With ariaLabel it is a named region. insetEnd (0.44.0) keeps that many px free at the inline end (the right; the left in RTL) on top of the gutter, so a top-end floating button beside the card never overlaps it: move the card to the top to see room kept for one.">
         <doc-demo code="<div style=&quot;position: relative&quot;>
   <app-map />
@@ -352,6 +352,9 @@ export class LayoutPage {
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'insetEnd', type: 'number', default: '0', desc: 'Px kept free at the inline end on top of the gutter, mirrored in RTL (0.44.0): room for a top-end fab.' },
     { name: '--ui-floating-panel-width', type: 'CSS length', default: '480px', desc: 'Its widest.' },
+  ];
+  protected readonly floatOut: ApiRow[] = [
+    { name: 'coverChange', type: 'number', default: '—', desc: 'Px of the parent\'s edge (top or bottom, per placement) covered by the panel, including its gutter.' },
   ];
   protected readonly lines = Array.from({ length: 20 }, (_, i) => i + 1);
   protected readonly shellWidths = [{ value: 'desktop', label: 'Desktop' }, { value: 'phone', label: 'Phone' }];

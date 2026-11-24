@@ -41,7 +41,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 </ui-alert>">
           <div class="stack">
             <ui-alert tone="info" heading="Heads up">Inline informational message.</ui-alert>
-            <ui-alert tone="success">Saved successfully.</ui-alert>
+            <ui-alert tone="success" appearance="soft">Saved successfully (soft appearance).</ui-alert>
             @if (showWarning()) {
               <ui-alert tone="warning" [dismissible]="true" (dismiss)="showWarning.set(false)">Approaching your quota. Dismiss me.</ui-alert>
             } @else {
@@ -197,7 +197,7 @@ providers: [provideUiConfig({ spinner: 'shutter' })]">
             <ui-result status="success" title="All done!" subtitle="Your changes were published.">
               <ui-button size="sm" variant="outline">View</ui-button>
             </ui-result>
-            <ui-result status="404" title="Page not found" subtitle="The link may be old or mistyped.">
+            <ui-result status="404" appearance="soft" title="Page not found" subtitle="The link may be old or mistyped (soft appearance).">
               <ui-button size="sm" variant="outline">Go home</ui-button>
             </ui-result>
           </div>
@@ -227,8 +227,10 @@ export class FeedbackPage {
   protected readonly icons = { folder: FolderAddIcon };
   protected readonly loading = signal(false);
   protected readonly showWarning = signal(true);
-  protected readonly RESULT = `type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | '500';`;
-  protected readonly ALERT = `type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';`;
+  protected readonly RESULT = `type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | '500';
+type UiResultAppearance = 'plain' | 'soft';`;
+  protected readonly ALERT = `type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
+type UiAlertAppearance = 'outline' | 'soft';`;
   private readonly stillShutter = viewChild<UiShutterLoader>('stillShutter');
   protected readonly stillCycles = signal(0);
   protected playStill(): void { this.stillShutter()?.play(); }
@@ -249,6 +251,7 @@ export class FeedbackPage {
 
   protected readonly alertApi: ApiRow[] = [
     { name: 'tone', type: 'UiAlertTone', default: "'info'", desc: 'Colour, ARIA role and icon.' },
+    { name: 'appearance', type: 'UiAlertAppearance', default: "'outline'", desc: "'outline' draws a bordered card with a 3px start accent; 'soft' uses a subtle tinted fill." },
     { name: 'heading', type: 'string', default: '—', desc: 'Optional bold title.' },
     { name: 'dismissible', type: 'boolean', default: 'false', desc: 'Show a Dismiss button.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
@@ -298,6 +301,7 @@ export class FeedbackPage {
   ];
   protected readonly resultApi: ApiRow[] = [
     { name: 'status', type: 'UiResultStatus', default: "'info'", desc: 'Icon and colour.' },
+    { name: 'appearance', type: 'UiResultAppearance', default: "'plain'", desc: "'plain' uses the raised surface behind the icon; 'soft' uses a subtle status tint." },
     { name: 'title', type: 'string', default: "''", desc: 'Headline.' },
     { name: 'subtitle', type: 'string', default: '—', desc: 'Supporting text.' },
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'Action buttons, centred below.' },

@@ -127,9 +127,13 @@ export class AssistancePage {
 
   protected readonly serviceApi: ApiRow[] = [
     { name: 'UiAssistanceService.textSize', type: "Signal<'default' | 'large' | 'larger'>", default: "'default'", desc: 'Current text size; reflected as data-text-size on <html>.' },
+    { name: 'UiAssistanceService.setTextSize(size)', type: '(UiTextSize) => void', default: '—', desc: 'Set text size directly and persist it.' },
     { name: 'UiAssistanceService.cycleTextSize()', type: '() => UiTextSize', default: '—', desc: 'Cycles default → large → larger → default.' },
     { name: 'UiAssistanceService.toQueryParams() / fromQueryParams()', type: 'methods', default: '—', desc: 'Serialize/restore textSize in URL query parameters.' },
-    { name: 'provideUiAssistance({ storage })', type: 'Provider', default: 'localStorage', desc: 'Custom storage adapter ({ get, set }) for textSize persistence.' },
-    { name: 'provideUiReadAloud({ engine })', type: 'Provider', default: 'speechSynthesis', desc: 'Pluggable TTS engine implementing UiReadAloudEngine.' },
+    { name: 'UiReadAloudService.speaking / paused / supported', type: 'Signal<boolean>', default: 'false', desc: 'Live playback state and whether an engine is available.' },
+    { name: 'UiReadAloudService.canSpeak(lang?)', type: '(string?) => boolean', default: '—', desc: 'Whether the engine has a voice for the given (or <html lang>) language.' },
+    { name: 'UiReadAloudService.speak(target, lang?) / pause() / resume() / stop()', type: 'methods', default: '—', desc: 'Control reading an element or CSS selector aloud.' },
+    { name: 'provideUiAssistance({ storage }) / UI_ASSISTANCE_STORAGE', type: 'Provider / Token', default: 'localStorage', desc: 'Custom storage adapter ({ get, set }) for textSize persistence.' },
+    { name: 'provideUiReadAloud({ engine }) / UI_READ_ALOUD_ENGINE', type: 'Provider / Token', default: 'speechSynthesis', desc: 'Pluggable TTS engine implementing UiReadAloudEngine.' },
   ];
 }

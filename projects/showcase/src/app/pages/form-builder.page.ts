@@ -311,6 +311,7 @@ update(id: string, s: UiFormSubmission) {
   ];
   protected readonly builderApi: ApiRow[] = [
     { name: 'agentInteractable', type: 'boolean (model)', default: 'false', desc: 'Form-level switch in Form settings; not stored in definition JSON.' },
+    { name: 'agentInteractableLabel / agentInteractableHint', type: 'string', default: "'Available to the assistant' / …", desc: 'Label and hint shown for the assistant-access switch in Form settings.' },
     { name: 'definition', type: 'UiFormDefinition', default: 'createDefinition()', desc: 'Two-way (`[(definition)]`). The form being built; every edit writes back. Setting another form (a different id) or different content loads it and clears undo history; the same form handed back with only `revision` changed, as when a published copy is stored back, keeps it.' },
     { name: 'published', type: 'UiFormDefinition | null', default: 'null', desc: 'The version people answer now. Drives the unpublished-changes list and answer protection.' },
     { name: 'submissionCount', type: 'number', default: '0', desc: 'Answers the published version has. Above zero: archive instead of delete, lock saved option values, remember renamed keys, only allow similar type changes.' },

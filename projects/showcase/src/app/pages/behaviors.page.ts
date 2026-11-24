@@ -245,6 +245,7 @@ export class BehaviorsPage {
   protected readonly fadeItems = Array.from({ length: 16 }, (_, i) => i + 1);
   protected readonly fadeApi: ApiRow[] = [
     { name: 'uiScrollFadeSize', type: 'number', default: '24', desc: 'Width of the fade, in px.' },
+    { name: 'uiScrollFadeAxis', type: "'horizontal' | 'vertical'", default: "'horizontal'", desc: 'Which scroll axis gets the edge fade.' },
     { name: 'update()', type: 'method', default: '—', desc: 'Measure again after a change that no resize event reports (content swapped in place).' },
   ];
   protected readonly infApi: ApiRow[] = [

@@ -447,6 +447,13 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
             <ui-badge tone="media"><hugeicons-icon [icon]="playIcon" [size]="12" [strokeWidth]="2" />0:24</ui-badge>
           </div>
+          <div class="row">
+            <ui-badge appearance="soft">neutral soft</ui-badge>
+            <ui-badge appearance="soft" tone="primary">primary soft</ui-badge>
+            <ui-badge appearance="soft" tone="success">success soft</ui-badge>
+            <ui-badge appearance="soft" tone="warning">warning soft</ui-badge>
+            <ui-badge appearance="soft" tone="danger">danger soft</ui-badge>
+          </div>
           <!-- 0.47.8: premium tiers, the same metal in every theme. -->
           <div class="row">
             <ui-badge tier="gold">Gold pass</ui-badge><ui-badge tier="platinum">Platinum pass</ui-badge><ui-badge tier="premium">Premium</ui-badge>
@@ -533,7 +540,7 @@ provideUiConfig({ chatMineSide: 'right' })">
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Chat widget" anchor="chat-widget" selector="ui-chat-widget" [api]="chatWidgetApi"
+      <doc-section name="Chat widget" anchor="chat-widget" selector="ui-chat-widget" [api]="chatWidgetApi" [outputs]="chatWidgetOut"
         summary="From @zouriel/ui/chat-widget. Corner launcher (floating, hover pill, or draggable head) that opens a chat panel with header, optional notice line, auto-scrolling message log, quick-actions slot (ui-chat-actions), typing indicator (ui-chat-typing), citation chips (ui-chat-source), and multiline composer (ui-chat-composer).">
         <doc-demo code="<ui-chat-widget [(open)]=&quot;open&quot; title=&quot;Addu Assistant&quot; notice=&quot;Answers come from an AI and cite their source.&quot;>
   <ui-chat-bubble>Hello! <ui-chat-source label=&quot;Guide&quot; href=&quot;#&quot; /></ui-chat-bubble>
@@ -995,6 +1002,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   protected readonly cropBox: UiAvatarCrop = { x: 0.55, y: 0.2, w: 0.2, h: 0.3 };
   protected readonly badgeApi: ApiRow[] = [
     { name: 'badge: tone', type: STATUS + " | 'media'", default: "'neutral'", desc: "Colour; 'media' draws a translucent dark scrim pill over photos/video." },
+    { name: 'badge: appearance', type: "'solid' | 'soft'", default: "'solid'", desc: "Surface style: 'solid' uses the strong tone fill; 'soft' uses the subtle status tint (ignored for tier and 'media')." },
     { name: 'badge: tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.' },
     { name: 'badge: dot', type: 'boolean', default: 'false', desc: 'Bare 8px status dot. It has no text, so give the host role="img" and an aria-label.' },
     { name: 'chip: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
@@ -1037,9 +1045,15 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'position', type: "'start' | 'end'", default: "'end'", desc: 'Logical corner (mirrors in RTL).' },
     { name: 'unread', type: 'number', default: '0', desc: 'Unread count badge on the launcher.' },
     { name: 'title / subtitle / notice', type: 'string', default: "'Assistant' / '' / ''", desc: 'Header title, subtitle, and optional notice strip.' },
+    { name: 'launcherLabel / closeLabel', type: 'string', default: "'Open the assistant' / 'Close the assistant'", desc: 'Accessible names for the launcher button and panel close button.' },
     { name: 'teaser / label / hint', type: 'string', default: "'' / 'Ask the Assistant' / …", desc: 'One-time teaser above floating launcher; two-line copy in hover pill.' },
-    { name: 'ui-chat-composer', type: 'attach, accept, multiple, disabled, busy, placeholder', default: '—', desc: 'Multiline auto-growing input (Enter sends, Shift+Enter newline) and optional file picker; emits send and files.' },
+    { name: 'ui-chat-composer', type: 'attach, accept, multiple, disabled, busy, placeholder, inputLabel, attachLabel, sendLabel', default: '—', desc: 'Multiline auto-growing input (Enter sends, Shift+Enter newline) and optional file picker; emits send and files.' },
     { name: 'ui-chat-typing / ui-chat-actions / ui-chat-source', type: 'label / actions, disabled / label, href', default: '—', desc: 'Typing indicator, quick-reply chips (pick), and citation chip/link.' },
+  ];
+  protected readonly chatWidgetOut: ApiRow[] = [
+    { name: 'dismissed', type: 'void', default: '—', desc: 'Draggable launcher dropped onto the × dismiss zone.' },
+    { name: 'teaserDismissed', type: 'void', default: '—', desc: 'One-time teaser bubble dismissed.' },
+    { name: 'positionChange', type: 'UiChatHeadPosition', default: '—', desc: 'Draggable launcher snapped to a new { x, y } position.' },
   ];
   protected readonly bubbleApi: ApiRow[] = [
     { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end (or right, see mineSide), primary colour.' },

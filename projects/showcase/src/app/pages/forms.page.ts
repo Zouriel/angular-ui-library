@@ -585,6 +585,7 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'maxRows', type: 'number', default: '8', desc: 'With autosize: most lines before it scrolls.' },
     { name: 'autocomplete', type: 'string', default: '—', desc: 'Native autocomplete.' },
     { name: 'name', type: 'string', default: '—', desc: 'Native name.' },
+    { name: 'maxlength', type: 'number | null', default: 'null', desc: 'Maximum characters accepted by the native textarea.' },
     { name: 'invalid', type: 'boolean', default: 'false', desc: 'Error styling.' },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'dir', type: "'ltr' | 'rtl' | 'auto' | null", default: 'null', desc: 'Writing direction of the native textarea (see Field slots).' },
