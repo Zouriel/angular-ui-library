@@ -18,6 +18,7 @@ export * from './engine';
 export * from './format';
 export type { UiFbUploader } from './renderer-field';
 export * from './form-renderer';
+export * from './form-summary';
 export * from './form-builder';
 export * from './revisions';
 export * from './builder-revisions';

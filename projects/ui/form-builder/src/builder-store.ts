@@ -111,6 +111,9 @@ export class FbBuilderStore {
   /** The version people are answering now; drives "this field has answers" warnings. */
   readonly published = signal<UiFormDefinition | null>(null);
   readonly submissionCount = signal(0);
+  readonly agentInteractable = signal(false);
+  readonly agentInteractableLabel = signal('Available to the assistant');
+  readonly agentInteractableHint = signal('Lets the AI assistant read this form and fill it in field by field for a signed-in person, who confirms before it is submitted.');
   readonly validatorDefs = signal<readonly UiFbValidatorDef[]>(UI_FB_BUILTIN_VALIDATORS);
   /** Lists the app can search (see provideUiFormOptionSources). */
   readonly optionSourceDefs = signal<readonly UiFbOptionSourceDef[]>([]);

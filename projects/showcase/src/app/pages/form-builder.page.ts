@@ -7,6 +7,7 @@ import { UiSwitch } from '@zouriel/ui/form';
 import {
   UiFormBuilder,
   UiFormRenderer,
+  UiFormSummary,
   UiFbMemoryRevisionStore,
   fbCreateRevision,
   fbLocales,
@@ -38,7 +39,7 @@ const STUDENT_ID: UiFbValidatorDef = {
 
 @Component({
   selector: 'page-form-builder',
-  imports: [JsonPipe, FormsModule, RouterLink, UiButton, UiSegmented, UiSwitch, UiFormBuilder, UiFormRenderer, UiFormGlobalSettingsEditor, DocApi, DocPage, DocSection, DocDemo],
+  imports: [JsonPipe, FormsModule, RouterLink, UiButton, UiSegmented, UiSwitch, UiFormBuilder, UiFormRenderer, UiFormSummary, UiFormGlobalSettingsEditor, DocApi, DocPage, DocSection, DocDemo],
   providers: [provideUiFormValidators(STUDENT_ID), provideUiFormOptionSources(...DEMO_SOURCES), provideUiFormHttpSources({ allowedOrigins: ['https://dummyjson.com'] })],
   template: `
     <doc-page eyebrow="Flagship" title="Form builder"
@@ -104,6 +105,22 @@ const STUDENT_ID: UiFbValidatorDef = {
           </div>
           <div class="frame">
             <ui-form-renderer [definition]="form" [prefill]="prefill" [serverErrors]="serverErrors()" (submitted)="last.set($event)" />
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Form summary" selector="ui-form-summary" [api]="summaryApi"
+        summary="Compact review card of answered, visible fields in definition order, keeping section headings and skipping fields hidden by conditions. Reuses the engine's condition evaluation and display formatting. Pass marked paths to highlight assistant-filled answers with a marker and legend, and project action buttons into [summary-footer].">
+        <doc-demo code="<ui-form-summary [definition]=&quot;form&quot; [answers]=&quot;answers&quot; [marked]=&quot;['full_name']&quot;>
+  <div summary-footer><ui-button>Confirm &amp; Submit</ui-button></div>
+</ui-form-summary>">
+          <div style="max-width: 420px;">
+            <ui-form-summary [definition]="form" [answers]="answers" [language]="lang()" [marked]="['full_name']" subtitle="Check every answer before you confirm.">
+              <div summary-footer style="display:flex;gap:8px;width:100%">
+                <ui-button variant="outline" style="flex:1">Edit Answers</ui-button>
+                <ui-button style="flex:1">Confirm &amp; Submit</ui-button>
+              </div>
+            </ui-form-summary>
           </div>
         </doc-demo>
       </doc-section>
@@ -284,7 +301,16 @@ update(id: string, s: UiFormSubmission) {
   <ui-button fbActions (click)="publish()">Publish</ui-button>
 </ui-form-builder>`;
 
+  protected readonly summaryApi: ApiRow[] = [
+    { name: 'definition', type: 'UiFormDefinition', default: 'required', desc: 'Form definition JSON.' },
+    { name: 'answers', type: 'Record<string, unknown>', default: '{}', desc: 'Submitted or draft answers object.' },
+    { name: 'language', type: 'string | null', default: 'null', desc: "Language code ('en', 'dv', …); defaults to the form's default." },
+    { name: 'marked', type: 'string[]', default: '[]', desc: 'Field paths to mark as assistant-filled.' },
+    { name: 'markedLabel', type: 'string', default: "'Filled in by the assistant'", desc: 'Legend and tooltip label for marked fields.' },
+    { name: 'subtitle / showTitle', type: 'string / boolean', default: "'' / true", desc: 'Optional subtitle and header visibility.' },
+  ];
   protected readonly builderApi: ApiRow[] = [
+    { name: 'agentInteractable', type: 'boolean (model)', default: 'false', desc: 'Form-level switch in Form settings; not stored in definition JSON.' },
     { name: 'definition', type: 'UiFormDefinition', default: 'createDefinition()', desc: 'Two-way (`[(definition)]`). The form being built; every edit writes back. Setting another form (a different id) or different content loads it and clears undo history; the same form handed back with only `revision` changed, as when a published copy is stored back, keeps it.' },
     { name: 'published', type: 'UiFormDefinition | null', default: 'null', desc: 'The version people answer now. Drives the unpublished-changes list and answer protection.' },
     { name: 'submissionCount', type: 'number', default: '0', desc: 'Answers the published version has. Above zero: archive instead of delete, lock saved option values, remember renamed keys, only allow similar type changes.' },

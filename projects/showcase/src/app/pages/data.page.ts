@@ -38,6 +38,7 @@ import {
   type UiTreeNode, type UiTreeMove, type UiTreeRename, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
 } from '@zouriel/ui/data';
 import { UiChatBubble } from '@zouriel/ui/chat-bubble';
+import { UiChatActions, UiChatComposer, UiChatSource, UiChatTyping, UiChatWidget, type UiChatAction, type UiChatLauncher } from '@zouriel/ui/chat-widget';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 interface Row extends Record<string, unknown> { name: string; role: string; score: number | null; email: string | null; }
@@ -47,7 +48,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
     UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
-    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, DocPage, DocSection, DocDemo,
+    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -532,6 +533,42 @@ provideUiConfig({ chatMineSide: 'right' })">
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Chat widget" anchor="chat-widget" selector="ui-chat-widget" [api]="chatWidgetApi"
+        summary="From @zouriel/ui/chat-widget. Corner launcher (floating, hover pill, or draggable head) that opens a chat panel with header, optional notice line, auto-scrolling message log, quick-actions slot (ui-chat-actions), typing indicator (ui-chat-typing), citation chips (ui-chat-source), and multiline composer (ui-chat-composer).">
+        <doc-demo code="<ui-chat-widget [(open)]=&quot;open&quot; title=&quot;Addu Assistant&quot; notice=&quot;Answers come from an AI and cite their source.&quot;>
+  <ui-chat-bubble>Hello! <ui-chat-source label=&quot;Guide&quot; href=&quot;#&quot; /></ui-chat-bubble>
+  <div chat-quick-actions><ui-chat-actions [actions]=&quot;actions&quot; (pick)=&quot;onPick($event)&quot; /></div>
+  <div chat-footer><ui-chat-composer (send)=&quot;onSend($event)&quot; /></div>
+</ui-chat-widget>">
+          <div class="row fc-controls">
+            <ui-segmented size="sm" label="Launcher mode" [options]="launcherModes" [value]="widgetLauncher()" (valueChange)="widgetLauncher.set($any($event))" />
+            <ui-button size="sm" variant="outline" (click)="widgetOpen.set(!widgetOpen())">{{ widgetOpen() ? 'Close' : 'Open' }} widget</ui-button>
+          </div>
+          <div class="chat">
+            <ui-chat-bubble>
+              You can apply online before 1 December 2026.
+              <div><ui-chat-source label="HR-REQ-2026-0014" href="#chat-widget" /> <ui-chat-source label="Application guide" /></div>
+            </ui-chat-bubble>
+            <ui-chat-actions [actions]="widgetActions" (pick)="widgetLastAction.set($event)" />
+            <ui-chat-typing />
+            <ui-chat-composer [attach]="true" (send)="widgetLastAction.set($event)" />
+          </div>
+          <ui-chat-widget
+            [(open)]="widgetOpen"
+            [launcher]="widgetLauncher()"
+            [unread]="1"
+            title="Addu Assistant"
+            subtitle="AI · Usually replies instantly"
+            notice="Answers come from an AI and cite their source."
+            teaser="Hi! Ask me about Council services."
+          >
+            <ui-chat-bubble>Hello! How can I help today?</ui-chat-bubble>
+            <div chat-quick-actions><ui-chat-actions [actions]="widgetActions" (pick)="widgetLastAction.set($event)" /></div>
+            <div chat-footer><ui-chat-composer [attach]="true" (send)="widgetLastAction.set($event)" /></div>
+          </ui-chat-widget>
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Timeline" selector="ui-timeline" [api]="timelineApi"
         summary="Vertical sequence of events in an ordered list, joined by a connector line. Each event shows a tone-coloured dot, or a marker holding its icon when icon is set (a HugeIcons icon or a short string such as a step number). Markers are decorative; the title and description carry the meaning. In a flow, give items a state: done (as without one), current (aria-current=&quot;step&quot; and a halo) or upcoming (muted, with a hollow dot)."
         [shapes]="TIMELINE">
@@ -981,6 +1018,28 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   protected readonly dlApi: ApiRow[] = [
     { name: 'items', type: 'UiDescriptionItem[]', default: '[]', desc: 'Term/detail pairs.' },
     { name: 'layout', type: "'stacked' | 'row'", default: "'row'", desc: 'Term beside (row) or above (stacked) its detail.' },
+  ];
+  protected readonly widgetOpen = signal(false);
+  protected readonly widgetLauncher = signal<UiChatLauncher>('floating');
+  protected readonly widgetLastAction = signal('');
+  protected readonly launcherModes = [
+    { value: 'floating', label: 'Floating' },
+    { value: 'hover', label: 'Hover pill' },
+    { value: 'draggable', label: 'Draggable' },
+  ];
+  protected readonly widgetActions: UiChatAction[] = [
+    { id: 'fill', label: 'Fill It In for Me' },
+    { id: 'open', label: 'Open the Vacancy' },
+  ];
+  protected readonly chatWidgetApi: ApiRow[] = [
+    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state of the chat panel.' },
+    { name: 'launcher', type: "'floating' | 'hover' | 'draggable'", default: "'floating'", desc: 'Launcher style: round corner button, expanding hover pill, or draggable head with edge snap and × drop zone.' },
+    { name: 'position', type: "'start' | 'end'", default: "'end'", desc: 'Logical corner (mirrors in RTL).' },
+    { name: 'unread', type: 'number', default: '0', desc: 'Unread count badge on the launcher.' },
+    { name: 'title / subtitle / notice', type: 'string', default: "'Assistant' / '' / ''", desc: 'Header title, subtitle, and optional notice strip.' },
+    { name: 'teaser / label / hint', type: 'string', default: "'' / 'Ask the Assistant' / …", desc: 'One-time teaser above floating launcher; two-line copy in hover pill.' },
+    { name: 'ui-chat-composer', type: 'attach, accept, multiple, disabled, busy, placeholder', default: '—', desc: 'Multiline auto-growing input (Enter sends, Shift+Enter newline) and optional file picker; emits send and files.' },
+    { name: 'ui-chat-typing / ui-chat-actions / ui-chat-source', type: 'label / actions, disabled / label, href', default: '—', desc: 'Typing indicator, quick-reply chips (pick), and citation chip/link.' },
   ];
   protected readonly bubbleApi: ApiRow[] = [
     { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end (or right, see mineSide), primary colour.' },

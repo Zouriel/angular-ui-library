@@ -488,6 +488,17 @@ const AUTOCOMPLETE = [
           <ui-fb-trans [text]="def.description" />
         </label>
         <ui-fb-settings-fields [settings]="s" (patch)="store.updateSettings($event.patch, $event.mergeKey)" />
+        <section class="group-sec">
+          <h3>Assistant</h3>
+          <div class="fld">
+            <ui-switch size="sm" [ngModel]="store.agentInteractable()" (ngModelChange)="store.agentInteractable.set($event)">
+              {{ store.agentInteractableLabel() }}
+            </ui-switch>
+            @if (store.agentInteractableHint()) {
+              <span class="fb-hint">{{ store.agentInteractableHint() }}</span>
+            }
+          </div>
+        </section>
       </div>
     </ng-template>
   `,

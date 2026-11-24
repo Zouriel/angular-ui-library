@@ -291,6 +291,10 @@ export class UiFormBuilder {
   readonly published = input<UiFormDefinition | null>(null);
   /** How many answers the published version has. Above zero, saved data is protected. */
   readonly submissionCount = input(0);
+  /** Whether the AI assistant can read and fill this form for a signed-in person (not stored in definition JSON). */
+  readonly agentInteractable = model(false);
+  readonly agentInteractableLabel = input('Available to the assistant');
+  readonly agentInteractableHint = input('Lets the AI assistant read this form and fill it in field by field for a signed-in person, who confirms before it is submitted.');
   /** App checks for the "Add a check" list, on top of `provideUiFormValidators`. */
   readonly validators = input<readonly UiFbValidatorDef[]>([]);
   /** Extra option sources (searchable lists) for dropdowns and multi-selects, on top of `provideUiFormOptionSources`. */
@@ -359,6 +363,13 @@ export class UiFormBuilder {
     });
     effect(() => this.store.published.set(this.published()));
     effect(() => this.store.submissionCount.set(this.submissionCount()));
+    effect(() => this.store.agentInteractable.set(this.agentInteractable()));
+    effect(() => {
+      const v = this.store.agentInteractable();
+      if (v !== untracked(() => this.agentInteractable())) untracked(() => this.agentInteractable.set(v));
+    });
+    effect(() => this.store.agentInteractableLabel.set(this.agentInteractableLabel()));
+    effect(() => this.store.agentInteractableHint.set(this.agentInteractableHint()));
     effect(() => this.store.validatorDefs.set([...UI_FB_BUILTIN_VALIDATORS, ...this.registered, ...this.validators()]));
     effect(() => this.store.optionSourceDefs.set([...this.registeredSources, ...sourcesFromSettings(this.globalSettings(), this.http), ...this.optionSources()]));
 
