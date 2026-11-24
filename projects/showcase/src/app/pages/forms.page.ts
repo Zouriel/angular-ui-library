@@ -8,11 +8,12 @@ import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
   UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput, UiPhoneInput, UiHandleField,
-  type UiChoice, type UiHandleCheck, type UiAnchor, type UiTokenRun,
+  UiDocumentChecklist,
+  type UiChoice, type UiHandleCheck, type UiAnchor, type UiTokenRun, type UiDocumentItem, type UiDocumentUploadEvent,
 } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
-import { UiDatePicker, UiCalendar, UiDateRangePicker, UiDateTimePicker } from '@zouriel/ui/datepicker';
+import { UiDatePicker, UiCalendar, UiDateRangePicker, UiDateTimePicker, UiSlotPicker, type UiSlot } from '@zouriel/ui/datepicker';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const SIZE = "'sm' | 'md' | 'lg'";
@@ -39,6 +40,24 @@ const TOKEN = `interface UiTokenRun {
   italic?: boolean;
 }
 // Also exported: normalizeRuns(runs) merges neighbouring text runs with the same marks and drops empty ones.`;
+const DOC_ITEM = `interface UiDocumentItem {
+  id: string;
+  title: string;
+  requirement?: string;
+  status: 'missing' | 'attached' | 'verified' | 'draft' | 'rejected';
+  reason?: string;
+  accept?: string;
+  maxSizeMb?: number;
+  source?: 'upload' | 'registry';
+  fileName?: string;
+}`;
+const SLOT_ITEM = `interface UiSlot {
+  id: string;
+  label: string;
+  note?: string;
+  remaining?: number;
+  disabled?: boolean;
+}`;
 
 @Component({
   selector: 'page-forms',
@@ -47,6 +66,7 @@ const TOKEN = `interface UiTokenRun {
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
     UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput, UiHandleField,
+    UiDocumentChecklist, UiSlotPicker,
     UiCombobox, UiMultiSelect, UiDatePicker, UiCalendar, UiDateRangePicker,
     DocPage, DocSection, DocDemo,
   ],
@@ -298,6 +318,14 @@ phone = new FormControl<string | null>('+9607771234');
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Document checklist" selector="ui-document-checklist" [api]="docChecklistApi" [outputs]="docChecklistOut" [shapes]="DOC_ITEM"
+        summary="The documents step of an application: one row per document with title, muted requirement line, soft status badge, and state-appropriate action (choose file, replace, view, remove). Registry items need no upload and show where they came from; rejected items show their reason and return to upload. A polite live summary counts attached and verified items. Validates accept and maxSizeMb before emitting (upload).">
+        <doc-demo lang="ts + html" code="<ui-document-checklist [items]=&quot;docs()&quot; (upload)=&quot;onDocUpload($event)&quot; (remove)=&quot;onDocRemove($event)&quot; (view)=&quot;onDocView($event)&quot; />">
+          <ui-document-checklist [items]="docs()" (upload)="onDocUpload($event)" (remove)="onDocRemove($event)" (view)="docNote.set('Viewing ' + $event)" />
+          @if (docNote()) { <p class="hint">{{ docNote() }}</p> }
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Date picker" selector="ui-date-picker" [api]="dateApi"
         summary="Calendar popover (CDK Overlay). Value type: ISO string 'YYYY-MM-DD' (or null; an empty or malformed string counts as no date). Click the field, or press Enter, Space or ArrowDown on it, to open; focus goes to the chosen day (or today). Arrow keys move by day and week, PageUp/PageDown by month, Home/End to the ends of the month, Enter picks. Tab stays inside the popover; Escape closes it and returns to the field, as does a click outside. The month and year in the header open month and year grids, which focus the month or year in view and keep one tab stop: arrow keys move (Up/Down by a row of three), Home/End go to the first and last cell, PageUp/PageDown change the year (month grid) or the page of 12 years (year grid), Enter or Space picks. min/max limit which days can be picked. Month and day names come from the built-in strings (Dhivehi in uiStringsDv) or Intl in the app's LOCALE_ID, and the weeks start on the locale's first day (Sunday in en-US and in uiStringsDv); in RTL the grid, the arrows and the arrow keys read right to left (0.46.0).">
         <doc-demo code="<ui-date-picker formControlName=&quot;date&quot; />">
@@ -325,6 +353,14 @@ phone = new FormControl<string | null>('+9607771234');
         [shapes]="'type UiDateRange = { start: string | null; end: string | null };'">
         <doc-demo code="<ui-date-range-picker formControlName=&quot;range&quot; />">
           <ui-date-range-picker formControlName="range" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Slot picker" selector="ui-slot-picker" [api]="slotPickerApi" [shapes]="SLOT_ITEM"
+        summary="Radio group of choice cards for sessions or appointment times with places left. Arrow keys move and select, with one tab stop and Home/End support. Slots at or below lowAt show their remaining count in the warning tone; remaining: 0 disables the card with Full. Supports [(value)] and ControlValueAccessor.">
+        <doc-demo code="<ui-slot-picker [slots]=&quot;slots&quot; [(value)]=&quot;chosenSlot&quot; label=&quot;Appointment slot&quot; />">
+          <ui-slot-picker [slots]="slots" [(value)]="chosenSlot" label="Appointment slot" />
+          <p class="hint">Selected slot: {{ chosenSlot() ?? 'none' }}</p>
         </doc-demo>
       </doc-section>
 
@@ -728,5 +764,48 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
   protected readonly calendarApi: ApiRow[] = [
     { name: 'min', type: 'string | null', default: 'null', desc: 'Earliest selectable day (ISO).' },
     { name: 'max', type: 'string | null', default: 'null', desc: 'Latest selectable day (ISO).' },
+  ];
+
+  protected readonly DOC_ITEM = DOC_ITEM;
+  protected readonly SLOT_ITEM = SLOT_ITEM;
+  protected readonly docNote = signal<string | null>(null);
+  protected readonly docs = signal<UiDocumentItem[]>([
+    { id: 'plans', title: 'Architectural plans', requirement: 'Required because this project has 2 floors · PDF · up to 5 MB', status: 'missing', accept: '.pdf,application/pdf', maxSizeMb: 5 },
+    { id: 'id-card', title: 'National ID copy', status: 'attached', fileName: 'id-front.pdf', accept: '.pdf' },
+    { id: 'land', title: 'Land registry extract', requirement: 'Verified from the land register', status: 'verified', source: 'registry' },
+    { id: 'photo', title: 'Site photograph', status: 'rejected', reason: 'Image is blurry; please upload a clearer photo', accept: 'image/*', maxSizeMb: 2 },
+  ]);
+  protected onDocUpload(e: UiDocumentUploadEvent): void {
+    this.docs.update((list) => list.map((d) => (d.id === e.id ? { ...d, status: 'attached', fileName: e.file.name, reason: undefined } : d)));
+    this.docNote.set(`Uploaded ${e.file.name} for ${e.id}`);
+  }
+  protected onDocRemove(id: string): void {
+    this.docs.update((list) => list.map((d) => (d.id === id ? { ...d, status: 'missing', fileName: undefined } : d)));
+    this.docNote.set(`Removed ${id}`);
+  }
+  protected readonly docChecklistApi: ApiRow[] = [
+    { name: 'items', type: 'UiDocumentItem[]', default: '[]', desc: 'Document rows with status, requirement, accept, maxSizeMb, source, fileName, and reason.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disables all row actions.' },
+  ];
+  protected readonly docChecklistOut: ApiRow[] = [
+    { name: 'upload', type: '{ id: string; file: File }', default: '—', desc: 'Emitted when a picked file passes accept and maxSizeMb.' },
+    { name: 'remove', type: 'string', default: '—', desc: 'Emitted with the document id when Remove is clicked.' },
+    { name: 'view', type: 'string', default: '—', desc: 'Emitted with the document id when View is clicked.' },
+  ];
+
+  protected readonly slots: UiSlot[] = [
+    { id: 's1', label: '09:00 – 10:00', note: 'Counter A', remaining: 8 },
+    { id: 's2', label: '10:30 – 11:30', note: 'Counter A', remaining: 3 },
+    { id: 's3', label: '13:00 – 14:00', note: 'Counter B', remaining: 0 },
+    { id: 's4', label: '14:30 – 15:30', note: 'Counter B', remaining: 5 },
+  ];
+  protected readonly chosenSlot = signal<string | null>('s1');
+  protected readonly slotPickerApi: ApiRow[] = [
+    { name: 'slots', type: 'UiSlot[]', default: '[]', desc: 'Slot options with id, label, optional note, remaining, and disabled.' },
+    { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Chosen slot id; also works with ngModel and reactive forms.' },
+    { name: 'lowAt', type: 'number', default: '5', desc: 'Remaining count at or under which the count shows in the warning tone.' },
+    { name: 'columns', type: "number | 'auto'", default: "'auto'", desc: 'Grid column count or responsive auto-fill.' },
+    { name: 'label', type: 'string', default: '—', desc: 'Accessible aria-label for the radiogroup.' },
+    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disables the whole group.' },
   ];
 }
