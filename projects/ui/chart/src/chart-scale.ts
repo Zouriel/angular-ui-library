@@ -42,6 +42,38 @@ export function uiChartScale(values: readonly number[]): UiChartScale {
   return { min, max, ticks };
 }
 
+/**
+ * A floating y scale for `baseline="auto"`, fitted around the data's own min and max on round
+ * steps (1, 2, 2.5 or 5 times a power of ten) with at most four intervals.
+ */
+export function uiChartAutoScale(values: readonly number[]): UiChartScale {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const v of values) {
+    if (!Number.isFinite(v)) continue;
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return { min: 0, max: 1, ticks: [0] };
+  if (lo === hi) return uiChartScale([lo]);
+  let step = 0;
+  search: for (let exp = Math.floor(Math.log10(hi - lo)) - 2; ; exp++) {
+    for (const m of [1, 2, 2.5, 5]) {
+      step = clean(m * Math.pow(10, exp));
+      const minIdx = Math.floor(lo / step + 1e-9);
+      const maxIdx = Math.ceil(hi / step - 1e-9);
+      if (maxIdx - minIdx <= 4) break search;
+    }
+  }
+  const minIdx = Math.floor(lo / step + 1e-9);
+  const maxIdx = Math.ceil(hi / step - 1e-9);
+  const min = clean(minIdx * step);
+  const max = clean(maxIdx * step);
+  const ticks: number[] = [];
+  for (let i = minIdx; i <= maxIdx; i++) ticks.push(clean(i * step));
+  return { min, max, ticks };
+}
+
 /** How one x label is shown: which category it names and whether it is pulled in from an edge. */
 export interface UiChartLabel {
   index: number;
