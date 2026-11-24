@@ -67,6 +67,9 @@ describe('ui-qr-scanner', () => {
 
     expect(getUserMedia).not.toHaveBeenCalled();
     const el = f.nativeElement as HTMLElement;
+    // Idle shows only the Start camera button, not the same words again above it.
+    expect(el.querySelector('.status-msg')).toBeNull();
+    expect(el.querySelectorAll('.action-btn.primary').length).toBe(1);
     const input = el.querySelector('.manual-input') as HTMLInputElement;
     const form = el.querySelector('form')!;
 

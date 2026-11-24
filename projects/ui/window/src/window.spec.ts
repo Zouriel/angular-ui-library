@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { UiWindow } from './window';
 import { UiWindowManager } from './window-manager';
 
@@ -12,6 +12,18 @@ class Host {
   readonly open = signal(true);
   closedCount = 0;
 }
+
+// Dragging, docking and tiling clamp to the viewport, so these tests pin it (1024 by 768, jsdom's
+// default) instead of inheriting whatever size a spec that ran earlier in the same worker left behind.
+const viewport = { width: window.innerWidth, height: window.innerHeight };
+beforeEach(() => {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: 1024 });
+  Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: 768 });
+});
+afterEach(() => {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: viewport.width });
+  Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: viewport.height });
+});
 
 describe('UiWindow', () => {
   function setup() {

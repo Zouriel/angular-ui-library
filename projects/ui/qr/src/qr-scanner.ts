@@ -62,9 +62,11 @@ interface BarcodeDetectorLike {
 
         @if (state() !== 'scanning') {
           <div class="overlay">
-            <p class="status-msg" [class.err]="state() === 'denied' || state() === 'unsupported' || errorReason() === 'no-camera' || errorReason() === 'failed'">
-              {{ statusMessage() }}
-            </p>
+            @if (statusMessage()) {
+              <p class="status-msg" [class.err]="state() === 'denied' || state() === 'unsupported' || errorReason() === 'no-camera' || errorReason() === 'failed'">
+                {{ statusMessage() }}
+              </p>
+            }
             @if (state() === 'idle' || state() === 'denied') {
               <button type="button" class="action-btn primary" (click)="startFromUser()">
                 {{ strings.scanStart }}
@@ -358,7 +360,8 @@ export class UiQrScanner {
       case 'unsupported':
         return s.scanUnsupported;
       default:
-        return s.scanStart;
+        // Idle: the Start camera button says it; repeating it above the button reads twice.
+        return '';
     }
   });
 

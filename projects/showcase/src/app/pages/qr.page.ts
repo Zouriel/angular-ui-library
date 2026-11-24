@@ -36,8 +36,8 @@ interface UiQrScanError {
   imports: [FormsModule, DocPage, DocSection, DocDemo, UiQrCode, UiQrScanner, UiFormField, UiInput, UiSegmented, UiButton, UiText],
   template: `
     <doc-page
-      name="QR"
-      entry="@zouriel/ui/qr"
+      eyebrow="Components"
+      title="QR code and scanner"
       lead="Pure-TypeScript QR code generation (ui-qr-code, uiQrMatrix) and camera + manual QR scanning (ui-qr-scanner)."
     >
       <doc-section
