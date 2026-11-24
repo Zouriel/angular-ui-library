@@ -236,6 +236,7 @@
   --ui-card-pad-sm: 16px;
   --ui-card-pad-md: 20px;
   --ui-card-pad-lg: 28px;
+  --ui-assistance-bar-height: 52px;
 
   --ui-map-route-primary: var(--ui-addu-blue-700);
 

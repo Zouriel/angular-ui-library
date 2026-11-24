@@ -63,7 +63,8 @@ let sidebarSeq = 0;
   },
   template: `
     <div class="backdrop" aria-hidden="true" (click)="close()"></div>
-    <aside #side class="sidebar" [id]="sideId" [attr.tabindex]="compact() ? -1 : null"
+    <aside #side class="sidebar" [id]="sideId" [attr.data-theme]="sidebarTheme() || null"
+           [attr.tabindex]="compact() ? -1 : null"
            [attr.role]="compact() ? 'dialog' : null"
            [attr.aria-modal]="drawer() ? 'true' : null"
            [attr.aria-label]="compact() ? strings.sidebarLabel : null"
@@ -115,7 +116,8 @@ let sidebarSeq = 0;
     .sidebar {
       --sb-pt: var(--ui-space-3); --sb-pb: var(--ui-space-3); --sb-ps: var(--ui-space-3);
       display: flex; flex-direction: column;
-      background: var(--ui-color-surface);
+      background-color: var(--ui-color-surface);
+      color: var(--ui-color-text);
       border-inline-end: 1px solid var(--ui-color-border);
       min-width: 0; min-height: 0;
       box-sizing: border-box;
@@ -242,6 +244,8 @@ export class UiSidebarLayout {
   breakpoint = input(860);
   /** Sidebar width (any CSS length). */
   sidebarWidth = input('248px');
+  /** Optional `data-theme` island applied to the sidebar panel (e.g. `'addu-tourism-branding-ink'`). */
+  sidebarTheme = input<string | null>(null);
   /**
    * Whether the content region is the page's `main` landmark. Turn it off when the shell sits inside
    * another `<main>` (a preview, a docs page), since a page should have only one.

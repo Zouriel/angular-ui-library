@@ -436,6 +436,17 @@ export interface UiStrings {
   scanUnsupported: string;
   scanTypeInstead: string;
   scanTorch: string;
+  /** `ui-assistance-bar` & `ui-language-switch`: accessibility toolbar and read-aloud controls. */
+  assistance: string;
+  textSize: string;
+  textSizeDefault: string;
+  textSizeLarge: string;
+  textSizeLarger: string;
+  readPageAloud: string;
+  readAloud: string;
+  stopReading: string;
+  getHelp: string;
+  language: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -671,6 +682,16 @@ export const defaultUiStrings: UiStrings = {
   scanUnsupported: 'Camera scanning is not supported in this browser',
   scanTypeInstead: 'Type the code instead',
   scanTorch: 'Toggle flashlight',
+  assistance: 'Assistance',
+  textSize: 'Text size',
+  textSizeDefault: 'Default',
+  textSizeLarge: 'Large',
+  textSizeLarger: 'Larger',
+  readPageAloud: 'Read this page aloud',
+  readAloud: 'Read aloud',
+  stopReading: 'Stop reading',
+  getHelp: 'Get help',
+  language: 'Language',
 };
 
 /**
@@ -912,6 +933,16 @@ export const uiStringsDv: UiStrings = {
   scanUnsupported: 'މި ބްރައުޒާގައި ކެމެރާ ސްކޭން ކުރުމަކަށް ސަޕޯޓެއް ނުކުރޭ',
   scanTypeInstead: 'ބަދަލުގައި ކޯޑު ޖަހާ',
   scanTorch: 'ފްލޭޝްލައިޓް ޖައްސާ/ނިއްވާ',
+  assistance: 'އެހީތެރިކަން',
+  textSize: 'ލިޔުމުގެ ސައިޒު',
+  textSizeDefault: 'އާދައިގެ',
+  textSizeLarge: 'ބޮޑު',
+  textSizeLarger: 'އިތުރަށް ބޮޑު',
+  readPageAloud: 'މި ޞަފްޙާ ކިޔައިދޭ',
+  readAloud: 'އަޑުހަރުކޮށް ކިޔާ',
+  stopReading: 'ކިޔުން ހުއްޓާލާ',
+  getHelp: 'އެހީ ހޯދާ',
+  language: 'ބަސް',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown

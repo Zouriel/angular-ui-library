@@ -350,4 +350,28 @@ describe('UiSidebarLayout fixed sidebar header and footer', () => {
       expect(bd.paddingInlineStart || bd.getPropertyValue('padding-inline-start')).toBe('var(--sb-ps)');
     }
   });
+
+  it('applies sidebarTheme as data-theme on the sidebar panel and colours it from tokens', () => {
+    const { q } = make();
+    const aside = q('aside');
+    expect(aside.hasAttribute('data-theme')).toBe(false);
+
+    @Component({
+      imports: [UiSidebarLayout],
+      template: `<ui-sidebar-layout [sidebarTheme]="theme()"><nav sidebar>nav</nav><p>page</p></ui-sidebar-layout>`,
+    })
+    class ThemedHost {
+      theme = signal<string | null>('addu-tourism-branding-ink');
+    }
+    const tf = TestBed.createComponent(ThemedHost);
+    tf.detectChanges();
+    const themedAside = tf.nativeElement.querySelector('aside.sidebar') as HTMLElement;
+    expect(themedAside.getAttribute('data-theme')).toBe('addu-tourism-branding-ink');
+    const style = getComputedStyle(themedAside);
+    expect(style.backgroundColor).toBe('var(--ui-color-surface)');
+    expect(style.color).toBe('var(--ui-color-text)');
+    tf.componentInstance.theme.set(null);
+    tf.detectChanges();
+    expect(themedAside.hasAttribute('data-theme')).toBe(false);
+  });
 });

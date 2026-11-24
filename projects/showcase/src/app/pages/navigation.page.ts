@@ -7,11 +7,15 @@ import DashboardSquare01Icon from '@hugeicons/core-free-icons/DashboardSquare01I
 import Analytics01Icon from '@hugeicons/core-free-icons/Analytics01Icon';
 import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
 import CreditCardIcon from '@hugeicons/core-free-icons/CreditCardIcon';
+import { uiStringsDv } from '@zouriel/ui';
 import { UiText } from '@zouriel/ui/text';
 import { UiButton } from '@zouriel/ui/button';
+import { UiThemeProvider } from '@zouriel/ui/theme';
 import {
   UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiSideNav, UiAnchorNav,
+  UiFooter, UiLanguageSwitch,
   type UiBreadcrumb, type UiBottomNavItem, type UiSideNavGroup, type UiAnchorItem, type UiStep,
+  type UiFooterColumn, type UiFooterContact, type UiLanguage,
 } from '@zouriel/ui/navigation';
 import { UiMenubar, type UiMenubarMenu } from '@zouriel/ui/menubar';
 import { UiTabs, UiTab } from '@zouriel/ui/tabs';
@@ -20,8 +24,8 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-navigation',
   imports: [
-    UiText, UiButton, UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
-    UiTabs, UiTab, DocPage, DocSection, DocDemo,
+    UiText, UiButton, UiThemeProvider, UiNavbar, UiBreadcrumbs, UiPagination, UiStepper, UiStepBody, UiBottomNav, UiMenubar, UiSideNav, UiAnchorNav,
+    UiFooter, UiLanguageSwitch, UiTabs, UiTab, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Navigation"
@@ -153,6 +157,57 @@ section[id] { scroll-margin-top: 80px; }">
           <div class="boxed"><ui-anchor-nav [items]="anchors" /></div>
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Language switch" selector="ui-language-switch" [api]="langApi" anchor="nav-language"
+        summary="Switches the page's language, direction (UiDirectionService.set), and built-in strings (UiStringsService.set when given). Each option renders in its own language and script with its own lang attribute, never as a flag. Available in link, segmented, and menu appearances."
+        shapes="interface UiLanguage { code: string; label: string; dir: 'ltr' | 'rtl'; strings?: Partial<UiStrings>; }">
+        <doc-demo lang="ts + html" code="import { UiLanguageSwitch, type UiLanguage } from '@zouriel/ui/navigation';
+import { uiStringsDv } from '@zouriel/ui';
+
+<ui-language-switch [languages]=&quot;langs&quot; appearance=&quot;segmented&quot; />">
+          <div class="demo-stack">
+            <div class="row">
+              <ui-language-switch [languages]="langs" [(value)]="lang" appearance="link" />
+              <ui-language-switch [languages]="langs" [(value)]="lang" appearance="segmented" />
+              <ui-language-switch [languages]="langs" [(value)]="lang" appearance="menu" />
+            </div>
+          </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Footer" selector="ui-footer" [api]="footerApi" anchor="nav-footer"
+        summary="Site footer (contentinfo landmark) with [footer-brand], [footer-aside], and [footer-legal] slots, responsive link columns (grid at min 180px, collapsing into an accordion closed by default under 600px), emergency/key contacts as LTR tel: links, and container-aligned width. Reads semantic tokens only, so wrapping it in ui-theme-provider (such as addu-tourism-branding-ink) recolours the entire footer."
+        [shapes]="'interface UiFooterColumn { title: string; links: { label: string; href: string; external?: boolean }[]; }\ninterface UiFooterContact { label: string; value: string; href?: string; }'">
+        <doc-demo lang="html" code="<ui-theme-provider theme=&quot;addu-tourism-branding-ink&quot;>
+  <ui-footer [columns]=&quot;cols&quot; [contacts]=&quot;contacts&quot; contactsTitle=&quot;In an emergency&quot; legal=&quot;© 2026 Addu City Council&quot;>
+    <div footer-brand>Addu City</div>
+  </ui-footer>
+</ui-theme-provider>">
+          <div class="demo-stack">
+            <ui-footer
+              [columns]="footerCols"
+              [contacts]="footerContacts"
+              contactsTitle="In an emergency"
+              legal="© 2026 Addu City Council">
+              <div footer-brand><strong>Addu City</strong><br>Hithadhoo, Addu City</div>
+              <div footer-aside><ui-button size="sm" variant="outline">Subscribe</ui-button></div>
+              <div footer-legal>Privacy · Accessibility</div>
+            </ui-footer>
+
+            <ui-theme-provider theme="addu-tourism-branding-ink">
+              <ui-footer
+                [columns]="footerCols"
+                [contacts]="footerContacts"
+                contactsTitle="In an emergency"
+                legal="© 2026 Addu City Council">
+                <div footer-brand><strong>Addu City</strong><br>Dark ink island</div>
+                <div footer-aside><ui-button size="sm" variant="primary">Subscribe</ui-button></div>
+                <div footer-legal>Privacy · Accessibility</div>
+              </ui-footer>
+            </ui-theme-provider>
+          </div>
+        </doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `
@@ -174,6 +229,20 @@ export class NavigationPage {
     { id: 'nav-navbar', label: 'Navbar' }, { id: 'nav-tabs', label: 'Tabs' }, { id: 'nav-side', label: 'Side nav' },
     { id: 'nav-crumbs', label: 'Breadcrumbs' }, { id: 'nav-pages', label: 'Pagination' }, { id: 'nav-stepper', label: 'Stepper' },
     { id: 'nav-menubar', label: 'Menubar' }, { id: 'nav-bottom', label: 'Bottom nav' }, { id: 'nav-anchor', label: 'Anchor nav' },
+    { id: 'nav-language', label: 'Language switch' }, { id: 'nav-footer', label: 'Footer' },
+  ];
+  protected readonly lang = signal('en');
+  protected readonly langs: UiLanguage[] = [
+    { code: 'en', label: 'English', dir: 'ltr', strings: {} },
+    { code: 'dv', label: 'ދިވެހި', dir: 'rtl', strings: uiStringsDv },
+  ];
+  protected readonly footerCols: UiFooterColumn[] = [
+    { title: 'Services', links: [{ label: 'Permits', href: '/permits' }, { label: 'Waste collection', href: '/waste' }] },
+    { title: 'Council', links: [{ label: 'About Addu', href: '/about' }, { label: 'Open data', href: 'https://example.com', external: true }] },
+  ];
+  protected readonly footerContacts: UiFooterContact[] = [
+    { label: 'Emergency', value: '119' },
+    { label: 'Council hotline', value: '+960 688 5000' },
   ];
   protected readonly menus: UiMenubarMenu[] = [
     { label: 'File', items: [{ label: 'New', value: 'new' }, { label: 'Open', value: 'open' }] },
@@ -252,5 +321,22 @@ export class NavigationPage {
   protected readonly anchorApi: ApiRow[] = [
     { name: 'items', type: 'UiAnchorItem[]', default: '[]', desc: 'Section links (by element id).' },
     { name: 'offset', type: 'number', default: '80', desc: 'Height in px of a fixed header: a section counts as in view only below it. Read once at init; does not change where a click scrolls to.' },
+  ];
+  protected readonly langApi: ApiRow[] = [
+    { name: 'languages', type: 'UiLanguage[]', default: 'required', desc: 'Available languages with code, label, dir, and optional strings.' },
+    { name: 'value', type: 'string', default: 'page lang', desc: 'Two-way ([(value)]) active language code.' },
+    { name: 'appearance', type: "'link' | 'segmented' | 'menu'", default: "'link'", desc: 'Visual presentation.' },
+    { name: 'label', type: 'string', default: 'strings.language', desc: 'Accessible name for the control.' },
+  ];
+  protected readonly footerApi: ApiRow[] = [
+    { name: 'columns', type: 'UiFooterColumn[]', default: '[]', desc: 'Link columns; each renders as a named <nav> and collapses to an accordion under 600px.' },
+    { name: 'contacts', type: 'UiFooterContact[]', default: '[]', desc: 'Key/emergency numbers rendered as LTR tel: links.' },
+    { name: 'contactsTitle', type: 'string', default: "''", desc: 'Heading above the contacts row.' },
+    { name: 'legal', type: 'string', default: "''", desc: 'Copyright / legal line.' },
+    { name: 'label', type: 'string', default: "''", desc: 'Accessible name for the contentinfo landmark.' },
+    { name: 'size', type: "'sm' | 'md' | 'lg' | 'xl' | 'full'", default: "'xl'", desc: 'Max-width container size matching ui-container.' },
+    { name: '[footer-brand]', type: 'slot', default: '—', desc: 'Logo, name, address, hours.' },
+    { name: '[footer-aside]', type: 'slot', default: '—', desc: 'Subscribe field or secondary action.' },
+    { name: '[footer-legal]', type: 'slot', default: '—', desc: 'Privacy and social links beside the legal line.' },
   ];
 }

@@ -130,10 +130,10 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 </ui-sidebar-layout>">
           <ui-segmented size="sm" label="Width" [options]="shellWidths" [value]="shellWidth()" (valueChange)="shellWidth.set($any($event)); shellOpen.set(false)" />
           <div class="shell-host" [class.phone]="shellWidth() === 'phone'">
-            <ui-sidebar-layout [breakpoint]="shellWidth() === 'phone' ? 100000 : 0" sidebarWidth="190px" mainLandmark="false" [(open)]="shellOpen">
+            <ui-sidebar-layout [breakpoint]="shellWidth() === 'phone' ? 100000 : 0" sidebarWidth="190px" sidebarTheme="addu-tourism-branding-ink" mainLandmark="false" [(open)]="shellOpen">
               <ui-side-nav sidebar [groups]="shellNav" [(active)]="shellActive" (navigate)="shellOpen.set(false)" />
               <strong header>{{ shellActive() }}</strong>
-              <p class="pane-text">Page content scrolls here while the bar stays put.</p>
+              <p class="pane-text">Page content scrolls here while the bar stays put (sidebar uses <code>sidebarTheme="addu-tourism-branding-ink"</code>).</p>
             </ui-sidebar-layout>
           </div>
         </doc-demo>
@@ -397,6 +397,7 @@ export class LayoutPage {
   protected readonly sidebarApi: ApiRow[] = [
     { name: 'breakpoint', type: 'number', default: '860', desc: 'Widest viewport (px) that still uses the drawer.' },
     { name: 'sidebarWidth', type: 'string', default: "'248px'", desc: 'Sidebar width, any CSS length.' },
+    { name: 'sidebarTheme', type: 'string | null', default: 'null', desc: 'Optional data-theme island applied to the sidebar panel (e.g. addu-tourism-branding-ink).' },
     { name: 'mainLandmark', type: 'boolean', default: 'true', desc: 'The content region has role=main. Set false when the shell is nested inside another main (as in this demo).' },
     { name: 'bar', type: 'boolean', default: 'true', desc: 'The built-in top bar (menu button + [header] slot). false: no bar at all; the app opens the drawer through [(open)] or toggle() from its own button, shown while compact().' },
     { name: 'fill', type: 'boolean', default: 'false', desc: 'Exactly the viewport height (100dvh, safe-area aware) instead of at least it: the sidebar and the content scroll inside themselves, and the content is an unpadded flex column (give the app\'s scrolling part flex: 1; min-height: 0, and dock a composer below it).' },

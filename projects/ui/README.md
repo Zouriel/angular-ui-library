@@ -95,7 +95,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `datepicker` | date picker, date range picker, calendar |
 | `overlay` | tooltip, hint (coachmark), popover, menu, context menu, backdrop, click-outside |
 | `dialog` | modal, drawer, bottom sheet, confirm dialog, toasts, task progress (+ dialog) |
-| `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav |
+| `navigation` | navbar, side nav, bottom nav, breadcrumbs, pagination, stepper, anchor nav, footer, language switch |
+| `assistance` | `ui-assistance-bar`, `UiAssistanceService` (text size), `UiReadAloudService` + `[uiReadAloud]` |
 | `tabs`, `accordion`, `list`, `table`, `card`, `alert`, `spinner`, `skeleton`, `divider`, `text` | tabs, accordion, list, table, card + stat card + feature card, alert, spinner, skeleton, divider, text |
 | `shutter-loader` | ui-shutter-loader: a camera-shutter loading mark; `provideUiConfig({ spinner: 'shutter' })` makes every spinner and built-in busy mark draw it |
 | `badge` | badge, chip, avatar, avatar group |
