@@ -167,7 +167,7 @@ export class UiTab {
     .tab {
       position: relative; z-index: 1; appearance: none; border: none; background: transparent;
       padding: var(--ui-space-2) var(--ui-space-3); margin-bottom: -1px;
-      color: var(--ui-color-text-muted); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); line-height: 1.35;
+      color: var(--ui-color-text-muted); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-control, 400); line-height: 1.35;
       cursor: pointer; border-bottom: 2px solid transparent;
       /* Never shrink or wrap: a two-line "Audit log" is how a tab strip starts looking broken. */
       flex: 0 0 auto;

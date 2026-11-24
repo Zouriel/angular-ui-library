@@ -87,9 +87,9 @@ let nextId = 0;
     /* The frame is ui-input's box: same height, border, corners, focus ring and invalid colour. */
     .frame {
       display: flex; align-items: stretch; box-sizing: border-box; width: 100%;
-      height: var(--ui-size-md);
+      height: var(--ui-field-size);
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
+      border: var(--ui-control-border-width) solid var(--ui-control-border); border-radius: var(--ui-field-radius);
       font-family: var(--ui-field-font, var(--ui-font-default)); font-size: var(--ui-font-size-md);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }

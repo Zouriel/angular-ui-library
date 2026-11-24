@@ -78,10 +78,10 @@ export interface UiComboboxOption {
   styles: `
     :host { display: block; }
     .wrap { position: relative; }
-    .ui-combobox { width: 100%; box-sizing: border-box; height: var(--ui-size-md);
+    .ui-combobox { width: 100%; box-sizing: border-box; height: var(--ui-field-size);
       padding: 0 calc(var(--ui-space-3) + 12px + var(--ui-space-2)) 0 var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
+      border: var(--ui-control-border-width) solid var(--ui-control-border); border-radius: var(--ui-field-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ui-combobox::placeholder { color: var(--ui-color-text-muted); }

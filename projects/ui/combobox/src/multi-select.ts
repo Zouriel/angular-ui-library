@@ -56,9 +56,9 @@ let nextId = 0;
   `,
   styles: `
     :host { display: block; }
-    .ms { display: flex; gap: var(--ui-space-1); align-items: center; box-sizing: border-box; min-height: var(--ui-size-md);
-      padding: 2px var(--ui-space-3) 2px var(--ui-space-1); background: var(--ui-color-surface); border: 1px solid var(--ui-control-border);
-      border-radius: var(--ui-radius); cursor: text; line-height: 1.35;
+    .ms { display: flex; gap: var(--ui-space-1); align-items: center; box-sizing: border-box; min-height: var(--ui-field-size);
+      padding: 2px var(--ui-space-3) 2px var(--ui-space-1); background: var(--ui-color-surface); border: var(--ui-control-border-width) solid var(--ui-control-border);
+      border-radius: var(--ui-field-radius); cursor: text; line-height: 1.35;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ms[data-size="sm"] { min-height: var(--ui-size-sm); padding-block: 0; }
     .vals { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: var(--ui-space-1); align-items: center; }

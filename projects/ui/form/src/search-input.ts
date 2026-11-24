@@ -31,8 +31,8 @@ import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .wrap { display: flex; align-items: center; gap: var(--ui-space-2); box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-1) 0 var(--ui-space-3);
-      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface);
+    .wrap { display: flex; align-items: center; gap: var(--ui-space-2); box-sizing: border-box; height: var(--ui-field-size); padding: 0 var(--ui-space-1) 0 var(--ui-space-3);
+      border: var(--ui-control-border-width) solid var(--ui-control-border); border-radius: var(--ui-radius-pill); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .wrap:has(.ui-search:disabled) { opacity: .5; cursor: not-allowed; }

@@ -21,9 +21,9 @@ import { UI_CONFIG, type UiSize } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .ui-time { width: 100%; box-sizing: border-box; height: var(--ui-size-md); padding: 0 var(--ui-space-3); font-variant-numeric: tabular-nums;
-      background: var(--ui-color-surface); color: var(--ui-color-text); border: 1px solid var(--ui-control-border);
-      border-radius: var(--ui-radius); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
+    .ui-time { width: 100%; box-sizing: border-box; height: var(--ui-field-size); padding: 0 var(--ui-space-3); font-variant-numeric: tabular-nums;
+      background: var(--ui-color-surface); color: var(--ui-color-text); border: var(--ui-control-border-width) solid var(--ui-control-border);
+      border-radius: var(--ui-field-radius); font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); outline: none;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .ui-time:focus-visible { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .ui-time:disabled { opacity: .5; cursor: not-allowed; }

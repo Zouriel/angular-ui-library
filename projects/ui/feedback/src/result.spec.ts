@@ -31,4 +31,18 @@ describe('UiResult', () => {
     expect(host.querySelector('.title')?.textContent?.trim()).toBe('Page not found');
     expect(host.hasAttribute('title')).toBe(false);
   });
+
+  it('supports appearance="soft" with subtle status tokens', () => {
+    const fixture = TestBed.createComponent(UiResult);
+    fixture.componentRef.setInput('status', 'success');
+    fixture.componentRef.setInput('appearance', 'soft');
+    fixture.detectChanges();
+    const el = (fixture.nativeElement as HTMLElement).querySelector('.ui-result')!;
+    expect(el.getAttribute('data-appearance')).toBe('soft');
+    const styles = ((UiResult as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+    expect(styles).toContain('var(--ui-color-success-subtle)');
+    expect(styles).toContain('var(--ui-color-danger-subtle)');
+    expect(styles).toContain('var(--ui-color-warning-subtle)');
+    expect(styles).toContain('var(--ui-color-info-subtle)');
+  });
 });

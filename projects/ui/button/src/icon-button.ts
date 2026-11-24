@@ -54,7 +54,7 @@ import type { UiButtonVariant } from './button';
       display: inline-flex; align-items: center; justify-content: center;
       width: var(--ui-size-md); height: var(--ui-size-md);
       border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius);
+      border-radius: var(--ui-button-radius);
       background: var(--ui-color-surface); color: var(--ui-color-text);
       font: inherit; padding: 0;
       cursor: pointer;

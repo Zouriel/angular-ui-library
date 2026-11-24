@@ -116,6 +116,8 @@
   --ui-chart-2: #6250d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #d95926;
 }
 
 [data-theme="maldives"] ::selection {
@@ -219,6 +221,8 @@
   --ui-chart-2: #d95926;
   --ui-chart-3: #3987e5;
   --ui-chart-4: #199e70;
+  --ui-chart-5: #9085e9;
+  --ui-chart-6: #c98500;
 }
 
 [data-theme="maldives-dark"] ::selection {

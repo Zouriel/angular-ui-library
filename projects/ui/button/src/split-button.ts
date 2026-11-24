@@ -26,15 +26,15 @@ import type { UiButtonVariant } from './button';
     .split { display: inline-flex; }
     button { display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-2); box-sizing: border-box;
       border: 1px solid var(--ui-color-border); background: var(--ui-color-surface); color: var(--ui-color-text);
-      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: calc(14px * var(--ui-font-scale)); font-weight: 500;
+      height: var(--ui-size-md); font-family: var(--ui-font-default); font-size: calc(14px * var(--ui-font-scale)); font-weight: var(--ui-font-weight-control, 500);
       letter-spacing: var(--ui-tracking-tight); cursor: pointer;
       transition: background var(--ui-motion-base) var(--ui-ease-standard), transform var(--ui-motion-fast) var(--ui-ease-standard); }
     button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
     button:active:not(:disabled) { transform: scale(var(--ui-scale-press)); }
     button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); z-index: 1; }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    .main { padding: 0 var(--ui-space-4); border-radius: 0; border-start-start-radius: var(--ui-radius); border-end-start-radius: var(--ui-radius); }
-    .caret { padding: 0 var(--ui-space-2); border-inline-start: none; border-radius: 0; border-start-end-radius: var(--ui-radius); border-end-end-radius: var(--ui-radius); }
+    .main { padding: 0 var(--ui-space-4); border-radius: 0; border-start-start-radius: var(--ui-button-radius); border-end-start-radius: var(--ui-button-radius); }
+    .caret { padding: 0 var(--ui-space-2); border-inline-start: none; border-radius: 0; border-start-end-radius: var(--ui-button-radius); border-end-end-radius: var(--ui-button-radius); }
     .split.no-radius .main, .split.no-radius .caret { border-radius: 0; }
     button[data-variant="primary"] { background: var(--ui-color-primary); color: var(--ui-color-primary-contrast); border-color: transparent; }
     button[data-variant="primary"]:hover:not(:disabled) { background: var(--ui-color-primary-hover); }

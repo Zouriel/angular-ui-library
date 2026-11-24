@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 
 export type TextVariant =
+  | 'display-xl' | 'display' | 'title' | 'subtitle' | 'stat'
   | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
   | 'body' | 'caption' | 'label' | 'code' | 'quote';
 
@@ -18,6 +19,7 @@ export type UiTextTone = 'default' | 'muted' | 'on-media';
 
 /** The tag each variant renders when `as` is not set. */
 const VARIANT_TAG: Record<TextVariant, TextTag> = {
+  'display-xl': 'h1', display: 'h1', title: 'h2', subtitle: 'p', stat: 'p',
   h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', h6: 'h6',
   body: 'p', caption: 'small', label: 'span', code: 'code', quote: 'blockquote',
 };
@@ -76,19 +78,24 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .v-h1, .v-h2, .v-h3 { font-family: var(--ui-font-display); }
-    .v-h1, .v-h2, .v-h3, .v-h4, .v-h5, .v-h6 { text-wrap: balance; }
+    .v-display-xl, .v-display, .v-title, .v-stat, .v-h1, .v-h2, .v-h3 { font-family: var(--ui-font-display); }
+    .v-display-xl, .v-display, .v-title, .v-stat, .v-h1, .v-h2, .v-h3, .v-h4, .v-h5, .v-h6 { text-wrap: balance; }
     /* Tracking tapers with size, largest heading first — matches the display type scale
        (tighter at the top, back to normal by h3/body so small text stays legible). */
-    .v-h1 { font-size: var(--ui-font-size-h1); font-weight: 700; line-height: 1.1; letter-spacing: var(--ui-tracking-tighter); }
-    .v-h2 { font-size: var(--ui-font-size-h2); font-weight: 700; line-height: 1.18; letter-spacing: var(--ui-tracking-tight); }
-    .v-h3 { font-size: var(--ui-font-size-h3); font-weight: 600; letter-spacing: var(--ui-tracking-tight); }
-    .v-h4 { font-size: var(--ui-font-size-lg); font-weight: 600; }
-    .v-h5 { font-size: var(--ui-font-size-h5); font-weight: 600; }
-    .v-h6 { font-size: var(--ui-font-size-h6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
-    .v-body { font-size: var(--ui-font-size-md); line-height: 1.45; text-wrap: pretty; }
+    .v-display-xl { font-size: var(--ui-font-size-display-xl); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.1); letter-spacing: var(--ui-tracking-tighter); }
+    .v-display { font-size: var(--ui-font-size-display-lg); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.12); letter-spacing: var(--ui-tracking-tighter); }
+    .v-title { font-size: var(--ui-font-size-title); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.2); letter-spacing: var(--ui-tracking-tight); }
+    .v-subtitle { font-size: var(--ui-font-size-subtitle); font-weight: var(--ui-font-weight-heading, 500); line-height: var(--ui-line-height-body, 1.45); }
+    .v-stat { font-size: var(--ui-font-size-stat); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.05); letter-spacing: var(--ui-tracking-tighter); font-variant-numeric: tabular-nums; }
+    .v-h1 { font-size: var(--ui-font-size-h1); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.1); letter-spacing: var(--ui-tracking-tighter); }
+    .v-h2 { font-size: var(--ui-font-size-h2); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.18); letter-spacing: var(--ui-tracking-tight); }
+    .v-h3 { font-size: var(--ui-font-size-h3); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); letter-spacing: var(--ui-tracking-tight); }
+    .v-h4 { font-size: var(--ui-font-size-lg); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); }
+    .v-h5 { font-size: var(--ui-font-size-h5); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); }
+    .v-h6 { font-size: var(--ui-font-size-h6); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
+    .v-body { font-size: var(--ui-font-size-md); line-height: var(--ui-line-height-body, 1.45); text-wrap: pretty; }
     .v-caption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
-    .v-label { font-size: var(--ui-font-size-sm); font-weight: 600; }
+    .v-label { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-control, 600); }
     .v-code {
       font-family: var(--ui-font-mono);
       font-size: 0.88em;
@@ -100,7 +107,7 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
     .v-quote {
       border-left: 2px solid var(--ui-color-border-strong);
       padding: var(--ui-space-2) var(--ui-space-4);
-      color: var(--ui-color-text-secondary); line-height: 1.45;
+      color: var(--ui-color-text-secondary); line-height: var(--ui-line-height-body, 1.45);
       font-style: italic;
     }
     .t[data-tone="muted"] { color: var(--ui-color-text-muted); }

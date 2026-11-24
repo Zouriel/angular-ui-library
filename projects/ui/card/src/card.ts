@@ -2,7 +2,7 @@ import { Component, inject, input, output } from '@angular/core';
 import { UI_CONFIG } from '@zouriel/ui';
 
 /** Spacing steps accepted by `ui-card [gap]` (maps to `--ui-space-N`). */
-export type UiCardGap = 0 | 1 | 2 | 3 | 4 | 6 | 8;
+export type UiCardGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10;
 
 /** Cross-axis alignment for `ui-card` body content. */
 export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
@@ -17,7 +17,8 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
     <div
       class="ui-card"
       [class.glass]="glass()"
-      [class.no-radius]="!radius()"
+      [class.no-radius]="radius() === false"
+      [class.radius-xl]="radius() === 'xl'"
       [class.interactive]="interactive() || pressable()"
       [class.disabled]="(interactive() || pressable()) && disabled()"
       [attr.data-pad]="padding()"
@@ -77,13 +78,17 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
     .bd[data-gap="2"] { gap: var(--ui-space-2); }
     .bd[data-gap="3"] { gap: var(--ui-space-3); }
     .bd[data-gap="4"] { gap: var(--ui-space-4); }
+    .bd[data-gap="5"] { gap: var(--ui-space-5); }
     .bd[data-gap="6"] { gap: var(--ui-space-6); }
+    .bd[data-gap="7"] { gap: var(--ui-space-7); }
     .bd[data-gap="8"] { gap: var(--ui-space-8); }
+    .bd[data-gap="10"] { gap: var(--ui-space-10); }
     .bd[data-align="stretch"] { align-items: stretch; }
     .bd[data-align="start"] { align-items: flex-start; text-align: start; }
     .bd[data-align="center"] { align-items: center; text-align: center; }
     .bd[data-align="end"] { align-items: flex-end; text-align: end; }
     .ui-card.no-radius { border-radius: 0; }
+    .ui-card.radius-xl { border-radius: var(--ui-radius-xl); }
     .ui-card.glass {
       background: var(--ui-glass-bg);
       backdrop-filter: blur(var(--ui-glass-blur));
@@ -91,9 +96,9 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
     }
     .ui-card.glass.interactive:not(.disabled):hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
-    .hd, .bd, .ft { padding: var(--ui-space-3) var(--ui-space-4); }
-    .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-space-2) var(--ui-space-3); }
-    .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-space-6) var(--ui-space-8); }
+    .hd, .bd, .ft { padding: var(--ui-card-pad-md); }
+    .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-card-pad-sm); }
+    .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-card-pad-lg); }
     .hd { border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: var(--ui-font-size-md); }
     .ft { border-top: 1px solid var(--ui-color-border); }
     /* Collapse empty header/footer slots */
@@ -108,7 +113,7 @@ export class UiCard {
   /** Cross-axis alignment of body children (enables flex column on the body). */
   align = input<UiCardAlign | null>(null);
   glass = input<boolean>(this.config.glass);
-  radius = input<boolean>(this.config.radius);
+  radius = input<boolean | 'xl'>(this.config.radius);
   /** Opt-in hover lift for cards that are themselves a clickable target, such as a card wrapped in
    *  an `<a>` or `<button>`. Visual only: the wrapping element stays the button. */
   interactive = input(false);

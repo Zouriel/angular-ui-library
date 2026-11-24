@@ -163,9 +163,9 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
     .fc[data-size="sm"] { padding: var(--ui-space-4); gap: var(--ui-space-3); --fc-badge: 40px; --fc-icon: 20px; }
     .fc[data-size="sm"][data-layout="horizontal"] { gap: var(--ui-space-3); }
 
-    /* Control radius: the corners of an input (--ui-radius), so a tile matches the field above it. */
-    .fc[data-radius="control"]:not(.no-radius) { border-radius: var(--ui-radius); }
-    .fc[data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-radius); }
+    /* Control radius: the corners of an input (--ui-field-radius), so a tile matches the field above it. */
+    .fc[data-radius="control"]:not(.no-radius) { border-radius: var(--ui-field-radius); }
+    .fc[data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-field-radius); }
 
     /*
      * Tinted: a soft wash in the tone instead of a white bordered card; no border (kept transparent, so the
@@ -205,7 +205,7 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
     }
     .badge ::ng-deep svg { width: var(--fc-icon); height: var(--fc-icon); }
     .fc[data-size="sm"]:not(.no-radius) .badge { border-radius: var(--ui-radius-sm); }
-    .fc[data-size="sm"][data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-radius); }
+    .fc[data-size="sm"][data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-field-radius); }
 
     .text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
     .eyebrow {

@@ -34,8 +34,8 @@ import { UI_CONFIG, type UiSize, injectUiStrings } from '@zouriel/ui';
   `,
   styles: `
     :host { display: block; }
-    .wrap { display: flex; align-items: center; box-sizing: border-box; height: var(--ui-size-md); padding-inline-end: 2px; border: 1px solid var(--ui-control-border);
-      border-radius: var(--ui-radius); background: var(--ui-color-surface);
+    .wrap { display: flex; align-items: center; box-sizing: border-box; height: var(--ui-field-size); padding-inline-end: 2px; border: var(--ui-control-border-width) solid var(--ui-control-border);
+      border-radius: var(--ui-field-radius); background: var(--ui-color-surface);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard); }
     .wrap:focus-within { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .wrap.no-radius { border-radius: 0; }

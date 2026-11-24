@@ -108,10 +108,13 @@
   --ui-space-2: 8px;
   --ui-space-3: 12px;
   --ui-space-4: 16px;
+  --ui-space-5: 20px;
   --ui-space-6: 24px;
+  --ui-space-7: 28px;
   /* Upper spacing steps for section/page-level rhythm (cards, dialogs, page shells) —
      the component-level scale above (1–6) stays untouched. */
   --ui-space-8: 32px;
+  --ui-space-10: 40px;
   --ui-space-12: 48px;
   --ui-space-20: 80px;
   --ui-font-size-sm: 13px;
@@ -124,6 +127,12 @@
   --ui-font-size-h3: 1.375rem;
   --ui-font-size-h5: 1rem;
   --ui-font-size-h6: 0.9rem;
+  --ui-font-size-display-xl: 3.5rem;
+  --ui-font-size-display-lg: 2.75rem;
+  --ui-font-size-title: 1.75rem;
+  --ui-font-size-subtitle: 1.125rem;
+  --ui-font-size-stat: 3rem;
+  --ui-line-height-body: 1.45;
 
   /* Density (0.45.0). 1 in comfortable, the default. Compact (see the density block below) lowers
      them, so text a component sizes in px (calc(14px * var(--ui-font-scale))), every icon
@@ -146,6 +155,7 @@
   --ui-radius-xs: 5px;
   --ui-radius-sm: 8px;
   --ui-radius-lg: 18px;
+  --ui-radius-xl: 24px;
   --ui-radius-pill: 9999px;
 
   /* Press feedback — one shared scale so every interactive component's :active state
@@ -208,6 +218,11 @@
   --ui-color-warning-contrast: #1a1d23;
   --ui-color-danger-contrast: var(--ui-color-primary-contrast);
   --ui-color-danger-hover: color-mix(in srgb, var(--ui-color-danger) 88%, var(--ui-color-primary-contrast));
+  --ui-color-success-subtle: color-mix(in srgb, var(--ui-color-success) 10%, var(--ui-color-surface));
+  --ui-color-warning-subtle: color-mix(in srgb, var(--ui-color-warning) 10%, var(--ui-color-surface));
+  --ui-color-danger-subtle: color-mix(in srgb, var(--ui-color-danger) 10%, var(--ui-color-surface));
+  --ui-color-info-subtle: color-mix(in srgb, var(--ui-color-info) 10%, var(--ui-color-surface));
+  --ui-color-neutral-subtle: color-mix(in srgb, var(--ui-color-text-muted) 10%, var(--ui-color-surface));
   --ui-color-selected: color-mix(in srgb, var(--ui-color-primary) 18%, transparent);
   --ui-color-track: var(--ui-color-surface-raised);
   --ui-color-overlay: rgba(0, 0, 0, 0.55);
@@ -224,6 +239,13 @@
 
   /* ── 3. Component tokens ── */
   --ui-control-border: var(--ui-color-border-strong); /* input, select, checkbox, radio outlines */
+  --ui-control-border-width: 1px;
+  --ui-field-size: var(--ui-size-md);
+  --ui-field-radius: var(--ui-radius);
+  --ui-button-radius: var(--ui-radius);
+  --ui-card-pad-sm: var(--ui-space-2) var(--ui-space-3);
+  --ui-card-pad-md: var(--ui-space-3) var(--ui-space-4);
+  --ui-card-pad-lg: var(--ui-space-6) var(--ui-space-8);
   --ui-switch-track: var(--ui-color-border);
   --ui-switch-track-checked: var(--ui-color-primary);
   --ui-switch-thumb: var(--ui-color-primary-contrast);
@@ -315,6 +337,8 @@
   --ui-chart-2: var(--ui-color-text-muted);
   --ui-chart-3: color-mix(in srgb, var(--ui-color-primary) 55%, var(--ui-color-surface));
   --ui-chart-4: color-mix(in srgb, var(--ui-color-text-muted) 55%, var(--ui-color-surface));
+  --ui-chart-5: var(--ui-color-accent);
+  --ui-chart-6: color-mix(in srgb, var(--ui-color-primary) 30%, var(--ui-color-text-muted));
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
@@ -362,6 +386,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #199e70;
   --ui-chart-4: #9085e9;
+  --ui-chart-5: #d55181;
+  --ui-chart-6: #63b5cf;
 }
 
 :root:not([data-theme]),
@@ -535,6 +561,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 /* Icon colour. A theme may set --ui-color-icon (maldives tints icons Lagoon); icons then take it
@@ -586,6 +614,44 @@ hugeicons-icon {
     --ui-font-scale: 0.93;
     --ui-density-scale: 0.9;
   }
+}
+
+/* Text size scaling (assistance bar). Specificity beats [data-theme="..."] blocks in later stylesheets. */
+:root[data-text-size="large"],
+[data-theme][data-text-size="large"],
+[data-text-size="large"] {
+  --ui-font-size-sm: calc(13px * 1.15);
+  --ui-font-size-md: calc(15px * 1.15);
+  --ui-font-size-lg: calc(18px * 1.15);
+  --ui-font-size-h1: calc(2.5rem * 1.15);
+  --ui-font-size-h2: calc(1.875rem * 1.15);
+  --ui-font-size-h3: calc(1.375rem * 1.15);
+  --ui-font-size-h5: calc(1rem * 1.15);
+  --ui-font-size-h6: calc(0.9rem * 1.15);
+  --ui-font-size-display-xl: calc(3.5rem * 1.15);
+  --ui-font-size-display-lg: calc(2.75rem * 1.15);
+  --ui-font-size-title: calc(1.75rem * 1.15);
+  --ui-font-size-subtitle: calc(1.125rem * 1.15);
+  --ui-font-size-stat: calc(3rem * 1.15);
+  --ui-font-scale: 1.15;
+}
+:root[data-text-size="larger"],
+[data-theme][data-text-size="larger"],
+[data-text-size="larger"] {
+  --ui-font-size-sm: calc(13px * 1.3);
+  --ui-font-size-md: calc(15px * 1.3);
+  --ui-font-size-lg: calc(18px * 1.3);
+  --ui-font-size-h1: calc(2.5rem * 1.3);
+  --ui-font-size-h2: calc(1.875rem * 1.3);
+  --ui-font-size-h3: calc(1.375rem * 1.3);
+  --ui-font-size-h5: calc(1rem * 1.3);
+  --ui-font-size-h6: calc(0.9rem * 1.3);
+  --ui-font-size-display-xl: calc(3.5rem * 1.3);
+  --ui-font-size-display-lg: calc(2.75rem * 1.3);
+  --ui-font-size-title: calc(1.75rem * 1.3);
+  --ui-font-size-subtitle: calc(1.125rem * 1.3);
+  --ui-font-size-stat: calc(3rem * 1.3);
+  --ui-font-scale: 1.3;
 }
 
 /* iOS Safari zooms the page into any field whose text is under 16px when it gets focus, and doesn't

@@ -97,6 +97,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 /* ── Light Pink ─────────────────────────────────────────────────────── */
@@ -131,6 +133,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 /* ── Light Teal ─────────────────────────────────────────────────────── */
@@ -165,6 +169,8 @@
   --ui-chart-2: #6250d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #2a78d6;
+  --ui-chart-6: #d95926;
 }
 
 /* ── Light Purple ───────────────────────────────────────────────────── */
@@ -199,6 +205,8 @@
   --ui-chart-2: #e87ba4;
   --ui-chart-3: #eda100;
   --ui-chart-4: #2a78d6;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #d95926;
 }
 
 /* ── Dark Pink ──────────────────────────────────────────────────────── */
@@ -237,6 +245,8 @@
   --ui-chart-2: #c98500;
   --ui-chart-3: #3987e5;
   --ui-chart-4: #199e70;
+  --ui-chart-5: #9085e9;
+  --ui-chart-6: #63b5cf;
 }
 
 /* ── Dark Teal ──────────────────────────────────────────────────────── */
@@ -274,6 +284,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #c98500;
   --ui-chart-4: #d55181;
+  --ui-chart-5: #9085e9;
+  --ui-chart-6: #63b5cf;
 }
 
 /* ── Dark Purple ────────────────────────────────────────────────────── */
@@ -312,6 +324,8 @@
   --ui-chart-2: #199e70;
   --ui-chart-3: #c98500;
   --ui-chart-4: #d55181;
+  --ui-chart-5: #3987e5;
+  --ui-chart-6: #63b5cf;
 }
 
 /* ── Gold Black (luxe gold-on-black) ────────────────────────────────── */
@@ -349,6 +363,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #199e70;
   --ui-chart-4: #9085e9;
+  --ui-chart-5: #d55181;
+  --ui-chart-6: #63b5cf;
 }
 
 /* ── Gold Red (gold accents over deep oxblood) ──────────────────────── */
@@ -386,6 +402,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #199e70;
   --ui-chart-4: #9085e9;
+  --ui-chart-5: #d55181;
+  --ui-chart-6: #63b5cf;
 }
 
 /* ── Light Purple Gold (regal: royal-purple primary, gold accents) ──── */
@@ -425,4 +443,6 @@
   --ui-chart-2: #e87ba4;
   --ui-chart-3: #eda100;
   --ui-chart-4: #2a78d6;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #d95926;
 }

@@ -2,7 +2,7 @@ import { Component, computed, input } from '@angular/core';
 
 /** 8/12/20 map to the upper --ui-space-* rhythm steps (32/48/80px) for section-level
  *  gaps — e.g. stacking page sections — on top of the original component-level scale. */
-type Gap = 0 | 1 | 2 | 3 | 4 | 6 | 8 | 12 | 20;
+type Gap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10 | 12 | 20;
 
 /** `ui-stack` — flexbox row/column with token gap and alignment. */
 @Component({

@@ -4,6 +4,8 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { describe, expect, it } from 'vitest';
 import { UiToggleButton } from './toggle-button';
 import { UiSplitButton } from './split-button';
+import { UiIconButton } from './icon-button';
+import { UiButton } from './button';
 import { UiFab } from './fab';
 import { UiDropdownButton } from '../../dropdown-button/src/dropdown-button';
 import { UiSegmented } from './segmented';
@@ -58,5 +60,16 @@ describe('UiSegmented as a form control', () => {
     f.componentInstance.mode.enable();
     await f.whenStable();
     expect(opts().some((o) => o.disabled)).toBe(false);
+  });
+});
+
+describe('button radius token', () => {
+  it('reads --ui-button-radius across button, icon-button, split-button and dropdown-button while keeping brand pill', () => {
+    for (const cmp of [UiButton, UiIconButton, UiSplitButton, UiDropdownButton]) {
+      const s = ((cmp as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+      expect(s).toContain('var(--ui-button-radius)');
+    }
+    const btnStyles = ((UiButton as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+    expect(btnStyles).toMatch(/\.ui-btn\[data-variant=["']?brand["']?\][^{]*\{[^}]*var\(--ui-radius-pill\)/);
   });
 });

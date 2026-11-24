@@ -345,7 +345,7 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
   it("radius 'control' gives the card and its badge an input's radius; booleans still work", () => {
     const { f, h, q, fc } = compact();
     const input = getComputedStyle(q('#field .ui-input')!).borderRadius;
-    expect(input).toBe('var(--ui-radius)');
+    expect(input).toBe('var(--ui-field-radius)');
     expect(fc().borderRadius).toBe(input);
     expect(getComputedStyle(q('#t .badge')!).borderRadius).toBe(input);
     expect(q('#attr .fc')!.getAttribute('data-radius')).toBe('control');

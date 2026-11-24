@@ -1,6 +1,7 @@
 import { Component, input } from '@angular/core';
 
 export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | '500';
+export type UiResultAppearance = 'plain' | 'soft';
 
 /** `ui-result` — full-page outcome state (success / error / 404 / 500). */
 @Component({
@@ -8,7 +9,7 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
   // `title` is an input here, not a tooltip: drop the native attribute so hovering doesn't show one.
   host: { '[attr.title]': 'null' },
   template: `
-    <div class="ui-result">
+    <div class="ui-result" [attr.data-appearance]="appearance()">
       <div class="glyph" [attr.data-status]="status()" aria-hidden="true">
         @switch (status()) {
           @case ('success') { <svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> }
@@ -39,6 +40,12 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
     .glyph[data-status="error"], .glyph[data-status="500"] { color: var(--ui-color-danger); }
     .glyph[data-status="warning"] { color: var(--ui-color-warning); }
     .glyph[data-status="info"], .glyph[data-status="404"] { color: var(--ui-color-info); }
+    .ui-result[data-appearance="soft"] .glyph[data-status="success"] { background: var(--ui-color-success-subtle); }
+    .ui-result[data-appearance="soft"] .glyph[data-status="error"],
+    .ui-result[data-appearance="soft"] .glyph[data-status="500"] { background: var(--ui-color-danger-subtle); }
+    .ui-result[data-appearance="soft"] .glyph[data-status="warning"] { background: var(--ui-color-warning-subtle); }
+    .ui-result[data-appearance="soft"] .glyph[data-status="info"],
+    .ui-result[data-appearance="soft"] .glyph[data-status="404"] { background: var(--ui-color-info-subtle); }
     .title { font-size: var(--ui-font-size-lg); font-weight: 600; color: var(--ui-color-text); margin-top: var(--ui-space-2); text-wrap: balance; }
     .subtitle { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); max-width: 420px; }
     .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--ui-space-2); margin-top: var(--ui-space-3); }
@@ -50,6 +57,7 @@ export type UiResultStatus = 'success' | 'error' | 'info' | 'warning' | '404' | 
 })
 export class UiResult {
   status = input<UiResultStatus>('info');
+  appearance = input<UiResultAppearance>('plain');
   title = input('');
   subtitle = input<string>();
 }

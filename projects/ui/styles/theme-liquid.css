@@ -119,6 +119,8 @@
   --ui-chart-2: #6250d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #2a78d6;
 }
 
 [data-theme="rugged"] ::selection {
@@ -220,6 +222,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #199e70;
   --ui-chart-4: #9085e9;
+  --ui-chart-5: #d55181;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="rugged-dark"] ::selection {
@@ -321,6 +325,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 [data-theme="glacier"] ::selection {
@@ -422,6 +428,8 @@
   --ui-chart-2: #9085e9;
   --ui-chart-3: #c98500;
   --ui-chart-4: #3987e5;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="glacier-dark"] ::selection {
@@ -523,6 +531,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 [data-theme="oxblood"] ::selection {
@@ -624,6 +634,8 @@
   --ui-chart-2: #9085e9;
   --ui-chart-3: #c98500;
   --ui-chart-4: #3987e5;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="oxblood-dark"] ::selection {
@@ -725,6 +737,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 [data-theme="graphite"] ::selection {
@@ -826,6 +840,8 @@
   --ui-chart-2: #3987e5;
   --ui-chart-3: #199e70;
   --ui-chart-4: #9085e9;
+  --ui-chart-5: #d55181;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="graphite-dark"] ::selection {
@@ -927,6 +943,8 @@
   --ui-chart-2: #2a78d6;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #6250d6;
 }
 
 [data-theme="cocoa"] ::selection {
@@ -1028,6 +1046,8 @@
   --ui-chart-2: #9085e9;
   --ui-chart-3: #c98500;
   --ui-chart-4: #199e70;
+  --ui-chart-5: #3987e5;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="cocoa-dark"] ::selection {
@@ -1129,6 +1149,8 @@
   --ui-chart-2: #1baf7a;
   --ui-chart-3: #eda100;
   --ui-chart-4: #e87ba4;
+  --ui-chart-5: #2a78d6;
+  --ui-chart-6: #d95926;
 }
 
 [data-theme="violet"] ::selection {
@@ -1230,6 +1252,8 @@
   --ui-chart-2: #c98500;
   --ui-chart-3: #d55181;
   --ui-chart-4: #3987e5;
+  --ui-chart-5: #199e70;
+  --ui-chart-6: #63b5cf;
 }
 
 [data-theme="violet-dark"] ::selection {

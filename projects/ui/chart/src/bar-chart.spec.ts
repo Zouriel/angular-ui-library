@@ -282,26 +282,26 @@ describe('UiBarChart', () => {
 
 describe('chart series tokens', () => {
   const styles = join(process.cwd(), 'projects/ui/styles');
-  const files = ['tokens.css', 'theme-palettes.css', 'theme-dark-orange.css', 'theme-maldives.css', 'theme-liquid.css'];
+  const files = ['tokens.css', 'theme-palettes.css', 'theme-dark-orange.css', 'theme-maldives.css', 'theme-addu.css', 'theme-liquid.css'];
   /** Every block that sets a theme's primary: its theme names and its declarations. */
   const themeBlocks = files.flatMap((f) => {
     const src = readFileSync(join(styles, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     return [...src.matchAll(/([^{};]+)\{([^{}]*)\}/g)]
-      .filter((m) => /(^|\s)--ui-color-primary\s*:/.test(m[2]) && m[1].includes('[data-theme="'))
+      .filter((m) => /(^|\s)--ui-color-primary\s*:/.test(m[2]) && m[1].includes('[data-theme="') && !m[1].includes('[data-portal='))
       .map((m) => ({ names: [...m[1].matchAll(/\[data-theme="([^"]+)"\]/g)].map((n) => n[1]), body: m[2] }));
   });
 
   it('finds every built-in theme', () => {
     const names = themeBlocks.flatMap((b) => b.names);
     expect(names.length).toBeGreaterThanOrEqual(27);
-    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'maldives', 'darkOrange', 'goldRed']) expect(names).toContain(n);
+    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'maldives', 'addu', 'addu-ink', 'darkOrange', 'goldRed']) expect(names).toContain(n);
   });
 
-  it('gives every built-in theme its own four series colours, all different', () => {
+  it('gives every built-in theme its own six series colours, all different', () => {
     for (const { names, body } of themeBlocks) {
-      const colours = [1, 2, 3, 4].map((i) => new RegExp(`--ui-chart-${i}\\s*:\\s*(#[0-9a-f]{6})\\s*;`).exec(body)?.[1]);
+      const colours = [1, 2, 3, 4, 5, 6].map((i) => new RegExp(`--ui-chart-${i}\\s*:\\s*(#[0-9a-f]{6})\\s*;`).exec(body)?.[1]);
       expect(colours.every(Boolean), names.join(', ')).toBe(true);
-      expect(new Set(colours).size, names.join(', ')).toBe(4);
+      expect(new Set(colours).size, names.join(', ')).toBe(6);
     }
   });
 

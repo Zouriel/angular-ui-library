@@ -54,9 +54,9 @@ export interface UiSelectOption {
     .wrap { position: relative; }
     .ui-select {
       width: 100%; box-sizing: border-box; appearance: none;
-      height: var(--ui-size-md); padding-block: 0; padding-inline: var(--ui-space-3) calc(var(--ui-space-3) + 12px + var(--ui-space-2));
+      height: var(--ui-field-size); padding-block: 0; padding-inline: var(--ui-space-3) calc(var(--ui-space-3) + 12px + var(--ui-space-2));
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
+      border: var(--ui-control-border-width) solid var(--ui-control-border); border-radius: var(--ui-field-radius);
       font-family: var(--ui-font-default); font-size: var(--ui-font-size-md); cursor: pointer;
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }

@@ -94,4 +94,23 @@ describe('UiText', () => {
     expect(css()).toMatch(/\.t\[data-tone=["']?muted["']?\][^{]*\{[^}]*var\(--ui-color-text-muted\)/);
     expect(css()).toMatch(/\.t\[data-tone=["']?on-media["']?\][^{]*\{[^}]*var\(--ui-media-on-scrim\)/);
   });
+
+  it('supports display-xl, display, title, subtitle and stat variants with their tokens', () => {
+    const expected: [TextVariant, string, string][] = [
+      ['display-xl', 'H1', '--ui-font-size-display-xl'],
+      ['display', 'H1', '--ui-font-size-display-lg'],
+      ['title', 'H2', '--ui-font-size-title'],
+      ['subtitle', 'P', '--ui-font-size-subtitle'],
+      ['stat', 'P', '--ui-font-size-stat'],
+    ];
+    for (const [variant, tag, token] of expected) {
+      const { el } = render(variant);
+      expect(el.tagName, variant).toBe(tag);
+      expect(el.classList.contains('v-' + variant), variant).toBe(true);
+      expect(css()).toContain(`var(${token})`);
+    }
+    expect(css()).toContain('var(--ui-font-weight-heading');
+    expect(css()).toContain('var(--ui-line-height-heading');
+    expect(css()).toContain('var(--ui-line-height-body');
+  });
 });

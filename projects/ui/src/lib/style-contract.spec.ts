@@ -153,7 +153,7 @@ const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', '
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
   const out: { name: string; vars: Record<string, string> }[] = [];
-  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
+  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
     for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
       const vars = Object.fromEntries([...m[2].matchAll(/(--ui-color-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -168,7 +168,7 @@ describe('theme palettes', () => {
 
   it('finds every named skin', () => {
     expect(list.map((t) => t.name).sort()).toEqual(
-      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark', ...LIQUID].sort(),
+      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark', 'addu', 'addu-ink', ...LIQUID].sort(),
     );
   });
 
@@ -216,6 +216,33 @@ describe('theme palettes', () => {
       pair('secondary-contrast', 'secondary', vars['--ui-color-primary-contrast']); // secondary buttons
       pair('warning-contrast', 'warning', '#1a1d23'); // tokens.css default
       if (vars['--ui-color-accent']) pair('accent-contrast', 'accent', vars['--ui-color-primary-contrast']); // accent buttons
+      // Soft status tints: explicit subtle tokens or tokens.css 10% color-mix with surface;
+      // soft text leans 25% toward --ui-color-text so it holds 4.5:1 in every theme.
+      const surface = c('surface');
+      const textCol = c('text');
+      if (surface && textCol) {
+        const cmix = (a: Rgba, b: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + b[i] * (1 - k)).concat(1) as Rgba;
+        for (const [role, sub] of [['success', 'success-subtle'], ['danger', 'danger-subtle'], ['info', 'info-subtle'], ['text-muted', 'neutral-subtle'], ['warning', 'warning-subtle']] as const) {
+          const baseFg = c(role === 'info' ? (vars['--ui-color-info'] ? 'info' : 'primary') : role);
+          const bg = vars[`--ui-color-${sub}`] ? c(sub) : (baseFg ? cmix(baseFg, surface, 0.1) : null);
+          const fg = baseFg ? cmix(baseFg, textCol, 0.75) : null;
+          if (fg && bg && contrast(fg, bg) < 4.5) fails.push(`${name}: ${role} on ${sub} is ${contrast(fg, bg).toFixed(2)}:1, needs 4.5:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  it('defines six distinct chart colours in every theme', () => {
+    const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css'];
+    const fails: string[] = [];
+    for (const file of files) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8'));
+      for (const m of text.matchAll(/([^{};]+)\{([^{}]*)\}/g)) {
+        if (!/(^|\s)--ui-color-primary\s*:/.test(m[2]) || !m[1].includes('[data-theme="') || m[1].includes('[data-portal=')) continue;
+        const colours = [1, 2, 3, 4, 5, 6].map((i) => new RegExp(`--ui-chart-${i}\\s*:\\s*(#[0-9a-f]{6})\\s*;`).exec(m[2])?.[1]);
+        if (!colours.every(Boolean) || new Set(colours).size !== 6) fails.push(`${file}: ${m[1].trim()}`);
+      }
     }
     expect(fails).toEqual([]);
   });
@@ -226,7 +253,7 @@ describe('theme palettes', () => {
    */
   it('keeps the skeleton visible on a card and its shimmer visible in every theme', () => {
     const fails: string[] = [];
-    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
         const v = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -272,7 +299,7 @@ describe('theme palettes', () => {
    */
   it('keeps text readable on glass in every light theme, over the page and over a dimmed page', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -280,7 +307,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'addu', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
@@ -342,7 +369,7 @@ describe('theme palettes', () => {
    */
   it('keeps the tinted ui-feature-card readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -357,7 +384,7 @@ describe('theme palettes', () => {
       return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
     };
     const fails: string[] = [];
-    expect(names.length).toBe(27);
+    expect(names.length).toBe(29);
     for (const name of names) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
       const get = (k: string, depth = 0): Rgba | null => {
@@ -399,7 +426,7 @@ describe('theme palettes', () => {
    */
   it('keeps badgeTone combinations and custom feature-card colours readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -461,7 +488,7 @@ describe('theme palettes', () => {
         need('action words', hex(r.ink), S, 4.5);
       }
     }
-    expect(names.length).toBe(27);
+    expect(names.length).toBe(29);
     expect(fails).toEqual([]);
   });
 });
@@ -469,7 +496,7 @@ describe('theme palettes', () => {
 /* ── See-through glass over a map (ui-bottom-sheet / ui-floating-panel `glass`, 0.41.2) ─────────── */
 
 describe('see-through glass', () => {
-  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-liquid.css'];
+  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css'];
   const blocks: Record<string, Record<string, string>> = {};
   /** Per selector, the properties set in a block that names only that selector. */
   const own: Record<string, Set<string>> = {};
@@ -484,7 +511,7 @@ describe('see-through glass', () => {
   }
   const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
   const names = ['dark', 'light', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold',
-    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark', ...LIQUID];
+    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark', 'addu', 'addu-ink', ...LIQUID];
   const resolve = (name: string) => {
     const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
     const raw = (k: string, depth = 0): string => {
@@ -706,7 +733,7 @@ describe('see-through glass', () => {
         if (c < 3) fails.push(`${name}: ${tone} route is ${c.toFixed(2)}:1 on its casing, needs 3:1`);
       }
     }
-    expect(names.length).toBe(27);
+    expect(names.length).toBe(29);
     expect(fails).toEqual([]);
   });
 });
@@ -954,7 +981,7 @@ describe('liquid themes', () => {
     expect(tokens).toMatch(/--ui-glass-highlight-top:\s*transparent;/);
     expect(tokens).toMatch(/--ui-glass-highlight-edge:\s*transparent;/);
     expect(tokens).toMatch(/--ui-glass-highlight:\s*inset 0 1px 0 0 var\(--ui-glass-highlight-top\), inset 0 0 0 1px var\(--ui-glass-highlight-edge\);/);
-    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css']) {
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css']) {
       expect(readFileSync(join(root, file), 'utf8'), file).not.toContain('--ui-glass-highlight');
     }
   });

@@ -2,6 +2,7 @@ import { Component, inject, input, output } from '@angular/core';
 import { UI_CONFIG, injectUiStrings } from '@zouriel/ui';
 
 export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
+export type UiAlertAppearance = 'outline' | 'soft';
 
 /** `ui-alert` — inline contextual message. Uses role="alert" for danger/warning. */
 @Component({
@@ -10,6 +11,7 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     <div
       class="ui-alert"
       [attr.data-tone]="tone()"
+      [attr.data-appearance]="appearance()"
       [class.no-radius]="!radius()"
       [attr.role]="tone() === 'danger' || tone() === 'warning' ? 'alert' : 'status'">
       <span class="icon" aria-hidden="true">
@@ -54,6 +56,12 @@ export type UiAlertTone = 'info' | 'success' | 'warning' | 'danger';
     .ui-alert[data-tone="success"] { border-inline-start-color: var(--ui-color-success); }
     .ui-alert[data-tone="warning"] { border-inline-start-color: var(--ui-color-warning); }
     .ui-alert[data-tone="danger"]  { border-inline-start-color: var(--ui-color-danger); }
+    .ui-alert[data-appearance="soft"] { border-color: transparent; border-inline-start-width: 1px; }
+    .ui-alert[data-appearance="soft"][data-tone="info"]    { background: var(--ui-color-info-subtle); color: color-mix(in srgb, var(--ui-color-info) 75%, var(--ui-color-text)); }
+    .ui-alert[data-appearance="soft"][data-tone="success"] { background: var(--ui-color-success-subtle); color: color-mix(in srgb, var(--ui-color-success) 75%, var(--ui-color-text)); }
+    .ui-alert[data-appearance="soft"][data-tone="warning"] { background: var(--ui-color-warning-subtle); color: color-mix(in srgb, var(--ui-color-warning) 75%, var(--ui-color-text)); }
+    .ui-alert[data-appearance="soft"][data-tone="danger"]  { background: var(--ui-color-danger-subtle); color: color-mix(in srgb, var(--ui-color-danger) 75%, var(--ui-color-text)); }
+    .ui-alert[data-appearance="soft"] .body { color: inherit; }
     .x {
       position: relative; flex: none;
       display: inline-flex; align-items: center; justify-content: center;
@@ -74,6 +82,7 @@ export class UiAlert {
   protected readonly strings = injectUiStrings();
   private config = inject(UI_CONFIG);
   tone = input<UiAlertTone>('info');
+  appearance = input<UiAlertAppearance>('outline');
   heading = input<string>();
   dismissible = input(false);
   radius = input<boolean>(this.config.radius);

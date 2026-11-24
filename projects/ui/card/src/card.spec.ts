@@ -13,6 +13,7 @@ import { UiCard, type UiCardAlign, type UiCardGap } from './card';
       [ariaLabel]="ariaLabel()"
       [gap]="gap()"
       [align]="align()"
+      [radius]="radius()"
       (activate)="activations.set(activations() + 1)"
     >
       <span class="body-text">Body</span>
@@ -27,6 +28,7 @@ class Host {
   ariaLabel = signal<string | null>(null);
   gap = signal<UiCardGap | null>(null);
   align = signal<UiCardAlign | null>(null);
+  radius = signal<boolean | 'xl'>(true);
   activations = signal(0);
 }
 
@@ -117,5 +119,18 @@ describe('UiCard', () => {
     expect(css()).toMatch(/\.bd\[data-gap=["']?2["']?\][^{]*\{[^}]*var\(--ui-space-2\)/);
     expect(css()).toMatch(/\.bd\[data-align=["']?center["']?\][^{]*\{[^}]*align-items:\s*center/);
     expect(css()).toMatch(/\.bd\[data-align=["']?center["']?\][^{]*\{[^}]*text-align:\s*center/);
+  });
+
+  it('supports radius="xl" and card padding tokens', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.radius.set('xl');
+    fixture.detectChanges();
+    const card = (fixture.nativeElement as HTMLElement).querySelector('.ui-card') as HTMLElement;
+    expect(card.classList.contains('radius-xl')).toBe(true);
+    expect(card.classList.contains('no-radius')).toBe(false);
+    expect(css()).toContain('var(--ui-radius-xl)');
+    expect(css()).toContain('var(--ui-card-pad-sm)');
+    expect(css()).toContain('var(--ui-card-pad-md)');
+    expect(css()).toContain('var(--ui-card-pad-lg)');
   });
 });

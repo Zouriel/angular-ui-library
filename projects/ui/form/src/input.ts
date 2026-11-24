@@ -59,9 +59,9 @@ import { uiNativeDir, uiSlotControlTakes, uiResolvedDir, type UiTextDir } from '
     .frame.disabled .slot { opacity: .5; pointer-events: none; }
     .ui-input {
       width: 100%; box-sizing: border-box;
-      height: var(--ui-size-md); padding: 0 var(--ui-space-3);
+      height: var(--ui-field-size); padding: 0 var(--ui-space-3);
       background: var(--ui-color-surface); color: var(--ui-color-text);
-      border: 1px solid var(--ui-control-border); border-radius: var(--ui-radius);
+      border: var(--ui-control-border-width) solid var(--ui-control-border); border-radius: var(--ui-field-radius);
       font-family: var(--ui-field-font, var(--ui-font-default)); font-size: var(--ui-font-size-md);
       transition: border-color var(--ui-motion-base) var(--ui-ease-standard), box-shadow var(--ui-motion-base) var(--ui-ease-standard);
     }

@@ -3,11 +3,12 @@ import type { UiBadgeTier, UiStatus } from '@zouriel/ui';
 
 /** Badge tone: any status tone or `'media'` for a translucent dark scrim pill over photos/video. */
 export type UiBadgeTone = UiStatus | 'media';
+export type UiBadgeAppearance = 'solid' | 'soft';
 
 /** `ui-badge` — small status/count label. */
 @Component({
   selector: 'ui-badge',
-  template: `<span class="ui-badge" [attr.data-tone]="tier() ?? tone()" [class.dot]="dot()"><ng-content /></span>`,
+  template: `<span class="ui-badge" [attr.data-tone]="tier() ?? tone()" [attr.data-appearance]="tier() || tone() === 'media' ? null : appearance()" [class.dot]="dot()"><ng-content /></span>`,
   styles: `
     :host { display: inline-flex; }
     .ui-badge {
@@ -34,6 +35,11 @@ export type UiBadgeTone = UiStatus | 'media';
     .ui-badge[data-tone="success"] { background: var(--ui-color-success); color: var(--ui-color-success-contrast); border-color: transparent; }
     .ui-badge[data-tone="warning"] { background: var(--ui-color-warning); color: var(--ui-color-warning-contrast); border-color: transparent; }
     .ui-badge[data-tone="danger"] { background: var(--ui-color-danger); color: var(--ui-color-danger-contrast); border-color: transparent; }
+    .ui-badge[data-appearance="soft"][data-tone="neutral"] { background: var(--ui-color-neutral-subtle); color: color-mix(in srgb, var(--ui-color-text-muted) 75%, var(--ui-color-text)); border-color: transparent; }
+    .ui-badge[data-appearance="soft"][data-tone="primary"] { background: var(--ui-color-info-subtle); color: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text)); border-color: transparent; }
+    .ui-badge[data-appearance="soft"][data-tone="success"] { background: var(--ui-color-success-subtle); color: color-mix(in srgb, var(--ui-color-success) 75%, var(--ui-color-text)); border-color: transparent; }
+    .ui-badge[data-appearance="soft"][data-tone="warning"] { background: var(--ui-color-warning-subtle); color: color-mix(in srgb, var(--ui-color-warning) 75%, var(--ui-color-text)); border-color: transparent; }
+    .ui-badge[data-appearance="soft"][data-tone="danger"] { background: var(--ui-color-danger-subtle); color: color-mix(in srgb, var(--ui-color-danger) 75%, var(--ui-color-text)); border-color: transparent; }
     .ui-badge[data-tone="media"] {
       background: color-mix(in srgb, var(--ui-media-scrim) 62%, transparent);
       color: var(--ui-media-on-scrim);
@@ -48,6 +54,7 @@ export type UiBadgeTone = UiStatus | 'media';
 })
 export class UiBadge {
   tone = input<UiBadgeTone>('neutral');
+  appearance = input<UiBadgeAppearance>('solid');
   /** A plan tier's metal: gold, platinum or premium (violet), the same in every theme. Wins over `tone`. */
   tier = input<UiBadgeTier | null>(null);
   /** Render as a bare status dot (no content). */

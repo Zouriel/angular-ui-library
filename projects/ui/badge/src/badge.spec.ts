@@ -43,4 +43,15 @@ describe('UiBadge tier', () => {
     expect(r).toContain('var(--ui-media-on-scrim)');
     expect(r).toContain('backdrop-filter');
   });
+
+  it('supports appearance="soft" using subtle status tokens', () => {
+    expect(pill({ tone: 'success' }).getAttribute('data-appearance')).toBe('solid');
+    expect(pill({ tone: 'success', appearance: 'soft' }).getAttribute('data-appearance')).toBe('soft');
+    expect(pill({ tone: 'media', appearance: 'soft' }).getAttribute('data-appearance')).toBeNull();
+    expect(css()).toContain('var(--ui-color-success-subtle)');
+    expect(css()).toContain('var(--ui-color-warning-subtle)');
+    expect(css()).toContain('var(--ui-color-danger-subtle)');
+    expect(css()).toContain('var(--ui-color-info-subtle)');
+    expect(css()).toContain('var(--ui-color-neutral-subtle)');
+  });
 });

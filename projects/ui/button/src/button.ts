@@ -76,12 +76,12 @@ export type UiButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'l
       height: var(--ui-size-md);
       padding: 0 var(--ui-space-4);
       border: 1px solid var(--ui-color-border);
-      border-radius: var(--ui-radius);
+      border-radius: var(--ui-button-radius);
       background: var(--ui-color-surface);
       color: var(--ui-color-text);
       font-family: var(--ui-font-default);
       font-size: calc(14px * var(--ui-font-scale));
-      font-weight: 500;
+      font-weight: var(--ui-font-weight-control, 500);
       letter-spacing: var(--ui-tracking-tight);
       cursor: pointer;
       white-space: nowrap;
