@@ -50,7 +50,8 @@ let nextWidgetId = 0;
         tabindex="-1"
         [style.left.px]="launcher() === 'draggable' && headOnLeft() ? head().x + 76 : null"
         [style.right.px]="launcher() === 'draggable' && !headOnLeft() ? winWidth() - head().x + 12 : null"
-        [style.bottom.px]="launcher() === 'draggable' ? clampBottom(head().y) : null"
+        [style.top.px]="launcher() === 'draggable' ? panelTop() : null"
+        [class.opens-down]="launcher() === 'draggable' && opensDown()"
       >
         <header>
           <div class="avatar">
@@ -161,6 +162,12 @@ let nextWidgetId = 0;
     }
     :host(.at-start) .panel {
       transform-origin: bottom left;
+    }
+    .panel.opens-down {
+      transform-origin: top right;
+    }
+    :host(.at-start) .panel.opens-down {
+      transform-origin: top left;
     }
     header {
       display: flex;
@@ -432,6 +439,7 @@ let nextWidgetId = 0;
         height: 100%;
         left: 0 !important;
         right: 0 !important;
+        top: 0 !important;
         bottom: 0 !important;
         border: 0;
         border-radius: 0;
@@ -535,8 +543,20 @@ export class UiChatWidget implements OnDestroy {
     return typeof window !== 'undefined' ? window.innerHeight : 768;
   }
 
-  protected clampBottom(headY: number): number {
-    return Math.max(16, this.winHeight() - headY - 64);
+  /** The bubble's centre is in the upper half of the window, so the panel hangs below it rather than above. */
+  protected opensDown(): boolean {
+    return this.head().y + 32 < this.winHeight() / 2;
+  }
+
+  /**
+   * Top edge of the draggable panel: level with the bubble's top when opening down, level with its bottom when
+   * opening up, then clamped so the whole panel (as tall as the CSS gives it) stays inside the window.
+   */
+  protected panelTop(): number {
+    const height = Math.min(600, this.winHeight() - 112);
+    const y = this.head().y;
+    const wanted = this.opensDown() ? y : y + 64 - height;
+    return Math.min(Math.max(16, wanted), Math.max(16, this.winHeight() - height - 16));
   }
 
   private syncObserver(): void {

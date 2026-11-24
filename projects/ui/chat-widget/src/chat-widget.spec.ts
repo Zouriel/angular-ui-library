@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { UiChatBubble } from '@zouriel/ui/chat-bubble';
 import {
   UiChatActions,
@@ -14,6 +14,20 @@ import {
   type UiChatPosition,
 } from './public-api';
 
+// The placement tests set the window size; put the real one back so later specs keep a desktop window.
+const realViewport = {
+  width: Object.getOwnPropertyDescriptor(window, 'innerWidth'),
+  height: Object.getOwnPropertyDescriptor(window, 'innerHeight'),
+};
+const restoreViewport = () => {
+  if (realViewport.width) Object.defineProperty(window, 'innerWidth', realViewport.width);
+  if (realViewport.height) Object.defineProperty(window, 'innerHeight', realViewport.height);
+};
+const setViewport = (width: number, height: number) => {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+  Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
+};
+
 @Component({
   imports: [UiChatWidget, UiChatBubble, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource],
   template: `
@@ -22,7 +36,7 @@ import {
       [position]="position()"
       [unread]="unread()"
       [launcher]="launcher()"
-      title="Addu Assistant"
+      title="Help Assistant"
       subtitle="Usually replies instantly"
       notice="Answers come from an AI and cite their source."
       launcherLabel="Open assistant"
@@ -111,7 +125,7 @@ describe('ui-chat-widget & pieces', () => {
     expect(panel).toBeTruthy();
     expect(panel.getAttribute('role')).toBe('dialog');
     const titleId = panel.getAttribute('aria-labelledby')!;
-    expect(el.querySelector(`#${titleId}`)!.textContent).toBe('Addu Assistant');
+    expect(el.querySelector(`#${titleId}`)!.textContent).toBe('Help Assistant');
     expect(el.querySelector('.notice')!.textContent).toContain('Answers come from an AI');
     expect(el.querySelector('#hdr-act')).toBeTruthy();
     expect(document.activeElement).toBe(panel);
@@ -149,6 +163,36 @@ describe('ui-chat-widget & pieces', () => {
     launcher.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true }));
     f.detectChanges();
     expect(f.componentInstance.lastPos?.y).toBe(16);
+  });
+
+  describe('draggable panel placement (desktop)', () => {
+    afterEach(restoreViewport);
+
+    const openWithHeadAt = (key: 'ArrowUp' | 'ArrowDown') => {
+      setViewport(1280, 900);
+      const f = TestBed.createComponent(Host);
+      f.componentInstance.launcher.set('draggable');
+      f.detectChanges();
+      const el = f.nativeElement as HTMLElement;
+      el.querySelector('.launcher')!.dispatchEvent(new KeyboardEvent('keydown', { key, altKey: true }));
+      f.componentInstance.open.set(true);
+      f.detectChanges();
+      return el.querySelector('.panel') as HTMLElement;
+    };
+
+    it('opens downward from a bubble near the top, so the panel stays on screen', () => {
+      const panel = openWithHeadAt('ArrowUp');
+      expect(panel.classList).toContain('opens-down');
+      expect(panel.style.top).toBe('16px');
+      expect(panel.style.bottom).toBe('');
+    });
+
+    it('opens upward from a bubble near the bottom, its bottom level with the bubble', () => {
+      const panel = openWithHeadAt('ArrowDown');
+      expect(panel.classList).not.toContain('opens-down');
+      // bubble at y 820 (900 - 80), 64 tall; panel 600 tall (min(600, 900 - 112)) ends at 884
+      expect(panel.style.top).toBe('284px');
+    });
   });
 
   it('renders typing indicator, quick actions, and sources', () => {
