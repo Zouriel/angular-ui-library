@@ -89,10 +89,10 @@ const VARIANT_TAG: Record<TextVariant, TextTag> = {
     .v-stat { font-size: var(--ui-font-size-stat); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.05); letter-spacing: var(--ui-tracking-tighter); font-variant-numeric: tabular-nums; }
     .v-h1 { font-size: var(--ui-font-size-h1); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.1); letter-spacing: var(--ui-tracking-tighter); }
     .v-h2 { font-size: var(--ui-font-size-h2); font-weight: var(--ui-font-weight-heading, 700); line-height: var(--ui-line-height-heading, 1.18); letter-spacing: var(--ui-tracking-tight); }
-    .v-h3 { font-size: var(--ui-font-size-h3); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); letter-spacing: var(--ui-tracking-tight); }
-    .v-h4 { font-size: var(--ui-font-size-lg); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); }
-    .v-h5 { font-size: var(--ui-font-size-h5); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); }
-    .v-h6 { font-size: var(--ui-font-size-h6); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading, 1.35); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
+    .v-h3 { font-size: var(--ui-font-size-h3); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading); letter-spacing: var(--ui-tracking-tight); }
+    .v-h4 { font-size: var(--ui-font-size-lg); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading); }
+    .v-h5 { font-size: var(--ui-font-size-h5); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading); }
+    .v-h6 { font-size: var(--ui-font-size-h6); font-weight: var(--ui-font-weight-heading, 600); line-height: var(--ui-line-height-heading); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ui-color-text-muted); }
     .v-body { font-size: var(--ui-font-size-md); line-height: var(--ui-line-height-body, 1.45); text-wrap: pretty; }
     .v-caption { font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
     .v-label { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-control, 600); }
