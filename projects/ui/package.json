@@ -19,6 +19,7 @@
     "@hugeicons/core-free-icons": "^4.3.0",
     "pdfjs-dist": "^4.10.38",
     "leaflet": "~1.9.4",
+    "jsqr": "^1.4.0",
     "@angular/router": "^22.0.0"
   },
   "dependencies": {
@@ -29,6 +30,9 @@
       "optional": true
     },
     "leaflet": {
+      "optional": true
+    },
+    "jsqr": {
       "optional": true
     },
     "@angular/router": {

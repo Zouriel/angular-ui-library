@@ -266,6 +266,9 @@
   --ui-media-on-scrim: #ffffff;
   --ui-media-danger: #ff8b8b;
   --ui-pdf-page-bg: #ffffff; /* rendered PDF pages are paper */
+  /* QR codes do not follow the theme: always dark on white so every scanner can read them. */
+  --ui-qr-dark: #000000;
+  --ui-qr-light: #ffffff;
   --ui-cursor-color: #ffffff;
   --ui-section-label-bracket: var(--ui-color-primary); /* the eyebrow bar, or the brackets in Dark Orange */
 

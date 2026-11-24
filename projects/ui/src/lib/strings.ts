@@ -424,6 +424,18 @@ export interface UiStrings {
   /** `ui-date-time-picker` (0.87.0): the names of its two parts. */
   dateLabel: string;
   timeLabel: string;
+  /** `ui-qr-code` and `ui-qr-scanner` (`@zouriel/ui/qr`). */
+  qrCode: string;
+  qrTooLong: string;
+  scanStart: string;
+  scanStop: string;
+  scanScanning: string;
+  scanRead: string;
+  scanDenied: string;
+  scanNoCamera: string;
+  scanUnsupported: string;
+  scanTypeInstead: string;
+  scanTorch: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -648,6 +660,17 @@ export const defaultUiStrings: UiStrings = {
   skipToContent: 'Skip to content',
   dateLabel: 'Date',
   timeLabel: 'Time',
+  qrCode: 'QR code',
+  qrTooLong: 'Too much data for a QR code',
+  scanStart: 'Start camera',
+  scanStop: 'Stop camera',
+  scanScanning: 'Scanning for QR code',
+  scanRead: 'QR code read',
+  scanDenied: 'Camera permission denied',
+  scanNoCamera: 'No camera available',
+  scanUnsupported: 'Camera scanning is not supported in this browser',
+  scanTypeInstead: 'Type the code instead',
+  scanTorch: 'Toggle flashlight',
 };
 
 /**
@@ -878,6 +901,17 @@ export const uiStringsDv: UiStrings = {
   skipToContent: 'ކޮންޓެންޓަށް ދާން',
   dateLabel: 'ތާރީޚު',
   timeLabel: 'ގަޑި',
+  qrCode: 'ކިއުއާރް ކޯޑު',
+  qrTooLong: 'ކިއުއާރް ކޯޑަކަށް މާ ގިނަ މަޢުލޫމާތު',
+  scanStart: 'ކެމެރާ ފަށާ',
+  scanStop: 'ކެމެރާ ހުއްޓުވާ',
+  scanScanning: 'ކިއުއާރް ކޯޑު ސްކޭން ކުރަނީ',
+  scanRead: 'ކިއުއާރް ކޯޑު ކިޔައިފި',
+  scanDenied: 'ކެމެރާގެ ހުއްދަ ނުދޭ',
+  scanNoCamera: 'ކެމެރާއެއް ނުލިބުނު',
+  scanUnsupported: 'މި ބްރައުޒާގައި ކެމެރާ ސްކޭން ކުރުމަކަށް ސަޕޯޓެއް ނުކުރޭ',
+  scanTypeInstead: 'ބަދަލުގައި ކޯޑު ޖަހާ',
+  scanTorch: 'ފްލޭޝްލައިޓް ޖައްސާ/ނިއްވާ',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown

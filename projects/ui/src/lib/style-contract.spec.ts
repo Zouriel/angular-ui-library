@@ -233,6 +233,31 @@ describe('theme palettes', () => {
     expect(fails).toEqual([]);
   });
 
+  it('keeps the QR code dark/light pair at 7:1 or more in every theme', () => {
+    const tokensText = withoutComments(readFileSync(join(root, 'styles/tokens.css'), 'utf8'));
+    const baseDark = tokensText.match(/--ui-qr-dark:\s*([^;]+);/)?.[1]?.trim() ?? '';
+    const baseLight = tokensText.match(/--ui-qr-light:\s*([^;]+);/)?.[1]?.trim() ?? '';
+    expect(baseDark, 'tokens.css --ui-qr-dark').toBeTruthy();
+    expect(baseLight, 'tokens.css --ui-qr-light').toBeTruthy();
+    const baseRatio = contrast(parseColor(baseDark)!, parseColor(baseLight)!);
+    expect(baseRatio).toBeGreaterThanOrEqual(7);
+
+    const fails: string[] = [];
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8'));
+      for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
+        const darkStr = m[2].match(/--ui-qr-dark:\s*([^;]+);/)?.[1]?.trim() ?? baseDark;
+        const lightStr = m[2].match(/--ui-qr-light:\s*([^;]+);/)?.[1]?.trim() ?? baseLight;
+        const fg = parseColor(darkStr);
+        const bg = parseColor(lightStr);
+        if (!fg || !bg || contrast(fg, bg) < 7) {
+          fails.push(`${m[1]}: QR pair contrast is ${fg && bg ? contrast(fg, bg).toFixed(2) : 'invalid'}:1, needs 7:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
   it('defines six distinct chart colours in every theme', () => {
     const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css'];
     const fails: string[] = [];

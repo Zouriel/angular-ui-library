@@ -281,6 +281,10 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'PDF viewer', anchor: 'pdf-viewer' },
     { name: 'File explorer', anchor: 'file-explorer' },
   ],
+  'qr': [
+    { name: 'QR code', anchor: 'qr-code' },
+    { name: 'QR scanner', anchor: 'qr-scanner' },
+  ],
   'fx': [
     { name: 'Reveal', anchor: 'reveal' },
     { name: 'Marquee', anchor: 'marquee' },
