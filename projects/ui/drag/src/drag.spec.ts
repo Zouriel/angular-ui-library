@@ -88,6 +88,8 @@ class MergeHost {
 }
 
 describe('UiDragItem & UiDropTarget', () => {
+  // Other specs in the same worker may have left a drag ghost or live region on the page.
+  beforeEach(() => document.querySelectorAll('.ui-drag-ghost, .ui-drag-live').forEach((el) => el.remove()));
   afterEach(() => {
     vi.useRealTimers();
     document.querySelectorAll('.ui-drag-ghost, .ui-drag-live').forEach((el) => el.remove());
@@ -303,5 +305,31 @@ describe('UiDragItem & UiDropTarget', () => {
     expect(tiles[2].classList.contains('ui-drop-target--over')).toBe(false);
     document.dispatchEvent(pointer('pointerup', { clientX: 50, clientY: 240 }));
     expect(host.drops).toEqual([]);
+  });
+});
+
+describe('UiDragService cleanup', () => {
+  it('keeps a single drag live region on the page, reusing one a previous service left behind', () => {
+    const stale = document.createElement('div');
+    stale.className = 'ui-drag-live';
+    stale.textContent = 'Cancelled dragging x';
+    document.body.appendChild(stale);
+
+    TestBed.inject(UiDragService).announce('Picked up Dinner');
+
+    const regions = document.querySelectorAll('.ui-drag-live');
+    expect(regions.length).toBe(1);
+    expect(regions[0].textContent).toBe('Picked up Dinner');
+    stale.remove();
+  });
+
+  it('removes its live region when its injector is destroyed, so no stale announcement stays on the page', () => {
+    const service = TestBed.inject(UiDragService);
+    service.announce('Cancelled dragging x');
+    expect(document.querySelectorAll('.ui-drag-live').length).toBe(1);
+
+    TestBed.resetTestingModule();
+
+    expect(document.querySelector('.ui-drag-live')).toBeNull();
   });
 });

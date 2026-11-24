@@ -1,5 +1,5 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Injectable, NgZone, PLATFORM_ID, inject, signal } from '@angular/core';
+import { Injectable, NgZone, OnDestroy, PLATFORM_ID, inject, signal } from '@angular/core';
 import { UI_CONFIG, uiLogicalKey } from '@zouriel/ui';
 
 /** Distance (px) a mouse or pen must move before a drag begins. */
@@ -96,7 +96,7 @@ export interface UiDragSession<T = unknown> {
  * screen-reader announcements.
  */
 @Injectable({ providedIn: 'root' })
-export class UiDragService {
+export class UiDragService implements OnDestroy {
   private readonly doc = inject(DOCUMENT);
   private readonly zone = inject(NgZone);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -105,6 +105,7 @@ export class UiDragService {
   private readonly targets = new Set<UiDropTargetHandle<unknown>>();
   private ghostEl: HTMLElement | null = null;
   private liveEl: HTMLElement | null = null;
+  private destroyed = false;
   private grabX = 0;
   private grabY = 0;
   private pointerX = 0;
@@ -242,12 +243,31 @@ export class UiDragService {
     }
   }
 
+  /**
+   * Removes what this service added to the page. Without it every injector that ever created the
+   * service (a lazy route, a test) leaves its own live region behind, so screen readers could hear an
+   * old drag's announcement next to the new one.
+   */
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.removeGhost();
+    this.liveEl?.remove();
+    this.liveEl = null;
+  }
+
   /** Updates the polite live region so screen readers hear drag state changes. */
   announce(message: string): void {
     this.announcement.set(message);
-    if (!this.isBrowser) return;
+    if (!this.isBrowser || this.destroyed) return;
     this.ensureStyles();
     if (!this.liveEl || !this.doc.body.contains(this.liveEl)) {
+      // One drag live region per page: reuse one another injector's service left, never add a second.
+      const existing = this.doc.body.querySelector<HTMLElement>(`:scope > .${LIVE_CLASS}`);
+      if (existing) {
+        this.liveEl = existing;
+        this.liveEl.textContent = message;
+        return;
+      }
       const el = this.doc.createElement('div');
       el.className = LIVE_CLASS;
       el.setAttribute('role', 'status');
