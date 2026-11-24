@@ -22,6 +22,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Right to left and Dhivehi', anchor: 'rtl' },
     { name: 'Theme service', anchor: 'theme-service' },
     { name: 'Themes', anchor: 'themes' },
+    { name: 'Addu portals, type scale & soft status', anchor: 'addu-portals-type-scale-soft-status' },
     { name: 'Scoped theme', anchor: 'scoped-theme' },
     { name: 'Theme swatch', anchor: 'theme-swatch' },
   ],

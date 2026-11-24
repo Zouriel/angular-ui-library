@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { UiText } from '@zouriel/ui/text';
 import { UiThemeProvider, UiThemeService, UiThemeSwatch, type UiThemeSwatchColors } from '@zouriel/ui/theme';
 import { UiCard } from '@zouriel/ui/card';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
-import { UiChip, UiAvatar } from '@zouriel/ui/badge';
+import { UiBadge, UiChip, UiAvatar } from '@zouriel/ui/badge';
+import { UiAlert } from '@zouriel/ui/alert';
 import { UiInput, UiSwitch, UiCheckbox, UiChoiceGrid, type UiChoice } from '@zouriel/ui/form';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Notification01Icon from '@hugeicons/core-free-icons/Notification01Icon';
@@ -14,7 +16,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 @Component({
   selector: 'page-foundation',
-  imports: [UiText, UiThemeProvider, UiCard, UiButton, UiSegmented, UiChip, UiAvatar, UiInput, UiSwitch, UiCheckbox, UiChoiceGrid, UiThemeSwatch, HugeiconsIconComponent, FormsModule, DocPage, DocSection, DocDemo],
+  imports: [UiText, UiThemeProvider, UiCard, UiButton, UiSegmented, UiBadge, UiAlert, UiChip, UiAvatar, UiInput, UiSwitch, UiCheckbox, UiChoiceGrid, UiThemeSwatch, HugeiconsIconComponent, FormsModule, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Getting started" title="Foundation"
       lead="Design tokens, the config provider, and the theme service. Everything else builds on these.">
@@ -31,6 +33,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @import '@zouriel/ui/styles/theme-liquid.css';       /* the liquid themes (rugged, glacier, …) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';  /* darkOrange; loads web fonts */
 @import '@zouriel/ui/styles/theme-maldives.css';     /* maldives; loads Poppins */
+@import '@zouriel/ui/styles/theme-addu.css';         /* addu + addu-ink island */
 @import '@zouriel/ui/styles/theme-palettes.css';     /* legacy accent palettes */"></doc-demo>
         <doc-demo lang="css" code="Colour roles (per theme)
 --ui-color-bg / surface / surface-raised / surface-subtle / surface-hover / elevated-hover
@@ -143,7 +146,7 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Themes" selector="data-theme"
-        summary="Nineteen current themes. dark and light are the Navy colour system in tokens.css (also navy-dark and navy): Midnight Navy, Powder Blue and Sunflower. darkOrange (theme-dark-orange.css) also changes the fonts; maldives and maldives-dark (theme-maldives.css) set Poppins and have their own sea backdrops. The twelve liquid themes in theme-liquid.css (rugged, glacier, oxblood, graphite, cocoa and violet, each with a -dark night twin) are made for glass surfaces over ui-liquid-backdrop. The legacy themes below still work unchanged but are not for new work. Each tile is a ui-theme-provider island; Use sets it for the whole page.">
+        summary="Twenty-one current themes. dark and light are the Navy colour system in tokens.css (also navy-dark and navy): Midnight Navy, Powder Blue and Sunflower. darkOrange (theme-dark-orange.css) also changes the fonts; maldives and maldives-dark (theme-maldives.css) set Poppins and have their own sea backdrops. addu (theme-addu.css) is the Addu City Digital Hub light theme with portal overrides via data-portal, and addu-ink is its dark surface island for ui-theme-provider. The twelve liquid themes in theme-liquid.css (rugged, glacier, oxblood, graphite, cocoa and violet, each with a -dark night twin) are made for glass surfaces over ui-liquid-backdrop. The legacy themes below still work unchanged but are not for new work. Each tile is a ui-theme-provider island; Use sets it for the whole page.">
         <div class="themes">
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
@@ -173,6 +176,33 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
               </div>
             </ui-theme-provider>
           }
+        </div>
+      </doc-section>
+
+      <doc-section name="Addu portals, type scale & soft status" selector="data-portal"
+        summary="Addu supports portal colour overrides via data-portal on the same element as data-theme, new display/title/stat variants on ui-text, and appearance='soft' on badges, alerts and results.">
+        <div class="density-demo">
+          <div class="density-row">
+            <ui-button size="sm" variant="outline" (click)="theme.set('addu')">Use addu theme</ui-button>
+            <ui-segmented label="Portal" [options]="portalOptions" [value]="portal()" (valueChange)="setPortal($any($event))" />
+          </div>
+          <ui-theme-provider theme="addu" [attr.data-portal]="portal() || null" class="ui-surface tile">
+            <div class="density-demo">
+              <ui-text variant="display">Display</ui-text>
+              <ui-text variant="title">Title</ui-text>
+              <ui-text variant="subtitle">Subtitle</ui-text>
+              <ui-text variant="stat">56</ui-text>
+              <div class="density-row">
+                <ui-badge appearance="soft" tone="neutral">Neutral</ui-badge>
+                <ui-badge appearance="soft" tone="primary">Primary</ui-badge>
+                <ui-badge appearance="soft" tone="success">Valid</ui-badge>
+                <ui-badge appearance="soft" tone="warning">Expired</ui-badge>
+                <ui-badge appearance="soft" tone="danger">Revoked</ui-badge>
+              </div>
+              <ui-alert appearance="soft" tone="success" heading="Verified">Document is valid.</ui-alert>
+              <ui-alert appearance="soft" tone="warning" heading="Expiring">Expires in 4 days.</ui-alert>
+            </div>
+          </ui-theme-provider>
         </div>
       </doc-section>
 
@@ -254,6 +284,22 @@ previews: Record<string, UiThemeSwatchColors> = {
     { name: 'label', type: 'string | null', default: 'null', desc: 'Names the picture (role="img"); without it the swatch is hidden from screen readers.' },
   ];
   protected readonly theme = inject(UiThemeService);
+  private readonly doc = inject(DOCUMENT);
+  protected readonly portal = signal('');
+  protected readonly portalOptions = [
+    { value: '', label: 'Connect (default)' },
+    { value: 'visit', label: 'Visit' },
+    { value: 'referendum', label: 'Referendum' },
+    { value: 'ready', label: 'Ready' },
+    { value: 'admin', label: 'Admin' },
+  ];
+  protected setPortal(p: string): void {
+    this.portal.set(p);
+    if (this.theme.theme() === 'addu') {
+      if (p) this.doc.documentElement.setAttribute('data-portal', p);
+      else this.doc.documentElement.removeAttribute('data-portal');
+    }
+  }
   protected readonly density = inject(ShowcaseDensity);
   protected readonly bell = Notification01Icon;
   protected readonly colors = ['bg', 'surface', 'surface-raised', 'surface-subtle', 'text', 'text-secondary', 'text-muted', 'border', 'border-strong', 'primary', 'secondary', 'accent', 'success', 'warning', 'danger', 'info', 'selected', 'track'];
@@ -265,6 +311,8 @@ previews: Record<string, UiThemeSwatchColors> = {
     { name: 'darkOrange', file: 'theme-dark-orange.css' },
     { name: 'maldives', file: 'theme-maldives.css' },
     { name: 'maldives-dark', file: 'theme-maldives.css' },
+    { name: 'addu', file: 'theme-addu.css' },
+    { name: 'addu-ink', file: 'theme-addu.css (island)' },
     { name: 'rugged', file: 'theme-liquid.css' },
     { name: 'rugged-dark', file: 'theme-liquid.css' },
     { name: 'glacier', file: 'theme-liquid.css' },
@@ -294,7 +342,7 @@ previews: Record<string, UiThemeSwatchColors> = {
   ];
   protected readonly THEME_TYPE = `type UiTheme =
   // current
-  | 'dark' | 'light' | 'navy' | 'navy-dark' | 'darkOrange' | 'maldives' | 'maldives-dark'
+  | 'dark' | 'light' | 'navy' | 'navy-dark' | 'darkOrange' | 'maldives' | 'maldives-dark' | 'addu' | 'addu-ink'
   | 'rugged' | 'rugged-dark' | 'glacier' | 'glacier-dark' | 'oxblood' | 'oxblood-dark'
   | 'graphite' | 'graphite-dark' | 'cocoa' | 'cocoa-dark' | 'violet' | 'violet-dark'
   // legacy (@deprecated): the Winter aliases and the palette skins

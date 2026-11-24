@@ -217,6 +217,8 @@ export class App {
     { value: 'darkOrange', label: 'Dark Orange' },
     { value: 'maldives', label: 'Maldives' },
     { value: 'maldives-dark', label: 'Maldives Dark' },
+    { value: 'addu', label: 'Addu' },
+    { value: 'addu-ink', label: 'Addu Ink (island)' },
     { value: 'rugged', label: 'Rugged' },
     { value: 'rugged-dark', label: 'Rugged Dark' },
     { value: 'glacier', label: 'Glacier' },

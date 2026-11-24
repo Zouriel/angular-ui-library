@@ -28,6 +28,7 @@ npm i pdfjs-dist   # only for ui-pdf-viewer, or PDFs in ui-file-viewer"></doc-de
 @import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the twelve liquid themes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: Dark Orange (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives day and night (loads Poppins) */
+@import '@zouriel/ui/styles/theme-addu.css';        /* optional: Addu City Digital Hub + addu-ink island */
 @import '@zouriel/ui/styles/theme-palettes.css';    /* optional, legacy: the ten colour palettes */
 @import '@zouriel/ui/styles/fx.css';                /* optional: .ui-glow, .ui-gradient-text, .ui-underline */
 @import '@zouriel/ui/styles/theme-animations.css';  /* optional: palette motion on those FX classes */
@@ -90,7 +91,7 @@ protected readonly anim = UI_ANIM;
       </doc-section>
 
       <doc-section name="Theming" anchor="theming"
-        summary="Components only read CSS custom-property tokens, so a theme is a set of token overrides keyed on data-theme. UiThemeService (from @zouriel/ui/theme) sets data-theme on <html>; ui-theme-provider scopes a theme to part of the page. Use the picker in the top bar to preview them: the 19 current themes first, then the 12 legacy ones. A custom theme is a [data-theme] block that sets the core --ui-color-* tokens; the rest are derived from them.">
+        summary="Components only read CSS custom-property tokens, so a theme is a set of token overrides keyed on data-theme. UiThemeService (from @zouriel/ui/theme) sets data-theme on <html>; ui-theme-provider scopes a theme to part of the page. Use the picker in the top bar to preview them: the 21 current themes first, then the 12 legacy ones. A custom theme is a [data-theme] block that sets the core --ui-color-* tokens; the rest are derived from them.">
         <doc-demo lang="ts" code="theme = inject(UiThemeService);
 this.theme.set('light');      // Navy Light (tokens.css); 'dark' is the default
 this.theme.set('glacier');    // needs theme-liquid.css
@@ -183,6 +184,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Navy (default)', file: 'tokens.css', themes: ['dark', 'light', 'navy-dark', 'navy'] },
     { title: 'Cinematic', file: 'theme-dark-orange.css', themes: ['darkOrange'] },
     { title: 'Sea', file: 'theme-maldives.css', themes: ['maldives', 'maldives-dark'] },
+    { title: 'Addu', file: 'theme-addu.css', themes: ['addu', 'addu-ink'] },
     { title: 'Liquid', file: 'theme-liquid.css', themes: ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark'] },
     { title: 'Legacy: palettes', file: 'theme-palettes.css (still supported, not for new work)', themes: ['lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed'] },
     { title: 'Legacy: Winter names', file: 'tokens.css (aliases of navy-dark and navy)', themes: ['winterDark', 'winterLight'] },
