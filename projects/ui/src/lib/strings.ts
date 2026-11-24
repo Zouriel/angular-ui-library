@@ -462,6 +462,14 @@ export interface UiStrings {
   docCount: string;
   docInvalidType: string;
   docTooLarge: string;
+  /** Signature pad: baseline prompt, action buttons, and thumbprint camera/retake labels. */
+  signHere: string;
+  signatureClear: string;
+  signatureUndo: string;
+  thumbprintTake: string;
+  thumbprintRetake: string;
+  /** Donut chart: folded tail segment when there are more than six segments. */
+  chartOther: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -720,6 +728,12 @@ export const defaultUiStrings: UiStrings = {
   docCount: '{done} of {total} attached',
   docInvalidType: 'Wrong file type',
   docTooLarge: 'File exceeds {max} MB',
+  signHere: 'Sign here',
+  signatureClear: 'Clear',
+  signatureUndo: 'Undo',
+  thumbprintTake: 'Take thumbprint photo',
+  thumbprintRetake: 'Retake',
+  chartOther: 'Other',
 };
 
 /**
@@ -984,6 +998,12 @@ export const uiStringsDv: UiStrings = {
   docCount: '{total} ގެ ތެރެއިން {done} އެޓޭޗްކޮށްފައި',
   docInvalidType: 'ފައިލްގެ ބާވަތް ރަނގަޅެއް ނޫން',
   docTooLarge: 'ފައިލް {max} އެމްބީއަށްވުރެ ބޮޑު',
+  signHere: 'މިތަނުގައި ސޮއިކުރޭ',
+  signatureClear: 'ފޮހެލާ',
+  signatureUndo: 'ފަހަތަށް',
+  thumbprintTake: 'އިނގިލީގެ ނިޝާން ފޮޓޯ ނަގާ',
+  thumbprintRetake: 'އަލުން ނަގާ',
+  chartOther: 'އެހެނިހެން',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown

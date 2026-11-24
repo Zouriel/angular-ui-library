@@ -342,6 +342,11 @@
   --ui-chart-4: color-mix(in srgb, var(--ui-color-text-muted) 55%, var(--ui-color-surface));
   --ui-chart-5: var(--ui-color-accent);
   --ui-chart-6: color-mix(in srgb, var(--ui-color-primary) 30%, var(--ui-color-text-muted));
+
+  /* Signature pad (ui-signature-pad): ink and paper do not follow the theme, so the stored
+     signature looks the same regardless of the officer's active theme. */
+  --ui-signature-ink: #0f1433;
+  --ui-signature-paper: #ffffff;
 }
 
 /* A theme island (<ui-theme-provider theme="dark"> on a light page) sits over another theme's
