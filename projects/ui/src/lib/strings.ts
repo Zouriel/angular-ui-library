@@ -447,6 +447,21 @@ export interface UiStrings {
   stopReading: string;
   getHelp: string;
   language: string;
+  /** `ui-slot-picker` (`@zouriel/ui/datepicker`). */
+  slotLeft: string;
+  slotFull: string;
+  /** `ui-document-checklist` (`@zouriel/ui/form`). */
+  docMissing: string;
+  docAttached: string;
+  docVerified: string;
+  docDraft: string;
+  docRejected: string;
+  docChoose: string;
+  docReplace: string;
+  docView: string;
+  docCount: string;
+  docInvalidType: string;
+  docTooLarge: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -692,6 +707,19 @@ export const defaultUiStrings: UiStrings = {
   stopReading: 'Stop reading',
   getHelp: 'Get help',
   language: 'Language',
+  slotLeft: '{n} left',
+  slotFull: 'Full',
+  docMissing: 'Missing',
+  docAttached: 'Attached',
+  docVerified: 'Verified',
+  docDraft: 'Draft',
+  docRejected: 'Rejected',
+  docChoose: 'Choose file',
+  docReplace: 'Replace',
+  docView: 'View',
+  docCount: '{done} of {total} attached',
+  docInvalidType: 'Wrong file type',
+  docTooLarge: 'File exceeds {max} MB',
 };
 
 /**
@@ -943,6 +971,19 @@ export const uiStringsDv: UiStrings = {
   stopReading: 'ކިޔުން ހުއްޓާލާ',
   getHelp: 'އެހީ ހޯދާ',
   language: 'ބަސް',
+  slotLeft: '{n} ބާކީ',
+  slotFull: 'ފުރިއްޖެ',
+  docMissing: 'ނުލިބޭ',
+  docAttached: 'އެޓޭޗްކޮށްފައި',
+  docVerified: 'ކަށަވަރުވެފައި',
+  docDraft: 'ޑްރާފްޓް',
+  docRejected: 'ރިޖެކްޓްވެފައި',
+  docChoose: 'ފައިލް ނަގާ',
+  docReplace: 'ބަދަލުކުރޭ',
+  docView: 'ބަލާ',
+  docCount: '{total} ގެ ތެރެއިން {done} އެޓޭޗްކޮށްފައި',
+  docInvalidType: 'ފައިލްގެ ބާވަތް ރަނގަޅެއް ނޫން',
+  docTooLarge: 'ފައިލް {max} އެމްބީއަށްވުރެ ބޮޑު',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown
