@@ -8,8 +8,8 @@ import {
   UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
   UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
   UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiTokenInput, UiPhoneInput, UiHandleField,
-  UiDocumentChecklist,
-  type UiChoice, type UiHandleCheck, type UiAnchor, type UiTokenRun, type UiDocumentItem, type UiDocumentUploadEvent,
+  UiDocumentChecklist, UiSignaturePad,
+  type UiChoice, type UiHandleCheck, type UiAnchor, type UiTokenRun, type UiDocumentItem, type UiDocumentUploadEvent, type UiSignatureValue,
 } from '@zouriel/ui/form';
 import { UiButton, UiIconButton } from '@zouriel/ui/button';
 import { UiCombobox, UiMultiSelect } from '@zouriel/ui/combobox';
@@ -66,7 +66,7 @@ const SLOT_ITEM = `interface UiSlot {
     UiFormField, UiInput, UiTextarea, UiCheckbox, UiSwitch, UiRadioGroup, UiSelect,
     UiNumberInput, UiPasswordInput, UiSearchInput, UiSlider, UiCheckboxGroup, UiRating, UiOtpInput,
     UiChipInput, UiEditableText, UiColorPicker, UiFileUpload, UiTimePicker, UiChoiceGrid, UiAnchorPicker, UiPhoneInput, UiHandleField,
-    UiDocumentChecklist, UiSlotPicker,
+    UiDocumentChecklist, UiSlotPicker, UiSignaturePad,
     UiCombobox, UiMultiSelect, UiDatePicker, UiCalendar, UiDateRangePicker,
     DocPage, DocSection, DocDemo,
   ],
@@ -361,6 +361,14 @@ phone = new FormControl<string | null>('+9607771234');
         <doc-demo code="<ui-slot-picker [slots]=&quot;slots&quot; [(value)]=&quot;chosenSlot&quot; label=&quot;Appointment slot&quot; />">
           <ui-slot-picker [slots]="slots" [(value)]="chosenSlot" label="Appointment slot" />
           <p class="hint">Selected slot: {{ chosenSlot() ?? 'none' }}</p>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Signature pad" selector="ui-signature-pad" [api]="signatureApi" [shapes]="SIG_SHAPE"
+        summary="Captures a handwritten signature on a fixed-ink/paper canvas (--ui-signature-ink on --ui-signature-paper, independent of theme), or attaches a thumbprint photo via ui-file-upload with capture='environment'. Implements ControlValueAccessor with UiSignatureValue | null and treats pads under the minimum ink length as empty so required fails on stray dots.">
+        <doc-demo code="<ui-signature-pad label=&quot;Applicant signature&quot; [(ngModel)]=&quot;sigValue&quot; />">
+          <ui-signature-pad label="Applicant signature" [(ngModel)]="sigValue" [ngModelOptions]="{ standalone: true }" />
+          <p class="hint">{{ sigValue() ? sigValue()!.kind + ' (' + sigValue()!.width + '×' + sigValue()!.height + ', ' + (sigValue()!.strokes ?? 0) + ' strokes)' : 'No signature captured' }}</p>
         </doc-demo>
       </doc-section>
 
@@ -808,5 +816,23 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'columns', type: "number | 'auto'", default: "'auto'", desc: 'Grid column count or responsive auto-fill.' },
     { name: 'label', type: 'string', default: '—', desc: 'Accessible aria-label for the radiogroup.' },
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disables the whole group.' },
+  ];
+
+  protected readonly SIG_SHAPE = `interface UiSignatureValue {
+  kind: 'signature' | 'thumbprint';
+  dataUrl: string;
+  width: number;
+  height: number;
+  capturedAt: string;
+  strokes?: number;
+}`;
+  protected readonly sigValue = signal<UiSignatureValue | null>(null);
+  protected readonly signatureApi: ApiRow[] = [
+    { name: 'mode', type: "'signature' | 'thumbprint'", default: "'signature'", desc: 'Handwritten pointer canvas or thumbprint image capture.' },
+    { name: 'height', type: 'number', default: '180', desc: 'Height of the signature pad in px.' },
+    { name: 'penWidth', type: 'number', default: '2.5', desc: 'Base stroke width; varies with pointer pressure when reported.' },
+    { name: 'label', type: 'string', default: 'strings.signHere', desc: 'Accessible name for the pad.' },
+    { name: 'description', type: 'string', default: '—', desc: 'Optional accessible description linked via aria-describedby.' },
+    { name: 'disabled / invalid', type: 'boolean', default: 'false', desc: 'Disables drawing/actions or marks the pad border invalid.' },
   ];
 }

@@ -1,5 +1,8 @@
 import { Component, signal } from '@angular/core';
-import { UiBarChart, type UiBarChartSeries } from '@zouriel/ui/chart';
+import {
+  UiBarChart, UiDonutChart, UiLineChart,
+  type UiBarChartSeries, type UiChartSeries, type UiDonutSegment,
+} from '@zouriel/ui/chart';
 import { UiText } from '@zouriel/ui/text';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
@@ -7,7 +10,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 @Component({
   selector: 'page-charts',
-  imports: [UiBarChart, UiText, DocPage, DocSection, DocDemo],
+  imports: [UiBarChart, UiLineChart, UiDonutChart, UiText, DocPage, DocSection, DocDemo],
   template: `
     <doc-page eyebrow="Components" title="Charts"
       lead="A bar chart for dashboards: thin columns from a zero baseline, a quiet grid, and colours each theme has checked for colour-blind readers. Every number is also in a table for screen readers.">
@@ -53,6 +56,38 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
           <ui-bar-chart ariaLabel="Sales by month" [categories]="months" [series]="none" emptyLabel="No data yet" [height]="160" />
         </doc-demo>
       </doc-section>
+
+      <doc-section name="Line chart" selector="ui-line-chart" [api]="lineApi" [outputs]="outputs"
+        shapes="interface UiChartSeries { name: string; values: (number | null)[]; color?: string; }"
+        summary="One to four series over categories, with distinct marker shapes (circle, square, triangle, diamond) so colour is never the only difference. A null value creates a gap in the line. curve='smooth' uses monotone interpolation that never overshoots; area='true' fills under a single series at 12%; baseline='auto' fits a floating axis and prints its range in the caption.">
+        <doc-demo code="<ui-line-chart ariaLabel=&quot;Monthly occupancy&quot; [categories]=&quot;months&quot;
+  [series]=&quot;occupancy&quot; [area]=&quot;true&quot; curve=&quot;smooth&quot; baseline=&quot;auto&quot; />">
+          <ui-text variant="label">Monthly occupancy (%)</ui-text>
+          <ui-line-chart ariaLabel="Monthly occupancy" [categories]="months" [series]="occupancy"
+            [area]="true" curve="smooth" baseline="auto" [minCategoryWidth]="36" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Multi-series line" selector="ui-line-chart [series]"
+        summary="Up to four series share one plot with distinct markers and a legend. Null values break the line cleanly without inventing zero.">
+        <doc-demo code="<ui-line-chart ariaLabel=&quot;Arrivals by region&quot; [categories]=&quot;months&quot; [series]=&quot;arrivals&quot; />">
+          <ui-text variant="label">Arrivals by region</ui-text>
+          <ui-line-chart ariaLabel="Arrivals by region" [categories]="months" [series]="arrivals" [minCategoryWidth]="36" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Donut chart" selector="ui-donut-chart" [api]="donutApi" [outputs]="donutOutputs"
+        shapes="interface UiDonutSegment { name: string; value: number; color?: string; }"
+        summary="Up to six segments with 2px gaps in the surface colour; more than six fold into Other. Shares under 3% still draw a minimum visible arc while the legend prints the true value and percentage. Draws clockwise from the top in LTR and counter-clockwise in RTL, with arrow-key navigation and a screen-reader table.">
+        <doc-demo code="<ui-donut-chart ariaLabel=&quot;Bookings by channel&quot; [segments]=&quot;channels&quot;
+  centerValue=&quot;1,240&quot; centerLabel=&quot;Bookings&quot;
+  [selectedIndex]=&quot;segment()&quot; (segmentSelect)=&quot;segment.set($event)&quot; />">
+          <ui-donut-chart ariaLabel="Bookings by channel" [segments]="channels"
+            centerValue="1,240" centerLabel="Bookings"
+            [selectedIndex]="segment()" (segmentSelect)="segment.set($event)" />
+          <ui-text variant="caption">{{ segment() === null ? 'Choose a segment.' : channels[segment()!]?.name ?? 'Other' }}</ui-text>
+        </doc-demo>
+      </doc-section>
     </doc-page>
   `,
   styles: `
@@ -89,5 +124,53 @@ export class ChartsPage {
   ];
   protected readonly outputs: ApiRow[] = [
     { name: 'categorySelect', type: 'number', desc: 'A category was clicked, tapped, or chosen with Enter or Space: its index.' },
+  ];
+
+  protected readonly occupancy: UiChartSeries[] = [
+    { name: 'Occupancy', values: [68, 72, 75, 71, 64, 61, 69, 78, 82, 79, 85, 91] },
+  ];
+  protected readonly arrivals: UiChartSeries[] = [
+    { name: 'Europe', values: [420, 460, 410, 390, 340, null, 380, 440, 490, 510, 560, 610] },
+    { name: 'Asia', values: [280, 310, 330, 350, 360, 340, 390, 410, 430, 460, 490, 530] },
+    { name: 'Middle East', values: [120, 140, 150, 130, 110, 125, 160, 180, 170, 190, 210, 240] },
+  ];
+  protected readonly segment = signal<number | null>(null);
+  protected readonly channels: UiDonutSegment[] = [
+    { name: 'Direct web', value: 520 },
+    { name: 'Tour operators', value: 340 },
+    { name: 'Online agencies', value: 210 },
+    { name: 'Travel desks', value: 95 },
+    { name: 'Corporate', value: 55 },
+    { name: 'Walk-in', value: 12 },
+    { name: 'Referral', value: 8 },
+  ];
+  protected readonly lineApi: ApiRow[] = [
+    { name: 'ariaLabel', type: 'string (required)', default: '—', desc: 'Chart name for screen readers and table caption.' },
+    { name: 'categories', type: 'string[]', default: '[]', desc: 'X-axis labels, oldest first.' },
+    { name: 'series', type: 'UiChartSeries[]', default: '[]', desc: 'One to four series; null values create gaps.' },
+    { name: 'formatValue', type: '(value: number) => string', default: 'locale number', desc: 'Formats numbers in axis, tooltip, labels and table.' },
+    { name: 'height', type: 'number', default: '220', desc: 'Plot height in px.' },
+    { name: 'area', type: 'boolean', default: 'false', desc: '12% area fill under a single series.' },
+    { name: 'curve', type: "'linear' | 'smooth'", default: "'linear'", desc: 'smooth uses monotone interpolation without overshoot.' },
+    { name: 'baseline', type: "'zero' | 'auto'", default: "'zero'", desc: 'auto fits a floating axis and prints the range in the caption.' },
+    { name: 'showValues', type: 'boolean', default: 'false', desc: 'Print value at each point.' },
+    { name: 'selectedIndex', type: 'number | null', default: '—', desc: 'Selected category index.' },
+    { name: 'minCategoryWidth', type: 'number | null', default: 'null', desc: 'Minimum width per category before sideways scroll.' },
+    { name: 'emptyLabel', type: 'string', default: 'No data', desc: 'Empty-state text.' },
+  ];
+  protected readonly donutApi: ApiRow[] = [
+    { name: 'ariaLabel', type: 'string (required)', default: '—', desc: 'Chart name for screen readers and table caption.' },
+    { name: 'segments', type: 'UiDonutSegment[]', default: '[]', desc: 'Up to 6 segments; extra segments fold into Other.' },
+    { name: 'size', type: 'number', default: '180', desc: 'Outer diameter in px.' },
+    { name: 'thickness', type: 'number', default: '24', desc: 'Ring thickness in px.' },
+    { name: 'centerValue', type: 'string', default: '—', desc: 'Primary text in the middle of the ring.' },
+    { name: 'centerLabel', type: 'string', default: '—', desc: 'Secondary label in the middle of the ring.' },
+    { name: 'legend', type: "'end' | 'bottom' | 'none'", default: "'end'", desc: 'Legend placement.' },
+    { name: 'formatValue', type: '(value: number) => string', default: 'locale number', desc: 'Formats segment values.' },
+    { name: 'selectedIndex', type: 'number | null', default: '—', desc: 'Selected segment index.' },
+    { name: 'emptyLabel', type: 'string', default: 'No data', desc: 'Empty-state text.' },
+  ];
+  protected readonly donutOutputs: ApiRow[] = [
+    { name: 'segmentSelect', type: 'number', desc: 'A segment was clicked, tapped, or chosen with Enter or Space: its index.' },
   ];
 }
