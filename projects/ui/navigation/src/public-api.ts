@@ -5,3 +5,5 @@ export * from './stepper';
 export * from './bottom-nav';
 export * from './anchor-nav';
 export * from './side-nav';
+export * from './footer';
+export * from './language-switch';
