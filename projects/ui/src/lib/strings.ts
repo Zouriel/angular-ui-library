@@ -470,6 +470,23 @@ export interface UiStrings {
   thumbprintRetake: string;
   /** Donut chart: folded tail segment when there are more than six segments. */
   chartOther: string;
+  /** `ui-rich-text` (`@zouriel/ui/rich-text`). */
+  rtBold: string;
+  rtItalic: string;
+  rtHeading2: string;
+  rtHeading3: string;
+  rtBulletList: string;
+  rtNumberList: string;
+  rtLink: string;
+  rtQuote: string;
+  rtImage: string;
+  rtTable: string;
+  rtUndo: string;
+  rtRedo: string;
+  rtLinkAddress: string;
+  rtLinkNewTab: string;
+  rtImageAlt: string;
+  rtCharCount: string;
 }
 
 export const defaultUiStrings: UiStrings = {
@@ -734,6 +751,22 @@ export const defaultUiStrings: UiStrings = {
   thumbprintTake: 'Take thumbprint photo',
   thumbprintRetake: 'Retake',
   chartOther: 'Other',
+  rtBold: 'Bold',
+  rtItalic: 'Italic',
+  rtHeading2: 'Heading 2',
+  rtHeading3: 'Heading 3',
+  rtBulletList: 'Bullet list',
+  rtNumberList: 'Numbered list',
+  rtLink: 'Link',
+  rtQuote: 'Quote',
+  rtImage: 'Image',
+  rtTable: 'Table',
+  rtUndo: 'Undo',
+  rtRedo: 'Redo',
+  rtLinkAddress: 'Link address',
+  rtLinkNewTab: 'Open in new tab',
+  rtImageAlt: 'Alt text',
+  rtCharCount: '{count} / {max}',
 };
 
 /**
@@ -1004,6 +1037,22 @@ export const uiStringsDv: UiStrings = {
   thumbprintTake: 'އިނގިލީގެ ނިޝާން ފޮޓޯ ނަގާ',
   thumbprintRetake: 'އަލުން ނަގާ',
   chartOther: 'އެހެނިހެން',
+  rtBold: 'ބޯލްޑް',
+  rtItalic: 'އިޓަލިކް',
+  rtHeading2: 'ސުރުޚީ 2',
+  rtHeading3: 'ސުރުޚީ 3',
+  rtBulletList: 'ބުލެޓް ލިސްޓް',
+  rtNumberList: 'ނަންބަރު ލިސްޓް',
+  rtLink: 'ލިންކް',
+  rtQuote: 'ކޯޓް',
+  rtImage: 'ފޮޓޯ',
+  rtTable: 'ތާވަލު',
+  rtUndo: 'ފަހަތަށް',
+  rtRedo: 'ކުރިއަށް',
+  rtLinkAddress: 'ލިންކް އެޑްރެސް',
+  rtLinkNewTab: 'އައު ޓެބެއްގައި ހުޅުވާ',
+  rtImageAlt: 'ފޮޓޯގެ ތަފްޞީލު',
+  rtCharCount: '{max} ގެ ތެރެއިން {count} އަކުރު',
 };
 
 /** Fills `{name}` placeholders in a built-in word: `uiFormatString(strings.remove, { label: 'Tea' })`. Unknown

@@ -20,6 +20,7 @@ export const routes: Routes = [
   { path: 'media', loadComponent: () => import('./pages/media.page').then((m) => m.MediaPage), title: 'Media · @zouriel/ui' },
   { path: 'map', loadComponent: () => import('./pages/map.page').then((m) => m.MapPage), title: 'Map · @zouriel/ui' },
   { path: 'qr', loadComponent: () => import('./pages/qr.page').then((m) => m.QrPage), title: 'QR · @zouriel/ui' },
+  { path: 'rich-text', loadComponent: () => import('./pages/rich-text.page').then((m) => m.RichTextPage), title: 'Rich text · @zouriel/ui' },
   { path: 'window', loadComponent: () => import('./pages/window.page').then((m) => m.WindowPage), title: 'Window system · @zouriel/ui' },
   { path: 'design-tools', loadComponent: () => import('./pages/design-tools.page').then((m) => m.DesignToolsPage), title: 'Design tools · @zouriel/ui' },
   { path: 'form-builder', loadComponent: () => import('./pages/form-builder.page').then((m) => m.FormBuilderPage), title: 'Form builder · @zouriel/ui' },
@@ -68,6 +69,7 @@ export const NAV = [
       { label: 'Media', value: 'media' },
       { label: 'Map', value: 'map' },
       { label: 'QR', value: 'qr' },
+      { label: 'Rich text', value: 'rich-text' },
     ],
   },
   {

@@ -300,6 +300,11 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'QR code', anchor: 'qr-code' },
     { name: 'QR scanner', anchor: 'qr-scanner' },
   ],
+  'rich-text': [
+    { name: 'Rich text editor', anchor: 'rich-text-editor' },
+    { name: 'Rich text viewer', anchor: 'rich-text-viewer' },
+    { name: 'Shared sanitizer', anchor: 'shared-sanitizer' },
+  ],
   'fx': [
     { name: 'Reveal', anchor: 'reveal' },
     { name: 'Marquee', anchor: 'marquee' },
