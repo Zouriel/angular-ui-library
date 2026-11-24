@@ -24,3 +24,4 @@ export * from './anchor-picker';
 export * from './phone';
 export * from './phone-input';
 export * from './handle-field';
+export * from './document-checklist';
