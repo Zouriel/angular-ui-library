@@ -360,7 +360,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
     { name: 'serverErrorsUnmatched', type: 'UiFbServerErrorItem[]', default: '—', desc: 'After serverErrors were applied: the { path, message } that matched no field (0.87.0).' },
   ];
-  protected readonly prefill = { full_name: 'Aisha Ali', email: 'aisha@example.mv' };
+  protected readonly prefill = { full_name: 'Aisha Ali', email: 'aisha@example.com' };
   protected readonly serverErrors = signal<Record<string, string> | null>(null);
   protected readonly validatorApi: ApiRow[] = [
     { name: 'type', type: 'string', default: '—', desc: 'Stored in the form JSON. Keep it stable.' },

@@ -179,8 +179,8 @@ import { uiStringsDv } from '@zouriel/ui';
         summary="Site footer (contentinfo landmark) with [footer-brand], [footer-aside], and [footer-legal] slots, responsive link columns (grid at min 180px, collapsing into an accordion closed by default under 600px), emergency/key contacts as LTR tel: links, and container-aligned width. Reads semantic tokens only, so wrapping it in ui-theme-provider (such as addu-tourism-branding-ink) recolours the entire footer."
         [shapes]="'interface UiFooterColumn { title: string; links: { label: string; href: string; external?: boolean }[]; }\ninterface UiFooterContact { label: string; value: string; href?: string; }'">
         <doc-demo lang="html" code="<ui-theme-provider theme=&quot;addu-tourism-branding-ink&quot;>
-  <ui-footer [columns]=&quot;cols&quot; [contacts]=&quot;contacts&quot; contactsTitle=&quot;In an emergency&quot; legal=&quot;© 2026 Addu City Council&quot;>
-    <div footer-brand>Addu City</div>
+  <ui-footer [columns]=&quot;cols&quot; [contacts]=&quot;contacts&quot; contactsTitle=&quot;In an emergency&quot; legal=&quot;© 2026 Harbourside City Council&quot;>
+    <div footer-brand>Harbourside City</div>
   </ui-footer>
 </ui-theme-provider>">
           <div class="demo-stack">
@@ -188,8 +188,8 @@ import { uiStringsDv } from '@zouriel/ui';
               [columns]="footerCols"
               [contacts]="footerContacts"
               contactsTitle="In an emergency"
-              legal="© 2026 Addu City Council">
-              <div footer-brand><strong>Addu City</strong><br>Hithadhoo, Addu City</div>
+              legal="© 2026 Harbourside City Council">
+              <div footer-brand><strong>Harbourside City</strong><br>Northgate, Harbourside City</div>
               <div footer-aside><ui-button size="sm" variant="outline">Subscribe</ui-button></div>
               <div footer-legal>Privacy · Accessibility</div>
             </ui-footer>
@@ -199,8 +199,8 @@ import { uiStringsDv } from '@zouriel/ui';
                 [columns]="footerCols"
                 [contacts]="footerContacts"
                 contactsTitle="In an emergency"
-                legal="© 2026 Addu City Council">
-                <div footer-brand><strong>Addu City</strong><br>Dark ink island</div>
+                legal="© 2026 Harbourside City Council">
+                <div footer-brand><strong>Harbourside City</strong><br>Dark ink island</div>
                 <div footer-aside><ui-button size="sm" variant="primary">Subscribe</ui-button></div>
                 <div footer-legal>Privacy · Accessibility</div>
               </ui-footer>
@@ -238,7 +238,7 @@ export class NavigationPage {
   ];
   protected readonly footerCols: UiFooterColumn[] = [
     { title: 'Services', links: [{ label: 'Permits', href: '/permits' }, { label: 'Waste collection', href: '/waste' }] },
-    { title: 'Council', links: [{ label: 'About Addu', href: '/about' }, { label: 'Open data', href: 'https://example.com', external: true }] },
+    { title: 'Council', links: [{ label: 'About Harbourside', href: '/about' }, { label: 'Open data', href: 'https://example.com', external: true }] },
   ];
   protected readonly footerContacts: UiFooterContact[] = [
     { label: 'Emergency', value: '119' },

@@ -542,7 +542,7 @@ provideUiConfig({ chatMineSide: 'right' })">
 
       <doc-section name="Chat widget" anchor="chat-widget" selector="ui-chat-widget" [api]="chatWidgetApi" [outputs]="chatWidgetOut"
         summary="From @zouriel/ui/chat-widget. Corner launcher (floating, hover pill, or draggable head) that opens a chat panel with header, optional notice line, auto-scrolling message log, quick-actions slot (ui-chat-actions), typing indicator (ui-chat-typing), citation chips (ui-chat-source), and multiline composer (ui-chat-composer).">
-        <doc-demo code="<ui-chat-widget [(open)]=&quot;open&quot; title=&quot;Addu Assistant&quot; notice=&quot;Answers come from an AI and cite their source.&quot;>
+        <doc-demo code="<ui-chat-widget [(open)]=&quot;open&quot; title=&quot;City Assistant&quot; notice=&quot;Answers come from an AI and cite their source.&quot;>
   <ui-chat-bubble>Hello! <ui-chat-source label=&quot;Guide&quot; href=&quot;#&quot; /></ui-chat-bubble>
   <div chat-quick-actions><ui-chat-actions [actions]=&quot;actions&quot; (pick)=&quot;onPick($event)&quot; /></div>
   <div chat-footer><ui-chat-composer (send)=&quot;onSend($event)&quot; /></div>
@@ -564,7 +564,7 @@ provideUiConfig({ chatMineSide: 'right' })">
             [(open)]="widgetOpen"
             [launcher]="widgetLauncher()"
             [unread]="1"
-            title="Addu Assistant"
+            title="City Assistant"
             subtitle="AI · Usually replies instantly"
             notice="Answers come from an AI and cite their source."
             teaser="Hi! Ask me about Council services."

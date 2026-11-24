@@ -228,11 +228,11 @@ this.toast.update(id, { loading: false, tone: 'success', title: 'File Uploaded',
           </div>
           <ng-template #flight>
             <div class="flight">
-              <div class="flight-head"><strong>Maldivian</strong><span>Q2 204</span></div>
+              <div class="flight-head"><strong>Coastal Air</strong><span>CA 204</span></div>
               <div class="flight-route">
-                <span>MLE</span>
+                <span>HBR</span>
                 <svg viewBox="0 0 160 30" preserveAspectRatio="none" aria-hidden="true"><path d="M4 26 Q80 -14 156 26" /></svg>
-                <span>GAN</span>
+                <span>NTG</span>
               </div>
             </div>
           </ng-template>
@@ -519,7 +519,7 @@ interface UiToastPromiseStates<T> {
     this.toast.blob('New Update Available', { message: 'Version 2.4 is ready.', action: { label: 'Share Now', run: () => {} }, duration: 9000 });
   }
   protected blobStackPromise(): void {
-    const booking = new Promise<string>((resolve) => setTimeout(() => resolve('Q2 204'), 2200));
+    const booking = new Promise<string>((resolve) => setTimeout(() => resolve('CA 204'), 2200));
     void this.toast.promise(booking, {
       loading: 'Booking Flight',
       success: () => ({ title: 'Booking Confirmed', content: this.flightTpl(), action: { label: 'View Details', run: () => {} }, duration: 8000 }),

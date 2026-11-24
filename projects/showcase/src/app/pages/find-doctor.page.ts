@@ -782,7 +782,7 @@ export class FindDoctorPage implements OnDestroy {
       name: 'Dr. Mariyam Shifa',
       person: 'Mariyam Shifa',
       specialty: 'Cardiologist',
-      place: 'Addu City',
+      place: 'Harbourside',
       rating: '4.7',
     },
   ];

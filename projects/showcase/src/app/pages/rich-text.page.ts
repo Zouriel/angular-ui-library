@@ -29,12 +29,12 @@ const SANITIZE_SNIPPET = `import { uiSanitizeRichText } from '@zouriel/ui/rich-t
 const safe = uiSanitizeRichText(dirtyHtml, { image: true, table: true });`;
 
 const INITIAL_HTML =
-  '<h2>Addu City Public Notice</h2>' +
-  '<p>Council consultation on the <strong>Hithadhoo Harbour</strong> upgrade is open until <em>30 November</em>.</p>' +
-  '<p>އައްޑޫ ސިޓީ ކައުންސިލްގެ ޢާންމު މަޝްވަރާ ބައްދަލުވުމަށް މަރުޙަބާ. ޕްރޮޖެކްޓް ކޯޑު: ADU-2026-14.</p>' +
+  '<h2>Harbourside City Public Notice</h2>' +
+  '<p>Council consultation on the <strong>Northgate Harbour</strong> upgrade is open until <em>30 November</em>.</p>' +
+  '<p>ސިޓީ ކައުންސިލްގެ ޢާންމު މަޝްވަރާ ބައްދަލުވުމަށް މަރުޙަބާ. ޕްރޮޖެކްޓް ކޯޑު: PRJ-2026-14.</p>' +
   '<ul><li>Review the draft plan</li><li>Submit feedback online</li></ul>' +
   '<blockquote>All submissions are published in the public consultation log.</blockquote>' +
-  '<p>More details at <a href="https://addu.gov.mv">addu.gov.mv</a>.</p>';
+  '<p>More details at <a href="https://example.com">example.com</a>.</p>';
 
 const ALL_TOOLS: UiRichTool[] = [
   'bold',
@@ -176,7 +176,7 @@ export class RichTextPage {
   protected readonly html = signal(INITIAL_HTML);
   protected readonly bilingualSample =
     '<h2>Mixed Thaana &amp; English</h2>' +
-    '<p>ދިވެހިބަހާއި އިނގިރޭސިބަސް އެއް ލިޔުމެއްގައި ބޭނުންކުރެވޭނެއެވެ. Reference: ADU-2026-01.</p>' +
+    '<p>ދިވެހިބަހާއި އިނގިރޭސިބަސް އެއް ލިޔުމެއްގައި ބޭނުންކުރެވޭނެއެވެ. Reference: DOC-2026-01.</p>' +
     '<p>Each paragraph carries <strong>dir="auto"</strong> so RTL and LTR blocks align naturally.</p>';
 
   protected readonly fakeUpload = async (file: File) => {

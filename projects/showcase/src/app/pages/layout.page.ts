@@ -195,7 +195,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
             <ui-sidebar-layout [breakpoint]="0" [sidebarWidth]="accountRail() ? '76px' : '240px'" [bar]="false" fill mainLandmark="false">
               @if (!accountRail()) { <ui-side-nav sidebar [groups]="shellNav" [(active)]="shellActive" /> }
               <ui-sidebar-account sidebar-footer [name]="accountDir() === 'rtl' ? 'އައިޝަތު މުހައްމަދު' : 'Aishath Mohamed Ibrahim Didi'"
-                                  [subtitle]="accountDir() === 'rtl' ? 'ކްލާކް · ސެކްރެޓޭރިއެޓް' : 'Senior Clerk · Secretariat of the Addu City Council'"
+                                  [subtitle]="accountDir() === 'rtl' ? 'ކްލާކް · ސެކްރެޓޭރިއެޓް' : 'Senior Clerk · Secretariat of the Harbourside City Council'"
                                   [badge]="accountKind() === 'readonly' ? (accountDir() === 'rtl' ? 'ކިޔުމަށް' : 'Read-only') : null" badgeTone="warning"
                                   [hint]="accountDir() === 'rtl' ? 'ޓެސްޓް އެކައުންޓް ބަދަލުކުރޭ' : 'Switch test account'"
                                   [disabled]="accountKind() === 'disabled'" [collapsed]="accountRail()" (activate)="accountPresses.set(accountPresses() + 1)" />

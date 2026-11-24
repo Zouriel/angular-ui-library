@@ -389,7 +389,7 @@ merge(e: UiPosterDrop) { /* e.dragged, e.target, e.draggedIndex, e.targetIndex *
   protected readonly posterShapes = "interface UiPoster { src?: string | null; label: string; href?: string | null; colors?: string[]; mark?: UiPosterMark | null; draggable?: boolean; position?: { x: number; y: number } | null; }\ninterface UiPosterDrop { dragged: UiPoster; target: UiPoster; draggedIndex: number; targetIndex: number; }\ninterface UiPosterMark { tone: 'primary' | 'warning' | 'neutral'; label: string; }";
   protected readonly viewOpen = signal(false);
   protected readonly picked = signal(0);
-  protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Addu', '12 guests', 'Tue 5 Jan'];
+  protected readonly when = ['Sat 12 Dec · Malé', 'Sun 20 Dec · Hulhumalé', 'Not finished', 'Fri 1 Jan · Harbourside', '12 guests', 'Tue 5 Jan'];
   protected readonly scrimPicture = grad('#ffffff', '#cfe8ff');
   protected readonly coverPicture = grad('#7a4fa0', '#66c2a5');
   protected readonly coverEditing = signal(false);

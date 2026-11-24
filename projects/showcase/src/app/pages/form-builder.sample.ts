@@ -128,7 +128,7 @@ export const SAMPLE_FORM: UiFormDefinition = {
 /** Saved answers to the sample, for showing edit and view modes. */
 export const SAMPLE_ANSWERS: Record<string, unknown> = {
   full_name: 'Aminath Shareef',
-  email: 'aminath.shareef@example.mv',
+  email: 'aminath.shareef@example.com',
   phone: '+960 777 4021',
   date_of_birth: '2004-03-19',
   age: 22,

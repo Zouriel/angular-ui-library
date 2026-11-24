@@ -61,14 +61,14 @@ import { uiStringsDv } from '@zouriel/ui';
         <doc-demo
           lang="html"
           code="<div #question>
-  <h3>What is your island?</h3>
-  <p>Select your home island in Addu City.</p>
+  <h3>What is your district?</h3>
+  <p>Select your home district in Harbourside City.</p>
 </div>
 <button type=&quot;button&quot; uiReadAloud [for]=&quot;question&quot;>Read this question aloud</button>">
           <div class="demo-box">
             <div #questionBlock class="sample">
               <ui-text variant="h4">Sample question</ui-text>
-              <ui-text variant="body">Select your home island in Addu City to continue your permit application.</ui-text>
+              <ui-text variant="body">Select your home district in Harbourside City to continue your permit application.</ui-text>
             </div>
             <div class="row">
               <ui-button variant="outline" size="sm" uiReadAloud [for]="questionBlock">

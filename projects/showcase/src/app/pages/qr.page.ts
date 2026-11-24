@@ -9,7 +9,7 @@ import { DocDemo, DocPage, DocSection, type ApiRow } from '../docs/docs-ui';
 const CODE_SNIPPET = `import { UiQrCode } from '@zouriel/ui/qr';
 
 <ui-qr-code
-  value="https://addu.gov.mv/verify/BCP-2026-0418"
+  value="https://example.com/verify/BCP-2026-0418"
   level="Q"
   caption="BCP-2026-0418"
 />`;
@@ -146,7 +146,7 @@ export class QrPage {
   protected readonly SCANNER_SNIPPET = SCANNER_SNIPPET;
   protected readonly SCAN_SHAPES = SCAN_SHAPES;
 
-  protected readonly value = signal('https://addu.gov.mv/verify/BCP-2026-0418');
+  protected readonly value = signal('https://example.com/verify/BCP-2026-0418');
   protected readonly level = signal<UiQrErrorCorrection>('M');
   protected readonly levels: UiSegmentedOption[] = [
     { value: 'L', label: 'L (7%)' },
