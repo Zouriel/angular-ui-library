@@ -148,6 +148,13 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Menubar', anchor: 'nav-menubar' },
     { name: 'Bottom nav', anchor: 'nav-bottom' },
     { name: 'Anchor nav', anchor: 'nav-anchor' },
+    { name: 'Language switch', anchor: 'nav-language' },
+    { name: 'Footer', anchor: 'nav-footer' },
+  ],
+  'assistance': [
+    { name: 'Assistance bar', anchor: 'assistance-bar' },
+    { name: 'Read aloud directive', anchor: 'read-aloud' },
+    { name: 'Services & providers', anchor: 'assistance-services' },
   ],
   'data': [
     { name: 'Table', anchor: 'table' },
