@@ -1,17 +1,17 @@
 /*
- * UI Library — "addu" theme (Addu City Digital Hub, "Beyond the Equator" brand).
+ * UI Library — "addu-tourism-branding" theme (Addu City Digital Hub, "Beyond the Equator" brand).
  *
  * One light theme, taken from the Figma file's "Color" variables and its 20 text styles.
  * The Figma file has no dark mode, so there is no night theme.
  *
- * Include AFTER tokens.css, then UiThemeService.set('addu') or <html data-theme="addu">.
+ * Include AFTER tokens.css, then UiThemeService.set('addu-tourism-branding') or <html data-theme="addu-tourism-branding">.
  * Apps self-host Figtree, Lexend and (for Dhivehi) MV Faseyha / MV Waheed.
  *
  *   @import '@zouriel/ui/styles/tokens.css';
- *   @import '@zouriel/ui/styles/theme-addu.css';
+ *   @import '@zouriel/ui/styles/theme-addu-tourism-branding.css';
  *
  * Portal colour: set data-portal on the SAME element as data-theme (normally <html>):
- *   <html data-theme="addu" data-portal="visit">
+ *   <html data-theme="addu-tourism-branding" data-portal="visit">
  * ConnectAddu is the default and needs no attribute.
  *
  * Contrast (WCAG 2.x):
@@ -22,7 +22,7 @@
  * fills only, as maldives does with Coral.
  */
 
-/* Fonts ship with the library (fonts/addu, licences in fonts/addu/NOTICE.md), so an app makes no
+/* Fonts ship with the library (fonts/addu-tourism-branding, licences in fonts/addu-tourism-branding/NOTICE.md), so an app makes no
    font request of its own. Latin text uses variable Figtree and Lexend; Thaana uses MV Faseyha and
    MV Waheed, downloaded only when Thaana characters are on the page (unicode-range). */
 @font-face {
@@ -30,7 +30,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 300 900;
-  src: url("./fonts/addu/figtree-latin-wght-normal.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/figtree-latin-wght-normal.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -38,7 +38,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 300 900;
-  src: url("./fonts/addu/figtree-latin-ext-wght-normal.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/figtree-latin-ext-wght-normal.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -46,7 +46,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
-  src: url("./fonts/addu/lexend-latin-wght-normal.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/lexend-latin-wght-normal.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -54,7 +54,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
-  src: url("./fonts/addu/lexend-latin-ext-wght-normal.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/lexend-latin-ext-wght-normal.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -62,7 +62,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 400;
-  src: url("./fonts/addu/mv-faseyha-regular.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/mv-faseyha-regular.woff2") format("woff2");
   unicode-range: U+0780-07BF, U+060C, U+061B, U+061F, U+FDF2;
 }
 @font-face {
@@ -70,7 +70,7 @@
   font-style: normal;
   font-display: swap;
   font-weight: 700;
-  src: url("./fonts/addu/mv-faseyha-bold.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/mv-faseyha-bold.woff2") format("woff2");
   unicode-range: U+0780-07BF, U+060C, U+061B, U+061F, U+FDF2;
 }
 @font-face {
@@ -78,11 +78,11 @@
   font-style: normal;
   font-display: swap;
   font-weight: 400;
-  src: url("./fonts/addu/mv-waheed-regular.woff2") format("woff2");
+  src: url("./fonts/addu-tourism-branding/mv-waheed-regular.woff2") format("woff2");
   unicode-range: U+0780-07BF, U+060C, U+061B, U+061F, U+FDF2;
 }
 
-[data-theme="addu"] {
+[data-theme="addu-tourism-branding"] {
   color-scheme: light;
   --ui-glass-sheet-floor: 0.75;
   --ui-glass-sheet-ceiling: 1;
@@ -90,11 +90,11 @@
   --ui-glass-clear-ceiling: 1;
 
   /* ── Primitives: the Figma "Color" collection, names kept ── */
-  --ui-addu-ink-900: #001540;
-  --ui-addu-ink-700: #23315e;
-  --ui-addu-ink-500: #56618a;
-  --ui-addu-ink-400: #7f89ad; /* control outlines at 3.5:1 */
-  --ui-addu-ink-300: #a2a9c4;
+  --ui-addu-tourism-branding-ink-900: #001540;
+  --ui-addu-tourism-branding-ink-700: #23315e;
+  --ui-addu-tourism-branding-ink-500: #56618a;
+  --ui-addu-tourism-branding-ink-400: #7f89ad; /* control outlines at 3.5:1 */
+  --ui-addu-tourism-branding-ink-300: #a2a9c4;
   --ui-addu-mist-50: #f6f8fc;
   --ui-addu-mist-100: #edf1f8;
   --ui-addu-mist-200: #dde3ef;
@@ -122,10 +122,10 @@
   --ui-color-surface-subtle: #edf1f8; /* --ui-addu-mist-100 */
   --ui-color-surface-hover: #edf1f8;
   --ui-color-elevated-hover: #edf1f8;
-  --ui-color-text: #001540; /* --ui-addu-ink-900 */
-  --ui-color-text-secondary: #23315e; /* --ui-addu-ink-700 */
-  --ui-color-text-muted: #56618a; /* --ui-addu-ink-500 */
-  --ui-color-text-disabled: #a2a9c4; /* --ui-addu-ink-300 */
+  --ui-color-text: #001540; /* --ui-addu-tourism-branding-ink-900 */
+  --ui-color-text-secondary: #23315e; /* --ui-addu-tourism-branding-ink-700 */
+  --ui-color-text-muted: #56618a; /* --ui-addu-tourism-branding-ink-500 */
+  --ui-color-text-disabled: #a2a9c4; /* --ui-addu-tourism-branding-ink-300 */
   --ui-color-text-inverse: #ffffff;
   --ui-color-border: #dde3ef; /* --ui-addu-mist-200 */
   --ui-color-border-subtle: #edf1f8; /* --ui-addu-mist-100 */
@@ -143,7 +143,7 @@
   --ui-color-secondary-contrast: #1a2f86; /* --ui-addu-blue-800 */
   /* Lime is the brand accent. Ink text on it (12.2:1); never white. */
   --ui-color-accent: #b6e56b; /* --ui-addu-lime-300 */
-  --ui-color-accent-contrast: #001540; /* --ui-addu-ink-900 */
+  --ui-color-accent-contrast: #001540; /* --ui-addu-tourism-branding-ink-900 */
   --ui-color-accent-subtle: #eaf7d6; /* --ui-addu-lime-100 */
   --ui-color-accent-strong: #4a6b0f; /* lime deepened for text: 5.5:1 or more */
   --ui-color-info: #2747b3; /* --ui-addu-blue-700 */
@@ -167,18 +167,18 @@
   --ui-color-overlay: rgba(0, 21, 64, 0.45);
 
   /* WCAG 1.4.11 requires 3:1 for control outlines; ink-400 (#7f89ad) holds 3.5:1 on white. */
-  --ui-control-border: #7f89ad; /* --ui-addu-ink-400 */
-  --ui-switch-track: #7f89ad; /* --ui-addu-ink-400 */
+  --ui-control-border: #7f89ad; /* --ui-addu-tourism-branding-ink-400 */
+  --ui-switch-track: #7f89ad; /* --ui-addu-tourism-branding-ink-400 */
   --ui-skeleton-base: #dde3ef; /* --ui-addu-mist-200 */
   --ui-skeleton-highlight: #edf1f8; /* --ui-addu-mist-100 */
   --ui-rating-fill: #b8860b;
-  --ui-cursor-color: #001540; /* --ui-addu-ink-900 */
+  --ui-cursor-color: #001540; /* --ui-addu-tourism-branding-ink-900 */
   --ui-section-label-bracket: #b6e56b; /* --ui-addu-lime-300 */
   --ui-scroll-progress-track: rgba(0, 21, 64, 0.06);
 
   /* The Figma "Brand gradient": blue to lilac to lime. Ink text on it. */
   --ui-gradient-brand: linear-gradient(90deg, #7fa2e6 0%, #d9ccf4 55%, #eaf7d6 100%);
-  --ui-gradient-brand-contrast: var(--ui-addu-ink-900);
+  --ui-gradient-brand-contrast: var(--ui-addu-tourism-branding-ink-900);
   --ui-gradient-hero: linear-gradient(160deg, #001540 0%, #1a2f86 60%, #2747b3 100%);
   --ui-gradient-highlight: linear-gradient(180deg, rgba(39, 71, 179, 0.1) 0%, rgba(39, 71, 179, 0) 100%);
   --ui-glow-amber: 0 8px 24px rgba(39, 71, 179, 0.18);
@@ -248,8 +248,8 @@
 }
 
 /* Dhivehi: Thaana typefaces, wherever the page or a subtree is in Dhivehi. */
-[data-theme="addu"]:lang(dv),
-[data-theme="addu"] :lang(dv) {
+[data-theme="addu-tourism-branding"]:lang(dv),
+[data-theme="addu-tourism-branding"] :lang(dv) {
   --ui-font-default: "MV Faseyha", "Faruma", "MV Boli", sans-serif;
   --ui-font-display: "MV Waheed", "MV Faseyha", "Faruma", sans-serif;
   --ui-tracking-tight: 0;
@@ -257,7 +257,7 @@
 }
 
 /* Compact density must still win over the theme's own sizes (the theme loads after tokens.css). */
-[data-theme="addu"][data-density="compact"] {
+[data-theme="addu-tourism-branding"][data-density="compact"] {
   --ui-size-sm: 32px;
   --ui-size-md: 40px;
   --ui-size-lg: 44px;
@@ -270,7 +270,7 @@
 /* Text size (assistance bar). tokens.css scales the library's default type scale; addu has its own,
    so it scales its own sizes here. They come after the compact block so a larger text size still
    applies in compact density. Control heights and spacing do not change. */
-[data-theme="addu"][data-text-size="large"] {
+[data-theme="addu-tourism-branding"][data-text-size="large"] {
   --ui-font-size-sm: calc(13px * 1.15);
   --ui-font-size-md: calc(15px * 1.15);
   --ui-font-size-lg: calc(17px * 1.15);
@@ -286,7 +286,7 @@
   --ui-font-size-stat: calc(3.5rem * 1.15);
   --ui-font-scale: 1.15;
 }
-[data-theme="addu"][data-text-size="larger"] {
+[data-theme="addu-tourism-branding"][data-text-size="larger"] {
   --ui-font-size-sm: calc(13px * 1.3);
   --ui-font-size-md: calc(15px * 1.3);
   --ui-font-size-lg: calc(17px * 1.3);
@@ -304,7 +304,7 @@
 }
 
 /* ── Portal colour. ConnectAddu is the default above. ── */
-[data-theme="addu"][data-portal="visit"] {
+[data-theme="addu-tourism-branding"][data-portal="visit"] {
   --ui-color-primary: #2a7354;
   --ui-color-primary-hover: #1f5a41;
   --ui-color-primary-active: #174633;
@@ -315,7 +315,7 @@
   --ui-color-info: #2a7354;
   --ui-color-selected: rgba(42, 115, 84, 0.1);
 }
-[data-theme="addu"][data-portal="referendum"] {
+[data-theme="addu-tourism-branding"][data-portal="referendum"] {
   --ui-color-primary: #5b4b9a;
   --ui-color-primary-hover: #473a7c;
   --ui-color-primary-active: #382d63;
@@ -326,7 +326,7 @@
   --ui-color-info: #5b4b9a;
   --ui-color-selected: rgba(91, 75, 154, 0.1);
 }
-[data-theme="addu"][data-portal="ready"] {
+[data-theme="addu-tourism-branding"][data-portal="ready"] {
   --ui-color-primary: #b33c29;
   --ui-color-primary-hover: #952f1f;
   --ui-color-primary-active: #782417;
@@ -340,20 +340,20 @@
 
 /* ── Admin portal. Measured on the work queue (AD1) and the form builder (AD2): the canvas is
    mist/100, not mist/50, and cards, tiles and the table have a 12px corner, not 16. ── */
-[data-theme="addu"][data-portal="admin"] {
+[data-theme="addu-tourism-branding"][data-portal="admin"] {
   --ui-color-bg: var(--ui-addu-mist-100);
   --ui-color-surface-subtle: var(--ui-addu-mist-50); /* the table header row */
   --ui-radius-lg: 12px;
 }
 
 /*
- * "addu-ink": the design's dark surfaces, as a theme island. Not a dark mode: it is for the parts
+ * "addu-tourism-branding-ink": the design's dark surfaces, as a theme island. Not a dark mode: it is for the parts
  * Figma draws on ink/900 inside a light page: the admin sidebar, the site footer, the top utility
  * bar, dark callouts and the rule box.
- *   <ui-theme-provider theme="addu-ink"> … </ui-theme-provider>
+ *   <ui-theme-provider theme="addu-tourism-branding-ink"> … </ui-theme-provider>
  * White text is 17.8:1 on ink/900; muted text (ink/300) is 7.6:1.
  */
-[data-theme="addu-ink"] {
+[data-theme="addu-tourism-branding-ink"] {
   color-scheme: dark;
   --ui-glass-sheet-floor: 0;
   --ui-glass-sheet-ceiling: 0.43;
@@ -403,7 +403,7 @@
   --ui-chart-6: #a2a9c4;
 }
 
-[data-theme="addu"] ::selection {
+[data-theme="addu-tourism-branding"] ::selection {
   background: #e4eafb;
   color: #001540;
 }

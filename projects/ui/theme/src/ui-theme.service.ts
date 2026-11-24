@@ -18,9 +18,9 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  *   `@zouriel/ui/styles/theme-maldives.css`.
  * - `maldives-dark` is its night variant (deep ocean canvas, Foam ink, Lagoon primary, Coral
  *   accent), in the same stylesheet; toggle day/night by switching between the two names.
- * - `addu` is the Addu City Digital Hub light theme (Figtree, Lexend; Mist canvas, Ink text,
+ * - `addu-tourism-branding` is the Addu City Digital Hub light theme (Figtree, Lexend; Mist canvas, Ink text,
  *   Blue primary, Lime accent) with portal colour overrides via `data-portal`, and requires
- *   `@zouriel/ui/styles/theme-addu.css`. `addu-ink` is its dark theme island for use inside
+ *   `@zouriel/ui/styles/theme-addu-tourism-branding.css`. `addu-tourism-branding-ink` is its dark theme island for use inside
  *   `ui-theme-provider` (sidebar, footer, dark callouts); neither is a day/night pair.
  * - The liquid themes, six day/night pairs in `@zouriel/ui/styles/theme-liquid.css`, made for
  *   glass surfaces over `ui-liquid-backdrop` (`@zouriel/ui/fx`): `rugged` / `rugged-dark`
@@ -50,8 +50,8 @@ export type UiTheme =
   | 'darkOrange'
   | 'maldives'
   | 'maldives-dark'
-  | 'addu'
-  | 'addu-ink'
+  | 'addu-tourism-branding'
+  | 'addu-tourism-branding-ink'
   | 'rugged'
   | 'rugged-dark'
   | 'glacier'
@@ -99,8 +99,8 @@ export const UI_CURRENT_THEMES = [
   'darkOrange',
   'maldives',
   'maldives-dark',
-  'addu',
-  'addu-ink',
+  'addu-tourism-branding',
+  'addu-tourism-branding-ink',
   'rugged',
   'rugged-dark',
   'glacier',

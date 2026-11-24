@@ -282,7 +282,7 @@ describe('UiBarChart', () => {
 
 describe('chart series tokens', () => {
   const styles = join(process.cwd(), 'projects/ui/styles');
-  const files = ['tokens.css', 'theme-palettes.css', 'theme-dark-orange.css', 'theme-maldives.css', 'theme-addu.css', 'theme-liquid.css'];
+  const files = ['tokens.css', 'theme-palettes.css', 'theme-dark-orange.css', 'theme-maldives.css', 'theme-addu-tourism-branding.css', 'theme-liquid.css'];
   /** Every block that sets a theme's primary: its theme names and its declarations. */
   const themeBlocks = files.flatMap((f) => {
     const src = readFileSync(join(styles, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
@@ -294,7 +294,7 @@ describe('chart series tokens', () => {
   it('finds every built-in theme', () => {
     const names = themeBlocks.flatMap((b) => b.names);
     expect(names.length).toBeGreaterThanOrEqual(27);
-    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'maldives', 'addu', 'addu-ink', 'darkOrange', 'goldRed']) expect(names).toContain(n);
+    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'maldives', 'addu-tourism-branding', 'addu-tourism-branding-ink', 'darkOrange', 'goldRed']) expect(names).toContain(n);
   });
 
   it('gives every built-in theme its own six series colours, all different', () => {

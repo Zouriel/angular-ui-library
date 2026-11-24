@@ -32,7 +32,7 @@ same blocks as `navy-dark` and `navy`, so an app that sets them gets Navy and ke
   backdrop.
 - On dark, Sunflower is the primary as it is (11.7:1 on the canvas, with a Midnight label).
 
-`theme-dark-orange.css`, `theme-maldives.css`, `theme-addu.css`, `theme-liquid.css` and the legacy `theme-palettes.css`
+`theme-dark-orange.css`, `theme-maldives.css`, `theme-addu-tourism-branding.css`, `theme-liquid.css` and the legacy `theme-palettes.css`
 set their own palettes and don't read Navy.
 
 ---

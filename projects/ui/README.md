@@ -28,7 +28,7 @@ Load the styles once (global stylesheet or `angular.json` styles):
 @import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the twelve liquid themes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: cinematic Dark Orange (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives sea skins, day and night (loads Poppins) */
-@import '@zouriel/ui/styles/theme-addu.css';        /* optional: Addu City Digital Hub + addu-ink island */
+@import '@zouriel/ui/styles/theme-addu-tourism-branding.css';        /* optional: Addu City Digital Hub + addu-tourism-branding-ink island */
 @import '@zouriel/ui/styles/theme-palettes.css';    /* optional, legacy: the ten colour palettes */
 @import '@zouriel/ui/styles/fx.css';                /* optional: FX utility classes */
 @import '@zouriel/ui/styles/theme-animations.css';  /* optional: palette motion on the FX classes */
@@ -63,7 +63,7 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 - `dark` / `light` (Navy, the default: Midnight Navy, Powder Blue and Sunflower; also `navy-dark` / `navy`), in `tokens.css`;
 - `darkOrange`, in `theme-dark-orange.css`;
 - `maldives` and its night variant `maldives-dark`, both in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`; `ui-sea-surface` scopes `maldives` unless given `theme="maldives-dark"` or `[theme]="null"`);
-- `addu` and its dark island `addu-ink`, both in `theme-addu.css` (Figtree/Lexend, `data-portal` overrides; `addu-ink` is for dark surfaces inside `ui-theme-provider`);
+- `addu-tourism-branding` and its dark island `addu-tourism-branding-ink`, both in `theme-addu-tourism-branding.css` (Figtree/Lexend, `data-portal` overrides; `addu-tourism-branding-ink` is for dark surfaces inside `ui-theme-provider`);
 - the liquid themes `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa` and `violet`, each with a `-dark` night twin, in `theme-liquid.css`: glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` from `@zouriel/ui/fx`.
 
 `toggle()` flips `dark` / `light` and every built-in `x` / `x-dark` pair.

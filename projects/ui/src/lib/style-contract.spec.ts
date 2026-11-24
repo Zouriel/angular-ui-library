@@ -153,7 +153,7 @@ const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', '
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
   const out: { name: string; vars: Record<string, string> }[] = [];
-  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
+  for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
     const text = withoutComments(readFileSync(join(root, file), 'utf8'));
     for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
       const vars = Object.fromEntries([...m[2].matchAll(/(--ui-color-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -168,7 +168,7 @@ describe('theme palettes', () => {
 
   it('finds every named skin', () => {
     expect(list.map((t) => t.name).sort()).toEqual(
-      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark', 'addu', 'addu-ink', ...LIQUID].sort(),
+      ['darkOrange', 'darkPink', 'darkPurple', 'darkTeal', 'goldBlack', 'goldRed', 'lightOrange', 'lightPink', 'lightPurple', 'lightPurpleGold', 'lightTeal', 'maldives', 'maldives-dark', 'addu-tourism-branding', 'addu-tourism-branding-ink', ...LIQUID].sort(),
     );
   });
 
@@ -234,7 +234,7 @@ describe('theme palettes', () => {
   });
 
   it('defines six distinct chart colours in every theme', () => {
-    const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css'];
+    const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css'];
     const fails: string[] = [];
     for (const file of files) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
@@ -253,7 +253,7 @@ describe('theme palettes', () => {
    */
   it('keeps the skeleton visible on a card and its shimmer visible in every theme', () => {
     const fails: string[] = [];
-    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/\[data-theme="([\w-]+)"\]\s*\{([^}]*)\}/g)) {
         const v = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -299,7 +299,7 @@ describe('theme palettes', () => {
    */
   it('keeps text readable on glass in every light theme, over the page and over a dimmed page', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8'));
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -307,7 +307,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'addu', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'addu-tourism-branding', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
@@ -369,7 +369,7 @@ describe('theme palettes', () => {
    */
   it('keeps the tinted ui-feature-card readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -426,7 +426,7 @@ describe('theme palettes', () => {
    */
   it('keeps badgeTone combinations and custom feature-card colours readable in every theme', () => {
     const blocks: Record<string, Record<string, string>> = {};
-    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css']) {
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
       const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
       for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
         const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
@@ -496,7 +496,7 @@ describe('theme palettes', () => {
 /* ── See-through glass over a map (ui-bottom-sheet / ui-floating-panel `glass`, 0.41.2) ─────────── */
 
 describe('see-through glass', () => {
-  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css', 'styles/theme-liquid.css'];
+  const files = ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css'];
   const blocks: Record<string, Record<string, string>> = {};
   /** Per selector, the properties set in a block that names only that selector. */
   const own: Record<string, Set<string>> = {};
@@ -511,7 +511,7 @@ describe('see-through glass', () => {
   }
   const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
   const names = ['dark', 'light', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold',
-    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark', 'addu', 'addu-ink', ...LIQUID];
+    'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'darkOrange', 'maldives', 'maldives-dark', 'addu-tourism-branding', 'addu-tourism-branding-ink', ...LIQUID];
   const resolve = (name: string) => {
     const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
     const raw = (k: string, depth = 0): string => {
@@ -981,7 +981,7 @@ describe('liquid themes', () => {
     expect(tokens).toMatch(/--ui-glass-highlight-top:\s*transparent;/);
     expect(tokens).toMatch(/--ui-glass-highlight-edge:\s*transparent;/);
     expect(tokens).toMatch(/--ui-glass-highlight:\s*inset 0 1px 0 0 var\(--ui-glass-highlight-top\), inset 0 0 0 1px var\(--ui-glass-highlight-edge\);/);
-    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu.css']) {
+    for (const file of ['styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css']) {
       expect(readFileSync(join(root, file), 'utf8'), file).not.toContain('--ui-glass-highlight');
     }
   });

@@ -72,10 +72,10 @@ describe('addu tokens and component updates', () => {
   });
 
   it('sets addu field size 48px, button radius pill, and compact density override', () => {
-    const addu = readFileSync(join(process.cwd(), 'projects/ui/styles/theme-addu.css'), 'utf8');
+    const addu = readFileSync(join(process.cwd(), 'projects/ui/styles/theme-addu-tourism-branding.css'), 'utf8');
     expect(addu).toContain('--ui-field-size: 48px;');
     expect(addu).toContain('--ui-button-radius: var(--ui-radius-pill);');
-    expect(addu).toMatch(/\[data-theme="addu"\]\[data-density="compact"\][\s\S]*--ui-field-size:\s*44px;/);
+    expect(addu).toMatch(/\[data-theme="addu-tourism-branding"\]\[data-density="compact"\][\s\S]*--ui-field-size:\s*44px;/);
   });
 
   it('scales a theme\'s own type scale for every text size, so a larger size never shrinks text', () => {
@@ -104,16 +104,16 @@ describe('addu tokens and component updates', () => {
     expect(checked).toBeGreaterThan(0);
   });
 
-  it('lets the addu-ink island inherit the page\'s font sizes', () => {
-    const addu = readFileSync(join(process.cwd(), 'projects/ui/styles/theme-addu.css'), 'utf8');
-    const start = addu.indexOf('[data-theme="addu-ink"] {');
+  it('lets the addu-tourism-branding-ink island inherit the page\'s font sizes', () => {
+    const addu = readFileSync(join(process.cwd(), 'projects/ui/styles/theme-addu-tourism-branding.css'), 'utf8');
+    const start = addu.indexOf('[data-theme="addu-tourism-branding-ink"] {');
     const ink = addu.slice(start, addu.indexOf('}', start));
     expect(ink).toContain('--ui-color-bg: #001540;');
     expect(ink).not.toMatch(/--ui-font-size-/);
   });
 
   it('ships every font file the addu theme references, and loads no remote fonts', () => {
-    const path = join(process.cwd(), 'projects/ui/styles/theme-addu.css');
+    const path = join(process.cwd(), 'projects/ui/styles/theme-addu-tourism-branding.css');
     const addu = readFileSync(path, 'utf8');
     const urls = [...addu.matchAll(/url\("([^"]+)"\)/g)].map(([, url]) => url);
     expect(urls.length).toBe(7);

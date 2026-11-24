@@ -54,7 +54,7 @@ describe('UiThemeService', () => {
   });
 
   it('goes to dark from a theme with no pair (a legacy skin, an app theme, an unknown -dark name)', () => {
-    for (const t of ['lightTeal', 'darkOrange', 'addu', 'addu-ink', 'my-brand', 'brand-dark']) {
+    for (const t of ['lightTeal', 'darkOrange', 'addu-tourism-branding', 'addu-tourism-branding-ink', 'my-brand', 'brand-dark']) {
       service.set(t);
       service.toggle();
       expect(service.theme(), t).toBe('dark');
