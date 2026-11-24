@@ -25,7 +25,7 @@ import {
   UI_GOOGLE_IDENTITY, UiGoogleAuthorization, UiGoogleAuthorizationError, UiGoogleButton, UiGoogleSignIn, UiAppleButton, UiSocialButton,
   type UiGoogleButtonTheme, type UiGoogleIdentity,
 } from '@zouriel/ui/google-sign-in';
-import { UiMessengerButton, UiMessengerSwitch, type UiMessengerApp } from '@zouriel/ui/messenger';
+import { UiMessengerButton, UiMessengerLogo, UiMessengerSwitch, type UiMessengerApp } from '@zouriel/ui/messenger';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
 const VARIANT = 'UiButtonVariant';
@@ -133,7 +133,7 @@ export class DemoGoogleAuthorization {
 @Component({
   selector: 'page-buttons',
   imports: [HugeiconsIconComponent, ReactiveFormsModule, UiSwitch,
-    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, UiMessengerSwitch, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold, UiSpeedDial, UiShutterLoader,
+    UiText, UiHoldButton, UiGoogleButton, UiAppleButton, UiSocialButton, UiMessengerButton, UiMessengerLogo, UiMessengerSwitch, DemoGoogleSignIn, DemoGoogleSignInBlocked, DemoGoogleAuthorization, UiButton, UiIconButton, UiButtonGroup, UiToggleButton, UiSplitButton, UiDropdownButton, UiSegmented, UiFab, UiFabHold, UiSpeedDial, UiShutterLoader,
     DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -338,6 +338,25 @@ type UiMessengerApp = 'whatsapp' | 'viber' | 'telegram';"
 <ui-messenger-switch [(value)]=&quot;channel&quot; sublabel=&quot;Next: Aisha&quot; (pressed)=&quot;sendNext($event)&quot; />">
           <ui-messenger-switch [(value)]="switchApp" sublabel="Next: Aisha" (pressed)="switchPressed($event)" />
           <span class="muted switch-out">value: {{ switchApp() }} · pressed: {{ switchLog() }}</span>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Messenger logo" anchor="messenger-logo" selector="ui-messenger-logo" [api]="logoApi"
+        summary="Official WhatsApp, Viber and Telegram SVG marks, unaltered and in their own colours, centred in a square box. Decorative (aria-hidden): the button or label around it carries the accessible name. Used by ui-messenger-button and ui-messenger-switch, and usable on its own.">
+        <doc-demo lang="ts + html" code="import { UiMessengerLogo } from '@zouriel/ui/messenger';
+
+<ui-messenger-logo app=&quot;whatsapp&quot; [size]=&quot;24&quot; />
+<ui-messenger-logo app=&quot;viber&quot; [size]=&quot;24&quot; />
+<ui-messenger-logo app=&quot;telegram&quot; [size]=&quot;28&quot; />">
+          <div class="row items-center">
+            @for (a of messengerApps; track a) {
+              <div class="logo-chip" [attr.title]="a">
+                <ui-messenger-logo [app]="a" [size]="20" />
+                <ui-messenger-logo [app]="a" [size]="28" />
+                <ui-messenger-logo [app]="a" [size]="36" />
+              </div>
+            }
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -582,6 +601,7 @@ interface UiSpeedDialAction {
     </doc-page>
   `,
   styles: `
+    .logo-chip { display: inline-flex; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-2) var(--ui-space-3); border-radius: var(--ui-radius); background: #181a1f; }
     .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); }
     .items-center { align-items: center; }
     .switch-out { display: block; text-align: center; margin-top: var(--ui-space-3); }
@@ -701,6 +721,10 @@ export class ButtonsPage {
     { name: 'disabled', type: 'boolean', default: 'false', desc: 'Disable the button.' },
     { name: 'size', type: "'sm' | 'md'", default: "'md'", desc: "'md': 44px. 'sm': 28px to look at, like a small icon button (logo 16, Telegram 20; tick 12px), with an invisible 44px tap area." },
   ];
+  protected readonly logoApi: ApiRow[] = [
+    { name: 'app', type: 'UiMessengerApp (required)', default: '—', desc: "'whatsapp', 'viber' or 'telegram'." },
+    { name: 'size', type: 'number', default: "brand's logoSize", desc: 'Square box size in px.' },
+  ];
   protected readonly messengerOut: ApiRow[] = [{ name: 'pressed', type: 'void', default: '—', desc: 'Clicked (or Enter/Space).' }];
   protected readonly switchApp = signal<UiMessengerApp>('whatsapp');
   protected readonly switchLog = signal('—');
@@ -752,6 +776,7 @@ export class ButtonsPage {
     { name: 'target', type: 'string | null', default: 'null', desc: "With href: link target; '_blank' adds rel=noopener noreferrer and is left to the browser." },
     { name: 'current', type: 'boolean | null', default: 'null', desc: 'With href: the page it opens is the one shown, aria-current=page and a selected look; null asks the navigator (isCurrent).' },
     { name: 'ariaLabel', type: 'string', default: '—', desc: 'Accessible name for the inner native control when its text does not say enough (a plain aria-label="…" works too). Never put it on the wrapper.' },
+    { name: 'ariaDescribedby', type: 'string | undefined', default: 'undefined', desc: 'Forwarded to aria-describedby on the inner native control.' },
     { name: 'variant', type: VARIANT, default: "'primary'", desc: 'Visual style.' },
     { name: 'tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: "A plan tier's metal: its sheen, contrast label, edge and focus ring; platinum catches a sweep of light on hover. Wins over variant. See Plans." },
     { name: 'size', type: BUTTON_SIZE, default: "'md'", desc: 'Control height & font size; xl is 56px.' },

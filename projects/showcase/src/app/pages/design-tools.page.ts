@@ -2,9 +2,9 @@ import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed,
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  UiImageEditor, UiPathEditor, UiTransformBox, UiSnapGuides, archContour, ellipseContour, insideContour, pathD, polygonContour, rectContour, starContour,
-  uiSnap, uiRotatedBounds, type UiBox, type UiBrushKind, type UiGuide, type UiInkStroke, type UiPathContour, type UiPathEditorMode, type UiPathItem,
-  type UiImageCrop, type UiImageEditorMode,
+  UiCanvasViewport, UiImageEditor, UiPathEditor, UiTransformBox, UiSnapGuides, archContour, ellipseContour, insideContour, pathD, polygonContour, rectContour, starContour,
+  uiSnap, uiRotatedBounds, type UiBox, type UiBrushKind, type UiGuide, type UiInkStroke, type UiMinimapItem, type UiPathContour, type UiPathEditorMode, type UiPathItem,
+  type UiImageCrop, type UiImageEditorMode, type UiViewportView,
 } from '@zouriel/ui/canvas';
 import { UiScrubber, UiSequencer, type UiSequencerRow } from '@zouriel/ui/sequencer';
 import { UiTokenInput, UiNumberInput, UiNumberLabel, UiSlider, UiSwitch, type UiTokenRun } from '@zouriel/ui/form';
@@ -25,7 +25,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-design-tools',
   imports: [
-    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiImageEditor, UiSlider, UiSwitch, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
+    DecimalPipe, FormsModule, UiTransformBox, UiSnapGuides, UiPathEditor, UiImageEditor, UiCanvasViewport, UiSlider, UiSwitch, UiSequencer, UiScrubber, UiTokenInput, UiNumberInput, UiNumberLabel,
     UiMeter, UiDeviceFrame, UiResizeHandle, UiButton, UiIconButton, UiSegmented, HugeiconsIconComponent, DocPage, DocSection, DocDemo,
   ],
   template: `
@@ -143,6 +143,28 @@ const shape = recognizeShape(samples);   // a line, ellipse or polygon, or null 
               <figure><svg viewBox="-4 -4 108 108" aria-hidden="true"><path [attr.d]="s.d" /></svg><figcaption>{{ s.name }}</figcaption></figure>
             }
           </div>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Canvas viewport" selector="ui-canvas-viewport" [api]="viewportApi" [outputs]="viewportOutputs" [shapes]="viewportShapes"
+        summary="A pannable, zoomable diagram surface. Place nodes inside in world coordinates (0, 0 at the top-left of contentWidth × contentHeight). Drag empty space or scroll to pan; Ctrl/⌘ + wheel, two-finger pinch, +/- or the corner buttons zoom; 0 or Fit frames everything. Children that handle their own pointer gestures should stop propagation of pointerdown or carry data-viewport-no-pan.">
+        <doc-demo code="<ui-canvas-viewport [contentWidth]=&quot;800&quot; [contentHeight]=&quot;500&quot; [minimap]=&quot;true&quot; [minimapItems]=&quot;nodes&quot; [(view)]=&quot;view&quot;>
+  @for (n of nodes; track n.label) {
+    <div class=&quot;node&quot; [style.left.px]=&quot;n.x&quot; [style.top.px]=&quot;n.y&quot; [style.width.px]=&quot;n.w&quot; [style.height.px]=&quot;n.h&quot;>{{ '{{' }} n.label {{ '}}' }}</div>
+  }
+</ui-canvas-viewport>">
+          <ui-canvas-viewport class="vp-stage" label="Workflow canvas demo" [contentWidth]="800" [contentHeight]="500"
+            [minimap]="true" [minimapItems]="vpMinimap()" [(view)]="vpView" (backgroundClick)="vpSelected.set(null)">
+            @for (n of vpNodes; track n.id) {
+              <button type="button" class="vp-node" data-viewport-no-pan
+                [class.active]="vpSelected() === n.id"
+                [style.left.px]="n.x" [style.top.px]="n.y" [style.width.px]="n.w" [style.height.px]="n.h"
+                (click)="vpSelected.set(n.id)">
+                {{ n.label }}
+              </button>
+            }
+          </ui-canvas-viewport>
+          <p class="note">Zoom {{ (vpView().zoom * 100) | number: '1.0-0' }}% · Selected: {{ vpSelected() ?? 'none (click a node or background)' }}</p>
         </doc-demo>
       </doc-section>
 
@@ -277,6 +299,9 @@ wheel(e: WheelEvent, f: UiDeviceFrame) {
     .pe-bar .grow { flex: 1; }
     .pe-group { display: flex; gap: var(--ui-space-2); }
     .pe-stage { height: 340px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); overflow: hidden; background: var(--ui-color-surface-subtle); }
+    .vp-stage { height: 280px; border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); }
+    .vp-node { position: absolute; display: grid; place-items: center; border: 1px solid var(--ui-color-border-strong); border-radius: var(--ui-radius); background: var(--ui-color-surface-raised, var(--ui-color-surface)); color: var(--ui-color-text); font: inherit; font-weight: 500; cursor: pointer; box-shadow: var(--ui-shadow-1); }
+    .vp-node.active { border-color: var(--ui-color-primary); box-shadow: var(--ui-focus-ring); }
     .pe-stage ui-path-editor, .pe-stage ui-image-editor { display: block; width: 100%; height: 100%; }
     .ie-sliders { display: flex; flex-wrap: wrap; gap: var(--ui-space-2) var(--ui-space-6); margin-bottom: var(--ui-space-2); }
     .ie-slider { display: flex; align-items: center; gap: var(--ui-space-2); flex: 1 1 220px; min-width: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); }
@@ -758,6 +783,33 @@ interface UiScrubberLane { start: number; end: number; selected?: boolean; muted
   protected readonly resizeOutputs: ApiRow[] = [
     { name: 'resizeEnd', type: 'number', desc: 'After a drag, double-click or key.' },
   ];
+
+  protected readonly vpNodes = [
+    { id: 'trigger', label: 'Form submitted', x: 60, y: 190, w: 160, h: 64 },
+    { id: 'review', label: 'Supervisor review', x: 310, y: 120, w: 170, h: 64 },
+    { id: 'notify', label: 'Notify applicant', x: 560, y: 240, w: 160, h: 64 },
+  ];
+  protected readonly vpSelected = signal<string | null>('review');
+  protected readonly vpView = signal<UiViewportView>({ x: 0, y: 0, zoom: 1 });
+  protected readonly vpMinimap = computed<UiMinimapItem[]>(() =>
+    this.vpNodes.map((n) => ({ x: n.x, y: n.y, w: n.w, h: n.h, active: this.vpSelected() === n.id })),
+  );
+  protected readonly viewportApi: ApiRow[] = [
+    { name: 'contentWidth / contentHeight', type: 'number', default: '800 / 600', desc: 'World size in px.' },
+    { name: 'minZoom / maxZoom', type: 'number', default: '0.25 / 2.5', desc: 'Zoom limits.' },
+    { name: 'fitMinZoom / padding', type: 'number', default: '0.6 / 32', desc: 'Smallest auto-fit zoom and edge padding in px.' },
+    { name: 'controls', type: 'boolean', default: 'true', desc: 'Show the zoom out / % / zoom in / fit corner toolbar.' },
+    { name: 'minimap / minimapItems', type: 'boolean / UiMinimapItem[]', default: 'false / []', desc: 'Interactive overview map (shown when the host is at least 520 × 340 px).' },
+    { name: 'label', type: 'string', default: "'Diagram'", desc: 'Accessible name (aria-label).' },
+    { name: 'view', type: 'UiViewportView (model)', default: '{ x: 0, y: 0, zoom: 1 }', desc: 'Two-way ([(view)]) pan offset and zoom.' },
+    { name: 'toWorld(clientX, clientY)', type: 'method', default: '—', desc: 'Convert pointer client coordinates into world coordinates.' },
+    { name: 'fit(all?) / zoomBy(factor, cx?, cy?) / centerOn(x, y) / reveal(x, y, w, h)', type: 'methods', default: '—', desc: 'Programmatic framing and navigation.' },
+  ];
+  protected readonly viewportOutputs: ApiRow[] = [
+    { name: 'backgroundClick', type: 'void', desc: 'Clicked empty canvas space (not after a pan).' },
+  ];
+  protected readonly viewportShapes = `interface UiViewportView { x: number; y: number; zoom: number; }
+interface UiMinimapItem { x: number; y: number; w: number; h: number; active?: boolean; }`;
 
   protected readonly unused = computed(() => this.tokenInput());
 }
