@@ -114,6 +114,7 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `command-palette` | command palette |
 | `window` | floating windows, window manager, draggable, resizable |
 | `file-viewer`, `pdf-viewer` | image/video/audio/text/code viewers, lightbox, explorer, lazy PDF |
+| `qr` | `uiQrMatrix` encoder, `ui-qr-code` SVG generator, `ui-qr-scanner` camera/manual scanner |
 | `form-builder` | form builder, form renderer, global form settings, option sources ([guide](form-builder/README.md)) |
 | `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide) |
 | `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer, slide transition (views and routes) |
