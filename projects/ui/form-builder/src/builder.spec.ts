@@ -152,12 +152,14 @@ describe('FbBuilderStore', () => {
 
 @Component({
   imports: [UiFormRenderer],
-  template: `<ui-form-renderer [definition]="def()" [values]="values()" [mode]="mode()" (submitted)="got.push($event)" />`,
+  template: `<ui-form-renderer [definition]="def()" [values]="values()" [mode]="mode()" [locale]="locale()" [presentation]="presentation()" (presentationChange)="presentation.set($event)" (submitted)="got.push($event)" />`,
 })
 class RendererHost {
   def = signal<UiFormDefinition>(form([]));
   values = signal<Record<string, unknown> | null>(null);
   mode = signal<'create' | 'edit' | 'view' | null>(null);
+  locale = signal<string | null>(null);
+  presentation = signal<'page' | 'one-question'>('page');
   got: UiFormSubmission[] = [];
 }
 
@@ -174,6 +176,76 @@ async function renderForm(def: UiFormDefinition, values: Record<string, unknown>
 }
 
 describe('UiFormRenderer', () => {
+  it('keeps the existing page presentation by default', async () => {
+    const { el } = await renderForm(form([f('a', 'text'), f('b', 'text')]));
+    expect(el.querySelector('.ui-fr-question')).toBeNull();
+    expect(el.querySelectorAll('.ui-fbf').length).toBe(2);
+  });
+
+  it('steps one question at a time, blocks invalid Next, reviews, and submits the same payload', async () => {
+    const def = form([f('a', 'text', { required: true }), f('b', 'number')]);
+    const { fx, el, host } = await renderForm(def);
+    host.presentation.set('one-question');
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Question 1 of 2');
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    fx.detectChanges();
+    expect(el.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Question 1 of 2');
+    const input = el.querySelector<HTMLInputElement>('input.ui-input')!;
+    input.value = 'ok';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    fx.detectChanges();
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Question 2 of 2');
+    expect(el.querySelector('.ui-fr-live')!.textContent).toContain('Question 2 of 2');
+    expect(document.activeElement).toBe(el.querySelector('.ui-fr-question-title'));
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-review')).not.toBeNull();
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    expect(host.got).toHaveLength(1);
+    expect(host.got[0].values).toEqual({ a: 'ok', b: null });
+  });
+
+  it('skips hidden questions and keeps answers when the presentation changes', async () => {
+    const def = form([
+      f('show', 'text'),
+      f('hidden', 'text', { visibility: { action: 'show', when: { ref: 'show', op: 'eq', value: { const: 'yes' } } } }),
+      f('last', 'text'),
+    ]);
+    const { fx, el, host } = await renderForm(def);
+    host.presentation.set('one-question');
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Question 1 of 2');
+    const first = el.querySelector<HTMLInputElement>('input.ui-input')!;
+    first.value = 'yes';
+    first.dispatchEvent(new Event('input', { bubbles: true }));
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-step')!.textContent).toContain('Question 1 of 3');
+    expect(el.querySelector<HTMLInputElement>('input.ui-input')!.value).toBe('yes');
+    host.presentation.set('page');
+    fx.detectChanges();
+    await fx.whenStable();
+    fx.detectChanges();
+    expect(el.querySelector<HTMLInputElement>('input.ui-input')!.value).toBe('yes');
+    host.presentation.set('one-question');
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-question')).not.toBeNull();
+  });
+
+  it('offers read-aloud in English and hides it for Dhivehi', async () => {
+    const { fx, el, host } = await renderForm(form([f('a', 'text')], { supportedLocales: [{ code: 'en' }, { code: 'dv' }] }));
+    host.presentation.set('one-question');
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-read')).not.toBeNull();
+    expect(el.querySelector('ui-form-renderer')!.getAttribute('lang')).toBe('en');
+    host.locale.set('dv');
+    fx.detectChanges();
+    expect(el.querySelector('.ui-fr-read')).toBeNull();
+  });
   it('ties each label to its input, and help text to the input too', async () => {
     const { el } = await renderForm(form([f('name', 'text', { label: 'Full name', help: 'As on your passport' })]));
     const label = el.querySelector('label.ui-fbf-label') as HTMLLabelElement;

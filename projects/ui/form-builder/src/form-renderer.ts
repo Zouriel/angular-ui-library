@@ -17,6 +17,8 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { UiButton } from '@zouriel/ui/button';
+import { UiReadAloud } from '@zouriel/ui/assistance';
+import { UiFormSummary } from './form-summary';
 import { UiFormEngine, type UiFbRemovedRow, type UiFbServerErrorItem, type UiFormMode } from './engine';
 import { formatValue } from './format';
 import { UiFbFieldView, type UiFbUploader } from './renderer-field';
@@ -28,6 +30,12 @@ import { UI_FB_OPTION_SOURCES, type UiFbOptionSourceDef } from './option-sources
 import { sourcesFromSettings, type UiFormGlobalSettings } from './global-settings';
 import { UI_FB_HTTP_SOURCES } from './http-sources';
 import { FB_ICONS } from './builder-icons';
+
+export type UiFbPresentation = 'page' | 'one-question';
+interface UiFbQuestion {
+  elements: UiFbElement[];
+  pageIndex: number;
+}
 
 let rendererSeq = 0;
 
@@ -42,13 +50,13 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
 @Component({
   selector: 'ui-form-renderer',
   encapsulation: ViewEncapsulation.None,
-  imports: [NgTemplateOutlet, HugeiconsIconComponent, UiButton, UiFbFieldView],
+  imports: [NgTemplateOutlet, HugeiconsIconComponent, UiButton, UiFbFieldView, UiReadAloud, UiFormSummary],
   host: { class: 'ui-fr-host', '[attr.dir]': 'dir()', '[attr.lang]': 'lang()' },
   template: `
     @if (engine(); as e) {
       @let def = e.definition;
       @let page = e.page();
-      <form class="ui-fr" novalidate (submit)="$event.preventDefault(); primary()" [attr.aria-labelledby]="showTitle() ? uid + '-title' : null">
+      <form class="ui-fr" novalidate (submit)="$event.preventDefault(); primary()" [attr.aria-labelledby]="oneQuestion() ? uid + '-question-title' : (showTitle() ? uid + '-title' : null)">
         @if (showTitle() && (e.text(def.title) || e.text(def.description))) {
           <header class="ui-fr-header">
             @if (e.text(def.title)) { <h2 class="ui-fr-title" [id]="uid + '-title'">{{ e.text(def.title) }}</h2> }
@@ -73,6 +81,27 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
             </section>
           }
         } @else {
+        @if (presentation() === 'one-question' && oneReview()) {
+          <section class="ui-fr-review" [attr.aria-labelledby]="uid + '-review-title'">
+            <h3 class="ui-fr-question-title" [id]="uid + '-review-title'" tabindex="-1">{{ s().review }}</h3>
+            <ui-form-summary [definition]="e.definition" [answers]="e.values()" [language]="activeLocale()" [showTitle]="false" />
+          </section>
+        } @else if (presentation() === 'one-question' && question(); as q) {
+          <section class="ui-fr-question" #questionBlock [attr.aria-labelledby]="uid + '-question-title'">
+            <div class="ui-fr-progress">
+              <div class="ui-fr-progress-track"><span [style.width.%]="questionProgress()"></span></div>
+              <p class="ui-fr-step">{{ fmt(s().questionOf, { n: questionCursor() + 1, total: questions().length }) }}</p>
+            </div>
+            <h3 class="ui-fr-question-title" [id]="uid + '-question-title'" #questionHeading tabindex="-1">{{ questionTitle(q) }}</h3>
+            @if (!isDhivehi()) {
+              <button type="button" class="ui-fr-read" uiReadAloud [for]="questionBlock" [lang]="activeLocale()">{{ s().readAloud }}</button>
+            }
+            <div class="ui-fr-grid">
+              <ng-container [ngTemplateOutlet]="elements" [ngTemplateOutletContext]="{ $implicit: q.elements, row: null, cols: 1 }" />
+            </div>
+          </section>
+        }
+        @if (presentation() === 'page') {
         @if (multiPage() && def.settings?.showProgress !== false) {
           <div class="ui-fr-progress">
             <div class="ui-fr-steps" aria-hidden="true">
@@ -84,7 +113,7 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           </div>
         }
 
-        @if (summary().length || unmatched().length) {
+        @if (presentation() === 'page' && (summary().length || unmatched().length)) {
           @let count = summary().length + unmatched().length;
           <div class="ui-fr-summary" role="alert" tabindex="-1" #summaryBox [attr.aria-labelledby]="uid + '-sum'">
             <h3 class="ui-fr-summary-title" [id]="uid + '-sum'">{{ count === 1 ? s().problemOne : fmt(s().problemMany, { n: count }) }}</h3>
@@ -109,15 +138,21 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
           <ng-container [ngTemplateOutlet]="elements" [ngTemplateOutletContext]="{ $implicit: page.elements, row: null, cols: 1 }" />
         </div>
         }
+        }
 
         @if (showActions() && e.mode !== 'view') {
           <footer class="ui-fr-footer">
             <div class="ui-fr-footer-start">
-              @if (multiPage() && e.step() > 0) {
+              @if ((presentation() === 'one-question' && questionCursor() > 0) || (presentation() === 'page' && multiPage() && e.step() > 0)) {
                 <ui-button variant="outline" type="button" (click)="back()"><hugeicons-icon aria-hidden="true" [icon]="backIcon" [size]="14" [strokeWidth]="1.8" />{{ e.text(def.settings?.backLabel) || s().back }}</ui-button>
               }
               @if (cancelLabel()) {
                 <ui-button variant="ghost" type="button" (click)="cancelled.emit()">{{ cancelLabel() }}</ui-button>
+              }
+              @if (presentation() === 'page') {
+                <button type="button" class="ui-fr-link" (click)="switchPresentation('one-question')">{{ s().switchToOneQuestion }}</button>
+              } @else if (!oneReview()) {
+                <button type="button" class="ui-fr-link" (click)="switchPresentation('page')">{{ s().switchToPage }}</button>
               }
             </div>
             <div class="ui-fr-footer-end">
@@ -135,7 +170,8 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
                   <span class="ui-fr-saved">{{ s().noChanges }}</span>
                 }
               }
-              <ui-button type="submit" [loading]="busy()">{{ primaryLabel() }}@if (!e.isLastPage()) {<hugeicons-icon aria-hidden="true" [icon]="nextIcon" [size]="14" [strokeWidth]="1.8" />}</ui-button>
+              @if (showSaveAndExit()) { <ui-button variant="outline" type="button" (click)="saveAndExit.emit()">{{ s().saveAndExit }}</ui-button> }
+              <ui-button type="submit" [loading]="busy()">{{ primaryLabel() }}@if ((presentation() === 'page' && !e.isLastPage()) || (presentation() === 'one-question' && !oneReview())) {<hugeicons-icon aria-hidden="true" [icon]="nextIcon" [size]="14" [strokeWidth]="1.8" />}</ui-button>
             </div>
           </footer>
         }
@@ -233,6 +269,15 @@ const SPAN: Record<string, number> = { full: 12, 'two-thirds': 8, half: 6, third
     .ui-fr-steps .seg.on { background: var(--ui-color-primary); }
     .ui-fr-step { margin: 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-secondary); font-weight: 500; }
     .ui-fr-step .sep { margin-inline-end: 2px; }
+    .ui-fr-question { display: flex; flex-direction: column; gap: var(--ui-space-4); }
+    .ui-fr-question-title { margin: 0; font-family: var(--ui-font-display); font-size: calc(22px * var(--ui-font-scale)); font-weight: 600; letter-spacing: var(--ui-tracking-tight, -0.01em); overflow-wrap: anywhere; }
+    .ui-fr-question-title:focus { outline: none; }
+    .ui-fr-progress-track { height: 5px; overflow: hidden; border-radius: 3px; background: var(--ui-color-track, var(--ui-color-border)); }
+    .ui-fr-progress-track span { display: block; height: 100%; border-radius: inherit; background: var(--ui-color-primary); transition: width var(--ui-motion-base) var(--ui-ease-standard); }
+    .ui-fr-read { align-self: flex-start; border: 0; border-radius: var(--ui-radius-pill, 999px); padding: var(--ui-space-2) var(--ui-space-3); color: var(--ui-color-primary); background: color-mix(in srgb, var(--ui-color-primary) 10%, var(--ui-color-surface)); font: inherit; font-size: var(--ui-font-size-sm); cursor: pointer; }
+    .ui-fr-read:hover { background: color-mix(in srgb, var(--ui-color-primary) 16%, var(--ui-color-surface)); }
+    .ui-fr-read:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .ui-fr-review { display: flex; flex-direction: column; gap: var(--ui-space-4); }
     .ui-fr-view-page > .ui-fr-page-head { margin-bottom: var(--ui-space-3); }
     .ui-fr-view-page + .ui-fr-view-page { margin-top: var(--ui-space-6); padding-top: var(--ui-space-6); border-top: 1px solid var(--ui-color-border); }
     .ui-fr-page-title { margin: 0 0 2px; font-size: var(--ui-font-size-lg); font-weight: 600; }
@@ -327,6 +372,10 @@ export class UiFormRenderer {
   readonly uploader = input<UiFbUploader | null>(null);
   readonly showTitle = input(true);
   readonly showActions = input(true);
+  /** Shows one visible question at a time, followed by a review screen. */
+  readonly presentation = input<UiFbPresentation>('page');
+  /** Lets the host offer a save-and-exit action alongside navigation. */
+  readonly showSaveAndExit = input(false);
   readonly submitLabel = input<string | null>(null);
   readonly cancelLabel = input<string | null>(null);
   /** Shows the primary button as busy (e.g. while the host saves). */
@@ -348,6 +397,8 @@ export class UiFormRenderer {
   /** The answers as they'd be saved, after every change. */
   readonly valueChange = output<Record<string, unknown>>();
   readonly dirtyChange = output<boolean>();
+  readonly presentationChange = output<UiFbPresentation>();
+  readonly saveAndExit = output<void>();
   /** After `serverErrors` were applied: the ones that matched no field (empty when all did). */
   readonly serverErrorsUnmatched = output<UiFbServerErrorItem[]>();
 
@@ -366,6 +417,7 @@ export class UiFormRenderer {
   protected readonly removed = signal<(UiFbRemovedRow & { label: string }) | null>(null);
   private removedTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly resetTick = signal(0);
+  private readonly questionCursorRaw = signal(0);
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
   private readonly fields = viewChildren(UiFbFieldView);
 
@@ -379,6 +431,37 @@ export class UiFormRenderer {
   protected readonly s = computed(() => this.engine()?.strings() ?? UI_FB_STRINGS_EN);
   protected readonly fmt = fbFormat;
   protected readonly multiPage = computed(() => (this.engine()?.path().length ?? 0) > 1);
+  protected readonly questions = computed<UiFbQuestion[]>(() => {
+    const e = this.engine();
+    if (!e) return [];
+    const out: UiFbQuestion[] = [];
+    for (const pageIndex of e.path()) {
+      const els = e.definition.pages[pageIndex]?.elements ?? [];
+      for (let i = 0; i < els.length; i++) {
+        const el = els[i];
+        if (el.archived || !e.instanceState(el.id, null).visible || (el.kind === 'field' && el.type === 'hidden')) continue;
+        if (el.kind === 'static' && i + 1 < els.length) {
+          const next = els[i + 1];
+          if (!next.archived && next.kind === 'field' && next.type !== 'hidden' && e.instanceState(next.id, null).visible) {
+            out.push({ pageIndex, elements: [el, next] });
+            i++;
+            continue;
+          }
+        }
+        out.push({ pageIndex, elements: [el] });
+      }
+    }
+    return out;
+  });
+  protected readonly questionCursor = computed(() => Math.min(this.questionCursorRaw(), this.questions().length));
+  protected readonly question = computed(() => this.questions()[this.questionCursor()] ?? null);
+  protected readonly oneQuestion = computed(() => this.presentation() === 'one-question' && this.engine()?.mode !== 'view' && !!this.question());
+  protected readonly oneReview = computed(() => this.presentation() === 'one-question' && this.engine()?.mode !== 'view' && this.questionCursor() >= this.questions().length);
+  protected readonly questionProgress = computed(() => {
+    const total = this.questions().length;
+    return total ? ((this.questionCursor() + 1) / (total + 1)) * 100 : 100;
+  });
+  protected readonly isDhivehi = computed(() => this.activeLocale().toLowerCase().split(/[-_]/)[0] === 'dv');
   /** Server errors that name no field (shown when the form has an error summary). */
   protected readonly unmatched = computed(() => (this.engine()?.settings.errorSummary ? this.engine()?.serverUnmatched() ?? [] : []));
   protected readonly summary = computed(() => {
@@ -409,7 +492,12 @@ export class UiFormRenderer {
         locale: this.locale(), link: this.link(), strings: untracked(() => this.stringOverrides()),
       }));
       this.engine.set(e);
+      this.questionCursorRaw.set(0);
       onCleanup(() => e.destroy());
+    });
+    effect(() => {
+      const count = this.questions().length;
+      if (this.questionCursorRaw() > count) this.questionCursorRaw.set(count);
     });
     // Language and link follow their inputs without restarting the form, so answers survive.
     effect(() => {
@@ -460,6 +548,11 @@ export class UiFormRenderer {
   protected primary(): void {
     const e = this.engine();
     if (!e) return;
+    if (this.presentation() === 'one-question') {
+      if (this.oneReview()) { this.submit(); return; }
+      this.nextQuestion();
+      return;
+    }
     if (!e.isLastPage()) {
       if (e.next()) this.pageChanged();
       else this.showSummary();
@@ -484,7 +577,58 @@ export class UiFormRenderer {
   }
 
   protected back(): void {
+    if (this.presentation() === 'one-question') {
+      if (this.questionCursor() > 0) {
+        this.questionCursorRaw.update((n) => Math.max(0, n - 1));
+        this.questionChanged();
+      }
+      return;
+    }
     if (this.engine()?.back()) this.pageChanged();
+  }
+
+  protected questionTitle(q: UiFbQuestion): string {
+    const e = this.engine();
+    if (!e) return '';
+    const first = q.elements[0];
+    if (first.kind === 'field') return e.text(first.label) || first.key || first.id;
+    if (first.kind === 'static') return e.text(first.text) || '';
+    return e.text(first.title) || '';
+  }
+
+  protected switchPresentation(next: UiFbPresentation): void {
+    this.presentationChange.emit(next);
+  }
+
+  private nextQuestion(): void {
+    const e = this.engine();
+    const q = this.question();
+    if (!e || !q) return;
+    e.attempted.update((s) => new Set(s).add(e.definition.pages[q.pageIndex].id));
+    const fields = e.instancesOn(q.pageIndex).filter((inst) => q.elements.some((el) => this.containsElement(el, inst.id)));
+    const bad = fields.filter((inst) => {
+      const st = e.instanceState(inst.id, inst.row);
+      return st.visible && (st.errors.length > 0 || st.pending);
+    });
+    if (bad.length) {
+      afterNextRender(() => this.fields().find((f) => f.addr() === bad[0].addr)?.focus(), { injector: this.injector });
+      return;
+    }
+    this.questionCursorRaw.update((n) => Math.min(this.questions().length, n + 1));
+    this.questionChanged();
+  }
+
+  private containsElement(parent: UiFbElement, id: string): boolean {
+    if (parent.id === id) return true;
+    return parent.kind === 'group' && parent.elements.some((el) => this.containsElement(el, id));
+  }
+
+  private questionChanged(): void {
+    const e = this.engine();
+    if (!e) return;
+    const total = this.questions().length;
+    this.announce.set(this.questionCursor() >= total ? e.strings().review : fbFormat(e.strings().questionOf, { n: this.questionCursor() + 1, total }));
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('.ui-fr-question-title')?.focus(), { injector: this.injector });
   }
 
   protected addRow(g: UiFbGroup): void {

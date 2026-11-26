@@ -107,6 +107,17 @@ const STUDENT_ID: UiFbValidatorDef = {
             <ui-form-renderer [definition]="form" [prefill]="prefill" [serverErrors]="serverErrors()" (submitted)="last.set($event)" />
           </div>
         </doc-demo>
+        <doc-demo code="<ui-form-renderer [definition]=&quot;form&quot; presentation=&quot;one-question&quot;
+  (presentationChange)=&quot;presentation.set($event)&quot; [showSaveAndExit]=&quot;true&quot;
+  (saveAndExit)=&quot;saveDraft()&quot; />">
+          <div class="bar">
+            <span class="plain">One question at a time validates before moving on, skips hidden questions, and ends with a review.</span>
+          </div>
+          <div class="frame">
+            <ui-form-renderer [definition]="form" [presentation]="presentationDemo()" [showSaveAndExit]="true"
+              (presentationChange)="presentationDemo.set($event)" (saveAndExit)="last.set(null)" (submitted)="last.set($event)" />
+          </div>
+        </doc-demo>
       </doc-section>
 
       <doc-section name="Form summary" selector="ui-form-summary" [api]="summaryApi"
@@ -234,6 +245,7 @@ export class FormBuilderPage {
   protected readonly builder = viewChild(UiFormBuilder);
   protected form: UiFormDefinition = structuredClone(SAMPLE_FORM);
   protected readonly answers = SAMPLE_ANSWERS;
+  protected readonly presentationDemo = signal<'page' | 'one-question'>('one-question');
   protected readonly published = signal<UiFormDefinition | null>(null);
   protected readonly answered = signal(false);
   protected readonly publishNote = signal('');
@@ -336,6 +348,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'prefill', type: 'Record<string, unknown> | null', default: 'null', desc: 'Starting answers for a new submission (create mode, 0.87.0): filled in, but still Submit and no change list; defaults apply to fields without one; keys that are not fields are dropped; repeat arrays become new entries. E.g. details from a sign-in, or answers carried over to a newer version of the form.' },
     { name: 'serverErrors', type: 'Record<string, string | string[]> | null', default: 'null', desc: "Errors from the server by data path ('full_name', 'address.city', 'dependants[1].name'; a 422's errors with any request prefix removed), 0.87.0. Shown on their fields like the form's own and listed in the summary (which takes focus); a field's message goes away when its answer changes and blocks submitting until then. Paths matching no field are listed first in the summary. Give a new object per response." },
     { name: 'mode', type: "'create' | 'edit' | 'view' | null", default: 'edit with values, else create', desc: 'Edit labels the button “Save changes” and lists changes. View shows every page at once as text and never validates.' },
+    { name: 'presentation', type: "'page' | 'one-question'", default: "'page'", desc: 'Choose the existing all-on-one-page flow or one visible question at a time. One-question mode has progress, validates before Next, skips hidden questions and ends with a review.' },
     { name: 'validators', type: 'readonly UiFbValidatorDef[]', default: '[]', desc: 'Extra app checks, on top of provideUiFormValidators.' },
     { name: 'optionSources', type: 'readonly UiFbOptionSourceDef[]', default: '[]', desc: 'Extra lists, on top of provideUiFormOptionSources. Use the same ones the builder had.' },
     { name: 'globalSettings', type: 'UiFormGlobalSettings | null', default: 'null', desc: 'Makes the lists from ui-form-global-settings searchable.' },
@@ -348,6 +361,7 @@ update(id: string, s: UiFormSubmission) {
     { name: 'busy', type: 'boolean', default: 'false', desc: 'Shows the submit button as busy while you save.' },
     { name: 'showTitle', type: 'boolean', default: 'true', desc: 'Show the form’s title and description.' },
     { name: 'showActions', type: 'boolean', default: 'true', desc: 'Show the buttons. Turn off to drive it with your own (submit()).' },
+    { name: 'showSaveAndExit', type: 'boolean', default: 'false', desc: 'Shows the optional Save and exit button; handle saveAndExit in the host.' },
     { name: 'today', type: '(() => string) | null', default: 'null', desc: 'Fixes today (YYYY-MM-DD) for date rules and ages, e.g. for forms filled in on behalf of a past date.' },
     { name: 'submit()', type: 'method', default: '—', desc: 'Checks every page on the route; emits and returns the submission, or returns null and shows the problems.' },
     { name: 'reset()', type: 'method', default: '—', desc: 'Starts over from the values the form was given (or blank), on the first page.' },
@@ -357,6 +371,8 @@ update(id: string, s: UiFormSubmission) {
     { name: 'submitted', type: 'UiFormSubmission', default: '—', desc: '{ formId, revision, locale, values, submittedAt, workflowId?, serviceCode?, fields, files } once everything on the route is valid. locale is the language it was filled in; fields lists each answer’s path, key, label (in that language) and type; workflowId and serviceCode come from the link input.' },
     { name: 'valueChange', type: 'Record<string, unknown>', default: '—', desc: 'The values as they would be saved, after every change.' },
     { name: 'dirtyChange', type: 'boolean', default: '—', desc: 'Whether the answers differ from what the form opened with.' },
+    { name: 'presentationChange', type: "'page' | 'one-question'", default: '—', desc: 'The person chose the other presentation from the renderer switch link. The host decides whether to update presentation; the renderer keeps the same engine and values.' },
+    { name: 'saveAndExit', type: 'void', default: '—', desc: 'The optional Save and exit action was pressed.' },
     { name: 'cancelled', type: 'void', default: '—', desc: 'The Cancel button was pressed.' },
     { name: 'serverErrorsUnmatched', type: 'UiFbServerErrorItem[]', default: '—', desc: 'After serverErrors were applied: the { path, message } that matched no field (0.87.0).' },
   ];

@@ -20,6 +20,18 @@ export interface UiFbStrings {
   next: string;
   /** Back button. */
   back: string;
+  /** One-question progress line (`{n}` of `{total}`). */
+  questionOf: string;
+  /** Read the current question aloud. */
+  readAloud: string;
+  /** Final review heading. */
+  review: string;
+  /** Optional host-provided save-and-exit action. */
+  saveAndExit: string;
+  /** Switch to the page presentation. */
+  switchToPage: string;
+  /** Switch to the one-question presentation. */
+  switchToOneQuestion: string;
   /** Progress line (`{n}` of `{total}`); the page title is appended after a colon. */
   stepOf: string;
 
@@ -185,6 +197,12 @@ export const UI_FB_STRINGS_EN: UiFbStrings = {
   saveChanges: 'Save changes',
   next: 'Continue',
   back: 'Back',
+  questionOf: 'Question {n} of {total}',
+  readAloud: 'Read this question aloud',
+  review: 'Review your answers',
+  saveAndExit: 'Save and exit',
+  switchToPage: 'See all questions',
+  switchToOneQuestion: 'One question at a time',
   stepOf: 'Step {n} of {total}',
 
   // Error summary and change list
@@ -295,6 +313,12 @@ export const UI_FB_STRINGS_DV: UiFbStrings = {
   saveChanges: 'ބަދަލުތައް ރައްކާކުރޭ',
   next: 'ކުރިއަށް',
   back: 'ފަހަތަށް',
+  questionOf: 'ސުވާލު {n} ގެ ނަންބަރު {total} ގެ ތެރޭގައި',
+  readAloud: 'މި ސުވާލު ކިޔައިދީ',
+  review: 'ޖަވާބުތައް ބަލާ',
+  saveAndExit: 'ރައްކާކޮށް ނުކުމެލާ',
+  switchToPage: 'ހުރިހާ ސުވާލުތަކެއް ބަލާ',
+  switchToOneQuestion: 'އެއްގޮތެއްގައި އެއް ސުވާލު',
   stepOf: 'ފިޔަވަޅު {total} އިން {n}',
 
   // Error summary and change list
