@@ -53,7 +53,7 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         [attr.data-gap]="gap()"
         [attr.data-align]="align()"
       ><ng-content /></div>
-      <div class="ft"><ng-content select="[card-footer]" /></div>
+      <div class="ft"><ng-content select="[card-footer], ui-card-actions" /></div>
     </div>
   `,
   styles: `

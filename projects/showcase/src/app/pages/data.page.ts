@@ -30,7 +30,7 @@ import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessen
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge, type UiAvatarCrop } from '@zouriel/ui/badge';
-import { UiCard, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
+import { UiCard, UiCardActions, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import {
@@ -48,7 +48,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
     UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
-    UiCard, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
+    UiCard, UiCardActions, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -277,7 +277,7 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
       </doc-section>
 
       <doc-section name="Card & stat-card" selector="ui-card · ui-stat-card" [api]="cardApi"
-        summary="ui-card: surface with [card-header] and [card-footer] slots; empty slots collapse, and the body stretches so footers line up across a grid of cards. Set interactive for a hover lift when the card itself is a link. ui-stat-card: KPI tile with a label, value, optional delta and an [stat-icon] slot; the delta arrow follows trend and screen readers hear Up or Down before it.">
+        summary="ui-card: surface with [card-header] and [card-footer] slots; empty slots collapse, and the body stretches so footers line up across a grid of cards. Use ui-card-actions in the footer for wrapping, aligned action buttons. Set interactive for a hover lift when the card itself is a link. ui-stat-card: KPI tile with a label, value, optional delta and an [stat-icon] slot; the delta arrow follows trend and screen readers hear Up or Down before it.">
         <doc-demo code="<ui-card padding=&quot;md&quot;>
   <span card-header>Title</span>
   Body
@@ -298,6 +298,13 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             <ui-stat-card label="Active users" value="1,204" delta="3%" trend="down">
               <hugeicons-icon stat-icon aria-hidden="true" [icon]="icons.users" [size]="16" [strokeWidth]="1.8" />
             </ui-stat-card>
+          </div>
+        </doc-demo>
+        <doc-demo code="Card grid with ui-card-actions: put buttons inside ui-card-actions in each ui-card.">
+          <div class="cols3">
+            <ui-card><ui-text variant="label">Short card</ui-text><ui-text variant="body">A compact description.</ui-text><ui-card-actions><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
+            <ui-card><ui-text variant="label">Longer card</ui-text><ui-text variant="body">More text makes this card taller, but its actions remain aligned with the other cards.</ui-text><ui-card-actions><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
+            <ui-card><ui-text variant="label">Another card</ui-text><ui-text variant="body">Three cards can share a grid row.</ui-text><ui-card-actions align="end"><ui-button size="sm">View</ui-button></ui-card-actions></ui-card>
           </div>
         </doc-demo>
         <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [pressable]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
@@ -982,6 +989,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive or pressable card.' },
     { name: 'card: (activate)', type: 'output<void>', default: '—', desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.' },
     { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
+    { name: 'ui-card-actions: align', type: "'start' | 'end' | 'stretch' | 'between'", default: "'start'", desc: 'Wrapping footer action row. stretch gives actions equal width; no accessibility role is added.' },
     { name: 'stat: label', type: 'string', default: "''", desc: 'Caption above the value.' },
     { name: 'stat: value', type: 'string | number', default: "''", desc: 'The KPI value.' },
     { name: 'stat: delta', type: 'string | number', default: '—', desc: 'Change indicator; hidden when unset.' },

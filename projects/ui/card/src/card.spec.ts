@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UiCard, type UiCardAlign, type UiCardGap } from './card';
+import { UiCardActions } from './card-actions';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidDisplacementMap } from './liquid-glass';
 
 @Component({
@@ -36,6 +37,46 @@ class Host {
 const css = () => ((UiCard as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
 
 describe('UiCard', () => {
+  it('projects ui-card-actions into the footer and keeps the body slack contract', () => {
+    @Component({ imports: [UiCard, UiCardActions], template: `<ui-card><span>Short body</span><ui-card-actions><button>Go</button></ui-card-actions></ui-card>` })
+    class ActionsHost {}
+    const fixture = TestBed.createComponent(ActionsHost);
+    fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('.ui-card') as HTMLElement;
+    expect(card.querySelector('.ft ui-card-actions')).toBeTruthy();
+    expect(card.querySelector('.bd')?.textContent).toContain('Short body');
+    expect(css()).toMatch(/\.bd[^}]*\{[^}]*flex:\s*1 1 auto/);
+    expect(css()).toMatch(/\.ft[^}]*\{[^}]*border-top/);
+  });
+
+  it('supports action alignment variants, wrapping, logical direction and equal stretch', () => {
+    @Component({ imports: [UiCardActions], template: `<ui-card-actions [align]="align()"><button>A</button><button>B</button></ui-card-actions>` })
+    class ActionsOnlyHost { align = signal<'start' | 'end' | 'stretch' | 'between'>('start'); }
+    const fixture = TestBed.createComponent(ActionsOnlyHost);
+    fixture.detectChanges();
+    const host = fixture.nativeElement.querySelector('ui-card-actions') as HTMLElement;
+    expect(host.getAttribute('data-align')).toBe('start');
+    fixture.componentInstance.align.set('between'); fixture.detectChanges();
+    expect(host.getAttribute('data-align')).toBe('between');
+    fixture.componentInstance.align.set('stretch'); fixture.detectChanges();
+    expect(host.getAttribute('data-align')).toBe('stretch');
+    const styles = ((UiCardActions as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+    expect(styles).toContain('flex-wrap: wrap');
+    expect(styles).toContain('justify-content: space-between');
+    expect(styles).toContain('flex: 1 1 0');
+    expect(host.getAttribute('role')).toBeNull();
+  });
+
+  it('keeps card-footer projection and collapses an empty footer', () => {
+    @Component({ imports: [UiCard], template: `<ui-card><span card-footer>Footer</span></ui-card>` })
+    class FooterHost {}
+    const withFooter = TestBed.createComponent(FooterHost); withFooter.detectChanges();
+    expect(withFooter.nativeElement.querySelector('.ft')?.textContent).toContain('Footer');
+    @Component({ imports: [UiCard], template: `<ui-card></ui-card>` })
+    class EmptyHost {}
+    const empty = TestBed.createComponent(EmptyHost); empty.detectChanges();
+    expect(css()).toMatch(/\.hd[^}]*:empty[^}]*,\s*\.ft[^}]*:empty[^}]*\{[^}]*display: none/);
+  });
   it('leaves a static card non-interactive with default block body', () => {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
