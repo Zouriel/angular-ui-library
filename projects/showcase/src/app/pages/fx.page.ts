@@ -199,7 +199,7 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
       </doc-section>
 
       <doc-section name="Model viewer" selector="ui-model-viewer" [api]="modelApi"
-        summary="From @zouriel/ui/model (0.101.0). Shows a glTF / GLB 3D model, turning slowly around its vertical axis: centred and scaled to fit (its bounding sphere, so it never clips while it turns), tilted toward you, under a soft studio light (a sky/ground ambient, a warm key and a cool fill) that reads on light and dark themes, on a transparent canvas so the theme or a liquid backdrop shows through. With fixed it is a decorative window layer like ui-liquid-backdrop (position fixed, inset 0, behind the content, no pointer, aria-hidden); otherwise give it an ariaLabel. The spin stops under reduced motion and animations: false (the model still renders), and it only draws while on screen and the tab is visible. three.js is an optional peer dependency (npm i three), loaded with a dynamic import the first time a viewer appears; renderer, geometries, materials and textures are disposed on destroy. Below: a passport behind a clear glass card (ui-card glassStrength=&quot;clear&quot;) over the liquid backdrop, in harbour and harbour-dark.">
+        summary="From @zouriel/ui/model (0.101.0). Shows a glTF / GLB 3D model, turning slowly around its vertical axis: centred and scaled to fit (its bounding sphere, so it never clips while it turns), tilted toward you, under a soft studio light (a sky/ground ambient, a warm key and a cool fill) that reads on light and dark themes, on a transparent canvas so the theme or a liquid backdrop shows through. With fixed it is a decorative window layer like ui-liquid-backdrop (position fixed, inset 0, behind the content, no pointer, aria-hidden); otherwise give it an ariaLabel. The spin stops under reduced motion and animations: false (the model still renders), and it only draws while on screen and the tab is visible. three.js is an optional peer dependency (npm i three), loaded with a dynamic import the first time a viewer appears; renderer, geometries, materials and textures are disposed on destroy. Below: a passport behind clear, frosted and liquid glass cards (ui-card glassStrength) over the liquid backdrop, then liquid glass over a busy photo with a soft scrim, in harbour and harbour-dark.">
         <doc-demo code="<!-- npm i three -->
 <ui-liquid-backdrop fixed />
 <ui-model-viewer fixed src=&quot;/media/maldivian-passport.glb&quot; [tilt]=&quot;12&quot; [spinSeconds]=&quot;24&quot; />
@@ -221,7 +221,24 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
                     <span class="surface-title">frosted</span>
                     <span class="surface-copy">The default glass, for comparison.</span>
                   </ui-card>
+                  <ui-card [glass]="true" glassStrength="liquid" [gap]="2">
+                    <span class="surface-title">liquid</span>
+                    <span class="surface-copy">At least 80% transparent; the edges bend what is behind.</span>
+                  </ui-card>
                 </div>
+              </ui-theme-provider>
+            }
+          </div>
+          <div class="liquid-photo-row">
+            @for (t of modelDemo; track t) {
+              <ui-theme-provider [theme]="t" class="ui-surface liquid-photo">
+                <ui-backdrop-slideshow [fixed]="false" [slides]="busySlide" motion="none" scrim="soft" />
+                <ui-model-viewer class="model-layer" src="demo/maldivian-passport.glb" [spinSeconds]="20" />
+                <ui-card class="liquid-demo-card" [glass]="true" glassStrength="liquid" radius="xl" [gap]="2">
+                  <span class="surface-title">Liquid glass · {{ t }}</span>
+                  <span class="surface-copy">The photo and the passport stay plainly visible through the card; its rounded edges bend them.</span>
+                  <ui-button variant="primary" size="sm">Send feedback</ui-button>
+                </ui-card>
               </ui-theme-provider>
             }
           </div>
@@ -262,7 +279,7 @@ slides: UiBackdropSlide[] = [
               <ui-backdrop-slideshow [slides]="slides" />
               <ui-model-viewer fixed src="demo/maldivian-passport.glb" />
               <div class="full-content">
-                <ui-card [glass]="true" glassStrength="clear" [gap]="3">
+                <ui-card [glass]="true" glassStrength="liquid" radius="xl" [gap]="3">
                   <span class="surface-title">Passport section feedback</span>
                   <span class="surface-copy">Photos at the bottom, the passport above them, this card on top.</span>
                   <ui-button variant="primary" (click)="fullSlides.set(false)">Close</ui-button>
@@ -321,6 +338,9 @@ slides: UiBackdropSlide[] = [
     .model-layer { position: absolute; inset: 0; width: auto; height: auto; }
     .model-cards { position: relative; display: grid; gap: var(--ui-space-3); }
     .slideshow-box { min-height: 420px; }
+    .liquid-photo-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: var(--ui-space-3); margin-bottom: var(--ui-space-3); }
+    .liquid-photo { position: relative; overflow: hidden; border-radius: var(--ui-radius-lg); min-height: 380px; padding: var(--ui-space-6); display: grid; place-items: center; }
+    .liquid-demo-card { position: relative; width: min(100%, 320px); }
     .full-open { margin-top: var(--ui-space-3); }
     .full-demo { position: fixed; inset: 0; z-index: 1000; }
     .full-content { position: relative; display: grid; place-items: end center; height: 100%; padding: var(--ui-space-4); }
@@ -434,6 +454,7 @@ export class FxPage {
   ];
   protected readonly modelDemo = ['harbour', 'harbour-dark'];
   protected readonly fullSlides = signal(false);
+  protected readonly busySlide: UiBackdropSlide[] = [{ src: 'demo/immigration/slide-2-1920.webp', srcset: 'demo/immigration/slide-2-960.webp 960w, demo/immigration/slide-2-1920.webp 1920w' }];
   protected readonly slides: UiBackdropSlide[] = [1, 2, 3].map((n) => ({
     src: `demo/immigration/slide-${n}-1920.webp`,
     srcset: `demo/immigration/slide-${n}-960.webp 960w, demo/immigration/slide-${n}-1920.webp 1920w`,

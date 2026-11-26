@@ -102,6 +102,12 @@
   --ui-glass-card-clear-tint: 0.15;
   --ui-glass-card-clear-blur: 24px;
   --ui-glass-card-clear-saturate: 1.6;
+  /* Liquid card glass (ui-card glassStrength="liquid", 0.102.0), after Apple's Liquid Glass: at most a 20% tint
+     (at least 80% transparent), a light blur and more saturation, no squeeze, so what is behind stays
+     recognisable. It does not promise AA over any backdrop: put it over a scrimmed one. */
+  --ui-glass-liquid-tint: 0.16;
+  --ui-glass-liquid-blur: 3px;
+  --ui-glass-liquid-saturate: 1.5;
   /* Backdrop slideshow scrim (ui-backdrop-slideshow, 0.101.0): the theme's page colour laid over the photos at this
      strength, so glass cards and text on top read in light and dark themes. */
   --ui-backdrop-scrim-soft: 45%;
@@ -310,6 +316,18 @@
     contrast(calc((var(--ui-glass-clear-ceiling) - var(--ui-glass-clear-floor)) / (var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor))))
     brightness(calc(var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor)))
     saturate(var(--ui-glass-clear-saturate));
+  /* Liquid card glass (0.102.0): the tint, the specular rim (bright top-left, soft dark bottom-right), the thin
+     luminous edge and the sheen, lighter on light themes and dimmer on dark ones (light-dark() follows the
+     theme's color-scheme), and a halo in the page colour behind text instead of a veil over the backdrop. */
+  --ui-glass-liquid-bg: color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-liquid-tint) * 100%), transparent);
+  --ui-glass-liquid-filter: blur(var(--ui-glass-liquid-blur)) saturate(var(--ui-glass-liquid-saturate));
+  --ui-glass-liquid-rim: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.42));
+  --ui-glass-liquid-rim-shade: light-dark(rgba(15, 23, 42, 0.14), rgba(0, 0, 0, 0.38));
+  --ui-glass-liquid-edge: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16));
+  --ui-glass-liquid-sheen: light-dark(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.09));
+  --ui-glass-liquid-text-halo: 0 0 1px color-mix(in srgb, var(--ui-color-bg) 70%, transparent),
+    0 0 8px color-mix(in srgb, var(--ui-color-bg) 65%, transparent),
+    0 0 18px color-mix(in srgb, var(--ui-color-bg) 40%, transparent);
   /* The scrim's colour: the page colour of the theme in effect (light over a light theme, dark over a dark one). */
   --ui-backdrop-scrim: var(--ui-color-bg);
   /* Clear card glass (0.101.0): blur and saturate first, then the squeeze, so every backdrop colour ends in

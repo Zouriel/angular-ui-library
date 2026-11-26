@@ -729,6 +729,28 @@ describe('see-through glass', () => {
     expect(fails).toEqual([]);
   });
 
+  // ── Liquid card glass (ui-card glassStrength 'liquid', 0.102.0) ──
+  // Apple-style liquid glass: transparency first. It deliberately does not promise AA over any backdrop
+  // (frosted and clear above do); it is for a scrimmed backdrop, with a text halo instead of a veil.
+  it('liquid card: at least 80% transparent in every theme, a light blur and saturation, and no squeeze', () => {
+    expect(base['--ui-glass-liquid-bg']).toBe('color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-liquid-tint) * 100%), transparent)');
+    expect(base['--ui-glass-liquid-filter']).toBe('blur(var(--ui-glass-liquid-blur)) saturate(var(--ui-glass-liquid-saturate))');
+    expect(base['--ui-glass-liquid-filter']).not.toMatch(/contrast|brightness/);
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const [tint, blur, sat] = [t.num('--ui-glass-liquid-tint'), t.raw('--ui-glass-liquid-blur'), t.num('--ui-glass-liquid-saturate')];
+      if (!(tint > 0 && tint <= 0.2)) fails.push(`${name}: liquid tint ${tint}, needs 0-0.2`);
+      if (!/^\d+px$/.test(blur) || parseFloat(blur) < 2 || parseFloat(blur) > 4) fails.push(`${name}: liquid blur ${blur}, needs 2-4px`);
+      if (!(sat >= 1.2 && sat <= 1.8)) fails.push(`${name}: liquid saturate ${sat}`);
+      for (const k of ['--ui-glass-liquid-rim', '--ui-glass-liquid-rim-shade', '--ui-glass-liquid-edge', '--ui-glass-liquid-sheen', '--ui-glass-liquid-text-halo']) {
+        if (!t.raw(k)) fails.push(`${name}: ${k} missing`);
+      }
+    }
+    expect(fails).toEqual([]);
+    expect(base['--ui-glass-liquid-text-halo']).toContain('var(--ui-color-bg)');
+  });
+
   // ── Clear glass (glassStrength 'clear', the default since 0.41.3) ──
   // Made for a map in the theme's own brightness. The colours MapTiler's dataviz and dataviz-dark
   // styles draw Malé in (sampled from real tiles at zoom 15-16, every colour covering more than 0.2%

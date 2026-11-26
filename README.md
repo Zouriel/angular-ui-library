@@ -157,6 +157,14 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   changes its column count: `(uiPinchIn)` at 0.8 times the baseline distance, `(uiPinchOut)` at 1.25 times, then the
   current distance is the new baseline. It cancels `touchmove` only while two fingers are on the host, so the page
   doesn't zoom and one finger still scrolls. `[uiPinchDisabled]` turns it off.
+- **0.102.0** (Angular; the Flutter twin follows): `ui-card glassStrength="liquid"`, Apple-style liquid glass: at
+  least 80% transparent (`--ui-glass-liquid-tint` 0.16), a 3px blur and saturate(1.5) with no squeeze, a specular rim,
+  a luminous edge and a sheen, and in Chromium edges that bend the backdrop (an SVG displacement map in
+  `backdrop-filter`, rebuilt on resize; `UI_LIQUID_REFRACTION` to force it). Text gets a halo in the page colour.
+  It trades guaranteed AA for transparency: use it over a scrimmed backdrop. Frosted under reduced transparency.
+  Fix: `ui-backdrop-slideshow` no longer stops after a few slides in WebKit (iPhone Safari): `decode()` no longer
+  gates the cycle (a load event, or a usable image after a 3 s timeout, counts too; only a real load error skips a
+  photo), one advance runs at a time with the next always rescheduled, and a watchdog restarts a stalled cycle.
 - **0.101.0** (Angular; the Flutter twins follow in a later release): the `harbour` / `harbour-dark` liquid theme pair
   (Mist, Navy, Crest Gold: a navy primary, a gold accent for highlights, and its own `--ui-color-info` blue, so the
   success / info / neutral / warning / danger tones all differ). `ui-model-viewer` in the new `@zouriel/ui/model`

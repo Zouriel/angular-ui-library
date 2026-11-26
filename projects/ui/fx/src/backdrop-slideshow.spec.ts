@@ -199,6 +199,67 @@ describe('ui-backdrop-slideshow', () => {
     delete (document as unknown as { visibilityState?: unknown }).visibilityState;
   });
 
+  // WebKit (iPhone Safari) can reject decode() for cached images or leave it unsettled after a src swap;
+  // the cycle must never depend on it.
+  const tops = async (f: Awaited<ReturnType<typeof make>>, steps: number, every: number) => {
+    const seen: string[] = [top(f).getAttribute('src')!];
+    for (let i = 0; i < steps; i++) {
+      await vi.advanceTimersByTimeAsync(every);
+      flushRaf();
+      const src = top(f).getAttribute('src')!;
+      if (src !== seen.at(-1)) seen.push(src);
+    }
+    return seen;
+  };
+
+  it('keeps cycling for three full rounds when decode() rejects (cached images in WebKit)', async () => {
+    HTMLImageElement.prototype.decode = () => Promise.reject(new DOMException('decode', 'EncodingError'));
+    const f = await make();
+    const seen = await tops(f, 9, 1000);
+    expect(seen).toEqual(['/s1.webp', '/s2.webp', '/s3.webp', '/s1.webp', '/s2.webp', '/s3.webp', '/s1.webp', '/s2.webp', '/s3.webp', '/s1.webp']);
+  });
+
+  it('keeps cycling when decode() never settles: a usable photo shows after the load timeout', async () => {
+    HTMLImageElement.prototype.decode = () => new Promise<void>(() => undefined);
+    const f = await make();
+    const seen = await tops(f, 16, 1000); // each change waits interval + the 3s timeout
+    expect(seen.length).toBeGreaterThanOrEqual(4);
+    expect(seen.slice(0, 4)).toEqual(['/s1.webp', '/s2.webp', '/s3.webp', '/s1.webp']);
+  });
+
+  it('runs one chain when the tab hides and shows during an in-flight advance, and keeps going', async () => {
+    let release: (() => void) | null = null;
+    HTMLImageElement.prototype.decode = () => new Promise<void>((r) => (release = r));
+    const f = await make();
+    await vi.advanceTimersByTimeAsync(1000); // advance to s2 starts, waiting on decode
+    expect(release).not.toBeNull();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    HTMLImageElement.prototype.decode = () => Promise.resolve();
+    // The visible handler's schedule must not start a second advance on the same layer.
+    await vi.advanceTimersByTimeAsync(1000);
+    release!();
+    await vi.advanceTimersByTimeAsync(0);
+    flushRaf();
+    expect(top(f).getAttribute('src')).toBe('/s2.webp');
+    const seen = await tops(f, 4, 1000);
+    expect(seen).toEqual(['/s2.webp', '/s3.webp', '/s1.webp', '/s2.webp', '/s3.webp']);
+    delete (document as unknown as { visibilityState?: unknown }).visibilityState;
+  });
+
+  it('restarts a stalled cycle (the watchdog) from the current slide', async () => {
+    const f = await make();
+    // Simulate a lost chain: an advance that never finishes and no timer.
+    const inst = f.debugElement.children[0].componentInstance as unknown as { advancing: boolean; timer: unknown; stop(): void };
+    inst.stop();
+    inst.advancing = true;
+    await vi.advanceTimersByTimeAsync(1000 + 3000 + 200 + 1000 + 6000);
+    flushRaf();
+    expect(top(f).getAttribute('src')).not.toBe('/s1.webp');
+  });
+
   it('drops the scrim with scrim="none" and covers its container without fixed', async () => {
     const f = await make([], (h) => {
       h.scrim.set('none');

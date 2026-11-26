@@ -1,5 +1,11 @@
-import { Component, inject, input, output } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
+import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidMapUrl } from './liquid-glass';
+
+/** How see-through a glass `ui-card` is: the shared strengths plus `'liquid'` (0.102.0). */
+export type UiCardGlassStrength = UiGlassStrength | 'liquid';
+
+let liquidIds = 0;
 
 /** Spacing steps accepted by `ui-card [gap]` (maps to `--ui-space-N`). */
 export type UiCardGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10;
@@ -14,10 +20,20 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
 @Component({
   selector: 'ui-card',
   template: `
+    @if (refractMap(); as m) {
+      <svg class="lq-defs" aria-hidden="true" focusable="false" width="0" height="0">
+        <filter [attr.id]="filterId" x="0" y="0" [attr.width]="m.w" [attr.height]="m.h" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+          <feImage [attr.href]="m.url" x="0" y="0" [attr.width]="m.w" [attr.height]="m.h" preserveAspectRatio="none" result="map" />
+          <feDisplacementMap in="SourceGraphic" in2="map" [attr.scale]="m.scale" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+    }
     <div
       class="ui-card"
       [class.glass]="glass()"
       [class.clear]="glass() && glassStrength() === 'clear'"
+      [class.liquid]="liquid()"
+      [style.--_lq-url]="refractUrl()"
       [class.no-radius]="radius() === false"
       [class.radius-xl]="radius() === 'xl'"
       [class.interactive]="interactive() || pressable()"
@@ -104,6 +120,40 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       -webkit-backdrop-filter: var(--ui-glass-card-clear-filter);
       backdrop-filter: var(--ui-glass-card-clear-filter);
     }
+    /* Liquid (0.102.0), after Apple's Liquid Glass: at most a 20% tint, no squeeze, a light blur and more
+       saturation so what is behind stays recognisable; a bright rim (top-left), a soft darker inner edge
+       (bottom-right), a thin luminous border and a sheen. In Chromium the backdrop also bends near the rounded
+       edge (an SVG displacement map, --_lq-url). Text gets a halo in the page colour instead of a veil, and
+       the card's own controls keep their surfaces. It trades guaranteed AA over any backdrop for transparency:
+       use it over a scrimmed backdrop (ui-backdrop-slideshow scrim). */
+    .lq-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+    .ui-card.glass.liquid {
+      background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg);
+      border-color: var(--ui-glass-liquid-edge);
+      -webkit-backdrop-filter: var(--ui-glass-liquid-filter);
+      backdrop-filter: var(--_lq-url,) var(--ui-glass-liquid-filter);
+      box-shadow:
+        inset 1.5px 1.5px 0 -0.5px var(--ui-glass-liquid-rim),
+        inset -1px -1px 0 0 var(--ui-glass-liquid-rim-shade),
+        inset 0 0 0 1px var(--ui-glass-liquid-edge),
+        var(--ui-shadow-2);
+      text-shadow: var(--ui-glass-liquid-text-halo);
+    }
+    .ui-card.glass.liquid .hd, .ui-card.glass.liquid .ft { border-color: var(--ui-glass-liquid-edge); }
+    .ui-card.glass.liquid ::ng-deep :is(button, input, textarea, select, [role='radio'], [role='checkbox'], [role='option'], [role='switch'], .ui-btn) { text-shadow: none; }
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      .ui-card.glass.liquid {
+        background: var(--ui-glass-bg);
+        border-color: var(--ui-glass-border);
+        -webkit-backdrop-filter: blur(var(--ui-glass-blur));
+        backdrop-filter: blur(var(--ui-glass-blur));
+        box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
+        text-shadow: none;
+      }
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .ui-card.glass.liquid { background: var(--ui-color-surface); text-shadow: none; }
+    }
     /* No backdrop-filter, or the user asks for less transparency / more contrast: an unfiltered backdrop
        under a light tint can't promise contrast, so a clear card is solid. */
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -135,8 +185,12 @@ export class UiCard {
    * a ui-model-viewer, a photo): the backdrop is squeezed into the theme's frosted range first, so text,
    * muted text, primary and status colours stay AA over anything. Solid where backdrop-filter is missing
    * or under reduced transparency / more contrast.
+   * `'liquid'` (0.102.0): Apple-style liquid glass, at least 80% transparent with no squeeze, a light
+   * blur, a specular rim and sheen, and (Chromium) edges that bend the backdrop; text gets a halo in the
+   * page colour. Not AA over every backdrop: use it over a scrimmed one. Frosted under reduced
+   * transparency / more contrast; solid without backdrop-filter.
    */
-  glassStrength = input<UiGlassStrength>('frosted');
+  glassStrength = input<UiCardGlassStrength>('frosted');
   radius = input<boolean | 'xl'>(this.config.radius);
   /** Opt-in hover lift for cards that are themselves a clickable target, such as a card wrapped in
    *  an `<a>` or `<button>`. Visual only: the wrapping element stays the button. */
@@ -150,6 +204,52 @@ export class UiCard {
   disabled = input(false);
   /** Emitted when an enabled pressable card is clicked or activated with Enter or Space. */
   activate = output<void>();
+
+  protected readonly liquid = computed(() => this.glass() && this.glassStrength() === 'liquid');
+  protected readonly filterId = `ui-lq-${++liquidIds}`;
+  private readonly refractionOn = inject(UI_LIQUID_REFRACTION)();
+  private readonly size = signal<{ w: number; h: number; r: number } | null>(null);
+  /** The displacement map for the card's current size (Chromium only), rebuilt on resize. */
+  protected readonly refractMap = computed(() => {
+    const s = this.size();
+    if (!this.liquid() || !this.refractionOn || !s || s.w < 8 || s.h < 8) return null;
+    const band = uiLiquidBand(s.w, s.h);
+    const url = uiLiquidMapUrl(s.w, s.h, s.r, band, this.host.ownerDocument);
+    return url ? { url, w: s.w, h: s.h, scale: Math.round(band * 0.9) } : null;
+  });
+  protected readonly refractUrl = computed(() => (this.refractMap() ? `url(#${this.filterId})` : null));
+  private readonly host = inject(ElementRef).nativeElement as HTMLElement;
+
+  constructor() {
+    let ro: ResizeObserver | null = null;
+    const measure = () => {
+      const card = this.host.querySelector<HTMLElement>(':scope > .ui-card');
+      if (!card) return;
+      const w = Math.round(card.offsetWidth);
+      const h = Math.round(card.offsetHeight);
+      const r = parseFloat(getComputedStyle(card).borderTopLeftRadius) || 0;
+      const cur = this.size();
+      if (!cur || cur.w !== w || cur.h !== h || cur.r !== r) this.size.set({ w, h, r });
+    };
+    afterNextRender(() => {
+      effect(() => {
+        const on = this.liquid() && this.refractionOn;
+        untracked(() => {
+          if (on && !ro && typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(() => measure());
+            const card = this.host.querySelector(':scope > .ui-card');
+            if (card) ro.observe(card);
+            measure();
+          } else if (!on && ro) {
+            ro.disconnect();
+            ro = null;
+          }
+        });
+      }, { injector: this.injector });
+    });
+    inject(DestroyRef).onDestroy(() => ro?.disconnect());
+  }
+  private readonly injector = inject(Injector);
 
   protected onClick(e: MouseEvent): void {
     if (!this.pressable() || this.disabled()) return;

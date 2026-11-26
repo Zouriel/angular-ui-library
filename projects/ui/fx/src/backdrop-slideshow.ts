@@ -48,6 +48,9 @@ export function uiSlideshowPan(viewW: number, viewH: number, natW: number, natH:
   return { width, from: -overflow * margin, to: -overflow * (1 - margin) };
 }
 
+/** How long a next photo may take to load before the slideshow shows it anyway (if usable) or skips it (ms). */
+export const UI_SLIDESHOW_LOAD_TIMEOUT_MS = 3000;
+
 /** Under reduced motion the crossfade is plain and at least this slow (ms). */
 export const UI_SLIDESHOW_REDUCED_FADE_MS = 2400;
 
@@ -158,6 +161,9 @@ export class UiBackdropSlideshow {
   private hidden = false;
   private reducedMotion = false;
   private seq = 0;
+  private advancing = false;
+  /** When a slide last changed (or the cycle started, or the tab came back), for the watchdog. */
+  private lastChange = Date.now();
   private cleanups: (() => void)[] = [];
 
   constructor() {
@@ -192,10 +198,15 @@ export class UiBackdropSlideshow {
     const doc = this.host.ownerDocument;
     const onVis = () => {
       this.hidden = doc.visibilityState === 'hidden';
+      if (!this.hidden) this.lastChange = Date.now(); // time hidden is not a stall
       if (this.hidden) this.stop();
       else this.schedule();
     };
     doc.addEventListener('visibilitychange', onVis);
+    this.zone.runOutsideAngular(() => {
+      const watchdog = setInterval(() => this.checkStalled(), Math.max(1000, Math.min(this.interval(), 5000)));
+      this.cleanups.push(() => clearInterval(watchdog));
+    });
     if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.relayout());
       ro.observe(this.host);
@@ -219,6 +230,8 @@ export class UiBackdropSlideshow {
     const [a, b] = this.layers().map((r) => r.nativeElement);
     if (!a || !b) return;
     this.seq++;
+    this.advancing = false;
+    this.lastChange = Date.now();
     this.current = -1;
     for (const el of [a, b]) {
       el.style.transition = 'none';
@@ -244,6 +257,8 @@ export class UiBackdropSlideshow {
 
   private schedule(): void {
     this.stop();
+    // An advance in flight schedules the next one itself when it ends.
+    if (this.advancing) return;
     if (this.destroyed || this.hidden || !this.animationsOn || this.slides().length < 2 || this.current < 0) return;
     this.zone.runOutsideAngular(() => {
       this.timer = setTimeout(() => void this.advance(), Math.max(this.interval(), 500));
@@ -269,45 +284,102 @@ export class UiBackdropSlideshow {
     this.timer = undefined;
   }
 
-  /** Load and decode the next slide in the hidden layer, then fade it in over the current one. */
+  /**
+   * Whether the photo in `img` can be shown: decode() settled, or the image loaded, whichever comes first.
+   * decode() never gates on its own: WebKit can reject it (EncodingError) or leave it unsettled for a
+   * cached image or after a src / srcset swap, so a load event, or a usable image (complete with a size)
+   * when decode() rejects or after `ms`, counts too. Only a real load error (or nothing usable after `ms`)
+   * is false.
+   */
+  private ready(img: HTMLImageElement, ms = UI_SLIDESHOW_LOAD_TIMEOUT_MS): Promise<boolean> {
+    return new Promise((resolve) => {
+      let done = false;
+      const usable = () => img.complete && img.naturalWidth > 0;
+      const finish = (ok: boolean) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onError);
+        resolve(ok);
+      };
+      const onLoad = () => finish(true);
+      const onError = () => finish(false);
+      img.addEventListener('load', onLoad);
+      img.addEventListener('error', onError);
+      const timer = setTimeout(() => finish(usable()), ms);
+      let decoding: Promise<void> | undefined;
+      try {
+        decoding = img.decode?.();
+      } catch {
+        decoding = undefined;
+      }
+      if (decoding) decoding.then(() => finish(true), () => usable() && finish(true));
+      else if (usable()) finish(true);
+    });
+  }
+
+  /** Load the next slide in the hidden layer, then fade it in over the current one. One chain at a time. */
   private async advance(): Promise<void> {
+    this.timer = undefined;
+    if (this.advancing) return;
     const slides = this.slides();
     if (slides.length < 2) return;
+    this.advancing = true;
     const seq = this.seq;
-    const next = (this.current + 1) % slides.length;
-    const layers = this.layers().map((r) => r.nativeElement);
-    const incoming = layers[1 - this.front];
-    const outgoing = layers[this.front];
-    // The incoming layer is under the current one (or transparent), so changing its source shows nothing.
-    incoming.style.transition = 'none';
-    incoming.style.opacity = '0';
-    this.halt(incoming);
-    this.assign(incoming, slides[next]);
     try {
-      await incoming.decode();
-    } catch {
-      // A broken image: skip it (stay on the current slide) and try the one after next time.
-      if (seq === this.seq && !this.destroyed) {
+      const next = (this.current + 1) % slides.length;
+      const layers = this.layers().map((r) => r.nativeElement);
+      const incoming = layers[1 - this.front];
+      const outgoing = layers[this.front];
+      // The incoming layer is under the current one (or transparent), so changing its source shows nothing.
+      incoming.style.transition = 'none';
+      incoming.style.opacity = '0';
+      this.halt(incoming);
+      this.assign(incoming, slides[next]);
+      const ok = await this.ready(incoming);
+      if (seq !== this.seq || this.destroyed) return;
+      if (!ok) {
+        // A broken photo: stay on the current one and try the slide after it next time.
         this.current = next;
+        return;
+      }
+      const fade = this.motionAllowed ? this.fade() : Math.max(this.fade(), UI_SLIDESHOW_REDUCED_FADE_MS);
+      outgoing.style.zIndex = '0';
+      incoming.style.zIndex = '1';
+      // The incoming slide is already moving when its fade starts; the outgoing one keeps moving under it.
+      this.move(incoming, next);
+      // Next frame: let opacity 0 apply, then fade in. The outgoing layer stays fully opaque underneath.
+      requestAnimationFrame(() => {
+        if (seq !== this.seq || this.destroyed) return;
+        incoming.style.transition = `opacity ${fade}ms ease-in-out`;
+        incoming.style.opacity = '1';
+      });
+      this.front = 1 - this.front;
+      this.current = next;
+      this.lastChange = Date.now();
+    } finally {
+      // Every way out keeps the cycle going (unless a restart or destroy took over).
+      if (seq === this.seq) {
+        this.advancing = false;
         this.schedule();
       }
-      return;
     }
-    if (seq !== this.seq || this.destroyed) return;
-    if (this.hidden) return; // resumes on visibilitychange
-    const fade = this.motionAllowed ? this.fade() : Math.max(this.fade(), UI_SLIDESHOW_REDUCED_FADE_MS);
-    outgoing.style.zIndex = '0';
-    incoming.style.zIndex = '1';
-    // The incoming slide is already moving when its fade starts; the outgoing one keeps moving under it.
-    this.move(incoming, next);
-    // Next frame: let opacity 0 apply, then fade in. The outgoing layer stays fully opaque underneath.
-    requestAnimationFrame(() => {
-      if (seq !== this.seq || this.destroyed) return;
-      incoming.style.transition = `opacity ${fade}ms ease-in-out`;
-      incoming.style.opacity = '1';
-    });
-    this.front = 1 - this.front;
-    this.current = next;
+  }
+
+  /**
+   * The watchdog: if no slide has changed for twice (interval + fade), and never less than a slow load,
+   * while the slideshow should be running (visible, several slides, animations on), restart the cycle
+   * from the current slide.
+   */
+  private checkStalled(): void {
+    if (this.destroyed || this.hidden || !this.animationsOn || this.slides().length < 2 || this.current < 0) return;
+    // Never shorter than a slow load (interval + the load timeout + the fade), or it would cut every slow load short.
+    const stall = Math.max(2 * (this.interval() + this.fade()), this.interval() + UI_SLIDESHOW_LOAD_TIMEOUT_MS + this.fade() + 1000);
+    if (Date.now() - this.lastChange <= stall) return;
+    this.seq++;
+    this.advancing = false;
+    this.lastChange = Date.now();
     this.schedule();
   }
 
