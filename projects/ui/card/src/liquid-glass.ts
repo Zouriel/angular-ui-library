@@ -9,8 +9,12 @@ import { InjectionToken } from '@angular/core';
 export const UI_LIQUID_REFRACTION = new InjectionToken<() => boolean>('UI_LIQUID_REFRACTION', {
   providedIn: 'root',
   factory: () => () => {
-    const brands = (globalThis.navigator as { userAgentData?: { brands?: { brand: string }[] } } | undefined)?.userAgentData?.brands;
-    return !!brands?.some((b) => /Chromium|Google Chrome|Microsoft Edge|Opera|Brave/i.test(b.brand));
+    const brands = (
+      globalThis.navigator as { userAgentData?: { brands?: { brand: string }[] } } | undefined
+    )?.userAgentData?.brands;
+    return !!brands?.some((b) =>
+      /Chromium|Google Chrome|Microsoft Edge|Opera|Brave/i.test(b.brand),
+    );
   },
 });
 
@@ -25,7 +29,13 @@ export function uiLiquidBand(w: number, h: number): number {
  * middle, rising toward the edge across `band` px along the edge's inward normal, so the backdrop near
  * the rim is pulled from further in (it bends like the edge of a lens) and the middle stays undistorted.
  */
-export function uiLiquidDisplacementMap(w: number, h: number, radius: number, band: number, scale = 0.5): { data: Uint8ClampedArray; width: number; height: number } {
+export function uiLiquidDisplacementMap(
+  w: number,
+  h: number,
+  radius: number,
+  band: number,
+  scale = 0.5,
+): { data: Uint8ClampedArray; width: number; height: number } {
   const mw = Math.max(1, Math.round(w * scale));
   const mh = Math.max(1, Math.round(h * scale));
   const data = new Uint8ClampedArray(mw * mh * 4);
@@ -66,7 +76,13 @@ export function uiLiquidDisplacementMap(w: number, h: number, radius: number, ba
 }
 
 /** The map as a PNG data URL (null where there is no canvas, e.g. a test DOM). */
-export function uiLiquidMapUrl(w: number, h: number, radius: number, band: number, doc: Document): string | null {
+export function uiLiquidMapUrl(
+  w: number,
+  h: number,
+  radius: number,
+  band: number,
+  doc: Document,
+): string | null {
   const map = uiLiquidDisplacementMap(w, h, radius, band);
   const canvas = doc.createElement('canvas');
   canvas.width = map.width;

@@ -5,14 +5,32 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import StethoscopeIcon from '@hugeicons/core-free-icons/StethoscopeIcon';
 import { UI_CONFIG, defaultUiConfig } from '@zouriel/ui';
 import { UiInput } from '@zouriel/ui/form';
-import { UiFeatureCard, type UiFeatureLayout, type UiFeatureRadius, type UiFeatureSize, type UiFeatureSurface, type UiFeatureTone } from './feature-card';
+import {
+  UiFeatureCard,
+  type UiFeatureLayout,
+  type UiFeatureRadius,
+  type UiFeatureSize,
+  type UiFeatureSurface,
+  type UiFeatureTone,
+} from './feature-card';
 
 @Component({
   imports: [UiFeatureCard, HugeiconsIconComponent],
   template: `
     <div [attr.dir]="dir()">
-      <ui-feature-card id="c" title="Find a doctor" [description]="description()" eyebrow="Clinics" [actionLabel]="actionLabel()"
-                       [href]="href()" [tone]="tone()" [layout]="layout()" [size]="size()" [disabled]="disabled()" (action)="hits.push($event)">
+      <ui-feature-card
+        id="c"
+        title="Find a doctor"
+        [description]="description()"
+        eyebrow="Clinics"
+        [actionLabel]="actionLabel()"
+        [href]="href()"
+        [tone]="tone()"
+        [layout]="layout()"
+        [size]="size()"
+        [disabled]="disabled()"
+        (action)="hits.push($event)"
+      >
         <hugeicons-icon feature-icon [icon]="icon" />
       </ui-feature-card>
       <ui-feature-card id="s" title="Static" description="No action" [headingLevel]="2" />
@@ -37,10 +55,23 @@ const setup = () => {
   const f = TestBed.createComponent(Host);
   f.detectChanges();
   const el = f.nativeElement as HTMLElement;
-  return { f, el, h: f.componentInstance, q: (s: string) => el.querySelector(s) as HTMLElement | null };
+  return {
+    f,
+    el,
+    h: f.componentInstance,
+    q: (s: string) => el.querySelector(s) as HTMLElement | null,
+  };
 };
-const controls = (root: Element) => root.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"]), input, select, textarea');
-const named = (el: Element, attr: string) => el.getAttribute(attr)!.split(' ').map((id) => document.getElementById(id)?.textContent?.trim() ?? `#${id}?`).join(', ');
+const controls = (root: Element) =>
+  root.querySelectorAll(
+    'button, a[href], [tabindex]:not([tabindex="-1"]), input, select, textarea',
+  );
+const named = (el: Element, attr: string) =>
+  el
+    .getAttribute(attr)!
+    .split(' ')
+    .map((id) => document.getElementById(id)?.textContent?.trim() ?? `#${id}?`)
+    .join(', ');
 
 describe('UiFeatureCard', () => {
   it('a card with an action has exactly one control, named "title, action" and described by the description', () => {
@@ -65,7 +96,9 @@ describe('UiFeatureCard', () => {
   it('stretches the one control over the whole card, so a click anywhere activates it', () => {
     const { q } = setup();
     expect(getComputedStyle(q('#c .fc')!).position).toBe('relative');
-    const rules = [...document.styleSheets].flatMap((s) => [...s.cssRules]).filter((r): r is CSSStyleRule => r instanceof CSSStyleRule);
+    const rules = [...document.styleSheets]
+      .flatMap((s) => [...s.cssRules])
+      .filter((r): r is CSSStyleRule => r instanceof CSSStyleRule);
     const after = rules.find((r) => /\.hit\S*::after/.test(r.selectorText));
     expect(after).toBeDefined();
     expect(after!.style.position).toBe('absolute');
@@ -121,7 +154,10 @@ describe('UiFeatureCard', () => {
     expect(controls(card).length).toBe(0);
     expect(card.querySelector('.fc')!.classList.contains('interactive')).toBe(false);
     const title = card.querySelector('.title')!;
-    expect([title.getAttribute('role'), title.getAttribute('aria-level')]).toEqual(['heading', '2']);
+    expect([title.getAttribute('role'), title.getAttribute('aria-level')]).toEqual([
+      'heading',
+      '2',
+    ]);
     expect(q('#c .title')!.getAttribute('aria-level')).toBe('3');
     // No icon projected: the badge collapses.
     expect(getComputedStyle(card.querySelector('.badge')!).display).toBe('none');
@@ -151,12 +187,18 @@ describe('UiFeatureCard', () => {
   it('size lg is roomier with a bigger badge; horizontal puts the badge beside the text', () => {
     const { f, h, q } = setup();
     const fc = () => getComputedStyle(q('#c .fc')!);
-    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual(['var(--ui-space-6)', '48px']);
+    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual([
+      'var(--ui-space-6)',
+      '48px',
+    ]);
     expect(fc().flexDirection).toBe('column');
     h.size.set('lg');
     h.layout.set('horizontal');
     f.detectChanges();
-    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual(['var(--ui-space-8)', '56px']);
+    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual([
+      'var(--ui-space-8)',
+      '56px',
+    ]);
     expect(fc().flexDirection).toBe('row');
   });
 
@@ -176,9 +218,21 @@ describe('UiFeatureCard', () => {
   template: `
     <div [attr.dir]="dir()">
       <ui-input id="field" ariaLabel="Ask" />
-      <ui-feature-card id="t" title="Find a doctor" [description]="description()" [size]="size()" [surface]="surface()" [tone]="tone()"
-                       [trailingArrow]="arrow()" [actionLabel]="actionLabel()" [href]="href()" [descriptionLines]="lines()" [radius]="radius()"
-                       [disabled]="disabled()" (action)="hits.push($event)">
+      <ui-feature-card
+        id="t"
+        title="Find a doctor"
+        [description]="description()"
+        [size]="size()"
+        [surface]="surface()"
+        [tone]="tone()"
+        [trailingArrow]="arrow()"
+        [actionLabel]="actionLabel()"
+        [href]="href()"
+        [descriptionLines]="lines()"
+        [radius]="radius()"
+        [disabled]="disabled()"
+        (action)="hits.push($event)"
+      >
         <hugeicons-icon feature-icon [icon]="icon" />
       </ui-feature-card>
       <ui-feature-card id="attr" title="Attr" radius="control" trailingArrow descriptionLines="2" />
@@ -208,20 +262,30 @@ const compact = () => {
   const q = (s: string) => el.querySelector(s) as HTMLElement | null;
   return { f, el, h: f.componentInstance, q, fc: () => getComputedStyle(q('#t .fc')!) };
 };
-const cssRules = () => [...document.styleSheets].flatMap((s) => [...s.cssRules]).filter((r): r is CSSStyleRule => r instanceof CSSStyleRule);
+const cssRules = () =>
+  [...document.styleSheets]
+    .flatMap((s) => [...s.cssRules])
+    .filter((r): r is CSSStyleRule => r instanceof CSSStyleRule);
 
 describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
   it('size sm: 40px badge, 20px icon, --ui-space-4 padding, body-strong title, small description', () => {
     const { f, h, q, fc } = compact();
     expect(q('#t .fc')!.getAttribute('data-size')).toBe('sm');
-    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim(), fc().getPropertyValue('--fc-icon').trim()]).toEqual(['var(--ui-space-4)', '40px', '20px']);
+    expect([
+      fc().padding || fc().paddingTop,
+      fc().getPropertyValue('--fc-badge').trim(),
+      fc().getPropertyValue('--fc-icon').trim(),
+    ]).toEqual(['var(--ui-space-4)', '40px', '20px']);
     expect(fc().gap || fc().rowGap).toBe('var(--ui-space-3)');
     const title = getComputedStyle(q('#t .title')!);
     expect([title.fontSize, title.fontWeight]).toEqual(['var(--ui-font-size-md)', '600']);
     expect(getComputedStyle(q('#t .desc')!).fontSize).toBe('var(--ui-font-size-sm)');
     h.size.set('md');
     f.detectChanges();
-    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual(['var(--ui-space-6)', '48px']);
+    expect([fc().padding || fc().paddingTop, fc().getPropertyValue('--fc-badge').trim()]).toEqual([
+      'var(--ui-space-6)',
+      '48px',
+    ]);
   });
 
   it('trailingArrow without an action label: the whole card is one button named "title, description", nothing nested', () => {
@@ -232,7 +296,9 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
       expect(controls(card).length).toBe(1);
       const btn = card.querySelector('button.hit')!;
       expect(btn.querySelectorAll('button, a, input, [tabindex]').length).toBe(0);
-      expect(named(btn, 'aria-labelledby')).toBe('Find a doctor, Book a visit at a clinic near you.');
+      expect(named(btn, 'aria-labelledby')).toBe(
+        'Find a doctor, Book a visit at a clinic near you.',
+      );
       expect(btn.hasAttribute('aria-describedby')).toBe(false);
       expect(q('#t .fc')!.classList.contains('interactive')).toBe(true);
       (btn as HTMLElement).click();
@@ -256,7 +322,9 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
       h.actionLabel.set('Book now');
       f.detectChanges();
       expect(q('#t .trail')).toBeNull();
-      expect(named(card.querySelector('button.hit')!, 'aria-labelledby')).toBe('Find a doctor, Book now');
+      expect(named(card.querySelector('button.hit')!, 'aria-labelledby')).toBe(
+        'Find a doctor, Book now',
+      );
       // Without trailingArrow (and no label or href) it is a static card again.
       h.actionLabel.set('');
       h.arrow.set(false);
@@ -286,16 +354,22 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
     f.detectChanges();
     expect(getComputedStyle(q('#t .trail')!).transform).toBe('scaleX(-1)');
     // Vertical with an icon: pinned to the end of the badge row by a logical offset, so it moves to the left in RTL.
-    const pin = cssRules().find((r) => /data-layout="vertical"\]\[data-size="sm"\].*:has\(.*\.trail/.test(r.selectorText))!;
+    const pin = cssRules().find((r) =>
+      /data-layout="vertical"\]\[data-size="sm"\].*:has\(.*\.trail/.test(r.selectorText),
+    )!;
     expect(pin).toBeDefined();
     expect(pin.style.getPropertyValue('inset-inline-end')).toBe('var(--ui-space-4)');
     expect(pin.style.top).toBe('calc(var(--ui-space-4) + 12px)');
-    expect(cssRules().some((r) => /\.trail/.test(r.selectorText) && (r.style.left || r.style.right))).toBe(false);
+    expect(
+      cssRules().some((r) => /\.trail/.test(r.selectorText) && (r.style.left || r.style.right)),
+    ).toBe(false);
   });
 
   it("the badge icon follows the badge colour, not a theme's icon tint", () => {
     const { q } = compact();
-    expect(getComputedStyle(q('#t .badge')!).getPropertyValue('--ui-color-icon').trim()).toBe('currentColor');
+    expect(getComputedStyle(q('#t .badge')!).getPropertyValue('--ui-color-icon').trim()).toBe(
+      'currentColor',
+    );
   });
 
   it('descriptionLines clamps the description with an ellipsis; 0 shows it all', () => {
@@ -320,13 +394,23 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
     expect(q('#t .fc')!.getAttribute('data-surface')).toBe('tinted');
     expect(fc().borderTopColor).toMatch(/^(transparent|rgba\(0, 0, 0, 0\))$/);
     expect(fc().boxShadow).toBe('none');
-    expect(fc().getPropertyValue('--fc-wash').trim()).toBe('color-mix(in srgb, var(--fc-tone) 8%, color-mix(in srgb, var(--ui-color-text) 4%, var(--ui-color-surface)))');
+    expect(fc().getPropertyValue('--fc-wash').trim()).toBe(
+      'color-mix(in srgb, var(--fc-tone) 8%, color-mix(in srgb, var(--ui-color-text) 4%, var(--ui-color-surface)))',
+    );
     expect(fc().getPropertyValue('--fc-desc').trim()).toContain('var(--ui-color-text-muted) 75%');
     // Scoped selectors carry [_ngcontent-…] attributes, so match the parts.
-    const hover = cssRules().find((r) => /\.fc\.interactive.*:not\(\.disabled\).*:hover$/.test(r.selectorText) && !!r.style.boxShadow);
+    const hover = cssRules().find(
+      (r) =>
+        /\.fc\.interactive.*:not\(\.disabled\).*:hover$/.test(r.selectorText) &&
+        !!r.style.boxShadow,
+    );
     expect(hover?.style.boxShadow).toBe('var(--ui-shadow-2)');
     // The hover border rule leaves the tinted surface borderless.
-    const border = cssRules().find((r) => r.style.borderColor === 'var(--ui-color-border-strong)' && r.selectorText.includes('.fc.interactive'))!;
+    const border = cssRules().find(
+      (r) =>
+        r.style.borderColor === 'var(--ui-color-border-strong)' &&
+        r.selectorText.includes('.fc.interactive'),
+    )!;
     expect(border.selectorText).toContain(':not([data-surface="tinted"])');
     h.tone.set('accent');
     f.detectChanges();
@@ -360,7 +444,9 @@ describe('UiFeatureCard 0.38 (compact tinted tile)', () => {
   });
 
   it("radius 'control' is square when UiConfig.radius is off, like the input it matches", () => {
-    TestBed.configureTestingModule({ providers: [{ provide: UI_CONFIG, useValue: { ...defaultUiConfig, radius: false } }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: UI_CONFIG, useValue: { ...defaultUiConfig, radius: false } }],
+    });
     const { q, fc } = compact();
     expect(q('#field .ui-input')!.classList.contains('no-radius')).toBe(true);
     expect(q('#t .fc')!.classList.contains('no-radius')).toBe(true);

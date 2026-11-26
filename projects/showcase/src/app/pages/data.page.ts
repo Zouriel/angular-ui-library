@@ -302,9 +302,9 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
         </doc-demo>
         <doc-demo code="Card grid with ui-card-actions: put buttons inside ui-card-actions in each ui-card.">
           <div class="cols3">
-            <ui-card><ui-text variant="label">Short card</ui-text><ui-text variant="body">A compact description.</ui-text><ui-card-actions><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
-            <ui-card><ui-text variant="label">Longer card</ui-text><ui-text variant="body">More text makes this card taller, but its actions remain aligned with the other cards.</ui-text><ui-card-actions><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
-            <ui-card><ui-text variant="label">Another card</ui-text><ui-text variant="body">Three cards can share a grid row.</ui-text><ui-card-actions align="end"><ui-button size="sm">View</ui-button></ui-card-actions></ui-card>
+            <ui-card><ui-text variant="label">Short card</ui-text><ui-text variant="body">A compact description.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
+            <ui-card><ui-text variant="label">Longer card</ui-text><ui-text variant="body">More text makes this card taller, but its actions remain aligned with the other cards.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
+            <ui-card><ui-text variant="label">Another card</ui-text><ui-text variant="body">Three cards can share a grid row.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button></ui-card-actions></ui-card>
           </div>
         </doc-demo>
         <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [pressable]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
@@ -989,7 +989,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive or pressable card.' },
     { name: 'card: (activate)', type: 'output<void>', default: '—', desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.' },
     { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
-    { name: 'ui-card-actions: align', type: "'start' | 'end' | 'stretch' | 'between'", default: "'start'", desc: 'Wrapping footer action row. stretch gives actions equal width; no accessibility role is added.' },
+    { name: 'ui-card-actions: align', type: "'start' | 'center' | 'end' | 'stretch' | 'between'", default: "'start'", desc: 'Wrapping footer action row. stretch gives actions equal width; no accessibility role is added.' },
+    { name: 'ui-card-actions: divided', type: 'boolean', default: 'false', desc: 'Keep the footer divider and top padding band; by default actions continue the card body.' },
     { name: 'stat: label', type: 'string', default: "''", desc: 'Caption above the value.' },
     { name: 'stat: value', type: 'string | number', default: "''", desc: 'The KPI value.' },
     { name: 'stat: delta', type: 'string | number', default: '—', desc: 'Change indicator; hidden when unset.' },

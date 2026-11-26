@@ -34,11 +34,17 @@ class Host {
   activations = signal(0);
 }
 
-const css = () => ((UiCard as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+const css = () =>
+  ((UiCard as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
 
 describe('UiCard', () => {
   it('projects ui-card-actions into the footer and keeps the body slack contract', () => {
-    @Component({ imports: [UiCard, UiCardActions], template: `<ui-card><span>Short body</span><ui-card-actions><button>Go</button></ui-card-actions></ui-card>` })
+    @Component({
+      imports: [UiCard, UiCardActions],
+      template: `<ui-card
+        ><span>Short body</span><ui-card-actions><button>Go</button></ui-card-actions></ui-card
+      >`,
+    })
     class ActionsHost {}
     const fixture = TestBed.createComponent(ActionsHost);
     fixture.detectChanges();
@@ -50,31 +56,74 @@ describe('UiCard', () => {
   });
 
   it('supports action alignment variants, wrapping, logical direction and equal stretch', () => {
-    @Component({ imports: [UiCardActions], template: `<ui-card-actions [align]="align()"><button>A</button><button>B</button></ui-card-actions>` })
-    class ActionsOnlyHost { align = signal<'start' | 'end' | 'stretch' | 'between'>('start'); }
+    @Component({
+      imports: [UiCardActions],
+      template: `<ui-card-actions [align]="align()"
+        ><button>A</button><button>B</button></ui-card-actions
+      >`,
+    })
+    class ActionsOnlyHost {
+      align = signal<'start' | 'center' | 'end' | 'stretch' | 'between'>('start');
+    }
     const fixture = TestBed.createComponent(ActionsOnlyHost);
     fixture.detectChanges();
     const host = fixture.nativeElement.querySelector('ui-card-actions') as HTMLElement;
     expect(host.getAttribute('data-align')).toBe('start');
-    fixture.componentInstance.align.set('between'); fixture.detectChanges();
+    fixture.componentInstance.align.set('center');
+    fixture.detectChanges();
+    expect(host.getAttribute('data-align')).toBe('center');
+    fixture.componentInstance.align.set('between');
+    fixture.detectChanges();
     expect(host.getAttribute('data-align')).toBe('between');
-    fixture.componentInstance.align.set('stretch'); fixture.detectChanges();
+    fixture.componentInstance.align.set('stretch');
+    fixture.detectChanges();
     expect(host.getAttribute('data-align')).toBe('stretch');
-    const styles = ((UiCardActions as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+    const styles = (
+      (UiCardActions as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []
+    ).join('\n');
     expect(styles).toContain('flex-wrap: wrap');
     expect(styles).toContain('justify-content: space-between');
+    expect(styles).toMatch(/data-align="?center"?\][^{]*\{\s*justify-content: center/);
     expect(styles).toContain('flex: 1 1 0');
     expect(host.getAttribute('role')).toBeNull();
   });
 
+  it('defaults to an undivided action footer and restores the footer band when divided', () => {
+    @Component({
+      imports: [UiCard, UiCardActions],
+      template: `<ui-card
+        ><span>Body</span
+        ><ui-card-actions [divided]="divided()"><button>Go</button></ui-card-actions></ui-card
+      >`,
+    })
+    class ActionsFooterHost {
+      divided = signal(false);
+    }
+    const fixture = TestBed.createComponent(ActionsFooterHost);
+    fixture.detectChanges();
+    const actions = fixture.nativeElement.querySelector('ui-card-actions') as HTMLElement;
+    expect(actions.hasAttribute('data-divided')).toBe(false);
+    expect(css()).toMatch(
+      /\.ft[^\{]*:has\(> ui-card-actions:not\(\[data-divided\]\)\)[^{]*\{[^}]*border-top:\s*0[^}]*padding-top:\s*0/,
+    );
+    fixture.componentInstance.divided.set(true);
+    fixture.detectChanges();
+    expect(actions.getAttribute('data-divided')).toBe('true');
+  });
+
   it('keeps card-footer projection and collapses an empty footer', () => {
-    @Component({ imports: [UiCard], template: `<ui-card><span card-footer>Footer</span></ui-card>` })
+    @Component({
+      imports: [UiCard],
+      template: `<ui-card><span card-footer>Footer</span></ui-card>`,
+    })
     class FooterHost {}
-    const withFooter = TestBed.createComponent(FooterHost); withFooter.detectChanges();
+    const withFooter = TestBed.createComponent(FooterHost);
+    withFooter.detectChanges();
     expect(withFooter.nativeElement.querySelector('.ft')?.textContent).toContain('Footer');
     @Component({ imports: [UiCard], template: `<ui-card></ui-card>` })
     class EmptyHost {}
-    const empty = TestBed.createComponent(EmptyHost); empty.detectChanges();
+    const empty = TestBed.createComponent(EmptyHost);
+    empty.detectChanges();
     expect(css()).toMatch(/\.hd[^}]*:empty[^}]*,\s*\.ft[^}]*:empty[^}]*\{[^}]*display: none/);
   });
   it('leaves a static card non-interactive with default block body', () => {
@@ -203,9 +252,15 @@ describe('UiCard glassStrength', () => {
 
   it('paints clear glass from the card tokens, solid without backdrop-filter or under reduced transparency', () => {
     const styles = css();
-    expect(styles).toMatch(/\.ui-card\.glass\.clear[^{]*\{[^}]*background:\s*var\(--ui-glass-card-clear-bg\)[^}]*backdrop-filter:\s*var\(--ui-glass-card-clear-filter\)/);
-    expect(styles).toMatch(/@supports not[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{\s*background:\s*var\(--ui-color-surface\)/);
-    expect(styles).toMatch(/prefers-reduced-transparency[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{[^}]*backdrop-filter:\s*none/);
+    expect(styles).toMatch(
+      /\.ui-card\.glass\.clear[^{]*\{[^}]*background:\s*var\(--ui-glass-card-clear-bg\)[^}]*backdrop-filter:\s*var\(--ui-glass-card-clear-filter\)/,
+    );
+    expect(styles).toMatch(
+      /@supports not[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{\s*background:\s*var\(--ui-color-surface\)/,
+    );
+    expect(styles).toMatch(
+      /prefers-reduced-transparency[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{[^}]*backdrop-filter:\s*none/,
+    );
     // The frosted look is unchanged.
     expect(styles).toMatch(/\.ui-card\.glass[^.{]*\{[^}]*background:\s*var\(--ui-glass-bg\)/);
   });
@@ -213,7 +268,10 @@ describe('UiCard glassStrength', () => {
 
 @Component({
   imports: [UiCard],
-  template: `<ui-card [glass]="true" [glassStrength]="strength()" radius="xl"><p>Body</p><button type="button">Go</button></ui-card>`,
+  template: `<ui-card [glass]="true" [glassStrength]="strength()" radius="xl"
+    ><p>Body</p>
+    <button type="button">Go</button></ui-card
+  >`,
 })
 class LiquidHost {
   strength = signal<'frosted' | 'clear' | 'liquid'>('liquid');
@@ -221,8 +279,18 @@ class LiquidHost {
 
 describe('UiCard liquid glass', () => {
   const size = (w: number, h: number) => {
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get(this: HTMLElement) { return this.classList.contains('ui-card') ? w : 0; } });
-    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', { configurable: true, get(this: HTMLElement) { return this.classList.contains('ui-card') ? h : 0; } });
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList.contains('ui-card') ? w : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList.contains('ui-card') ? h : 0;
+      },
+    });
   };
   afterEach(() => {
     delete (HTMLElement.prototype as unknown as { offsetWidth?: unknown }).offsetWidth;
@@ -232,17 +300,33 @@ describe('UiCard liquid glass', () => {
 
   async function make(refract: boolean, opts: { canvas?: boolean } = {}) {
     let resize: (() => void) | null = null;
-    vi.stubGlobal('ResizeObserver', class { constructor(cb: () => void) { resize = cb; } observe() {} disconnect() {} });
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(cb: () => void) {
+          resize = cb;
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
     if (opts.canvas !== false) {
       // jsdom has no 2D canvas: a minimal one that returns a data URL.
-      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => ({
-        createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
-        putImageData: () => undefined,
-      }) as unknown as CanvasRenderingContext2D);
-      vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockImplementation(() => 'data:image/png;base64,MAP');
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        () =>
+          ({
+            createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+            putImageData: () => undefined,
+          }) as unknown as CanvasRenderingContext2D,
+      );
+      vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockImplementation(
+        () => 'data:image/png;base64,MAP',
+      );
     }
     size(360, 240);
-    TestBed.configureTestingModule({ providers: [{ provide: UI_LIQUID_REFRACTION, useValue: () => refract }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: UI_LIQUID_REFRACTION, useValue: () => refract }],
+    });
     const f = TestBed.createComponent(LiquidHost);
     f.detectChanges();
     await f.whenStable();
@@ -265,7 +349,9 @@ describe('UiCard liquid glass', () => {
     resize();
     f.detectChanges();
     expect(f.nativeElement.querySelector('svg.lq-defs filter')!.getAttribute('width')).toBe('500');
-    expect(f.nativeElement.querySelector('svg.lq-defs feImage')!.getAttribute('height')).toBe('300');
+    expect(f.nativeElement.querySelector('svg.lq-defs feImage')!.getAttribute('height')).toBe(
+      '300',
+    );
   });
 
   it('falls back to blur, saturation, rim and sheen without the bend elsewhere (Safari, Firefox)', async () => {
@@ -280,23 +366,35 @@ describe('UiCard liquid glass', () => {
     const styles = css();
     const rule = /\.ui-card\.glass\.liquid\[[^\]]*\]\s*\{([^}]*)\}/.exec(styles)?.[1] ?? '';
     expect(rule).toContain('var(--ui-glass-liquid-bg)');
-    expect(rule).toMatch(/backdrop-filter:\s*var\(--_lq-url,\s*\)\s*var\(--ui-glass-liquid-filter\)/);
+    expect(rule).toMatch(
+      /backdrop-filter:\s*var\(--_lq-url,\s*\)\s*var\(--ui-glass-liquid-filter\)/,
+    );
     expect(rule).not.toMatch(/contrast\(|brightness\(/);
     expect(rule).toContain('var(--ui-glass-liquid-text-halo)');
     expect(rule).toContain('var(--ui-glass-liquid-rim)');
-    expect(styles).toMatch(/prefers-reduced-transparency[^{]*\{[^{}]*\.ui-card\.glass\.liquid[^{]*\{[^}]*background:\s*var\(--ui-glass-bg\)[^}]*backdrop-filter:\s*blur\(var\(--ui-glass-blur\)\)/);
-    expect(styles).toMatch(/@supports not[^{]*\{[^{}]*\.ui-card\.glass\.liquid[^{]*\{\s*background:\s*var\(--ui-color-surface\)/);
+    expect(styles).toMatch(
+      /prefers-reduced-transparency[^{]*\{[^{}]*\.ui-card\.glass\.liquid[^{]*\{[^}]*background:\s*var\(--ui-glass-bg\)[^}]*backdrop-filter:\s*blur\(var\(--ui-glass-blur\)\)/,
+    );
+    expect(styles).toMatch(
+      /@supports not[^{]*\{[^{}]*\.ui-card\.glass\.liquid[^{]*\{\s*background:\s*var\(--ui-color-surface\)/,
+    );
     // The card's own controls keep their surfaces: no halo on them.
-    expect(styles).toMatch(/\.ui-card\.glass\.liquid[^{]*:is\(button, input[^{]*\{\s*text-shadow:\s*none/);
+    expect(styles).toMatch(
+      /\.ui-card\.glass\.liquid[^{]*:is\(button, input[^{]*\{\s*text-shadow:\s*none/,
+    );
   });
 });
 
 describe('liquid displacement map', () => {
   it('leaves the middle undistorted and pulls inward near every edge, scaled to the card', () => {
-    const w = 200, h = 100;
+    const w = 200,
+      h = 100;
     const { data, width, height } = uiLiquidDisplacementMap(w, h, 24, uiLiquidBand(w, h), 1);
     expect([width, height]).toEqual([200, 100]);
-    const at = (x: number, y: number) => { const o = (y * width + x) * 4; return [data[o], data[o + 1]]; };
+    const at = (x: number, y: number) => {
+      const o = (y * width + x) * 4;
+      return [data[o], data[o + 1]];
+    };
     expect(at(100, 50)).toEqual([128, 128]); // middle
     expect(at(199, 50)[0]).toBeLessThan(100); // right edge samples from the left
     expect(at(0, 50)[0]).toBeGreaterThan(156); // left edge samples from the right

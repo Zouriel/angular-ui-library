@@ -1,4 +1,17 @@
-import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidMapUrl } from './liquid-glass';
 
@@ -22,9 +35,32 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
   template: `
     @if (refractMap(); as m) {
       <svg class="lq-defs" aria-hidden="true" focusable="false" width="0" height="0">
-        <filter [attr.id]="filterId" x="0" y="0" [attr.width]="m.w" [attr.height]="m.h" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-          <feImage [attr.href]="m.url" x="0" y="0" [attr.width]="m.w" [attr.height]="m.h" preserveAspectRatio="none" result="map" />
-          <feDisplacementMap in="SourceGraphic" in2="map" [attr.scale]="m.scale" xChannelSelector="R" yChannelSelector="G" />
+        <filter
+          [attr.id]="filterId"
+          x="0"
+          y="0"
+          [attr.width]="m.w"
+          [attr.height]="m.h"
+          filterUnits="userSpaceOnUse"
+          primitiveUnits="userSpaceOnUse"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            [attr.href]="m.url"
+            x="0"
+            y="0"
+            [attr.width]="m.w"
+            [attr.height]="m.h"
+            preserveAspectRatio="none"
+            result="map"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="map"
+            [attr.scale]="m.scale"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
         </filter>
       </svg>
     }
@@ -52,14 +88,19 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         [class.bd-flex]="gap() !== null || align() !== null"
         [attr.data-gap]="gap()"
         [attr.data-align]="align()"
-      ><ng-content /></div>
+      >
+        <ng-content />
+      </div>
       <div class="ft"><ng-content select="[card-footer], ui-card-actions" /></div>
     </div>
   `,
   styles: `
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     .ui-card {
-      display: flex; flex-direction: column;
+      display: flex;
+      flex-direction: column;
       /* Fill the host so cards in a stretched context (e.g. a CSS grid) are equal height. In normal
          flow the host height is content-driven, so this resolves to auto and changes nothing. */
       height: 100%;
@@ -68,51 +109,110 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-1);
       overflow: hidden;
-      font-family: var(--ui-font-default); line-height: 1.35;
+      font-family: var(--ui-font-default);
+      line-height: 1.35;
     }
     /* Opt-in: for cards that are themselves the clickable surface — lifts the whole card on hover
        so it reads as a target, not just decoration. Static/informational cards leave this off. */
     .ui-card.interactive {
       cursor: pointer;
-      transition: transform var(--ui-motion-base) var(--ui-ease-standard),
-                  box-shadow var(--ui-motion-base) var(--ui-ease-standard),
-                  border-color var(--ui-motion-base) var(--ui-ease-standard);
+      transition:
+        transform var(--ui-motion-base) var(--ui-ease-standard),
+        box-shadow var(--ui-motion-base) var(--ui-ease-standard),
+        border-color var(--ui-motion-base) var(--ui-ease-standard);
     }
-    .ui-card.interactive:not(.disabled):hover { transform: translateY(-2px); box-shadow: var(--ui-shadow-2); border-color: var(--ui-color-border-strong); }
-    .ui-card.interactive:not(.disabled):active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
+    .ui-card.interactive:not(.disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: var(--ui-shadow-2);
+      border-color: var(--ui-color-border-strong);
+    }
+    .ui-card.interactive:not(.disabled):active {
+      transform: translateY(-1px) scale(var(--ui-scale-press));
+    }
     /* The card is the target, so keyboard focus on the card or a link/button inside rings the whole card. */
     .ui-card.interactive:focus-visible,
-    .ui-card.interactive:has(:focus-visible) { outline: none; box-shadow: var(--ui-focus-ring); }
-    .ui-card.interactive.disabled { opacity: 0.5; cursor: not-allowed; }
+    .ui-card.interactive:has(:focus-visible) {
+      outline: none;
+      box-shadow: var(--ui-focus-ring);
+    }
+    .ui-card.interactive.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     @media (prefers-reduced-motion: reduce) {
-      .ui-card.interactive:hover, .ui-card.interactive:active { transform: none; }
+      .ui-card.interactive:hover,
+      .ui-card.interactive:active {
+        transform: none;
+      }
     }
     /* Body takes the slack so a [card-footer] (e.g. an actions row) bottom-aligns across a grid of cards. */
-    .bd { flex: 1 1 auto; }
-    .bd.bd-flex { display: flex; flex-direction: column; }
-    .bd[data-gap="0"] { gap: 0; }
-    .bd[data-gap="1"] { gap: var(--ui-space-1); }
-    .bd[data-gap="2"] { gap: var(--ui-space-2); }
-    .bd[data-gap="3"] { gap: var(--ui-space-3); }
-    .bd[data-gap="4"] { gap: var(--ui-space-4); }
-    .bd[data-gap="5"] { gap: var(--ui-space-5); }
-    .bd[data-gap="6"] { gap: var(--ui-space-6); }
-    .bd[data-gap="7"] { gap: var(--ui-space-7); }
-    .bd[data-gap="8"] { gap: var(--ui-space-8); }
-    .bd[data-gap="10"] { gap: var(--ui-space-10); }
-    .bd[data-align="stretch"] { align-items: stretch; }
-    .bd[data-align="start"] { align-items: flex-start; text-align: start; }
-    .bd[data-align="center"] { align-items: center; text-align: center; }
-    .bd[data-align="end"] { align-items: flex-end; text-align: end; }
-    .ui-card.no-radius { border-radius: 0; }
-    .ui-card.radius-xl { border-radius: var(--ui-radius-xl); }
+    .bd {
+      flex: 1 1 auto;
+    }
+    .bd.bd-flex {
+      display: flex;
+      flex-direction: column;
+    }
+    .bd[data-gap='0'] {
+      gap: 0;
+    }
+    .bd[data-gap='1'] {
+      gap: var(--ui-space-1);
+    }
+    .bd[data-gap='2'] {
+      gap: var(--ui-space-2);
+    }
+    .bd[data-gap='3'] {
+      gap: var(--ui-space-3);
+    }
+    .bd[data-gap='4'] {
+      gap: var(--ui-space-4);
+    }
+    .bd[data-gap='5'] {
+      gap: var(--ui-space-5);
+    }
+    .bd[data-gap='6'] {
+      gap: var(--ui-space-6);
+    }
+    .bd[data-gap='7'] {
+      gap: var(--ui-space-7);
+    }
+    .bd[data-gap='8'] {
+      gap: var(--ui-space-8);
+    }
+    .bd[data-gap='10'] {
+      gap: var(--ui-space-10);
+    }
+    .bd[data-align='stretch'] {
+      align-items: stretch;
+    }
+    .bd[data-align='start'] {
+      align-items: flex-start;
+      text-align: start;
+    }
+    .bd[data-align='center'] {
+      align-items: center;
+      text-align: center;
+    }
+    .bd[data-align='end'] {
+      align-items: flex-end;
+      text-align: end;
+    }
+    .ui-card.no-radius {
+      border-radius: 0;
+    }
+    .ui-card.radius-xl {
+      border-radius: var(--ui-radius-xl);
+    }
     .ui-card.glass {
       background: var(--ui-glass-bg);
       backdrop-filter: blur(var(--ui-glass-blur));
       border-color: var(--ui-glass-border);
       box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
     }
-    .ui-card.glass.interactive:not(.disabled):hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
+    .ui-card.glass.interactive:not(.disabled):hover {
+      box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2);
+    }
     /* Clear (0.101.0): a light tint over a strongly blurred backdrop that is squeezed into the theme's
        frosted range, so the backdrop's colour and shape show while text stays AA over anything (tokens.css). */
     .ui-card.glass.clear {
@@ -126,9 +226,17 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
        edge (an SVG displacement map, --_lq-url). Text gets a halo in the page colour instead of a veil, and
        the card's own controls keep their surfaces. It trades guaranteed AA over any backdrop for transparency:
        use it over a scrimmed backdrop (ui-backdrop-slideshow scrim). */
-    .lq-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+    .lq-defs {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
     .ui-card.glass.liquid {
-      background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg);
+      background:
+        linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%),
+        var(--ui-glass-liquid-bg);
       border-color: var(--ui-glass-liquid-edge);
       -webkit-backdrop-filter: var(--ui-glass-liquid-filter);
       backdrop-filter: var(--_lq-url,) var(--ui-glass-liquid-filter);
@@ -139,8 +247,25 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         var(--ui-shadow-2);
       text-shadow: var(--ui-glass-liquid-text-halo);
     }
-    .ui-card.glass.liquid .hd, .ui-card.glass.liquid .ft { border-color: var(--ui-glass-liquid-edge); }
-    .ui-card.glass.liquid ::ng-deep :is(button, input, textarea, select, [role='radio'], [role='checkbox'], [role='option'], [role='switch'], .ui-btn) { text-shadow: none; }
+    .ui-card.glass.liquid .hd,
+    .ui-card.glass.liquid .ft {
+      border-color: var(--ui-glass-liquid-edge);
+    }
+    .ui-card.glass.liquid
+      ::ng-deep
+      :is(
+        button,
+        input,
+        textarea,
+        select,
+        [role='radio'],
+        [role='checkbox'],
+        [role='option'],
+        [role='switch'],
+        .ui-btn
+      ) {
+      text-shadow: none;
+    }
     @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
       .ui-card.glass.liquid {
         background: var(--ui-glass-bg);
@@ -152,23 +277,58 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       }
     }
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-      .ui-card.glass.liquid { background: var(--ui-color-surface); text-shadow: none; }
+      .ui-card.glass.liquid {
+        background: var(--ui-color-surface);
+        text-shadow: none;
+      }
     }
     /* No backdrop-filter, or the user asks for less transparency / more contrast: an unfiltered backdrop
        under a light tint can't promise contrast, so a clear card is solid. */
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-      .ui-card.glass.clear { background: var(--ui-color-surface); }
+      .ui-card.glass.clear {
+        background: var(--ui-color-surface);
+      }
     }
     @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-      .ui-card.glass.clear { background: var(--ui-color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+      .ui-card.glass.clear {
+        background: var(--ui-color-surface);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
     }
-    .hd, .bd, .ft { padding: var(--ui-card-pad-md); }
-    .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-card-pad-sm); }
-    .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-card-pad-lg); }
-    .hd { border-bottom: 1px solid var(--ui-color-border); font-weight: 600; font-size: var(--ui-font-size-md); }
-    .ft { border-top: 1px solid var(--ui-color-border); }
+    .hd,
+    .bd,
+    .ft {
+      padding: var(--ui-card-pad-md);
+    }
+    .ui-card[data-pad='sm'] .hd,
+    .ui-card[data-pad='sm'] .bd,
+    .ui-card[data-pad='sm'] .ft {
+      padding: var(--ui-card-pad-sm);
+    }
+    .ui-card[data-pad='lg'] .hd,
+    .ui-card[data-pad='lg'] .bd,
+    .ui-card[data-pad='lg'] .ft {
+      padding: var(--ui-card-pad-lg);
+    }
+    .hd {
+      border-bottom: 1px solid var(--ui-color-border);
+      font-weight: 600;
+      font-size: var(--ui-font-size-md);
+    }
+    .ft {
+      border-top: 1px solid var(--ui-color-border);
+    }
+    /* Actions continue the card body by default; [divided] opts back into the regular footer band. */
+    .ft:has(> ui-card-actions:not([data-divided])) {
+      border-top: 0;
+      padding-top: 0;
+    }
     /* Collapse empty header/footer slots */
-    .hd:empty, .ft:empty { display: none; }
+    .hd:empty,
+    .ft:empty {
+      display: none;
+    }
   `,
 })
 export class UiCard {
@@ -217,7 +377,9 @@ export class UiCard {
     const url = uiLiquidMapUrl(s.w, s.h, s.r, band, this.host.ownerDocument);
     return url ? { url, w: s.w, h: s.h, scale: Math.round(band * 0.9) } : null;
   });
-  protected readonly refractUrl = computed(() => (this.refractMap() ? `url(#${this.filterId})` : null));
+  protected readonly refractUrl = computed(() =>
+    this.refractMap() ? `url(#${this.filterId})` : null,
+  );
   private readonly host = inject(ElementRef).nativeElement as HTMLElement;
 
   constructor() {
@@ -232,20 +394,23 @@ export class UiCard {
       if (!cur || cur.w !== w || cur.h !== h || cur.r !== r) this.size.set({ w, h, r });
     };
     afterNextRender(() => {
-      effect(() => {
-        const on = this.liquid() && this.refractionOn;
-        untracked(() => {
-          if (on && !ro && typeof ResizeObserver !== 'undefined') {
-            ro = new ResizeObserver(() => measure());
-            const card = this.host.querySelector(':scope > .ui-card');
-            if (card) ro.observe(card);
-            measure();
-          } else if (!on && ro) {
-            ro.disconnect();
-            ro = null;
-          }
-        });
-      }, { injector: this.injector });
+      effect(
+        () => {
+          const on = this.liquid() && this.refractionOn;
+          untracked(() => {
+            if (on && !ro && typeof ResizeObserver !== 'undefined') {
+              ro = new ResizeObserver(() => measure());
+              const card = this.host.querySelector(':scope > .ui-card');
+              if (card) ro.observe(card);
+              measure();
+            } else if (!on && ro) {
+              ro.disconnect();
+              ro = null;
+            }
+          });
+        },
+        { injector: this.injector },
+      );
     });
     inject(DestroyRef).onDestroy(() => ro?.disconnect());
   }
@@ -254,7 +419,12 @@ export class UiCard {
   protected onClick(e: MouseEvent): void {
     if (!this.pressable() || this.disabled()) return;
     const target = e.target as Element | null;
-    if (target && target !== e.currentTarget && target.closest('a[href], button, input, select, textarea')) return;
+    if (
+      target &&
+      target !== e.currentTarget &&
+      target.closest('a[href], button, input, select, textarea')
+    )
+      return;
     this.activate.emit();
   }
 
