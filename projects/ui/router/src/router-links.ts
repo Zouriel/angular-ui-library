@@ -9,6 +9,15 @@ export interface UiRouterLinksOptions {
    * under it (`/media` for `/media/12`), for section links in a navbar.
    */
   exact?: boolean;
+  /**
+   * Same-origin paths this app does not serve, such as a sibling app on the same domain (a hub at `/`
+   * with portal apps at `/connect/`, `/visit/`...). A link whose path it returns `true` for loads that
+   * page instead of going to this app's router, which would only find its own "not found" page.
+   * Receives the link's path, e.g. `/connect/jobs`.
+   */
+  outside?: (path: string) => boolean;
+  /** How a link `outside` names is loaded; defaults to `location.assign(href)`. */
+  load?: (href: string) => void;
 }
 
 /** The path of a URL or href, without query or fragment, and without a trailing slash. */
@@ -35,7 +44,7 @@ export function uiRouterUrl(href: string, baseUri: string): string {
  * and those links mark the open page (`aria-current="page"`). Add it to the app's providers next to
  * `provideRouter`. Under a `<base href>` (an app served at `/admin/`), write hrefs relative to it
  * (`media/12`) or with it (`/admin/media/12`), so open-in-new-tab gets the right address too; both reach
- * the router as `/media/12`.
+ * the router as `/media/12`. Paths served by another app on the same origin are named with `outside`.
  */
 export function provideUiRouterLinks(options: UiRouterLinksOptions = {}): Provider {
   return {
@@ -45,10 +54,16 @@ export function provideUiRouterLinks(options: UiRouterLinksOptions = {}): Provid
       const doc = inject(DOCUMENT);
       const toUrl = (href: string) => uiRouterUrl(href, doc.baseURI);
       const url = signal(router.url);
-      router.events.subscribe((e) => { if (e instanceof NavigationEnd) url.set(e.urlAfterRedirects); });
+      router.events.subscribe((e) => {
+        if (e instanceof NavigationEnd) url.set(e.urlAfterRedirects);
+      });
       const exact = options.exact ?? true;
       return {
-        navigate: (href) => void router.navigateByUrl(toUrl(href)),
+        navigate: (href) => {
+          if (options.outside?.(new URL(href, doc.baseURI).pathname))
+            (options.load ?? ((h) => doc.location.assign(h)))(href);
+          else void router.navigateByUrl(toUrl(href));
+        },
         isCurrent: (href) => {
           const here = pathOf(url());
           const there = pathOf(toUrl(href));

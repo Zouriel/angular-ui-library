@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 import { UI_LINK_NAVIGATOR } from '@zouriel/ui';
-import { provideUiRouterLinks, uiRouterUrl } from './router-links';
+import { provideUiRouterLinks, uiRouterUrl, type UiRouterLinksOptions } from './router-links';
+import { vi } from 'vitest';
 
 @Component({ template: '' })
 class Blank {}
@@ -19,9 +20,16 @@ describe('uiRouterUrl', () => {
 });
 
 describe('provideUiRouterLinks', () => {
-  function setup(options?: { exact?: boolean }) {
+  function setup(options?: UiRouterLinksOptions) {
     TestBed.configureTestingModule({
-      providers: [provideRouter([{ path: 'media', component: Blank }, { path: 'media/:id', component: Blank }, { path: 'hr', component: Blank }]), provideUiRouterLinks(options)],
+      providers: [
+        provideRouter([
+          { path: 'media', component: Blank },
+          { path: 'media/:id', component: Blank },
+          { path: 'hr', component: Blank },
+        ]),
+        provideUiRouterLinks(options),
+      ],
     });
     return { router: TestBed.inject(Router), nav: TestBed.inject(UI_LINK_NAVIGATOR) };
   }
@@ -44,5 +52,21 @@ describe('provideUiRouterLinks', () => {
     expect(nav.isCurrent?.('/media')).toBe(true);
     expect(nav.isCurrent?.('/med')).toBe(false);
     expect(nav.isCurrent?.('/')).toBe(false);
+  });
+
+  it('outside: loads paths another app serves instead of routing them; its own paths still route', async () => {
+    const assign = vi.fn<(href: string) => void>();
+    const { router, nav } = setup({
+      outside: (path) => path.startsWith('/connect/'),
+      load: assign,
+    });
+    nav.navigate('/connect/jobs');
+    await new Promise((r) => setTimeout(r));
+    expect(assign).toHaveBeenCalledWith('/connect/jobs');
+    expect(router.url).toBe('/');
+    nav.navigate('/media/12');
+    await new Promise((r) => setTimeout(r));
+    expect(router.url).toBe('/media/12');
+    expect(assign).toHaveBeenCalledTimes(1);
   });
 });

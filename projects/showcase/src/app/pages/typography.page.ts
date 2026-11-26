@@ -113,7 +113,7 @@ type TextTag =
     { name: 'tone', type: "'primary' | 'muted' | 'plain'", default: "'primary'", desc: 'Color. plain inherits the surrounding text colour.' },
     { name: 'current', type: 'boolean | null', default: 'null', desc: "The open page: aria-current=page and the current look. Null asks the link navigator's isCurrent (0.87.0)." },
     { name: 'provideUiLinkNavigator(f)', type: 'Provider', default: '—', desc: '{ navigate(href, event?), isCurrent?(href) }: how library links (ui-link, ui-button href, breadcrumbs, feature cards) move around the app (0.87.0).' },
-    { name: 'provideUiRouterLinks(opts?)', type: 'Provider', default: '—', desc: "@zouriel/ui/router: the navigator for the Angular Router. Under a base href write hrefs relative to it ('media/12') or with it. { exact: false } also marks section links on the pages under them." },
+    { name: 'provideUiRouterLinks(opts?)', type: 'Provider', default: '—', desc: "@zouriel/ui/router: the navigator for the Angular Router. Under a base href write hrefs relative to it ('media/12') or with it. { exact: false } also marks section links on the pages under them. { outside: (path) => boolean } (0.104.0) names same-origin paths another app serves (sibling apps on one domain): those links load the page instead of going to this app's router." },
   ];
   protected readonly skipApi: ApiRow[] = [
     { name: 'target', type: 'string', default: "'main'", desc: 'The id of the element holding the main content.' },
