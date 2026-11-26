@@ -88,6 +88,9 @@
   --ui-glass-sheet-ceiling: 1;
   --ui-glass-clear-floor: 0.35;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.89;
+  --ui-glass-card-ceiling: 1.0;
 
   /* ── Primitives: the Figma "Color" collection, names kept ── */
   --ui-addu-tourism-branding-ink-900: #001540;
@@ -360,6 +363,9 @@
   --ui-glass-sheet-ceiling: 0.43;
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.26;
 
   --ui-color-bg: #001540;
   --ui-color-surface: #001540;

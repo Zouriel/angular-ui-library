@@ -146,7 +146,7 @@ this.theme.theme();    // current theme (signal)"></doc-demo>
       </doc-section>
 
       <doc-section name="Themes" selector="data-theme"
-        summary="Twenty-one current themes. dark and light are the Navy colour system in tokens.css (also navy-dark and navy): Midnight Navy, Powder Blue and Sunflower. darkOrange (theme-dark-orange.css) also changes the fonts; maldives and maldives-dark (theme-maldives.css) set Poppins and have their own sea backdrops. addu-tourism-branding (theme-addu-tourism-branding.css) is the Addu City Digital Hub light theme with portal overrides via data-portal, and addu-tourism-branding-ink is its dark surface island for ui-theme-provider. The twelve liquid themes in theme-liquid.css (rugged, glacier, oxblood, graphite, cocoa and violet, each with a -dark night twin) are made for glass surfaces over ui-liquid-backdrop. The legacy themes below still work unchanged but are not for new work. Each tile is a ui-theme-provider island; Use sets it for the whole page.">
+        summary="Twenty-three current themes. dark and light are the Navy colour system in tokens.css (also navy-dark and navy): Midnight Navy, Powder Blue and Sunflower. darkOrange (theme-dark-orange.css) also changes the fonts; maldives and maldives-dark (theme-maldives.css) set Poppins and have their own sea backdrops. addu-tourism-branding (theme-addu-tourism-branding.css) is the Addu City Digital Hub light theme with portal overrides via data-portal, and addu-tourism-branding-ink is its dark surface island for ui-theme-provider. The fourteen liquid themes in theme-liquid.css (rugged, glacier, oxblood, graphite, cocoa, violet and harbour, each with a -dark night twin) are made for glass surfaces over ui-liquid-backdrop; harbour (Mist, Navy, Crest Gold) is a navy for public services, with its own info blue so every status colour differs. The legacy themes below still work unchanged but are not for new work. Each tile is a ui-theme-provider island; Use sets it for the whole page.">
         <div class="themes">
           @for (t of themes; track t.name) {
             <ui-theme-provider [theme]="t.name" class="ui-surface tile">
@@ -262,12 +262,15 @@ export class FoundationPage {
     oxblood: { bg: '#F2EADB', surface: '#F8F3EA', text: '#1C1C1F', muted: '#55504A', accent: '#7A0C1E' },
     'oxblood-dark': { bg: '#1C1C1F', surface: '#232326', text: '#F2EADB', muted: '#BDB4A6', accent: '#F58A99' },
     glacier: { bg: '#F1F3F4', surface: '#F8FBFC', text: '#0E1A24', muted: '#475867', accent: '#B30022' },
+    harbour: { bg: '#F2F5FA', surface: '#F9FBFE', text: '#0F1E3D', muted: '#45526B', accent: '#1B3A6B' },
+    'harbour-dark': { bg: '#0A1426', surface: '#101C33', text: '#E6ECF5', muted: '#A9B6CB', accent: '#8FB4FF' },
     maldives: { bg: '#f3f8fb', surface: '#ffffff', text: '#0b2d3a', muted: '#365f6e', accent: '#0b2d3a' },
     dark: { bg: '#0f1433', surface: '#151b3f', text: '#c9d6ff', muted: '#9daadc', accent: '#ffc93c' },
     light: { bg: '#eef2ff', surface: '#f7f9ff', text: '#0f1433', muted: '#46507e', accent: '#7a5800' },
   };
   protected readonly swatchChoices: UiChoice[] = [
     { value: 'oxblood', label: 'Oxblood' }, { value: 'oxblood-dark', label: 'Oxblood night' }, { value: 'glacier', label: 'Glacier' },
+    { value: 'harbour', label: 'Harbour' }, { value: 'harbour-dark', label: 'Harbour night' },
     { value: 'maldives', label: 'Maldives' }, { value: 'dark', label: 'Navy dark' }, { value: 'light', label: 'Navy light' },
   ];
   protected swatchPick: string | null = 'oxblood';
@@ -325,6 +328,8 @@ previews: Record<string, UiThemeSwatchColors> = {
     { name: 'cocoa-dark', file: 'theme-liquid.css' },
     { name: 'violet', file: 'theme-liquid.css' },
     { name: 'violet-dark', file: 'theme-liquid.css' },
+    { name: 'harbour', file: 'theme-liquid.css' },
+    { name: 'harbour-dark', file: 'theme-liquid.css' },
   ];
   protected readonly legacyThemes = [
     { name: 'winterDark', file: 'tokens.css (alias of navy-dark)' },
@@ -344,7 +349,7 @@ previews: Record<string, UiThemeSwatchColors> = {
   // current
   | 'dark' | 'light' | 'navy' | 'navy-dark' | 'darkOrange' | 'maldives' | 'maldives-dark' | 'addu-tourism-branding' | 'addu-tourism-branding-ink'
   | 'rugged' | 'rugged-dark' | 'glacier' | 'glacier-dark' | 'oxblood' | 'oxblood-dark'
-  | 'graphite' | 'graphite-dark' | 'cocoa' | 'cocoa-dark' | 'violet' | 'violet-dark'
+  | 'graphite' | 'graphite-dark' | 'cocoa' | 'cocoa-dark' | 'violet' | 'violet-dark' | 'harbour' | 'harbour-dark'
   // legacy (@deprecated): the Winter aliases and the palette skins
   | 'winterDark' | 'winterLight'
   | 'lightOrange' | 'lightPink' | 'darkPink' | 'goldBlack' | 'goldRed'

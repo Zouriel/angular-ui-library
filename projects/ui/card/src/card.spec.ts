@@ -134,3 +134,37 @@ describe('UiCard', () => {
     expect(css()).toContain('var(--ui-card-pad-lg)');
   });
 });
+
+@Component({
+  imports: [UiCard],
+  template: `<ui-card [glass]="glass()" [glassStrength]="strength()">Body</ui-card>`,
+})
+class GlassHost {
+  glass = signal(true);
+  strength = signal<'frosted' | 'clear'>('frosted');
+}
+
+describe('UiCard glassStrength', () => {
+  it('is frosted by default and clear on request, only while glass is on', () => {
+    const f = TestBed.createComponent(GlassHost);
+    f.detectChanges();
+    const card = f.nativeElement.querySelector('.ui-card') as HTMLElement;
+    expect(card.classList).toContain('glass');
+    expect(card.classList).not.toContain('clear');
+    f.componentInstance.strength.set('clear');
+    f.detectChanges();
+    expect(card.classList).toContain('clear');
+    f.componentInstance.glass.set(false);
+    f.detectChanges();
+    expect(card.classList).not.toContain('clear');
+  });
+
+  it('paints clear glass from the card tokens, solid without backdrop-filter or under reduced transparency', () => {
+    const styles = css();
+    expect(styles).toMatch(/\.ui-card\.glass\.clear[^{]*\{[^}]*background:\s*var\(--ui-glass-card-clear-bg\)[^}]*backdrop-filter:\s*var\(--ui-glass-card-clear-filter\)/);
+    expect(styles).toMatch(/@supports not[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{\s*background:\s*var\(--ui-color-surface\)/);
+    expect(styles).toMatch(/prefers-reduced-transparency[^{]*\{[^{}]*\.ui-card\.glass\.clear[^{]*\{[^}]*backdrop-filter:\s*none/);
+    // The frosted look is unchanged.
+    expect(styles).toMatch(/\.ui-card\.glass[^.{]*\{[^}]*background:\s*var\(--ui-glass-bg\)/);
+  });
+});

@@ -25,7 +25,7 @@ Load the styles once (global stylesheet or `angular.json` styles):
 ```css
 @import '@zouriel/ui/styles/tokens.css';            /* required */
 @import '@zouriel/ui/styles/animations.css';        /* enter/leave animations used by overlays */
-@import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the twelve liquid themes */
+@import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the fourteen liquid themes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: cinematic Dark Orange (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives sea skins, day and night (loads Poppins) */
 @import '@zouriel/ui/styles/theme-addu-tourism-branding.css';        /* optional: Addu City Digital Hub + addu-tourism-branding-ink island */
@@ -64,7 +64,7 @@ Form controls implement `ControlValueAccessor` (template-driven, reactive and Si
 - `darkOrange`, in `theme-dark-orange.css`;
 - `maldives` and its night variant `maldives-dark`, both in `theme-maldives.css` (its sea backdrops are components in `@zouriel/ui/fx`; `ui-sea-surface` scopes `maldives` unless given `theme="maldives-dark"` or `[theme]="null"`);
 - `addu-tourism-branding` and its dark island `addu-tourism-branding-ink`, both in `theme-addu-tourism-branding.css` (Figtree/Lexend, `data-portal` overrides; `addu-tourism-branding-ink` is for dark surfaces inside `ui-theme-provider`);
-- the liquid themes `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa` and `violet`, each with a `-dark` night twin, in `theme-liquid.css`: glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` from `@zouriel/ui/fx`.
+- the liquid themes `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa`, `violet` and `harbour` (a navy with its own info blue), each with a `-dark` night twin, in `theme-liquid.css`: glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` from `@zouriel/ui/fx`.
 
 `toggle()` flips `dark` / `light` and every built-in `x` / `x-dark` pair.
 
@@ -117,7 +117,8 @@ tokens and everything else is derived (see `styles/COLOR-SYSTEM.md`).
 | `file-viewer`, `pdf-viewer` | image/video/audio/text/code viewers, lightbox, explorer, lazy PDF |
 | `qr` | `uiQrMatrix` encoder, `ui-qr-code` SVG generator, `ui-qr-scanner` camera/manual scanner |
 | `form-builder` | form builder, form renderer, global form settings, option sources ([guide](form-builder/README.md)) |
-| `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide) |
+| `fx` | reveal, cursor, marquee, drift row, grain, glyph field, split text, magnetic, intro loader, scroll progress, section label; sea backdrops (wave footer, ocean hero, coral and palm decor, sunrise, sea surface, tide); liquid backdrop; backdrop slideshow (`ui-backdrop-slideshow`: full-screen photos that pan right to left on phones and crossfade without a blank frame, with a theme scrim) |
+| `model` | `ui-model-viewer`: a glTF / GLB 3D model, centred, fitted, softly lit on a transparent canvas, turning slowly (stops under reduced motion); `fixed` makes it a decorative window layer. three.js loaded on first use (install `three`; `UI_MODEL_THREE` to provide another loader) |
 | `behaviors` | swipe, intersect, infinite scroll, virtual list, copy to clipboard, ripple, resize observer, slide transition (views and routes) |
 | `theme` | `UiThemeService`, `ui-theme-provider`, `ui-theme-swatch` (a small picture of a theme from its colours, for a theme picker) |
 

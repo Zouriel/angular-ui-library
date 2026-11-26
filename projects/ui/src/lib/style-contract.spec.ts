@@ -147,8 +147,8 @@ export function contrast(fg: Rgba, bg: Rgba): number {
   return (x + 0.05) / (y + 0.05);
 }
 
-/** The liquid themes (theme-liquid.css): six day/night pairs. */
-const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark'] as const;
+/** The liquid themes (theme-liquid.css): seven day/night pairs. */
+const LIQUID = ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark', 'harbour', 'harbour-dark'] as const;
 
 /** Theme blocks that set their own palette (the Winter pair is covered by styles/contrast-check.mjs). */
 function themes(): { name: string; vars: Record<string, string> }[] {
@@ -332,7 +332,7 @@ describe('theme palettes', () => {
       }
     }
     const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
-    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'addu-tourism-branding', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
+    const light = ['winterLight', 'lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'maldives', 'addu-tourism-branding', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet', 'harbour'];
     const fails: string[] = [];
     for (const name of light) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
@@ -409,7 +409,7 @@ describe('theme palettes', () => {
       return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
     };
     const fails: string[] = [];
-    expect(names.length).toBe(29);
+    expect(names.length).toBe(31);
     for (const name of names) {
       const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
       const get = (k: string, depth = 0): Rgba | null => {
@@ -513,7 +513,7 @@ describe('theme palettes', () => {
         need('action words', hex(r.ink), S, 4.5);
       }
     }
-    expect(names.length).toBe(29);
+    expect(names.length).toBe(31);
     expect(fails).toEqual([]);
   });
 
@@ -593,7 +593,7 @@ describe('theme palettes', () => {
         if (edge < 3) fails.push(`${name}/${tone}: chosen edge ${edge.toFixed(2)}:1 on the chosen fill, needs 3:1`);
       }
     }
-    expect(names.length).toBe(29);
+    expect(names.length).toBe(31);
     expect(fails).toEqual([]);
   });
 });
@@ -646,7 +646,7 @@ describe('see-through glass', () => {
     const missing: string[] = [];
     for (const name of names) {
       const keys = new Set([...(own[`[data-theme="${name}"]`] ?? [])]);
-      for (const k of ['--ui-glass-sheet-floor', '--ui-glass-sheet-ceiling', '--ui-glass-clear-floor', '--ui-glass-clear-ceiling']) if (!keys.has(k)) missing.push(`${name}: ${k}`);
+      for (const k of ['--ui-glass-sheet-floor', '--ui-glass-sheet-ceiling', '--ui-glass-clear-floor', '--ui-glass-clear-ceiling', '--ui-glass-card-floor', '--ui-glass-card-ceiling']) if (!keys.has(k)) missing.push(`${name}: ${k}`);
     }
     expect(missing).toEqual([]);
   });
@@ -687,6 +687,42 @@ describe('see-through glass', () => {
           }
           const r = contrast(c, panel);
           if (r < need) fails.push(`${name}: ${fg} on glass over ${where} is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
+  });
+
+  // ── Clear card glass (ui-card glassStrength 'clear', 0.101.0) ──
+  // A card over a busy backdrop (a liquid backdrop, a spinning model, a photo): little tint, a strong blur,
+  // the backdrop's colour lifted, then the frosted squeeze, so AA holds over pure white and pure black.
+  it('clear card: derives its tint and filter as this spec models them (blur and saturate, then the squeeze into the card range)', () => {
+    expect(base['--ui-glass-card-clear-bg']).toBe('color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-card-clear-tint) * 100%), transparent)');
+    expect(base['--ui-glass-card-clear-filter']).toBe(
+      'blur(var(--ui-glass-card-clear-blur)) saturate(var(--ui-glass-card-clear-saturate)) contrast(calc((var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) - var(--ui-glass-card-floor, var(--ui-glass-sheet-floor))) / (var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) + var(--ui-glass-card-floor, var(--ui-glass-sheet-floor))))) brightness(calc(var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) + var(--ui-glass-card-floor, var(--ui-glass-sheet-floor))))',
+    );
+    // The squeeze comes last, so whatever saturate() did, every backdrop channel ends in [floor, ceiling].
+    expect(base['--ui-glass-card-clear-filter'].indexOf('saturate')).toBeLessThan(base['--ui-glass-card-clear-filter'].indexOf('contrast'));
+  });
+
+  it('clear card: a light tint and a strong blur in every theme, and AA text, muted text, primary and status colours over pure white and pure black', () => {
+    const fails: string[] = [];
+    for (const name of names) {
+      const t = resolve(name);
+      const surface = t.color('--ui-color-surface')!;
+      const [tint, floor, ceiling, blur, sat] = [t.num('--ui-glass-card-clear-tint'), t.num('--ui-glass-card-floor'), t.num('--ui-glass-card-ceiling'), t.raw('--ui-glass-card-clear-blur'), t.num('--ui-glass-card-clear-saturate')];
+      if (!(floor >= 0 && ceiling <= 1 && ceiling - floor >= 0.05)) fails.push(`${name}: card range ${floor}-${ceiling} shows too little`);
+      if (!(tint > 0 && tint <= 0.2)) fails.push(`${name}: card clear tint ${tint}`);
+      if (!/^\d+px$/.test(blur) || parseFloat(blur) <= parseFloat(t.raw('--ui-glass-blur'))) fails.push(`${name}: card clear blur ${blur} is not stronger than the frosted card's ${t.raw('--ui-glass-blur')}`);
+      if (!(sat >= 1 && sat <= 2)) fails.push(`${name}: card clear saturate ${sat}`);
+      for (const [where, v] of [['black', floor], ['white', ceiling]] as const) {
+        const g = v * 255;
+        const panel = over([surface[0], surface[1], surface[2], tint], [g, g, g, 1]);
+        for (const [fg, need] of [['text', 4.5], ['text-muted', 4.5], ['primary', 4.5], ['success', 4.5], ['danger', 4.5], ['warning', 3], ['icon', 3]] as const) {
+          const c = t.color(`--ui-color-${fg}`);
+          if (!c) continue;
+          const r = contrast(c, panel);
+          if (r < need) fails.push(`${name}: ${fg} on a clear card over ${where} is ${r.toFixed(2)}:1, needs ${need}:1`);
         }
       }
     }
@@ -838,7 +874,7 @@ describe('see-through glass', () => {
         if (c < 3) fails.push(`${name}: ${tone} route is ${c.toFixed(2)}:1 on its casing, needs 3:1`);
       }
     }
-    expect(names.length).toBe(29);
+    expect(names.length).toBe(31);
     expect(fails).toEqual([]);
   });
 });
@@ -968,9 +1004,9 @@ describe('liquid themes', () => {
   const mixed = (a: Rgba, b: Rgba, k: number): Rgba => [0, 1, 2].map((i) => a[i] * k + b[i] * (1 - k)).concat(1) as Rgba;
   const pct = (v: string) => parseFloat(v) / 100;
 
-  it('defines all twelve themes, each night theme with exactly the token set of its day twin', () => {
+  it('defines all fourteen themes, each night theme with exactly the token set of its day twin', () => {
     expect(Object.keys(blocks).sort()).toEqual([...LIQUID].sort());
-    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
+    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet', 'harbour']) {
       const keys = (n: string) => Object.keys(blocks[n]).sort();
       expect(keys(day).length, day).toBeGreaterThan(55);
       expect(keys(`${day}-dark`), day).toEqual(keys(day));
@@ -997,6 +1033,8 @@ describe('liquid themes', () => {
       'cocoa-dark': ['#1F1612', '#3A2A21', '#F2385A', '#EEE4D6'],
       violet: ['#E9ECEF', '#111316', '#7B4DFF'],
       'violet-dark': ['#111316', '#2A2D33', '#8F6BFF', '#E9ECEF'],
+      harbour: ['#F2F5FA', '#1B3A6B', '#C9A227'],
+      'harbour-dark': ['#0A1426', '#1E3560', '#D9B44A', '#E6ECF5'],
     };
     for (const [name, [main, second, accent, ink]] of Object.entries(brand)) {
       const b = blocks[name];
@@ -1005,6 +1043,58 @@ describe('liquid themes', () => {
       expect(b['--ui-color-accent'], name).toBe(accent);
       if (ink) expect(b['--ui-liquid-ink'], name).toBe(ink);
     }
+  });
+
+  it('gives harbour a navy primary, a gold accent and its own distinct status colours, AA on every surface', () => {
+    // A government-service navy: the primary is navy by day (white label), lifted to a readable blue by night;
+    // unlike the other liquid themes it defines --ui-color-info, so success, info, warning, danger and
+    // neutral (text-muted) never share a colour and each tone tile reads differently.
+    const hue = ([r, g, b]: Rgba) => {
+      const [x, y, z] = [r / 255, g / 255, b / 255];
+      const max = Math.max(x, y, z);
+      const d = max - Math.min(x, y, z);
+      if (d === 0) return 0;
+      const h = max === x ? ((y - z) / d) % 6 : max === y ? (z - x) / d + 2 : (x - y) / d + 4;
+      return (h * 60 + 360) % 360;
+    };
+    const sat = ([r, g, b]: Rgba) => (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+    const apart = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+    expect(blocks['harbour']['--ui-color-primary']).toBe('#1B3A6B');
+    expect(blocks['harbour']['--ui-color-primary-contrast']).toBe('#FFFFFF');
+    expect(blocks['harbour-dark']['--ui-color-primary-contrast']).toBe('#0A1426');
+    const fails: string[] = [];
+    for (const name of ['harbour', 'harbour-dark']) {
+      const primary = col(name, '--ui-color-primary');
+      // Navy / blue primary, gold accent.
+      expect(hue(primary), `${name} primary hue`).toBeGreaterThan(205);
+      expect(hue(primary), `${name} primary hue`).toBeLessThan(230);
+      expect(hue(col(name, '--ui-color-accent')), `${name} accent hue`).toBeGreaterThan(38);
+      expect(hue(col(name, '--ui-color-accent')), `${name} accent hue`).toBeLessThan(52);
+      expect(contrast(col(name, '--ui-color-primary-contrast'), primary), name).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(col(name, '--ui-color-info-contrast'), col(name, '--ui-color-info')), name).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(col(name, '--ui-color-accent-contrast'), col(name, '--ui-color-accent')), name).toBeGreaterThanOrEqual(4.5);
+      // Each status colour is its own hue family (and info is a clear blue, not the primary or the grey).
+      const status: [string, Rgba][] = ['success', 'info', 'warning', 'danger'].map((k) => [k, col(name, `--ui-color-${k}`)]);
+      expect(blocks[name]['--ui-color-info'].toLowerCase(), name).not.toBe(blocks[name]['--ui-color-primary'].toLowerCase());
+      const info = col(name, '--ui-color-info');
+      expect(hue(info), `${name} info hue`).toBeGreaterThan(190);
+      expect(hue(info), `${name} info hue`).toBeLessThan(215);
+      expect(sat(info), `${name} info saturation`).toBeGreaterThan(sat(col(name, '--ui-color-text-muted')) + 0.3);
+      for (let i = 0; i < status.length; i++) {
+        for (let j = i + 1; j < status.length; j++) {
+          const d = apart(hue(status[i][1]), hue(status[j][1]));
+          if (d < 25) fails.push(`${name}: ${status[i][0]} and ${status[j][0]} are only ${d.toFixed(0)}deg apart`);
+        }
+      }
+      for (const g of ['bg', 'surface', 'surface-raised']) {
+        const ground = col(name, `--ui-color-${g}`);
+        for (const [k, need] of [['text', 7], ['text-muted', 4.5], ['primary', 4.5], ['info', 4.5], ['success', 4.5], ['danger', 4.5], ['warning', 4.5]] as const) {
+          const r = contrast(col(name, `--ui-color-${k}`), ground);
+          if (r < need) fails.push(`${name}: ${k} on ${g} is ${r.toFixed(2)}:1, needs ${need}:1`);
+        }
+      }
+    }
+    expect(fails).toEqual([]);
   });
 
   it('builds the brand gradient from brand colours that read on the page, with a label that holds 4.5:1 on every stop', () => {

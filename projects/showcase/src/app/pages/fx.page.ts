@@ -2,8 +2,10 @@ import { Component, signal } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import AiBrain01Icon from '@hugeicons/core-free-icons/AiBrain01Icon';
 import { UiButton } from '@zouriel/ui/button';
+import { UiCard } from '@zouriel/ui/card';
+import { UiModelViewer } from '@zouriel/ui/model';
 import { UiThemeProvider } from '@zouriel/ui/theme';
-import { UiLiquidBackdrop,
+import { UiLiquidBackdrop, UiBackdropSlideshow, type UiBackdropSlide,
   UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField, UiIntroLoader, UiMagnetic,
   UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide, type UiDecorCorner,
 } from '@zouriel/ui/fx';
@@ -12,7 +14,7 @@ import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 @Component({
   selector: 'page-fx',
   imports: [
-    UiLiquidBackdrop,
+    UiLiquidBackdrop, UiModelViewer, UiCard, UiBackdropSlideshow,
     HugeiconsIconComponent, UiButton, UiThemeProvider, UiReveal, UiMarquee, UiDriftRow, UiSectionLabel, UiSplitText, UiGlyphField,
     UiIntroLoader, UiMagnetic, UiWaveFooter, UiOceanHero, UiCoralDecor, UiPalmDecor, UiSunrise, UiSeaSurface, UiTide,
     DocPage, DocSection, DocDemo,
@@ -196,6 +198,81 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
         </doc-demo>
       </doc-section>
 
+      <doc-section name="Model viewer" selector="ui-model-viewer" [api]="modelApi"
+        summary="From @zouriel/ui/model (0.101.0). Shows a glTF / GLB 3D model, turning slowly around its vertical axis: centred and scaled to fit (its bounding sphere, so it never clips while it turns), tilted toward you, under a soft studio light (a sky/ground ambient, a warm key and a cool fill) that reads on light and dark themes, on a transparent canvas so the theme or a liquid backdrop shows through. With fixed it is a decorative window layer like ui-liquid-backdrop (position fixed, inset 0, behind the content, no pointer, aria-hidden); otherwise give it an ariaLabel. The spin stops under reduced motion and animations: false (the model still renders), and it only draws while on screen and the tab is visible. three.js is an optional peer dependency (npm i three), loaded with a dynamic import the first time a viewer appears; renderer, geometries, materials and textures are disposed on destroy. Below: a passport behind a clear glass card (ui-card glassStrength=&quot;clear&quot;) over the liquid backdrop, in harbour and harbour-dark.">
+        <doc-demo code="<!-- npm i three -->
+<ui-liquid-backdrop fixed />
+<ui-model-viewer fixed src=&quot;/media/maldivian-passport.glb&quot; [tilt]=&quot;12&quot; [spinSeconds]=&quot;24&quot; />
+<ui-card [glass]=&quot;true&quot; glassStrength=&quot;clear&quot;>…the form…</ui-card>
+
+<ui-model-viewer src=&quot;/media/passport.glb&quot; ariaLabel=&quot;A Maldivian passport&quot; />">
+          <div class="model-row">
+            @for (t of modelDemo; track t) {
+              <ui-theme-provider [theme]="t" class="ui-surface model-box">
+                <ui-liquid-backdrop />
+                <ui-model-viewer class="model-layer" src="demo/maldivian-passport.glb" />
+                <div class="model-cards">
+                  <ui-card [glass]="true" glassStrength="clear" [gap]="2">
+                    <span class="surface-title">{{ t }}: clear</span>
+                    <span class="surface-copy">Passport section feedback. The passport turns behind this card.</span>
+                    <ui-button variant="primary" size="sm">Send feedback</ui-button>
+                  </ui-card>
+                  <ui-card [glass]="true" [gap]="2">
+                    <span class="surface-title">frosted</span>
+                    <span class="surface-copy">The default glass, for comparison.</span>
+                  </ui-card>
+                </div>
+              </ui-theme-provider>
+            }
+          </div>
+          <ui-model-viewer class="model-alone" src="demo/maldivian-passport.glb" ariaLabel="A Maldivian passport" [tilt]="20" [spinSeconds]="16" />
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Backdrop slideshow" selector="ui-backdrop-slideshow" [api]="slideshowApi" [shapes]="slideshowShapes"
+        summary="0.101.0. A decorative full-screen background of photos that crossfade while they move. motion pan (default): on a phone each photo fills the height and pans slowly right to left across its whole width, so most of a wide photo is seen; the next slide is already panning as it fades in, so the motion never stops at a crossfade. The travel comes from the photo's own aspect ratio and is recomputed on resize; where a photo barely overflows (a wide screen) it drifts and zooms slowly instead. Every next photo is preloaded and decoded before it fades in over the current one, so there is never a blank frame; the first shows at once. Transform and opacity only (Web Animations API). Pauses while the tab is hidden; one slide is still; reduced motion: no pan or zoom and a slow plain crossfade; animations: false: the first slide only. fixed (default) covers the window behind the content (aria-hidden, no pointer). scrim lays the theme's page colour over the photos (soft 45%, strong 72%) so glass cards and text read in light and dark themes. Layer order: the slideshow first, then ui-liquid-backdrop or ui-model-viewer fixed, then the content with position: relative.">
+        <doc-demo code="<ui-backdrop-slideshow [slides]=&quot;slides&quot; scrim=&quot;soft&quot; />          <!-- bottom: the window -->
+<ui-model-viewer fixed src=&quot;/media/passport.glb&quot; />                 <!-- above it -->
+<main style=&quot;position: relative&quot;>
+  <ui-card [glass]=&quot;true&quot; glassStrength=&quot;clear&quot;>…</ui-card>          <!-- on top -->
+</main>
+
+slides: UiBackdropSlide[] = [
+  { src: 'slide-1-1920.webp', srcset: 'slide-1-960.webp 960w, slide-1-1920.webp 1920w', position: 'center 40%' },
+  …
+];">
+          <div class="model-row">
+            @for (t of modelDemo; track t) {
+              <ui-theme-provider [theme]="t" class="ui-surface model-box slideshow-box">
+                <ui-backdrop-slideshow [fixed]="false" [slides]="slides" [interval]="5000" [fade]="1400" />
+                <ui-model-viewer class="model-layer" src="demo/maldivian-passport.glb" [spinSeconds]="30" />
+                <div class="model-cards">
+                  <ui-card [glass]="true" glassStrength="clear" [gap]="2">
+                    <span class="surface-title">{{ t }}</span>
+                    <span class="surface-copy">Photos at the bottom, the passport above them, this card on top.</span>
+                    <ui-button variant="primary" size="sm">Start</ui-button>
+                  </ui-card>
+                </div>
+              </ui-theme-provider>
+            }
+          </div>
+          <ui-button variant="outline" class="full-open" (click)="fullSlides.set(true)">Try it full screen</ui-button>
+          @if (fullSlides()) {
+            <div class="full-demo">
+              <ui-backdrop-slideshow [slides]="slides" />
+              <ui-model-viewer fixed src="demo/maldivian-passport.glb" />
+              <div class="full-content">
+                <ui-card [glass]="true" glassStrength="clear" [gap]="3">
+                  <span class="surface-title">Passport section feedback</span>
+                  <span class="surface-copy">Photos at the bottom, the passport above them, this card on top.</span>
+                  <ui-button variant="primary" (click)="fullSlides.set(false)">Close</ui-button>
+                </ui-card>
+              </div>
+            </div>
+          }
+        </doc-demo>
+      </doc-section>
+
       <doc-section name="Tide" selector="[uiTide]" [api]="tideApi"
         summary="Directive. A staggered entrance for lists and cards: each item fades in and slides up 8px, starting tideDelay + index × tideStep ms after it renders. It reuses the shared ui-slide-up-enter class from animations.css (load it globally), so reduced motion turns it into a plain fade and animations off skips it. The .ui-pulse class from fx.css is the matching slow glow pulse for a working or AI-thinking mark.">
         <doc-demo code="@for (d of doctors; track d.id; let i = $index) {
@@ -239,6 +316,16 @@ html.ui-cursor-on, html.ui-cursor-on * { cursor: none; }"></doc-demo>
     .sun-inner { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-3); padding: var(--ui-space-4); }
     .sun-logo { font-family: var(--ui-font-display); font-weight: 600; font-size: 1.6rem; }
     .surface-demo { border-radius: var(--ui-radius-lg); min-height: 260px; }
+    .model-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--ui-space-3); margin-bottom: var(--ui-space-3); }
+    .model-box { position: relative; overflow: hidden; border-radius: var(--ui-radius-lg); min-height: 360px; padding: var(--ui-space-4); display: grid; align-items: end; }
+    .model-layer { position: absolute; inset: 0; width: auto; height: auto; }
+    .model-cards { position: relative; display: grid; gap: var(--ui-space-3); }
+    .slideshow-box { min-height: 420px; }
+    .full-open { margin-top: var(--ui-space-3); }
+    .full-demo { position: fixed; inset: 0; z-index: 1000; }
+    .full-content { position: relative; display: grid; place-items: end center; height: 100%; padding: var(--ui-space-4); }
+    .full-content ui-card { width: min(100%, 420px); }
+    .model-alone { max-width: 420px; height: 280px; }
     .liquid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-3); }
     .liquid-box { position: relative; overflow: hidden; border-radius: var(--ui-radius-lg); min-height: 200px; display: grid; place-items: center; padding: var(--ui-space-4); }
     .liquid-glass { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: var(--ui-space-2); padding: var(--ui-space-4);
@@ -345,7 +432,36 @@ export class FxPage {
     { name: 'size', type: 'number', default: '120', desc: 'Diameter of the sun (px); the host is 1.6 times that, for the glow.' },
     { name: '<ng-content>', type: 'slot', default: '—', desc: 'The logo, centred on the sun.' },
   ];
-  protected readonly liquidDemo = ['glacier', 'rugged-dark', 'cocoa', 'violet-dark', 'navy'];
+  protected readonly modelDemo = ['harbour', 'harbour-dark'];
+  protected readonly fullSlides = signal(false);
+  protected readonly slides: UiBackdropSlide[] = [1, 2, 3].map((n) => ({
+    src: `demo/immigration/slide-${n}-1920.webp`,
+    srcset: `demo/immigration/slide-${n}-960.webp 960w, demo/immigration/slide-${n}-1920.webp 1920w`,
+  }));
+  protected readonly slideshowShapes = `interface UiBackdropSlide { src: string; srcset?: string; alt?: string; position?: string }
+type UiBackdropMotion = 'pan' | 'zoom' | 'none';
+type UiBackdropScrim = 'none' | 'soft' | 'strong';`;
+  protected readonly slideshowApi: ApiRow[] = [
+    { name: 'slides', type: 'UiBackdropSlide[]', default: '[]', desc: 'The photos, in order: src, optional srcset (sizes is 100vw), alt, and position (object-position, e.g. "center 30%").' },
+    { name: 'interval', type: 'number', default: '7000', desc: 'How long each slide shows, in ms, from the start of its fade in.' },
+    { name: 'fade', type: 'number', default: '1600', desc: 'Crossfade, in ms (at least 2400 under reduced motion).' },
+    { name: 'motion', type: 'UiBackdropMotion', default: "'pan'", desc: 'pan: right to left across a photo wider than the box (a slow zoom where it barely overflows); zoom: always the slow zoom and drift; none: still. Off under reduced motion.' },
+    { name: 'fixed', type: 'boolean', default: 'true', desc: 'Cover the window (position fixed, inset 0, z-index 0); false fills the nearest positioned container.' },
+    { name: 'scrim', type: 'UiBackdropScrim', default: "'soft'", desc: 'The theme page colour over the photos: soft 45%, strong 72% (--ui-backdrop-scrim-soft / -strong), none.' },
+  ];
+  protected readonly modelApi: ApiRow[] = [
+    { name: 'src', type: 'string (required)', default: '—', desc: 'URL of the model (.glb or .gltf). A new src loads the new model and disposes the old one.' },
+    { name: 'spin', type: 'boolean', default: 'true', desc: 'Turn slowly around the vertical axis. Stops under prefers-reduced-motion and animations: false; the model still renders.' },
+    { name: 'spinSeconds', type: 'number', default: '24', desc: 'Seconds per full turn.' },
+    { name: 'tilt', type: 'number', default: '12', desc: 'Resting tilt toward the viewer, in degrees (the top leans toward you).' },
+    { name: 'fixed', type: 'boolean', default: 'false', desc: 'A decorative window layer: position fixed, inset 0, z-index 0, pointer-events none, aria-hidden. Put the content after it.' },
+    { name: 'ariaLabel', type: 'string | null', default: 'null', desc: 'What the model shows (role=img). Without it, or with fixed, the viewer is decorative (aria-hidden).' },
+    { name: '(loaded)', type: 'output<void>', default: '—', desc: 'The model loaded and drew its first frame (the canvas then fades in).' },
+    { name: '(error)', type: 'output<unknown>', default: '—', desc: 'three.js or the model failed to load.' },
+    { name: 'UI_MODEL_THREE', type: 'InjectionToken<() => Promise<UiModelThree>>', default: "import('three') + GLTFLoader", desc: 'How three.js is loaded; provide another loader for tests or a CDN.' },
+    { name: 'height', type: 'CSS', default: '320px', desc: 'Not fixed: the host is a block, 100% wide and 320px tall; size it with CSS.' },
+  ];
+  protected readonly liquidDemo = ['glacier', 'rugged-dark', 'cocoa', 'violet-dark', 'harbour', 'navy'];
   protected readonly liquidApi: ApiRow[] = [
     { name: 'fixed', type: 'boolean', default: 'false', desc: 'Cover the window (position: fixed) instead of the nearest positioned container.' },
     { name: 'opacity', type: 'number', default: '1', desc: 'Opacity of the whole backdrop, 0-1.' },

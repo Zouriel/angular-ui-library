@@ -294,7 +294,7 @@ describe('chart series tokens', () => {
   it('finds every built-in theme', () => {
     const names = themeBlocks.flatMap((b) => b.names);
     expect(names.length).toBeGreaterThanOrEqual(27);
-    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'maldives', 'addu-tourism-branding', 'addu-tourism-branding-ink', 'darkOrange', 'goldRed']) expect(names).toContain(n);
+    for (const n of ['dark', 'light', 'oxblood', 'oxblood-dark', 'harbour', 'harbour-dark', 'maldives', 'addu-tourism-branding', 'addu-tourism-branding-ink', 'darkOrange', 'goldRed']) expect(names).toContain(n);
   });
 
   it('gives every built-in theme its own six series colours, all different', () => {

@@ -25,7 +25,7 @@ npm i pdfjs-dist   # only for ui-pdf-viewer, or PDFs in ui-file-viewer"></doc-de
         summary="Load the styles once, in angular.json styles or your global stylesheet. tokens.css is required: without it components have no colours, sizes or spacing. animations.css holds the enter/leave animations that modals, drawers, popovers and the command palette use. The rest are optional.">
         <doc-demo lang="css" code="@import '@zouriel/ui/styles/tokens.css';            /* required: tokens + Navy dark/light */
 @import '@zouriel/ui/styles/animations.css';        /* enter/leave animations */
-@import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the twelve liquid themes */
+@import '@zouriel/ui/styles/theme-liquid.css';      /* optional: the fourteen liquid themes */
 @import '@zouriel/ui/styles/theme-dark-orange.css'; /* optional: Dark Orange (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-maldives.css';    /* optional: Maldives day and night (loads Poppins) */
 @import '@zouriel/ui/styles/theme-addu-tourism-branding.css';        /* optional: Addu City Digital Hub + addu-tourism-branding-ink island */
@@ -185,7 +185,7 @@ type UiStatus = 'neutral' | 'primary' | 'success' | 'warning' | 'danger';`;
     { title: 'Cinematic', file: 'theme-dark-orange.css', themes: ['darkOrange'] },
     { title: 'Sea', file: 'theme-maldives.css', themes: ['maldives', 'maldives-dark'] },
     { title: 'Addu Tourism Branding', file: 'theme-addu-tourism-branding.css', themes: ['addu-tourism-branding', 'addu-tourism-branding-ink'] },
-    { title: 'Liquid', file: 'theme-liquid.css', themes: ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark'] },
+    { title: 'Liquid', file: 'theme-liquid.css', themes: ['rugged', 'rugged-dark', 'glacier', 'glacier-dark', 'oxblood', 'oxblood-dark', 'graphite', 'graphite-dark', 'cocoa', 'cocoa-dark', 'violet', 'violet-dark', 'harbour', 'harbour-dark'] },
     { title: 'Legacy: palettes', file: 'theme-palettes.css (still supported, not for new work)', themes: ['lightOrange', 'lightPink', 'lightTeal', 'lightPurple', 'lightPurpleGold', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed'] },
     { title: 'Legacy: Winter names', file: 'tokens.css (aliases of navy-dark and navy)', themes: ['winterDark', 'winterLight'] },
   ];

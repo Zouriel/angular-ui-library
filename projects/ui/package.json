@@ -1,6 +1,6 @@
 {
   "name": "@zouriel/ui",
-  "version": "0.100.0",
+  "version": "0.101.0",
   "description": "Zouriel design system for Angular: components, effects, and a theme system.",
   "license": "MIT",
   "repository": {
@@ -26,7 +26,8 @@
     "@tiptap/starter-kit": "3.33.0",
     "@tiptap/extension-link": "3.33.0",
     "@tiptap/extension-image": "3.33.0",
-    "@tiptap/extension-table": "3.33.0"
+    "@tiptap/extension-table": "3.33.0",
+    "three": ">=0.160.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"
@@ -60,6 +61,9 @@
       "optional": true
     },
     "@tiptap/extension-table": {
+      "optional": true
+    },
+    "three": {
       "optional": true
     }
   },

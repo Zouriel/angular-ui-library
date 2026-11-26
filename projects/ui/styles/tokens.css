@@ -94,6 +94,18 @@
   --ui-glass-clear-tint: 0.12;
   --ui-glass-clear-blur: 3px;
   --ui-glass-clear-saturate: 1.8;
+  /* Clear card glass (ui-card glassStrength="clear", 0.101.0): a card over a busy backdrop (a liquid backdrop,
+     a ui-model-viewer, a photo). A light tint and a strong blur, the backdrop's colour lifted, then squeezed into
+     each theme's --ui-glass-card-floor / --ui-glass-card-ceiling (a custom theme without them falls back to its
+     frosted range), so text, muted text, primary and status colours stay AA under the light tint over anything,
+     pure white and pure black included (style-contract spec). */
+  --ui-glass-card-clear-tint: 0.15;
+  --ui-glass-card-clear-blur: 24px;
+  --ui-glass-card-clear-saturate: 1.6;
+  /* Backdrop slideshow scrim (ui-backdrop-slideshow, 0.101.0): the theme's page colour laid over the photos at this
+     strength, so glass cards and text on top read in light and dark themes. */
+  --ui-backdrop-scrim-soft: 45%;
+  --ui-backdrop-scrim-strong: 72%;
 
   /* Sizing — FIXED set, no arbitrary values */
   --ui-size-sm: 26px;
@@ -298,6 +310,14 @@
     contrast(calc((var(--ui-glass-clear-ceiling) - var(--ui-glass-clear-floor)) / (var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor))))
     brightness(calc(var(--ui-glass-clear-ceiling) + var(--ui-glass-clear-floor)))
     saturate(var(--ui-glass-clear-saturate));
+  /* The scrim's colour: the page colour of the theme in effect (light over a light theme, dark over a dark one). */
+  --ui-backdrop-scrim: var(--ui-color-bg);
+  /* Clear card glass (0.101.0): blur and saturate first, then the squeeze, so every backdrop colour ends in
+     [floor, ceiling] whatever the saturation did. */
+  --ui-glass-card-clear-bg: color-mix(in srgb, var(--ui-color-surface) calc(var(--ui-glass-card-clear-tint) * 100%), transparent);
+  --ui-glass-card-clear-filter: blur(var(--ui-glass-card-clear-blur)) saturate(var(--ui-glass-card-clear-saturate))
+    contrast(calc((var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) - var(--ui-glass-card-floor, var(--ui-glass-sheet-floor))) / (var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) + var(--ui-glass-card-floor, var(--ui-glass-sheet-floor)))))
+    brightness(calc(var(--ui-glass-card-ceiling, var(--ui-glass-sheet-ceiling)) + var(--ui-glass-card-floor, var(--ui-glass-sheet-floor))));
 
   /* Map routes (ui-map routes, 0.42.0): the line in each tone over a casing. Each tone must hold
      3:1 against the colours MapTiler's streets-v2 and dataviz styles draw (in the theme's own
@@ -387,6 +407,9 @@
   /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.26;
 
   /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
      colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
@@ -485,6 +508,9 @@
   /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.35;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.85;
+  --ui-glass-card-ceiling: 1.0;
 
   --ui-color-bg: var(--ui-navy-50);
   --ui-color-surface: var(--ui-navy-25);

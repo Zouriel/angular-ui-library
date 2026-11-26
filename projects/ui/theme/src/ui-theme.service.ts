@@ -22,12 +22,13 @@ import { Injectable, effect, inject, signal } from '@angular/core';
  *   Blue primary, Lime accent) with portal colour overrides via `data-portal`, and requires
  *   `@zouriel/ui/styles/theme-addu-tourism-branding.css`. `addu-tourism-branding-ink` is its dark theme island for use inside
  *   `ui-theme-provider` (sidebar, footer, dark callouts); neither is a day/night pair.
- * - The liquid themes, six day/night pairs in `@zouriel/ui/styles/theme-liquid.css`, made for
+ * - The liquid themes, seven day/night pairs in `@zouriel/ui/styles/theme-liquid.css`, made for
  *   glass surfaces over `ui-liquid-backdrop` (`@zouriel/ui/fx`): `rugged` / `rugged-dark`
  *   (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue,
  *   Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood) and `graphite` /
  *   `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa,
- *   Raspberry) and `violet` / `violet-dark` (Mist, Ink, Electric Violet).
+ *   Raspberry), `violet` / `violet-dark` (Mist, Ink, Electric Violet) and `harbour` /
+ *   `harbour-dark` (Mist, Navy, Crest Gold: navy primary, distinct semantic colours with its own info blue).
  *
  * Legacy themes (still supported, but new work should use a current theme; see
  * {@link UI_LEGACY_THEMES} and {@link isLegacyTheme}):
@@ -64,6 +65,8 @@ export type UiTheme =
   | 'cocoa-dark'
   | 'violet'
   | 'violet-dark'
+  | 'harbour'
+  | 'harbour-dark'
   /** @deprecated The retired Winter name: an alias of `navy-dark` (use `dark` or `navy-dark`). */
   | 'winterDark'
   /** @deprecated The retired Winter name: an alias of `navy` (use `light` or `navy`). */
@@ -113,6 +116,8 @@ export const UI_CURRENT_THEMES = [
   'cocoa-dark',
   'violet',
   'violet-dark',
+  'harbour',
+  'harbour-dark',
 ] as const;
 
 /**
@@ -146,7 +151,7 @@ export function isLegacyTheme(name: string): name is UiLegacyTheme {
 }
 
 /** Built-in themes that come as a day/night pair named `x` and `x-dark`. */
-const UI_DAY_NIGHT_PAIRS: readonly string[] = ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet'];
+const UI_DAY_NIGHT_PAIRS: readonly string[] = ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet', 'harbour'];
 
 /**
  * Global theme controller. Drives `data-theme` on the document root so the
@@ -176,7 +181,7 @@ export class UiThemeService {
 
   /**
    * Flips day and night: `dark` <-> `light`, a built-in `x` / `x-dark` pair (`navy`, `maldives`,
-   * `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa`, `violet`) to its other half, and the
+   * `rugged`, `glacier`, `oxblood`, `graphite`, `cocoa`, `violet`, `harbour`) to its other half, and the
    * deprecated `winterDark` <-> `winterLight`; from any other theme it goes to `dark`.
    */
   toggle(): void {

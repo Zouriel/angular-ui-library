@@ -16,11 +16,11 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 ## Highlights
 
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
-  set of token overrides. Ships **19 current themes**:
+  set of token overrides. Ships **21 current themes**:
   - **Navy**: Navy Dark and Navy Light (`dark` / `light`), the defaults: Midnight Navy, Powder Blue and Sunflower;
   - **Dark Orange**: a cinematic theme with web fonts and FX;
   - **Maldives** and **Maldives Dark**: a calm sea theme (Poppins) by day and by night, with its own sea backdrops;
-  - **Liquid** (12): Rugged, Glacier, Oxblood, Graphite, Cocoa and Violet, each by day and by night, made for
+  - **Liquid** (14): Rugged, Glacier, Oxblood, Graphite, Cocoa, Violet and Harbour, each by day and by night, made for
     glass surfaces over a flowing `ui-liquid-backdrop`.
 
   Plus **legacy themes**, still supported but not for new work: the ten colour palettes and the
@@ -157,6 +157,15 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   changes its column count: `(uiPinchIn)` at 0.8 times the baseline distance, `(uiPinchOut)` at 1.25 times, then the
   current distance is the new baseline. It cancels `touchmove` only while two fingers are on the host, so the page
   doesn't zoom and one finger still scrolls. `[uiPinchDisabled]` turns it off.
+- **0.101.0** (Angular; the Flutter twins follow in a later release): the `harbour` / `harbour-dark` liquid theme pair
+  (Mist, Navy, Crest Gold: a navy primary, a gold accent for highlights, and its own `--ui-color-info` blue, so the
+  success / info / neutral / warning / danger tones all differ). `ui-model-viewer` in the new `@zouriel/ui/model`
+  entry point shows a glTF / GLB model turning slowly (`src`, `spin`, `spinSeconds`, `tilt`, `fixed`, `ariaLabel`,
+  `(loaded)`, `(error)`; three.js an optional peer, lazy-loaded through `UI_MODEL_THREE`). `ui-card [glassStrength]`
+  `'frosted'` (default, unchanged) | `'clear'`: a light tint over a strong blur, squeezed into each theme's new
+  `--ui-glass-card-floor` / `-ceiling` so text stays AA over any backdrop. `ui-backdrop-slideshow` in `@zouriel/ui/fx`:
+  a full-screen photo background that pans right to left on phones (zoom and drift where a photo barely overflows),
+  preloads and decodes every next photo before crossfading, with a theme scrim (`--ui-backdrop-scrim-soft/-strong`).
 - **0.47.3**: `ui-google-sign-in` follows its host's width: it measures again whenever the host resizes (it used to
   measure once, so a page that loaded hidden, such as behind a location gate, kept Google's narrowest 219px button),
   centres the button up to Google's 400px limit, and keeps its skeleton until Google's frame has drawn, so it no
@@ -315,17 +324,19 @@ The package is published to GitHub Packages, so point the scope there once:
 echo "@zouriel:registry=https://npm.pkg.github.com" >> .npmrc
 npm i @zouriel/ui @angular/cdk @hugeicons/angular @hugeicons/core-free-icons
 npm i pdfjs-dist        # only if you use the PDF viewer (ui-pdf-viewer, or PDFs in ui-file-viewer)
+npm i three             # only if you use the 3D model viewer (ui-model-viewer, @zouriel/ui/model)
 ```
 
 Peer dependencies: `@angular/core`, `@angular/common`, `@angular/forms` and `@angular/cdk` ^22,
-`@hugeicons/angular` ^1.0.11, `@hugeicons/core-free-icons` ^4.3.0, and optionally `pdfjs-dist` ^4.10.38.
+`@hugeicons/angular` ^1.0.11, `@hugeicons/core-free-icons` ^4.3.0, and optionally `pdfjs-dist` ^4.10.38 and
+`three` >=0.160.0 (loaded with a dynamic import only when a `ui-model-viewer` appears).
 
 Load the global styles once (e.g. in `angular.json` styles or your global stylesheet):
 
 ```css
 @import '@zouriel/ui/styles/tokens.css';
 @import '@zouriel/ui/styles/animations.css';
-/* optional: the twelve liquid themes (rugged, glacier, oxblood, graphite, cocoa, violet, each with -dark) */
+/* optional: the fourteen liquid themes (rugged, glacier, oxblood, graphite, cocoa, violet, harbour, each with -dark) */
 @import '@zouriel/ui/styles/theme-liquid.css';
 /* optional: the cinematic Dark Orange skin (loads Google Fonts) */
 @import '@zouriel/ui/styles/theme-dark-orange.css';
@@ -400,7 +411,7 @@ this.theme.toggle();           // glacier <-> glacier-dark, dark <-> light
 | Cinematic | `darkOrange`: ink/ember palette, display + mono fonts, glow | `theme-dark-orange.css` |
 | Sea | `maldives`: Ocean Deep, Lagoon, Coral, Sand and Mist, Poppins; `maldives-dark`: the same sea at night (deep ocean canvas, Foam ink, Lagoon primary, Coral accent). A day/night toggle switches between the two names | `theme-maldives.css` |
 | Addu Tourism Branding | `addu-tourism-branding`: Addu City Digital Hub light theme (Mist canvas, Ink text, Blue primary, Lime accent; Figtree & Lexend; `data-portal` overrides); `addu-tourism-branding-ink`: dark surface island for `ui-theme-provider` | `theme-addu-tourism-branding.css` |
-| Liquid | `rugged` / `rugged-dark` (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue, Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood), `graphite` / `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa, Raspberry), `violet` / `violet-dark` (Mist, Ink, Electric Violet). Glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` | `theme-liquid.css` |
+| Liquid | `rugged` / `rugged-dark` (Desert Sand, Olive Drab, Signal Yellow), `glacier` / `glacier-dark` (Ice White, Glacier Blue, Signal Red), `oxblood` / `oxblood-dark` (Bone, Charcoal, Oxblood), `graphite` / `graphite-dark` (Light Grey, Slate, Safety Orange), `cocoa` / `cocoa-dark` (Cream, Cocoa, Raspberry), `violet` / `violet-dark` (Mist, Ink, Electric Violet), `harbour` / `harbour-dark` (Mist, Navy, Crest Gold; navy primary and its own info blue). Glass surfaces (`provideUiConfig({ glass: true })`) over `ui-liquid-backdrop` | `theme-liquid.css` |
 
 **Legacy themes** still work exactly as before, but new work should use a current theme:
 `lightOrange`, `lightPink`, `lightTeal`, `lightPurple`, `lightPurpleGold`, `darkPink`, `darkTeal`,

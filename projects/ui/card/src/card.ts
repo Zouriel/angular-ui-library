@@ -1,5 +1,5 @@
 import { Component, inject, input, output } from '@angular/core';
-import { UI_CONFIG } from '@zouriel/ui';
+import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
 
 /** Spacing steps accepted by `ui-card [gap]` (maps to `--ui-space-N`). */
 export type UiCardGap = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 10;
@@ -17,6 +17,7 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
     <div
       class="ui-card"
       [class.glass]="glass()"
+      [class.clear]="glass() && glassStrength() === 'clear'"
       [class.no-radius]="radius() === false"
       [class.radius-xl]="radius() === 'xl'"
       [class.interactive]="interactive() || pressable()"
@@ -96,6 +97,21 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
     }
     .ui-card.glass.interactive:not(.disabled):hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
+    /* Clear (0.101.0): a light tint over a strongly blurred backdrop that is squeezed into the theme's
+       frosted range, so the backdrop's colour and shape show while text stays AA over anything (tokens.css). */
+    .ui-card.glass.clear {
+      background: var(--ui-glass-card-clear-bg);
+      -webkit-backdrop-filter: var(--ui-glass-card-clear-filter);
+      backdrop-filter: var(--ui-glass-card-clear-filter);
+    }
+    /* No backdrop-filter, or the user asks for less transparency / more contrast: an unfiltered backdrop
+       under a light tint can't promise contrast, so a clear card is solid. */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .ui-card.glass.clear { background: var(--ui-color-surface); }
+    }
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      .ui-card.glass.clear { background: var(--ui-color-surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
     .hd, .bd, .ft { padding: var(--ui-card-pad-md); }
     .ui-card[data-pad="sm"] .hd, .ui-card[data-pad="sm"] .bd, .ui-card[data-pad="sm"] .ft { padding: var(--ui-card-pad-sm); }
     .ui-card[data-pad="lg"] .hd, .ui-card[data-pad="lg"] .bd, .ui-card[data-pad="lg"] .ft { padding: var(--ui-card-pad-lg); }
@@ -113,6 +129,14 @@ export class UiCard {
   /** Cross-axis alignment of body children (enables flex column on the body). */
   align = input<UiCardAlign | null>(null);
   glass = input<boolean>(this.config.glass);
+  /**
+   * How see-through `glass` is (0.101.0). `'frosted'` (default): the glass panel as before.
+   * `'clear'`: far less tint and a stronger blur, for a card over a busy backdrop (a liquid backdrop,
+   * a ui-model-viewer, a photo): the backdrop is squeezed into the theme's frosted range first, so text,
+   * muted text, primary and status colours stay AA over anything. Solid where backdrop-filter is missing
+   * or under reduced transparency / more contrast.
+   */
+  glassStrength = input<UiGlassStrength>('frosted');
   radius = input<boolean | 'xl'>(this.config.radius);
   /** Opt-in hover lift for cards that are themselves a clickable target, such as a card wrapped in
    *  an `<a>` or `<button>`. Visual only: the wrapping element stays the button. */

@@ -1,5 +1,5 @@
 /*
- * UI Library: the liquid themes. Six families, each a day and a night theme:
+ * UI Library: the liquid themes. Seven families, each a day and a night theme:
  *
  *   rugged / rugged-dark       Desert Sand, Olive Drab, Signal Yellow
  *   glacier / glacier-dark     Ice White, Glacier Blue, Signal Red
@@ -7,6 +7,7 @@
  *   graphite / graphite-dark   Light Grey, Slate, Safety Orange
  *   cocoa / cocoa-dark         Cream, Cocoa, Raspberry
  *   violet / violet-dark       Mist, Ink, Electric Violet
+ *   harbour / harbour-dark     Mist, Navy, Crest Gold
  *
  * Each brand is 60% main (the canvas), 30% second (panels and secondary fills) and 10% accent (the
  * primary). The raw brand colours paint the liquid backdrop (ui-liquid-backdrop in @zouriel/ui/fx) and
@@ -35,6 +36,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.71;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -138,6 +142,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.27;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -241,6 +248,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.84;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -344,6 +354,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.25;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -447,6 +460,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.76;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -550,6 +566,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.25;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -653,6 +672,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.83;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -756,6 +778,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.25;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -859,6 +884,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.81;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -962,6 +990,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.24;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -1065,6 +1096,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.83;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -1168,6 +1202,9 @@
   /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.23;
   color-scheme: dark;
 
   /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
@@ -1259,4 +1296,222 @@
 [data-theme="violet-dark"] ::selection {
   background: rgba(172, 146, 255, 0.34);
   color: #E9ECEF;
+}
+
+/*
+ * "harbour" (Harbour): Mist ground, Navy panels and a Crest Gold accent: an official, calm navy for public services.
+ * Navy is the primary (white on it); the gold is for highlights only (ratings, brackets, glows, the backdrop). Unlike
+ * the other liquid themes, harbour sets its own info blue, so success, info, warning, danger and neutral all differ.
+ */
+[data-theme="harbour"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0.87;
+  --ui-glass-sheet-ceiling: 1;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0.46;
+  --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.83;
+  --ui-glass-card-ceiling: 1.0;
+  color-scheme: light;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #F2F5FA;
+  --ui-liquid-second: #1B3A6B;
+  --ui-liquid-accent: #C9A227;
+  --ui-liquid-ink: #0F1E3D;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 10%;
+  --ui-liquid-accent-strength: 12%;
+
+  /* Canvas (60%): the main colour; panels a step lighter, tinted by the second. */
+  --ui-color-bg: #F2F5FA;
+  --ui-glass-bg: rgba(249, 251, 254, 0.7);
+  --ui-color-surface: #F9FBFE;
+  --ui-color-surface-raised: #FFFFFF;
+  --ui-color-surface-subtle: #ECF0F6;
+  --ui-color-surface-hover: #E5EAF2;
+  --ui-color-elevated-hover: #EDF1F7;
+  --ui-color-text: #0F1E3D;
+  --ui-color-text-muted: #45526B;
+  --ui-color-border: #CDD5E1;
+  --ui-color-border-strong: #7D8AA0;
+
+  /* Roles: navy for the primary, steel blue for secondary fills, gold (10%) as the accent. */
+  --ui-color-primary: #1B3A6B;
+  --ui-color-primary-hover: #16305A;
+  --ui-color-primary-contrast: #FFFFFF;
+  --ui-color-secondary: #3B5B8C;
+  --ui-color-secondary-contrast: #FFFFFF;
+  --ui-color-success: #1E6B3F;
+  --ui-color-warning: #8A5300;
+  --ui-color-warning-contrast: #FFFFFF;
+  --ui-color-danger: #B0261E;
+  --ui-color-info: #1863A8;
+  --ui-color-info-contrast: #FFFFFF;
+  --ui-color-accent: #C9A227;
+  --ui-color-accent-contrast: #0F1E3D;
+  --ui-color-accent-subtle: rgba(201, 162, 39, 0.18);
+  --ui-color-accent-strong: #8A6D12;
+  --ui-color-selected: rgba(27, 58, 107, 0.12);
+  --ui-color-track: #CDD5E1;
+  --ui-color-overlay: rgba(10, 20, 38, 0.42);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #56637C;
+  --ui-switch-track: #7D8AA0;
+
+  --ui-rating-fill: #C9A227;
+  --ui-cursor-color: #0F1E3D;
+  --ui-section-label-bracket: #C9A227;
+  --ui-scroll-progress-track: rgba(15, 30, 61, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #1B3A6B 0%, #2B528F 100%);
+  --ui-gradient-brand-contrast: #FFFFFF;
+  --ui-gradient-hero: linear-gradient(160deg, #F2F5FA 0%, #DFE6F0 60%, #EFEBDD 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(27, 58, 107, 0.14) 0%, rgba(27, 58, 107, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(201, 162, 39, 0.3);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(15, 30, 61, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.85);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.4);
+  --ui-shadow-1: 0 1px 2px rgba(15, 30, 61, 0.07);
+  --ui-shadow-2: 0 6px 20px rgba(15, 30, 61, 0.1);
+  --ui-shadow-3: 0 16px 48px rgba(15, 30, 61, 0.16);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #1B3A6B;
+  --ui-map-route-success: #1E6B3F;
+  --ui-map-route-danger: #B0261E;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #2f5ba8;
+  --ui-chart-2: #1baf7a;
+  --ui-chart-3: #eda100;
+  --ui-chart-4: #e87ba4;
+  --ui-chart-5: #7b4dff;
+  --ui-chart-6: #d95926;
+}
+
+[data-theme="harbour"] ::selection {
+  background: rgba(27, 58, 107, 0.2);
+  color: #0F1E3D;
+}
+
+/*
+ * "harbour-dark" (Harbour Dark): a deep navy-black ground, mist ink, the primary lifted to a periwinkle for text, and Crest Gold.
+ */
+[data-theme="harbour-dark"] {
+  /* Frosted glass (glassStrength="frosted"): the backdrop is held between these, so text stays AA over white or black. */
+  --ui-glass-sheet-floor: 0;
+  --ui-glass-sheet-ceiling: 0.3;
+  /* Clear glass (the default glassStrength): the range for a map in this theme's brightness. */
+  --ui-glass-clear-floor: 0;
+  --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.27;
+  color-scheme: dark;
+
+  /* Brand colours, raw: the liquid backdrop and the brand gradient (not text on the canvas). */
+  --ui-liquid-main: #0A1426;
+  --ui-liquid-second: #1E3560;
+  --ui-liquid-accent: #D9B44A;
+  --ui-liquid-ink: #E6ECF5;
+  /* How strongly the second and accent colours pool in the backdrop: page text and glass stay readable on the strongest pool. */
+  --ui-liquid-second-strength: 60%;
+  --ui-liquid-accent-strength: 16%;
+
+  /* Canvas (60%): the main colour; panels a step up, tinted by the second. */
+  --ui-color-bg: #0A1426;
+  --ui-glass-bg: rgba(16, 28, 51, 0.72);
+  --ui-color-surface: #101C33;
+  --ui-color-surface-raised: #15233D;
+  --ui-color-surface-subtle: #132038;
+  --ui-color-surface-hover: #1A2944;
+  --ui-color-elevated-hover: #213150;
+  --ui-color-text: #E6ECF5;
+  --ui-color-text-muted: #A9B6CB;
+  --ui-color-border: #2C3B57;
+  --ui-color-border-strong: #6E7F9C;
+
+  /* Roles: navy for secondary fills, the primary lifted to periwinkle, gold (10%) as the accent. */
+  --ui-color-primary: #8FB4FF;
+  --ui-color-primary-hover: #A3C1FF;
+  --ui-color-primary-contrast: #0A1426;
+  --ui-color-secondary: #1E3560;
+  --ui-color-secondary-contrast: #E6ECF5;
+  --ui-color-success: #7FD3A0;
+  --ui-color-warning: #F0B955;
+  --ui-color-warning-contrast: #0A1426;
+  --ui-color-danger: #FF8F85;
+  --ui-color-info: #5CC6F2;
+  --ui-color-info-contrast: #0A1426;
+  --ui-color-accent: #D9B44A;
+  --ui-color-accent-contrast: #0A1426;
+  --ui-color-accent-subtle: rgba(217, 180, 74, 0.16);
+  --ui-color-accent-strong: #E6C76E;
+  --ui-color-selected: rgba(143, 180, 255, 0.2);
+  --ui-color-track: #2C3B57;
+  --ui-color-overlay: rgba(5, 10, 20, 0.62);
+
+  /* Icons on neutral surfaces (3:1); an off switch's track (3:1 on the surfaces). */
+  --ui-color-icon: #9AA9C4;
+  --ui-switch-track: #7586A2;
+
+  --ui-rating-fill: #D9B44A;
+  --ui-cursor-color: #E6ECF5;
+  --ui-section-label-bracket: #D9B44A;
+  --ui-scroll-progress-track: rgba(230, 236, 245, 0.08);
+
+  /* Brand gradient (brand buttons, gradient text): brand colours that read on the page (3:1), and the label that holds 4.5:1 on every stop. */
+  --ui-gradient-brand: linear-gradient(90deg, #8FB4FF 0%, #E6ECF5 100%);
+  --ui-gradient-brand-contrast: #0A1426;
+  --ui-gradient-hero: linear-gradient(160deg, #0A1426 0%, #12213D 60%, #1C1E26 100%);
+  --ui-gradient-highlight: linear-gradient(180deg, rgba(143, 180, 255, 0.16) 0%, rgba(143, 180, 255, 0) 100%);
+  --ui-glow-amber: 0 0 24px rgba(217, 180, 74, 0.32);
+
+  /* Liquid glass: a translucent panel, a bright 1px rim (brightest on the top edge) and soft shadows. */
+  --ui-glass-border: rgba(255, 255, 255, 0.1);
+  --ui-glass-highlight-top: rgba(255, 255, 255, 0.16);
+  --ui-glass-highlight-edge: rgba(255, 255, 255, 0.06);
+  --ui-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-shadow-2: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --ui-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  --ui-radius: var(--ui-radius-lg);
+
+  /* Map route tones that hold 3:1 over the map tiles and their casing here (see tokens.css). */
+  --ui-map-route-primary: #A3C1FF;
+  --ui-map-route-success: #7FD3A0;
+  --ui-map-route-danger: #FF8F85;
+
+  /* Tier metal edges: the library's own, darkened only where the ground is mid-toned (3:1 rim). */
+  --ui-tier-gold-border: #a67c12;
+  --ui-tier-platinum-border: #76818e;
+  --ui-tier-premium-border: #8c74e8;
+
+  /* Chart series (ui-bar-chart): 1 is the primary moved into the band where a filled mark reads as a
+     colour, 2 to 4 are dataviz reference steps; checked per theme with validate_palette.js. */
+  --ui-chart-1: #6f93e0;
+  --ui-chart-2: #c98500;
+  --ui-chart-3: #d55181;
+  --ui-chart-4: #199e70;
+  --ui-chart-5: #947ae4;
+  --ui-chart-6: #63b5cf;
+}
+
+[data-theme="harbour-dark"] ::selection {
+  background: rgba(143, 180, 255, 0.32);
+  color: #E6ECF5;
 }

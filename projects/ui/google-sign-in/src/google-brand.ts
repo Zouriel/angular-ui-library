@@ -11,7 +11,7 @@ export type UiGoogleButtonShape = 'rectangular' | 'pill';
 /** The library themes that are dark (their stylesheets set `color-scheme: dark`). */
 const DARK_THEMES = new Set([
   'dark', 'navy-dark', 'winterDark', 'darkOrange', 'darkPink', 'darkTeal', 'darkPurple', 'goldBlack', 'goldRed', 'maldives-dark', 'addu-tourism-branding-ink',
-  'rugged-dark', 'glacier-dark', 'oxblood-dark', 'graphite-dark', 'cocoa-dark', 'violet-dark',
+  'rugged-dark', 'glacier-dark', 'oxblood-dark', 'graphite-dark', 'cocoa-dark', 'violet-dark', 'harbour-dark',
 ]);
 
 /**

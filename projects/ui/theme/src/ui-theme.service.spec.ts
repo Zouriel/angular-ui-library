@@ -30,7 +30,7 @@ describe('UiThemeService', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('glacier');
   });
 
-  for (const day of ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
+  for (const day of ['navy', 'maldives', 'rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet', 'harbour']) {
     it(`toggles ${day} <-> ${day}-dark`, () => {
       service.set(day);
       service.toggle();
@@ -68,7 +68,7 @@ describe('theme roster', () => {
     const legacy = [...UI_LEGACY_THEMES];
     expect(current.filter((t) => (legacy as string[]).includes(t))).toEqual([]);
     expect([...current, ...legacy].sort()).toEqual(stylesheetThemes());
-    expect(current.length + legacy.length).toBe(33);
+    expect(current.length + legacy.length).toBe(35);
   });
 
   it('names exactly the old palette skins and the Winter aliases as legacy', () => {
@@ -82,7 +82,7 @@ describe('theme roster', () => {
   });
 
   it('pairs every liquid day theme with a -dark twin', () => {
-    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet']) {
+    for (const day of ['rugged', 'glacier', 'oxblood', 'graphite', 'cocoa', 'violet', 'harbour']) {
       expect(UI_CURRENT_THEMES).toContain(day);
       expect(UI_CURRENT_THEMES).toContain(`${day}-dark`);
     }

@@ -30,6 +30,9 @@
   /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0.46;
   --ui-glass-clear-ceiling: 1;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.94;
+  --ui-glass-card-ceiling: 1.0;
   color-scheme: light;
 
   /* Brand colours, raw. For the fx layers and accent fills, not for text on the canvas. */
@@ -139,6 +142,9 @@
   /* Clear glass (the default glassStrength, 0.41.3): the range for a map in this theme's brightness. */
   --ui-glass-clear-floor: 0;
   --ui-glass-clear-ceiling: 0.85;
+  /* Clear card glass (ui-card glassStrength="clear"): the backdrop range that keeps text AA under its light tint. */
+  --ui-glass-card-floor: 0.0;
+  --ui-glass-card-ceiling: 0.26;
   color-scheme: dark;
 
   /* Brand colours, raw, re-tuned for a dark page. */

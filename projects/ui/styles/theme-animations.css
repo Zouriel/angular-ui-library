@@ -102,7 +102,9 @@
 [data-theme="cocoa"] .ui-gradient-text,
 [data-theme="cocoa-dark"] .ui-gradient-text,
 [data-theme="violet"] .ui-gradient-text,
-[data-theme="violet-dark"] .ui-gradient-text {
+[data-theme="violet-dark"] .ui-gradient-text,
+[data-theme="harbour"] .ui-gradient-text,
+[data-theme="harbour-dark"] .ui-gradient-text {
   background-size: 220% 100%;
 }
 
@@ -189,7 +191,9 @@
 [data-theme="cocoa"] .ui-gradient-text,
 [data-theme="cocoa-dark"] .ui-gradient-text,
 [data-theme="violet"] .ui-gradient-text,
-[data-theme="violet-dark"] .ui-gradient-text {
+[data-theme="violet-dark"] .ui-gradient-text,
+[data-theme="harbour"] .ui-gradient-text,
+[data-theme="harbour-dark"] .ui-gradient-text {
   animation: ui-fx-tide 18s ease-in-out infinite;
 }
 [data-theme="rugged"] .ui-glow,
@@ -203,7 +207,9 @@
 [data-theme="cocoa"] .ui-glow,
 [data-theme="cocoa-dark"] .ui-glow,
 [data-theme="violet"] .ui-glow,
-[data-theme="violet-dark"] .ui-glow {
+[data-theme="violet-dark"] .ui-glow,
+[data-theme="harbour"] .ui-glow,
+[data-theme="harbour-dark"] .ui-glow {
   animation: ui-fx-breathe 5s var(--ui-ease-standard) infinite;
 }
 
