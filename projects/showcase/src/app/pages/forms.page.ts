@@ -25,7 +25,10 @@ const CHOICE = `interface UiChoice {
   description?: string;   // a second line under the label
   group?: string;         // tiles with the same group sit under that heading
   disabled?: boolean;
+  tone?: UiChoiceTone;    // colours the tile: tinted at rest, its tone, subtle fill and a tick when chosen
 }
+type UiChoiceTone = 'primary' | 'success' | 'info' | 'warning' | 'danger' | 'neutral';
+type UiChoiceAlign = 'start' | 'center';
 // context of the #tile template
 interface UiChoiceTileContext { $implicit: UiChoice; selected: boolean; }`;
 const HANDLE = `interface UiHandleCheck {
@@ -375,7 +378,7 @@ phone = new FormControl<string | null>('+9607771234');
       </form>
 
       <doc-section name="Choice grid" selector="ui-choice-grid" [api]="choiceApi" [outputs]="choiceOut"
-        summary="One of many options as tiles, grouped under headings; a radio group underneath (form control or [(value)]). Arrow keys (and Home/End) move through the enabled tiles in reading order and choose as they go, only the chosen tile is in the tab order, Enter/Space choose. Project #tile (let-item, let-selected) to draw a picture above each label. (picked) fires on every choice, even the selected tile again."
+        summary="One of many options as tiles, grouped under headings; a radio group underneath (form control or [(value)]). Arrow keys (and Home/End) move through the enabled tiles in reading order and choose as they go, only the chosen tile is in the tab order, Enter/Space choose. Project #tile (let-item, let-selected) to draw a picture above each label. align=&quot;center&quot; centres the words of compact tiles; a tone on an item colours its tile (a rating scale from success to danger). (picked) fires on every choice, even the selected tile again."
         [shapes]="CHOICE">
         <doc-demo code="<ui-choice-grid [options]=&quot;presets&quot; [(value)]=&quot;preset&quot; label=&quot;Motion preset&quot;>
   <ng-template #tile let-item let-selected=&quot;selected&quot;><img [src]=&quot;item.value + '.png'&quot; alt=&quot;&quot; /></ng-template>
@@ -384,6 +387,10 @@ phone = new FormControl<string | null>('+9607771234');
             <ng-template #tile let-item let-selected="selected"><span class="swatch" [class.on]="selected">{{ item.label[0] }}</span></ng-template>
           </ui-choice-grid>
           <span class="muted">value: {{ choice() }} · picked: {{ lastPick() }}</span>
+        </doc-demo>
+        <doc-demo title="Toned and centred: a satisfaction scale" lang="ts + html" [code]="scaleCode">
+          <ui-choice-grid [options]="scale" [(value)]="satisfaction" label="How satisfied are you?" align="center" minTile="104px" />
+          <span class="muted">value: {{ satisfaction() ?? '—' }}</span>
         </doc-demo>
       </doc-section>
 
@@ -470,6 +477,23 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { value: 'spin', label: 'Spin', group: 'Loops', disabled: true },
   ];
   protected readonly choice = signal<string | null>('rise');
+  protected readonly scale: UiChoice[] = [
+    { value: '5', label: 'Very satisfied', tone: 'success' },
+    { value: '4', label: 'Satisfied', tone: 'info' },
+    { value: '3', label: 'Neutral', tone: 'neutral' },
+    { value: '2', label: 'Dissatisfied', tone: 'warning' },
+    { value: '1', label: 'Very dissatisfied', tone: 'danger' },
+  ];
+  protected readonly satisfaction = signal<string | null>('4');
+  protected readonly scaleCode = `scale: UiChoice[] = [
+  { value: '5', label: 'Very satisfied', tone: 'success' },
+  { value: '4', label: 'Satisfied', tone: 'info' },
+  { value: '3', label: 'Neutral', tone: 'neutral' },
+  { value: '2', label: 'Dissatisfied', tone: 'warning' },
+  { value: '1', label: 'Very dissatisfied', tone: 'danger' },
+];
+
+<ui-choice-grid [options]="scale" [(value)]="satisfaction" label="How satisfied are you?" align="center" />`;
   protected readonly lastPick = signal('—');
   /** The "With a picture in it" upload demo: starts with a picture; a picked file replaces it (a local blob: URL). */
   protected readonly coverUrl = signal<string | null>('demo/sunset.jpg');
@@ -494,6 +518,8 @@ checkHandle = (handle: string) => firstValueFrom(this.http.get<UiHandleCheck>('/
     { name: 'value', type: 'string | null (model)', default: 'null', desc: 'Two-way (`[(value)]`). The chosen value. Also a form control (ngModel, formControl).' },
     { name: 'label', type: 'string', default: "'Choices'", desc: 'Accessible name of the group.' },
     { name: 'minTile', type: 'string', default: "'88px'", desc: 'Narrowest a tile may get (CSS length).' },
+    { name: 'align', type: "'start' | 'center'", default: "'start'", desc: 'center centres the label and description of compact tiles across and down, so tiles with different line counts in a row look even. Tiles with a #tile picture are always centred.' },
+    { name: 'UiChoice.tone', type: "'primary' | 'success' | 'info' | 'warning' | 'danger' | 'neutral'", default: '—', desc: "Colours one tile: a light wash of the tone and a tinted edge at rest, stronger on hover; chosen, the tone's border, its -subtle fill and a tick in the corner. Text stays AA in every theme. Left out, the tile looks as before." },
     { name: '#tile', type: 'slot (ng-template)', default: '—', desc: 'Picture above each label; context is UiChoiceTileContext.' },
   ];
   protected readonly choiceOut: ApiRow[] = [

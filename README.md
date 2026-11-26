@@ -71,6 +71,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   person who approves is not the one who did the previous step (maker-checker); a time limit can pause while
   the record sits in chosen states or waits on a signal; and a workflow can state its usual processing time
   for the public. All optional; existing definitions behave as before.
+- **Toned, centred choice tiles** (`@zouriel/ui/form`, 0.100.0): `ui-choice-grid` takes `align="center"`
+  (centres a compact tile's label and description across and down) and a `tone` on each `UiChoice`
+  (`primary`, `success`, `info`, `warning`, `danger`, `neutral`): a light wash and tinted edge at rest, stronger
+  on hover, and when chosen the tone's border, its `-subtle` fill and a tick. For rating scales such as Very
+  satisfied (success) to Very dissatisfied (danger); text holds AA in every theme (the twin of Flutter's
+  `UiChoiceGrid(align: UiChoiceAlign.center)` and `UiChoice(tone: UiChoiceTone.success)`).
 - **Plans** (`@zouriel/ui/plans`, 0.52.0): `ui-plan-card`, `ui-plan-grid` and `ui-plan-compare`
   for pricing pages, `ui-button [tier]` in a plan tier's metal, and a third metal, premium (violet), beside
   gold and platinum; all AA in every theme (the twins of Flutter's `UiPlanCard`, `UiPlanGrid`, `UiPlanCompare`).

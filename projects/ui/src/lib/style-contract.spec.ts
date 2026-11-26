@@ -516,6 +516,86 @@ describe('theme palettes', () => {
     expect(names.length).toBe(29);
     expect(fails).toEqual([]);
   });
+
+  /*
+   * 0.100 ui-choice-grid tones, in every theme (Navy pair included), with the CSS the component ships
+   * (5% wash at rest, 8% on hover, the tone's -subtle fill when chosen, 50% / 80% / 100% tone edge):
+   * the label (text) and description (text-muted 75% toward text) hold 4.5:1 on all three fills, the tick holds 3:1 on its
+   * tone badge, and the chosen edge (the tone) holds 3:1 against the chosen fill.
+   */
+  it('keeps toned ui-choice-grid tiles readable in every theme, at rest, on hover and chosen', () => {
+    const src = readFileSync(join(root, 'form/src/choice-grid.ts'), 'utf8');
+    // The fills this test models are the ones the component uses.
+    expect(src).toContain('background: color-mix(in srgb, var(--ui-choice-tone) 5%, var(--ui-color-surface))');
+    expect(src).toContain('background: color-mix(in srgb, var(--ui-choice-tone) 8%, var(--ui-color-surface))');
+    expect(src).toContain('background: var(--ui-choice-subtle)');
+    expect(src).toContain('.tile.toned .desc { color: color-mix(in srgb, var(--ui-color-text-muted) 75%, var(--ui-color-text)); }');
+    const blocks: Record<string, Record<string, string>> = {};
+    for (const file of ['styles/tokens.css', 'styles/theme-palettes.css', 'styles/theme-dark-orange.css', 'styles/theme-maldives.css', 'styles/theme-addu-tourism-branding.css', 'styles/theme-liquid.css']) {
+      const text = withoutComments(readFileSync(join(root, file), 'utf8')).replace(/@import url\([^)]*\)[^;]*;/g, '');
+      for (const m of text.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+        const decls = Object.fromEntries([...m[2].matchAll(/(--ui-[\w-]+):\s*([^;]+);/g)].map((d) => [d[1], d[2].trim()]));
+        for (const sel of m[1].split(',').map((x) => x.trim())) blocks[sel] = { ...blocks[sel], ...decls };
+      }
+    }
+    const base = { ...blocks[':root'], ...blocks['[data-theme]'] };
+    const names = ['winterDark', 'winterLight', ...list.map((t) => t.name)];
+    const cmix = (a: Rgba, b: Rgba, k: number): Rgba => {
+      const alpha = a[3] * k + b[3] * (1 - k);
+      return [0, 1, 2].map((i) => (a[i] * a[3] * k + b[i] * b[3] * (1 - k)) / alpha).concat(alpha) as Rgba;
+    };
+    const white: Rgba = [255, 255, 255, 1];
+    const fails: string[] = [];
+    for (const name of names) {
+      const vars = { ...base, ...blocks[`[data-theme="${name}"]`] };
+      const get = (k: string, depth = 0): Rgba | null => {
+        const v = vars[k] ?? '';
+        const ref = v.match(/^var\((--ui-[\w-]+)\)$/);
+        return ref && depth < 5 ? get(ref[1], depth + 1) : parseColor(v);
+      };
+      const [surfaceRaw, text, muted] = ['surface', 'text', 'text-muted'].map((k) => get(`--ui-color-${k}`));
+      if (!surfaceRaw || !text || !muted) {
+        fails.push(`${name}: colours unreadable`);
+        continue;
+      }
+      const surface = over(surfaceRaw, white);
+      const tones: [string, string, string, string | null][] = [
+        ['primary', 'primary', 'primary-contrast', null],
+        ['success', 'success', 'success-contrast', 'success-subtle'],
+        ['info', 'info', 'info-contrast', 'info-subtle'],
+        ['warning', 'warning', 'warning-contrast', 'warning-subtle'],
+        ['danger', 'danger', 'danger-contrast', 'danger-subtle'],
+        ['neutral', 'text-muted', 'surface', 'neutral-subtle'],
+      ];
+      for (const [tone, colorKey, inkKey, subtleKey] of tones) {
+        const c = get(`--ui-color-${colorKey}`);
+        const ink = get(`--ui-color-${inkKey}`) ?? (inkKey === 'warning-contrast' ? parseColor('#1a1d23') : null);
+        if (!c || !ink) {
+          fails.push(`${name}/${tone}: tone colours unreadable`);
+          continue;
+        }
+        // A theme's own -subtle token, else the tokens.css 10% mix with the surface.
+        const subtle = (subtleKey && get(`--ui-color-${subtleKey}`)) || cmix(c, surface, 0.1);
+        const fills: [string, Rgba][] = [
+          ['rest', over(cmix(c, surface, 0.05), surface)],
+          ['hover', over(cmix(c, surface, 0.08), surface)],
+          ['chosen', over(subtle, surface)],
+        ];
+        for (const [state, fill] of fills) {
+          for (const [what, fg] of [['label', text], ['description', cmix(muted, text, 0.75)]] as const) {
+            const r = contrast(fg, fill);
+            if (r < 4.5) fails.push(`${name}/${tone}/${state}: ${what} ${r.toFixed(2)}:1, needs 4.5:1`);
+          }
+        }
+        const tick = contrast(ink, over(c, surface));
+        if (tick < 3) fails.push(`${name}/${tone}: tick on its badge ${tick.toFixed(2)}:1, needs 3:1`);
+        const edge = contrast(over(c, surface), fills[2][1]);
+        if (edge < 3) fails.push(`${name}/${tone}: chosen edge ${edge.toFixed(2)}:1 on the chosen fill, needs 3:1`);
+      }
+    }
+    expect(names.length).toBe(29);
+    expect(fails).toEqual([]);
+  });
 });
 
 /* ── See-through glass over a map (ui-bottom-sheet / ui-floating-panel `glass`, 0.41.2) ─────────── */
