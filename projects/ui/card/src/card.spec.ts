@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UiCard, type UiCardAlign, type UiCardGap } from './card';
 import { UiCardActions } from './card-actions';
+import { UI_LINK_NAVIGATOR } from '@zouriel/ui';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidDisplacementMap } from './liquid-glass';
 
 @Component({
@@ -13,6 +14,8 @@ import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidDisplacementMap } from './l
       [pressable]="pressable()"
       [disabled]="disabled()"
       [ariaLabel]="ariaLabel()"
+      [href]="href()"
+      [target]="target()"
       [gap]="gap()"
       [align]="align()"
       [radius]="radius()"
@@ -31,6 +34,8 @@ class Host {
   gap = signal<UiCardGap | null>(null);
   align = signal<UiCardAlign | null>(null);
   radius = signal<boolean | 'xl'>(true);
+  href = signal<string | null>(null);
+  target = signal<string | null>(null);
   activations = signal(0);
 }
 
@@ -178,6 +183,31 @@ describe('UiCard', () => {
     // Nested native buttons should not also fire card activate.
     (card.querySelector('.inner-btn') as HTMLButtonElement).click();
     expect(fixture.componentInstance.activations()).toBe(3);
+  });
+
+  it('renders href cards as focused, undecorated anchors and delegates plain internal clicks', () => {
+    const navigate = vi.fn();
+    TestBed.configureTestingModule({ providers: [{ provide: UI_LINK_NAVIGATOR, useValue: { navigate } }] });
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.href.set('/categories/design');
+    fixture.componentInstance.target.set('_blank');
+    fixture.componentInstance.ariaLabel.set('Design, 12 items');
+    fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('a.ui-card') as HTMLAnchorElement;
+    expect(card.getAttribute('href')).toBe('/categories/design');
+    expect(card.getAttribute('target')).toBe('_blank');
+    expect(card.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(card.getAttribute('aria-label')).toBe('Design, 12 items');
+    expect(card.getAttribute('tabindex')).toBeNull();
+    expect(css()).toMatch(/a\.ui-card[^}]*text-decoration:\s*none/);
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }));
+    expect(navigate).not.toHaveBeenCalled();
+    fixture.componentInstance.target.set(null);
+    fixture.detectChanges();
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }));
+    expect(navigate).toHaveBeenCalledWith('/categories/design', expect.any(MouseEvent));
+    card.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, ctrlKey: true }));
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 
   it('disables focus, semantics and activation when disabled is true', () => {

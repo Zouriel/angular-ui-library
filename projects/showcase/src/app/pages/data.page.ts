@@ -307,6 +307,17 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             <ui-card><ui-text variant="label">Another card</ui-text><ui-text variant="body">Three cards can share a grid row.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button></ui-card-actions></ui-card>
           </div>
         </doc-demo>
+        <doc-demo code="<ui-card href=&quot;/categories/design&quot; ariaLabel=&quot;Design, 12 items&quot;>
+  <ui-text variant=&quot;label&quot;>Design</ui-text>
+  <ui-text variant=&quot;caption&quot;>12 items</ui-text>
+</ui-card>">
+          <div class="cols3">
+            <ui-card href="/categories/design" [interactive]="true" ariaLabel="Design, 12 items"><ui-text variant="label">Design</ui-text><ui-text variant="caption">12 items <span aria-hidden="true">→</span></ui-text></ui-card>
+            <ui-card href="/categories/engineering" [interactive]="true" ariaLabel="Engineering, 8 items"><ui-text variant="label">Engineering</ui-text><ui-text variant="caption">8 items <span aria-hidden="true">→</span></ui-text></ui-card>
+            <ui-card href="/categories/research" [interactive]="true" ariaLabel="Research, 5 items"><ui-text variant="label">Research</ui-text><ui-text variant="caption">5 items <span aria-hidden="true">→</span></ui-text></ui-card>
+          </div>
+          <p class="hint">Link cards are one real anchor. Do not put buttons, links, or ui-card-actions inside them.</p>
+        </doc-demo>
         <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [pressable]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
   <ui-avatar name=&quot;Aisha Ibrahim&quot; [dimension]=&quot;64&quot; />
   <ui-text variant=&quot;label&quot; [truncate]=&quot;true&quot;>Aisha Ibrahim</ui-text>
@@ -984,6 +995,8 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'card: glassStrength', type: "'frosted' | 'clear' | 'liquid'", default: "'frosted'", desc: "liquid (0.102.0): Apple-style liquid glass. At least 80% transparent (tint 16%), a 3px blur and saturate(1.5) with no squeeze, a bright top-left rim, a soft dark bottom-right inner edge, a luminous border and a sheen; in Chromium the rounded edges bend the backdrop (an SVG displacement map in backdrop-filter, rebuilt when the card resizes; UI_LIQUID_REFRACTION to force it), plain blur and sheen in Safari and Firefox. Text gets a halo in the page colour; the card's controls keep their own surfaces. It does not promise AA over any backdrop: use it over a scrimmed one (ui-backdrop-slideshow scrim). Frosted under reduced transparency or more contrast, solid without backdrop-filter. How see-through glass is (0.101.0). frosted: the glass panel as before. clear: a light tint (15%) over a strong blur (24px), the backdrop's colour lifted, then squeezed into the theme's --ui-glass-card-floor / -ceiling, so text, muted text, primary and status colours stay AA over any backdrop (a liquid backdrop, a ui-model-viewer, a photo). Solid without backdrop-filter or under reduced transparency / more contrast. See Motion & FX › Model viewer." },
     { name: 'card: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Hover lift only, for a card wrapped in a link or button (the wrapper stays the button).' },
+    { name: 'card: href', type: 'string | null', default: 'null', desc: 'Makes the whole card one anchor; internal plain clicks use the library link navigator.' },
+    { name: 'card: target', type: 'string | null', default: 'null', desc: 'Anchor target; _blank gets rel="noopener noreferrer".' },
     { name: 'card: pressable', type: 'boolean', default: 'false', desc: 'The card itself is the button: role=button, focusable, hover lift, Enter/Space and click emit activate.' },
     { name: 'card: ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name for a pressable card.' },
     { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive or pressable card.' },

@@ -52,8 +52,7 @@ export function uiParseColorAlpha(value: string | null | undefined): UiRgba | nu
   if (m) {
     const h = m[1];
     const short = h.length <= 4;
-    const at = (i: number) =>
-      short ? parseInt(h[i] + h[i], 16) : parseInt(h.slice(i * 2, i * 2 + 2), 16);
+    const at = (i: number) => (short ? parseInt(h[i] + h[i], 16) : parseInt(h.slice(i * 2, i * 2 + 2), 16));
     const hasAlpha = h.length === 4 || h.length === 8;
     return [at(0), at(1), at(2), hasAlpha ? at(3) / 255 : 1];
   }
@@ -118,21 +117,12 @@ const WHITE: UiRgb = [255, 255, 255];
  * The colours a card with `colors` draws on a theme; null when a colour string can't be read (the
  * card then keeps its tone).
  */
-export function uiResolveFeatureColors(
-  colors: UiFeatureCardColors,
-  theme: UiFeatureColorTheme,
-): UiFeatureResolvedColors | null {
+export function uiResolveFeatureColors(colors: UiFeatureCardColors, theme: UiFeatureColorTheme): UiFeatureResolvedColors | null {
   const surface = uiParseColor(colors.surface);
   const accent = uiParseColor(colors.accent);
   const surfaceDark = colors.surfaceDark == null ? null : uiParseColor(colors.surfaceDark);
   const accentDark = colors.accentDark == null ? null : uiParseColor(colors.accentDark);
-  if (
-    !surface ||
-    !accent ||
-    (colors.surfaceDark != null && !surfaceDark) ||
-    (colors.accentDark != null && !accentDark)
-  )
-    return null;
+  if (!surface || !accent || (colors.surfaceDark != null && !surfaceDark) || (colors.accentDark != null && !accentDark)) return null;
 
   const S = round(theme.dark ? (surfaceDark ?? uiMix(accent, theme.surface, 0.18)) : surface);
   const badgeOf = (a: UiRgb, k = 0.14) => round(uiMix(a, S, k));
@@ -151,13 +141,6 @@ export function uiResolveFeatureColors(
     A = towards(A, text, (a) => uiContrast(a, S) >= 3 && uiContrast(a, badgeOf(a, k)) >= 3);
   }
   const ink = uiContrast(A, S) >= 4.5 ? A : towards(A, text, (a) => uiContrast(a, S) >= 4.5);
-  const desc =
-    uiContrast(muted, S) >= 4.5 ? muted : towards(muted, text, (a) => uiContrast(a, S) >= 4.5);
-  return {
-    surface: uiToHex(S),
-    accent: uiToHex(A),
-    badge: uiToHex(badgeOf(A, k)),
-    ink: uiToHex(ink),
-    desc: uiToHex(desc),
-  };
+  const desc = uiContrast(muted, S) >= 4.5 ? muted : towards(muted, text, (a) => uiContrast(a, S) >= 4.5);
+  return { surface: uiToHex(S), accent: uiToHex(A), badge: uiToHex(badgeOf(A, k)), ink: uiToHex(ink), desc: uiToHex(desc) };
 }

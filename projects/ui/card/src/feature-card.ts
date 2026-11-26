@@ -1,32 +1,11 @@
 import { isPlatformBrowser } from '@angular/common';
 import {
-  afterNextRender,
-  booleanAttribute,
-  Component,
-  computed,
-  DestroyRef,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  isDevMode,
-  numberAttribute,
-  output,
-  PLATFORM_ID,
-  signal,
-  untracked,
+  afterNextRender, booleanAttribute, Component, computed, DestroyRef, effect, ElementRef, inject, input, isDevMode, numberAttribute, output, PLATFORM_ID, signal, untracked,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import ArrowRight02Icon from '@hugeicons/core-free-icons/ArrowRight02Icon';
 import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, uiWatchTheme } from '@zouriel/ui';
-import {
-  uiLuminance,
-  uiParseColor,
-  uiParseColorAlpha,
-  uiResolveFeatureColors,
-  type UiFeatureCardColors,
-  type UiFeatureColorTheme,
-} from './feature-colors';
+import { uiLuminance, uiParseColor, uiParseColorAlpha, uiResolveFeatureColors, type UiFeatureCardColors, type UiFeatureColorTheme } from './feature-colors';
 
 export type UiFeatureTone = 'primary' | 'accent' | 'brand' | 'neutral';
 export type UiFeatureLayout = 'vertical' | 'horizontal';
@@ -75,133 +54,56 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
   selector: 'ui-feature-card',
   imports: [HugeiconsIconComponent],
   template: `
-    <div
-      class="fc"
-      [attr.data-tone]="tone()"
-      [attr.data-layout]="layout()"
-      [attr.data-size]="size()"
-      [attr.data-surface]="surface()"
-      [attr.data-radius]="radius() === 'control' ? 'control' : null"
-      [class.interactive]="interactive()"
-      [class.disabled]="disabled()"
-      [class.glass]="glass() && surface() !== 'tinted' && !custom()"
-      [class.no-radius]="square()"
-      [class.card-action]="cardAction()"
-      [attr.data-badge-tone]="badgeTone() ?? null"
-      [class.enter]="enter()"
-      [style.--fc-enter-delay.ms]="enter() ? enterDelay() : null"
-      [attr.data-colors]="custom() ? '' : null"
-      [style.--fc-wash]="custom()?.surface ?? null"
-      [style.--fc-badge-bg]="custom()?.badge ?? null"
-      [style.--fc-badge-fg]="custom()?.accent ?? null"
-      [style.--fc-accent]="custom()?.accent ?? null"
-      [style.--fc-ink]="custom()?.ink ?? null"
-      [style.--fc-eyebrow]="custom()?.ink ?? null"
-      [style.--fc-desc]="custom()?.desc ?? null"
-    >
+    <div class="fc" [attr.data-tone]="tone()" [attr.data-layout]="layout()" [attr.data-size]="size()"
+         [attr.data-surface]="surface()" [attr.data-radius]="radius() === 'control' ? 'control' : null"
+         [class.interactive]="interactive()" [class.disabled]="disabled()" [class.glass]="glass() && surface() !== 'tinted' && !custom()"
+         [class.no-radius]="square()" [class.card-action]="cardAction()"
+         [attr.data-badge-tone]="badgeTone() ?? null" [class.enter]="enter()" [style.--fc-enter-delay.ms]="enter() ? enterDelay() : null"
+         [attr.data-colors]="custom() ? '' : null" [style.--fc-wash]="custom()?.surface ?? null"
+         [style.--fc-badge-bg]="custom()?.badge ?? null" [style.--fc-badge-fg]="custom()?.accent ?? null"
+         [style.--fc-accent]="custom()?.accent ?? null" [style.--fc-ink]="custom()?.ink ?? null"
+         [style.--fc-eyebrow]="custom()?.ink ?? null" [style.--fc-desc]="custom()?.desc ?? null">
       <span class="badge" aria-hidden="true"><ng-content select="[feature-icon], [icon]" /></span>
       <div class="text">
-        @if (eyebrow()) {
-          <span class="eyebrow">{{ eyebrow() }}</span>
-        }
+        @if (eyebrow()) { <span class="eyebrow">{{ eyebrow() }}</span> }
         <div class="title-row">
-          <div class="title" role="heading" [attr.aria-level]="headingLevel()" [id]="titleId">
-            @if (cardAction()) {
-              <!-- The card is the action: one control over the whole card, named by the title and the description. -->
-              @if (href()) {
-                <a
-                  class="hit card-hit"
-                  [attr.href]="disabled() ? null : href()"
-                  [attr.target]="target() || null"
-                  [attr.aria-disabled]="disabled() ? 'true' : null"
-                  [attr.aria-labelledby]="cardName()"
-                  (click)="activate($event)"
-                  ><span [id]="titleTextId">{{ title() }}</span></a
-                >
-              } @else {
-                <button
-                  type="button"
-                  class="hit card-hit"
-                  [disabled]="disabled()"
-                  [attr.aria-labelledby]="cardName()"
-                  (click)="activate($event)"
-                >
-                  <span [id]="titleTextId">{{ title() }}</span>
-                </button>
-              }
-            } @else if (href() && !actionLabel()) {
-              <a
-                class="hit"
-                [attr.href]="disabled() ? null : href()"
-                [attr.target]="target() || null"
-                [attr.aria-disabled]="disabled() ? 'true' : null"
-                [attr.aria-describedby]="description() ? descId : null"
-                (click)="activate($event)"
-                >{{ title() }}</a
-              >
-            } @else {
-              {{ title() }}
-            }
-          </div>
+        <div class="title" role="heading" [attr.aria-level]="headingLevel()" [id]="titleId">
           @if (cardAction()) {
-            <hugeicons-icon
-              class="arrow trail"
-              [icon]="arrow"
-              [size]="16"
-              [strokeWidth]="2"
-              aria-hidden="true"
-            />
+            <!-- The card is the action: one control over the whole card, named by the title and the description. -->
+            @if (href()) {
+              <a class="hit card-hit" [attr.href]="disabled() ? null : href()" [attr.target]="target() || null"
+                 [attr.aria-disabled]="disabled() ? 'true' : null" [attr.aria-labelledby]="cardName()"
+                 (click)="activate($event)"><span [id]="titleTextId">{{ title() }}</span></a>
+            } @else {
+              <button type="button" class="hit card-hit" [disabled]="disabled()" [attr.aria-labelledby]="cardName()"
+                      (click)="activate($event)"><span [id]="titleTextId">{{ title() }}</span></button>
+            }
+          } @else if (href() && !actionLabel()) {
+            <a class="hit" [attr.href]="disabled() ? null : href()" [attr.target]="target() || null"
+               [attr.aria-disabled]="disabled() ? 'true' : null" [attr.aria-describedby]="description() ? descId : null"
+               (click)="activate($event)">{{ title() }}</a>
+          } @else {
+            {{ title() }}
           }
         </div>
+        @if (cardAction()) { <hugeicons-icon class="arrow trail" [icon]="arrow" [size]="16" [strokeWidth]="2" aria-hidden="true" /> }
+        </div>
         @if (description()) {
-          <p
-            class="desc"
-            [id]="descId"
-            [class.clamp]="descriptionLines() > 0"
-            [style.--fc-lines]="descriptionLines() > 0 ? descriptionLines() : null"
-          >
-            {{ description() }}
-          </p>
+          <p class="desc" [id]="descId" [class.clamp]="descriptionLines() > 0" [style.--fc-lines]="descriptionLines() > 0 ? descriptionLines() : null">{{ description() }}</p>
         }
         <ng-content />
         @if (actionLabel()) {
           <div class="act-row">
             @if (href()) {
-              <a
-                class="hit act"
-                [attr.href]="disabled() ? null : href()"
-                [attr.target]="target() || null"
-                [attr.aria-disabled]="disabled() ? 'true' : null"
-                [attr.aria-labelledby]="titleId + ' ' + actId"
-                [attr.aria-describedby]="description() ? descId : null"
-                (click)="activate($event)"
-              >
-                <span [id]="actId">{{ actionLabel() }}</span
-                ><hugeicons-icon
-                  class="arrow"
-                  [icon]="arrow"
-                  [size]="16"
-                  [strokeWidth]="2"
-                  aria-hidden="true"
-                />
+              <a class="hit act" [attr.href]="disabled() ? null : href()" [attr.target]="target() || null"
+                 [attr.aria-disabled]="disabled() ? 'true' : null" [attr.aria-labelledby]="titleId + ' ' + actId"
+                 [attr.aria-describedby]="description() ? descId : null" (click)="activate($event)">
+                <span [id]="actId">{{ actionLabel() }}</span><hugeicons-icon class="arrow" [icon]="arrow" [size]="16" [strokeWidth]="2" aria-hidden="true" />
               </a>
             } @else {
-              <button
-                type="button"
-                class="hit act"
-                [disabled]="disabled()"
-                [attr.aria-labelledby]="titleId + ' ' + actId"
-                [attr.aria-describedby]="description() ? descId : null"
-                (click)="activate($event)"
-              >
-                <span [id]="actId">{{ actionLabel() }}</span
-                ><hugeicons-icon
-                  class="arrow"
-                  [icon]="arrow"
-                  [size]="16"
-                  [strokeWidth]="2"
-                  aria-hidden="true"
-                />
+              <button type="button" class="hit act" [disabled]="disabled()" [attr.aria-labelledby]="titleId + ' ' + actId"
+                      [attr.aria-describedby]="description() ? descId : null" (click)="activate($event)">
+                <span [id]="actId">{{ actionLabel() }}</span><hugeicons-icon class="arrow" [icon]="arrow" [size]="16" [strokeWidth]="2" aria-hidden="true" />
               </button>
             }
           </div>
@@ -210,9 +112,7 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
     </div>
   `,
   styles: `
-    :host {
-      display: block;
-    }
+    :host { display: block; }
     .fc {
       /* Tone: the wash and eyebrow/action colour (primary), the badge fill and icon colour. */
       --fc-tone: var(--ui-color-primary);
@@ -220,38 +120,30 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
       --fc-eyebrow: var(--ui-color-primary);
       --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 14%, var(--ui-color-surface));
       --fc-badge-fg: var(--ui-color-primary);
-      --fc-wash: linear-gradient(
-        160deg,
-        color-mix(in srgb, var(--fc-tone) 3%, var(--ui-color-surface)) 0%,
-        var(--ui-color-surface) 55%
-      );
+      --fc-wash: linear-gradient(160deg, color-mix(in srgb, var(--fc-tone) 3%, var(--ui-color-surface)) 0%, var(--ui-color-surface) 55%);
       --fc-badge: 48px;
       --fc-icon: 24px;
 
       position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: var(--ui-space-4);
+      display: flex; flex-direction: column; gap: var(--ui-space-4);
       /* Fills a stretched host (a grid row) so neighbouring cards are equal height, like ui-card. */
-      height: 100%;
-      box-sizing: border-box;
+      height: 100%; box-sizing: border-box;
       padding: var(--ui-space-6);
       background: var(--fc-wash);
       color: var(--ui-color-text);
       border: 1px solid var(--ui-color-border);
       border-radius: var(--ui-radius-lg);
       box-shadow: var(--ui-shadow-1);
-      font-family: var(--ui-font-default);
-      line-height: 1.35;
+      font-family: var(--ui-font-default); line-height: 1.35;
     }
-    .fc[data-tone='accent'] {
+    .fc[data-tone="accent"] {
       --fc-tone: var(--ui-color-accent);
       --fc-ink: var(--ui-color-text);
       --fc-eyebrow: var(--ui-color-text-muted);
       --fc-badge-bg: var(--ui-color-accent);
       --fc-badge-fg: var(--ui-color-accent-contrast);
     }
-    .fc[data-tone='neutral'] {
+    .fc[data-tone="neutral"] {
       --fc-ink: var(--ui-color-text);
       --fc-eyebrow: var(--ui-color-text-muted);
       --fc-badge-bg: var(--ui-color-surface-raised);
@@ -259,46 +151,21 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
       --fc-wash: var(--ui-color-surface);
     }
     /* Brand: the theme's brand gradient on the card's edge and around the badge (never under text). */
-    .fc[data-tone='brand'] {
+    .fc[data-tone="brand"] {
       border-color: transparent;
-      background:
-        var(--fc-wash) padding-box,
-        var(--ui-gradient-brand) border-box;
+      background: var(--fc-wash) padding-box, var(--ui-gradient-brand) border-box;
     }
-    .fc.glass {
-      background: var(--ui-glass-bg);
-      backdrop-filter: blur(var(--ui-glass-blur));
-      border-color: var(--ui-glass-border);
-      box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
-    }
-    .fc.no-radius,
-    .fc.no-radius .badge {
-      border-radius: 0;
-    }
+    .fc.glass { background: var(--ui-glass-bg); backdrop-filter: blur(var(--ui-glass-blur)); border-color: var(--ui-glass-border); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1); }
+    .fc.no-radius, .fc.no-radius .badge { border-radius: 0; }
 
-    .fc[data-size='lg'] {
-      padding: var(--ui-space-8);
-      --fc-badge: 56px;
-      --fc-icon: 28px;
-    }
+    .fc[data-size="lg"] { padding: var(--ui-space-8); --fc-badge: 56px; --fc-icon: 28px; }
     /* sm: the compact tile (a start screen's shortcuts): 40px badge, 16px padding, body-strong title. */
-    .fc[data-size='sm'] {
-      padding: var(--ui-space-4);
-      gap: var(--ui-space-3);
-      --fc-badge: 40px;
-      --fc-icon: 20px;
-    }
-    .fc[data-size='sm'][data-layout='horizontal'] {
-      gap: var(--ui-space-3);
-    }
+    .fc[data-size="sm"] { padding: var(--ui-space-4); gap: var(--ui-space-3); --fc-badge: 40px; --fc-icon: 20px; }
+    .fc[data-size="sm"][data-layout="horizontal"] { gap: var(--ui-space-3); }
 
     /* Control radius: the corners of an input (--ui-field-radius), so a tile matches the field above it. */
-    .fc[data-radius='control']:not(.no-radius) {
-      border-radius: var(--ui-field-radius);
-    }
-    .fc[data-radius='control']:not(.no-radius) .badge {
-      border-radius: var(--ui-field-radius);
-    }
+    .fc[data-radius="control"]:not(.no-radius) { border-radius: var(--ui-field-radius); }
+    .fc[data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-field-radius); }
 
     /*
      * Tinted: a soft wash in the tone instead of a white bordered card; no border (kept transparent, so the
@@ -306,363 +173,159 @@ const themeKey = (t: UiFeatureColorTheme | null) => (t ? `${t.surface}|${t.text}
      * words are deepened a quarter towards the text colour (text-muted fails 4.5:1 on an 8% wash in
      * lightPink), and the primary badge tint is raised to 18% so it still reads on the wash.
      */
-    .fc[data-surface='tinted'] {
+    .fc[data-surface="tinted"] {
       /* 8% of the tone over the surface with 4% of the text, so a pale tone (Winter's sun accent) still shows. */
-      --fc-wash: color-mix(
-        in srgb,
-        var(--fc-tone) 8%,
-        color-mix(in srgb, var(--ui-color-text) 4%, var(--ui-color-surface))
-      );
+      --fc-wash: color-mix(in srgb, var(--fc-tone) 8%, color-mix(in srgb, var(--ui-color-text) 4%, var(--ui-color-surface)));
       --fc-desc: color-mix(in srgb, var(--ui-color-text-muted) 75%, var(--ui-color-text));
       background: var(--fc-wash);
       border-color: transparent;
       box-shadow: none;
     }
-    .fc[data-surface='tinted']:is([data-tone='primary'], [data-tone='brand']) {
+    .fc[data-surface="tinted"]:is([data-tone="primary"], [data-tone="brand"]) {
       --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface));
       --fc-ink: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text));
       --fc-eyebrow: color-mix(in srgb, var(--ui-color-primary) 75%, var(--ui-color-text));
     }
-    .fc[data-surface='tinted'][data-tone='neutral'] {
-      --fc-wash: color-mix(in srgb, var(--ui-color-text) 5%, var(--ui-color-surface));
-    }
-    .fc[data-layout='horizontal'] {
-      flex-direction: row;
-      align-items: flex-start;
-    }
+    .fc[data-surface="tinted"][data-tone="neutral"] { --fc-wash: color-mix(in srgb, var(--ui-color-text) 5%, var(--ui-color-surface)); }
+    .fc[data-layout="horizontal"] { flex-direction: row; align-items: flex-start; }
 
     .badge {
-      flex: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: var(--fc-badge);
-      height: var(--fc-badge);
-      box-sizing: border-box;
+      flex: none; display: inline-flex; align-items: center; justify-content: center;
+      width: var(--fc-badge); height: var(--fc-badge); box-sizing: border-box;
       border-radius: var(--ui-radius-lg);
-      background: var(--fc-badge-bg);
-      color: var(--fc-badge-fg);
+      background: var(--fc-badge-bg); color: var(--fc-badge-fg);
       /* The icon follows the badge colour, not a theme's icon tint (maldives' Lagoon on the coral badge was 1.5:1). */
       --ui-color-icon: currentColor;
     }
-    .badge:empty {
-      display: none;
-    }
-    .fc[data-tone='neutral'] .badge {
-      border: 1px solid var(--ui-color-border);
-    }
-    .fc[data-tone='brand'] .badge {
+    .badge:empty { display: none; }
+    .fc[data-tone="neutral"] .badge { border: 1px solid var(--ui-color-border); }
+    .fc[data-tone="brand"] .badge {
       border: 2px solid transparent;
-      background:
-        linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box,
-        var(--ui-gradient-brand) border-box;
+      background: linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box, var(--ui-gradient-brand) border-box;
     }
-    .badge ::ng-deep svg {
-      width: var(--fc-icon);
-      height: var(--fc-icon);
-    }
-    .fc[data-size='sm']:not(.no-radius) .badge {
-      border-radius: var(--ui-radius-sm);
-    }
-    .fc[data-size='sm'][data-radius='control']:not(.no-radius) .badge {
-      border-radius: var(--ui-field-radius);
-    }
+    .badge ::ng-deep svg { width: var(--fc-icon); height: var(--fc-icon); }
+    .fc[data-size="sm"]:not(.no-radius) .badge { border-radius: var(--ui-radius-sm); }
+    .fc[data-size="sm"][data-radius="control"]:not(.no-radius) .badge { border-radius: var(--ui-field-radius); }
 
-    .text {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      min-width: 0;
-    }
+    .text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
     .eyebrow {
       margin-bottom: var(--ui-space-1);
-      font-size: var(--ui-font-size-sm);
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      font-size: var(--ui-font-size-sm); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
       color: var(--fc-eyebrow);
     }
     /* The title and, for a card action, the trailing arrow at the end of its row. */
-    .title-row {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--ui-space-2);
-    }
+    .title-row { display: flex; align-items: flex-start; gap: var(--ui-space-2); }
     .title {
-      flex: 1 1 auto;
-      min-width: 0;
-      font-size: var(--ui-font-size-lg);
-      font-weight: 600;
-      line-height: 1.3;
-      letter-spacing: var(--ui-tracking-tight);
-      color: var(--ui-color-text);
-      overflow-wrap: anywhere;
+      flex: 1 1 auto; min-width: 0;
+      font-size: var(--ui-font-size-lg); font-weight: 600; line-height: 1.3; letter-spacing: var(--ui-tracking-tight);
+      color: var(--ui-color-text); overflow-wrap: anywhere;
     }
-    .fc[data-size='lg'] .title {
-      font-family: var(--ui-font-display);
-      font-size: calc(22px * var(--ui-font-scale));
-      font-weight: 700;
-    }
-    .fc[data-size='sm'] .title {
-      font-size: var(--ui-font-size-md);
-      line-height: 1.35;
-      letter-spacing: normal;
-    }
+    .fc[data-size="lg"] .title { font-family: var(--ui-font-display); font-size: calc(22px * var(--ui-font-scale)); font-weight: 700; }
+    .fc[data-size="sm"] .title { font-size: var(--ui-font-size-md); line-height: 1.35; letter-spacing: normal; }
     .desc {
       margin: var(--ui-space-2) 0 0;
-      font-size: var(--ui-font-size-md);
-      line-height: 1.5;
-      color: var(--fc-desc, var(--ui-color-text-muted));
+      font-size: var(--ui-font-size-md); line-height: 1.5; color: var(--fc-desc, var(--ui-color-text-muted));
     }
-    .fc[data-size='lg'] .desc {
-      font-size: calc(16px * var(--ui-font-scale));
-    }
-    .fc[data-size='sm'] .desc {
-      margin-top: var(--ui-space-1);
-      font-size: var(--ui-font-size-sm);
-      line-height: 1.4;
-    }
+    .fc[data-size="lg"] .desc { font-size: calc(16px * var(--ui-font-scale)); }
+    .fc[data-size="sm"] .desc { margin-top: var(--ui-space-1); font-size: var(--ui-font-size-sm); line-height: 1.4; }
     /* descriptionLines: clamp with an ellipsis. */
     .desc.clamp {
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      -webkit-line-clamp: var(--fc-lines);
-      line-clamp: var(--fc-lines);
+      display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+      -webkit-line-clamp: var(--fc-lines); line-clamp: var(--fc-lines);
     }
 
     /* Sits at the bottom, so actions line up across a row of cards. */
-    .act-row {
-      margin-top: auto;
-      padding-top: var(--ui-space-4);
-    }
-    .fc[data-size='sm'] .act-row {
-      padding-top: var(--ui-space-3);
-    }
+    .act-row { margin-top: auto; padding-top: var(--ui-space-4); }
+    .fc[data-size="sm"] .act-row { padding-top: var(--ui-space-3); }
     .act {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--ui-space-2);
-      padding: 0;
-      border: none;
-      background: none;
-      color: var(--fc-ink);
-      font: inherit;
-      font-size: var(--ui-font-size-md);
-      font-weight: 600;
-      text-decoration: none;
+      display: inline-flex; align-items: center; gap: var(--ui-space-2);
+      padding: 0; border: none; background: none; color: var(--fc-ink);
+      font: inherit; font-size: var(--ui-font-size-md); font-weight: 600; text-decoration: none;
       cursor: pointer;
     }
-    .title .hit {
-      color: inherit;
-      text-decoration: none;
-    }
+    .title .hit { color: inherit; text-decoration: none; }
     .card-hit {
-      display: inline;
-      padding: 0;
-      margin: 0;
-      border: none;
-      background: none;
-      font: inherit;
-      color: inherit;
-      letter-spacing: inherit;
-      text-align: start;
-      cursor: pointer;
+      display: inline; padding: 0; margin: 0; border: none; background: none;
+      font: inherit; color: inherit; letter-spacing: inherit; text-align: start; cursor: pointer;
     }
     /*
      * The card action's arrow: subtle (muted). Horizontal, or with no icon: at the end of the title row,
      * centred on its first line. Vertical with an icon: at the end of the badge row, centred on the badge,
      * so the title keeps the full width (a narrow tile no longer wraps its title around the arrow).
      */
-    .trail {
-      flex: none;
-      height: 1.35em;
-      align-items: center;
-      color: var(--fc-desc, var(--ui-color-text-muted));
+    .trail { flex: none; height: 1.35em; align-items: center; color: var(--fc-desc, var(--ui-color-text-muted)); }
+    .fc:not([data-size="sm"]) .trail { height: 1.3em; }
+    .fc[data-layout="vertical"]:has(.badge:not(:empty)) .trail {
+      position: absolute; height: 16px;
+      inset-inline-end: var(--ui-space-6); top: calc(var(--ui-space-6) + 16px);
     }
-    .fc:not([data-size='sm']) .trail {
-      height: 1.3em;
-    }
-    .fc[data-layout='vertical']:has(.badge:not(:empty)) .trail {
-      position: absolute;
-      height: 16px;
-      inset-inline-end: var(--ui-space-6);
-      top: calc(var(--ui-space-6) + 16px);
-    }
-    .fc[data-layout='vertical'][data-size='sm']:has(.badge:not(:empty)) .trail {
-      inset-inline-end: var(--ui-space-4);
-      top: calc(var(--ui-space-4) + 12px);
-    }
-    .fc[data-layout='vertical'][data-size='lg']:has(.badge:not(:empty)) .trail {
-      inset-inline-end: var(--ui-space-8);
-      top: calc(var(--ui-space-8) + 20px);
-    }
-    .hit {
-      outline: none;
-    }
+    .fc[data-layout="vertical"][data-size="sm"]:has(.badge:not(:empty)) .trail { inset-inline-end: var(--ui-space-4); top: calc(var(--ui-space-4) + 12px); }
+    .fc[data-layout="vertical"][data-size="lg"]:has(.badge:not(:empty)) .trail { inset-inline-end: var(--ui-space-8); top: calc(var(--ui-space-8) + 20px); }
+    .hit { outline: none; }
     /* The one control's hit area covers the whole card. */
-    .hit::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      z-index: 1;
-    }
-    .arrow {
-      display: inline-flex;
-      transition: transform var(--ui-motion-fast) var(--ui-ease-standard);
-    }
-    :host-context([dir='rtl']) .arrow {
-      transform: scaleX(-1);
-    }
-    .arrow:dir(rtl) {
-      transform: scaleX(-1);
-    }
+    .hit::after { content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: 1; }
+    .arrow { display: inline-flex; transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
+    :host-context([dir="rtl"]) .arrow { transform: scaleX(-1); }
+    .arrow:dir(rtl) { transform: scaleX(-1); }
 
     .fc.interactive {
       cursor: pointer;
-      transition:
-        transform var(--ui-motion-base) var(--ui-ease-standard),
-        box-shadow var(--ui-motion-base) var(--ui-ease-standard),
-        border-color var(--ui-motion-base) var(--ui-ease-standard);
+      transition: transform var(--ui-motion-base) var(--ui-ease-standard),
+                  box-shadow var(--ui-motion-base) var(--ui-ease-standard),
+                  border-color var(--ui-motion-base) var(--ui-ease-standard);
     }
-    .fc.interactive:not(.disabled):hover {
-      transform: translateY(-2px);
-      box-shadow: var(--ui-shadow-2);
-    }
-    .fc.glass.interactive:not(.disabled):hover {
-      box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2);
-    }
-    .fc.interactive:not(.disabled):not([data-tone='brand']):not(.glass):not(
-        [data-surface='tinted']
-      ):hover {
-      border-color: var(--ui-color-border-strong);
-    }
-    .fc.interactive:not(.disabled):active {
-      transform: translateY(-1px) scale(var(--ui-scale-press));
-    }
-    .fc.interactive:not(.disabled):hover .arrow {
-      transform: translateX(3px);
-    }
-    :host-context([dir='rtl']) .fc.interactive:not(.disabled):hover .arrow {
-      transform: scaleX(-1) translateX(3px);
-    }
-    .fc.interactive:not(.disabled):hover .arrow:dir(rtl) {
-      transform: scaleX(-1) translateX(3px);
-    }
-    .fc.interactive:has(.hit:focus-visible) {
-      box-shadow: var(--ui-focus-ring);
-    }
-    .fc.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .fc.disabled .hit {
-      cursor: not-allowed;
-    }
+    .fc.interactive:not(.disabled):hover { transform: translateY(-2px); box-shadow: var(--ui-shadow-2); }
+    .fc.glass.interactive:not(.disabled):hover { box-shadow: var(--ui-glass-highlight), var(--ui-shadow-2); }
+    .fc.interactive:not(.disabled):not([data-tone="brand"]):not(.glass):not([data-surface="tinted"]):hover { border-color: var(--ui-color-border-strong); }
+    .fc.interactive:not(.disabled):active { transform: translateY(-1px) scale(var(--ui-scale-press)); }
+    .fc.interactive:not(.disabled):hover .arrow { transform: translateX(3px); }
+    :host-context([dir="rtl"]) .fc.interactive:not(.disabled):hover .arrow { transform: scaleX(-1) translateX(3px); }
+    .fc.interactive:not(.disabled):hover .arrow:dir(rtl) { transform: scaleX(-1) translateX(3px); }
+    .fc.interactive:has(.hit:focus-visible) { box-shadow: var(--ui-focus-ring); }
+    .fc.disabled { opacity: 0.5; cursor: not-allowed; }
+    .fc.disabled .hit { cursor: not-allowed; }
 
     /* badgeTone: the badge's own tone (tint and icon), over whatever the card's tone set. Each rule also has a
        [data-surface] form, so it outranks the tinted tone rules (.fc[data-surface="tinted"]:is(...)). */
-    .fc[data-badge-tone] .badge {
-      border: 0;
-      background: var(--fc-badge-bg);
-    }
-    .fc[data-surface]:is([data-badge-tone='primary'], [data-badge-tone='brand']) {
+    .fc[data-badge-tone] .badge { border: 0; background: var(--fc-badge-bg); }
+    .fc[data-surface]:is([data-badge-tone="primary"], [data-badge-tone="brand"]) {
       --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 14%, var(--ui-color-surface));
       --fc-badge-fg: var(--ui-color-primary);
     }
-    .fc[data-surface='tinted']:is([data-badge-tone='primary'], [data-badge-tone='brand']) {
+    .fc[data-surface="tinted"]:is([data-badge-tone="primary"], [data-badge-tone="brand"]) {
       --fc-badge-bg: color-mix(in srgb, var(--ui-color-primary) 18%, var(--ui-color-surface));
     }
-    .fc[data-surface][data-badge-tone='accent'] {
-      --fc-badge-bg: var(--ui-color-accent);
-      --fc-badge-fg: var(--ui-color-accent-contrast);
-    }
-    .fc[data-surface][data-badge-tone='neutral'] {
-      --fc-badge-bg: var(--ui-color-surface-raised);
-      --fc-badge-fg: var(--ui-color-text);
-    }
-    .fc[data-badge-tone='neutral'] .badge {
-      border: 1px solid var(--ui-color-border);
-    }
-    .fc[data-badge-tone='brand'] .badge {
+    .fc[data-surface][data-badge-tone="accent"] { --fc-badge-bg: var(--ui-color-accent); --fc-badge-fg: var(--ui-color-accent-contrast); }
+    .fc[data-surface][data-badge-tone="neutral"] { --fc-badge-bg: var(--ui-color-surface-raised); --fc-badge-fg: var(--ui-color-text); }
+    .fc[data-badge-tone="neutral"] .badge { border: 1px solid var(--ui-color-border); }
+    .fc[data-badge-tone="brand"] .badge {
       border: 2px solid transparent;
-      background:
-        linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box,
-        var(--ui-gradient-brand) border-box;
+      background: linear-gradient(var(--fc-badge-bg), var(--fc-badge-bg)) padding-box, var(--ui-gradient-brand) border-box;
     }
 
     /* colors: the app's surface and accent. No border at rest; the accent border on hover and focus. */
-    .fc[data-colors],
-    .fc[data-colors][data-tone='brand'] {
-      background: var(--fc-wash);
-      border-color: transparent;
-    }
-    .fc[data-colors] .badge,
-    .fc[data-colors][data-tone='brand'] .badge {
-      border: 0;
-      background: var(--fc-badge-bg);
-    }
-    .fc[data-colors] .trail {
-      color: var(--fc-accent);
-    }
-    .fc[data-colors].interactive:not(.disabled):hover,
-    .fc[data-colors].interactive:has(.hit:focus-visible) {
-      border-color: var(--fc-accent);
-    }
+    .fc[data-colors], .fc[data-colors][data-tone="brand"] { background: var(--fc-wash); border-color: transparent; }
+    .fc[data-colors] .badge, .fc[data-colors][data-tone="brand"] .badge { border: 0; background: var(--fc-badge-bg); }
+    .fc[data-colors] .trail { color: var(--fc-accent); }
+    .fc[data-colors].interactive:not(.disabled):hover, .fc[data-colors].interactive:has(.hit:focus-visible) { border-color: var(--fc-accent); }
 
     /* enter: a short fade and rise when the card first appears (backwards fill, so hover still lifts it after). */
-    .fc.enter {
-      animation: ui-fc-enter var(--ui-motion-slow) var(--ui-ease-decelerate) backwards;
-      animation-delay: var(--fc-enter-delay, 0ms);
-    }
-    @keyframes ui-fc-enter {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-    }
+    .fc.enter { animation: ui-fc-enter var(--ui-motion-slow) var(--ui-ease-decelerate) backwards; animation-delay: var(--fc-enter-delay, 0ms); }
+    @keyframes ui-fc-enter { from { opacity: 0; transform: translateY(8px); } }
 
     /* Hover, keyboard focus and press: the badge icon lifts a little; the arrow nudges towards the end. */
-    .badge ::ng-deep > * {
-      transition: transform var(--ui-motion-base) var(--ui-ease-spring);
-    }
-    .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible))
-      .badge
-      ::ng-deep
-      > * {
-      transform: translateY(-2px) scale(1.08);
-    }
-    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow {
-      transform: translateX(3px);
-    }
-    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) {
-      transform: scaleX(-1) translateX(3px);
-    }
+    .badge ::ng-deep > * { transition: transform var(--ui-motion-base) var(--ui-ease-spring); }
+    .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible)) .badge ::ng-deep > * { transform: translateY(-2px) scale(1.08); }
+    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow { transform: translateX(3px); }
+    .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) { transform: scaleX(-1) translateX(3px); }
 
     @media (prefers-reduced-motion: reduce) {
-      .fc.interactive:hover,
-      .fc.interactive:active {
-        transform: none;
-      }
-      .fc.interactive:not(.disabled):hover .arrow {
-        transform: none;
-      }
-      .fc.enter {
-        animation: none;
-      }
-      .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible))
-        .badge
-        ::ng-deep
-        > * {
-        transform: none;
-      }
-      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow {
-        transform: none;
-      }
-      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) {
-        transform: scaleX(-1);
-      }
+      .fc.interactive:hover, .fc.interactive:active { transform: none; }
+      .fc.interactive:not(.disabled):hover .arrow { transform: none; }
+      .fc.enter { animation: none; }
+      .fc.interactive:not(.disabled):is(:hover, :active, :has(.hit:focus-visible)) .badge ::ng-deep > * { transform: none; }
+      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow { transform: none; }
+      .fc.interactive:not(.disabled):is(:active, :has(.hit:focus-visible)) .arrow:dir(rtl) { transform: scaleX(-1); }
     }
   `,
 })
@@ -715,15 +378,9 @@ export class UiFeatureCard {
 
   /** The card itself is the action (trailingArrow without an action label). */
   protected readonly cardAction = computed(() => this.trailingArrow() && !this.actionLabel());
-  protected readonly interactive = computed(
-    () => !!this.actionLabel() || !!this.href() || this.cardAction(),
-  );
-  protected readonly square = computed(
-    () => this.radius() === false || (this.radius() === 'control' && !this.config.radius),
-  );
-  protected readonly cardName = computed(() =>
-    this.description() ? `${this.titleTextId} ${this.descId}` : this.titleTextId,
-  );
+  protected readonly interactive = computed(() => !!this.actionLabel() || !!this.href() || this.cardAction());
+  protected readonly square = computed(() => this.radius() === false || (this.radius() === 'control' && !this.config.radius));
+  protected readonly cardName = computed(() => (this.description() ? `${this.titleTextId} ${this.descId}` : this.titleTextId));
   private readonly seq = featureSeq++;
   protected readonly titleId = `ui-feature-${this.seq}-title`;
   protected readonly descId = `ui-feature-${this.seq}-desc`;
@@ -739,11 +396,7 @@ export class UiFeatureCard {
     const theme = this.themeColors();
     if (!c || !theme) return null;
     const r = uiResolveFeatureColors(c, theme);
-    if (!r && isDevMode())
-      console.warn(
-        'ui-feature-card: colors must be hex (#rgb, #rrggbb) or rgb() strings; using the tone instead.',
-        c,
-      );
+    if (!r && isDevMode()) console.warn('ui-feature-card: colors must be hex (#rgb, #rrggbb) or rgb() strings; using the tone instead.', c);
     return r;
   });
 

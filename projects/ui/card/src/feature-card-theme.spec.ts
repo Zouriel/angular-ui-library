@@ -22,18 +22,8 @@ const MINT: UiFeatureCardColors = { surface: '#E1F4EF', accent: '#4B8791' };
 const LIGHT_WASH = '#e1f4ef';
 
 const TOKENS = {
-  light: {
-    '--ui-color-surface': '#ffffff',
-    '--ui-color-text': '#0b2d3a',
-    '--ui-color-text-muted': '#365f6e',
-    colorScheme: 'light',
-  },
-  dark: {
-    '--ui-color-surface': '#0b0f12',
-    '--ui-color-text': '#b3cbdc',
-    '--ui-color-text-muted': '#8aa3b5',
-    colorScheme: 'dark',
-  },
+  light: { '--ui-color-surface': '#ffffff', '--ui-color-text': '#0b2d3a', '--ui-color-text-muted': '#365f6e', colorScheme: 'light' },
+  dark: { '--ui-color-surface': '#0b0f12', '--ui-color-text': '#b3cbdc', '--ui-color-text-muted': '#8aa3b5', colorScheme: 'dark' },
 } as const;
 
 const page = { sheetLoaded: true, deviceDark: true };
@@ -63,10 +53,7 @@ beforeEach(() => {
     cardReads++;
     const t = themeAt(el);
     const v = t ? TOKENS[t] : null;
-    return {
-      getPropertyValue: (k: string) => (v ? ((v as Record<string, string>)[k] ?? '') : ''),
-      colorScheme: v?.colorScheme ?? '',
-    } as unknown as CSSStyleDeclaration;
+    return { getPropertyValue: (k: string) => (v ? ((v as Record<string, string>)[k] ?? '') : ''), colorScheme: v?.colorScheme ?? '' } as unknown as CSSStyleDeclaration;
   });
   // The device prefers dark.
   Object.defineProperty(window, 'matchMedia', {
@@ -74,12 +61,9 @@ beforeEach(() => {
     writable: true,
     value: (q: string) => ({
       media: q,
-      get matches() {
-        return q.includes('dark') && page.deviceDark;
-      },
+      get matches() { return q.includes('dark') && page.deviceDark; },
       addEventListener: (_: string, fn: () => void) => schemeListeners.push(fn),
-      removeEventListener: (_: string, fn: () => void) =>
-        (schemeListeners = schemeListeners.filter((f) => f !== fn)),
+      removeEventListener: (_: string, fn: () => void) => (schemeListeners = schemeListeners.filter((f) => f !== fn)),
     }),
   });
 });
@@ -94,17 +78,10 @@ afterEach(() => {
 
 @Component({
   imports: [UiFeatureCard, HugeiconsIconComponent],
-  template: ` <ui-feature-card
-    id="t"
-    title="Find a doctor"
-    description="Book a visit."
-    size="sm"
-    surface="tinted"
-    trailingArrow
-    [colors]="colors"
-  >
-    <hugeicons-icon feature-icon [icon]="icon" />
-  </ui-feature-card>`,
+  template: `
+    <ui-feature-card id="t" title="Find a doctor" description="Book a visit." size="sm" surface="tinted" trailingArrow [colors]="colors">
+      <hugeicons-icon feature-icon [icon]="icon" />
+    </ui-feature-card>`,
 })
 class Host {
   readonly icon = StethoscopeIcon;
@@ -116,10 +93,7 @@ function setup() {
   f.detectChanges();
   TestBed.tick();
   f.detectChanges();
-  const wash = () =>
-    (
-      (f.nativeElement as HTMLElement).querySelector('#t .fc') as HTMLElement
-    ).style.getPropertyValue('--fc-wash');
+  const wash = () => ((f.nativeElement as HTMLElement).querySelector('#t .fc') as HTMLElement).style.getPropertyValue('--fc-wash');
   return { f, wash };
 }
 

@@ -3,8 +3,10 @@ import {
   DestroyRef,
   ElementRef,
   Injector,
+  isDevMode,
   afterNextRender,
   computed,
+  contentChild,
   effect,
   inject,
   input,
@@ -12,7 +14,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { UI_CONFIG, type UiGlassStrength } from '@zouriel/ui';
+import { NgTemplateOutlet } from '@angular/common';
+import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, type UiGlassStrength } from '@zouriel/ui';
+import { UiCardActions } from './card-actions';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidMapUrl } from './liquid-glass';
 
 /** How see-through a glass `ui-card` is: the shared strengths plus `'liquid'` (0.102.0). */
@@ -32,6 +36,7 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
  */
 @Component({
   selector: 'ui-card',
+  imports: [NgTemplateOutlet],
   template: `
     @if (refractMap(); as m) {
       <svg class="lq-defs" aria-hidden="true" focusable="false" width="0" height="0">
@@ -64,6 +69,31 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         </filter>
       </svg>
     }
+    @if (href() !== null) {
+    <a
+      class="ui-card"
+      [class.glass]="glass()"
+      [class.clear]="glass() && glassStrength() === 'clear'"
+      [class.liquid]="liquid()"
+      [style.--_lq-url]="refractUrl()"
+      [class.no-radius]="radius() === false"
+      [class.radius-xl]="radius() === 'xl'"
+      [class.interactive]="interactive() || pressable() || href() !== null"
+      [class.disabled]="(interactive() || pressable()) && disabled()"
+      [attr.data-pad]="padding()"
+      [attr.href]="href()"
+      [attr.target]="target()"
+      [attr.rel]="target() === '_blank' ? 'noopener noreferrer' : null"
+      [attr.role]="null"
+      [attr.tabindex]="disabled() ? -1 : null"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-disabled]="pressable() && disabled() ? 'true' : null"
+      (click)="onClick($event)"
+      (keydown)="onKeydown($event)"
+    >
+      <ng-container [ngTemplateOutlet]="content" />
+    </a>
+    } @else {
     <div
       class="ui-card"
       [class.glass]="glass()"
@@ -82,17 +112,14 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       (click)="onClick($event)"
       (keydown)="onKeydown($event)"
     >
-      <div class="hd"><ng-content select="[card-header]" /></div>
-      <div
-        class="bd"
-        [class.bd-flex]="gap() !== null || align() !== null"
-        [attr.data-gap]="gap()"
-        [attr.data-align]="align()"
-      >
-        <ng-content />
-      </div>
-      <div class="ft"><ng-content select="[card-footer], ui-card-actions" /></div>
+      <ng-container [ngTemplateOutlet]="content" />
     </div>
+    }
+    <ng-template #content>
+      <div class="hd"><ng-content select="[card-header]" /></div>
+      <div class="bd" [class.bd-flex]="gap() !== null || align() !== null" [attr.data-gap]="gap()" [attr.data-align]="align()"><ng-content /></div>
+      <div class="ft"><ng-content select="[card-footer], ui-card-actions" /></div>
+    </ng-template>
   `,
   styles: `
     :host {
@@ -111,6 +138,10 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       overflow: hidden;
       font-family: var(--ui-font-default);
       line-height: 1.35;
+    }
+    a.ui-card {
+      color: inherit;
+      text-decoration: none;
     }
     /* Opt-in: for cards that are themselves the clickable surface — lifts the whole card on hover
        so it reads as a target, not just decoration. Static/informational cards leave this off. */
@@ -358,6 +389,10 @@ export class UiCard {
   /** The card itself is the button: hover lift, `role="button"`, focusable, Enter/Space and click
    *  emit `activate`. Use it instead of wrapping the card in a button, never together with one. */
   pressable = input(false);
+  /** Makes the card surface one link. Do not place interactive descendants inside a link card. */
+  href = input<string | null>(null);
+  /** Link target used with `href`; `_blank` gets `noopener noreferrer`. */
+  target = input<string | null>(null);
   /** Accessible name when `pressable` is true. */
   ariaLabel = input<string | null>(null);
   /** Disables activation, focus and hover lift on an interactive or pressable card. */
@@ -381,8 +416,14 @@ export class UiCard {
     this.refractMap() ? `url(#${this.filterId})` : null,
   );
   private readonly host = inject(ElementRef).nativeElement as HTMLElement;
+  private readonly navigator = injectUiLinkNavigator();
+  private readonly actions = contentChild(UiCardActions);
 
   constructor() {
+    if (isDevMode()) afterNextRender(() => {
+      if (this.href() !== null && this.actions())
+        console.warn('ui-card: ui-card-actions cannot be used inside a link card; keeping the card a plain surface.');
+    });
     let ro: ResizeObserver | null = null;
     const measure = () => {
       const card = this.host.querySelector<HTMLElement>(':scope > .ui-card');
@@ -417,6 +458,10 @@ export class UiCard {
   private readonly injector = inject(Injector);
 
   protected onClick(e: MouseEvent): void {
+    if (this.href() !== null) {
+      uiFollowLink(this.navigator, this.href(), e, this.target());
+      return;
+    }
     if (!this.pressable() || this.disabled()) return;
     const target = e.target as Element | null;
     if (
