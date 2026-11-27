@@ -121,6 +121,13 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
     </div>
     }
     <ng-template #content>
+      @if (staticGlass()) {
+        <span class="static-glass-slice slice-0" aria-hidden="true"></span>
+        <span class="static-glass-slice slice-1" aria-hidden="true"></span>
+        <span class="static-glass-slice slice-2" aria-hidden="true"></span>
+        <span class="static-glass-slice slice-3" aria-hidden="true"></span>
+        <span class="static-glass-tint" aria-hidden="true"></span>
+      }
       <div class="hd"><ng-content select="[card-header]" /></div>
       <div class="bd" [class.bd-flex]="gap() !== null || align() !== null" [attr.data-gap]="gap()" [attr.data-align]="align()"><ng-content /></div>
       <div class="ft"><ng-content select="[card-footer], ui-card-actions" /></div>
@@ -283,26 +290,30 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         var(--ui-shadow-2);
       text-shadow: var(--ui-glass-liquid-text-halo);
     }
-    /* A descendant of ui-glass-backdrop uses its one pre-blurred image. The pseudo-element is the
-       backdrop slice; the second background is the card's own tint and liquid sheen. */
+    /* A descendant of ui-glass-backdrop uses its pre-blurred image layers. The backdrop and each
+       card receive the same opacity values, so a glass slice never gets ahead of its background. */
     .ui-card.glass.static-glass {
       position: relative;
       background: transparent;
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
-    .ui-card.glass.static-glass::before {
+    .ui-card.glass.static-glass .static-glass-slice {
       content: '';
       position: absolute;
       inset: 0;
       z-index: 0;
       pointer-events: none;
-      background-image: var(--_ui-glass-backdrop-url, none);
+      background-image: var(--_ui-glass-backdrop-url-0, none);
       background-repeat: no-repeat;
       background-size: var(--_ui-glass-backdrop-width) var(--_ui-glass-backdrop-height);
       background-position: calc(-1 * var(--_ui-glass-backdrop-x, 0px)) calc(-1 * var(--_ui-glass-backdrop-y, 0px));
     }
-    .ui-card.glass.static-glass::after {
+    .ui-card.glass.static-glass .slice-0 { opacity: var(--_ui-glass-backdrop-opacity-0, 0); }
+    .ui-card.glass.static-glass .slice-1 { background-image: var(--_ui-glass-backdrop-url-1, none); opacity: var(--_ui-glass-backdrop-opacity-1, 0); }
+    .ui-card.glass.static-glass .slice-2 { background-image: var(--_ui-glass-backdrop-url-2, none); opacity: var(--_ui-glass-backdrop-opacity-2, 0); }
+    .ui-card.glass.static-glass .slice-3 { background-image: var(--_ui-glass-backdrop-url-3, none); opacity: var(--_ui-glass-backdrop-opacity-3, 0); }
+    .ui-card.glass.static-glass .static-glass-tint {
       content: '';
       position: absolute;
       inset: 0;
@@ -311,12 +322,15 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       background: var(--ui-glass-bg);
       box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
     }
-    .ui-card.glass.static-glass.liquid::after {
+    .ui-card.glass.static-glass.liquid .static-glass-tint {
       background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg);
     }
-    .ui-card.glass.static-glass > *,
-    .ui-card.glass.static-glass ::ng-deep > * { position: relative; z-index: 2; }
-    .ui-card.glass.static-glass-empty::before { display: none; }
+    .ui-card.glass.static-glass > * { position: relative; z-index: 2; }
+    .ui-card.glass.static-glass > .static-glass-slice,
+    .ui-card.glass.static-glass > .static-glass-tint { position: absolute; z-index: 0; }
+    .ui-card.glass.static-glass > .static-glass-tint { z-index: 1; }
+    .ui-card.glass.static-glass-empty .static-glass-slice { display: none; }
+    .ui-card.glass.static-glass-empty .static-glass-tint { display: none; }
     .ui-card.glass.static-glass-empty { background: var(--ui-glass-bg); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1); }
     .ui-card.glass.static-glass-empty.liquid { background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg); }
     /* Static mode intentionally omits the liquid refraction SVG: bending a precomputed slice would
@@ -377,7 +391,7 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
       }
-      .ui-card.glass.static-glass::before { display: none; }
+      .ui-card.glass.static-glass .static-glass-slice { display: none; }
     }
     .hd,
     .bd,
@@ -493,8 +507,12 @@ export class UiCard {
       const card = this.host.querySelector<HTMLElement>(':scope > .ui-card');
       const unregister = card && this.backdrop ? this.backdrop.registerCard(card) : null;
       effect(() => {
-        const url = this.backdrop?.imageUrl() ?? null;
-        card?.style.setProperty('--_ui-glass-backdrop-url', url ? `url("${url}")` : 'none');
+        const layers = this.backdrop?.layers() ?? [];
+        for (let i = 0; i < 4; i++) {
+          const layer = layers[i];
+          card?.style.setProperty(`--_ui-glass-backdrop-url-${i}`, layer ? `url("${layer.imageUrl}")` : 'none');
+          card?.style.setProperty(`--_ui-glass-backdrop-opacity-${i}`, String(layer?.opacity ?? 0));
+        }
       }, { injector: this.injector });
       effect(
         () => {

@@ -78,7 +78,7 @@ describe('UiCard', () => {
     const card = fixture.nativeElement.querySelector('.ui-card') as HTMLElement;
     expect(card.classList.contains('static-glass-empty')).toBe(true);
     expect(fixture.nativeElement.querySelector('.lq-defs')).toBeNull();
-    expect(css()).toMatch(/static-glass-empty[^}]*::before[^}]*display:\s*none/);
+    expect(css()).toMatch(/static-glass-empty[^}]*\.static-glass-slice[^}]*display:\s*none/);
   });
 
   it('projects ui-card-actions into the footer and keeps the body slack contract', () => {

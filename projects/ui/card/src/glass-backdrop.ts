@@ -4,15 +4,24 @@ import {
   DestroyRef,
   ElementRef,
   InjectionToken,
-  input,
+  computed,
   effect,
+  input,
   signal,
   type Signal,
 } from '@angular/core';
 
+/** One synchronised source/blur pair painted by a glass backdrop transition. */
+export interface UiGlassBackdropLayer {
+  readonly sourceUrl: string;
+  readonly imageUrl: string;
+  readonly opacity: number;
+}
+
 /** The static backdrop published to descendant `ui-card` instances. */
 export interface UiGlassBackdropContext {
   readonly imageUrl: Signal<string | null>;
+  readonly layers: Signal<readonly UiGlassBackdropLayer[]>;
   registerCard(card: HTMLElement): () => void;
 }
 
@@ -23,25 +32,43 @@ function numberValue(value: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function durationValue(value: string): number {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return value.trim().endsWith('s') && !value.trim().endsWith('ms') ? parsed * 1000 : parsed;
+}
+
+interface BackdropLayer {
+  readonly sourceUrl: string;
+  readonly imageUrl: string;
+}
+
+interface VisibleLayer {
+  readonly layer: BackdropLayer;
+  readonly opacity: number;
+}
+
 /**
  * Paints a static image background and publishes one downscaled, blurred copy to glass cards below it.
- * The copy is deliberately not a live CSS backdrop: cards only paint a positioned slice of this image.
- * Liquid refraction is skipped in this mode; the rim, sheen and tint remain on the card.
+ * The copy is deliberately not a live CSS backdrop: cards only paint positioned slices of the same
+ * source/blur layers. A transition runs only while an image is changing.
  */
 @Component({
   selector: 'ui-glass-backdrop',
   providers: [{ provide: UI_GLASS_BACKDROP, useExisting: UiGlassBackdrop }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="source" [style.background-color]="color()" [style.background-image]="imageCss()"></div>
-    <div class="dim" [style.opacity]="dim()"></div>
+    @for (i of [0, 1, 2, 3]; track i) {
+      <div class="source" [class]="'source source-' + i" [style.background-image]="sourceCss(i)" [style.opacity]="layerOpacity(i)"></div>
+    }
+    <div class="dim" [style.background-color]="color()" [style.opacity]="dim()"></div>
     <ng-content />
   `,
   styles: `
     :host { display: block; position: relative; overflow: hidden; isolation: isolate; }
     .source, .dim { position: absolute; inset: 0; pointer-events: none; }
     .source { background-position: center; background-repeat: no-repeat; background-size: cover; }
-    .dim { background: oklch(0 0 0); }
+    .dim { z-index: 0; background: oklch(0 0 0); }
     :host > ::ng-deep *:not(.source):not(.dim) { position: relative; z-index: 1; }
   `,
 })
@@ -49,33 +76,61 @@ export class UiGlassBackdrop implements UiGlassBackdropContext {
   image = input<string | null>(null);
   dim = input(0, { transform: (value: number | string) => Math.min(1, Math.max(0, Number(value) || 0)) });
   color = input('transparent');
-  readonly imageUrl = signal<string | null>(null);
+  /** Cross-fade duration in milliseconds. Null follows `--ui-motion-slow`. */
+  transition = input<number | string | null>(null);
+  readonly layers = signal<readonly UiGlassBackdropLayer[]>([]);
+  readonly imageUrl = computed(() => {
+    const current = this.layers();
+    return current.length ? current[current.length - 1].imageUrl : null;
+  });
   private readonly host: HTMLElement;
-  private objectUrl: string | null = null;
-  private generation = 0;
   private readonly cards = new Map<HTMLElement, () => void>();
+  private readonly owned = new Set<BackdropLayer>();
+  private current: BackdropLayer | null = null;
+  private from: VisibleLayer[] = [];
+  private target: BackdropLayer | null = null;
+  private fading = false;
+  private ready: BackdropLayer | null = null;
+  private readyAvailable = false;
+  private readyAnimate = true;
+  private progress = 1;
+  private generation = 0;
+  private requestedImage: string | null | undefined;
+  private lastBuildKey = '';
+  private raf = 0;
+  private fadeStarted = 0;
 
   constructor(private readonly element: ElementRef<HTMLElement>, destroy: DestroyRef) {
     this.host = element.nativeElement;
-    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.rebuild());
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.rebuild(false));
     ro?.observe(this.host);
     destroy.onDestroy(() => {
       ro?.disconnect();
       this.generation++;
-      if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-      this.objectUrl = null;
-      this.imageUrl.set(null);
+      if (this.raf) this.host.ownerDocument.defaultView?.cancelAnimationFrame?.(this.raf);
+      this.raf = 0;
+      this.ready = null;
+      for (const layer of this.owned) URL.revokeObjectURL(layer.imageUrl);
+      this.owned.clear();
       for (const stop of this.cards.values()) stop();
       this.cards.clear();
     });
     effect(() => {
-      this.image(); this.dim(); this.color();
-      this.rebuild();
+      const source = this.image();
+      this.dim(); this.color();
+      const changed = source !== this.requestedImage;
+      this.requestedImage = source;
+      this.rebuild(changed);
     });
   }
 
-  protected imageCss(): string {
-    return this.image() ? `url("${this.image()!.replaceAll('"', '%22')}")` : 'none';
+  protected sourceCss(index: number): string {
+    const layer = this.layers()[index];
+    return layer ? `url("${layer.sourceUrl.replaceAll('"', '%22')}")` : 'none';
+  }
+
+  protected layerOpacity(index: number): number {
+    return this.layers()[index]?.opacity ?? 0;
   }
 
   registerCard(card: HTMLElement): () => void {
@@ -122,15 +177,34 @@ export class UiGlassBackdrop implements UiGlassBackdropContext {
     return () => { stop(); this.cards.delete(card); };
   }
 
-  private rebuild(): void {
+  private visibleLayers(): VisibleLayer[] {
+    if (!this.fading) return this.current ? [{ layer: this.current, opacity: 1 }] : this.from;
+    const visible = this.from
+      .map(({ layer, opacity }) => ({ layer, opacity: opacity * (1 - this.progress) }))
+      .filter(({ opacity }) => opacity > 0);
+    if (this.target && this.progress > 0) visible.push({ layer: this.target, opacity: this.progress });
+    return visible;
+  }
+
+  private publish(): void {
+    this.layers.set(this.visibleLayers().map(({ layer, opacity }) => ({ ...layer, opacity })));
+  }
+
+  private rebuild(animate: boolean): void {
     const src = this.image();
-    if (!src || typeof document === 'undefined') { this.replaceUrl(null); return; }
+    const rect = this.host.getBoundingClientRect();
+    const key = `${src ?? ''}|${Math.round(rect.width)}x${Math.round(rect.height)}|${this.dim()}|${this.color()}`;
+    if (key === this.lastBuildKey) return;
+    this.lastBuildKey = key;
     const generation = ++this.generation;
+    if (!src || typeof document === 'undefined') {
+      this.finish(null, animate);
+      return;
+    }
     const image = new Image();
     image.crossOrigin = 'anonymous';
     image.onload = () => {
       if (generation !== this.generation) return;
-      const rect = this.host.getBoundingClientRect();
       const scale = 0.25;
       const width = Math.max(1, Math.round(rect.width * scale));
       const height = Math.max(1, Math.round(rect.height * scale));
@@ -153,16 +227,91 @@ export class UiGlassBackdrop implements UiGlassBackdropContext {
       }
       canvas.toBlob(blob => {
         if (!blob || generation !== this.generation) return;
-        this.replaceUrl(URL.createObjectURL(blob));
+        const layer = { sourceUrl: src, imageUrl: URL.createObjectURL(blob) };
+        this.owned.add(layer);
+        this.finish(layer, animate);
       }, 'image/png');
     };
-    image.onerror = () => { if (generation === this.generation) this.replaceUrl(null); };
+    image.onerror = () => { if (generation === this.generation) this.finish(null, animate); };
     image.src = src;
   }
 
-  private replaceUrl(url: string | null): void {
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    this.objectUrl = url;
-    this.imageUrl.set(url);
+  private finish(layer: BackdropLayer | null, animate: boolean): void {
+    if (this.ready) {
+      this.owned.delete(this.ready);
+      URL.revokeObjectURL(this.ready.imageUrl);
+    }
+    this.ready = layer;
+    this.readyAvailable = true;
+    this.readyAnimate = animate;
+    this.consumeReady();
+  }
+
+  private consumeReady(): void {
+    if (!this.readyAvailable) return;
+    const layer = this.ready;
+    this.ready = null;
+    this.readyAvailable = false;
+    const duration = this.transitionMs();
+    if (!this.hasShown() || !this.readyAnimate || duration <= 0 || this.prefersReducedMotion()) {
+      this.commit(layer);
+      return;
+    }
+    this.from = this.visibleLayers();
+    this.target = layer;
+    this.fading = true;
+    this.progress = 0;
+    this.current = null;
+    if (this.raf) this.host.ownerDocument.defaultView?.cancelAnimationFrame?.(this.raf);
+    this.raf = 0;
+    this.publish();
+    this.fadeStarted = performance.now();
+    this.scheduleFade();
+  }
+
+  private hasShown(): boolean {
+    return this.current !== null || this.from.length > 0 || this.target !== null;
+  }
+
+  private commit(layer: BackdropLayer | null): void {
+    if (this.raf) this.host.ownerDocument.defaultView?.cancelAnimationFrame?.(this.raf);
+    this.raf = 0;
+    for (const old of this.owned) {
+      if (old !== layer) URL.revokeObjectURL(old.imageUrl);
+    }
+    this.owned.clear();
+    if (layer) this.owned.add(layer);
+    this.current = layer;
+    this.from = [];
+    this.target = null;
+    this.fading = false;
+    this.progress = 1;
+    this.publish();
+  }
+
+  private scheduleFade(): void {
+    const win = this.host.ownerDocument.defaultView;
+    if (!win?.requestAnimationFrame || !this.fading) {
+      this.commit(this.target);
+      return;
+    }
+    this.raf = win.requestAnimationFrame((time) => {
+      this.raf = 0;
+      if (!this.fading) return;
+      this.progress = Math.min(1, (time - this.fadeStarted) / this.transitionMs());
+      this.publish();
+      if (this.progress >= 1) this.commit(this.target);
+      else this.scheduleFade();
+    });
+  }
+
+  private transitionMs(): number {
+    const raw = this.transition();
+    if (raw !== null) return Math.max(0, typeof raw === 'number' ? raw : durationValue(raw));
+    return durationValue(getComputedStyle(this.host).getPropertyValue('--ui-motion-slow'));
+  }
+
+  private prefersReducedMotion(): boolean {
+    return !!this.host.ownerDocument.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   }
 }

@@ -342,17 +342,18 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
 
       <doc-section name="Static glass backdrop" selector="ui-glass-backdrop" [api]="glassBackdropApi"
         summary="Pre-blurs one still image for every glass ui-card inside it. Cards paint an aligned slice of that copy, so scrolling, relayout and animation do not run a live backdrop filter for each card. With image unset, cards keep their tint and rim without a blur layer. Liquid refraction is intentionally skipped in this mode; the rim, sheen and tint remain.">
-        <doc-demo code="&lt;ui-glass-backdrop image=&quot;/wallpaper.jpg&quot; [dim]=&quot;0.18&quot;&gt;
+        <doc-demo code="&lt;ui-glass-backdrop [image]=&quot;wallpaper&quot; [transition]=&quot;320&quot; [dim]=&quot;0.18&quot;&gt;
   &lt;div class=&quot;glass-grid&quot;&gt;&lt;ui-card [glass]=&quot;true&quot; glassStrength=&quot;liquid&quot;&gt;One pre-blurred backdrop&lt;/ui-card&gt;
     &lt;ui-card [glass]=&quot;true&quot; glassStrength=&quot;clear&quot;&gt;Safe to scroll&lt;/ui-card&gt;&lt;/div&gt;
 &lt;/ui-glass-backdrop&gt;">
-          <ui-glass-backdrop class="glass-backdrop-demo" [image]="glassWallpaper" [dim]="0.18">
+          <ui-glass-backdrop class="glass-backdrop-demo" [image]="glassWallpaper()" [transition]="320" [dim]="0.18">
             <div class="glass-grid">
               <ui-card [glass]="true" glassStrength="liquid"><ui-text variant="label">One copy</ui-text><ui-text variant="body">The background blur is shared.</ui-text></ui-card>
               <ui-card [glass]="true" glassStrength="clear"><ui-text variant="label">Still aligned</ui-text><ui-text variant="body">Scroll or resize this demo.</ui-text></ui-card>
             </div>
           </ui-glass-backdrop>
-          <p class="hint">The cards keep their own tint, border and sheen; only the expensive live backdrop filter is removed.</p>
+          <ui-button size="sm" variant="outline" (click)="cycleGlassWallpaper()">Cycle wallpaper</ui-button>
+          <p class="hint">The cards keep their own tint, border and sheen; only the expensive live backdrop filter is removed. Each change waits for its blur, then cross-fades the background and slices together.</p>
         </doc-demo>
       </doc-section>
 
@@ -647,7 +648,7 @@ events: UiTimelineItem[] = [
     .cc-tiny { max-width: 220px; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
-    .glass-backdrop-demo { min-height: 250px; padding: var(--ui-space-6); border-radius: var(--ui-radius-lg); }
+    .glass-backdrop-demo { min-height: 250px; padding: var(--ui-space-6); border-radius: var(--ui-radius-lg); margin-bottom: var(--ui-space-3); }
     .glass-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); max-width: 560px; margin: auto; }
     @media (max-width: 640px) { .glass-backdrop-demo { padding: var(--ui-space-3); } .glass-grid { grid-template-columns: 1fr; } }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
@@ -1033,11 +1034,21 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'stat: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },
   ];
-  protected readonly glassWallpaper = 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=1200&q=80';
+  protected readonly glassWallpapers = [
+    'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=1200&q=80',
+    'https://images.unsplash.com/photo-1500534623283-312a0f6c86e8?w=1200&q=80',
+    'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=1200&q=80',
+  ];
+  protected readonly glassWallpaperIndex = signal(0);
+  protected readonly glassWallpaper = computed(() => this.glassWallpapers[this.glassWallpaperIndex()]);
+  protected cycleGlassWallpaper(): void {
+    this.glassWallpaperIndex.update(i => (i + 1) % this.glassWallpapers.length);
+  }
   protected readonly glassBackdropApi: ApiRow[] = [
-    { name: 'image', type: 'string | null', default: 'null', desc: 'Static image URL. It is downscaled and blurred once; cards inside paint aligned slices.' },
+    { name: 'image', type: 'string | null', default: 'null', desc: 'Static image URL. It is decoded and blurred once; when it changes, the ready background and every card slice cross-fade together.' },
     { name: 'dim', type: 'number', default: '0', desc: 'Black overlay opacity from 0 to 1; included in the pre-blurred copy.' },
     { name: 'color', type: 'string', default: 'transparent', desc: 'Background colour shown beneath the image.' },
+    { name: 'transition', type: 'number (ms)', default: 'var(--ui-motion-slow)', desc: 'Cross-fade duration after the new image and blurred copy are ready. Zero is instant; reduced motion is always instant.' },
     { name: 'content', type: 'slot', default: '—', desc: 'Cards and other content. Glass ui-card descendants use the static copy; cards outside behave normally.' },
   ];
   protected readonly storeBadgeApi: ApiRow[] = [
