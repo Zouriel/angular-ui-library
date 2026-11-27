@@ -26,37 +26,126 @@ import SquareIcon from '@hugeicons/core-free-icons/SquareIcon';
 import PlayIcon from '@hugeicons/core-free-icons/PlayIcon';
 import { UiText } from '@zouriel/ui/text';
 import { UiCell, UiTable, type UiColumn, type UiRowAction } from '@zouriel/ui/table';
-import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessengerApp, type UiMessengerChannel } from '@zouriel/ui/messenger';
+import {
+  UiContactChannels,
+  UiMessengerButton,
+  type UiEmailStatus,
+  type UiMessengerApp,
+  type UiMessengerChannel,
+} from '@zouriel/ui/messenger';
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
-import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge, type UiAvatarCrop } from '@zouriel/ui/badge';
-import { UiCard, UiCardActions, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
+import {
+  UiBadge,
+  UiChip,
+  UiAvatar,
+  UiAvatarGroup,
+  UiStoreBadge,
+  type UiAvatarCrop,
+} from '@zouriel/ui/badge';
+import {
+  UiCard,
+  UiCardActions,
+  UiStatCard,
+  UiFeatureCard,
+  type UiFeatureLayout,
+  type UiFeatureSize,
+} from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import {
-  UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable,
-  type UiTreeNode, type UiTreeMove, type UiTreeRename, type UiTreeTableRow, type UiTreeTableColumn, type UiTimelineItem, type UiDescriptionItem,
+  UiDescriptionList,
+  UiTimeline,
+  UiCodeBlock,
+  UiTree,
+  UiTreeNodeEnd,
+  UiTreeTable,
+  type UiTreeNode,
+  type UiTreeMove,
+  type UiTreeRename,
+  type UiTreeTableRow,
+  type UiTreeTableColumn,
+  type UiTimelineItem,
+  type UiDescriptionItem,
 } from '@zouriel/ui/data';
 import { UiChatBubble } from '@zouriel/ui/chat-bubble';
-import { UiChatActions, UiChatComposer, UiChatSource, UiChatTyping, UiChatWidget, type UiChatAction, type UiChatLauncher } from '@zouriel/ui/chat-widget';
+import {
+  UiChatActions,
+  UiChatComposer,
+  UiChatSource,
+  UiChatTyping,
+  UiChatWidget,
+  type UiChatAction,
+  type UiChatLauncher,
+} from '@zouriel/ui/chat-widget';
 import { DocPage, DocSection, DocDemo, type ApiRow } from '../docs/docs-ui';
 
-interface Row extends Record<string, unknown> { name: string; role: string; score: number | null; email: string | null; }
+interface Row extends Record<string, unknown> {
+  name: string;
+  role: string;
+  score: number | null;
+  email: string | null;
+}
 const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
 
 @Component({
   selector: 'page-data',
-  imports: [HugeiconsIconComponent, UiButton,
-    UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
-    UiCard, UiCardActions, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
+  imports: [
+    HugeiconsIconComponent,
+    UiButton,
+    UiText,
+    UiTable,
+    UiCell,
+    UiContactChannels,
+    UiMessengerButton,
+    UiList,
+    UiListItem,
+    UiAccordion,
+    UiAccordionItem,
+    UiBadge,
+    UiChip,
+    UiAvatar,
+    UiAvatarGroup,
+    UiStoreBadge,
+    UiCard,
+    UiCardActions,
+    UiStatCard,
+    UiFeatureCard,
+    UiInput,
+    UiSegmented,
+    UiDescriptionList,
+    UiTimeline,
+    UiCodeBlock,
+    UiTree,
+    UiTreeNodeEnd,
+    UiTreeTable,
+    UiIconButton,
+    UiChatBubble,
+    UiChatWidget,
+    UiChatComposer,
+    UiChatTyping,
+    UiChatActions,
+    UiChatSource,
+    DocPage,
+    DocSection,
+    DocDemo,
   ],
   template: `
-    <doc-page eyebrow="Components" title="Data display"
-      lead="Present data: table, list, tree, tree-table, accordion, cards, badges, chips, avatars, stats, description-list, timeline, code-block.">
-
-      <doc-section name="Table" selector="ui-table" [api]="tableApi" [outputs]="tableOut"
-        summary="Generic over the row type. Sortable headers are buttons; each click goes ascending, descending, then back to the original order, and the header carries aria-sort. Sorting reads the raw value (not the formatted text): numbers compare as numbers, text compares case-insensitively with numbers inside it in numeric order, and empty values go last. selectable adds a checkbox per row and a select-all box; selectionChange emits the selected rows by reference, and a row that leaves data stops counting as selected. actions adds a trailing column of real buttons, each of which can be disabled for one row. With no rows, emptyText spans the whole table. On a narrow screen the table scrolls sideways inside its border.">
-        <doc-demo lang="ts + html" code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;rows&quot; [selectable]=&quot;true&quot; [actions]=&quot;actions&quot;
+    <doc-page
+      eyebrow="Components"
+      title="Data display"
+      lead="Present data: table, list, tree, tree-table, accordion, cards, badges, chips, avatars, stats, description-list, timeline, code-block."
+    >
+      <doc-section
+        name="Table"
+        selector="ui-table"
+        [api]="tableApi"
+        [outputs]="tableOut"
+        summary="Generic over the row type. Sortable headers are buttons; each click goes ascending, descending, then back to the original order, and the header carries aria-sort. Sorting reads the raw value (not the formatted text): numbers compare as numbers, text compares case-insensitively with numbers inside it in numeric order, and empty values go last. selectable adds a checkbox per row and a select-all box; selectionChange emits the selected rows by reference, and a row that leaves data stops counting as selected. actions adds a trailing column of real buttons, each of which can be disabled for one row. With no rows, emptyText spans the whole table. On a narrow screen the table scrolls sideways inside its border."
+      >
+        <doc-demo
+          lang="ts + html"
+          code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;rows&quot; [selectable]=&quot;true&quot; [actions]=&quot;actions&quot;
   (selectionChange)=&quot;onSelect($event)&quot; />
 
 cols: UiColumn<Row>[] = [
@@ -65,39 +154,70 @@ cols: UiColumn<Row>[] = [
 ];
 actions: UiRowAction<Row>[] = [
   { label: 'Email', run: (row) => this.email(row), disabled: (row) => !row.email, ariaLabel: (row) => 'Email ' + row.name },
-];">
-          <ui-table [columns]="cols" [data]="rows" [selectable]="true" [actions]="actions" (selectionChange)="sel.set($event.length)" />
-          <p class="hint">Rows that open something (0.87.0): click a row, or Tab to its first cell and press Enter.</p>
-          <ui-table [columns]="cols" [data]="rows" [activatable]="true" [rowLabel]="openLabel" (rowActivate)="openedRow.set($any($event).name)" />
+];"
+        >
+          <ui-table
+            [columns]="cols"
+            [data]="rows"
+            [selectable]="true"
+            [actions]="actions"
+            (selectionChange)="sel.set($event.length)"
+          />
+          <p class="hint">
+            Rows that open something (0.87.0): click a row, or Tab to its first cell and press
+            Enter.
+          </p>
+          <ui-table
+            [columns]="cols"
+            [data]="rows"
+            [activatable]="true"
+            [rowLabel]="openLabel"
+            (rowActivate)="openedRow.set($any($event).name)"
+          />
           <p class="hint">Opened: {{ openedRow() ?? 'nothing yet' }}</p>
           <ui-text variant="caption">{{ sel() }} selected · {{ lastAction() }}</ui-text>
         </doc-demo>
-        <doc-demo code="<ui-table [columns]=&quot;cols&quot; [data]=&quot;[]&quot; emptyText=&quot;No people match this filter&quot; />">
+        <doc-demo
+          code='<ui-table [columns]="cols" [data]="[]" emptyText="No people match this filter" />'
+        >
           <ui-table [columns]="cols" [data]="[]" emptyText="No people match this filter" />
         </doc-demo>
-        <doc-demo lang="ts + html" code="import { UiCell, UiTable } from '@zouriel/ui/table';
+        <doc-demo
+          lang="ts + html"
+          code="import { UiCell, UiTable } from '@zouriel/ui/table';
 
 <!-- A custom cell: an ng-template naming the column key, inside the table. It wins over format;
      sorting still reads the raw value. Context: the row (let-row) and the value (let-value=&quot;value&quot;). -->
 <ui-table [columns]=&quot;guestCols&quot; [data]=&quot;guests&quot;>
   <ng-template uiCell=&quot;rsvp&quot; let-value=&quot;value&quot;>
-    <ui-badge [tone]=&quot;value === 'yes' ? 'success' : 'neutral'&quot;>{{ '{{' }} value {{ '}}' }}</ui-badge>
+    <ui-badge [tone]=&quot;value === 'yes' ? 'success' : 'neutral'&quot;>{{
+            '{{'
+          }} value {{ '}}' }}</ui-badge>
   </ng-template>
   <ng-template uiCell=&quot;whatsapp&quot; let-row>
     <ui-messenger-button app=&quot;whatsapp&quot; [compact]=&quot;true&quot; [ariaLabel]=&quot;'Send to ' + row.name + ' on WhatsApp'&quot; (pressed)=&quot;send(row)&quot; />
   </ng-template>
-</ui-table>">
+</ui-table>"
+        >
           <ui-table [columns]="guestCols" [data]="guests()">
             <ng-template uiCell="rsvp" let-value="value">
               <ui-badge [tone]="value === 'yes' ? 'success' : 'neutral'">{{ value }}</ui-badge>
             </ng-template>
             <ng-template uiCell="whatsapp" let-row>
-              <ui-messenger-button app="whatsapp" [compact]="true" [ticked]="!!row.sent" [tickLabel]="row.sent"
-                [ariaLabel]="'Send to ' + row.name + ' on WhatsApp'" (pressed)="sendGuest(row)" />
+              <ui-messenger-button
+                app="whatsapp"
+                [compact]="true"
+                [ticked]="!!row.sent"
+                [tickLabel]="row.sent"
+                [ariaLabel]="'Send to ' + row.name + ' on WhatsApp'"
+                (pressed)="sendGuest(row)"
+              />
             </ng-template>
           </ui-table>
         </doc-demo>
-        <doc-demo lang="ts + html" code="// Many columns in a box too narrow for them all: long headings wrap, the status stays on one
+        <doc-demo
+          lang="ts + html"
+          code="// Many columns in a box too narrow for them all: long headings wrap, the status stays on one
 // line (nowrap), and names keep at least 9rem (minWidth). On a phone the table scrolls instead.
 crowdedCols: UiColumn<Row>[] = [
   { key: 'name', header: 'Guest', minWidth: '9rem' },
@@ -109,17 +229,26 @@ crowdedCols: UiColumn<Row>[] = [
   { key: 'note', header: 'A note for the host' },
 ];
 
-<ui-table [columns]=&quot;crowdedCols&quot; [data]=&quot;crowded&quot; [selectable]=&quot;true&quot; />">
+<ui-table [columns]=&quot;crowdedCols&quot; [data]=&quot;crowded&quot; [selectable]=&quot;true&quot; />"
+        >
           <ui-table [columns]="crowdedCols" [data]="crowded" [selectable]="true" />
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Contact channels" anchor="contact-channels" selector="ui-contact-channels" [api]="contactApi" [outputs]="contactOut"
+      <doc-section
+        name="Contact channels"
+        anchor="contact-channels"
+        selector="ui-contact-channels"
+        [api]="contactApi"
+        [outputs]="contactOut"
         shapes="// from @zouriel/ui/messenger
 type UiEmailStatus = 'none' | 'skipped' | 'sent' | 'delivered' | 'failed' | 'bounced';
 interface UiMessengerChannel { app: UiMessengerApp; ticked?: boolean; tickLabel?: string; ariaLabel?: string; hidden?: boolean }"
-        summary="One person's ways to be reached, in columns that line up: an Email row (label, address, status), a Number row, and under the number a row of ui-messenger-buttons. Every row shares three columns: labels (at least 64px), values (the rest; long values end in an ellipsis with the full text as the title) and status (at least 44px, content at the end), so ticks line up from card to card. The email's status: a success tick when sent or delivered (emailTickLabel is its tooltip and name), Retry with the error under the row when it failed or bounced, Send when not sent, a spinner while emailBusy. The messenger buttons start at the value column's edge: small 28px squares like the library's small icon buttons (44px to tap), the official logos alone, 8px apart and never stretched, each ticked on its own with the time in its tooltip (long-press on touch) and its name. The component reports presses; the app sends and sets the ticks. Rows without a value are left out. layout='compact' (for a phone card) drops the label column: one line per contact with a small mail or phone icon, the value, and its state immediately after it (tick, Send/Retry), the messenger buttons at the end of the number line, wrapping under the number only when the width really doesn't fit (measured); 8px gaps, 28px lines, no padding of its own. The Flutter twin is UiContactChannels.">
-        <doc-demo lang="ts + html" code="import { UiContactChannels } from '@zouriel/ui/messenger';
+        summary="One person's ways to be reached, in columns that line up: an Email row (label, address, status), a Number row, and under the number a row of ui-messenger-buttons. Every row shares three columns: labels (at least 64px), values (the rest; long values end in an ellipsis with the full text as the title) and status (at least 44px, content at the end), so ticks line up from card to card. The email's status: a success tick when sent or delivered (emailTickLabel is its tooltip and name), Retry with the error under the row when it failed or bounced, Send when not sent, a spinner while emailBusy. The messenger buttons start at the value column's edge: small 28px squares like the library's small icon buttons (44px to tap), the official logos alone, 8px apart and never stretched, each ticked on its own with the time in its tooltip (long-press on touch) and its name. The component reports presses; the app sends and sets the ticks. Rows without a value are left out. layout='compact' (for a phone card) drops the label column: one line per contact with a small mail or phone icon, the value, and its state immediately after it (tick, Send/Retry), the messenger buttons at the end of the number line, wrapping under the number only when the width really doesn't fit (measured); 8px gaps, 28px lines, no padding of its own. The Flutter twin is UiContactChannels."
+      >
+        <doc-demo
+          lang="ts + html"
+          code="import { UiContactChannels } from '@zouriel/ui/messenger';
 
 <ui-contact-channels [email]=&quot;guest.email&quot; emailStatus=&quot;sent&quot; emailTickLabel=&quot;Emailed 4 Nov, 7:02 pm&quot;
   [phone]=&quot;guest.phoneDisplay&quot; [messengers]=&quot;channels()&quot;
@@ -129,163 +258,309 @@ channels = computed<UiMessengerChannel[]>(() => [
   { app: 'whatsapp', ticked: !!this.opened().whatsapp, tickLabel: this.opened().whatsapp, ariaLabel: 'Send to Aisha on WhatsApp' },
   { app: 'viber', ariaLabel: 'Send to Aisha on Viber' },
   { app: 'telegram', ariaLabel: 'Send to Aisha on Telegram' },
-]);">
+]);"
+        >
           <div class="cc-demos">
             <ui-card>
               <ui-text variant="label">Aisha Ibrahim</ui-text>
-              <ui-contact-channels email="aisha.ibrahim.longaddress@example.com" emailStatus="sent" emailTickLabel="Emailed 4 Nov, 7:02 pm"
-                phone="+960 777 1234" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+              <ui-contact-channels
+                email="aisha.ibrahim.longaddress@example.com"
+                emailStatus="sent"
+                emailTickLabel="Emailed 4 Nov, 7:02 pm"
+                phone="+960 777 1234"
+                [messengers]="guestChannels()"
+                (messengerPress)="openChannel($event)"
+              />
             </ui-card>
             <ui-card>
               <ui-text variant="label">Hassan Ali</ui-text>
-              <ui-contact-channels email="hassan@example" [emailStatus]="hassanStatus()" [emailBusy]="hassanBusy()"
-                emailError="The address doesn't exist (bounced)." emailTickLabel="Emailed just now"
-                phone="+44 7700 900123" [messengers]="hassanChannels" (emailRetry)="retryHassan()" (messengerPress)="openChannel($event)" />
+              <ui-contact-channels
+                email="hassan@example"
+                [emailStatus]="hassanStatus()"
+                [emailBusy]="hassanBusy()"
+                emailError="The address doesn't exist (bounced)."
+                emailTickLabel="Emailed just now"
+                phone="+44 7700 900123"
+                [messengers]="hassanChannels"
+                (emailRetry)="retryHassan()"
+                (messengerPress)="openChannel($event)"
+              />
             </ui-card>
             <ui-text variant="label">layout="compact": a guest card on a phone</ui-text>
             <div class="cc-phone">
               <ui-card class="cc-compact" padding="sm" data-demo="compact-sent">
                 <ui-text variant="label">Chloe Both</ui-text>
-                <ui-contact-channels layout="compact" email="chloe@example.com" emailStatus="sent" emailTickLabel="Emailed 4 Nov, 7:02 pm"
-                  phone="+1 202 555 0123" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+                <ui-contact-channels
+                  layout="compact"
+                  email="chloe@example.com"
+                  emailStatus="sent"
+                  emailTickLabel="Emailed 4 Nov, 7:02 pm"
+                  phone="+1 202 555 0123"
+                  [messengers]="guestChannels()"
+                  (messengerPress)="openChannel($event)"
+                />
               </ui-card>
               <ui-card class="cc-compact" padding="sm" data-demo="compact-failed">
                 <ui-text variant="label">Hassan Ali</ui-text>
-                <ui-contact-channels layout="compact" email="hassan@example" emailStatus="bounced" emailError="The address doesn't exist (bounced)."
-                  phone="+44 7700 900123" [messengers]="hassanChannels" />
+                <ui-contact-channels
+                  layout="compact"
+                  email="hassan@example"
+                  emailStatus="bounced"
+                  emailError="The address doesn't exist (bounced)."
+                  phone="+44 7700 900123"
+                  [messengers]="hassanChannels"
+                />
               </ui-card>
               <ui-card class="cc-compact" padding="sm" data-demo="compact-send">
                 <ui-text variant="label">Aisha Ibrahim (not sent yet)</ui-text>
-                <ui-contact-channels layout="compact" email="aisha.ibrahim.longaddress@example.com" emailStatus="none" phone="+960 777 1234" [messengers]="guestChannels()" />
+                <ui-contact-channels
+                  layout="compact"
+                  email="aisha.ibrahim.longaddress@example.com"
+                  emailStatus="none"
+                  phone="+960 777 1234"
+                  [messengers]="guestChannels()"
+                />
               </ui-card>
               <div class="cc-tiny">
                 <ui-card class="cc-compact" padding="sm" data-demo="compact-wrap">
                   <ui-text variant="label">At 220px: the buttons wrap under the number</ui-text>
-                  <ui-contact-channels layout="compact" phone="+960 777 1234" [messengers]="guestChannels()" />
+                  <ui-contact-channels
+                    layout="compact"
+                    phone="+960 777 1234"
+                    [messengers]="guestChannels()"
+                  />
                 </ui-card>
               </div>
             </div>
             <div class="cc-narrow">
               <ui-card>
                 <ui-text variant="label">At 320px</ui-text>
-                <ui-contact-channels email="aisha@example.com" emailStatus="none" phone="+960 777 1234" [messengers]="guestChannels()" (messengerPress)="openChannel($event)" />
+                <ui-contact-channels
+                  email="aisha@example.com"
+                  emailStatus="none"
+                  phone="+960 777 1234"
+                  [messengers]="guestChannels()"
+                  (messengerPress)="openChannel($event)"
+                />
               </ui-card>
             </div>
           </div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="List" selector="ui-list · ui-list-item" [api]="listApi" [outputs]="listOut"
-        summary="Semantic list (role=list, each item role=listitem). An interactive item renders as a button, so it is focusable and works with Enter and Space; it grows to a 44px touch target on touch screens. selected and disabled only apply to interactive items. Slots: [item-leading] and [item-trailing]; empty slots collapse.">
-        <doc-demo code="<ui-list [bordered]=&quot;true&quot;>
-  <ui-list-item [interactive]=&quot;true&quot; [selected]=&quot;current === 'edit'&quot; (activate)=&quot;current = 'edit'&quot;>
-    <hugeicons-icon item-leading [icon]=&quot;PencilEdit02Icon&quot; [size]=&quot;16&quot; />
+      <doc-section
+        name="List"
+        selector="ui-list · ui-list-item"
+        [api]="listApi"
+        [outputs]="listOut"
+        summary="Semantic list (role=list, each item role=listitem). An interactive item renders as a button, so it is focusable and works with Enter and Space; it grows to a 44px touch target on touch screens. selected and disabled only apply to interactive items. Slots: [item-leading] and [item-trailing]; empty slots collapse."
+      >
+        <doc-demo
+          code='<ui-list [bordered]="true">
+  <ui-list-item [interactive]="true" [selected]="current === &apos;edit&apos;" (activate)="current = &apos;edit&apos;">
+    <hugeicons-icon item-leading [icon]="PencilEdit02Icon" [size]="16" />
     Edited tokens
     <span item-trailing>2m</span>
   </ui-list-item>
-</ui-list>">
+</ui-list>'
+        >
           <ui-list [bordered]="true">
             @for (a of activity; track a.id) {
-              <ui-list-item [interactive]="true" [selected]="current() === a.id" [disabled]="a.disabled" (activate)="current.set(a.id)">
-                <hugeicons-icon item-leading aria-hidden="true" [icon]="a.icon" [size]="16" [strokeWidth]="1.8" />{{ a.title }}<span item-trailing>{{ a.time }}</span>
+              <ui-list-item
+                [interactive]="true"
+                [selected]="current() === a.id"
+                [disabled]="a.disabled"
+                (activate)="current.set(a.id)"
+              >
+                <hugeicons-icon
+                  item-leading
+                  aria-hidden="true"
+                  [icon]="a.icon"
+                  [size]="16"
+                  [strokeWidth]="1.8"
+                />{{ a.title }}<span item-trailing>{{ a.time }}</span>
               </ui-list-item>
             }
           </ui-list>
           <ui-text variant="caption">Selected: {{ current() }}</ui-text>
         </doc-demo>
-        <doc-demo code="<ui-list [bordered]=&quot;true&quot;>
-  <ui-list-item [interactive]=&quot;true&quot; title=&quot;Feed photos&quot; hint=&quot;3 of 6 selected for the album feed&quot;>
-    <hugeicons-icon item-leading [icon]=&quot;Image01Icon&quot; [size]=&quot;18&quot; />
+        <doc-demo
+          code='<ui-list [bordered]="true">
+  <ui-list-item [interactive]="true" title="Feed photos" hint="3 of 6 selected for the album feed">
+    <hugeicons-icon item-leading [icon]="Image01Icon" [size]="18" />
   </ui-list-item>
-</ui-list>">
+</ui-list>'
+        >
           <ui-list [bordered]="true">
-            <ui-list-item [interactive]="true" title="Feed photos" hint="3 of 6 selected for the album feed">
-              <hugeicons-icon item-leading aria-hidden="true" [icon]="imageIcon" [size]="18" [strokeWidth]="1.8" />
+            <ui-list-item
+              [interactive]="true"
+              title="Feed photos"
+              hint="3 of 6 selected for the album feed"
+            >
+              <hugeicons-icon
+                item-leading
+                aria-hidden="true"
+                [icon]="imageIcon"
+                [size]="18"
+                [strokeWidth]="1.8"
+              />
             </ui-list-item>
-            <ui-list-item [interactive]="true" title="Colours" hint="Reply pages & QR table card — long hints ellipsize cleanly on one line">
-              <hugeicons-icon item-leading aria-hidden="true" [icon]="settingsIcon" [size]="18" [strokeWidth]="1.8" />
+            <ui-list-item
+              [interactive]="true"
+              title="Colours"
+              hint="Reply pages & QR table card — long hints ellipsize cleanly on one line"
+            >
+              <hugeicons-icon
+                item-leading
+                aria-hidden="true"
+                [icon]="settingsIcon"
+                [size]="18"
+                [strokeWidth]="1.8"
+              />
             </ui-list-item>
           </ui-list>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Tree" selector="ui-tree" [api]="treeApi" [outputs]="treeOut"
+      <doc-section
+        name="Tree"
+        selector="ui-tree"
+        [api]="treeApi"
+        [outputs]="treeOut"
         summary="Expandable hierarchy following the WAI-ARIA tree view pattern. The container is role=tree (named by label); each node is a role=treeitem with aria-level, aria-setsize, aria-posinset and aria-selected, parents also carry aria-expanded, and open children sit in a role=group inside their parent. The tree is a single tab stop: Tab lands on the last focused item, else the selected one, else the first. Arrow Up and Down move through visible items, Home and End jump to the first and last. Arrow Right opens a closed parent or moves to the first child of an open one; Arrow Left closes an open parent or moves to the parent. Enter or Space selects, typing a letter jumps to the next item starting with it, and * opens every sibling of the focused item. Clicking a row selects it; clicking its chevron only opens or closes it. Node icons take a HugeIcons icon or a short string. Each value must be unique. expanded is a two-way list of open nodes, so an app can open the ancestors of a node it selects. For a layers panel: muted draws a node's label dimmed (a hidden layer); multiple makes selectedValues the selection (click selects one, Ctrl or Cmd-click toggles, Shift-click selects the visible range from the last click, Space toggles; selected follows the last click; the tree gets aria-multiselectable); an ng-template uiTreeNodeEnd draws controls at the end of every row, and clicks, double clicks and keys inside it never select, open or drag the row; reorderable lets a mouse or pen drag rows (after a 4px move, so clicks still select) with a line where the row will land, or an outline when it will go into a node that has children or is a container, and never into itself or its own descendants; Alt+Up and Alt+Down move the focused node among its siblings. The tree doesn't change nodes itself: nodeMove says to move value to child number index of parent (null for the top level), counted after taking it out. Double-clicking a label or pressing F2 always emits nodeActivate; with renamable it also opens an in-place editor and nodeRename reports a committed changed label. Drag on touch screens isn't supported; the list keeps scrolling there."
-        [shapes]="TREENODE">
-        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
+        [shapes]="TREENODE"
+      >
+        <doc-demo
+          lang="ts + html"
+          code="<ui-tree label=&quot;Project files&quot; [nodes]=&quot;nodes&quot; [(selected)]=&quot;selected&quot; (nodeSelect)=&quot;open($event)&quot; />
 
 import Folder01Icon from '@hugeicons/core-free-icons/Folder01Icon';
 nodes: UiTreeNode[] = [
   { label: 'src', value: 'src', icon: Folder01Icon, children: [
     { label: 'main.ts', value: 'main', icon: FileScriptIcon },
   ] },
-];">
+];"
+        >
           <ui-tree label="Project files" [nodes]="treeNodes" [(selected)]="treeSel" />
           <ui-text variant="caption">Selected: {{ treeSel() ?? 'none' }}</ui-text>
         </doc-demo>
-        <doc-demo lang="ts + html" code="<ui-tree label=&quot;Layers&quot; [nodes]=&quot;layers()&quot; [multiple]=&quot;true&quot; [reorderable]=&quot;true&quot; [renamable]=&quot;true&quot;
-         [(selectedValues)]=&quot;selection&quot; [(expanded)]=&quot;open&quot;
-         (nodeMove)=&quot;move($event)&quot; (nodeRename)=&quot;rename($event)&quot;>
+        <doc-demo
+          lang="ts + html"
+          code='<ui-tree label="Layers" [nodes]="layers()" [multiple]="true" [reorderable]="true" [renamable]="true"
+         [(selectedValues)]="selection" [(expanded)]="open"
+         (nodeMove)="move($event)" (nodeRename)="rename($event)">
   <ng-template uiTreeNodeEnd let-node>
-    <ui-icon-button size=&quot;sm&quot; [label]=&quot;(hidden(node) ? 'Show ' : 'Hide ') + node.label&quot; (click)=&quot;toggleHidden(node)&quot;>
-      <hugeicons-icon [icon]=&quot;hidden(node) ? ViewOffSlashIcon : ViewIcon&quot; [size]=&quot;14&quot; />
+    <ui-icon-button size="sm" [label]="(hidden(node) ? &apos;Show &apos; : &apos;Hide &apos;) + node.label" (click)="toggleHidden(node)">
+      <hugeicons-icon [icon]="hidden(node) ? ViewOffSlashIcon : ViewIcon" [size]="14" />
     </ui-icon-button>
-    <ui-icon-button size=&quot;sm&quot; [label]=&quot;(locked(node) ? 'Unlock ' : 'Lock ') + node.label&quot; (click)=&quot;toggleLocked(node)&quot;>…</ui-icon-button>
+    <ui-icon-button size="sm" [label]="(locked(node) ? &apos;Unlock &apos; : &apos;Lock &apos;) + node.label" (click)="toggleLocked(node)">…</ui-icon-button>
   </ng-template>
 </ui-tree>
 
-// A hidden layer: { label: 'Background', value: 'bg', muted: true }
-// An empty group that can take children: { label: 'Group', value: 'g2', container: true, children: [] }
-move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent */ }">
+// A hidden layer: { label: &apos;Background&apos;, value: &apos;bg&apos;, muted: true }
+// An empty group that can take children: { label: &apos;Group&apos;, value: &apos;g2&apos;, container: true, children: [] }
+move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent */ }'
+        >
           <div class="layers-demo">
-            <ui-tree label="Layers" [nodes]="layerNodes()" [multiple]="true" [reorderable]="true" [renamable]="true"
-                     [(selectedValues)]="layerSel" [(expanded)]="layerOpen" [(selected)]="layerLast"
-                     (nodeMove)="moveLayer($event)" (nodeActivate)="layerActivated.set($event.label)" (nodeRename)="renameLayer($event)">
+            <ui-tree
+              label="Layers"
+              [nodes]="layerNodes()"
+              [multiple]="true"
+              [reorderable]="true"
+              [renamable]="true"
+              [(selectedValues)]="layerSel"
+              [(expanded)]="layerOpen"
+              [(selected)]="layerLast"
+              (nodeMove)="moveLayer($event)"
+              (nodeActivate)="layerActivated.set($event.label)"
+              (nodeRename)="renameLayer($event)"
+            >
               <ng-template uiTreeNodeEnd let-node>
-                <ui-icon-button size="sm" [label]="(isHidden(node) ? 'Show ' : 'Hide ') + node.label" (click)="toggleLayer(hiddenLayers, node)">
-                  <hugeicons-icon [icon]="isHidden(node) ? ViewOffSlashIcon : ViewIcon" [size]="14" [strokeWidth]="1.8" />
+                <ui-icon-button
+                  size="sm"
+                  [label]="(isHidden(node) ? 'Show ' : 'Hide ') + node.label"
+                  (click)="toggleLayer(hiddenLayers, node)"
+                >
+                  <hugeicons-icon
+                    [icon]="isHidden(node) ? ViewOffSlashIcon : ViewIcon"
+                    [size]="14"
+                    [strokeWidth]="1.8"
+                  />
                 </ui-icon-button>
-                <ui-icon-button size="sm" [label]="(isLocked(node) ? 'Unlock ' : 'Lock ') + node.label" (click)="toggleLayer(lockedLayers, node)">
-                  <hugeicons-icon [icon]="isLocked(node) ? SquareLock02Icon : SquareUnlock02Icon" [size]="14" [strokeWidth]="1.8" />
+                <ui-icon-button
+                  size="sm"
+                  [label]="(isLocked(node) ? 'Unlock ' : 'Lock ') + node.label"
+                  (click)="toggleLayer(lockedLayers, node)"
+                >
+                  <hugeicons-icon
+                    [icon]="isLocked(node) ? SquareLock02Icon : SquareUnlock02Icon"
+                    [size]="14"
+                    [strokeWidth]="1.8"
+                  />
                 </ui-icon-button>
               </ng-template>
             </ui-tree>
           </div>
-          <ui-text variant="caption">Selected: {{ layerSel().join(', ') || 'none' }} · last moved: {{ lastMove() }} · activated: {{ layerActivated() ?? 'none' }}</ui-text>
+          <ui-text variant="caption"
+            >Selected: {{ layerSel().join(', ') || 'none' }} · last moved: {{ lastMove() }} ·
+            activated: {{ layerActivated() ?? 'none' }}</ui-text
+          >
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Tree table" selector="ui-tree-table" [api]="treeTableApi"
+      <doc-section
+        name="Tree table"
+        selector="ui-tree-table"
+        [api]="treeTableApi"
         summary="Hierarchical table; the first column is an expandable tree and shows row.label. Other columns read row.data[key]. Rows with children get a chevron button with a 24px target (aria-expanded, labelled Expand or Collapse plus the row label). Rows are tracked by value, so each value must be unique. Scrolls sideways on narrow screens."
-        [shapes]="TREEROW">
-        <doc-demo code="<ui-tree-table [rows]=&quot;rows&quot; [columns]=&quot;cols&quot; firstHeader=&quot;Path&quot; />">
+        [shapes]="TREEROW"
+      >
+        <doc-demo code='<ui-tree-table [rows]="rows" [columns]="cols" firstHeader="Path" />'>
           <ui-tree-table [rows]="treeRows" [columns]="treeCols" firstHeader="Path" />
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Accordion" selector="ui-accordion · ui-accordion-item" [api]="accApi"
-        summary="Collapsible panels; single-open unless multiple is set. Each item needs a title; project its body. The header is a button inside an h3 with aria-expanded and aria-controls, and the panel is a labelled region. A closed panel is inert, so its content is out of the tab order and hidden from screen readers. An item used outside ui-accordion toggles on its own.">
-        <doc-demo code="<ui-accordion [multiple]=&quot;false&quot;>
-  <ui-accordion-item title=&quot;Section&quot;>Body…</ui-accordion-item>
-</ui-accordion>">
+      <doc-section
+        name="Accordion"
+        selector="ui-accordion · ui-accordion-item"
+        [api]="accApi"
+        summary="Collapsible panels; single-open unless multiple is set. Each item needs a title; project its body. The header is a button inside an h3 with aria-expanded and aria-controls, and the panel is a labelled region. A closed panel is inert, so its content is out of the tab order and hidden from screen readers. An item used outside ui-accordion toggles on its own."
+      >
+        <doc-demo
+          code='<ui-accordion [multiple]="false">
+  <ui-accordion-item title="Section">Body…</ui-accordion-item>
+</ui-accordion>'
+        >
           <ui-accordion>
-            <ui-accordion-item title="What is this?">A reusable Angular component library.</ui-accordion-item>
-            <ui-accordion-item title="Can I open two at once?">Not here. Set [multiple]="true" on ui-accordion to allow it.</ui-accordion-item>
-            <ui-accordion-item title="Is a closed panel reachable by keyboard?">No. Closed panels are inert until opened.</ui-accordion-item>
+            <ui-accordion-item title="What is this?"
+              >A reusable Angular component library.</ui-accordion-item
+            >
+            <ui-accordion-item title="Can I open two at once?"
+              >Not here. Set [multiple]="true" on ui-accordion to allow it.</ui-accordion-item
+            >
+            <ui-accordion-item title="Is a closed panel reachable by keyboard?"
+              >No. Closed panels are inert until opened.</ui-accordion-item
+            >
           </ui-accordion>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Card & stat-card" selector="ui-card · ui-stat-card" [api]="cardApi"
-        summary="ui-card: surface with [card-header] and [card-footer] slots; empty slots collapse, and the body stretches so footers line up across a grid of cards. Use ui-card-actions in the footer for wrapping, aligned action buttons. Set interactive for a hover lift when the card itself is a link. ui-stat-card: KPI tile with a label, value, optional delta and an [stat-icon] slot; the delta arrow follows trend and screen readers hear Up or Down before it.">
-        <doc-demo code="<ui-card padding=&quot;md&quot;>
+      <doc-section
+        name="Card & stat-card"
+        selector="ui-card · ui-stat-card"
+        [api]="cardApi"
+        summary="ui-card: surface with [card-header] and [card-footer] slots; empty slots collapse, and the body stretches so footers line up across a grid of cards. Use ui-card-actions in the footer for wrapping, aligned action buttons. Set interactive for a hover lift when the card itself is a link. ui-stat-card: KPI tile with a label, value, optional delta and an [stat-icon] slot; the delta arrow follows trend and screen readers hear Up or Down before it."
+      >
+        <doc-demo
+          code='<ui-card padding="md">
   <span card-header>Title</span>
   Body
   <div card-footer>Footer</div>
 </ui-card>
-<ui-stat-card label=&quot;Revenue&quot; value=&quot;$48.2k&quot; delta=&quot;12%&quot; trend=&quot;up&quot;>
-  <hugeicons-icon stat-icon [icon]=&quot;Money03Icon&quot; [size]=&quot;16&quot; />
-</ui-stat-card>">
+<ui-stat-card label="Revenue" value="$48.2k" delta="12%" trend="up">
+  <hugeicons-icon stat-icon [icon]="Money03Icon" [size]="16" />
+</ui-stat-card>'
+        >
           <div class="cols3">
             <ui-card>
               <ui-text variant="label" card-header>Card</ui-text>
@@ -293,43 +568,120 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
               <ui-text variant="caption" card-footer>Updated 2m ago</ui-text>
             </ui-card>
             <ui-stat-card label="Revenue" value="$48.2k" delta="12%" trend="up">
-              <hugeicons-icon stat-icon aria-hidden="true" [icon]="icons.money" [size]="16" [strokeWidth]="1.8" />
+              <hugeicons-icon
+                stat-icon
+                aria-hidden="true"
+                [icon]="icons.money"
+                [size]="16"
+                [strokeWidth]="1.8"
+              />
             </ui-stat-card>
             <ui-stat-card label="Active users" value="1,204" delta="3%" trend="down">
-              <hugeicons-icon stat-icon aria-hidden="true" [icon]="icons.users" [size]="16" [strokeWidth]="1.8" />
+              <hugeicons-icon
+                stat-icon
+                aria-hidden="true"
+                [icon]="icons.users"
+                [size]="16"
+                [strokeWidth]="1.8"
+              />
             </ui-stat-card>
+            <ui-stat-card label="Breaching in 48 hours" value="4" tone="danger" />
           </div>
         </doc-demo>
-        <doc-demo code="Card grid with ui-card-actions: put buttons inside ui-card-actions in each ui-card.">
+        <doc-demo
+          code="Card grid with ui-card-actions: put buttons inside ui-card-actions in each ui-card."
+        >
           <div class="cols3">
-            <ui-card><ui-text variant="label">Short card</ui-text><ui-text variant="body">A compact description.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
-            <ui-card><ui-text variant="label">Longer card</ui-text><ui-text variant="body">More text makes this card taller, but its actions remain aligned with the other cards.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions></ui-card>
-            <ui-card><ui-text variant="label">Another card</ui-text><ui-text variant="body">Three cards can share a grid row.</ui-text><ui-card-actions align="stretch"><ui-button size="sm">View</ui-button></ui-card-actions></ui-card>
+            <ui-card
+              ><ui-text variant="label">Short card</ui-text
+              ><ui-text variant="body">A compact description.</ui-text
+              ><ui-card-actions align="stretch"
+                ><ui-button size="sm">View</ui-button
+                ><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions
+              ></ui-card
+            >
+            <ui-card
+              ><ui-text variant="label">Longer card</ui-text
+              ><ui-text variant="body"
+                >More text makes this card taller, but its actions remain aligned with the other
+                cards.</ui-text
+              ><ui-card-actions align="stretch"
+                ><ui-button size="sm">View</ui-button
+                ><ui-button size="sm" variant="outline">Edit</ui-button></ui-card-actions
+              ></ui-card
+            >
+            <ui-card
+              ><ui-text variant="label">Another card</ui-text
+              ><ui-text variant="body">Three cards can share a grid row.</ui-text
+              ><ui-card-actions align="stretch"
+                ><ui-button size="sm">View</ui-button></ui-card-actions
+              ></ui-card
+            >
           </div>
         </doc-demo>
-        <doc-demo code="<ui-card href=&quot;/categories/design&quot; ariaLabel=&quot;Design, 12 items&quot;>
-  <ui-text variant=&quot;label&quot;>Design</ui-text>
-  <ui-text variant=&quot;caption&quot;>12 items</ui-text>
-</ui-card>">
+        <doc-demo
+          code='<ui-card href="/categories/design" ariaLabel="Design, 12 items">
+  <ui-text variant="label">Design</ui-text>
+  <ui-text variant="caption">12 items</ui-text>
+</ui-card>'
+        >
           <div class="cols3">
-            <ui-card href="/categories/design" [interactive]="true" ariaLabel="Design, 12 items"><ui-text variant="label">Design</ui-text><ui-text variant="caption">12 items <span aria-hidden="true">→</span></ui-text></ui-card>
-            <ui-card href="/categories/engineering" [interactive]="true" ariaLabel="Engineering, 8 items"><ui-text variant="label">Engineering</ui-text><ui-text variant="caption">8 items <span aria-hidden="true">→</span></ui-text></ui-card>
-            <ui-card href="/categories/research" [interactive]="true" ariaLabel="Research, 5 items"><ui-text variant="label">Research</ui-text><ui-text variant="caption">5 items <span aria-hidden="true">→</span></ui-text></ui-card>
+            <ui-card href="/categories/design" [interactive]="true" ariaLabel="Design, 12 items"
+              ><ui-text variant="label">Design</ui-text
+              ><ui-text variant="caption"
+                >12 items <span aria-hidden="true">→</span></ui-text
+              ></ui-card
+            >
+            <ui-card
+              href="/categories/engineering"
+              [interactive]="true"
+              ariaLabel="Engineering, 8 items"
+              ><ui-text variant="label">Engineering</ui-text
+              ><ui-text variant="caption"
+                >8 items <span aria-hidden="true">→</span></ui-text
+              ></ui-card
+            >
+            <ui-card href="/categories/research" [interactive]="true" ariaLabel="Research, 5 items"
+              ><ui-text variant="label">Research</ui-text
+              ><ui-text variant="caption"
+                >5 items <span aria-hidden="true">→</span></ui-text
+              ></ui-card
+            >
           </div>
-          <p class="hint">Link cards are one real anchor. Do not put buttons, links, or ui-card-actions inside them.</p>
+          <p class="hint">
+            Link cards are one real anchor. Do not put buttons, links, or ui-card-actions inside
+            them.
+          </p>
         </doc-demo>
-        <doc-demo code="<ui-card padding=&quot;sm&quot; [gap]=&quot;1&quot; align=&quot;center&quot; [pressable]=&quot;true&quot; ariaLabel=&quot;Aisha, 24 photos&quot; (activate)=&quot;open('aisha')&quot;>
-  <ui-avatar name=&quot;Aisha Ibrahim&quot; [dimension]=&quot;64&quot; />
-  <ui-text variant=&quot;label&quot; [truncate]=&quot;true&quot;>Aisha Ibrahim</ui-text>
-  <ui-text variant=&quot;caption&quot;>24 photos</ui-text>
-</ui-card>">
+        <doc-demo
+          code='<ui-card padding="sm" [gap]="1" align="center" [pressable]="true" ariaLabel="Aisha, 24 photos" (activate)="open(&apos;aisha&apos;)">
+  <ui-avatar name="Aisha Ibrahim" [dimension]="64" />
+  <ui-text variant="label" [truncate]="true">Aisha Ibrahim</ui-text>
+  <ui-text variant="caption">24 photos</ui-text>
+</ui-card>'
+        >
           <div class="cols3">
-            <ui-card padding="sm" [gap]="1" align="center" [pressable]="true" ariaLabel="Aisha Ibrahim, 24 photos" (activate)="cardHits.set(cardHits() + 1)">
+            <ui-card
+              padding="sm"
+              [gap]="1"
+              align="center"
+              [pressable]="true"
+              ariaLabel="Aisha Ibrahim, 24 photos"
+              (activate)="cardHits.set(cardHits() + 1)"
+            >
               <ui-avatar name="Aisha Ibrahim" [dimension]="64" />
               <ui-text variant="label" [truncate]="true">Aisha Ibrahim</ui-text>
               <ui-text variant="caption">24 photos</ui-text>
             </ui-card>
-            <ui-card padding="sm" [gap]="1" align="center" [pressable]="true" [disabled]="true" ariaLabel="Ali Zahir, 8 photos" (activate)="cardHits.set(cardHits() + 1)">
+            <ui-card
+              padding="sm"
+              [gap]="1"
+              align="center"
+              [pressable]="true"
+              [disabled]="true"
+              ariaLabel="Ali Zahir, 8 photos"
+              (activate)="cardHits.set(cardHits() + 1)"
+            >
               <ui-avatar name="Ali Zahir" [dimension]="64" />
               <ui-text variant="label" [truncate]="true">Ali Zahir</ui-text>
               <ui-text variant="caption">8 photos</ui-text>
@@ -339,106 +691,239 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Feature card" selector="ui-feature-card" [api]="featureApi"
-        summary="A product or service card for a landing page: an icon in a tinted badge, an optional eyebrow, a title, a description and an action. With actionLabel (or href) the whole card is the target: the action is one real button (or link) whose hit area covers the card, so a click anywhere activates it and screen readers hear one control, named by the title and the action and described by the description. tone sets the badge and a faint wash over the surface (brand puts the theme's brand gradient on the edge and around the badge); layout puts the badge above or beside the text; the action sits at the bottom so a row of cards lines up. The title is a heading (headingLevel). The arrow follows the reading direction.">
-        <doc-demo code="<ui-feature-card title=&quot;Find a doctor&quot; eyebrow=&quot;Clinics&quot;
-  description=&quot;Book a visit at a clinic near you.&quot;
-  actionLabel=&quot;Book now&quot; tone=&quot;primary&quot; (action)=&quot;open('doctors')&quot;>
-  <hugeicons-icon feature-icon [icon]=&quot;StethoscopeIcon&quot; />
-</ui-feature-card>">
+      <doc-section
+        name="Feature card"
+        selector="ui-feature-card"
+        [api]="featureApi"
+        summary="A product or service card for a landing page: an icon in a tinted badge, an optional eyebrow, a title, a description and an action. With actionLabel (or href) the whole card is the target: the action is one real button (or link) whose hit area covers the card, so a click anywhere activates it and screen readers hear one control, named by the title and the action and described by the description. tone sets the badge and a faint wash over the surface (brand puts the theme's brand gradient on the edge and around the badge); layout puts the badge above or beside the text; the action sits at the bottom so a row of cards lines up. The title is a heading (headingLevel). The arrow follows the reading direction."
+      >
+        <doc-demo
+          code='<ui-feature-card title="Find a doctor" eyebrow="Clinics"
+  description="Book a visit at a clinic near you."
+  actionLabel="Book now" tone="primary" (action)="open(&apos;doctors&apos;)">
+  <hugeicons-icon feature-icon [icon]="StethoscopeIcon" />
+</ui-feature-card>'
+        >
           <div class="row fc-controls">
-            <ui-segmented size="sm" label="Layout" [options]="fcLayouts" [value]="fcLayout()" (valueChange)="fcLayout.set($any($event))" />
-            <ui-segmented size="sm" label="Size" [options]="fcSizes" [value]="fcSize()" (valueChange)="fcSize.set($any($event))" />
+            <ui-segmented
+              size="sm"
+              label="Layout"
+              [options]="fcLayouts"
+              [value]="fcLayout()"
+              (valueChange)="fcLayout.set($any($event))"
+            />
+            <ui-segmented
+              size="sm"
+              label="Size"
+              [options]="fcSizes"
+              [value]="fcSize()"
+              (valueChange)="fcSize.set($any($event))"
+            />
           </div>
           <div class="fc-grid" [class.wide]="fcLayout() === 'horizontal'">
-            <ui-feature-card title="Find a doctor" eyebrow="Clinics" description="Book a visit at a clinic near you, today or later this week."
-              actionLabel="Book now" tone="primary" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Find a doctor')">
+            <ui-feature-card
+              title="Find a doctor"
+              eyebrow="Clinics"
+              description="Book a visit at a clinic near you, today or later this week."
+              actionLabel="Book now"
+              tone="primary"
+              [layout]="fcLayout()"
+              [size]="fcSize()"
+              (action)="fcLast.set('Find a doctor')"
+            >
               <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
             </ui-feature-card>
-            <ui-feature-card title="Nurse at home" eyebrow="New" description="A nurse comes to you for injections, dressings and checks."
-              actionLabel="Request a visit" tone="accent" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Nurse at home')">
+            <ui-feature-card
+              title="Nurse at home"
+              eyebrow="New"
+              description="A nurse comes to you for injections, dressings and checks."
+              actionLabel="Request a visit"
+              tone="accent"
+              [layout]="fcLayout()"
+              [size]="fcSize()"
+              (action)="fcLast.set('Nurse at home')"
+            >
               <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
             </ui-feature-card>
-            <ui-feature-card title="Pharmacy" description="Order prescriptions and have them delivered."
-              actionLabel="Order" tone="brand" [layout]="fcLayout()" [size]="fcSize()" (action)="fcLast.set('Pharmacy')">
+            <ui-feature-card
+              title="Pharmacy"
+              description="Order prescriptions and have them delivered."
+              actionLabel="Order"
+              tone="brand"
+              [layout]="fcLayout()"
+              [size]="fcSize()"
+              (action)="fcLast.set('Pharmacy')"
+            >
               <hugeicons-icon feature-icon [icon]="icons.medicine" [strokeWidth]="1.8" />
             </ui-feature-card>
-            <ui-feature-card title="Appointments" description="See and change your bookings."
-              actionLabel="Coming soon" tone="neutral" disabled [layout]="fcLayout()" [size]="fcSize()">
+            <ui-feature-card
+              title="Appointments"
+              description="See and change your bookings."
+              actionLabel="Coming soon"
+              tone="neutral"
+              disabled
+              [layout]="fcLayout()"
+              [size]="fcSize()"
+            >
               <hugeicons-icon feature-icon [icon]="icons.calendar" [strokeWidth]="1.8" />
             </ui-feature-card>
           </div>
-          <p class="fc-last" aria-live="polite">{{ fcLast() ? 'Opened: ' + fcLast() : 'Click a card.' }}</p>
+          <p class="fc-last" aria-live="polite">
+            {{ fcLast() ? 'Opened: ' + fcLast() : 'Click a card.' }}
+          </p>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Feature card: compact tinted" selector="ui-feature-card"
-        summary="The start-screen tile: two cards side by side under a text field, together exactly its width and equal in height (a two-column grid). size sm, surface tinted (a soft wash in the tone instead of a bordered card), radius control (the field's corners), trailingArrow (the whole card is one button named by its title and description, with an arrow that points the reading way) and descriptionLines 2. They lift and cast a shadow on hover, scale a little on press, show the focus ring, and keep still with reduced motion. On hover, focus or press the badge icon lifts a little and the arrow nudges towards the end. The second demo gives the cards an app's own colours (colors: Dhirumi's nursing mint and prescription blue with a #4B8791 accent; switch to a dark theme to see the derived pair), a staggered entrance (enter, enterDelay), and badges in another tone than the card (badgeTone).">
-        <doc-demo id="fc-compact" code="<ui-input placeholder=&quot;Describe how you feel&quot; ariaLabel=&quot;Ask&quot; />
-<div class=&quot;pair&quot;> <!-- grid-template-columns: 1fr 1fr; gap: var(--ui-space-3) -->
-  <ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
-    tone=&quot;primary&quot; title=&quot;Find a doctor&quot; description=&quot;Book a clinic visit near you.&quot; (action)=&quot;open('doctors')&quot;>
-    <hugeicons-icon feature-icon [icon]=&quot;StethoscopeIcon&quot; />
+      <doc-section
+        name="Feature card: compact tinted"
+        selector="ui-feature-card"
+        summary="The start-screen tile: two cards side by side under a text field, together exactly its width and equal in height (a two-column grid). size sm, surface tinted (a soft wash in the tone instead of a bordered card), radius control (the field's corners), trailingArrow (the whole card is one button named by its title and description, with an arrow that points the reading way) and descriptionLines 2. They lift and cast a shadow on hover, scale a little on press, show the focus ring, and keep still with reduced motion. On hover, focus or press the badge icon lifts a little and the arrow nudges towards the end. The second demo gives the cards an app's own colours (colors: Dhirumi's nursing mint and prescription blue with a #4B8791 accent; switch to a dark theme to see the derived pair), a staggered entrance (enter, enterDelay), and badges in another tone than the card (badgeTone)."
+      >
+        <doc-demo
+          id="fc-compact"
+          code='<ui-input placeholder="Describe how you feel" ariaLabel="Ask" />
+<div class="pair"> <!-- grid-template-columns: 1fr 1fr; gap: var(--ui-space-3) -->
+  <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+    tone="primary" title="Find a doctor" description="Book a clinic visit near you." (action)="open(&apos;doctors&apos;)">
+    <hugeicons-icon feature-icon [icon]="StethoscopeIcon" />
   </ui-feature-card>
-  <ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
-    tone=&quot;accent&quot; title=&quot;Nurse at home&quot; description=&quot;A nurse comes to you.&quot; (action)=&quot;open('nurse')&quot;>
-    <hugeicons-icon feature-icon [icon]=&quot;AmbulanceIcon&quot; />
+  <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+    tone="accent" title="Nurse at home" description="A nurse comes to you." (action)="open(&apos;nurse&apos;)">
+    <hugeicons-icon feature-icon [icon]="AmbulanceIcon" />
   </ui-feature-card>
-</div>">
+</div>'
+        >
           <div class="row fc-controls">
-            <ui-segmented size="sm" label="Direction" [options]="fcDirs" [value]="fcDir()" (valueChange)="fcDir.set($any($event))" />
+            <ui-segmented
+              size="sm"
+              label="Direction"
+              [options]="fcDirs"
+              [value]="fcDir()"
+              (valueChange)="fcDir.set($any($event))"
+            />
           </div>
           <div class="fc-start" [attr.dir]="fcDir()">
             <ui-input placeholder="Describe how you feel" ariaLabel="Ask" />
             <div class="fc-pair">
-              <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="primary"
+              <ui-feature-card
+                size="sm"
+                surface="tinted"
+                radius="control"
+                trailingArrow
+                [descriptionLines]="2"
+                tone="primary"
                 [title]="fcDir() === 'rtl' ? 'ޑޮކްޓަރެއް ހޯދާ' : 'Find a doctor'"
-                [description]="fcDir() === 'rtl' ? 'ކައިރީގައި ހުންނަ ކްލިނިކެއްގައި ވަގުތު ހައްދަވާ.' : 'Book a clinic visit near you.'"
-                (action)="fcLast.set('Find a doctor')">
+                [description]="
+                  fcDir() === 'rtl'
+                    ? 'ކައިރީގައި ހުންނަ ކްލިނިކެއްގައި ވަގުތު ހައްދަވާ.'
+                    : 'Book a clinic visit near you.'
+                "
+                (action)="fcLast.set('Find a doctor')"
+              >
                 <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
               </ui-feature-card>
-              <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="accent"
+              <ui-feature-card
+                size="sm"
+                surface="tinted"
+                radius="control"
+                trailingArrow
+                [descriptionLines]="2"
+                tone="accent"
                 [title]="fcDir() === 'rtl' ? 'ގެއަށް ނަރުހެއް' : 'Nurse at home'"
-                [description]="fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'"
-                (action)="fcLast.set('Nurse at home')">
+                [description]="
+                  fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'
+                "
+                (action)="fcLast.set('Nurse at home')"
+              >
                 <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
               </ui-feature-card>
             </div>
           </div>
         </doc-demo>
-        <doc-demo id="fc-colors" code="<!-- An app's own colours (light; the dark pair is derived), a staggered entrance, a badge in another tone -->
-<ui-feature-card size=&quot;sm&quot; surface=&quot;tinted&quot; radius=&quot;control&quot; trailingArrow [descriptionLines]=&quot;2&quot;
-  [colors]=&quot;{ surface: '#E1F4EF', accent: '#4B8791' }&quot; enter [enterDelay]=&quot;0&quot;
-  title=&quot;Nurse at home&quot; description=&quot;A nurse comes to you.&quot;>…</ui-feature-card>
-<ui-feature-card … [colors]=&quot;{ surface: '#E5F0FA', accent: '#4B8791' }&quot; enter [enterDelay]=&quot;90&quot;
-  title=&quot;Prescriptions&quot; description=&quot;Order and refill your medicines.&quot;>…</ui-feature-card>
-<ui-feature-card … tone=&quot;accent&quot; badgeTone=&quot;primary&quot; title=&quot;Book a clinic&quot; …>…</ui-feature-card>">
+        <doc-demo
+          id="fc-colors"
+          code='<!-- An app&apos;s own colours (light; the dark pair is derived), a staggered entrance, a badge in another tone -->
+<ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2"
+  [colors]="{ surface: &apos;#E1F4EF&apos;, accent: &apos;#4B8791&apos; }" enter [enterDelay]="0"
+  title="Nurse at home" description="A nurse comes to you.">…</ui-feature-card>
+<ui-feature-card … [colors]="{ surface: &apos;#E5F0FA&apos;, accent: &apos;#4B8791&apos; }" enter [enterDelay]="90"
+  title="Prescriptions" description="Order and refill your medicines.">…</ui-feature-card>
+<ui-feature-card … tone="accent" badgeTone="primary" title="Book a clinic" …>…</ui-feature-card>'
+        >
           <div class="row fc-controls">
-            <ui-button size="sm" variant="outline" (click)="fcRun.set(fcRun() + 1)">Replay the entrance</ui-button>
+            <ui-button size="sm" variant="outline" (click)="fcRun.set(fcRun() + 1)"
+              >Replay the entrance</ui-button
+            >
           </div>
           @for (run of [fcRun()]; track run) {
             <div class="fc-start" [attr.dir]="fcDir()">
               <div class="fc-pair">
-                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" [colors]="fcMint" enter [enterDelay]="0"
+                <ui-feature-card
+                  size="sm"
+                  surface="tinted"
+                  radius="control"
+                  trailingArrow
+                  [descriptionLines]="2"
+                  [colors]="fcMint"
+                  enter
+                  [enterDelay]="0"
                   [title]="fcDir() === 'rtl' ? 'ގެއަށް ނަރުހެއް' : 'Nurse at home'"
-                  [description]="fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'"
-                  (action)="fcLast.set('Nurse at home')">
+                  [description]="
+                    fcDir() === 'rtl' ? 'ނަރުހަކު ގެއަށް އަންނާނެ.' : 'A nurse comes to you.'
+                  "
+                  (action)="fcLast.set('Nurse at home')"
+                >
                   <hugeicons-icon feature-icon [icon]="icons.ambulance" [strokeWidth]="1.8" />
                 </ui-feature-card>
-                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" [colors]="fcBlue" enter [enterDelay]="90"
+                <ui-feature-card
+                  size="sm"
+                  surface="tinted"
+                  radius="control"
+                  trailingArrow
+                  [descriptionLines]="2"
+                  [colors]="fcBlue"
+                  enter
+                  [enterDelay]="90"
                   [title]="fcDir() === 'rtl' ? 'ބޭސް' : 'Prescriptions'"
-                  [description]="fcDir() === 'rtl' ? 'ބޭސް އޯޑަރ ކުރައްވާ.' : 'Order and refill your medicines.'"
-                  (action)="fcLast.set('Prescriptions')">
+                  [description]="
+                    fcDir() === 'rtl' ? 'ބޭސް އޯޑަރ ކުރައްވާ.' : 'Order and refill your medicines.'
+                  "
+                  (action)="fcLast.set('Prescriptions')"
+                >
                   <hugeicons-icon feature-icon [icon]="icons.medicine" [strokeWidth]="1.8" />
                 </ui-feature-card>
               </div>
               <div class="fc-pair">
-                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="accent" badgeTone="primary" enter [enterDelay]="180"
-                  title="Book a clinic" description="An accent card with a primary badge." (action)="fcLast.set('Book a clinic')">
+                <ui-feature-card
+                  size="sm"
+                  surface="tinted"
+                  radius="control"
+                  trailingArrow
+                  [descriptionLines]="2"
+                  tone="accent"
+                  badgeTone="primary"
+                  enter
+                  [enterDelay]="180"
+                  title="Book a clinic"
+                  description="An accent card with a primary badge."
+                  (action)="fcLast.set('Book a clinic')"
+                >
                   <hugeicons-icon feature-icon [icon]="icons.doctor" [strokeWidth]="1.8" />
                 </ui-feature-card>
-                <ui-feature-card size="sm" surface="tinted" radius="control" trailingArrow [descriptionLines]="2" tone="primary" badgeTone="accent" enter [enterDelay]="270"
-                  title="Appointments" description="A primary card with an accent badge." (action)="fcLast.set('Appointments')">
+                <ui-feature-card
+                  size="sm"
+                  surface="tinted"
+                  radius="control"
+                  trailingArrow
+                  [descriptionLines]="2"
+                  tone="primary"
+                  badgeTone="accent"
+                  enter
+                  [enterDelay]="270"
+                  title="Appointments"
+                  description="A primary card with an accent badge."
+                  (action)="fcLast.set('Appointments')"
+                >
                   <hugeicons-icon feature-icon [icon]="icons.calendar" [strokeWidth]="1.8" />
                 </ui-feature-card>
               </div>
@@ -447,23 +932,33 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Badge, chip, avatar" selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group" [api]="badgeApi" [outputs]="chipOut"
-        summary="Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot; tier makes it a plan tier's metal, gold, platinum or premium, the same in every theme. In Dhivehi (lang=&quot;dv&quot;) or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). crop shows one box of the image, given as fractions (x, y, w, h, each 0 to 1), filling the circle, so a face from a photo needs no cropped file; cropPadding adds room around the box (0.25 of its size per side) and the box is kept inside the image. ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.">
-        <doc-demo code="<ui-badge tone=&quot;success&quot;>live</ui-badge>
-<ui-badge tone=&quot;danger&quot; [dot]=&quot;true&quot; role=&quot;img&quot; aria-label=&quot;Offline&quot; />
-<ui-badge tier=&quot;gold&quot;>Gold pass</ui-badge>
-<ui-badge tier=&quot;platinum&quot;>Platinum pass</ui-badge>
-<ui-badge tier=&quot;premium&quot;>Premium</ui-badge>
-<ui-chip tone=&quot;primary&quot; [removable]=&quot;true&quot; label=&quot;angular&quot; (remove)=&quot;drop('angular')&quot;>angular</ui-chip>
-<ui-avatar-group style=&quot;--ui-avatar-ring: var(--ui-color-surface)&quot;>
-  <ui-avatar name=&quot;Ada Lovelace&quot; />
-  <ui-avatar name=&quot;Grace Hopper&quot; src=&quot;/grace.jpg&quot; alt=&quot;Grace Hopper&quot; />
+      <doc-section
+        name="Badge, chip, avatar"
+        selector="ui-badge · ui-chip · ui-avatar · ui-avatar-group"
+        [api]="badgeApi"
+        [outputs]="chipOut"
+        summary='Status, token and identity primitives. ui-badge holds a short label or count, or a bare dot; tier makes it a plan tier&apos;s metal, gold, platinum or premium, the same in every theme. In Dhivehi (lang="dv") or a right-to-left page a badge grows to fit Thaana marks below the line. ui-chip can show a remove button; it only emits remove, so the host removes the chip. ui-avatar shows src, or initials from name when there is no image or it fails to load; sizes sm to xl (26 to 56px), or dimension for any pixel size (a profile photo). crop shows one box of the image, given as fractions (x, y, w, h, each 0 to 1), filling the circle, so a face from a photo needs no cropped file; cropPadding adds room around the box (0.25 of its size per side) and the box is kept inside the image. ui-avatar-group overlaps its avatars by --ui-avatar-overlap and rings them in --ui-avatar-ring.'
+      >
+        <doc-demo
+          code='<ui-badge tone="success">live</ui-badge>
+<ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
+<ui-badge tier="gold">Gold pass</ui-badge>
+<ui-badge tier="platinum">Platinum pass</ui-badge>
+<ui-badge tier="premium">Premium</ui-badge>
+<ui-chip tone="primary" [removable]="true" label="angular" (remove)="drop(&apos;angular&apos;)">angular</ui-chip>
+<ui-avatar-group style="--ui-avatar-ring: var(--ui-color-surface)">
+  <ui-avatar name="Ada Lovelace" />
+  <ui-avatar name="Grace Hopper" src="/grace.jpg" alt="Grace Hopper" />
 </ui-avatar-group>
-<ui-avatar src=&quot;/photo.jpg&quot; alt=&quot;Aminath&quot; [crop]=&quot;{ x: 0.42, y: 0.18, w: 0.12, h: 0.2 }&quot; [dimension]=&quot;96&quot; />">
+<ui-avatar src="/photo.jpg" alt="Aminath" [crop]="{ x: 0.42, y: 0.18, w: 0.12, h: 0.2 }" [dimension]="96" />'
+        >
           <div class="row">
-            <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge><ui-badge tone="success">success</ui-badge>
-            <ui-badge tone="warning">3</ui-badge><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
-            <ui-badge tone="media"><hugeicons-icon [icon]="playIcon" [size]="12" [strokeWidth]="2" />0:24</ui-badge>
+            <ui-badge>neutral</ui-badge><ui-badge tone="primary">primary</ui-badge
+            ><ui-badge tone="success">success</ui-badge> <ui-badge tone="warning">3</ui-badge
+            ><ui-badge tone="danger" [dot]="true" role="img" aria-label="Offline" />
+            <ui-badge tone="media"
+              ><hugeicons-icon [icon]="playIcon" [size]="12" [strokeWidth]="2" />0:24</ui-badge
+            >
           </div>
           <div class="row">
             <ui-badge appearance="soft">neutral soft</ui-badge>
@@ -474,52 +969,102 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
           </div>
           <!-- 0.47.8: premium tiers, the same metal in every theme. -->
           <div class="row">
-            <ui-badge tier="gold">Gold pass</ui-badge><ui-badge tier="platinum">Platinum pass</ui-badge><ui-badge tier="premium">Premium</ui-badge>
-            <ui-badge tier="gold" [dot]="true" role="img" aria-label="Gold" /><ui-badge tier="platinum" [dot]="true" role="img" aria-label="Platinum" />
+            <ui-badge tier="gold">Gold pass</ui-badge
+            ><ui-badge tier="platinum">Platinum pass</ui-badge
+            ><ui-badge tier="premium">Premium</ui-badge>
+            <ui-badge tier="gold" [dot]="true" role="img" aria-label="Gold" /><ui-badge
+              tier="platinum"
+              [dot]="true"
+              role="img"
+              aria-label="Platinum"
+            />
           </div>
           <!-- 0.46.1: Thaana's marks below the line stay inside the pill (lang="dv" or a right-to-left page). -->
           <div class="row thaana-pills" lang="dv" dir="rtl">
-            <ui-badge tone="success">މިހާރު ހުޅުވާލާފައި</ui-badge><ui-badge tone="warning">ދުވަސް ޓީއްގައި ކުރީ</ui-badge><ui-badge>ބުރާސްފަތި</ui-badge>
+            <ui-badge tone="success">މިހާރު ހުޅުވާލާފައި</ui-badge
+            ><ui-badge tone="warning">ދުވަސް ޓީއްގައި ކުރީ</ui-badge><ui-badge>ބުރާސްފަތި</ui-badge>
             <ui-chip tone="primary">ޑޮކްޓަރު</ui-chip><ui-chip>ފާމަސީ ހުޅުވިފައި</ui-chip>
           </div>
           <div class="row">
             @for (t of tags(); track t) {
-              <ui-chip tone="primary" [removable]="true" [label]="t" (remove)="dropTag(t)">{{ t }}</ui-chip>
+              <ui-chip tone="primary" [removable]="true" [label]="t" (remove)="dropTag(t)">{{
+                t
+              }}</ui-chip>
             } @empty {
-              <ui-text variant="caption">All chips removed. <button type="button" class="linkish" (click)="resetTags()">Reset</button></ui-text>
+              <ui-text variant="caption"
+                >All chips removed.
+                <button type="button" class="linkish" (click)="resetTags()">Reset</button></ui-text
+              >
             }
-            <ui-chip>neutral</ui-chip><ui-chip tone="success">success</ui-chip><ui-chip tone="warning">warning</ui-chip><ui-chip tone="danger">danger</ui-chip>
+            <ui-chip>neutral</ui-chip><ui-chip tone="success">success</ui-chip
+            ><ui-chip tone="warning">warning</ui-chip><ui-chip tone="danger">danger</ui-chip>
           </div>
           <div class="row">
-            <ui-avatar name="Ada Lovelace" size="sm" /><ui-avatar name="Ada Lovelace" /><ui-avatar name="Ada Lovelace" size="lg" />
-            <ui-avatar name="Ada Lovelace" size="xl" /><ui-avatar name="Aminath Hassan" [dimension]="96" />
+            <ui-avatar name="Ada Lovelace" size="sm" /><ui-avatar name="Ada Lovelace" /><ui-avatar
+              name="Ada Lovelace"
+              size="lg"
+            />
+            <ui-avatar name="Ada Lovelace" size="xl" /><ui-avatar
+              name="Aminath Hassan"
+              [dimension]="96"
+            />
             <ui-avatar name="Square Team" [square]="true" />
             <ui-avatar src="demo/sunset.jpg" alt="Whole photo" [dimension]="64" />
-            <ui-avatar src="demo/sunset.jpg" alt="Cropped to a box" [crop]="cropBox" [dimension]="64" />
-            <ui-avatar src="demo/sunset.jpg" alt="Cropped, no padding" [crop]="cropBox" [cropPadding]="0" [dimension]="64" />
+            <ui-avatar
+              src="demo/sunset.jpg"
+              alt="Cropped to a box"
+              [crop]="cropBox"
+              [dimension]="64"
+            />
+            <ui-avatar
+              src="demo/sunset.jpg"
+              alt="Cropped, no padding"
+              [crop]="cropBox"
+              [cropPadding]="0"
+              [dimension]="64"
+            />
             <ui-avatar src="demo/sunset.jpg" alt="Cropped" [crop]="cropBox" size="sm" />
             <ui-avatar src="demo/sunset.jpg" alt="Cropped" [crop]="cropBox" size="xl" />
-            <ui-avatar-group class="on-surface"><ui-avatar name="Ada Lovelace" /><ui-avatar name="Grace Hopper" /><ui-avatar name="Alan Turing" /></ui-avatar-group>
+            <ui-avatar-group class="on-surface"
+              ><ui-avatar name="Ada Lovelace" /><ui-avatar name="Grace Hopper" /><ui-avatar
+                name="Alan Turing"
+            /></ui-avatar-group>
           </div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Store badge" anchor="store-badge" selector="ui-store-badge" [api]="storeBadgeApi"
-        summary="Apple's official Download on the App Store badge as a link, artwork unaltered: black on light surfaces, white on dark ones. scheme auto follows the surrounding colour scheme. Apple asks for at least 40px height and clear space around it. There is no Play badge: Google Play isn't public for our apps yet.">
-        <doc-demo code="<ui-store-badge href=&quot;https://apps.apple.com/us/app/invites-blog/id6829749209&quot; />
-<ui-store-badge href=&quot;...&quot; scheme=&quot;dark&quot; [height]=&quot;56&quot; />">
+      <doc-section
+        name="Store badge"
+        anchor="store-badge"
+        selector="ui-store-badge"
+        [api]="storeBadgeApi"
+        summary="Apple's official Download on the App Store badge as a link, artwork unaltered: black on light surfaces, white on dark ones. scheme auto follows the surrounding colour scheme. Apple asks for at least 40px height and clear space around it. There is no Play badge: Google Play isn't public for our apps yet."
+      >
+        <doc-demo
+          code='<ui-store-badge href="https://apps.apple.com/us/app/invites-blog/id6829749209" />
+<ui-store-badge href="..." scheme="dark" [height]="56" />'
+        >
           <div class="row">
             <ui-store-badge href="https://apps.apple.com/us/app/invites-blog/id6829749209" />
-            <ui-store-badge href="https://apps.apple.com/us/app/invites-blog/id6829749209" [height]="56" />
+            <ui-store-badge
+              href="https://apps.apple.com/us/app/invites-blog/id6829749209"
+              [height]="56"
+            />
           </div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Description list" selector="ui-description-list" [api]="dlApi"
+      <doc-section
+        name="Description list"
+        selector="ui-description-list"
+        [api]="dlApi"
         summary="Term and detail pairs in a semantic dl. row puts each term beside its detail; stacked puts the term above."
-        [shapes]="'interface UiDescriptionItem { term: string; detail: string; }'">
-        <doc-demo code="<ui-description-list [items]=&quot;items&quot; layout=&quot;row&quot; />
-<ui-description-list [items]=&quot;items&quot; layout=&quot;stacked&quot; />">
+        [shapes]="'interface UiDescriptionItem { term: string; detail: string; }'"
+      >
+        <doc-demo
+          code='<ui-description-list [items]="items" layout="row" />
+<ui-description-list [items]="items" layout="stacked" />'
+        >
           <div class="cols2">
             <ui-description-list [items]="details" />
             <ui-description-list [items]="details" layout="stacked" />
@@ -527,52 +1072,104 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Chat bubble" anchor="chat-bubble" selector="ui-chat-bubble" [api]="bubbleApi"
-        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap, unless mineSide is right (0.46.3), which keeps yours on the right in both directions. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves: each takes the whole row whatever the column aligns (start, end, center, stretch), so text wraps at 80% of it, between words; a long URL breaks only where it would overflow.">
-        <doc-demo code="<ui-chat-bubble meta=&quot;09:40&quot;>Hello, I'm on my way to you.</ui-chat-bubble>
-<ui-chat-bubble [mine]=&quot;true&quot; meta=&quot;09:41 · Read&quot;>Thank you! The gate code is 2468.</ui-chat-bubble>">
+      <doc-section
+        name="Chat bubble"
+        anchor="chat-bubble"
+        selector="ui-chat-bubble"
+        [api]="bubbleApi"
+        summary="From @zouriel/ui/chat-bubble. One message in a conversation. Your own (mine) sit at the inline end in the primary colour, the other side's at the inline start on the raised surface; in RTL they swap, unless mineSide is right (0.46.3), which keeps yours on the right in both directions. meta is a small line under the text (the time, read status). The corner nearest the speaker is tucked in. Put them in a column and they align themselves: each takes the whole row whatever the column aligns (start, end, center, stretch), so text wraps at 80% of it, between words; a long URL breaks only where it would overflow."
+      >
+        <doc-demo
+          code='<ui-chat-bubble meta="09:40">Hello, I&apos;m on my way to you.</ui-chat-bubble>
+<ui-chat-bubble [mine]="true" meta="09:41 · Read">Thank you! The gate code is 2468.</ui-chat-bubble>'
+        >
           <div class="chat">
             <ui-chat-bubble meta="09:40">Hello, I'm on my way to you.</ui-chat-bubble>
-            <ui-chat-bubble [mine]="true" meta="09:41 · Read">Thank you! The gate code is 2468.</ui-chat-bubble>
-            <ui-chat-bubble meta="09:43">Arriving in about ten minutes. Is there parking nearby?</ui-chat-bubble>
+            <ui-chat-bubble [mine]="true" meta="09:41 · Read"
+              >Thank you! The gate code is 2468.</ui-chat-bubble
+            >
+            <ui-chat-bubble meta="09:43"
+              >Arriving in about ten minutes. Is there parking nearby?</ui-chat-bubble
+            >
           </div>
           <div class="chat" dir="rtl">
             <ui-chat-bubble meta="09:40">އައްސަލާމު ޢަލައިކުމް</ui-chat-bubble>
             <ui-chat-bubble [mine]="true" meta="09:41">ޝުކުރިއްޔާ</ui-chat-bubble>
           </div>
         </doc-demo>
-        <doc-demo code="<ui-chat-bubble [mine]=&quot;true&quot; mineSide=&quot;right&quot; meta=&quot;09:41&quot;>ޝުކުރިއްޔާ</ui-chat-bubble>
+        <doc-demo
+          code='<ui-chat-bubble [mine]="true" mineSide="right" meta="09:41">ޝުކުރިއްޔާ</ui-chat-bubble>
 
 // or once for the app
-provideUiConfig({ chatMineSide: 'right' })">
+provideUiConfig({ chatMineSide: &apos;right&apos; })'
+        >
           <div class="row fc-controls">
-            <ui-segmented size="sm" label="Your messages" [options]="bubbleSides" [value]="bubbleSide()" (valueChange)="bubbleSide.set($any($event))" />
-            <ui-segmented size="sm" label="Direction" [options]="fcDirs" [value]="bubbleDir()" (valueChange)="bubbleDir.set($any($event))" />
+            <ui-segmented
+              size="sm"
+              label="Your messages"
+              [options]="bubbleSides"
+              [value]="bubbleSide()"
+              (valueChange)="bubbleSide.set($any($event))"
+            />
+            <ui-segmented
+              size="sm"
+              label="Direction"
+              [options]="fcDirs"
+              [value]="bubbleDir()"
+              (valueChange)="bubbleDir.set($any($event))"
+            />
           </div>
           <div class="chat chat-side" [attr.dir]="bubbleDir()">
-            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:40">އައްސަލާމު ޢަލައިކުމް، ދަނޑިވަޅެއް ބޭނުންތަ؟</ui-chat-bubble>
-            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41">ޝުކުރިއްޔާ، މެންދުރު ފަހުން</ui-chat-bubble>
-            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41">Is 3 pm okay?</ui-chat-bubble>
-            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:42">Yes, see you at 3.</ui-chat-bubble>
+            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:40"
+              >އައްސަލާމު ޢަލައިކުމް، ދަނޑިވަޅެއް ބޭނުންތަ؟</ui-chat-bubble
+            >
+            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41"
+              >ޝުކުރިއްޔާ، މެންދުރު ފަހުން</ui-chat-bubble
+            >
+            <ui-chat-bubble [mine]="true" [mineSide]="bubbleSide()" meta="09:41"
+              >Is 3 pm okay?</ui-chat-bubble
+            >
+            <ui-chat-bubble [mineSide]="bubbleSide()" meta="09:42"
+              >Yes, see you at 3.</ui-chat-bubble
+            >
           </div>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Chat widget" anchor="chat-widget" selector="ui-chat-widget" [api]="chatWidgetApi" [outputs]="chatWidgetOut"
-        summary="From @zouriel/ui/chat-widget. Corner launcher (floating, hover pill, or draggable head) that opens a chat panel with header, optional notice line, auto-scrolling message log, quick-actions slot (ui-chat-actions), typing indicator (ui-chat-typing), citation chips (ui-chat-source), and multiline composer (ui-chat-composer).">
-        <doc-demo code="<ui-chat-widget [(open)]=&quot;open&quot; title=&quot;City Assistant&quot; notice=&quot;Answers come from an AI and cite their source.&quot;>
-  <ui-chat-bubble>Hello! <ui-chat-source label=&quot;Guide&quot; href=&quot;#&quot; /></ui-chat-bubble>
-  <div chat-quick-actions><ui-chat-actions [actions]=&quot;actions&quot; (pick)=&quot;onPick($event)&quot; /></div>
-  <div chat-footer><ui-chat-composer (send)=&quot;onSend($event)&quot; /></div>
-</ui-chat-widget>">
+      <doc-section
+        name="Chat widget"
+        anchor="chat-widget"
+        selector="ui-chat-widget"
+        [api]="chatWidgetApi"
+        [outputs]="chatWidgetOut"
+        summary="From @zouriel/ui/chat-widget. Corner launcher (floating, hover pill, or draggable head) that opens a chat panel with header, optional notice line, auto-scrolling message log, quick-actions slot (ui-chat-actions), typing indicator (ui-chat-typing), citation chips (ui-chat-source), and multiline composer (ui-chat-composer)."
+      >
+        <doc-demo
+          code='<ui-chat-widget [(open)]="open" title="City Assistant" notice="Answers come from an AI and cite their source.">
+  <ui-chat-bubble>Hello! <ui-chat-source label="Guide" href="#" /></ui-chat-bubble>
+  <div chat-quick-actions><ui-chat-actions [actions]="actions" (pick)="onPick($event)" /></div>
+  <div chat-footer><ui-chat-composer (send)="onSend($event)" /></div>
+</ui-chat-widget>'
+        >
           <div class="row fc-controls">
-            <ui-segmented size="sm" label="Launcher mode" [options]="launcherModes" [value]="widgetLauncher()" (valueChange)="widgetLauncher.set($any($event))" />
-            <ui-button size="sm" variant="outline" (click)="widgetOpen.set(!widgetOpen())">{{ widgetOpen() ? 'Close' : 'Open' }} widget</ui-button>
+            <ui-segmented
+              size="sm"
+              label="Launcher mode"
+              [options]="launcherModes"
+              [value]="widgetLauncher()"
+              (valueChange)="widgetLauncher.set($any($event))"
+            />
+            <ui-button size="sm" variant="outline" (click)="widgetOpen.set(!widgetOpen())"
+              >{{ widgetOpen() ? 'Close' : 'Open' }} widget</ui-button
+            >
           </div>
           <div class="chat">
             <ui-chat-bubble>
               You can apply online before 1 December 2026.
-              <div><ui-chat-source label="HR-REQ-2026-0014" href="#chat-widget" /> <ui-chat-source label="Application guide" /></div>
+              <div>
+                <ui-chat-source label="HR-REQ-2026-0014" href="#chat-widget" />
+                <ui-chat-source label="Application guide" />
+              </div>
             </ui-chat-bubble>
             <ui-chat-actions [actions]="widgetActions" (pick)="widgetLastAction.set($event)" />
             <ui-chat-typing />
@@ -588,21 +1185,31 @@ provideUiConfig({ chatMineSide: 'right' })">
             teaser="Hi! Ask me about Council services."
           >
             <ui-chat-bubble>Hello! How can I help today?</ui-chat-bubble>
-            <div chat-quick-actions><ui-chat-actions [actions]="widgetActions" (pick)="widgetLastAction.set($event)" /></div>
-            <div chat-footer><ui-chat-composer [attach]="true" (send)="widgetLastAction.set($event)" /></div>
+            <div chat-quick-actions>
+              <ui-chat-actions [actions]="widgetActions" (pick)="widgetLastAction.set($event)" />
+            </div>
+            <div chat-footer>
+              <ui-chat-composer [attach]="true" (send)="widgetLastAction.set($event)" />
+            </div>
           </ui-chat-widget>
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Timeline" selector="ui-timeline" [api]="timelineApi"
-        summary="Vertical sequence of events in an ordered list, joined by a connector line. Each event shows a tone-coloured dot, or a marker holding its icon when icon is set (a HugeIcons icon or a short string such as a step number). Markers are decorative; the title and description carry the meaning. In a flow, give items a state: done (as without one), current (aria-current=&quot;step&quot; and a halo) or upcoming (muted, with a hollow dot)."
-        [shapes]="TIMELINE">
-        <doc-demo code="<ui-timeline [items]=&quot;events&quot; />
+      <doc-section
+        name="Timeline"
+        selector="ui-timeline"
+        [api]="timelineApi"
+        summary='Vertical sequence of events in an ordered list, joined by a connector line. Each event shows a tone-coloured dot, or a marker holding its icon when icon is set (a HugeIcons icon or a short string such as a step number). Markers are decorative; the title and description carry the meaning. In a flow, give items a state: done (as without one), current (aria-current="step" and a halo) or upcoming (muted, with a hollow dot).'
+        [shapes]="TIMELINE"
+      >
+        <doc-demo
+          code="<ui-timeline [items]=&quot;events&quot; />
 
 events: UiTimelineItem[] = [
   { title: 'Created', meta: 'Mon', icon: Flag01Icon },
   { title: 'Shipped', meta: 'Wed', tone: 'success', icon: CheckmarkCircle02Icon },
-];">
+];"
+        >
           <div class="cols2">
             <ui-timeline [items]="timeline" />
             <ui-timeline [items]="timelineIcons" />
@@ -611,78 +1218,266 @@ events: UiTimelineItem[] = [
         </doc-demo>
       </doc-section>
 
-      <doc-section name="Code block" selector="ui-code-block" [api]="codeApi"
-        summary="Monospace code panel with a language label and a copy button. The button says Copied when the clipboard took the text and Copy failed when the browser refused (for example on a page not served over HTTPS), announced politely to screen readers. Long lines scroll sideways.">
-        <doc-demo code="<ui-code-block language=&quot;ts&quot; [code]=&quot;source&quot; />">
+      <doc-section
+        name="Code block"
+        selector="ui-code-block"
+        [api]="codeApi"
+        summary="Monospace code panel with a language label and a copy button. The button says Copied when the clipboard took the text and Copy failed when the browser refused (for example on a page not served over HTTPS), announced politely to screen readers. Long lines scroll sideways."
+      >
+        <doc-demo code='<ui-code-block language="ts" [code]="source" />'>
           <ui-code-block language="ts" [code]="sample" />
         </doc-demo>
       </doc-section>
     </doc-page>
   `,
   styles: `
-    .layers-demo { max-width: 320px; padding: var(--ui-space-2); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); margin-bottom: var(--ui-space-2); }
-    .chat { display: flex; flex-direction: column; gap: var(--ui-space-2); max-width: 420px; margin-bottom: var(--ui-space-4); }
-    .row { display: flex; flex-wrap: wrap; gap: var(--ui-space-3); align-items: center; }
-    .cc-demos { display: grid; gap: var(--ui-space-4); max-width: 560px; }
-    .cc-demos ui-card ui-text { display: block; margin-bottom: var(--ui-space-2); }
-    .cc-narrow { max-width: 320px; }
-    .cc-phone { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ui-space-2); max-width: 350px; }
-    .cc-tiny { max-width: 220px; }
-    .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
-    .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
-    @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
+    .layers-demo {
+      max-width: 320px;
+      padding: var(--ui-space-2);
+      border: 1px solid var(--ui-color-border);
+      border-radius: var(--ui-radius);
+      margin-bottom: var(--ui-space-2);
+    }
+    .chat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ui-space-2);
+      max-width: 420px;
+      margin-bottom: var(--ui-space-4);
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ui-space-3);
+      align-items: center;
+    }
+    .cc-demos {
+      display: grid;
+      gap: var(--ui-space-4);
+      max-width: 560px;
+    }
+    .cc-demos ui-card ui-text {
+      display: block;
+      margin-bottom: var(--ui-space-2);
+    }
+    .cc-narrow {
+      max-width: 320px;
+    }
+    .cc-phone {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--ui-space-2);
+      max-width: 350px;
+    }
+    .cc-tiny {
+      max-width: 220px;
+    }
+    .cols2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--ui-space-6);
+    }
+    .cols3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--ui-space-3);
+    }
+    @media (max-width: 640px) {
+      .cols2 {
+        grid-template-columns: 1fr;
+      }
       /* Phones: the card takes the full row and the two stat tiles share the next one. */
-      .cols3 { grid-template-columns: 1fr 1fr; } .cols3 > ui-card { grid-column: 1 / -1; } }
+      .cols3 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cols3 > ui-card {
+        grid-column: 1 / -1;
+      }
+    }
     /* The demo sits on a surface, so ring the stacked avatars in that colour. */
-    .on-surface { --ui-avatar-ring: var(--ui-color-surface); }
-    .fc-controls { margin-bottom: var(--ui-space-3); }
-    .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--ui-space-4); }
-    .fc-grid.wide { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-    @media (max-width: 640px) { .fc-grid, .fc-grid.wide { grid-template-columns: 1fr; } }
+    .on-surface {
+      --ui-avatar-ring: var(--ui-color-surface);
+    }
+    .fc-controls {
+      margin-bottom: var(--ui-space-3);
+    }
+    .fc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: var(--ui-space-4);
+    }
+    .fc-grid.wide {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+    @media (max-width: 640px) {
+      .fc-grid,
+      .fc-grid.wide {
+        grid-template-columns: 1fr;
+      }
+    }
     /* The start-screen pair: two tiles exactly the field's width, equal heights. */
-    .fc-start { display: flex; flex-direction: column; gap: var(--ui-space-3); max-width: 640px; }
-    .fc-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-3); }
-    .fc-last { margin: var(--ui-space-3) 0 0; font-size: var(--ui-font-size-sm); color: var(--ui-color-text-muted); }
-    .linkish { background: none; border: none; padding: 0; font: inherit; color: var(--ui-color-primary); text-decoration: underline; cursor: pointer; border-radius: var(--ui-radius-xs); }
-    .linkish:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+    .fc-start {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ui-space-3);
+      max-width: 640px;
+    }
+    .fc-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--ui-space-3);
+    }
+    .fc-last {
+      margin: var(--ui-space-3) 0 0;
+      font-size: var(--ui-font-size-sm);
+      color: var(--ui-color-text-muted);
+    }
+    .linkish {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: var(--ui-color-primary);
+      text-decoration: underline;
+      cursor: pointer;
+      border-radius: var(--ui-radius-xs);
+    }
+    .linkish:focus-visible {
+      outline: none;
+      box-shadow: var(--ui-focus-ring);
+    }
   `,
 })
 export class DataPage {
-  protected readonly icons = { money: Money03Icon, users: UserGroupIcon, doctor: StethoscopeIcon, ambulance: AmbulanceIcon, medicine: Medicine01Icon, calendar: Calendar03Icon };
+  protected readonly icons = {
+    money: Money03Icon,
+    users: UserGroupIcon,
+    doctor: StethoscopeIcon,
+    ambulance: AmbulanceIcon,
+    medicine: Medicine01Icon,
+    calendar: Calendar03Icon,
+  };
   protected readonly fcLayout = signal<UiFeatureLayout>('vertical');
   protected readonly fcSize = signal<UiFeatureSize>('md');
   protected readonly fcDir = signal<'ltr' | 'rtl'>('ltr');
-  protected readonly fcDirs = [{ value: 'ltr', label: 'LTR' }, { value: 'rtl', label: 'RTL' }];
-  protected readonly bubbleSides = [{ value: 'end', label: 'Inline end' }, { value: 'right', label: 'Right' }];
+  protected readonly fcDirs = [
+    { value: 'ltr', label: 'LTR' },
+    { value: 'rtl', label: 'RTL' },
+  ];
+  protected readonly bubbleSides = [
+    { value: 'end', label: 'Inline end' },
+    { value: 'right', label: 'Right' },
+  ];
   protected readonly bubbleSide = signal<'end' | 'right'>('right');
   protected readonly bubbleDir = signal<'ltr' | 'rtl'>('rtl');
   protected readonly fcLast = signal('');
   protected readonly fcMint = { surface: '#E1F4EF', accent: '#4B8791' };
   protected readonly fcBlue = { surface: '#E5F0FA', accent: '#4B8791' };
   protected readonly fcRun = signal(0);
-  protected readonly fcLayouts = [{ value: 'vertical', label: 'Vertical' }, { value: 'horizontal', label: 'Horizontal' }];
-  protected readonly fcSizes = [{ value: 'md', label: 'md' }, { value: 'lg', label: 'lg' }];
+  protected readonly fcLayouts = [
+    { value: 'vertical', label: 'Vertical' },
+    { value: 'horizontal', label: 'Horizontal' },
+  ];
+  protected readonly fcSizes = [
+    { value: 'md', label: 'md' },
+    { value: 'lg', label: 'lg' },
+  ];
   protected readonly featureApi: ApiRow[] = [
     { name: 'title', type: 'string (required)', default: '—', desc: 'The heading.' },
-    { name: 'description', type: 'string', default: "''", desc: 'Text under the title; also describes the action to screen readers.' },
+    {
+      name: 'description',
+      type: 'string',
+      default: "''",
+      desc: 'Text under the title; also describes the action to screen readers.',
+    },
     { name: 'eyebrow', type: 'string', default: "''", desc: 'A short tag above the title.' },
-    { name: 'actionLabel', type: 'string', default: "''", desc: 'The action\'s words. With it (or href) the whole card is clickable.' },
-    { name: 'href / target', type: 'string', default: '—', desc: 'Makes the action a link. With href and no actionLabel, the title is the link.' },
-    { name: 'tone', type: "'primary' | 'accent' | 'brand' | 'neutral'", default: "'primary'", desc: 'Badge tint and surface treatment.' },
-    { name: 'layout', type: "'vertical' | 'horizontal'", default: "'vertical'", desc: 'Badge above the text, or beside it at the start.' },
-    { name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Padding 16 / 24 / 32, badge 40 / 48 / 56. sm is the compact tile: 20px icon, body-strong title, small description, tighter gaps.' },
-    { name: 'surface', type: "'default' | 'tinted'", default: "'default'", desc: 'tinted: a soft wash in the tone (8%), no border, shadow only on hover; muted and primary words deepened to stay AA on the wash. Ignores glass.' },
-    { name: 'trailingArrow', type: 'boolean', default: 'false', desc: 'Without actionLabel, the whole card is one button (a link with href) named "title, description", with a small arrow that flips in RTL: at the end of the badge row in the vertical layout, at the end of the title row when horizontal or without an icon. Ignored when actionLabel is set.' },
-    { name: 'descriptionLines', type: 'number', default: '0', desc: 'Clamp the description to this many lines with an ellipsis; 0 shows it all.' },
-    { name: 'disabled', type: 'boolean', default: 'false', desc: 'Dimmed; the action does nothing and (action) is not emitted.' },
-    { name: 'headingLevel', type: 'number', default: '3', desc: 'The title\'s aria-level.' },
+    {
+      name: 'actionLabel',
+      type: 'string',
+      default: "''",
+      desc: "The action's words. With it (or href) the whole card is clickable.",
+    },
+    {
+      name: 'href / target',
+      type: 'string',
+      default: '—',
+      desc: 'Makes the action a link. With href and no actionLabel, the title is the link.',
+    },
+    {
+      name: 'tone',
+      type: "'primary' | 'accent' | 'brand' | 'neutral'",
+      default: "'primary'",
+      desc: 'Badge tint and surface treatment.',
+    },
+    {
+      name: 'layout',
+      type: "'vertical' | 'horizontal'",
+      default: "'vertical'",
+      desc: 'Badge above the text, or beside it at the start.',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      default: "'md'",
+      desc: 'Padding 16 / 24 / 32, badge 40 / 48 / 56. sm is the compact tile: 20px icon, body-strong title, small description, tighter gaps.',
+    },
+    {
+      name: 'surface',
+      type: "'default' | 'tinted'",
+      default: "'default'",
+      desc: 'tinted: a soft wash in the tone (8%), no border, shadow only on hover; muted and primary words deepened to stay AA on the wash. Ignores glass.',
+    },
+    {
+      name: 'trailingArrow',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Without actionLabel, the whole card is one button (a link with href) named "title, description", with a small arrow that flips in RTL: at the end of the badge row in the vertical layout, at the end of the title row when horizontal or without an icon. Ignored when actionLabel is set.',
+    },
+    {
+      name: 'descriptionLines',
+      type: 'number',
+      default: '0',
+      desc: 'Clamp the description to this many lines with an ellipsis; 0 shows it all.',
+    },
+    {
+      name: 'disabled',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Dimmed; the action does nothing and (action) is not emitted.',
+    },
+    { name: 'headingLevel', type: 'number', default: '3', desc: "The title's aria-level." },
     { name: 'glass', type: 'boolean', default: 'UiConfig', desc: 'Translucent surface.' },
-    { name: 'radius', type: "boolean | 'control'", default: 'UiConfig', desc: "Corners: true the card radius (--ui-radius-lg), false square, 'control' an input's radius (--ui-radius), so a tile matches the field above it; square when UiConfig.radius is off, like the input." },
-    { name: 'badgeTone', type: "'primary' | 'accent' | 'brand' | 'neutral'", default: 'tone', desc: 'The badge\'s own tone (its tint and icon colour), e.g. an accent card with a primary badge. Icon 3:1 on its badge in every theme.' },
-    { name: 'colors', type: 'UiFeatureCardColors | null', default: 'null', desc: "The app's own { surface, accent, surfaceDark?, accentDark? } (hex or rgb strings). surface is the card's background (no border at rest); accent is the badge tint (14%), icon, arrow and hover/focus border; action words and eyebrow use the accent deepened to 4.5:1. Title and description keep the theme's text colours. On a dark theme, left-out dark colours are derived: the accent 18% into the theme surface, and the accent lightened until 4.5:1. Invalid strings fall back to the tone (with a dev-mode warning). Wins over tone and badgeTone. Dark or light follows the theme in effect at the card from the first frame, including a stylesheet that loads late, a class or style theme and prefers-color-scheme (0.40.2)." },
-    { name: 'enter / enterDelay', type: 'boolean / number (ms)', default: 'false / 0', desc: 'A short entrance (fade and an 8px rise, --ui-motion-slow, decelerate) once, when the card first appears, after enterDelay ms (stagger cards with it). Off under reduced motion.' },
+    {
+      name: 'radius',
+      type: "boolean | 'control'",
+      default: 'UiConfig',
+      desc: "Corners: true the card radius (--ui-radius-lg), false square, 'control' an input's radius (--ui-radius), so a tile matches the field above it; square when UiConfig.radius is off, like the input.",
+    },
+    {
+      name: 'badgeTone',
+      type: "'primary' | 'accent' | 'brand' | 'neutral'",
+      default: 'tone',
+      desc: "The badge's own tone (its tint and icon colour), e.g. an accent card with a primary badge. Icon 3:1 on its badge in every theme.",
+    },
+    {
+      name: 'colors',
+      type: 'UiFeatureCardColors | null',
+      default: 'null',
+      desc: "The app's own { surface, accent, surfaceDark?, accentDark? } (hex or rgb strings). surface is the card's background (no border at rest); accent is the badge tint (14%), icon, arrow and hover/focus border; action words and eyebrow use the accent deepened to 4.5:1. Title and description keep the theme's text colours. On a dark theme, left-out dark colours are derived: the accent 18% into the theme surface, and the accent lightened until 4.5:1. Invalid strings fall back to the tone (with a dev-mode warning). Wins over tone and badgeTone. Dark or light follows the theme in effect at the card from the first frame, including a stylesheet that loads late, a class or style theme and prefers-color-scheme (0.40.2).",
+    },
+    {
+      name: 'enter / enterDelay',
+      type: 'boolean / number (ms)',
+      default: 'false / 0',
+      desc: 'A short entrance (fade and an 8px rise, --ui-motion-slow, decelerate) once, when the card first appears, after enterDelay ms (stagger cards with it). Off under reduced motion.',
+    },
     { name: '(action)', type: 'MouseEvent', default: '—', desc: 'The card was activated.' },
-    { name: '[feature-icon]', type: 'slot', default: '—', desc: 'The icon, shown in the badge (decorative). [icon] works too, except on hugeicons-icon.' },
+    {
+      name: '[feature-icon]',
+      type: 'slot',
+      default: '—',
+      desc: 'The icon, shown in the badge (decorative). [icon] works too, except on hugeicons-icon.',
+    },
   ];
   protected readonly COLUMN = `interface UiColumn<T = Record<string, unknown>> {
   key: string;
@@ -733,26 +1528,46 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   protected readonly sel = signal(0);
   protected readonly lastAction = signal('no action yet');
   protected readonly cols: UiColumn<Row>[] = [
-    { key: 'name', header: 'Name', sortable: true }, { key: 'role', header: 'Role', sortable: true },
-    { key: 'score', header: 'Score', sortable: true, align: 'right', format: (v) => (v == null ? '—' : String(v)) },
+    { key: 'name', header: 'Name', sortable: true },
+    { key: 'role', header: 'Role', sortable: true },
+    {
+      key: 'score',
+      header: 'Score',
+      sortable: true,
+      align: 'right',
+      format: (v) => (v == null ? '—' : String(v)),
+    },
   ];
   protected readonly rows: Row[] = [
     { name: 'Ada Lovelace', role: 'Engineer', score: 98, email: 'ada@example.com' },
     { name: 'grace Hopper', role: 'Engineer', score: 95, email: 'grace@example.com' },
     { name: 'Alan Turing', role: 'Researcher', score: null, email: null },
-    { name: 'Katherine Johnson', role: 'Mathematician', score: 100, email: 'katherine@example.com' },
+    {
+      name: 'Katherine Johnson',
+      role: 'Mathematician',
+      score: 100,
+      email: 'katherine@example.com',
+    },
   ];
   protected readonly actions: UiRowAction<Row>[] = [
     {
-      label: 'Email', run: (row) => this.lastAction.set(`emailed ${row.name}`),
-      disabled: (row) => !row.email, ariaLabel: (row) => `Email ${row.name}`,
+      label: 'Email',
+      run: (row) => this.lastAction.set(`emailed ${row.name}`),
+      disabled: (row) => !row.email,
+      ariaLabel: (row) => `Email ${row.name}`,
     },
   ];
   protected readonly current = signal('edit');
   protected readonly activity = [
     { id: 'edit', icon: PencilEdit02Icon, title: 'Edited tokens', time: '2m', disabled: false },
     { id: 'deploy', icon: Rocket01Icon, title: 'Deployed', time: '1h', disabled: false },
-    { id: 'settings', icon: Settings01Icon, title: 'Settings (disabled)', time: '—', disabled: true },
+    {
+      id: 'settings',
+      icon: Settings01Icon,
+      title: 'Settings (disabled)',
+      time: '—',
+      disabled: true,
+    },
   ];
   protected readonly treeSel = signal<string | null>(null);
 
@@ -763,10 +1578,15 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   protected readonly SquareUnlock02Icon = SquareUnlock02Icon;
   private readonly layerTree = signal<UiTreeNode[]>([
     { label: 'Names', value: 'names', icon: TextIcon },
-    { label: 'Photo group', value: 'photos', icon: Layers01Icon, children: [
-      { label: 'Couple photo', value: 'photo', icon: Image01Icon },
-      { label: 'Frame', value: 'frame', icon: SquareIcon },
-    ] },
+    {
+      label: 'Photo group',
+      value: 'photos',
+      icon: Layers01Icon,
+      children: [
+        { label: 'Couple photo', value: 'photo', icon: Image01Icon },
+        { label: 'Frame', value: 'frame', icon: SquareIcon },
+      ],
+    },
     { label: 'Empty group', value: 'empty', icon: Layers01Icon, container: true },
     { label: 'Background', value: 'bg', icon: SquareIcon },
   ]);
@@ -780,11 +1600,19 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   protected readonly layerNodes = computed(() => {
     const hidden = this.hiddenLayers();
     const mark = (list: UiTreeNode[]): UiTreeNode[] =>
-      list.map((n) => ({ ...n, muted: hidden.has(n.value), children: n.children ? mark(n.children) : undefined }));
+      list.map((n) => ({
+        ...n,
+        muted: hidden.has(n.value),
+        children: n.children ? mark(n.children) : undefined,
+      }));
     return mark(this.layerTree());
   });
-  protected isHidden(n: UiTreeNode): boolean { return this.hiddenLayers().has(n.value); }
-  protected isLocked(n: UiTreeNode): boolean { return this.lockedLayers().has(n.value); }
+  protected isHidden(n: UiTreeNode): boolean {
+    return this.hiddenLayers().has(n.value);
+  }
+  protected isLocked(n: UiTreeNode): boolean {
+    return this.lockedLayers().has(n.value);
+  }
   protected toggleLayer(set: typeof this.hiddenLayers, n: UiTreeNode): void {
     const next = new Set(set());
     next.has(n.value) ? next.delete(n.value) : next.add(n.value);
@@ -793,28 +1621,55 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   protected moveLayer(m: UiTreeMove): void {
     let taken: UiTreeNode | undefined;
     const without = (list: UiTreeNode[]): UiTreeNode[] =>
-      list.filter((n) => (n.value === m.value ? ((taken = n), false) : true)).map((n) => (n.children ? { ...n, children: without(n.children) } : n));
+      list
+        .filter((n) => (n.value === m.value ? ((taken = n), false) : true))
+        .map((n) => (n.children ? { ...n, children: without(n.children) } : n));
     const rest = without(this.layerTree());
     if (!taken) return;
-    const insert = (list: UiTreeNode[]): UiTreeNode[] => list.map((n) =>
-      n.value === m.parent ? { ...n, children: [...(n.children ?? []).slice(0, m.index), taken!, ...(n.children ?? []).slice(m.index)] } : n.children ? { ...n, children: insert(n.children) } : n);
-    this.layerTree.set(m.parent === null ? [...rest.slice(0, m.index), taken, ...rest.slice(m.index)] : insert(rest));
+    const insert = (list: UiTreeNode[]): UiTreeNode[] =>
+      list.map((n) =>
+        n.value === m.parent
+          ? {
+              ...n,
+              children: [
+                ...(n.children ?? []).slice(0, m.index),
+                taken!,
+                ...(n.children ?? []).slice(m.index),
+              ],
+            }
+          : n.children
+            ? { ...n, children: insert(n.children) }
+            : n,
+      );
+    this.layerTree.set(
+      m.parent === null ? [...rest.slice(0, m.index), taken, ...rest.slice(m.index)] : insert(rest),
+    );
     // Show where it went.
-    if (m.parent !== null && !this.layerOpen().includes(m.parent)) this.layerOpen.update((o) => [...o, m.parent!]);
+    if (m.parent !== null && !this.layerOpen().includes(m.parent))
+      this.layerOpen.update((o) => [...o, m.parent!]);
     this.lastMove.set(`${taken.label} to ${m.parent ?? 'top'} #${m.index}`);
   }
   protected renameLayer(rename: UiTreeRename): void {
-    const update = (list: UiTreeNode[]): UiTreeNode[] => list.map((n) => ({
-      ...n,
-      label: n.value === rename.value ? rename.label : n.label,
-      children: n.children ? update(n.children) : undefined,
-    }));
+    const update = (list: UiTreeNode[]): UiTreeNode[] =>
+      list.map((n) => ({
+        ...n,
+        label: n.value === rename.value ? rename.label : n.label,
+        children: n.children ? update(n.children) : undefined,
+      }));
     this.layerTree.set(update(this.layerTree()));
   }
   protected readonly treeNodes: UiTreeNode[] = [
     {
-      label: 'src', value: 'src', icon: Folder01Icon, children: [
-        { label: 'app', value: 'src/app', icon: Folder01Icon, children: [{ label: 'app.ts', value: 'src/app/app.ts', icon: FileScriptIcon }] },
+      label: 'src',
+      value: 'src',
+      icon: Folder01Icon,
+      children: [
+        {
+          label: 'app',
+          value: 'src/app',
+          icon: Folder01Icon,
+          children: [{ label: 'app.ts', value: 'src/app/app.ts', icon: FileScriptIcon }],
+        },
         { label: 'main.ts', value: 'src/main.ts', icon: FileScriptIcon },
       ],
     },
@@ -827,7 +1682,10 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   ];
   protected readonly treeRows: UiTreeTableRow[] = [
     {
-      label: 'src', value: 'src', data: { type: 'Folder', size: '—' }, children: [
+      label: 'src',
+      value: 'src',
+      data: { type: 'Folder', size: '—' },
+      children: [
         { label: 'app.ts', value: 'src/app.ts', data: { type: 'TypeScript', size: '12 KB' } },
         { label: 'main.ts', value: 'src/main.ts', data: { type: 'TypeScript', size: '1 KB' } },
       ],
@@ -835,10 +1693,16 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
     { label: 'package.json', value: 'package.json', data: { type: 'JSON', size: '1 KB' } },
   ];
   protected readonly tags = signal(['angular', 'signals', 'tokens']);
-  protected dropTag(t: string): void { this.tags.update((list) => list.filter((x) => x !== t)); }
-  protected resetTags(): void { this.tags.set(['angular', 'signals', 'tokens']); }
+  protected dropTag(t: string): void {
+    this.tags.update((list) => list.filter((x) => x !== t));
+  }
+  protected resetTags(): void {
+    this.tags.set(['angular', 'signals', 'tokens']);
+  }
   protected readonly details: UiDescriptionItem[] = [
-    { term: 'Framework', detail: 'Angular v22' }, { term: 'Styling', detail: 'CSS tokens' }, { term: 'Change detection', detail: 'Zoneless, signals' },
+    { term: 'Framework', detail: 'Angular v22' },
+    { term: 'Styling', detail: 'CSS tokens' },
+    { term: 'Change detection', detail: 'Zoneless, signals' },
   ];
   protected readonly timeline: UiTimelineItem[] = [
     { title: 'Created', meta: 'Mon', description: 'Draft opened.' },
@@ -847,7 +1711,12 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
   ];
   protected readonly timelineFlow = [
     { title: 'Request sent', meta: '09:12', state: 'done' as const },
-    { title: 'Nurse assigned', meta: '09:20', description: 'Aminath Hassan, RN', state: 'done' as const },
+    {
+      title: 'Nurse assigned',
+      meta: '09:20',
+      description: 'Aminath Hassan, RN',
+      state: 'done' as const,
+    },
     { title: 'On the way', meta: 'Now', state: 'current' as const },
     { title: 'Visit', state: 'upcoming' as const },
     { title: 'Payment', state: 'upcoming' as const },
@@ -863,14 +1732,54 @@ interface UiTreeTableColumn { key: string; header: string; align?: 'left' | 'rig
 const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
 
   protected readonly tableApi: ApiRow[] = [
-    { name: 'activatable', type: 'boolean', default: 'false', desc: 'Rows open something (0.87.0): the first cell becomes a real button (keyboard, screen readers) and a click anywhere else in the row activates it too; row actions and links in cells keep working. Use with (rowActivate).' },
-    { name: 'rowLabel', type: '((row: T) => string) | null', default: 'null', desc: "The row button's accessible name ('Open HR-REQ-12'); null: its cell text." },
-    { name: 'columns', type: 'UiColumn<T>[]', default: '[]', desc: 'Column definitions (see Data shapes).' },
-    { name: 'data', type: 'T[]', default: '[]', desc: 'Row objects. Selection is tracked by object reference.' },
-    { name: 'selectable', type: 'boolean', default: 'false', desc: 'Show a checkbox per row and a select-all box.' },
-    { name: 'actions', type: 'UiRowAction<T>[]', default: '[]', desc: 'Per-row buttons in a trailing column, space-2 apart at the row end; an empty list renders no column.' },
-    { name: 'ui-row-actions', type: "component: align 'start' | 'end' = 'end'", default: '—', desc: 'For a table you build yourself: wrap a row\'s buttons in it and they keep space-2 apart, at the end, wrapping when the cell is narrow.' },
-    { name: 'emptyText', type: 'string', default: "'No data'", desc: 'Shown across the table when data is empty.' },
+    {
+      name: 'activatable',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Rows open something (0.87.0): the first cell becomes a real button (keyboard, screen readers) and a click anywhere else in the row activates it too; row actions and links in cells keep working. Use with (rowActivate).',
+    },
+    {
+      name: 'rowLabel',
+      type: '((row: T) => string) | null',
+      default: 'null',
+      desc: "The row button's accessible name ('Open HR-REQ-12'); null: its cell text.",
+    },
+    {
+      name: 'columns',
+      type: 'UiColumn<T>[]',
+      default: '[]',
+      desc: 'Column definitions (see Data shapes).',
+    },
+    {
+      name: 'data',
+      type: 'T[]',
+      default: '[]',
+      desc: 'Row objects. Selection is tracked by object reference.',
+    },
+    {
+      name: 'selectable',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Show a checkbox per row and a select-all box.',
+    },
+    {
+      name: 'actions',
+      type: 'UiRowAction<T>[]',
+      default: '[]',
+      desc: 'Per-row buttons in a trailing column, space-2 apart at the row end; an empty list renders no column.',
+    },
+    {
+      name: 'ui-row-actions',
+      type: "component: align 'start' | 'end' = 'end'",
+      default: '—',
+      desc: "For a table you build yourself: wrap a row's buttons in it and they keep space-2 apart, at the end, wrapping when the cell is narrow.",
+    },
+    {
+      name: 'emptyText',
+      type: 'string',
+      default: "'No data'",
+      desc: 'Shown across the table when data is empty.',
+    },
     { name: 'radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
   ];
   protected readonly crowdedCols: UiColumn<Record<string, unknown>>[] = [
@@ -883,9 +1792,33 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { key: 'note', header: 'A note for the host' },
   ];
   protected readonly crowded: Record<string, unknown>[] = [
-    { name: 'Hassan Ibrahim', status: 'Not sent yet', rsvp: 'No reply yet', count: '—', meal: '—', arrival: '—', note: '—' },
-    { name: 'Mariyam Naseer Abdulla Didi', status: 'Opened', rsvp: 'Coming', count: '3', meal: 'Fish', arrival: '7:30 pm', note: 'Running a little late' },
-    { name: 'Aminath Shareef', status: 'Sent', rsvp: 'Maybe', count: '2', meal: 'Vegetarian', arrival: '—', note: '—' },
+    {
+      name: 'Hassan Ibrahim',
+      status: 'Not sent yet',
+      rsvp: 'No reply yet',
+      count: '—',
+      meal: '—',
+      arrival: '—',
+      note: '—',
+    },
+    {
+      name: 'Mariyam Naseer Abdulla Didi',
+      status: 'Opened',
+      rsvp: 'Coming',
+      count: '3',
+      meal: 'Fish',
+      arrival: '7:30 pm',
+      note: 'Running a little late',
+    },
+    {
+      name: 'Aminath Shareef',
+      status: 'Sent',
+      rsvp: 'Maybe',
+      count: '2',
+      meal: 'Vegetarian',
+      arrival: '—',
+      note: '—',
+    },
   ];
   protected readonly guestCols: UiColumn<{ name: string; rsvp: string; sent?: string }>[] = [
     { key: 'name', header: 'Guest', sortable: true },
@@ -899,16 +1832,35 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   ]);
   protected sendGuest(row: { name: string }): void {
     const time = new Date().toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-    this.guests.update((g) => g.map((x) => (x.name === row.name ? { ...x, sent: `Opened in WhatsApp · ${time}` } : x)));
+    this.guests.update((g) =>
+      g.map((x) => (x.name === row.name ? { ...x, sent: `Opened in WhatsApp · ${time}` } : x)),
+    );
   }
-  private readonly opened = signal<Partial<Record<UiMessengerApp, string>>>({ whatsapp: 'Opened in WhatsApp · 3:14 pm' });
-  protected readonly guestChannels = signal<UiMessengerChannel[]>(this.channelsFor({ whatsapp: 'Opened in WhatsApp · 3:14 pm' }));
+  private readonly opened = signal<Partial<Record<UiMessengerApp, string>>>({
+    whatsapp: 'Opened in WhatsApp · 3:14 pm',
+  });
+  protected readonly guestChannels = signal<UiMessengerChannel[]>(
+    this.channelsFor({ whatsapp: 'Opened in WhatsApp · 3:14 pm' }),
+  );
   private channelsFor(o: Partial<Record<UiMessengerApp, string>>): UiMessengerChannel[] {
-    const names: Record<UiMessengerApp, string> = { whatsapp: 'WhatsApp', viber: 'Viber', telegram: 'Telegram' };
-    return (['whatsapp', 'viber', 'telegram'] as const).map((app) => ({ app, ticked: !!o[app], tickLabel: o[app], ariaLabel: `Send to Aisha on ${names[app]}` }));
+    const names: Record<UiMessengerApp, string> = {
+      whatsapp: 'WhatsApp',
+      viber: 'Viber',
+      telegram: 'Telegram',
+    };
+    return (['whatsapp', 'viber', 'telegram'] as const).map((app) => ({
+      app,
+      ticked: !!o[app],
+      tickLabel: o[app],
+      ariaLabel: `Send to Aisha on ${names[app]}`,
+    }));
   }
   protected openChannel(app: UiMessengerApp): void {
-    const names: Record<UiMessengerApp, string> = { whatsapp: 'WhatsApp', viber: 'Viber', telegram: 'Telegram' };
+    const names: Record<UiMessengerApp, string> = {
+      whatsapp: 'WhatsApp',
+      viber: 'Viber',
+      telegram: 'Telegram',
+    };
     const time = new Date().toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
     this.opened.update((o) => ({ ...o, [app]: `Opened in ${names[app]} · ${time}` }));
     this.guestChannels.set(this.channelsFor(this.opened()));
@@ -928,94 +1880,372 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     }, 1200);
   }
   protected readonly contactApi: ApiRow[] = [
-    { name: 'email', type: 'string | null', default: '—', desc: 'The address; no Email row without one.' },
-    { name: 'emailStatus', type: 'UiEmailStatus', default: "'none'", desc: "'sent' / 'delivered': tick. 'failed' / 'bounced': Retry and the error. 'none' / 'skipped': Send." },
-    { name: 'emailTickLabel', type: 'string', default: "'Sent'", desc: "The tick's tooltip and name ('Emailed 4 Nov, 7:02 pm')." },
-    { name: 'emailError', type: 'string', default: '—', desc: 'Why it failed, shown under the row in danger text; Retry is described by it.' },
+    {
+      name: 'email',
+      type: 'string | null',
+      default: '—',
+      desc: 'The address; no Email row without one.',
+    },
+    {
+      name: 'emailStatus',
+      type: 'UiEmailStatus',
+      default: "'none'",
+      desc: "'sent' / 'delivered': tick. 'failed' / 'bounced': Retry and the error. 'none' / 'skipped': Send.",
+    },
+    {
+      name: 'emailTickLabel',
+      type: 'string',
+      default: "'Sent'",
+      desc: "The tick's tooltip and name ('Emailed 4 Nov, 7:02 pm').",
+    },
+    {
+      name: 'emailError',
+      type: 'string',
+      default: '—',
+      desc: 'Why it failed, shown under the row in danger text; Retry is described by it.',
+    },
     { name: 'emailBusy', type: 'boolean', default: 'false', desc: 'A spinner in the status cell.' },
-    { name: 'phone', type: 'string | null', default: '—', desc: 'The number as the app formats it; no Number row or buttons without one.' },
-    { name: 'messengers', type: 'UiMessengerChannel[]', default: '[]', desc: 'The buttons under the number, in order; hidden ones are left out.' },
-    { name: 'emailLabel · numberLabel', type: 'string', default: "'Email' · 'Number'", desc: 'Row labels (library strings by default); in compact, read to screen readers before the value.' },
-    { name: 'layout', type: "'columns' | 'compact'", default: "'columns'", desc: "'columns': label, value and status columns, buttons on their own row. 'compact' (for a phone card): one line per contact, a mail/phone icon instead of the label, the state right after the value, the messenger buttons at the end of the number line (under the number, from its text start, only when the line is too narrow)." },
+    {
+      name: 'phone',
+      type: 'string | null',
+      default: '—',
+      desc: 'The number as the app formats it; no Number row or buttons without one.',
+    },
+    {
+      name: 'messengers',
+      type: 'UiMessengerChannel[]',
+      default: '[]',
+      desc: 'The buttons under the number, in order; hidden ones are left out.',
+    },
+    {
+      name: 'emailLabel · numberLabel',
+      type: 'string',
+      default: "'Email' · 'Number'",
+      desc: 'Row labels (library strings by default); in compact, read to screen readers before the value.',
+    },
+    {
+      name: 'layout',
+      type: "'columns' | 'compact'",
+      default: "'columns'",
+      desc: "'columns': label, value and status columns, buttons on their own row. 'compact' (for a phone card): one line per contact, a mail/phone icon instead of the label, the state right after the value, the messenger buttons at the end of the number line (under the number, from its text start, only when the line is too narrow).",
+    },
   ];
   protected readonly contactOut: ApiRow[] = [
     { name: 'emailSend', type: 'void', default: '—', desc: 'Send pressed.' },
     { name: 'emailRetry', type: 'void', default: '—', desc: 'Retry pressed.' },
-    { name: 'messengerPress', type: 'UiMessengerApp', default: '—', desc: 'A messenger button pressed.' },
+    {
+      name: 'messengerPress',
+      type: 'UiMessengerApp',
+      default: '—',
+      desc: 'A messenger button pressed.',
+    },
   ];
   protected readonly tableOut: ApiRow[] = [
-    { name: 'selectionChange', type: 'T[]', default: '—', desc: 'Selected rows (by reference), after each checkbox change.' },
-    { name: 'rowActivate', type: 'T', default: '—', desc: 'A row was activated (with activatable): a click on it outside its buttons, links and fields and not while selecting text, or Enter/Space on its first-cell button (0.87.0).' },
+    {
+      name: 'selectionChange',
+      type: 'T[]',
+      default: '—',
+      desc: 'Selected rows (by reference), after each checkbox change.',
+    },
+    {
+      name: 'rowActivate',
+      type: 'T',
+      default: '—',
+      desc: 'A row was activated (with activatable): a click on it outside its buttons, links and fields and not while selecting text, or Enter/Space on its first-cell button (0.87.0).',
+    },
   ];
   protected readonly openedRow = signal<string | null>(null);
   protected readonly openLabel = (r: Record<string, unknown>) => `Open ${r['name']}`;
   protected readonly listApi: ApiRow[] = [
-    { name: 'list: bordered', type: 'boolean', default: 'false', desc: 'Outer border + row dividers.' },
-    { name: 'item: title', type: 'string | null', default: 'null', desc: 'Structured medium-weight row title.' },
-    { name: 'item: hint', type: 'string | null', default: 'null', desc: 'Muted single-line ellipsized description below the title.' },
-    { name: 'item: interactive', type: 'boolean', default: 'false', desc: 'Render the row as a button.' },
-    { name: 'item: selected', type: 'boolean', default: 'false', desc: 'Selected styling (interactive items only).' },
-    { name: 'item: disabled', type: 'boolean', default: 'false', desc: 'Disable the button (interactive items only).' },
-    { name: 'item: [item-leading] / [item-hint] / [item-trailing]', type: 'slot', default: '—', desc: 'Content before, under, and after the main text.' },
+    {
+      name: 'list: bordered',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Outer border + row dividers.',
+    },
+    {
+      name: 'item: title',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Structured medium-weight row title.',
+    },
+    {
+      name: 'item: hint',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Muted single-line ellipsized description below the title.',
+    },
+    {
+      name: 'item: interactive',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Render the row as a button.',
+    },
+    {
+      name: 'item: selected',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Selected styling (interactive items only).',
+    },
+    {
+      name: 'item: disabled',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Disable the button (interactive items only).',
+    },
+    {
+      name: 'item: [item-leading] / [item-hint] / [item-trailing]',
+      type: 'slot',
+      default: '—',
+      desc: 'Content before, under, and after the main text.',
+    },
   ];
-  protected readonly listOut: ApiRow[] = [{ name: 'item: activate', type: 'void', default: '—', desc: 'Interactive item clicked, or activated with Enter or Space.' }];
+  protected readonly listOut: ApiRow[] = [
+    {
+      name: 'item: activate',
+      type: 'void',
+      default: '—',
+      desc: 'Interactive item clicked, or activated with Enter or Space.',
+    },
+  ];
   protected readonly treeApi: ApiRow[] = [
     { name: 'nodes', type: 'UiTreeNode[]', default: '[]', desc: 'Root nodes.' },
-    { name: 'selected', type: 'string | null', default: 'null', desc: 'Two-way (`[(selected)]`). Value of the selected node.' },
-    { name: 'label', type: 'string', default: "''", desc: 'Accessible name of the tree (aria-label on role=tree).' },
-    { name: 'expanded', type: 'string[]', default: '[]', desc: 'Two-way (`[(expanded)]`). Values of the open nodes; unbound, the tree keeps its own.' },
-    { name: 'multiple', type: 'boolean', default: 'false', desc: 'Select several nodes: click, Ctrl/Cmd-click toggles, Shift-click selects a range, Space toggles.' },
-    { name: 'selectedValues', type: 'string[]', default: '[]', desc: 'Two-way. The selection when multiple is on, in tree order.' },
-    { name: 'reorderable', type: 'boolean', default: 'false', desc: 'Drag rows with a mouse or pen, and Alt+Up/Down, to move nodes (emits nodeMove).' },
-    { name: 'renamable', type: 'boolean', default: 'false', desc: 'Edit a label in place after double click or F2.' },
-    { name: 'ng-template uiTreeNodeEnd', type: 'let-node', default: '—', desc: 'Content at the end of every row (UiTreeNodeEnd). Its clicks and keys do not select the row.' },
+    {
+      name: 'selected',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Two-way (`[(selected)]`). Value of the selected node.',
+    },
+    {
+      name: 'label',
+      type: 'string',
+      default: "''",
+      desc: 'Accessible name of the tree (aria-label on role=tree).',
+    },
+    {
+      name: 'expanded',
+      type: 'string[]',
+      default: '[]',
+      desc: 'Two-way (`[(expanded)]`). Values of the open nodes; unbound, the tree keeps its own.',
+    },
+    {
+      name: 'multiple',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Select several nodes: click, Ctrl/Cmd-click toggles, Shift-click selects a range, Space toggles.',
+    },
+    {
+      name: 'selectedValues',
+      type: 'string[]',
+      default: '[]',
+      desc: 'Two-way. The selection when multiple is on, in tree order.',
+    },
+    {
+      name: 'reorderable',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Drag rows with a mouse or pen, and Alt+Up/Down, to move nodes (emits nodeMove).',
+    },
+    {
+      name: 'renamable',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Edit a label in place after double click or F2.',
+    },
+    {
+      name: 'ng-template uiTreeNodeEnd',
+      type: 'let-node',
+      default: '—',
+      desc: 'Content at the end of every row (UiTreeNodeEnd). Its clicks and keys do not select the row.',
+    },
   ];
   protected readonly treeOut: ApiRow[] = [
-    { name: 'nodeSelect', type: 'UiTreeNode', default: '—', desc: 'Node chosen by click, Enter or Space.' },
-    { name: 'nodeMove', type: 'UiTreeMove', default: '—', desc: 'Move value to child number index of parent (null = top level), counted after taking it out.' },
-    { name: 'nodeActivate', type: 'UiTreeNode', default: '—', desc: 'Double click on a label, or F2 (e.g. to rename).' },
-    { name: 'nodeRename', type: 'UiTreeRename', default: '—', desc: 'A non-empty changed label committed with Enter or blur.' },
+    {
+      name: 'nodeSelect',
+      type: 'UiTreeNode',
+      default: '—',
+      desc: 'Node chosen by click, Enter or Space.',
+    },
+    {
+      name: 'nodeMove',
+      type: 'UiTreeMove',
+      default: '—',
+      desc: 'Move value to child number index of parent (null = top level), counted after taking it out.',
+    },
+    {
+      name: 'nodeActivate',
+      type: 'UiTreeNode',
+      default: '—',
+      desc: 'Double click on a label, or F2 (e.g. to rename).',
+    },
+    {
+      name: 'nodeRename',
+      type: 'UiTreeRename',
+      default: '—',
+      desc: 'A non-empty changed label committed with Enter or blur.',
+    },
   ];
   protected readonly treeTableApi: ApiRow[] = [
     { name: 'rows', type: 'UiTreeTableRow[]', default: '[]', desc: 'Hierarchical rows.' },
-    { name: 'columns', type: 'UiTreeTableColumn[]', default: '[]', desc: 'Columns after the tree column.' },
+    {
+      name: 'columns',
+      type: 'UiTreeTableColumn[]',
+      default: '[]',
+      desc: 'Columns after the tree column.',
+    },
     { name: 'firstHeader', type: 'string', default: "'Name'", desc: 'Header of the tree column.' },
   ];
   protected readonly accApi: ApiRow[] = [
-    { name: 'accordion: multiple', type: 'boolean', default: 'false', desc: 'Allow more than one open item.' },
+    {
+      name: 'accordion: multiple',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Allow more than one open item.',
+    },
     { name: 'item: title', type: 'string (required)', default: '—', desc: 'Header label.' },
-    { name: 'item: open', type: 'WritableSignal<boolean>', default: 'false', desc: 'Read or set from a template reference (#item) to open an item in code.' },
+    {
+      name: 'item: open',
+      type: 'WritableSignal<boolean>',
+      default: 'false',
+      desc: 'Read or set from a template reference (#item) to open an item in code.',
+    },
   ];
   protected readonly cardHits = signal(0);
   protected readonly cardApi: ApiRow[] = [
-    { name: 'card: padding', type: "'sm' | 'md' | 'lg'", default: "'md'", desc: 'Padding of the header, body and footer.' },
-    { name: 'card: gap', type: '0 | 1 | 2 | 3 | 4 | 6 | 8 | null', default: 'null', desc: 'Vertical spacing step between body children (enables flex column).' },
-    { name: 'card: align', type: "'stretch' | 'start' | 'center' | 'end' | null", default: 'null', desc: 'Cross-axis body alignment (and text-align).' },
-    { name: 'card: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
-    { name: 'card: glassStrength', type: "'frosted' | 'clear' | 'liquid'", default: "'frosted'", desc: "liquid (0.102.0): Apple-style liquid glass. At least 80% transparent (tint 16%), a 3px blur and saturate(1.5) with no squeeze, a bright top-left rim, a soft dark bottom-right inner edge, a luminous border and a sheen; in Chromium the rounded edges bend the backdrop (an SVG displacement map in backdrop-filter, rebuilt when the card resizes; UI_LIQUID_REFRACTION to force it), plain blur and sheen in Safari and Firefox. Text gets a halo in the page colour; the card's controls keep their own surfaces. It does not promise AA over any backdrop: use it over a scrimmed one (ui-backdrop-slideshow scrim). Frosted under reduced transparency or more contrast, solid without backdrop-filter. How see-through glass is (0.101.0). frosted: the glass panel as before. clear: a light tint (15%) over a strong blur (24px), the backdrop's colour lifted, then squeezed into the theme's --ui-glass-card-floor / -ceiling, so text, muted text, primary and status colours stay AA over any backdrop (a liquid backdrop, a ui-model-viewer, a photo). Solid without backdrop-filter or under reduced transparency / more contrast. See Motion & FX › Model viewer." },
+    {
+      name: 'card: padding',
+      type: "'sm' | 'md' | 'lg'",
+      default: "'md'",
+      desc: 'Padding of the header, body and footer.',
+    },
+    {
+      name: 'card: gap',
+      type: '0 | 1 | 2 | 3 | 4 | 6 | 8 | null',
+      default: 'null',
+      desc: 'Vertical spacing step between body children (enables flex column).',
+    },
+    {
+      name: 'card: align',
+      type: "'stretch' | 'start' | 'center' | 'end' | null",
+      default: 'null',
+      desc: 'Cross-axis body alignment (and text-align).',
+    },
+    {
+      name: 'card: glass',
+      type: 'boolean',
+      default: 'UiConfig.glass',
+      desc: 'Translucent, blurred surface.',
+    },
+    {
+      name: 'card: glassStrength',
+      type: "'frosted' | 'clear' | 'liquid'",
+      default: "'frosted'",
+      desc: "liquid (0.102.0): Apple-style liquid glass. At least 80% transparent (tint 16%), a 3px blur and saturate(1.5) with no squeeze, a bright top-left rim, a soft dark bottom-right inner edge, a luminous border and a sheen; in Chromium the rounded edges bend the backdrop (an SVG displacement map in backdrop-filter, rebuilt when the card resizes; UI_LIQUID_REFRACTION to force it), plain blur and sheen in Safari and Firefox. Text gets a halo in the page colour; the card's controls keep their own surfaces. It does not promise AA over any backdrop: use it over a scrimmed one (ui-backdrop-slideshow scrim). Frosted under reduced transparency or more contrast, solid without backdrop-filter. How see-through glass is (0.101.0). frosted: the glass panel as before. clear: a light tint (15%) over a strong blur (24px), the backdrop's colour lifted, then squeezed into the theme's --ui-glass-card-floor / -ceiling, so text, muted text, primary and status colours stay AA over any backdrop (a liquid backdrop, a ui-model-viewer, a photo). Solid without backdrop-filter or under reduced transparency / more contrast. See Motion & FX › Model viewer.",
+    },
     { name: 'card: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
-    { name: 'card: interactive', type: 'boolean', default: 'false', desc: 'Hover lift only, for a card wrapped in a link or button (the wrapper stays the button).' },
-    { name: 'card: href', type: 'string | null', default: 'null', desc: 'Makes the whole card one anchor; internal plain clicks use the library link navigator.' },
-    { name: 'card: target', type: 'string | null', default: 'null', desc: 'Anchor target; _blank gets rel="noopener noreferrer".' },
-    { name: 'card: pressable', type: 'boolean', default: 'false', desc: 'The card itself is the button: role=button, focusable, hover lift, Enter/Space and click emit activate.' },
-    { name: 'card: ariaLabel', type: 'string | null', default: 'null', desc: 'Accessible name for a pressable card.' },
-    { name: 'card: disabled', type: 'boolean', default: 'false', desc: 'Disable an interactive or pressable card.' },
-    { name: 'card: (activate)', type: 'output<void>', default: '—', desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.' },
-    { name: 'card: [card-header] / [card-footer]', type: 'slot', default: '—', desc: 'Header and footer; hidden when empty.' },
-    { name: 'ui-card-actions: align', type: "'start' | 'center' | 'end' | 'stretch' | 'between'", default: "'start'", desc: 'Wrapping footer action row. stretch gives actions equal width; no accessibility role is added.' },
-    { name: 'ui-card-actions: divided', type: 'boolean', default: 'false', desc: 'Keep the footer divider and top padding band; by default actions continue the card body.' },
+    {
+      name: 'card: interactive',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Hover lift only, for a card wrapped in a link or button (the wrapper stays the button).',
+    },
+    {
+      name: 'card: href',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Makes the whole card one anchor; internal plain clicks use the library link navigator.',
+    },
+    {
+      name: 'card: target',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Anchor target; _blank gets rel="noopener noreferrer".',
+    },
+    {
+      name: 'card: pressable',
+      type: 'boolean',
+      default: 'false',
+      desc: 'The card itself is the button: role=button, focusable, hover lift, Enter/Space and click emit activate.',
+    },
+    {
+      name: 'card: ariaLabel',
+      type: 'string | null',
+      default: 'null',
+      desc: 'Accessible name for a pressable card.',
+    },
+    {
+      name: 'card: disabled',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Disable an interactive or pressable card.',
+    },
+    {
+      name: 'card: (activate)',
+      type: 'output<void>',
+      default: '—',
+      desc: 'Emitted when an interactive card is clicked or activated with Enter/Space.',
+    },
+    {
+      name: 'card: [card-header] / [card-footer]',
+      type: 'slot',
+      default: '—',
+      desc: 'Header and footer; hidden when empty.',
+    },
+    {
+      name: 'ui-card-actions: align',
+      type: "'start' | 'center' | 'end' | 'stretch' | 'between'",
+      default: "'start'",
+      desc: 'Wrapping footer action row. stretch gives actions equal width; no accessibility role is added.',
+    },
+    {
+      name: 'ui-card-actions: divided',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Keep the footer divider and top padding band; by default actions continue the card body.',
+    },
     { name: 'stat: label', type: 'string', default: "''", desc: 'Caption above the value.' },
     { name: 'stat: value', type: 'string | number', default: "''", desc: 'The KPI value.' },
-    { name: 'stat: delta', type: 'string | number', default: '—', desc: 'Change indicator; hidden when unset.' },
-    { name: 'stat: trend', type: "'up' | 'down'", default: "'up'", desc: 'Delta colour and arrow.' },
-    { name: 'stat: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
+    {
+      name: 'stat: delta',
+      type: 'string | number',
+      default: '—',
+      desc: 'Change indicator; hidden when unset.',
+    },
+    {
+      name: 'stat: trend',
+      type: "'up' | 'down'",
+      default: "'up'",
+      desc: 'Delta colour and arrow.',
+    },
+    {
+      name: 'stat: tone',
+      type: "'default' | 'danger' | 'warning' | 'success' | 'info'",
+      default: "'default'",
+      desc: 'Status-tinted background and family border. Ignored when glass is true; value and label use the theme text colour for contrast.',
+    },
+    {
+      name: 'stat: glass',
+      type: 'boolean',
+      default: 'UiConfig.glass',
+      desc: 'Translucent, blurred surface.',
+    },
     { name: 'stat: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },
   ];
   protected readonly storeBadgeApi: ApiRow[] = [
     { name: 'href', type: 'string', default: 'required', desc: 'The App Store listing URL.' },
-    { name: 'scheme', type: "'auto' | 'light' | 'dark'", default: "'auto'", desc: 'auto follows the surrounding colour scheme; light is the black badge, dark the white one.' },
-    { name: 'height', type: 'number', default: '40', desc: 'Height in px. Apple asks for at least 40.' },
+    {
+      name: 'scheme',
+      type: "'auto' | 'light' | 'dark'",
+      default: "'auto'",
+      desc: 'auto follows the surrounding colour scheme; light is the black badge, dark the white one.',
+    },
+    {
+      name: 'height',
+      type: 'number',
+      default: '40',
+      desc: 'Height in px. Apple asks for at least 40.',
+    },
     { name: 'newTab', type: 'boolean', default: 'false', desc: 'Open the listing in a new tab.' },
   ];
 
@@ -1024,31 +2254,128 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
   protected readonly settingsIcon = Settings01Icon;
   protected readonly cropBox: UiAvatarCrop = { x: 0.55, y: 0.2, w: 0.2, h: 0.3 };
   protected readonly badgeApi: ApiRow[] = [
-    { name: 'badge: tone', type: STATUS + " | 'media'", default: "'neutral'", desc: "Colour; 'media' draws a translucent dark scrim pill over photos/video." },
-    { name: 'badge: appearance', type: "'solid' | 'soft'", default: "'solid'", desc: "Surface style: 'solid' uses the strong tone fill; 'soft' uses the subtle status tint (ignored for tier and 'media')." },
-    { name: 'badge: tier', type: "'gold' | 'platinum' | 'premium' | null", default: 'null', desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.' },
-    { name: 'badge: dot', type: 'boolean', default: 'false', desc: 'Bare 8px status dot. It has no text, so give the host role="img" and an aria-label.' },
+    {
+      name: 'badge: tone',
+      type: STATUS + " | 'media'",
+      default: "'neutral'",
+      desc: "Colour; 'media' draws a translucent dark scrim pill over photos/video.",
+    },
+    {
+      name: 'badge: appearance',
+      type: "'solid' | 'soft'",
+      default: "'solid'",
+      desc: "Surface style: 'solid' uses the strong tone fill; 'soft' uses the subtle status tint (ignored for tier and 'media').",
+    },
+    {
+      name: 'badge: tier',
+      type: "'gold' | 'platinum' | 'premium' | null",
+      default: 'null',
+      desc: 'A plan tier: warm gold, cool platinum or violet premium, the same in every theme (AA in all of them; the edge keeps it visible on a white or dark page). Wins over tone. See Plans.',
+    },
+    {
+      name: 'badge: dot',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Bare 8px status dot. It has no text, so give the host role="img" and an aria-label.',
+    },
     { name: 'chip: tone', type: STATUS, default: "'neutral'", desc: 'Colour.' },
     { name: 'chip: removable', type: 'boolean', default: 'false', desc: 'Show a remove button.' },
-    { name: 'chip: label', type: 'string', default: '—', desc: "Builds the remove button's accessible name (Remove <label>)." },
-    { name: 'chip: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Pill shape; false gives the standard radius.' },
-    { name: 'avatar: src', type: 'string', default: '—', desc: 'Image URL. Initials show instead if it fails to load.' },
-    { name: 'avatar: alt', type: 'string', default: '—', desc: 'Accessible name; falls back to name, then "avatar".' },
-    { name: 'avatar: name', type: 'string', default: '—', desc: 'Initials (first and last word) and fallback accessible name.' },
-    { name: 'avatar: size', type: "'sm' | 'md' | 'lg' | 'xl'", default: "'md'", desc: 'Avatar size: 26, 30, 38 or 56px.' },
-    { name: 'avatar: dimension', type: 'number | null', default: 'null', desc: 'Any pixel size (96, 128 for a profile photo); overrides size, and the initials scale with it.' },
-    { name: 'avatar: crop', type: 'UiAvatarCrop | null', default: 'null', desc: 'A box of the image as fractions of its width and height ({ x, y, w, h }, each 0 to 1) that fills the avatar, centred; a box that is not square in pixels is covered by its larger side. Leave null for the whole image. The image is read on load to keep it undistorted and stays hidden until then.' },
-    { name: 'avatar: cropPadding', type: 'number', default: '0.25', desc: 'Room added around the crop box on every side, as a fraction of its size, kept inside the image; 0 fits the box exactly.' },
-    { name: 'avatar: position / repositionable', type: 'UiRepositionPosition / boolean', default: 'center / false', desc: 'Saved cover focal point and shared in-place editing state; save emits positionSave and cancel emits repositionCancel.' },
-    { name: 'avatar: square', type: 'boolean', default: 'false', desc: 'Rounded square instead of a circle.' },
-    { name: 'avatar-group: max', type: 'number', default: '—', desc: 'Informational only; trim the list yourself.' },
-    { name: '--ui-avatar-overlap', type: 'CSS length', default: 'var(--ui-space-1)', desc: 'How far grouped avatars overlap.' },
-    { name: '--ui-avatar-ring', type: 'CSS colour', default: 'var(--ui-color-bg)', desc: 'Ring around grouped avatars; set it to the colour behind them.' },
+    {
+      name: 'chip: label',
+      type: 'string',
+      default: '—',
+      desc: "Builds the remove button's accessible name (Remove <label>).",
+    },
+    {
+      name: 'chip: radius',
+      type: 'boolean',
+      default: 'UiConfig.radius',
+      desc: 'Pill shape; false gives the standard radius.',
+    },
+    {
+      name: 'avatar: src',
+      type: 'string',
+      default: '—',
+      desc: 'Image URL. Initials show instead if it fails to load.',
+    },
+    {
+      name: 'avatar: alt',
+      type: 'string',
+      default: '—',
+      desc: 'Accessible name; falls back to name, then "avatar".',
+    },
+    {
+      name: 'avatar: name',
+      type: 'string',
+      default: '—',
+      desc: 'Initials (first and last word) and fallback accessible name.',
+    },
+    {
+      name: 'avatar: size',
+      type: "'sm' | 'md' | 'lg' | 'xl'",
+      default: "'md'",
+      desc: 'Avatar size: 26, 30, 38 or 56px.',
+    },
+    {
+      name: 'avatar: dimension',
+      type: 'number | null',
+      default: 'null',
+      desc: 'Any pixel size (96, 128 for a profile photo); overrides size, and the initials scale with it.',
+    },
+    {
+      name: 'avatar: crop',
+      type: 'UiAvatarCrop | null',
+      default: 'null',
+      desc: 'A box of the image as fractions of its width and height ({ x, y, w, h }, each 0 to 1) that fills the avatar, centred; a box that is not square in pixels is covered by its larger side. Leave null for the whole image. The image is read on load to keep it undistorted and stays hidden until then.',
+    },
+    {
+      name: 'avatar: cropPadding',
+      type: 'number',
+      default: '0.25',
+      desc: 'Room added around the crop box on every side, as a fraction of its size, kept inside the image; 0 fits the box exactly.',
+    },
+    {
+      name: 'avatar: position / repositionable',
+      type: 'UiRepositionPosition / boolean',
+      default: 'center / false',
+      desc: 'Saved cover focal point and shared in-place editing state; save emits positionSave and cancel emits repositionCancel.',
+    },
+    {
+      name: 'avatar: square',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Rounded square instead of a circle.',
+    },
+    {
+      name: 'avatar-group: max',
+      type: 'number',
+      default: '—',
+      desc: 'Informational only; trim the list yourself.',
+    },
+    {
+      name: '--ui-avatar-overlap',
+      type: 'CSS length',
+      default: 'var(--ui-space-1)',
+      desc: 'How far grouped avatars overlap.',
+    },
+    {
+      name: '--ui-avatar-ring',
+      type: 'CSS colour',
+      default: 'var(--ui-color-bg)',
+      desc: 'Ring around grouped avatars; set it to the colour behind them.',
+    },
   ];
-  protected readonly chipOut: ApiRow[] = [{ name: 'chip: remove', type: 'void', default: '—', desc: 'Remove button pressed.' }];
+  protected readonly chipOut: ApiRow[] = [
+    { name: 'chip: remove', type: 'void', default: '—', desc: 'Remove button pressed.' },
+  ];
   protected readonly dlApi: ApiRow[] = [
     { name: 'items', type: 'UiDescriptionItem[]', default: '[]', desc: 'Term/detail pairs.' },
-    { name: 'layout', type: "'stacked' | 'row'", default: "'row'", desc: 'Term beside (row) or above (stacked) its detail.' },
+    {
+      name: 'layout',
+      type: "'stacked' | 'row'",
+      default: "'row'",
+      desc: 'Term beside (row) or above (stacked) its detail.',
+    },
   ];
   protected readonly widgetOpen = signal(false);
   protected readonly widgetLauncher = signal<UiChatLauncher>('floating');
@@ -1063,36 +2390,126 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { id: 'open', label: 'Open the Vacancy' },
   ];
   protected readonly chatWidgetApi: ApiRow[] = [
-    { name: 'open', type: 'boolean (model)', default: 'false', desc: 'Two-way open state of the chat panel.' },
-    { name: 'launcher', type: "'floating' | 'hover' | 'draggable'", default: "'floating'", desc: 'Launcher style: round corner button, expanding hover pill, or draggable head with edge snap and × drop zone.' },
-    { name: 'position', type: "'start' | 'end'", default: "'end'", desc: 'Logical corner (mirrors in RTL).' },
+    {
+      name: 'open',
+      type: 'boolean (model)',
+      default: 'false',
+      desc: 'Two-way open state of the chat panel.',
+    },
+    {
+      name: 'launcher',
+      type: "'floating' | 'hover' | 'draggable'",
+      default: "'floating'",
+      desc: 'Launcher style: round corner button, expanding hover pill, or draggable head with edge snap and × drop zone.',
+    },
+    {
+      name: 'position',
+      type: "'start' | 'end'",
+      default: "'end'",
+      desc: 'Logical corner (mirrors in RTL).',
+    },
     { name: 'unread', type: 'number', default: '0', desc: 'Unread count badge on the launcher.' },
-    { name: 'title / subtitle / notice', type: 'string', default: "'Assistant' / '' / ''", desc: 'Header title, subtitle, and optional notice strip.' },
-    { name: 'launcherLabel / closeLabel', type: 'string', default: "'Open the assistant' / 'Close the assistant'", desc: 'Accessible names for the launcher button and panel close button.' },
-    { name: 'teaser / label / hint', type: 'string', default: "'' / 'Ask the Assistant' / …", desc: 'One-time teaser above floating launcher; two-line copy in hover pill.' },
-    { name: 'ui-chat-composer', type: 'attach, accept, multiple, disabled, busy, placeholder, inputLabel, attachLabel, sendLabel', default: '—', desc: 'Multiline auto-growing input (Enter sends, Shift+Enter newline) and optional file picker; emits send and files.' },
-    { name: 'ui-chat-typing / ui-chat-actions / ui-chat-source', type: 'label / actions, disabled / label, href', default: '—', desc: 'Typing indicator, quick-reply chips (pick), and citation chip/link.' },
+    {
+      name: 'title / subtitle / notice',
+      type: 'string',
+      default: "'Assistant' / '' / ''",
+      desc: 'Header title, subtitle, and optional notice strip.',
+    },
+    {
+      name: 'launcherLabel / closeLabel',
+      type: 'string',
+      default: "'Open the assistant' / 'Close the assistant'",
+      desc: 'Accessible names for the launcher button and panel close button.',
+    },
+    {
+      name: 'teaser / label / hint',
+      type: 'string',
+      default: "'' / 'Ask the Assistant' / …",
+      desc: 'One-time teaser above floating launcher; two-line copy in hover pill.',
+    },
+    {
+      name: 'ui-chat-composer',
+      type: 'attach, accept, multiple, disabled, busy, placeholder, inputLabel, attachLabel, sendLabel',
+      default: '—',
+      desc: 'Multiline auto-growing input (Enter sends, Shift+Enter newline) and optional file picker; emits send and files.',
+    },
+    {
+      name: 'ui-chat-typing / ui-chat-actions / ui-chat-source',
+      type: 'label / actions, disabled / label, href',
+      default: '—',
+      desc: 'Typing indicator, quick-reply chips (pick), and citation chip/link.',
+    },
   ];
   protected readonly chatWidgetOut: ApiRow[] = [
-    { name: 'dismissed', type: 'void', default: '—', desc: 'Draggable launcher dropped onto the × dismiss zone.' },
-    { name: 'teaserDismissed', type: 'void', default: '—', desc: 'One-time teaser bubble dismissed.' },
-    { name: 'positionChange', type: 'UiChatHeadPosition', default: '—', desc: 'Draggable launcher snapped to a new { x, y } position.' },
+    {
+      name: 'dismissed',
+      type: 'void',
+      default: '—',
+      desc: 'Draggable launcher dropped onto the × dismiss zone.',
+    },
+    {
+      name: 'teaserDismissed',
+      type: 'void',
+      default: '—',
+      desc: 'One-time teaser bubble dismissed.',
+    },
+    {
+      name: 'positionChange',
+      type: 'UiChatHeadPosition',
+      default: '—',
+      desc: 'Draggable launcher snapped to a new { x, y } position.',
+    },
   ];
   protected readonly bubbleApi: ApiRow[] = [
-    { name: 'mine', type: 'boolean', default: 'false', desc: 'Your own message: inline end (or right, see mineSide), primary colour.' },
-    { name: 'mineSide', type: "UiChatBubbleSide: 'end' | 'right'", default: 'UiConfig.chatMineSide (end)', desc: "Where your own messages sit. 'end': the inline end, so the left in RTL. 'right': always the right, theirs always the left, in LTR and RTL; the tucked corners and meta line follow, laid out as in LTR, and the text takes its own direction (dir=auto: Thaana right to left, Latin left to right). Set it app-wide with provideUiConfig({ chatMineSide: 'right' })." },
-    { name: 'meta', type: 'string', default: '—', desc: 'A small line under the text: the time, read status.' },
-    { name: 'ariaLabel', type: 'string', default: '—', desc: 'Names the message (e.g. "You, 09:41") when the text alone does not say who sent it.' },
+    {
+      name: 'mine',
+      type: 'boolean',
+      default: 'false',
+      desc: 'Your own message: inline end (or right, see mineSide), primary colour.',
+    },
+    {
+      name: 'mineSide',
+      type: "UiChatBubbleSide: 'end' | 'right'",
+      default: 'UiConfig.chatMineSide (end)',
+      desc: "Where your own messages sit. 'end': the inline end, so the left in RTL. 'right': always the right, theirs always the left, in LTR and RTL; the tucked corners and meta line follow, laid out as in LTR, and the text takes its own direction (dir=auto: Thaana right to left, Latin left to right). Set it app-wide with provideUiConfig({ chatMineSide: 'right' }).",
+    },
+    {
+      name: 'meta',
+      type: 'string',
+      default: '—',
+      desc: 'A small line under the text: the time, read status.',
+    },
+    {
+      name: 'ariaLabel',
+      type: 'string',
+      default: '—',
+      desc: 'Names the message (e.g. "You, 09:41") when the text alone does not say who sent it.',
+    },
     { name: '(content)', type: 'slot', default: '—', desc: 'The message; line breaks are kept.' },
   ];
   protected readonly timelineApi: ApiRow[] = [
     { name: 'items', type: 'UiTimelineItem[]', default: '[]', desc: 'Events, top to bottom.' },
-    { name: 'item.state', type: "UiTimelineState: 'done' | 'current' | 'upcoming'", default: '—', desc: 'Place in a flow. current is aria-current=&quot;step&quot; with a halo; upcoming is muted with a hollow dot; unset or done look as before.' },
-    { name: '--ui-timeline-ring', type: 'CSS colour', default: 'var(--ui-color-surface)', desc: 'Ring around each marker; set it to the colour behind the timeline.' },
+    {
+      name: 'item.state',
+      type: "UiTimelineState: 'done' | 'current' | 'upcoming'",
+      default: '—',
+      desc: 'Place in a flow. current is aria-current=&quot;step&quot; with a halo; upcoming is muted with a hollow dot; unset or done look as before.',
+    },
+    {
+      name: '--ui-timeline-ring',
+      type: 'CSS colour',
+      default: 'var(--ui-color-surface)',
+      desc: 'Ring around each marker; set it to the colour behind the timeline.',
+    },
   ];
   protected readonly codeApi: ApiRow[] = [
     { name: 'code', type: 'string', default: "''", desc: 'Source text, shown as is.' },
-    { name: 'language', type: 'string', default: "'text'", desc: 'Label in the top bar. No syntax highlighting.' },
+    {
+      name: 'language',
+      type: 'string',
+      default: "'text'",
+      desc: 'Label in the top bar. No syntax highlighting.',
+    },
     { name: 'radius', type: 'boolean', default: 'true', desc: 'Rounded corners.' },
   ];
 }

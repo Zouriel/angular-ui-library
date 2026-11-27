@@ -1,5 +1,14 @@
 import {
-  Component, ElementRef, afterRenderEffect, contentChildren, effect, inject, input, model, signal, computed,
+  Component,
+  ElementRef,
+  afterRenderEffect,
+  contentChildren,
+  effect,
+  inject,
+  input,
+  model,
+  signal,
+  computed,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import type { IconSvgObject } from '@hugeicons/angular';
@@ -8,8 +17,8 @@ import { uiLogicalKey, injectUiStrings, UiTourAnchor } from '@zouriel/ui';
 /** Horizontal alignment of the tab buttons along the strip. */
 export type UiTabsAlign = 'start' | 'center' | 'fill';
 
-/** How the strip is drawn: `line` (underline + rule) or `glow` (a moving accent glow). */
-export type UiTabsAppearance = 'line' | 'glow';
+/** How the strip is drawn: `line` (underline + rule), `glow` (moving accent glow), or `pill`. */
+export type UiTabsAppearance = 'line' | 'glow' | 'pill';
 
 let tabSeq = 0;
 
@@ -24,8 +33,20 @@ let tabSeq = 0;
  */
 @Component({
   selector: 'ui-tab',
-  template: `<div role="tabpanel" [id]="panelId" [attr.aria-labelledby]="tabId" [hidden]="!active() || stripOnly()" tabindex="0"><ng-content /></div>`,
-  styles: `:host { display: block; }`,
+  template: `<div
+    role="tabpanel"
+    [id]="panelId"
+    [attr.aria-labelledby]="tabId"
+    [hidden]="!active() || stripOnly()"
+    tabindex="0"
+  >
+    <ng-content />
+  </div>`,
+  styles: `
+    :host {
+      display: block;
+    }
+  `,
 })
 export class UiTab {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -82,15 +103,18 @@ export class UiTab {
       [class.center]="align() === 'center'"
       [class.fill]="align() === 'fill'"
       [class.glow]="appearance() === 'glow'"
+      [class.pill]="appearance() === 'pill'"
       [class.strip-only]="stripOnly()"
       role="tablist"
-      [attr.aria-label]="labelText()">
+      [attr.aria-label]="labelText()"
+    >
       @if (appearance() === 'glow') {
         <span
           class="tab-glow"
           aria-hidden="true"
           [style.width.px]="glowWidth()"
-          [style.transform]="'translateX(' + glowX() + 'px)'">
+          [style.transform]="'translateX(' + glowX() + 'px)'"
+        >
         </span>
       }
       @for (tab of tabs(); track tab.tabId; let i = $index) {
@@ -105,20 +129,46 @@ export class UiTab {
           [attr.tabindex]="selectedIndex() === i ? 0 : -1"
           [disabled]="tab.disabled()"
           [class.tab--icon]="tab.iconOnly() && !!tab.icon()"
-          [attr.aria-label]="tab.iconOnly() && tab.icon() ? tab.label() + (tab.badgeText() ? ', ' + (tab.badgeLabel() ?? tab.badgeText()) : '') : null"
+          [attr.aria-label]="
+            tab.iconOnly() && tab.icon()
+              ? tab.label() + (tab.badgeText() ? ', ' + (tab.badgeLabel() ?? tab.badgeText()) : '')
+              : null
+          "
           [attr.title]="tab.iconOnly() && tab.icon() ? tab.label() : null"
           (click)="select(i)"
-          (keydown)="onKeydown($event, i)">
+          (keydown)="onKeydown($event, i)"
+        >
           @if (tab.icon(); as icon) {
-            <hugeicons-icon class="tab__icon" aria-hidden="true" [icon]="icon" [size]="tab.iconOnly() ? 22 : 18" [strokeWidth]="1.8" />
+            <hugeicons-icon
+              class="tab__icon"
+              aria-hidden="true"
+              [icon]="icon"
+              [size]="tab.iconOnly() ? 22 : 18"
+              [strokeWidth]="1.8"
+            />
           }
           @if (!tab.iconOnly() || !tab.icon()) {
             <span class="tab__label">{{ tab.label() }}</span>
           }
           @if (tab.badgeText(); as b) {
-            <span class="tab__badge" [attr.aria-hidden]="tab.badgeLabel() || (tab.iconOnly() && tab.icon()) ? 'true' : null">{{ b }}</span>
+            @if (appearance() === 'pill') {
+              <span class="tab__badge-pair" [attr.aria-hidden]="tab.badgeLabel() ? 'true' : null">
+                (<span class="tab__badge">{{ b }}</span
+                >)</span
+              >
+            } @else {
+              <span
+                class="tab__badge"
+                [attr.aria-hidden]="
+                  tab.badgeLabel() || (tab.iconOnly() && tab.icon()) ? 'true' : null
+                "
+                >{{ b }}</span
+              >
+            }
             @if (tab.badgeLabel(); as bl) {
-              @if (!tab.iconOnly() || !tab.icon()) { <span class="tab__sr">{{ bl }}</span> }
+              @if (!tab.iconOnly() || !tab.icon()) {
+                <span class="tab__sr">{{ bl }}</span>
+              }
             }
           }
         </button>
@@ -127,7 +177,9 @@ export class UiTab {
     <ng-content />
   `,
   styles: `
-    :host { display: block; }
+    :host {
+      display: block;
+    }
     /* More tabs than fit is normal on a phone, so the strip SCROLLS rather than pushing the page
        sideways — a tablist wide enough to overflow the viewport takes the whole layout with it. */
     .tablist {
@@ -144,57 +196,210 @@ export class UiTab {
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
-    .tablist::-webkit-scrollbar { display: none; }
+    .tablist::-webkit-scrollbar {
+      display: none;
+    }
     /* Safe centering along the full-width bottom rule: auto inline margins split leftover room
        when tabs fit and collapse to 0 when they overflow, so tab 0 stays reachable by scroll. */
-    .tablist.center .tab:first-child, .tablist.center .tab:first-of-type { margin-inline-start: auto; }
-    .tablist.center .tab:last-child, .tablist.center .tab:last-of-type { margin-inline-end: auto; }
-    .tablist.strip-only { margin-bottom: 0; }
-    /* Fill gives each tab the same share of the full strip. */
-    .tablist.fill { overflow-x: hidden; }
-    .tablist.fill .tab { flex: 1 1 0; min-width: 0; justify-content: center; }
-    .tablist.fill .tab__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    /* Glow has one indicator that slides between tabs, rather than separate glows fading in place. */
-    .tablist.glow { border-bottom: none; }
-    .tablist.glow .tab { margin-bottom: 0; border-bottom-color: transparent; }
-    .tab-glow {
-      position: absolute; z-index: 0; left: 0; bottom: 0; height: var(--ui-space-6);
-      pointer-events: none; opacity: 1;
-      background: radial-gradient(ellipse at center bottom, color-mix(in srgb, var(--ui-color-primary) 46%, transparent), transparent 72%);
-      transition: transform var(--ui-motion-base) var(--ui-ease-standard), width var(--ui-motion-base) var(--ui-ease-standard);
+    .tablist.center .tab:first-child,
+    .tablist.center .tab:first-of-type {
+      margin-inline-start: auto;
     }
-    @media (prefers-reduced-motion: reduce) { .tab-glow { transition: none; } }
+    .tablist.center .tab:last-child,
+    .tablist.center .tab:last-of-type {
+      margin-inline-end: auto;
+    }
+    .tablist.strip-only {
+      margin-bottom: 0;
+    }
+    /* Fill gives each tab the same share of the full strip. */
+    .tablist.fill {
+      overflow-x: hidden;
+    }
+    .tablist.fill .tab {
+      flex: 1 1 0;
+      min-width: 0;
+      justify-content: center;
+    }
+    .tablist.fill .tab__label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* Glow has one indicator that slides between tabs, rather than separate glows fading in place. */
+    .tablist.glow {
+      border-bottom: none;
+    }
+    .tablist.glow .tab {
+      margin-bottom: 0;
+      border-bottom-color: transparent;
+    }
+    .tablist.pill {
+      gap: var(--ui-space-2);
+      border-bottom: none;
+      margin-bottom: var(--ui-space-4);
+      overflow: visible;
+      flex-wrap: wrap;
+    }
+    .tablist.pill.fill {
+      overflow: visible;
+    }
+    .tablist.pill.fill .tab {
+      flex: 0 1 auto;
+    }
+    .tablist.pill .tab {
+      margin-bottom: 0;
+      border: 1.5px solid var(--ui-color-border);
+      border-radius: var(--ui-radius-pill);
+      color: var(--ui-color-text);
+      white-space: normal;
+    }
+    .tablist.pill .tab:hover:not(:disabled) {
+      background: var(--ui-color-surface-hover);
+    }
+    .tablist.pill .tab[aria-selected='true'] {
+      background: var(--ui-color-primary);
+      border-color: var(--ui-color-border);
+      color: var(--ui-color-primary-contrast);
+    }
+    .tablist.pill .tab:focus-visible {
+      box-shadow: var(--ui-focus-ring);
+    }
+    .tab-glow {
+      position: absolute;
+      z-index: 0;
+      left: 0;
+      bottom: 0;
+      height: var(--ui-space-6);
+      pointer-events: none;
+      opacity: 1;
+      background: radial-gradient(
+        ellipse at center bottom,
+        color-mix(in srgb, var(--ui-color-primary) 46%, transparent),
+        transparent 72%
+      );
+      transition:
+        transform var(--ui-motion-base) var(--ui-ease-standard),
+        width var(--ui-motion-base) var(--ui-ease-standard);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .tab-glow {
+        transition: none;
+      }
+    }
     .tab {
-      position: relative; z-index: 1; appearance: none; border: none; background: transparent;
-      padding: var(--ui-space-2) var(--ui-space-3); margin-bottom: -1px;
-      color: var(--ui-color-text-muted); font: inherit; font-family: var(--ui-font-default); font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-control, 400); line-height: 1.35;
-      cursor: pointer; border-bottom: 2px solid transparent;
+      position: relative;
+      z-index: 1;
+      appearance: none;
+      border: none;
+      background: transparent;
+      padding: var(--ui-space-2) var(--ui-space-3);
+      margin-bottom: -1px;
+      color: var(--ui-color-text-muted);
+      font: inherit;
+      font-family: var(--ui-font-default);
+      font-size: var(--ui-font-size-sm);
+      font-weight: var(--ui-font-weight-control, 400);
+      line-height: 1.35;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
       /* Never shrink or wrap: a two-line "Audit log" is how a tab strip starts looking broken. */
       flex: 0 0 auto;
       white-space: nowrap;
       scroll-snap-align: start;
-      transition: color var(--ui-motion-base) var(--ui-ease-standard),
-                  border-color var(--ui-motion-base) var(--ui-ease-standard),
-                  transform var(--ui-motion-fast) var(--ui-ease-standard);
+      transition:
+        color var(--ui-motion-base) var(--ui-ease-standard),
+        border-color var(--ui-motion-base) var(--ui-ease-standard),
+        transform var(--ui-motion-fast) var(--ui-ease-standard);
     }
-    .tab { display: inline-flex; align-items: center; gap: var(--ui-space-2); }
-    .tab__icon { display: inline-flex; flex: none; }
-    .tab__badge { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 18px; height: 18px;
-      padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: var(--ui-color-primary); color: var(--ui-color-primary-contrast);
-      font-size: calc(12px * var(--ui-font-scale)); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
-    .tab__sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ui-space-2);
+    }
+    .tab__icon {
+      display: inline-flex;
+      flex: none;
+    }
+    .tab__badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      box-sizing: border-box;
+      border-radius: 999px;
+      background: var(--ui-color-primary);
+      color: var(--ui-color-primary-contrast);
+      font-size: calc(12px * var(--ui-font-scale));
+      font-weight: 600;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .tablist.pill .tab__badge-pair {
+      color: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .tablist.pill .tab__badge {
+      min-width: 0;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+    }
+    .tab__sr {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
     /* Icon-only tabs share the strip evenly and keep a thumb-sized target. */
-    .tab--icon { flex: 1 1 0; justify-content: center; min-width: var(--ui-size-touch, 44px); }
-    @media (pointer: coarse) { .tab { min-height: var(--ui-size-touch); } }
-    .tab:hover:not(:disabled) { color: var(--ui-color-text); }
+    .tab--icon {
+      flex: 1 1 0;
+      justify-content: center;
+      min-width: var(--ui-size-touch, 44px);
+    }
+    @media (pointer: coarse) {
+      .tab {
+        min-height: var(--ui-size-touch);
+      }
+    }
+    .tab:hover:not(:disabled) {
+      color: var(--ui-color-text);
+    }
     /* Press feedback on the contents only, so the selected underline doesn't shrink with it. */
-    .tab:active:not(:disabled) > * { transform: scale(var(--ui-scale-press)); }
-    .tab > * { transition: transform var(--ui-motion-fast) var(--ui-ease-standard); }
-    .tab[aria-selected="true"] { --ui-color-icon: currentColor; }
-    .tab[aria-selected="true"] { color: var(--ui-color-text); border-bottom-color: var(--ui-color-primary); }
+    .tab:active:not(:disabled) > * {
+      transform: scale(var(--ui-scale-press));
+    }
+    .tab > * {
+      transition: transform var(--ui-motion-fast) var(--ui-ease-standard);
+    }
+    .tab[aria-selected='true'] {
+      --ui-color-icon: currentColor;
+    }
+    .tab[aria-selected='true'] {
+      color: var(--ui-color-text);
+      border-bottom-color: var(--ui-color-primary);
+    }
     /* The strip scrolls, which clips an outset ring top and bottom; the ring sits inside instead. */
-    .tab:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--ui-color-border-focus); border-radius: var(--ui-radius-xs); }
-    .tab:disabled { opacity: .5; cursor: not-allowed; }
+    .tab:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px var(--ui-color-border-focus);
+      border-radius: var(--ui-radius-xs);
+    }
+    .tab:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   `,
 })
 export class UiTabs {
@@ -203,7 +408,7 @@ export class UiTabs {
   selectedIndex = model(0);
   /** Horizontal alignment of the tabs along the full-width bottom rule. */
   align = input<UiTabsAlign>('start');
-  /** `line` keeps the existing underline and rule; `glow` uses a moving accent glow. */
+  /** `line` keeps the existing underline and rule; `glow` uses a moving accent glow; `pill` uses wrapped pill tabs. */
   appearance = input<UiTabsAppearance>('line');
   /** Default: the built-in `tabs` (Tabs), which follows the app's language. */
   label = input<string | undefined>(undefined);
