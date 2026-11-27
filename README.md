@@ -15,6 +15,12 @@ keyboard support, CDK focus handling). About 140 components and directives acros
 
 ## Highlights
 
+- **Static glass backdrops** (`@zouriel/ui/card`, 0.109.0): `ui-glass-backdrop` accepts an image URL,
+  `dim`, `color` and projected content. It makes one downscaled blurred copy of the still background;
+  descendant glass `ui-card` components paint aligned slices while moving and scrolling, without a live
+  `backdrop-filter`. With no image, cards keep their tint and rim only. Liquid refraction is skipped in
+  this mode; its tint, border, rim and sheen remain.
+
 - **Tokens-only styling**: every component reads CSS custom properties, so a theme is a
   set of token overrides. Ships **21 current themes**:
   - **Navy**: Navy Dark and Navy Light (`dark` / `light`), the defaults: Midnight Navy, Powder Blue and Sunflower;

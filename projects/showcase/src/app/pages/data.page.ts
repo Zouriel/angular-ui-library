@@ -30,7 +30,7 @@ import { UiContactChannels, UiMessengerButton, type UiEmailStatus, type UiMessen
 import { UiList, UiListItem } from '@zouriel/ui/list';
 import { UiAccordion, UiAccordionItem } from '@zouriel/ui/accordion';
 import { UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge, type UiAvatarCrop } from '@zouriel/ui/badge';
-import { UiCard, UiCardActions, UiStatCard, UiFeatureCard, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
+import { UiCard, UiCardActions, UiStatCard, UiFeatureCard, UiGlassBackdrop, type UiFeatureLayout, type UiFeatureSize } from '@zouriel/ui/card';
 import { UiInput } from '@zouriel/ui/form';
 import { UiButton, UiIconButton, UiSegmented } from '@zouriel/ui/button';
 import {
@@ -48,7 +48,7 @@ const STATUS = "'neutral' | 'primary' | 'success' | 'warning' | 'danger'";
   selector: 'page-data',
   imports: [HugeiconsIconComponent, UiButton,
     UiText, UiTable, UiCell, UiContactChannels, UiMessengerButton, UiList, UiListItem, UiAccordion, UiAccordionItem, UiBadge, UiChip, UiAvatar, UiAvatarGroup, UiStoreBadge,
-    UiCard, UiCardActions, UiStatCard, UiFeatureCard, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
+    UiCard, UiCardActions, UiStatCard, UiFeatureCard, UiGlassBackdrop, UiInput, UiSegmented, UiDescriptionList, UiTimeline, UiCodeBlock, UiTree, UiTreeNodeEnd, UiTreeTable, UiIconButton, UiChatBubble, UiChatWidget, UiChatComposer, UiChatTyping, UiChatActions, UiChatSource, DocPage, DocSection, DocDemo,
   ],
   template: `
     <doc-page eyebrow="Components" title="Data display"
@@ -336,6 +336,22 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             </ui-card>
           </div>
           <ui-text variant="caption">Activated {{ cardHits() }} times</ui-text>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Static glass backdrop" selector="ui-glass-backdrop" [api]="glassBackdropApi"
+        summary="Pre-blurs one still image for every glass ui-card inside it. Cards paint an aligned slice of that copy, so scrolling, relayout and animation do not run a live backdrop filter for each card. With image unset, cards keep their tint and rim without a blur layer. Liquid refraction is intentionally skipped in this mode; the rim, sheen and tint remain.">
+        <doc-demo code="&lt;ui-glass-backdrop image=&quot;/wallpaper.jpg&quot; [dim]=&quot;0.18&quot;&gt;
+  &lt;div class=&quot;glass-grid&quot;&gt;&lt;ui-card [glass]=&quot;true&quot; glassStrength=&quot;liquid&quot;&gt;One pre-blurred backdrop&lt;/ui-card&gt;
+    &lt;ui-card [glass]=&quot;true&quot; glassStrength=&quot;clear&quot;&gt;Safe to scroll&lt;/ui-card&gt;&lt;/div&gt;
+&lt;/ui-glass-backdrop&gt;">
+          <ui-glass-backdrop class="glass-backdrop-demo" [image]="glassWallpaper" [dim]="0.18">
+            <div class="glass-grid">
+              <ui-card [glass]="true" glassStrength="liquid"><ui-text variant="label">One copy</ui-text><ui-text variant="body">The background blur is shared.</ui-text></ui-card>
+              <ui-card [glass]="true" glassStrength="clear"><ui-text variant="label">Still aligned</ui-text><ui-text variant="body">Scroll or resize this demo.</ui-text></ui-card>
+            </div>
+          </ui-glass-backdrop>
+          <p class="hint">The cards keep their own tint, border and sheen; only the expensive live backdrop filter is removed.</p>
         </doc-demo>
       </doc-section>
 
@@ -630,6 +646,9 @@ events: UiTimelineItem[] = [
     .cc-tiny { max-width: 220px; }
     .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ui-space-6); }
     .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ui-space-3); }
+    .glass-backdrop-demo { min-height: 250px; padding: var(--ui-space-6); border-radius: var(--ui-radius-lg); }
+    .glass-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ui-space-4); max-width: 560px; margin: auto; }
+    @media (max-width: 640px) { .glass-backdrop-demo { padding: var(--ui-space-3); } .glass-grid { grid-template-columns: 1fr; } }
     @media (max-width: 640px) { .cols2 { grid-template-columns: 1fr; }
       /* Phones: the card takes the full row and the two stat tiles share the next one. */
       .cols3 { grid-template-columns: 1fr 1fr; } .cols3 > ui-card { grid-column: 1 / -1; } }
@@ -1011,6 +1030,13 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'stat: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
     { name: 'stat: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },
+  ];
+  protected readonly glassWallpaper = 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=1200&q=80';
+  protected readonly glassBackdropApi: ApiRow[] = [
+    { name: 'image', type: 'string | null', default: 'null', desc: 'Static image URL. It is downscaled and blurred once; cards inside paint aligned slices.' },
+    { name: 'dim', type: 'number', default: '0', desc: 'Black overlay opacity from 0 to 1; included in the pre-blurred copy.' },
+    { name: 'color', type: 'string', default: 'transparent', desc: 'Background colour shown beneath the image.' },
+    { name: 'content', type: 'slot', default: '—', desc: 'Cards and other content. Glass ui-card descendants use the static copy; cards outside behave normally.' },
   ];
   protected readonly storeBadgeApi: ApiRow[] = [
     { name: 'href', type: 'string', default: 'required', desc: 'The App Store listing URL.' },

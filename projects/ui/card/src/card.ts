@@ -18,6 +18,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { UI_CONFIG, injectUiLinkNavigator, uiFollowLink, type UiGlassStrength } from '@zouriel/ui';
 import { UiCardActions } from './card-actions';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidMapUrl } from './liquid-glass';
+import { UI_GLASS_BACKDROP } from './glass-backdrop';
 
 /** How see-through a glass `ui-card` is: the shared strengths plus `'liquid'` (0.102.0). */
 export type UiCardGlassStrength = UiGlassStrength | 'liquid';
@@ -75,6 +76,8 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       [class.glass]="glass()"
       [class.clear]="glass() && glassStrength() === 'clear'"
       [class.liquid]="liquid()"
+      [class.static-glass]="staticGlass()"
+      [class.static-glass-empty]="staticGlassEmpty()"
       [style.--_lq-url]="refractUrl()"
       [class.no-radius]="radius() === false"
       [class.radius-xl]="radius() === 'xl'"
@@ -99,6 +102,8 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
       [class.glass]="glass()"
       [class.clear]="glass() && glassStrength() === 'clear'"
       [class.liquid]="liquid()"
+      [class.static-glass]="staticGlass()"
+      [class.static-glass-empty]="staticGlassEmpty()"
       [style.--_lq-url]="refractUrl()"
       [class.no-radius]="radius() === false"
       [class.radius-xl]="radius() === 'xl'"
@@ -278,6 +283,44 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         var(--ui-shadow-2);
       text-shadow: var(--ui-glass-liquid-text-halo);
     }
+    /* A descendant of ui-glass-backdrop uses its one pre-blurred image. The pseudo-element is the
+       backdrop slice; the second background is the card's own tint and liquid sheen. */
+    .ui-card.glass.static-glass {
+      position: relative;
+      background: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .ui-card.glass.static-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: var(--_ui-glass-backdrop-url, none);
+      background-repeat: no-repeat;
+      background-size: var(--_ui-glass-backdrop-width) var(--_ui-glass-backdrop-height);
+      background-position: calc(-1 * var(--_ui-glass-backdrop-x, 0px)) calc(-1 * var(--_ui-glass-backdrop-y, 0px));
+    }
+    .ui-card.glass.static-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: var(--ui-glass-bg);
+      box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1);
+    }
+    .ui-card.glass.static-glass.liquid::after {
+      background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg);
+    }
+    .ui-card.glass.static-glass > *,
+    .ui-card.glass.static-glass ::ng-deep > * { position: relative; z-index: 2; }
+    .ui-card.glass.static-glass-empty::before { display: none; }
+    .ui-card.glass.static-glass-empty { background: var(--ui-glass-bg); box-shadow: var(--ui-glass-highlight), var(--ui-shadow-1); }
+    .ui-card.glass.static-glass-empty.liquid { background: linear-gradient(135deg, var(--ui-glass-liquid-sheen) 0%, transparent 42%), var(--ui-glass-liquid-bg); }
+    /* Static mode intentionally omits the liquid refraction SVG: bending a precomputed slice would
+       require another per-card live filter. The rim, edge, sheen and tint remain unchanged. */
     .ui-card.glass.liquid .hd,
     .ui-card.glass.liquid .ft {
       border-color: var(--ui-glass-liquid-edge);
@@ -326,6 +369,15 @@ export type UiCardAlign = 'stretch' | 'start' | 'center' | 'end';
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
       }
+    }
+    @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+      .ui-card.glass.static-glass,
+      .ui-card.glass.static-glass-empty {
+        background: var(--ui-color-surface);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+      }
+      .ui-card.glass.static-glass::before { display: none; }
     }
     .hd,
     .bd,
@@ -401,13 +453,16 @@ export class UiCard {
   activate = output<void>();
 
   protected readonly liquid = computed(() => this.glass() && this.glassStrength() === 'liquid');
+  private readonly backdrop = inject(UI_GLASS_BACKDROP, { optional: true });
+  protected readonly staticGlass = computed(() => !!this.backdrop);
+  protected readonly staticGlassEmpty = computed(() => !!this.backdrop && !this.backdrop.imageUrl());
   protected readonly filterId = `ui-lq-${++liquidIds}`;
   private readonly refractionOn = inject(UI_LIQUID_REFRACTION)();
   private readonly size = signal<{ w: number; h: number; r: number } | null>(null);
   /** The displacement map for the card's current size (Chromium only), rebuilt on resize. */
   protected readonly refractMap = computed(() => {
     const s = this.size();
-    if (!this.liquid() || !this.refractionOn || !s || s.w < 8 || s.h < 8) return null;
+    if (!this.liquid() || this.backdrop || !this.refractionOn || !s || s.w < 8 || s.h < 8) return null;
     const band = uiLiquidBand(s.w, s.h);
     const url = uiLiquidMapUrl(s.w, s.h, s.r, band, this.host.ownerDocument);
     return url ? { url, w: s.w, h: s.h, scale: Math.round(band * 0.9) } : null;
@@ -435,6 +490,12 @@ export class UiCard {
       if (!cur || cur.w !== w || cur.h !== h || cur.r !== r) this.size.set({ w, h, r });
     };
     afterNextRender(() => {
+      const card = this.host.querySelector<HTMLElement>(':scope > .ui-card');
+      const unregister = card && this.backdrop ? this.backdrop.registerCard(card) : null;
+      effect(() => {
+        const url = this.backdrop?.imageUrl() ?? null;
+        card?.style.setProperty('--_ui-glass-backdrop-url', url ? `url("${url}")` : 'none');
+      }, { injector: this.injector });
       effect(
         () => {
           const on = this.liquid() && this.refractionOn;
@@ -452,10 +513,12 @@ export class UiCard {
         },
         { injector: this.injector },
       );
+      this.destroyRef.onDestroy(() => unregister?.());
     });
     inject(DestroyRef).onDestroy(() => ro?.disconnect());
   }
   private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected onClick(e: MouseEvent): void {
     if (this.href() !== null) {

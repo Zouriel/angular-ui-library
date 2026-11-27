@@ -168,6 +168,7 @@ export const DOC_SECTIONS: Record<string, readonly { name: string; anchor: strin
     { name: 'Tree table', anchor: 'tree-table' },
     { name: 'Accordion', anchor: 'accordion' },
     { name: 'Card & stat-card', anchor: 'card-stat-card' },
+    { name: 'Static glass backdrop', anchor: 'static-glass-backdrop' },
     { name: 'Feature card', anchor: 'feature-card' },
     { name: 'Feature card: compact tinted', anchor: 'feature-card-compact-tinted' },
     { name: 'Badge, chip, avatar', anchor: 'badge-chip-avatar' },

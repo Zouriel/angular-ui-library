@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UiCard, type UiCardAlign, type UiCardGap } from './card';
+import { UiGlassBackdrop } from './glass-backdrop';
 import { UiCardActions } from './card-actions';
 import { UI_LINK_NAVIGATOR } from '@zouriel/ui';
 import { UI_LIQUID_REFRACTION, uiLiquidBand, uiLiquidDisplacementMap } from './liquid-glass';
@@ -43,6 +44,43 @@ const css = () =>
   ((UiCard as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
 
 describe('UiCard', () => {
+  it('uses a positioned static slice inside UiGlassBackdrop and keeps live glass outside it', async () => {
+    @Component({
+      imports: [UiCard, UiGlassBackdrop],
+      template: `<ui-glass-backdrop><ui-card [glass]="true" glassStrength="liquid">Static</ui-card></ui-glass-backdrop>`,
+    })
+    class StaticHost {}
+    const fixture = TestBed.createComponent(StaticHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const card = fixture.nativeElement.querySelector('.ui-card') as HTMLElement;
+    expect(card.classList.contains('static-glass')).toBe(true);
+    const backdrop = fixture.nativeElement.querySelector('ui-glass-backdrop') as HTMLElement;
+    vi.spyOn(backdrop, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 20, width: 300, height: 200 } as DOMRect);
+    vi.spyOn(card, 'getBoundingClientRect').mockReturnValue({ left: 35, top: 70, width: 100, height: 50 } as DOMRect);
+    document.dispatchEvent(new Event('scroll'));
+    expect(card.style.getPropertyValue('--_ui-glass-backdrop-x')).toBe('25px');
+    expect(card.style.getPropertyValue('--_ui-glass-backdrop-y')).toBe('50px');
+    expect(css()).toMatch(/static-glass[^}]*backdrop-filter:\s*none/);
+    expect(css()).toContain('--_ui-glass-backdrop-x');
+    expect(css()).toContain('var(--ui-glass-highlight)');
+  });
+
+  it('does not add a blur slice or refraction map when the static backdrop has no image', async () => {
+    @Component({
+      imports: [UiCard, UiGlassBackdrop],
+      template: `<ui-glass-backdrop><ui-card [glass]="true" glassStrength="liquid">No image</ui-card></ui-glass-backdrop>`,
+    })
+    class EmptyStaticHost {}
+    const fixture = TestBed.createComponent(EmptyStaticHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const card = fixture.nativeElement.querySelector('.ui-card') as HTMLElement;
+    expect(card.classList.contains('static-glass-empty')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.lq-defs')).toBeNull();
+    expect(css()).toMatch(/static-glass-empty[^}]*::before[^}]*display:\s*none/);
+  });
+
   it('projects ui-card-actions into the footer and keeps the body slack contract', () => {
     @Component({
       imports: [UiCard, UiCardActions],
