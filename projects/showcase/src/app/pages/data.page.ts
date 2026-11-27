@@ -298,6 +298,7 @@ move(m: UiTreeMove) { /* take m.value out, insert it at m.index under m.parent *
             <ui-stat-card label="Active users" value="1,204" delta="3%" trend="down">
               <hugeicons-icon stat-icon aria-hidden="true" [icon]="icons.users" [size]="16" [strokeWidth]="1.8" />
             </ui-stat-card>
+            <ui-stat-card label="Breaching in 48 hours" value="4" tone="danger" />
           </div>
         </doc-demo>
         <doc-demo code="Card grid with ui-card-actions: put buttons inside ui-card-actions in each ui-card.">
@@ -1027,6 +1028,7 @@ const cols: UiColumn[] = [{ key: 'name', header: 'Name', sortable: true }];`;
     { name: 'stat: value', type: 'string | number', default: "''", desc: 'The KPI value.' },
     { name: 'stat: delta', type: 'string | number', default: '—', desc: 'Change indicator; hidden when unset.' },
     { name: 'stat: trend', type: "'up' | 'down'", default: "'up'", desc: 'Delta colour and arrow.' },
+    { name: 'stat: tone', type: "'default' | 'danger' | 'warning' | 'success' | 'info'", default: "'default'", desc: 'Status-tinted background and family border. Ignored when glass is true; value and label use the theme text colour for contrast.' },
     { name: 'stat: glass', type: 'boolean', default: 'UiConfig.glass', desc: 'Translucent, blurred surface.' },
     { name: 'stat: radius', type: 'boolean', default: 'UiConfig.radius', desc: 'Rounded corners.' },
     { name: 'stat: [stat-icon]', type: 'slot', default: '—', desc: 'Icon beside the label.' },

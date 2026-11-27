@@ -3,7 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import type { IconSvgObject } from '@hugeicons/angular';
 import { UiTab, UiTabs } from './tabs';
 
-const ICON: IconSvgObject = [['path', { d: 'M0 0h24v24H0z', key: 'k' }]] as unknown as IconSvgObject;
+const ICON: IconSvgObject = [
+  ['path', { d: 'M0 0h24v24H0z', key: 'k' }],
+] as unknown as IconSvgObject;
 
 @Component({
   imports: [UiTabs, UiTab],
@@ -23,7 +25,9 @@ describe('UiTabs icons', () => {
   function tabs() {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
-    return [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    return [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ];
   }
 
   it('an icon-only tab draws the icon, hides the text and keeps the label as its name and tooltip', () => {
@@ -53,7 +57,9 @@ describe('UiTabs icons', () => {
   template: `
     <ui-tabs label="Portfolio">
       <ui-tab label="Page">page</ui-tab>
-      <ui-tab label="Enquiries" [badge]="unread" [badgeLabel]="unread ? unread + ' new' : undefined">enquiries</ui-tab>
+      <ui-tab label="Enquiries" [badge]="unread" [badgeLabel]="unread ? unread + ' new' : undefined"
+        >enquiries</ui-tab
+      >
       <ui-tab label="Inbox" [icon]="icon" [iconOnly]="true" [badge]="2">inbox</ui-tab>
     </ui-tabs>
   `,
@@ -68,7 +74,9 @@ describe('UiTab badge (0.79.0)', () => {
     const fixture = TestBed.createComponent(BadgeHost);
     fixture.componentInstance.unread = unread;
     fixture.detectChanges();
-    return [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    return [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ];
   }
 
   it('shows the count after the label; screen readers hear badgeLabel instead of the bare number', () => {
@@ -108,15 +116,20 @@ class StripOnlyHost {
 }
 
 describe('UiTabs align & strip-only mode', () => {
-  const css = () => ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+  const css = () =>
+    ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
 
   it('adds .center class when align="center" with logical auto-margin centering rules', () => {
     const fixture = TestBed.createComponent(StripOnlyHost);
     fixture.detectChanges();
     const tablist = (fixture.nativeElement as HTMLElement).querySelector('.tablist') as HTMLElement;
     expect(tablist.classList.contains('center')).toBe(true);
-    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:first-child[^{]*\{[^}]*margin-inline-start:\s*auto/);
-    expect(css()).toMatch(/\.tablist\.center[^{]*\.tab[^{]*:last-child[^{]*\{[^}]*margin-inline-end:\s*auto/);
+    expect(css()).toMatch(
+      /\.tablist\.center[^{]*\.tab[^{]*:first-child[^{]*\{[^}]*margin-inline-start:\s*auto/,
+    );
+    expect(css()).toMatch(
+      /\.tablist\.center[^{]*\.tab[^{]*:last-child[^{]*\{[^}]*margin-inline-end:\s*auto/,
+    );
 
     fixture.componentInstance.align.set('start');
     fixture.detectChanges();
@@ -140,7 +153,9 @@ describe('UiTabs align & strip-only mode', () => {
     fullFixture.detectChanges();
     const fullEl = fullFixture.nativeElement as HTMLElement;
     expect(fullEl.querySelector('.tablist')!.classList.contains('strip-only')).toBe(false);
-    expect(fullEl.querySelector<HTMLButtonElement>('[role="tab"]')!.getAttribute('aria-controls')).not.toBeNull();
+    expect(
+      fullEl.querySelector<HTMLButtonElement>('[role="tab"]')!.getAttribute('aria-controls'),
+    ).not.toBeNull();
   });
 });
 
@@ -152,7 +167,8 @@ describe('UiTabs align & strip-only mode', () => {
       [align]="align()"
       [selectedIndex]="selected()"
       (selectedIndexChange)="selected.set($event)"
-      label="Albums">
+      label="Albums"
+    >
       <ui-tab label="Ceremony" />
       <ui-tab label="Reception" />
       <ui-tab label="A very long portraits album label that cannot fit" />
@@ -160,13 +176,14 @@ describe('UiTabs align & strip-only mode', () => {
   `,
 })
 class GlowHost {
-  readonly appearance = signal<'line' | 'glow'>('glow');
+  readonly appearance = signal<'line' | 'glow' | 'pill'>('glow');
   readonly align = signal<'start' | 'center' | 'fill'>('fill');
   readonly selected = signal(0);
 }
 
 describe('UiTabs glow appearance & fill alignment', () => {
-  const css = () => ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
+  const css = () =>
+    ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? []).join('\n');
 
   function make() {
     const fixture = TestBed.createComponent(GlowHost);
@@ -207,9 +224,13 @@ describe('UiTabs glow appearance & fill alignment', () => {
     expect(glow.style.transform).toBe('translateX(200px)');
     expect(tabs[2].getAttribute('aria-selected')).toBe('true');
     expect(css()).toMatch(/\.tablist\.glow[^{}]*\{[^}]*border-bottom:\s*none/);
-    expect(css()).toMatch(/\.tablist\.glow[^{}]*\.tab[^{}]*\{[^}]*border-bottom-color:\s*transparent/);
+    expect(css()).toMatch(
+      /\.tablist\.glow[^{}]*\.tab[^{}]*\{[^}]*border-bottom-color:\s*transparent/,
+    );
     expect(css()).toMatch(/\.tab-glow[^{}]*\{[^}]*radial-gradient[^}]*transition:[^}]*transform/);
-    expect(css()).toMatch(/prefers-reduced-motion:\s*reduce[^{}]*\{[^}]*\.tab-glow[^{}]*\{[^}]*transition:\s*none/);
+    expect(css()).toMatch(
+      /prefers-reduced-motion:\s*reduce[^{}]*\{[^}]*\.tab-glow[^{}]*\{[^}]*transition:\s*none/,
+    );
   });
 
   it('fill gives every tab an equal flex share and truncates long labels', () => {
@@ -217,9 +238,70 @@ describe('UiTabs glow appearance & fill alignment', () => {
     const list = (fixture.nativeElement as HTMLElement).querySelector('.tablist') as HTMLElement;
     expect(list.classList.contains('fill')).toBe(true);
     expect(css()).toMatch(/\.tablist\.fill[^{}]*\.tab[^{}]*\{[^}]*flex:\s*1 1 0/);
-    expect(css()).toMatch(/\.tablist\.fill[^{}]*\.tab__label[^{}]*\{[^}]*text-overflow:\s*ellipsis/);
+    expect(css()).toMatch(
+      /\.tablist\.fill[^{}]*\.tab__label[^{}]*\{[^}]*text-overflow:\s*ellipsis/,
+    );
     fixture.componentInstance.align.set('start');
     fixture.detectChanges();
     expect(list.classList.contains('fill')).toBe(false);
+  });
+});
+
+@Component({
+  imports: [UiTabs, UiTab],
+  template: `<ui-tabs appearance="pill" label="Queues">
+    <ui-tab label="Mine" [badge]="6" [badgeLabel]="'6 assigned'" />
+    <ui-tab label="Unassigned" [badge]="3" />
+    <ui-tab label="All open" [badge]="38" />
+  </ui-tabs>`,
+})
+class PillHost {}
+
+describe('UiTabs pill appearance', () => {
+  const css = () =>
+    ((UiTabs as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? [])
+      .join('\n')
+      .replace(/\[_ng(?:host|content)-%COMP%\]/g, '');
+
+  it('adds the pill class, wraps tabs, and uses a full-radius bordered selected tab', () => {
+    const fixture = TestBed.createComponent(PillHost);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const list = el.querySelector('.tablist')!;
+    expect(list.classList.contains('pill')).toBe(true);
+    expect(css()).toMatch(
+      /\.tablist\.pill[^{}]*\{[^}]*gap:\s*var\(--ui-space-2\)[^}]*border-bottom:\s*none[^}]*flex-wrap:\s*wrap/,
+    );
+    expect(css()).toMatch(
+      /\.tablist\.pill[^{}]*\.tab[^{}]*\{[^}]*1\.5px solid var\(--ui-color-border\)[^}]*border-radius:\s*var\(--ui-radius-pill\)/,
+    );
+    expect(css()).toMatch(
+      /\.tablist\.pill[^{}]*\.tab\[aria-selected=true\][^{}]*\{[^}]*background:\s*var\(--ui-color-primary\)[^}]*color:\s*var\(--ui-color-primary-contrast\)/,
+    );
+  });
+
+  it('renders pill badges as plain parenthesized counts without changing the accessible name', () => {
+    const fixture = TestBed.createComponent(PillHost);
+    fixture.detectChanges();
+    const [mine, , all] = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ];
+    expect(mine.textContent).toContain('Mine (6)');
+    expect(all.textContent).toContain('All open (38)');
+    expect(mine.querySelector('.tab__badge-pair')?.getAttribute('aria-hidden')).toBe('true');
+    expect(mine.querySelector('.tab__sr')?.textContent?.trim()).toBe('6 assigned');
+  });
+
+  it('keeps roving tabindex and arrow selection in pill mode', () => {
+    const fixture = TestBed.createComponent(PillHost);
+    fixture.detectChanges();
+    const buttons = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ];
+    buttons[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    fixture.detectChanges();
+    expect(buttons[1].getAttribute('aria-selected')).toBe('true');
+    expect(buttons[0].tabIndex).toBe(-1);
+    expect(buttons[1].tabIndex).toBe(0);
   });
 });
