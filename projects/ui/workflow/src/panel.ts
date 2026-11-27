@@ -345,14 +345,12 @@ const RUNS_POLL_MS = 15_000;
     .rail[data-edge="bottom"] { bottom: 0; left: 50%; transform: translateX(-50%); padding: var(--ui-space-2) var(--ui-space-3); border-bottom: 0;
       border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0; padding-bottom: calc(var(--ui-space-2) + env(safe-area-inset-bottom)); }
     /* Fingers need a bigger target than the dots. */
-    @media (pointer: coarse) { .rail { min-width: var(--ui-size-touch); min-height: var(--ui-size-touch); } }
-    /* Phones: a side rail only peeks into the page's 16px gutter (dots at its inner edge), so it neither covers the
-       content nor catches taps meant for it; the part off screen still counts as its target where it is visible. */
-    @media (max-width: 600px) {
-      .rail[data-edge="right"], .rail[data-edge="left"] { width: var(--ui-size-touch); box-sizing: border-box; padding-left: var(--ui-space-1); padding-right: var(--ui-space-1); }
-      .rail[data-edge="right"] { right: calc(var(--ui-space-4) - var(--ui-size-touch)); justify-content: flex-start; }
-      .rail[data-edge="left"] { left: calc(var(--ui-space-4) - var(--ui-size-touch)); justify-content: flex-end; }
-    }
+    @media (pointer: coarse) { .rail { min-height: var(--ui-size-touch); } .rail[data-edge="bottom"] { min-width: var(--ui-size-touch); } }
+    /* A side rail is exactly --ui-wf-rail-size wide at every screen size, so a page can keep that much room free
+       on its edge and the rail never covers content. On touch screens the target grows in height only, never
+       sideways over the content beside it. */
+    .rail[data-edge="right"], .rail[data-edge="left"] { width: var(--ui-wf-rail-size); box-sizing: border-box;
+      padding-left: 0; padding-right: 0; box-shadow: var(--ui-shadow-1); }
   `],
 })
 export class UiWorkflowPanel extends WfWithApi {

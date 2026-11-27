@@ -202,13 +202,24 @@ describe('ui-map preview (0.43.0)', () => {
     expect(host.hasAttribute('data-preview')).toBe(false);
     expect(canvas.hasAttribute('inert')).toBe(false);
     expect(canvas.hasAttribute('aria-hidden')).toBe(false);
-    // The keys pan it, and markers select.
+    // The keys pan it, and markers select. Turning preview off can still be moving the map (resize, recentre):
+    // wait until it is still, so only the key press can move it from here.
+    let last = map.getCenter();
+    await vi.waitFor(
+      () => {
+        const now = map.getCenter();
+        const still = now.equals(last);
+        last = now;
+        expect(still).toBe(true);
+      },
+      { timeout: 5000, interval: 100 },
+    );
     const before = map.getCenter();
     arrow(canvas);
-    // Leaflet animates the pan a frame at a time.
-    await new Promise((r) => setTimeout(r, 400));
+    // Leaflet animates the pan a frame at a time; under load frames come late, so wait for the move itself
+    // instead of a fixed time.
+    await vi.waitFor(() => expect(map.getCenter().equals(before)).toBe(false), { timeout: 5000, interval: 50 });
     await settle();
-    expect(map.getCenter().equals(before)).toBe(false);
     markerEl('a').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(f.componentInstance.picked).toEqual(['a']);
     f.componentInstance.preview.set(true);

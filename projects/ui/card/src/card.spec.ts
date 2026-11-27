@@ -346,6 +346,10 @@ class LiquidHost {
 }
 
 describe('UiCard liquid glass', () => {
+  // jsdom defines offsetWidth/offsetHeight on HTMLElement.prototype itself: restore the originals afterwards
+  // (deleting them would remove them for every later spec in the same worker).
+  const realOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')!;
+  const realOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!;
   const size = (w: number, h: number) => {
     Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
       configurable: true,
@@ -361,8 +365,8 @@ describe('UiCard liquid glass', () => {
     });
   };
   afterEach(() => {
-    delete (HTMLElement.prototype as unknown as { offsetWidth?: unknown }).offsetWidth;
-    delete (HTMLElement.prototype as unknown as { offsetHeight?: unknown }).offsetHeight;
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', realOffsetWidth);
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', realOffsetHeight);
     vi.unstubAllGlobals();
   });
 
@@ -450,6 +454,12 @@ describe('UiCard liquid glass', () => {
     expect(styles).toMatch(
       /\.ui-card\.glass\.liquid[^{]*:is\(button, input[^{]*\{\s*text-shadow:\s*none/,
     );
+  });
+
+  // Runs last in this block, after every stub above was undone by afterEach.
+  it('leaves jsdom\'s own offsetWidth/offsetHeight getters in place for later specs', () => {
+    expect(Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth')?.get).toBe(realOffsetWidth.get);
+    expect(Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')?.get).toBe(realOffsetHeight.get);
   });
 });
 

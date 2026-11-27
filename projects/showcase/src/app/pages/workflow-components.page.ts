@@ -85,6 +85,7 @@ const ENTITY = 'application';
           } @else {
             <div class="frame hint">
               <p>The panel is on the {{ layout() === 'side-drawer' ? 'right edge' : 'bottom edge' }} of the screen as a rail of dots: one per state, green up to where the application is now. Hover it with a mouse to peek, or tap or click it to open the drawer.</p>
+              <p>The side rail is <code>--ui-wf-rail-size</code> wide (28px) at every screen size and sits over the page, so a page that shows one keeps at least that much room on that side, e.g. <code>padding-inline-end: calc(var(--ui-wf-rail-size) + var(--ui-space-2))</code>.</p>
             </div>
             <ui-workflow-panel [entity]="entity" [entityId]="id" [layout]="layout()" [api]="api()" title="Application workflow" (changed)="onPanelChanged()" />
           }

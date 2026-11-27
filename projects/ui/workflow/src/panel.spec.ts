@@ -722,3 +722,34 @@ class SwitchHost {
   api!: UiWorkflowApi;
   onChanged: (r: UiWfRecord) => void = () => undefined;
 }
+
+describe('UiWorkflowPanel side rail size', () => {
+  const css = () =>
+    ((UiWorkflowPanel as unknown as { ɵcmp: { styles: string[] } }).ɵcmp.styles ?? [])
+      .join('\n')
+      .replace(/\s+/g, ' ');
+
+  it('is exactly --ui-wf-rail-size wide at every screen size, so a page can keep that room free', () => {
+    const styles = css();
+    expect(styles).toMatch(
+      /\.rail\[data-edge=["']?right["']?\][^{]*\{[^}]*width: ?var\(--ui-wf-rail-size\)/,
+    );
+    // No phone-only rule that pushes the rail off screen or widens it to the touch size.
+    expect(styles).not.toMatch(/max-width: ?600px/);
+    expect(styles).not.toMatch(/calc\(var\(--ui-space-4\) - var\(--ui-size-touch\)\)/);
+  });
+
+  it('grows the touch target in height only, never sideways over the content', () => {
+    const blocks = [...css().matchAll(/@media \(pointer: ?coarse\) ?\{(.*?\}) ?\}/g)].map(
+      (m) => m[1],
+    );
+    const rail = blocks.find((b) => b.includes('.rail'));
+    expect(rail).toBeDefined();
+    expect(rail).toContain('min-height: var(--ui-size-touch)');
+    // Only the bottom rail may widen to the touch size; the side rails keep --ui-wf-rail-size.
+    expect(rail).not.toMatch(/\.rail\[_ngcontent-%COMP%\] ?\{[^}]*min-width/);
+    expect(rail).toMatch(
+      /\.rail\[data-edge=["']?bottom["']?\]\[_ngcontent-%COMP%\] ?\{[^}]*min-width/,
+    );
+  });
+});

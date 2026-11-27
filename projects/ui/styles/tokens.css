@@ -279,6 +279,9 @@
   --ui-progress-neutral: var(--ui-color-text-muted);
   --ui-scroll-progress-track: color-mix(in srgb, var(--ui-color-text) 6%, transparent);
   /* Media chrome sits over photographs, so it stays dark-scrim/light-glyph in every theme. */
+  /* Workflow panel: the side rail's visible width (the active dot with its ring, plus padding). It sits on the
+     screen edge over the page, so a page that shows a rail keeps at least this much room on that side. */
+  --ui-wf-rail-size: 28px;
   --ui-media-bg: #000000;
   --ui-media-scrim: #000000;
   --ui-media-on-scrim: #ffffff;
