@@ -414,6 +414,36 @@ EdgeInsetsDirectional.only(top:, bottom:))`, with `UiFloatingPanel.onCoverChange
 `UiBottomSheet.onCoverChanged`, and `glass: true` on both (solid under `MediaQuery.highContrast`, as
 Flutter has no reduce-transparency setting).
 
+## GeoJSON layers, selection and drawing (`ui-map`)
+
+`ui-map` accepts `layers: UiMapLayer[]`, each with an `id`, `label`, optional token-backed `tone`
+(`brand`, `accent`, `success`, `warning`, `danger`, `info` or `neutral`), optional `visible`, and a
+GeoJSON `FeatureCollection`. Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon
+features are supported. `properties.title` is the feature's accessible name; areas use a light fill.
+Changing the input redraws the GeoJSON overlay on the existing Leaflet map.
+
+```html
+<ui-map [layers]="layers" layerControl [visibleLayers]="visibleLayerIds()"
+  (visibleLayersChange)="visibleLayerIds.set($event)" (featureSelected)="selected.set($event)">
+  <ng-template uiMapFeatureDetails let-selection>
+    <h2>{{ selection.feature.properties?.['title'] }}</h2>
+    <p>{{ selection.layerId }}</p>
+  </ng-template>
+</ui-map>
+```
+
+The legend is a token-backed panel at the top-end corner, mirrored in RTL. Each checkbox has a swatch,
+label and feature count; it collapses on small screens. Features in visible layers are individual Tab
+stops. Enter or Space selects one, highlights it and emits `featureSelected`; the projected details
+template is a side card on wide maps and a bottom sheet on narrow maps. Escape and Close emit `null`.
+
+`drawMode` is `'none' | 'point' | 'line' | 'area'` (default `'none'`). Click adds vertices; Point
+finishes on its first click, Enter or double-click finishes a line or area, Backspace removes the last
+vertex and Escape emits `drawCancelled`. The Undo point and Finish controls are always available while
+drawing. `drawn` emits a GeoJSON Point, LineString or closed Polygon. Pass an existing Point,
+LineString or Polygon to `editGeometry` to show draggable vertices and emit the edited geometry on
+Finish. These keyboard rules are also the accessible drawing alternative to pointer input.
+
 ## Routes and fit to points (`ui-map`, 0.42)
 
 ```html

@@ -88,6 +88,69 @@
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .ui-map .ui-map-marker[data-side="left"] .ui-map-label { left: auto; right: calc(100% + var(--ui-space-1)); }
 
+/* GeoJSON features use the same marker dot as ordinary markers. Every tone resolves to a theme
+   token so layers remain correct in dark mode and in branded themes. */
+.ui-map .ui-map-dot[data-tone="brand"], .ui-map .ui-map-dot[data-tone="primary"] { --ui-map-dot-tone: var(--ui-color-primary); }
+.ui-map .ui-map-dot[data-tone="accent"] { --ui-map-dot-tone: var(--ui-color-accent); }
+.ui-map .ui-map-dot[data-tone="info"] { --ui-map-dot-tone: var(--ui-color-info); }
+.ui-map .ui-map-dot[data-tone="success"] { --ui-map-dot-tone: var(--ui-color-success); }
+.ui-map .ui-map-dot[data-tone="warning"] { --ui-map-dot-tone: var(--ui-color-warning); }
+.ui-map .ui-map-dot[data-tone="danger"] { --ui-map-dot-tone: var(--ui-color-danger); }
+.ui-map .ui-map-dot[data-tone="neutral"] { --ui-map-dot-tone: var(--ui-color-text-muted); }
+.ui-map .ui-map-feature-path { stroke: var(--ui-map-feature-tone, var(--ui-color-primary)); fill: var(--ui-map-feature-tone, var(--ui-color-primary)); }
+.ui-map .ui-map-feature-path[data-tone="brand"] { --ui-map-feature-tone: var(--ui-color-primary); }
+.ui-map .ui-map-feature-path[data-tone="accent"] { --ui-map-feature-tone: var(--ui-color-accent); }
+.ui-map .ui-map-feature-path[data-tone="info"] { --ui-map-feature-tone: var(--ui-color-info); }
+.ui-map .ui-map-feature-path[data-tone="success"] { --ui-map-feature-tone: var(--ui-color-success); }
+.ui-map .ui-map-feature-path[data-tone="warning"] { --ui-map-feature-tone: var(--ui-color-warning); }
+.ui-map .ui-map-feature-path[data-tone="danger"] { --ui-map-feature-tone: var(--ui-color-danger); }
+.ui-map .ui-map-feature-path[data-tone="neutral"] { --ui-map-feature-tone: var(--ui-color-text-muted); }
+.ui-map .ui-map-feature-path[data-selected] { filter: drop-shadow(0 0 3px var(--ui-color-surface-raised)); }
+.ui-map .ui-map-geo-marker[data-selected] .ui-map-dot { box-shadow: var(--ui-focus-ring); }
+
+/* A small, token-backed legend at the logical start side (the right in RTL). */
+.ui-map .ui-map-layer-control { position: absolute; z-index: 1002; top: calc(var(--ui-map-inset-top, 0px) + var(--ui-space-3)); inset-inline-start: calc(var(--ui-map-inset-start, 0px) + var(--ui-space-3));
+  min-width: 176px; max-width: min(260px, calc(100% - 2 * var(--ui-space-3))); color: var(--ui-color-text); background: color-mix(in srgb, var(--ui-color-surface-raised) 94%, transparent);
+  border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2); overflow: hidden; }
+.ui-map .ui-map-layer-toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--ui-space-3); width: 100%; min-height: var(--ui-size-lg); padding: var(--ui-space-2) var(--ui-space-3); border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: start; cursor: pointer; }
+.ui-map .ui-map-layer-toggle:focus-visible, .ui-map .ui-map-layer-option:has(input:focus-visible) { outline: none; box-shadow: inset var(--ui-focus-ring); }
+.ui-map .ui-map-layer-list { display: flex; flex-direction: column; gap: var(--ui-space-1); padding: 0 var(--ui-space-2) var(--ui-space-2); }
+.ui-map .ui-map-layer-option { display: flex; align-items: center; gap: var(--ui-space-2); min-height: var(--ui-size-lg); padding: var(--ui-space-1); border-radius: var(--ui-radius-xs); cursor: pointer; }
+.ui-map .ui-map-layer-option:hover { background: var(--ui-color-surface-hover); }
+.ui-map .ui-map-layer-option input { margin: 0; accent-color: var(--ui-color-primary); }
+.ui-map .ui-map-layer-swatch { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--ui-map-feature-tone, var(--ui-color-primary)); }
+.ui-map .ui-map-layer-swatch[data-tone="brand"] { --ui-map-feature-tone: var(--ui-color-primary); }
+.ui-map .ui-map-layer-swatch[data-tone="accent"] { --ui-map-feature-tone: var(--ui-color-accent); }
+.ui-map .ui-map-layer-swatch[data-tone="info"] { --ui-map-feature-tone: var(--ui-color-info); }
+.ui-map .ui-map-layer-swatch[data-tone="success"] { --ui-map-feature-tone: var(--ui-color-success); }
+.ui-map .ui-map-layer-swatch[data-tone="warning"] { --ui-map-feature-tone: var(--ui-color-warning); }
+.ui-map .ui-map-layer-swatch[data-tone="danger"] { --ui-map-feature-tone: var(--ui-color-danger); }
+.ui-map .ui-map-layer-swatch[data-tone="neutral"] { --ui-map-feature-tone: var(--ui-color-text-muted); }
+.ui-map .ui-map-layer-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-map .ui-map-layer-count { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); font-variant-numeric: tabular-nums; }
+
+/* Drawing is deliberately compact and keyboard operable; vertices remain real draggable markers. */
+.ui-map .ui-map-drawing-controls { position: absolute; z-index: 1002; bottom: calc(var(--ui-map-inset-bottom, 0px) + var(--ui-space-3)); inset-inline-start: calc(var(--ui-map-inset-start, 0px) + var(--ui-space-3)); display: flex; align-items: center; gap: var(--ui-space-2); padding: var(--ui-space-2); color: var(--ui-color-text); background: color-mix(in srgb, var(--ui-color-surface-raised) 94%, transparent); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-drawing-controls button { min-height: var(--ui-size-md); padding: 0 var(--ui-space-2); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius-xs); background: var(--ui-color-surface-raised); color: var(--ui-color-text); font: inherit; cursor: pointer; }
+.ui-map .ui-map-drawing-controls button:hover:not(:disabled) { background: var(--ui-color-surface-hover); }
+.ui-map .ui-map-drawing-controls button:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+.ui-map .ui-map-drawing-controls button:disabled { color: var(--ui-color-text-muted); cursor: not-allowed; }
+.ui-map .ui-map-drawing-status { color: var(--ui-color-text-muted); font-size: var(--ui-font-size-sm); white-space: nowrap; }
+.ui-map .ui-map-drawing-line { stroke: var(--ui-color-primary); fill: none; stroke-dasharray: 7 5; pointer-events: none; }
+.ui-map .ui-map-drawing-area { stroke: var(--ui-color-primary); fill: var(--ui-color-primary); fill-opacity: .18; pointer-events: none; }
+.ui-map .ui-map-drawing-vertex { width: 16px !important; height: 16px !important; margin: -8px 0 0 -8px !important; border: 2px solid var(--ui-color-surface-raised); border-radius: 50%; background: var(--ui-color-primary); box-shadow: var(--ui-shadow-2); cursor: grab; }
+.ui-map .ui-map-drawing-vertex:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+
+/* Details is a side card on wide maps and a bottom sheet on narrow maps. */
+.ui-map .ui-map-feature-details { position: absolute; z-index: 1003; inset-block-start: calc(var(--ui-map-inset-top, 0px) + var(--ui-space-3)); inset-inline-end: calc(var(--ui-map-inset-end, 0px) + var(--ui-space-3)); width: min(320px, calc(100% - 2 * var(--ui-space-3))); max-height: calc(100% - var(--ui-space-6)); overflow: auto; box-sizing: border-box; padding: var(--ui-space-4); color: var(--ui-color-text); background: var(--ui-color-surface-raised); border: 1px solid var(--ui-color-border); border-radius: var(--ui-radius); box-shadow: var(--ui-shadow-2); }
+.ui-map .ui-map-feature-details h2 { margin: 0; font-size: var(--ui-font-size-md); }
+.ui-map .ui-map-feature-details-close { position: absolute; inset-block-start: var(--ui-space-2); inset-inline-end: var(--ui-space-2); width: var(--ui-size-md); height: var(--ui-size-md); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ui-color-text); font: inherit; font-size: var(--ui-font-size-lg); line-height: 1; cursor: pointer; }
+.ui-map .ui-map-feature-details-close:hover { background: var(--ui-color-surface-hover); }
+.ui-map .ui-map-feature-details-close:focus-visible { outline: none; box-shadow: var(--ui-focus-ring); }
+@media (max-width: 600px) {
+  .ui-map .ui-map-feature-details { inset-block-start: auto; inset-inline: 0; bottom: 0; width: 100%; max-height: 48%; border-radius: var(--ui-radius) var(--ui-radius) 0 0; }
+}
+
 /* The pin: a teardrop in the accent (or primary) colour, its tip on the point. */
 .ui-map .ui-map-pin { cursor: grab; }
 .ui-map .ui-map-pin:active { cursor: grabbing; }

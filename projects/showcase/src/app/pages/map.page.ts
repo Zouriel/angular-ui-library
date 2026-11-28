@@ -7,7 +7,7 @@ import VolumeHighIcon from '@hugeicons/core-free-icons/VolumeHighIcon';
 import VolumeOffIcon from '@hugeicons/core-free-icons/VolumeOffIcon';
 import Alert02Icon from '@hugeicons/core-free-icons/Alert02Icon';
 import { NAV_DEMO_ROUTE, navDemoSteps } from './nav-demo';
-import { UiMap, uiMapFormatRadius, type UiLatLng, type UiMapArea, type UiMapControl, type UiMapInsets, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
+import { UiMap, UiMapFeatureDetails, uiMapFormatRadius, type UiLatLng, type UiMapArea, type UiMapControl, type UiMapFeatureSelection, type UiMapInsets, type UiMapLayer, type UiMapMarker, type UiMapMarkerLabels, type UiMapPulse, type UiMapRoute, type UiMapRouteTone, type UiMapUserLocation, type UiMapView } from '@zouriel/ui/map';
 import CenterFocusIcon from '@hugeicons/core-free-icons/CenterFocusIcon';
 import { UiFloatingPanel } from '@zouriel/ui/layout';
 import { UiButton, UiSegmented } from '@zouriel/ui/button';
@@ -133,6 +133,18 @@ const AREA_CODE = `<!-- "Find a nurse within": the patient drags the handle on t
 <ui-button (click)="map.fitArea()">Show the whole area</ui-button>
 <!-- uiMapFormatRadius(radius()) gives "5 km", "800 m" in the app's words (the mapRadius* strings). -->`;
 
+const LAYERS_CODE = `<ui-map [layers]="layers" layerControl [visibleLayers]="visibleLayers()"
+  (visibleLayersChange)="visibleLayers.set($event)" (featureSelected)="selected.set($event)">
+  <ng-template uiMapFeatureDetails let-selection>
+    <h2>{{ selection.feature.properties?.['title'] }}</h2>
+    <p>Layer: {{ selection.layerId }}</p>
+  </ng-template>
+</ui-map>`;
+
+const DRAW_CODE = `<ui-map [drawMode]="drawMode()" [editGeometry]="editGeometry()"
+  (drawn)="lastGeometry.set($event)" (drawCancelled)="lastGeometry.set(null)" />
+<!-- Keyboard: click to add vertices; Enter or double-click finishes; Backspace undoes; Escape cancels. -->`;
+
 const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
   <ui-map fill [center]="home" [zoom]="15" [markers]="nurses" [pin]="home" [pinDraggable]="false"
     [pulse]="{ lat: home.lat, lng: home.lng, active: searching() }"
@@ -171,6 +183,40 @@ const PAGE_CODE = `<div class="page"> <!-- position: fixed; inset: 0 -->
             }
           </div>
           <ui-text variant="caption">View: {{ view() ? view()!.lat.toFixed(4) + ', ' + view()!.lng.toFixed(4) + ' at zoom ' + view()!.zoom : '—' }}</ui-text>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="GeoJSON layers" anchor="geojson-layers" selector="ui-map [layers] · layerControl · uiMapFeatureDetails" [api]="layerApi"
+        summary="GeoJSON layers keep data and presentation together: points use the map's marker dot, lines are stroked, and polygons get a light token-backed fill. The legend is a keyboard-friendly checkbox list with a swatch and feature count; visibleLayersChange lets an app persist the choice. Features are real Tab stops: Enter or Space selects one, applies a highlight and opens the projected details panel. The panel is a side card on wide maps and a bottom sheet on narrow maps; Escape or Close clears it."
+        >
+        <doc-demo lang="ts + html" [code]="LAYERS_CODE">
+          <div class="map-wrap layers-wrap">
+            <ui-map [center]="layerCenter" [zoom]="13" [layers]="geoLayers" layerControl [visibleLayers]="visibleLayers()"
+              (visibleLayersChange)="visibleLayers.set($event)" (featureSelected)="selectedFeature.set($event)" ariaLabel="Lumen Vale map layers">
+              <ng-template uiMapFeatureDetails let-selection>
+                <h2>{{ selection.feature.properties?.['title'] }}</h2>
+                <p class="meta">Layer: {{ selection.layerId }}</p>
+                <p class="meta">Press Escape or Close to return to the map.</p>
+              </ng-template>
+            </ui-map>
+          </div>
+          <ui-text variant="caption">{{ selectedFeature() ? 'Selected: ' + selectedFeature()!.feature.properties?.['title'] : 'Tab to a feature or click one.' }}</ui-text>
+        </doc-demo>
+      </doc-section>
+
+      <doc-section name="Drawing and editing" anchor="drawing" selector="ui-map drawMode · editGeometry · (drawn)" [api]="drawingApi"
+        summary="Drawing is opt-in. In point, line or area mode, click to add vertices; Enter or double-click finishes a line or area, Backspace removes the last vertex and Escape cancels. The Undo point and Finish controls are also available to pointer and keyboard users. A Polygon is emitted with a closed ring. Pass an existing Point, LineString or Polygon to editGeometry to show draggable vertices, then Finish to emit the edited geometry."
+        >
+        <doc-demo lang="ts + html" [code]="DRAW_CODE">
+          <div class="map-wrap draw-wrap">
+            <ui-map [center]="layerCenter" [zoom]="13" [drawMode]="drawMode()" [editGeometry]="editGeometry()"
+              (drawn)="lastGeometry.set($event)" (drawCancelled)="lastGeometry.set(null)" ariaLabel="Draw on the Lumen Vale map" />
+          </div>
+          <div class="route-acts">
+            <ui-segmented label="Mode" size="sm" [options]="drawModeOptions" [value]="drawMode()" (valueChange)="drawMode.set($any($event))" />
+            <ui-button size="sm" variant="outline" (click)="editGeometry.set(editGeometry() ? null : editSample)">{{ editGeometry() ? 'Stop editing' : 'Edit sample area' }}</ui-button>
+            <ui-text variant="caption">{{ lastGeometry() ? 'Geometry ready to save.' : 'Click the map to begin.' }}</ui-text>
+          </div>
         </doc-demo>
       </doc-section>
 
@@ -574,6 +620,43 @@ export class MapPage {
   protected readonly ROUTE_CODE = ROUTE_CODE;
   protected readonly PREVIEW_CODE = PREVIEW_CODE;
   protected readonly SELECTED_CODE = SELECTED_CODE;
+  protected readonly LAYERS_CODE = LAYERS_CODE;
+  protected readonly DRAW_CODE = DRAW_CODE;
+  protected readonly layerCenter: UiLatLng = { lat: 4.1755, lng: 73.5093 };
+  protected readonly geoLayers: UiMapLayer[] = [
+    { id: 'districts', label: 'Lumen Vale districts', tone: 'accent', features: { type: 'FeatureCollection', features: [
+      { type: 'Feature', properties: { title: 'Harbour Ward' }, geometry: { type: 'Polygon', coordinates: [[[73.501, 4.171], [73.515, 4.171], [73.515, 4.181], [73.501, 4.181], [73.501, 4.171]]] } },
+    ] } },
+    { id: 'paths', label: 'Northstar paths', tone: 'info', features: { type: 'FeatureCollection', features: [
+      { type: 'Feature', properties: { title: 'Lantern Walk' }, geometry: { type: 'LineString', coordinates: [[73.501, 4.171], [73.509, 4.177], [73.517, 4.181]] } },
+    ] } },
+    { id: 'places', label: 'Helpful places', tone: 'success', features: { type: 'FeatureCollection', features: [
+      { type: 'Feature', properties: { title: 'Morrow Library' }, geometry: { type: 'Point', coordinates: [73.508, 4.176] } },
+      { type: 'Feature', properties: { title: 'Cedar Clinic' }, geometry: { type: 'Point', coordinates: [73.513, 4.174] } },
+    ] } },
+  ];
+  protected readonly visibleLayers = signal<string[]>(this.geoLayers.map((layer) => layer.id));
+  protected readonly selectedFeature = signal<UiMapFeatureSelection | null>(null);
+  protected readonly layerApi: ApiRow[] = [
+    { name: 'layers', type: 'UiMapLayer[]', default: '[]', desc: 'GeoJSON FeatureCollections of Point, MultiPoint, LineString, MultiLineString, Polygon or MultiPolygon features. properties.title names each feature.' },
+    { name: 'UiMapLayer.tone', type: "'brand' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'", default: "'brand'", desc: 'Maps to the theme colour tokens; areas use a light fill.' },
+    { name: 'layerControl', type: 'boolean', default: 'false', desc: 'Shows the collapsible, keyboard-friendly legend with a checkbox, swatch and feature count per layer.' },
+    { name: 'visibleLayers', type: 'string[] | null', default: 'null', desc: 'Controlled visible layer ids; null uses each layer.visible value (true by default).' },
+    { name: '(visibleLayersChange)', type: 'string[]', default: '—', desc: 'Emits the visible layer ids in input order after a legend toggle.' },
+    { name: 'uiMapFeatureDetails', type: 'ng-template let-selection', default: '—', desc: 'Projected details template. Features are Tab stops; Enter or Space selects them. Escape closes the side card or bottom sheet.' },
+    { name: '(featureSelected)', type: 'UiMapFeatureSelection | null', default: '—', desc: 'The selected layer id and GeoJSON Feature, or null when details close.' },
+  ];
+  protected readonly drawMode = signal<'none' | 'point' | 'line' | 'area'>('none');
+  protected readonly drawModeOptions = [{ value: 'none', label: 'Off' }, { value: 'point', label: 'Point' }, { value: 'line', label: 'Line' }, { value: 'area', label: 'Area' }];
+  protected readonly editGeometry = signal<GeoJSON.Geometry | null>(null);
+  protected readonly editSample: GeoJSON.Geometry = { type: 'Polygon', coordinates: [[[73.503, 4.173], [73.510, 4.173], [73.511, 4.179], [73.503, 4.179], [73.503, 4.173]]] };
+  protected readonly lastGeometry = signal<GeoJSON.Geometry | null>(null);
+  protected readonly drawingApi: ApiRow[] = [
+    { name: 'drawMode', type: "'none' | 'point' | 'line' | 'area'", default: "'none'", desc: 'Click to add vertices; Point finishes on its first click, Enter or double-click finishes line/area, Backspace undoes and Escape cancels.' },
+    { name: 'editGeometry', type: 'GeoJSON.Geometry | null', default: 'null', desc: 'An existing Point, LineString or Polygon with draggable vertices; Finish emits the edited geometry.' },
+    { name: '(drawn)', type: 'GeoJSON.Geometry', default: '—', desc: 'Completed Point, LineString or closed Polygon.' },
+    { name: '(drawCancelled)', type: 'void', default: '—', desc: 'Escape cancelled the current drawing.' },
+  ];
   // Preview (0.43.0): the still map, and the full map it opens.
   protected readonly previewCenter: UiLatLng = { lat: 4.176, lng: 73.5087 };
   protected readonly previewOn = signal(true);

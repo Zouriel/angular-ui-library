@@ -118,6 +118,10 @@ keyboard support, CDK focus handling). About 140 components and directives acros
   and `ui-bottom-sheet` report `coverChange` to feed them. `ui-feature-card` gains `badgeTone`,
   `colors` (an app's own surface and accent, dark pair derived, contrast-checked) and `enter` /
   `enterDelay` (a staggered entrance), with an icon lift and arrow nudge on hover and focus.
+- **GeoJSON map layers and drawing**: `ui-map` accepts token-backed `UiMapLayer[]` with a keyboard-
+  friendly layer legend, persisted `visibleLayers`, feature selection and projected details, plus
+  Point/LineString/Polygon drawing and draggable `editGeometry` vertices. `drawn` emits the resulting
+  GeoJSON geometry and `drawCancelled` reports Escape cancellation.
 - **Map preview, selected marker, label modes** (0.43.0): `ui-map preview` is a still picture of the
   map that is one button (`(previewPress)`, named `previewLabel` / the `mapOpen` string, an expand badge
   at the top-end corner): no pan, zoom, keys or controls, and the wheel or a drag over it scrolls the

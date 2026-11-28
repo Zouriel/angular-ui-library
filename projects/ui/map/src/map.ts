@@ -1,6 +1,6 @@
-import { isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 import {
-  Component, DestroyRef, booleanAttribute, ElementRef, InjectionToken, NgZone, PLATFORM_ID, ViewEncapsulation, afterNextRender, effect, inject, input, model, output, signal, untracked,
+  Component, DestroyRef, Directive, booleanAttribute, ElementRef, InjectionToken, NgZone, PLATFORM_ID, TemplateRef, ViewEncapsulation, afterNextRender, computed, contentChild, effect, inject, input, model, output, signal, untracked,
 } from '@angular/core';
 import type * as Leaflet from 'leaflet';
 import { HugeiconsIconComponent, type IconSvgObject } from '@hugeicons/angular';
@@ -10,6 +10,8 @@ import ArrowExpand01Icon from '@hugeicons/core-free-icons/ArrowExpand01Icon';
 import { defaultUiStrings, injectUiConfig, injectUiStrings, uiWatchTheme, type UiStatus, type UiStrings, UiDirectionService } from '@zouriel/ui';
 import { UiTooltip } from '@zouriel/ui/overlay';
 import { UiShutterLoader } from '@zouriel/ui/shutter-loader';
+
+let uiMapInstance = 0;
 
 /**
  * How ui-map loads Leaflet: `import('leaflet')` by default. Provide another loader to test a map
@@ -38,6 +40,44 @@ export interface UiMapMarker extends UiLatLng {
 /** Where the map is looking, after the person (or the app) moved it. */
 export interface UiMapView extends UiLatLng {
   zoom: number;
+}
+
+/** The theme tone used by a GeoJSON layer. `brand` is the primary brand colour. */
+export type UiMapLayerTone = 'brand' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+
+/** GeoJSON geometry types that ui-map renders and edits. */
+export type UiMapGeometry = GeoJSON.Point | GeoJSON.MultiPoint | GeoJSON.LineString | GeoJSON.MultiLineString | GeoJSON.Polygon | GeoJSON.MultiPolygon;
+
+/** A collection of map features rendered as one switchable layer. */
+export interface UiMapLayer {
+  id: string;
+  label: string;
+  tone?: UiMapLayerTone;
+  visible?: boolean;
+  features: GeoJSON.FeatureCollection<UiMapGeometry>;
+}
+
+/** A feature selected from a GeoJSON layer. */
+export interface UiMapFeatureSelection {
+  layerId: string;
+  feature: GeoJSON.Feature<UiMapGeometry>;
+}
+
+/** Context exposed by `<ng-template uiMapFeatureDetails let-selection>`. */
+export interface UiMapFeatureDetailsContext {
+  $implicit: UiMapFeatureSelection;
+}
+
+/**
+ * Projects feature details into ui-map's selection panel. The feature is keyboard reachable by
+ * Tab; Enter or Space selects it and supplies this context to the template.
+ */
+@Directive({ selector: 'ng-template[uiMapFeatureDetails]' })
+export class UiMapFeatureDetails {
+  readonly template = inject<TemplateRef<UiMapFeatureDetailsContext>>(TemplateRef);
+  static ngTemplateContextGuard(_d: UiMapFeatureDetails, ctx: unknown): ctx is UiMapFeatureDetailsContext {
+    return true;
+  }
 }
 
 /**
@@ -469,6 +509,9 @@ const USER_PANE = 'uiMapUser';
 const ROUTE_PANE = 'uiMapRoute';
 /** The search area's pane (0.44.0): above the tiles and overlays, below the routes (420). */
 const AREA_PANE = 'uiMapArea';
+/** GeoJSON features sit above routes and below the library's ordinary markers. */
+const FEATURE_PANE = 'uiMapFeature';
+const DRAWING_PANE = 'uiMapDrawing';
 
 /** A drawn route's two polylines, the geometry they show, and the draw-in running, if one is. */
 interface RouteLayers {
@@ -476,6 +519,12 @@ interface RouteLayers {
   line: Leaflet.Polyline;
   key: string;
   anim?: { start: number; ms: number; pts: UiLatLng[] };
+}
+
+interface FeatureRef {
+  layerId: string;
+  feature: GeoJSON.Feature<UiMapGeometry>;
+  layer: Leaflet.Layer;
 }
 
 /** OpenStreetMap's standard tiles; use them within the OSM tile usage policy, or pass your own `tileUrl`. */
@@ -494,7 +543,7 @@ export function uiMapIsDark(color: string): boolean {
 }
 
 /** The marker's HTML: a dot in its tone and, when it has one, its label. */
-export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string {
+export function uiMapMarkerHtml(m: { tone?: UiStatus | UiMapLayerTone; label?: string }): string {
   return `<span class="ui-map-dot" data-tone="${m.tone ?? 'primary'}"></span>${m.label ? `<span class="ui-map-label">${esc(m.label)}</span>` : ''}`;
 }
 
@@ -581,8 +630,44 @@ export function uiMapMarkerHtml(m: Pick<UiMapMarker, 'tone' | 'label'>): string 
   selector: 'ui-map',
   encapsulation: ViewEncapsulation.None,
   host: { class: 'ui-map', '[attr.data-preview]': 'preview() || null', '[attr.data-dark]': 'dark() || null', '[attr.data-dark-tiles]': '(dark() && !!tileUrlDark()) || null', '[class.ui-map-fill]': 'fill()', role: 'region', '[attr.aria-label]': 'ariaLabel()' },
-  imports: [HugeiconsIconComponent, UiTooltip, UiShutterLoader],
+  imports: [NgTemplateOutlet, HugeiconsIconComponent, UiTooltip, UiShutterLoader],
   template: `<div class="ui-map-canvas" #canvas></div>
+    @if (layerControl() && layers().length && !preview()) {
+      <aside class="ui-map-layer-control" [class.ui-map-layer-control-open]="layerPanelOpen()" aria-label="Map layers">
+        <button type="button" class="ui-map-layer-toggle" [attr.aria-expanded]="layerPanelOpen()" [attr.aria-controls]="layerListId" (click)="layerPanelOpen.update(v => !v)">
+          <span>Map layers</span><span aria-hidden="true">{{ layerPanelOpen() ? '−' : '+' }}</span>
+        </button>
+        @if (layerPanelOpen()) {
+          <div [id]="layerListId" class="ui-map-layer-list">
+            @for (layer of layers(); track layer.id) {
+              <label class="ui-map-layer-option">
+                <input type="checkbox" [checked]="layerVisible(layer.id)" (change)="toggleLayer(layer.id)" (keydown)="onLayerKeydown($event, layer.id)" />
+                <span class="ui-map-layer-swatch" [attr.data-tone]="layer.tone ?? 'brand'" aria-hidden="true"></span>
+                <span class="ui-map-layer-label">{{ layer.label }}</span>
+                <span class="ui-map-layer-count">{{ layer.features.features.length }}</span>
+              </label>
+            }
+          </div>
+        }
+      </aside>
+    }
+    @if (drawingActive()) {
+      <div class="ui-map-drawing-controls" role="group" aria-label="Drawing controls">
+        <button type="button" [disabled]="!drawingPoints().length" (click)="undoDrawing()">Undo point</button>
+        <button type="button" [disabled]="!drawingCanFinish()" (click)="finishDrawing()">Finish</button>
+        <span class="ui-map-drawing-status" aria-live="polite">{{ drawingPoints().length }} point{{ drawingPoints().length === 1 ? '' : 's' }}</span>
+      </div>
+    }
+    @if (featureSelection(); as selection) {
+      <section class="ui-map-feature-details" role="dialog" aria-label="Feature details" (keydown)="onDetailsKeydown($event)">
+        <button type="button" class="ui-map-feature-details-close" aria-label="Close feature details" (click)="closeFeatureDetails()">×</button>
+        @if (featureDetails(); as details) {
+          <ng-container [ngTemplateOutlet]="details.template" [ngTemplateOutletContext]="{ $implicit: selection }" />
+        } @else {
+          <h2>{{ featureTitle(selection.feature) }}</h2>
+        }
+      </section>
+    }
     @if (locateControl() && !preview()) {
       <button type="button" class="ui-map-locate" [attr.data-state]="locating() ? 'locating' : locateOff() ? 'off' : null"
         [attr.aria-label]="strings.mapLocate" [attr.aria-busy]="locating() ? 'true' : null"
@@ -683,6 +768,16 @@ export class UiMap {
   rotatable = input(true, { transform: booleanAttribute });
   /** A compass button under the zoom buttons while the map is turned from north; it turns it back (0.47.0). */
   compass = input(true, { transform: booleanAttribute });
+  /** GeoJSON layers. Supported geometries are Point, MultiPoint, LineString, MultiLineString, Polygon and MultiPolygon. */
+  layers = input<readonly UiMapLayer[]>([]);
+  /** Shows the keyboard-friendly layer legend. */
+  layerControl = input(false, { transform: booleanAttribute });
+  /** Persisted visible layer ids. `null` uses each layer's `visible` value (true by default). */
+  visibleLayers = input<readonly string[] | null>(null);
+  /** Drawing mode; map clicks add vertices, Enter/double-click finishes, Backspace undoes and Escape cancels. */
+  drawMode = input<'none' | 'point' | 'line' | 'area'>('none');
+  /** Existing geometry to edit; its vertices are draggable and Finish emits the edited geometry. */
+  editGeometry = input<GeoJSON.Geometry | null>(null);
 
   readonly markerSelected = output<UiMapMarker>();
   /** A map-background tap (0.43.1); also emitted after that tap moves the pin in `pinMode`. */
@@ -705,6 +800,14 @@ export class UiMap {
   readonly userMove = output<void>();
   /** The person turned the map, or pressed the compass (0.47.0): the new bearing, when the turn ends. */
   readonly bearingChange = output<number>();
+  /** A GeoJSON feature was selected by click, Enter or Space; close emits null. */
+  readonly featureSelected = output<UiMapFeatureSelection | null>();
+  /** Visible layer ids after a legend checkbox changes. */
+  readonly visibleLayersChange = output<string[]>();
+  /** A completed Point, LineString or closed Polygon drawing. */
+  readonly drawn = output<GeoJSON.Geometry>();
+  /** Drawing was cancelled with Escape or the cancel path. */
+  readonly drawCancelled = output<void>();
 
   protected readonly icons = { locate: Gps01Icon, off: GpsOff01Icon, expand: ArrowExpand01Icon };
 
@@ -712,6 +815,12 @@ export class UiMap {
   protected readonly dark = signal(false);
   /** The controls' tooltips face into the map: left of them, right in RTL (set once laid out). */
   protected readonly tooltipSide = signal<'left' | 'right'>('left');
+  protected readonly layerPanelOpen = signal(true);
+  protected readonly layerListId = `ui-map-layer-list-${++uiMapInstance}`;
+  protected readonly featureSelection = signal<UiMapFeatureSelection | null>(null);
+  protected readonly drawingPoints = signal<UiLatLng[]>([]);
+  protected readonly drawingActive = computed(() => this.drawMode() !== 'none' || this.editGeometry() !== null);
+  protected readonly featureDetails = contentChild(UiMapFeatureDetails);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly loadLeaflet = inject(UI_MAP_LEAFLET);
@@ -722,6 +831,14 @@ export class UiMap {
   private markerLayer: Leaflet.LayerGroup | null = null;
   /** The markers drawn, by id, so the selection and label mode update them in place. */
   private markerById = new Map<string, Leaflet.Marker>();
+  private geoLayerById = new Map<string, Leaflet.GeoJSON>();
+  private featureRefs = new Map<Leaflet.Layer, FeatureRef>();
+  private visibleLayerState = signal<Set<string>>(new Set());
+  private visibleLayerStateReady = false;
+  private drawingLayer: Leaflet.Polyline | Leaflet.Polygon | null = null;
+  private drawingVertices: Leaflet.LayerGroup | null = null;
+  private drawingKind: 'point' | 'line' | 'area' | null = null;
+  private drawingSourceKey = '';
   /** The zoom buttons, taken off a preview and put back after. */
   private zoomControl: Leaflet.Control.Zoom | null = null;
   /** The OSM credits, moved to the other corner when the text direction flips. */
@@ -834,6 +951,16 @@ export class UiMap {
     effect(() => {
       const r = this.routes();
       untracked(() => this.drawRoutes(r));
+    });
+    effect(() => {
+      const list = this.layers();
+      this.visibleLayers();
+      untracked(() => this.syncVisibleLayers(list));
+    });
+    effect(() => {
+      this.drawMode();
+      const geometry = this.editGeometry();
+      untracked(() => this.syncDrawing(geometry));
     });
     effect(() => {
       this.selectedMarkerId();
@@ -971,6 +1098,10 @@ export class UiMap {
       const areaPane = map.createPane(AREA_PANE);
       areaPane.style.zIndex = '410';
       areaPane.style.pointerEvents = 'none';
+      const featurePane = map.createPane(FEATURE_PANE);
+      featurePane.style.zIndex = '580';
+      const drawingPane = map.createPane(DRAWING_PANE);
+      drawingPane.style.zIndex = '650';
       this.map = map;
       this.markerLayer = L.layerGroup().addTo(map);
       // The person moves the map (drag, wheel, double click, pinch, keys, box zoom): it is theirs now.
@@ -1048,18 +1179,45 @@ export class UiMap {
       map.on('click', (e: Leaflet.LeafletMouseEvent) => {
         if (this.preview()) return;
         const point = { lat: e.latlng.lat, lng: e.latlng.lng };
+        if (this.drawingActive()) {
+          this.addDrawingVertex(point);
+          return;
+        }
         this.zone.run(() => {
           if (this.pinMode()) this.pin.set(point);
           this.mapTap.emit(point);
         });
       });
+      map.on('dblclick', (e: Leaflet.LeafletMouseEvent) => {
+        if (!this.drawingActive() || this.preview()) return;
+        L.DomEvent.stop(e.originalEvent);
+        this.finishDrawing();
+      });
       // Enter on the focused map drops the pin at its centre (keyboard users pan with the arrows).
       el.addEventListener('keydown', (e) => {
+        if (this.drawingActive() && e.target === el) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            this.finishDrawing();
+            return;
+          }
+          if (e.key === 'Backspace') {
+            e.preventDefault();
+            this.undoDrawing();
+            return;
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            this.cancelDrawing();
+            return;
+          }
+        }
         if (e.key !== 'Enter' || !this.pinMode() || e.target !== el) return;
         const c = this.visibleCenter();
         if (!c) return;
         this.zone.run(() => this.pin.set({ lat: c.lat, lng: c.lng }));
       });
+      map.on('zoomend', () => this.updateDrawing());
       const ro = new ResizeObserver(() => {
         map.invalidateSize({ animate: false });
         this.sizeLabels();
@@ -1089,6 +1247,11 @@ export class UiMap {
         this.map = null;
         this.markerLayer = null;
         this.markerById.clear();
+        this.clearGeoLayers();
+        this.drawingLayer?.remove();
+        this.drawingVertices?.clearLayers();
+        this.drawingLayer = null;
+        this.drawingVertices = null;
         this.zoomControl = null;
         this.attributionControl = null;
         this.pinMarker = null;
@@ -1120,6 +1283,8 @@ export class UiMap {
     this.drawPulse(this.pulse());
     this.drawUser(this.userLocation());
     this.drawRoutes(this.routes());
+    this.syncVisibleLayers(this.layers());
+    this.syncDrawing(this.editGeometry());
     this.drawArea();
     this.applyPreview(this.preview());
     this.turn = 0;
@@ -1447,6 +1612,7 @@ export class UiMap {
     el.style.setProperty('--ui-map-inset-bottom', px(insets.bottom ?? 0));
     el.style.setProperty('--ui-map-inset-left', px(rtl ? end : start));
     el.style.setProperty('--ui-map-inset-right', px(rtl ? start : end));
+    el.style.setProperty('--ui-map-inset-start', px(start));
     // The locate button sits at the inline end (its own CSS flips it in RTL).
     el.style.setProperty('--ui-map-inset-end', px(end));
     const next = uiMapInsetShift(insets, rtl);
@@ -1725,6 +1891,252 @@ export class UiMap {
       r.casing.setStyle({ weight: casing });
       r.line.setStyle({ weight: line });
     }
+  }
+
+  /** Keeps the local layer state stable while allowing an app to take control with visibleLayers. */
+  private syncVisibleLayers(list: readonly UiMapLayer[]): void {
+    const ids = new Set(list.map((layer) => layer.id));
+    const supplied = this.visibleLayers();
+    let next: Set<string>;
+    if (supplied !== null) {
+      next = new Set(supplied.filter((id) => ids.has(id)));
+    } else if (!this.visibleLayerStateReady) {
+      next = new Set(list.filter((layer) => layer.visible !== false).map((layer) => layer.id));
+    } else {
+      next = new Set([...this.visibleLayerState()].filter((id) => ids.has(id)));
+      for (const layer of list) if (!this.visibleLayerState().has(layer.id) && layer.visible !== false) next.add(layer.id);
+    }
+    this.visibleLayerStateReady = true;
+    this.visibleLayerState.set(next);
+    this.drawGeoLayers(list);
+  }
+
+  protected layerVisible(id: string): boolean {
+    return this.visibleLayerState().has(id);
+  }
+
+  protected toggleLayer(id: string): void {
+    const next = new Set(this.visibleLayerState());
+    if (next.has(id)) next.delete(id); else next.add(id);
+    this.visibleLayerState.set(next);
+    this.drawGeoLayers(this.layers());
+    const ids = this.layers().filter((layer) => next.has(layer.id)).map((layer) => layer.id);
+    this.zone.run(() => this.visibleLayersChange.emit(ids));
+  }
+
+  protected onLayerKeydown(event: KeyboardEvent, id: string): void {
+    if (event.key !== ' ') return;
+    event.preventDefault();
+    this.toggleLayer(id);
+  }
+
+  private clearGeoLayers(): void {
+    for (const layer of this.geoLayerById.values()) layer.remove();
+    this.geoLayerById.clear();
+    this.featureRefs.clear();
+  }
+
+  protected featureTitle(feature: GeoJSON.Feature<UiMapGeometry>): string {
+    const title = feature.properties?.['title'];
+    return typeof title === 'string' && title.trim() ? title : 'Map feature';
+  }
+
+  private drawGeoLayers(list: readonly UiMapLayer[]): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    this.clearGeoLayers();
+    for (const layer of list) {
+      if (!this.layerVisible(layer.id)) continue;
+      const tone = layer.tone ?? 'brand';
+      let featureNumber = 0;
+      const geo = L.geoJSON(layer.features as unknown as GeoJSON.GeoJsonObject, {
+        pane: FEATURE_PANE,
+        bubblingMouseEvents: false,
+        pointToLayer: (_feature, latlng) => L.marker(latlng, {
+          pane: FEATURE_PANE,
+          keyboard: true,
+          bubblingMouseEvents: false,
+          riseOnHover: true,
+          icon: L.divIcon({ className: 'ui-map-marker ui-map-geo-marker', html: uiMapMarkerHtml({ tone }), iconSize: undefined }),
+        }),
+        style: (feature) => {
+          const type = feature?.geometry?.type;
+          const area = type === 'Polygon' || type === 'MultiPolygon';
+          return { pane: FEATURE_PANE, className: 'ui-map-feature-path', weight: 3, opacity: 1, fill: area, fillOpacity: area ? 0.16 : 0 };
+        },
+        onEachFeature: (feature, leafletLayer) => {
+          const f = feature as GeoJSON.Feature<UiMapGeometry>;
+          const ref: FeatureRef = { layerId: layer.id, feature: f, layer: leafletLayer };
+          this.featureRefs.set(leafletLayer, ref);
+          const title = this.featureTitle(f);
+          leafletLayer.on('click', (event: Leaflet.LeafletMouseEvent) => {
+            L.DomEvent.stop(event.originalEvent);
+            this.selectFeature(ref);
+          });
+          featureNumber += 1;
+          (leafletLayer as Leaflet.Layer & { __uiMapFeatureNumber?: number }).__uiMapFeatureNumber = featureNumber;
+          queueMicrotask(() => this.prepareFeatureElement(ref, title));
+        },
+      });
+      geo.addTo(map);
+      this.geoLayerById.set(layer.id, geo);
+      geo.eachLayer((leafletLayer) => {
+        const ref = this.featureRefs.get(leafletLayer);
+        if (ref) this.prepareFeatureElement(ref, this.featureTitle(ref.feature), tone);
+      });
+    }
+    this.applyFeatureSelection();
+  }
+
+  private prepareFeatureElement(ref: FeatureRef, title: string, tone?: UiMapLayerTone): void {
+    const element = (ref.layer as Leaflet.Marker | Leaflet.Path).getElement?.() as HTMLElement | undefined;
+    if (!element) return;
+    element.setAttribute('role', 'button');
+    element.setAttribute('tabindex', '0');
+    element.setAttribute('aria-label', title);
+    if (tone) element.setAttribute('data-tone', tone);
+    element.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        event.stopPropagation();
+        this.selectFeature(ref);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        this.closeFeatureDetails();
+      }
+    });
+  }
+
+  private selectFeature(ref: FeatureRef): void {
+    const selection = { layerId: ref.layerId, feature: ref.feature } satisfies UiMapFeatureSelection;
+    this.featureSelection.set(selection);
+    this.applyFeatureSelection();
+    this.zone.run(() => this.featureSelected.emit(selection));
+  }
+
+  protected closeFeatureDetails(): void {
+    this.featureSelection.set(null);
+    this.applyFeatureSelection();
+    this.zone.run(() => this.featureSelected.emit(null));
+  }
+
+  protected onDetailsKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    this.closeFeatureDetails();
+  }
+
+  private applyFeatureSelection(): void {
+    const selected = this.featureSelection();
+    for (const ref of this.featureRefs.values()) {
+      const on = !!selected && selected.layerId === ref.layerId && selected.feature === ref.feature;
+      const element = (ref.layer as Leaflet.Marker | Leaflet.Path).getElement?.() as HTMLElement | undefined;
+      element?.toggleAttribute('data-selected', on);
+      if (element?.classList.contains('leaflet-marker-icon')) (ref.layer as Leaflet.Marker).setZIndexOffset(on ? 800 : 0);
+      if ('setStyle' in ref.layer && typeof (ref.layer as Leaflet.Path).setStyle === 'function') {
+        (ref.layer as Leaflet.Path).setStyle({ weight: on ? 5 : 3, fillOpacity: on ? 0.28 : 0.16 });
+      }
+    }
+  }
+
+  private syncDrawing(geometry: GeoJSON.Geometry | null): void {
+    const mode = this.drawMode();
+    const kind = mode !== 'none' ? mode : geometry ? this.editKind(geometry) : null;
+    const key = mode !== 'none' ? `draw:${mode}` : geometry ? `edit:${JSON.stringify(geometry)}` : 'none';
+    if (key === this.drawingSourceKey) return;
+    this.drawingSourceKey = key;
+    this.drawingKind = kind;
+    this.drawingPoints.set(mode !== 'none' ? [] : geometry ? this.geometryPoints(geometry) : []);
+    this.updateDrawing();
+    this.map?.doubleClickZoom[mode !== 'none' || !!geometry ? 'disable' : 'enable']();
+  }
+
+  private editKind(geometry: GeoJSON.Geometry): 'point' | 'line' | 'area' | null {
+    if (geometry.type === 'Point') return 'point';
+    if (geometry.type === 'LineString') return 'line';
+    if (geometry.type === 'Polygon') return 'area';
+    return null;
+  }
+
+  private geometryPoints(geometry: GeoJSON.Geometry): UiLatLng[] {
+    const coords = geometry.type === 'Point' ? [geometry.coordinates] : geometry.type === 'LineString' ? geometry.coordinates : geometry.type === 'Polygon' ? geometry.coordinates[0] : [];
+    const points = (coords as unknown as readonly (readonly [number, number])[]).filter((p) => Array.isArray(p) && p.length >= 2).map(([lng, lat]) => ({ lat, lng }));
+    if (points.length > 1 && points[0].lat === points[points.length - 1].lat && points[0].lng === points[points.length - 1].lng) points.pop();
+    return points;
+  }
+
+  private updateDrawing(): void {
+    const { L, map } = this;
+    if (!L || !map) return;
+    this.drawingLayer?.remove();
+    this.drawingLayer = null;
+    this.drawingVertices?.clearLayers();
+    if (!this.drawingVertices) this.drawingVertices = L.layerGroup().addTo(map);
+    const points = this.drawingPoints().map((p) => [p.lat, p.lng] as [number, number]);
+    if (this.drawingKind === 'line' && points.length >= 2) {
+      this.drawingLayer = L.polyline(points, { pane: DRAWING_PANE, className: 'ui-map-drawing-line', weight: 4, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+    } else if (this.drawingKind === 'area' && points.length >= 2) {
+      this.drawingLayer = L.polygon(points, { pane: DRAWING_PANE, className: 'ui-map-drawing-area', weight: 3, fillOpacity: 0.18 }).addTo(map);
+    }
+    this.drawingLayer?.getElement()?.setAttribute('aria-hidden', 'true');
+    for (const [index, point] of this.drawingPoints().entries()) {
+      const marker = L.marker([point.lat, point.lng], { pane: DRAWING_PANE, draggable: true, keyboard: true, icon: L.divIcon({ className: 'ui-map-drawing-vertex', html: '', iconSize: [16, 16], iconAnchor: [8, 8] }) });
+      marker.on('drag', () => {
+        const ll = marker.getLatLng();
+        const next = [...this.drawingPoints()];
+        next[index] = { lat: ll.lat, lng: ll.lng };
+        this.drawingPoints.set(next);
+        const values = next.map((p) => [p.lat, p.lng] as [number, number]);
+        this.drawingLayer?.setLatLngs(this.drawingKind === 'area' ? [...values, values[0] ?? values[0]] : values);
+      });
+      marker.on('click', (event: Leaflet.LeafletMouseEvent) => L.DomEvent.stop(event.originalEvent));
+      marker.on('keydown', (event: Leaflet.LeafletKeyboardEvent) => {
+        if (event.originalEvent.key === 'Escape') {
+          event.originalEvent.preventDefault();
+          this.cancelDrawing();
+        } else if (event.originalEvent.key === 'Backspace') {
+          event.originalEvent.preventDefault();
+          this.undoDrawing();
+        }
+      });
+      marker.addTo(this.drawingVertices);
+      marker.getElement()?.setAttribute('aria-label', `Drawing point ${index + 1}`);
+    }
+  }
+
+  protected drawingCanFinish(): boolean {
+    const n = this.drawingPoints().length;
+    return this.drawingKind === 'point' ? n >= 1 : this.drawingKind === 'line' ? n >= 2 : this.drawingKind === 'area' ? n >= 3 : false;
+  }
+
+  private addDrawingVertex(point: UiLatLng): void {
+    if (!this.drawingKind) return;
+    const last = this.drawingPoints().at(-1);
+    if (last && Math.abs(last.lat - point.lat) < 1e-9 && Math.abs(last.lng - point.lng) < 1e-9) return;
+    this.drawingPoints.update((points) => [...points, point]);
+    this.updateDrawing();
+    if (this.drawingKind === 'point') this.finishDrawing();
+  }
+
+  protected undoDrawing(): void {
+    if (!this.drawingPoints().length) return;
+    this.drawingPoints.update((points) => points.slice(0, -1));
+    this.updateDrawing();
+  }
+
+  protected finishDrawing(): void {
+    if (!this.drawingCanFinish()) return;
+    const points = this.drawingPoints().map(({ lat, lng }) => [lng, lat] as [number, number]);
+    const geometry: GeoJSON.Geometry = this.drawingKind === 'point' ? { type: 'Point', coordinates: points[0] } : this.drawingKind === 'line' ? { type: 'LineString', coordinates: points } : { type: 'Polygon', coordinates: [[...points, points[0]]] };
+    this.zone.run(() => this.drawn.emit(geometry));
+  }
+
+  protected cancelDrawing(): void {
+    this.drawingPoints.set([]);
+    this.updateDrawing();
+    this.drawingSourceKey = '';
+    this.zone.run(() => this.drawCancelled.emit());
+    if (this.editGeometry()) this.syncDrawing(this.editGeometry());
   }
 
   private drawMarkers(list: UiMapMarker[]): void {
